@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.57 2003-01-05 18:08:38 zigziggy Exp $
+ * @version    $Id: dynshell.c,v 1.58 2003-01-08 17:08:39 ben Exp $
  */
 
 #include <stdio.h>
@@ -86,7 +86,7 @@ static int dynshell_command(const char * fmt, ...)
   shell_showconsole(); /* make sure console is visible */
 
   /*  printf("CATCHING EXCEPTION IN SHELL !\n");
-	  irq_dump_regs(0, 0); */
+      irq_dump_regs(0, 0); */
 
   {
     lua_Debug ar;
@@ -336,7 +336,7 @@ static int lua_malloc_stats(lua_State * L)
    Each list has been sorted according to sortdir function.
 */
 static int push_dir_as_2_tables(lua_State * L, fu_dirent_t * dir, int count,
-								fu_sortdir_f sortdir)
+				fu_sortdir_f sortdir)
 {
   int k,j,i;
 
@@ -345,7 +345,7 @@ static int push_dir_as_2_tables(lua_State * L, fu_dirent_t * dir, int count,
   /*     return 0; */
   /*   } */
   if (sortdir) {
-	fu_sort_dir(dir, count, sortdir);
+    fu_sort_dir(dir, count, sortdir);
   }
 
   for (k=0; k<2; ++k) {
@@ -356,9 +356,9 @@ static int push_dir_as_2_tables(lua_State * L, fu_dirent_t * dir, int count,
       lua_pushstring(L, dir[i].name);
       lua_rawset(L, k+1);
     }
-	lua_pushstring(L, "n");
-	lua_pushnumber(L, j);
-	lua_settable(L, k+1);
+    lua_pushstring(L, "n");
+    lua_pushnumber(L, j);
+    lua_settable(L, k+1);
   }
   return lua_gettop(L);
 }
@@ -366,7 +366,7 @@ static int push_dir_as_2_tables(lua_State * L, fu_dirent_t * dir, int count,
 /* Return a list of struct {name, size} sorted according to the sortdir
    function. */
 static int push_dir_as_struct(lua_State * L, fu_dirent_t * dir, int count,
-							  fu_sortdir_f sortdir)
+			      fu_sortdir_f sortdir)
 {
   int i, table;
 
@@ -375,7 +375,7 @@ static int push_dir_as_struct(lua_State * L, fu_dirent_t * dir, int count,
   /*     return 0; */
   /*   } */
   if (sortdir) {
-	fu_sort_dir(dir, count, sortdir);
+    fu_sort_dir(dir, count, sortdir);
   }
 
   lua_newtable(L);
@@ -434,42 +434,42 @@ static int lua_dirlist(lua_State * L)
 
   /* Get parameters */
   for (i=1; i<=nparam; ++i) {
-	const char *s = lua_tostring(L, i);
-	if (!s) {
-	  printf("dirlist : Bad parameters #%d\n", i);
-	  return -1;
-	}
-	if (s[0] == '-') {
-	  int j;
-	  for (j=1; s[j]; ++j) {
-		switch(s[j]) {
-		case '2':
-		  two = s[j];
-		  break;
-		case 's': case 'S': case 'n':
-		  if (!sort || sort==s[j]) {
-			sort = s[j];
-		  } else {
-			printf("dirlist : '%c' switch incompatible with '%c'.\n",
-				   s[j], sort);
-			return -1;
-		  }
-		  break;
-		default:
-		  printf("dirlist : invalid switch '%c'.\n", s[j]);
-		  return -1;
-		}
+    const char *s = lua_tostring(L, i);
+    if (!s) {
+      printf("dirlist : Bad parameters #%d\n", i);
+      return -1;
+    }
+    if (s[0] == '-') {
+      int j;
+      for (j=1; s[j]; ++j) {
+	switch(s[j]) {
+	case '2':
+	  two = s[j];
+	  break;
+	case 's': case 'S': case 'n':
+	  if (!sort || sort==s[j]) {
+	    sort = s[j];
+	  } else {
+	    printf("dirlist : '%c' switch incompatible with '%c'.\n",
+		   s[j], sort);
+	    return -1;
 	  }
-	} else if (path) {
-	  printf("dirlist : Only one path allowed. [%s].\n", s);
+	  break;
+	default:
+	  printf("dirlist : invalid switch '%c'.\n", s[j]);
 	  return -1;
-	} else {
-	  path = s;
 	}
+      }
+    } else if (path) {
+      printf("dirlist : Only one path allowed. [%s].\n", s);
+      return -1;
+    } else {
+      path = s;
+    }
   }
   if (!path) {
-	printf("dirlist : Missing <path> parameter.\n");
-	return -1;
+    printf("dirlist : Missing <path> parameter.\n");
+    return -1;
   }
 
   if (!fn_get_path(rpath, path, sizeof(rpath), 0)) {
@@ -477,8 +477,8 @@ static int lua_dirlist(lua_State * L)
     return -2;
   }
   if (!rpath[0]) {
-	rpath[0] = '/';
-	rpath[1] = 0;
+    rpath[0] = '/';
+    rpath[1] = 0;
   }
 
   count = fu_read_dir(rpath, &dir, 0);
@@ -489,27 +489,27 @@ static int lua_dirlist(lua_State * L)
 
   switch(sort) {
   case 's':
-	/* 	printf("sort by > size\n"); */
-	sortdir = fu_sortdir_by_ascending_size;
-	break;
+    /* 	printf("sort by > size\n"); */
+    sortdir = fu_sortdir_by_ascending_size;
+    break;
   case 'S':
-	/* 	printf("sort by < size\n"); */
-	sortdir = fu_sortdir_by_descending_size;
-	break;
+    /* 	printf("sort by < size\n"); */
+    sortdir = fu_sortdir_by_descending_size;
+    break;
   case 'n':
-	/* 	printf("sort by name\n"); */
-	sortdir = fu_sortdir_by_name_dirfirst;
-	break;
+    /* 	printf("sort by name\n"); */
+    sortdir = fu_sortdir_by_name_dirfirst;
+    break;
   default:
-	sortdir = 0;
+    sortdir = 0;
   }
 
   if (two) {
-	/* 	printf("Get 2 lists [%d]\n", count); */
-	count = push_dir_as_2_tables(L, dir, count, sortdir);
+    /* 	printf("Get 2 lists [%d]\n", count); */
+    count = push_dir_as_2_tables(L, dir, count, sortdir);
   } else {
-	/* 	printf("Get 1 list [%d]\n", count); */
-	count = push_dir_as_struct(L, dir, count, sortdir);
+    /* 	printf("Get 1 list [%d]\n", count); */
+    count = push_dir_as_struct(L, dir, count, sortdir);
   }
   /*   printf("->%d\n", count); */
 
@@ -555,17 +555,17 @@ static int r_path_load(lua_State * L, char *path, unsigned int level, const char
     if (type == filetype_dir) {
       strcpy(dirs[ndirs++], de->name);
       if (!ext)
-		continue;
+	continue;
     }
 
     if (ext) {
       int l = strlen(de->name);
       if (ext[0] && stricmp(ext, de->name + l - strlen(ext))) {
-		continue;
+	continue;
       }
     } else {
       if (type != filetype_lef) {
-		continue;
+	continue;
       }
     }
 
@@ -596,7 +596,7 @@ static int r_path_load(lua_State * L, char *path, unsigned int level, const char
     *path_end = 0;
   }
   /*  dbglog(DBG_DEBUG, "<< " __FUNCTION__ "(%2d,[%s]) = %d\n",
-	  level, path, count);*/
+      level, path, count);*/
   return count;
 }
 
@@ -789,13 +789,13 @@ static int lua_hideconsole(lua_State * L)
 }
 
 static int copyfile(const char *dst, const char *src,
-					int force, int unlink, int verbose)
+		    int force, int unlink, int verbose)
 {
   int err;
   char *fct;
 
   SDDEBUG("[%s] : [%s] [%s] %c%c%c\n", __FUNCTION__,  dst, src,
-		  'f' ^ (force<<5), 'u' ^ (unlink<<5), 'v' ^ (verbose<<5));
+	  'f' ^ (force<<5), 'u' ^ (unlink<<5), 'v' ^ (verbose<<5));
 
   if (unlink) {
     fct = "move";
@@ -812,14 +812,14 @@ static int copyfile(const char *dst, const char *src,
 
   if (err >= 0 && verbose) {
     printf("%s : [%s] -> [%s] (%d bytes)\n", unlink ? "move" : "copy",
-		   src, dst, err);
+	   src, dst, err);
   }
   
   return -(err < 0);
 }
 
 static int get_option(lua_State * L, const char *fct,
-					  int * verbose, int * force)
+		      int * verbose, int * force)
 {
   int i, nparam = lua_gettop(L), err = 0;
 
@@ -828,22 +828,22 @@ static int get_option(lua_State * L, const char *fct,
     if (fname[0] == '-') {
       int j;
       for (j=1; fname[j]; ++j) {
-		switch(fname[j]) {
-		case 'v':
-		  if (verbose) {
-			*verbose = 1;
-		  } else {
-			++err;
-		  }
-		  break;
-		case 'f':
-		  if (force) {
-			*force = 1;
-		  } else {
-			++err;
-		  }
-		  break;
-		}
+	switch(fname[j]) {
+	case 'v':
+	  if (verbose) {
+	    *verbose = 1;
+	  } else {
+	    ++err;
+	  }
+	  break;
+	case 'f':
+	  if (force) {
+	    *force = 1;
+	  } else {
+	    ++err;
+	  }
+	  break;
+	}
       }
     }
   }
@@ -879,9 +879,9 @@ static int lua_mkdir(lua_State * L)
 
   lua_settop(L,0);
   if (!err) {
-	lua_settop(L,0);
-	lua_pushnumber(L,1);
-	return 1;
+    lua_settop(L,0);
+    lua_pushnumber(L,1);
+    return 1;
   }
   return 0;
 }
@@ -905,16 +905,16 @@ static int lua_unlink(lua_State * L)
     e = fu_remove(fname);
     if (e < 0) {
       if (!force) {
-		printf("unlink : [%s] [%s].\n", fname, fu_strerr(e));
-		++err;
+	printf("unlink : [%s] [%s].\n", fname, fu_strerr(e));
+	++err;
       }
     } else if (verbose) {
       printf("unlink : [%s] removed.\n", fname);
     }
   }
   if (!err) {
-	lua_pushnumber(L,1);
-	return 1;
+    lua_pushnumber(L,1);
+    return 1;
   }
   return 0;
 }
@@ -960,8 +960,8 @@ static int lua_copy(lua_State * L)
   if (cnt == 2) {
     if (fu_is_dir(fulldest)) {
       if (!fn_add_path(fulldest, enddest, fn_basename(src), max)) {
-		printf("copy : [filename too long].\n");
-		return 0;
+	printf("copy : [filename too long].\n");
+	return 0;
       }
     } else if (slashed) {
       printf("copy : [%s] [not a directory].\n", dst);
@@ -979,23 +979,23 @@ static int lua_copy(lua_State * L)
     for (i=1; i<=nparam; ++i) {
       const char *fname = lua_tostring(L, i);
       if (fname == dst) {
-		break;
+	break;
       }
       if (fname[i] == '-') {
-		continue;
+	continue;
       }
       if (!fn_add_path(fulldest, enddest, fn_basename(fname), max)) {
-		printf("copy : [filename too long].\n");
-		err = -1;
+	printf("copy : [filename too long].\n");
+	err = -1;
       } else {
-		err |= copyfile(fulldest, fname, force, 0, verbose);
+	err |= copyfile(fulldest, fname, force, 0, verbose);
       }
     }
   }
   if (!err) {
-	lua_settop(L,0);
-	lua_pushnumber(L,1);
-	return 1;
+    lua_settop(L,0);
+    lua_pushnumber(L,1);
+    return 1;
   }
   return 0;
 }
@@ -1031,8 +1031,8 @@ static int lua_dcar(lua_State * L)
     switch(c) {
     case 'a': case 'c': case 's': case 'x': case 't':
       if (com) {
-		error = "Multiple commands";
-		goto error;
+	error = "Multiple commands";
+	goto error;
       }
       com = c;
       break;
@@ -1043,14 +1043,14 @@ static int lua_dcar(lua_State * L)
       break;
     default:
       if (c>='0' && c<='9' && value==-1) {
-		value = c - '0';
-		while ( (c = command[1] & 255), (c>='0' && c<='9')) {
-		  value = value * 10 + (c-'0');
-		  ++command;
-		}
+	value = c - '0';
+	while ( (c = command[1] & 255), (c>='0' && c<='9')) {
+	  value = value * 10 + (c-'0');
+	  ++command;
+	}
       } else {
-		error = "Invalid command";
-		goto error;
+	error = "Invalid command";
+	goto error;
       }
     }
   }
@@ -1059,14 +1059,14 @@ static int lua_dcar(lua_State * L)
   switch(com) {
   case 'c': case 'a':
     if (archive && path) {
-	  int size;
-	  if (value >= 0) opt.in.compress = value % 10u;
-	  if (com == 'a' && (size=fu_size(archive), size > 0)) {
-		opt.in.skip = size;
-	  }
+      int size;
+      if (value >= 0) opt.in.compress = value % 10u;
+      if (com == 'a' && (size=fu_size(archive), size > 0)) {
+	opt.in.skip = size;
+      }
       count = dcar_archive(archive, path, &opt);
       if (count < 0) {
-		error = opt.errstr;
+	error = opt.errstr;
       }
     }
     break;
@@ -1078,17 +1078,17 @@ static int lua_dcar(lua_State * L)
     if (path=archive, path) {
       count = dcar_simulate(path, &opt);
       if (count < 0) {
-		error = opt.errstr;
+	error = opt.errstr;
       }
     }
     break;
 	
   case 'x':
     if (path && archive) {
-	  if (value > 0) opt.in.skip = value;
+      if (value > 0) opt.in.skip = value;
       count = dcar_extract(archive, path, &opt);
       if (count < 0) {
-		error = opt.errstr;
+	error = opt.errstr;
       }
     }
     break;
@@ -1100,7 +1100,7 @@ static int lua_dcar(lua_State * L)
  error:  
   if (count < 0) {
     printf("dcar : %s\n", error);
-	return 0;
+    return 0;
   } else if (opt.in.verbose) {
     printf("dcar := %d\n", count);
     if (opt.out.level)
@@ -1130,7 +1130,7 @@ static int lua_play(lua_State * L)
 
   /* Get lua parms */
   if (!nparam) {
-	goto ok;
+    goto ok;
   }
 
   if (nparam >= 1) {
@@ -1170,9 +1170,9 @@ static int lua_pause(lua_State * L)
   int pause;
 
   if (lua_type(L, 1) != LUA_TNUMBER) {
-	pause = playa_ispaused();
+    pause = playa_ispaused();
   } else {
-	pause = playa_pause(lua_tonumber(L, 1) != 0);
+    pause = playa_pause(lua_tonumber(L, 1) != 0);
   }
   lua_settop(L,0);
   lua_pushnumber(L,pause);
@@ -1185,7 +1185,7 @@ static int lua_fade(lua_State * L)
   int ms = 0;
 
   if (nparam>=1) {
-	ms = 1024.0f * lua_tonumber(L, 1);
+    ms = 1024.0f * lua_tonumber(L, 1);
   }
   ms = playa_fade(ms);
   lua_settop(L,0);
@@ -1234,7 +1234,7 @@ static int convert_info(lua_State * L, playa_info_t * info, int update)
   int mask;
 
   if (!info || !info->valid) {
-	return 0;
+    return 0;
   }
 
   mask = info->update_mask | -!!update;
@@ -1252,99 +1252,99 @@ static int convert_info(lua_State * L, playa_info_t * info, int update)
   lua_settable(L,1);
   
   if (mask & (1<<PLAYA_INFO_BITS)) {
-	lua_pushstring(L,"bits");
-	lua_pushnumber(L, 1<<(playa_info_bits(info, -1)+3));
-	lua_settable(L,1);
+    lua_pushstring(L,"bits");
+    lua_pushnumber(L, 1<<(playa_info_bits(info, -1)+3));
+    lua_settable(L,1);
   }
 
   if (mask & (1<<PLAYA_INFO_STEREO)) {
-	lua_pushstring(L,"stereo");
-	lua_pushnumber(L, playa_info_stereo(info, -1));
-	lua_settable(L,1);
+    lua_pushstring(L,"stereo");
+    lua_pushnumber(L, playa_info_stereo(info, -1));
+    lua_settable(L,1);
   }
 
   if (mask & (1<<PLAYA_INFO_FRQ)) {
-	lua_pushstring(L,"frq");
-	lua_pushnumber(L, playa_info_frq(info, -1));
-	lua_settable(L,1);
+    lua_pushstring(L,"frq");
+    lua_pushnumber(L, playa_info_frq(info, -1));
+    lua_settable(L,1);
   }
 
   if (mask & (1<<PLAYA_INFO_TIME)) {
-	lua_pushstring(L,"time_ms");
-	lua_pushnumber(L, (float)playa_info_time(info, -1) / 1024.0f);
-	lua_settable(L,1);
+    lua_pushstring(L,"time_ms");
+    lua_pushnumber(L, (float)playa_info_time(info, -1) / 1024.0f);
+    lua_settable(L,1);
   }
 
   if (mask & (1<<PLAYA_INFO_BPS)) {
-	lua_pushstring(L,"bps");
-	lua_pushnumber(L, playa_info_bps(info, -1));
-	lua_settable(L,1);
+    lua_pushstring(L,"bps");
+    lua_pushnumber(L, playa_info_bps(info, -1));
+    lua_settable(L,1);
   }
 
   if (mask & (1<<PLAYA_INFO_BYTES)) {
-	lua_pushstring(L,"bytes");
-	lua_pushnumber(L, playa_info_bytes(info, -1));
-	lua_settable(L,1);
+    lua_pushstring(L,"bytes");
+    lua_pushnumber(L, playa_info_bytes(info, -1));
+    lua_settable(L,1);
   }
 
   if (mask & (1<<PLAYA_INFO_DESC)) {
-	lua_pushstring(L,"description");
-	lua_pushstring(L,playa_info_desc(info, r));
-	lua_settable(L,1);
+    lua_pushstring(L,"description");
+    lua_pushstring(L,playa_info_desc(info, r));
+    lua_settable(L,1);
   }
 
   if (mask & (1<<PLAYA_INFO_ARTIST)) {
-	lua_pushstring(L,"artist");
-	lua_pushstring(L,playa_info_artist(info, r));
-	lua_settable(L,1);
+    lua_pushstring(L,"artist");
+    lua_pushstring(L,playa_info_artist(info, r));
+    lua_settable(L,1);
   }
 
   if (mask & (1<<PLAYA_INFO_ALBUM)) {
-	lua_pushstring(L,"album");
-	lua_pushstring(L,playa_info_album(info, r));
-	lua_settable(L,1);
+    lua_pushstring(L,"album");
+    lua_pushstring(L,playa_info_album(info, r));
+    lua_settable(L,1);
   }
 
   if (mask & (1<<PLAYA_INFO_TRACK)) {
-	lua_pushstring(L,"track");
-	lua_pushstring(L,playa_info_track(info, r));
-	lua_settable(L,1);
+    lua_pushstring(L,"track");
+    lua_pushstring(L,playa_info_track(info, r));
+    lua_settable(L,1);
   }
 
   if (mask & (1<<PLAYA_INFO_TITLE)) {
-	lua_pushstring(L,"title");
-	lua_pushstring(L,playa_info_title(info, r));
-	lua_settable(L,1);
+    lua_pushstring(L,"title");
+    lua_pushstring(L,playa_info_title(info, r));
+    lua_settable(L,1);
   }
 
   if (mask & (1<<PLAYA_INFO_YEAR)) {
-	lua_pushstring(L,"year");
-	lua_pushstring(L,playa_info_year(info, r));
-	lua_settable(L,1);
+    lua_pushstring(L,"year");
+    lua_pushstring(L,playa_info_year(info, r));
+    lua_settable(L,1);
   }
 
   if (mask & (1<<PLAYA_INFO_GENRE)) {
-	lua_pushstring(L,"genre");
-	lua_pushstring(L,playa_info_genre(info, r));
-	lua_settable(L,1);
+    lua_pushstring(L,"genre");
+    lua_pushstring(L,playa_info_genre(info, r));
+    lua_settable(L,1);
   }
 
   if (mask & (1<<PLAYA_INFO_COMMENTS)) {
-	lua_pushstring(L,"comments");
-	lua_pushstring(L,playa_info_comments(info, r));
-	lua_settable(L,1);
+    lua_pushstring(L,"comments");
+    lua_pushstring(L,playa_info_comments(info, r));
+    lua_settable(L,1);
   }
 
   if (mask & (1<<PLAYA_INFO_FORMAT)) {
-	lua_pushstring(L,"format");
-	lua_pushstring(L,playa_info_format(info));
-	lua_settable(L,1);
+    lua_pushstring(L,"format");
+    lua_pushstring(L,playa_info_format(info));
+    lua_settable(L,1);
   }
 
   if (mask & (1<<PLAYA_INFO_TIME)) {
-	lua_pushstring(L,"time");
-	lua_pushstring(L,playa_info_timestr(info));
-	lua_settable(L,1);
+    lua_pushstring(L,"time");
+    lua_pushstring(L,playa_info_timestr(info));
+    lua_settable(L,1);
   }
 
   return 1;
@@ -1370,8 +1370,8 @@ static int lua_music_info_id(lua_State * L)
 
   info = playa_info_lock();
   if (info) {
-	id = info->valid;
-	playa_info_release(info);
+    id = info->valid;
+    playa_info_release(info);
   }
   lua_settop(L,0);
   lua_pushnumber(L,id);
@@ -1449,7 +1449,7 @@ static int lua_vmutools(lua_State * L)
 
   } else {
     printf("vmu_tools : Backup [%s] into [%s]...\n",
-		   vmupath, file);
+	   vmupath, file);
 
     buffer = malloc(128<<10);
     if (!buffer) {
@@ -1496,16 +1496,16 @@ static int lua_canonical_path(lua_State * L)
   char buffer[1024], *res;
 
   if (lua_type(L,1) != LUA_TSTRING) {
-	printf("canonical_path : bad argument\n");
-	return 0;
+    printf("canonical_path : bad argument\n");
+    return 0;
   }
   path = lua_tostring(L,1);
 
   /*   printf("canonical [%s]\n", path); */
   res = fn_canonical(buffer, path, sizeof(buffer));
   if (!res) {
-	printf("canonical_path : path [%s] too long\n", path);
-	return 0;
+    printf("canonical_path : path [%s] too long\n", path);
+    return 0;
   }
 
   /*   printf("--> [%s]\n", res); */
@@ -1521,49 +1521,50 @@ static int lua_test(lua_State * L)
   const char * test, * fname;
 
   if (n != 2 ||
-	  lua_type(L,1) != LUA_TSTRING ||
-	  lua_type(L,2) != LUA_TSTRING) {
-	printf("test : bad arguments\n");
-	return 0;
+      lua_type(L,1) != LUA_TSTRING ||
+      lua_type(L,2) != LUA_TSTRING) {
+    printf("test : bad arguments\n");
+    return 0;
   }
 
   test = lua_tostring(L,1);
   fname = lua_tostring(L,2);
 
   if (test[0] == '-' && test[1] && !test[2]) {
-	switch(test[1]) {
-	case 'e':
-	  /* Exist */
-	  result = fu_exist(fname);
-	  break;
-	case 'd':
-	  /* Directory */
-	  result = fu_is_dir(fname);
-	  break;
-	case 'f': case 's':
-	  result = fu_is_regular(fname);
-	  if (result && test[1] == 's') {
-		/* Empty */
-		result = fu_size(fname) > 0;
-	  }
-	  break;
-	}
+    switch(test[1]) {
+    case 'e':
+      /* Exist */
+      result = fu_exist(fname);
+      break;
+    case 'd':
+      /* Directory */
+      result = fu_is_dir(fname);
+      break;
+    case 'f': case 's':
+      result = fu_is_regular(fname);
+      if (result && test[1] == 's') {
+	/* Empty */
+	result = fu_size(fname) > 0;
+      }
+      break;
+    }
   }
 
   if (result < 0) {
-	printf("test : invalid test [%s]\n",test);
-	result = 0;
+    printf("test : invalid test [%s]\n",test);
+    result = 0;
   }
 
   lua_settop(L,0);
   if (result) {
-	lua_pushnumber(L,1);
+    lua_pushnumber(L,1);
   }
   return lua_gettop(L);
 }
 
 extern void vmu_set_text(const char *s); /* vmu68.c */
 extern int vmu_set_visual(int visual);
+extern int vmu_set_db(int db);
 
 static int lua_vmu_set_text(lua_State * L)
 {
@@ -1573,8 +1574,19 @@ static int lua_vmu_set_text(lua_State * L)
 
 static int lua_vmu_set_visual(lua_State * L)
 {
-  int v = (lua_type(L,1) == LUA_TNIL) ? -1 : lua_tonumber(L,1);
+  int v = (lua_gettop(L)<1 || lua_type(L,1) == LUA_TNIL)
+    ? -1
+    : lua_tonumber(L,1);
   lua_pushnumber(L, vmu_set_visual(v));
+  return 1;
+}
+
+static int lua_vmu_set_db(lua_State * L)
+{
+  int v = (lua_gettop(L)<1 || lua_type(L,1) == LUA_TNIL)
+    ? -1
+    : lua_tonumber(L,1);
+  lua_pushnumber(L, vmu_set_db(v));
   return 1;
 }
 
@@ -1586,20 +1598,20 @@ static int lua_filetype(lua_State * L)
 
   fname = lua_tostring(L,1);
   if (!fname) {
-	return 0;
+    return 0;
   }
 
   if (fu_is_dir(fname)) {
-	type = filetype_directory(fname);
+    type = filetype_directory(fname);
   } else {
-	type = filetype_regular(fname);
+    type = filetype_regular(fname);
   }
   if (type < 0) {
-	return 0;
+    return 0;
   }
 
   if (filetype_names(type, &major_name, &minor_name) < 0) {
-	return 0;
+    return 0;
   }
 
   lua_settop(L,0);
@@ -1616,31 +1628,31 @@ static int lua_filetype_add(lua_State * L)
 
   type = lua_type(L,1);
   if (type == LUA_TNUMBER) {
-	major_name = filetype_major_name(lua_tonumber(L,1));
+    major_name = filetype_major_name(lua_tonumber(L,1));
   } else if (type == LUA_TSTRING) {
-	major_name = lua_tostring(L,1);
+    major_name = lua_tostring(L,1);
   }
 
   if (!major_name || !major_name[0]) {
-	printf("filetype_add : bad or missing major type.\n");
-	return 0;
+    printf("filetype_add : bad or missing major type.\n");
+    return 0;
   }
 
   type = filetype_major_add(major_name);
   if (type < 0) {
-	printf("filetype_add : error creating major type [%s]\n", major_name);
-	return 0;
+    printf("filetype_add : error creating major type [%s]\n", major_name);
+    return 0;
   }
 
   minor_name = lua_tostring(L,2);
   ext_list = lua_tostring(L,3);
 
   if (minor_name || ext_list) {
-	type = filetype_add(type, minor_name, ext_list);
-	if (type < 0) {
-	  printf("filetype_add : error creating minor type\n");
-	  return 0;
-	}
+    type = filetype_add(type, minor_name, ext_list);
+    if (type < 0) {
+      printf("filetype_add : error creating minor type\n");
+      return 0;
+    }
   }
 
   lua_settop(L,0);
@@ -1652,9 +1664,9 @@ static int greaterlog2(int v)
 {
   int i;
   for (i=0; i<(sizeof(int)<<3); ++i) {
-	if ((1<<i) >= v) {
-	  return i;
-	}
+    if ((1<<i) >= v) {
+      return i;
+    }
   }
   return -1;
 }
@@ -1671,22 +1683,22 @@ static int lua_load_background(lua_State * L)
   int smodulo = 0;
 
   struct {
-	float x,y,u,v;
+    float x,y,u,v;
   } vdef[2];
 
   texid = texture_get("background");
   if (texid < 0) {
-	texid = texture_create_flat("background",1024,512,0xFFFFFFFF);
+    texid = texture_create_flat("background",1024,512,0xFFFFFFFF);
   }
   if (texid < 0) {
-	printf("load_background : no [background] texture.\n");
-	return 0;
+    printf("load_background : no [background] texture.\n");
+    return 0;
   }
 
   btexture = texture_lock(texid);
   if (!btexture) {
-	/* Safety net ... */
-	return 0;
+    /* Safety net ... */
+    return 0;
   }
 
   /* Little dangerous things ... But avoid to lock rendering */
@@ -1694,41 +1706,41 @@ static int lua_load_background(lua_State * L)
 
   switch(lua_type(L,1)) {
   case LUA_TNUMBER:
-	stexture = texture_lock(lua_tonumber(L,1));
-	if (stexture) {
-	  texture_release(stexture);
-	  smodulo = (1 << stexture->wlog2) - stexture->width;
-	}
-	break;
+    stexture = texture_lock(lua_tonumber(L,1));
+    if (stexture) {
+      texture_release(stexture);
+      smodulo = (1 << stexture->wlog2) - stexture->width;
+    }
+    break;
   case LUA_TSTRING:
-	img = LoadImageFile(lua_tostring(L,1));
-	if (img) {
-	  tmp.width = img->width;
-	  tmp.height = img->height;
-	  tmp.wlog2 = greaterlog2(img->width);
-	  tmp.hlog2 = greaterlog2(img->height);
-	  tmp.addr = img->data;
-	  stexture = &tmp;
-	  ARGB32toRGB565(tmp.addr, tmp.addr, tmp.width * tmp.height);
-	  stexture->format = texture_strtoformat("0565");
-	}
-	break;
+    img = LoadImageFile(lua_tostring(L,1));
+    if (img) {
+      tmp.width = img->width;
+      tmp.height = img->height;
+      tmp.wlog2 = greaterlog2(img->width);
+      tmp.hlog2 = greaterlog2(img->height);
+      tmp.addr = img->data;
+      stexture = &tmp;
+      ARGB32toRGB565(tmp.addr, tmp.addr, tmp.width * tmp.height);
+      stexture->format = texture_strtoformat("0565");
+    }
+    break;
   }
 
   if (!stexture) {
-	if (img) free(img);
-	printf("load_background : invalid source image.\n");
-	return 0;
+    if (img) free(img);
+    printf("load_background : invalid source image.\n");
+    return 0;
   }
 
   type = 0;
   typestr = lua_tostring(L,2);
   if (typestr) {
-	if (!stricmp(typestr,"center")) {
-	  type = 1;
-	} else if (!stricmp(typestr,"tile")) {
-	  type = 2;
-	}
+    if (!stricmp(typestr,"center")) {
+      type = 1;
+    } else if (!stricmp(typestr,"tile")) {
+      type = 2;
+    }
   }
 
   /* Original aspect ratio */
@@ -1737,9 +1749,9 @@ static int lua_load_background(lua_State * L)
   orgRatio = dh / dw;
 
   if (type == 2) {
-	/* Tile needs power of 2 dimension */
-	dw = (float)(1 << stexture->wlog2);
-	dh = (float)(1 << stexture->hlog2);
+    /* Tile needs power of 2 dimension */
+    dw = (float)(1 << stexture->wlog2);
+    dh = (float)(1 << stexture->hlog2);
   }
 
   if (dw > 1024) dw = 1024;
@@ -1751,25 +1763,25 @@ static int lua_load_background(lua_State * L)
   btexture->format = stexture->format;
   finalRatio = dh / dw;
 
-/*   printf("type:[%s]\n", !type ? "scale" : (type==1?"center":"tile")); */
-/*   printf("src : [%dx%d] [%dx%d] , modulo:%d, ratio:%0.2f\n", */
-/* 		 stexture->width,stexture->height, */
-/* 		 1<<stexture->wlog2, 1<<stexture->hlog2, */
-/* 		 smodulo, orgRatio); */
+  /*   printf("type:[%s]\n", !type ? "scale" : (type==1?"center":"tile")); */
+  /*   printf("src : [%dx%d] [%dx%d] , modulo:%d, ratio:%0.2f\n", */
+  /* 		 stexture->width,stexture->height, */
+  /* 		 1<<stexture->wlog2, 1<<stexture->hlog2, */
+  /* 		 smodulo, orgRatio); */
 
-/*   printf("bkg : [%dx%d] [%dx%d], modulo:%d\n", */
-/* 		 btexture->width,btexture->height, */
-/* 		 1<<btexture->wlog2,  1<<btexture->hlog2, */
-/* 		 (1<<btexture->wlog2) - btexture->width); */
+  /*   printf("bkg : [%dx%d] [%dx%d], modulo:%d\n", */
+  /* 		 btexture->width,btexture->height, */
+  /* 		 1<<btexture->wlog2,  1<<btexture->hlog2, */
+  /* 		 (1<<btexture->wlog2) - btexture->width); */
 
   /* $$$ Currently all texture are 16bit. Since blitz don't care about exact
      pixel format blitz is done with ARGB565 format. */
   Blitz(btexture->addr, btexture->width, btexture->height,
-		SHAPF_RGB565, ((1<<btexture->wlog2) - btexture->width) * 2,
-		stexture->addr, stexture->width, stexture->height,
-		SHAPF_RGB565, smodulo * 2);
+	SHAPF_RGB565, ((1<<btexture->wlog2) - btexture->width) * 2,
+	stexture->addr, stexture->width, stexture->height,
+	SHAPF_RGB565, smodulo * 2);
   if (img) {
-	free(img);
+    free(img);
   }
 
   vdef[0].u = vdef[0].v = 0;
@@ -1779,34 +1791,34 @@ static int lua_load_background(lua_State * L)
   v1 = 1.0f / (float) (1<<btexture->hlog2);
   
   if (type != 2) {
-	vdef[1].u = (float)btexture->width * u1;
-	vdef[1].v = (float)btexture->height * v1;
+    vdef[1].u = (float)btexture->width * u1;
+    vdef[1].v = (float)btexture->height * v1;
 
-	if (!type) {
-	  w = 1;
-	  h = (640.0f / 480.0f) * orgRatio;
-	  if (h > w) {
-		w /= h;
-		h = 1;
-	  }
-	} else {
-	  w = dw / 640.0f;
-	  h = dh / 480.0f;
-	}
+    if (!type) {
+      w = 1;
+      h = (640.0f / 480.0f) * orgRatio;
+      if (h > w) {
+	w /= h;
+	h = 1;
+      }
+    } else {
+      w = dw / 640.0f;
+      h = dh / 480.0f;
+    }
 
-	vdef[0].x = (1 - w) * 0.5;
-	vdef[0].y = (1 - h) * 0.5;
-	vdef[1].x = 1 - vdef[0].x;
-	vdef[1].y = 1 - vdef[0].y;
+    vdef[0].x = (1 - w) * 0.5;
+    vdef[0].y = (1 - h) * 0.5;
+    vdef[1].x = 1 - vdef[0].x;
+    vdef[1].y = 1 - vdef[0].y;
 
   } else {
-	u1 = 1.0f / w;
-	v1 = 1.0f / h;
+    u1 = 1.0f / w;
+    v1 = 1.0f / h;
 
-	vdef[1].u = 640.0f * u1;
-	vdef[1].v = 480.0f * v1;
-	vdef[0].x = vdef[0].y = 0;
-	vdef[1].x = vdef[1].y = 1;
+    vdef[1].u = 640.0f * u1;
+    vdef[1].v = 480.0f * v1;
+    vdef[0].x = vdef[0].y = 0;
+    vdef[1].x = vdef[1].y = 1;
   }
 
   lua_settop(L, 0);
@@ -1814,19 +1826,19 @@ static int lua_load_background(lua_State * L)
   for (i=0; i<4; ++i) {
     lua_newtable(L);
 
-	lua_pushnumber(L, vdef[i&1].x);      /* X */
-	lua_rawseti(L, 2, 1);
+    lua_pushnumber(L, vdef[i&1].x);      /* X */
+    lua_rawseti(L, 2, 1);
 
-	lua_pushnumber(L, vdef[(i&2)>>1].y); /* Y */
-	lua_rawseti(L, 2, 2);
+    lua_pushnumber(L, vdef[(i&2)>>1].y); /* Y */
+    lua_rawseti(L, 2, 2);
 
-	lua_pushnumber(L, vdef[i&1].u);      /* U */
-	lua_rawseti(L, 2, 3);
+    lua_pushnumber(L, vdef[i&1].u);      /* U */
+    lua_rawseti(L, 2, 3);
 
-	lua_pushnumber(L, vdef[(i&2)>>1].v); /* V */
-	lua_rawseti(L, 2, 4);
+    lua_pushnumber(L, vdef[(i&2)>>1].v); /* V */
+    lua_rawseti(L, 2, 4);
 
-	lua_rawseti(L, 1, i+1);
+    lua_rawseti(L, 1, i+1);
   }
   return 1;
 }
@@ -1934,6 +1946,19 @@ static int lua_read_controler(lua_State * L)
   return lua_gettop(L);
 }
 
+static int lua_cdrom_status(lua_State * L)
+{
+  int check = lua_gettop(L) >= 1 && lua_type(L,1) != LUA_TNIL;
+
+  check = check ? cdrom_check() : cdrom_status();
+  lua_settop(L,0);
+  lua_pushstring(L,cdrom_statusstr(check)+6);
+  lua_pushstring(L,cdrom_drivestr(check));
+  lua_pushnumber(L,cdrom_disk_id);
+  return 3;
+}
+
+
 #if 0
 static char shell_basic_lua_init[] = 
 "\n shell_help_array = {}"
@@ -2006,22 +2031,22 @@ static luashell_command_description_t commands[] = {
     0,
     "print([["
     "dirlist [switches] <path>)\n"
-	" switches:\n"
-	"  -2 : returns 2 separate lists (see below)\n"
-	"  -S : sort by descending size\n"
-	"  -s : sort by ascending size\n"
-	"  -n : sort by name\n"
-	"\n"
-	"Get sorted listing of a directory. There is to possible output depending "
-	"on the '-2' switch.\n"
-	"\n"
-	"If -2 is given, the function returns 2 lists, one for directory,"
-	"the other for files. This list contains file name only.\n"
-	"\n"
-	"If -2 switch is ommitted, the function returns one list which contains "
-	"one structure by file. Each structure as two fields: \"name\" and "
-	"\"size\" which contains respectively the file or directory name, "
-	"and the size in bytes of files or -1 for directories.\n"
+    " switches:\n"
+    "  -2 : returns 2 separate lists (see below)\n"
+    "  -S : sort by descending size\n"
+    "  -s : sort by ascending size\n"
+    "  -n : sort by name\n"
+    "\n"
+    "Get sorted listing of a directory. There is to possible output depending "
+    "on the '-2' switch.\n"
+    "\n"
+    "If -2 is given, the function returns 2 lists, one for directory,"
+    "the other for files. This list contains file name only.\n"
+    "\n"
+    "If -2 switch is ommitted, the function returns one list which contains "
+    "one structure by file. Each structure as two fields: \"name\" and "
+    "\"size\" which contains respectively the file or directory name, "
+    "and the size in bytes of files or -1 for directories.\n"
     "]])",
 
     SHELL_COMMAND_C, lua_dirlist
@@ -2090,7 +2115,7 @@ static luashell_command_description_t commands[] = {
 
     "print([["
     "rawprint( ... ) : "
-	"raw print on console (no extra linefeed like with print)\n"
+    "raw print on console (no extra linefeed like with print)\n"
     "]])",
 
     SHELL_COMMAND_C, lua_rawprint
@@ -2180,7 +2205,7 @@ static luashell_command_description_t commands[] = {
     "play",
     "print([["
     "play([music-file [,track, [,immediat] ] ]) : "
-	"Play a music file or get play status.\n"
+    "Play a music file or get play status.\n"
     "]])",
 
     SHELL_COMMAND_C, lua_play
@@ -2209,9 +2234,9 @@ static luashell_command_description_t commands[] = {
     "fade",
     "print([["
     "fade([seconds]) : Music fade-in / fade-out.\n"
-	" If seconds = 0 or no seconds is missing read current fade status.\n"
-	" If seconds > 0 starts a fade-in.\n"
-	" If seconds < 0 starts a fade-out.\n"
+    " If seconds = 0 or no seconds is missing read current fade status.\n"
+    " If seconds > 0 starts a fade-in.\n"
+    " If seconds < 0 starts a fade-out.\n"
     "]])",
     SHELL_COMMAND_C, lua_fade
   },
@@ -2221,8 +2246,8 @@ static luashell_command_description_t commands[] = {
     "playtime",
     "print([["
     "seconds,str = playa_playtime() :\n"
-	"Returns current playing time in seconds and "
-	"into a hh:mm:ss formated string."
+    "Returns current playing time in seconds and "
+    "into a hh:mm:ss formated string."
     "]])",
     SHELL_COMMAND_C, lua_playtime
   },
@@ -2232,7 +2257,7 @@ static luashell_command_description_t commands[] = {
     "info",
     "print([["
     "playa_info( [update | [filename [ ,track ] ] ]) :\n"
-	"Get music information table."
+    "Get music information table."
     "]])",
     SHELL_COMMAND_C, lua_music_info
   },
@@ -2242,7 +2267,7 @@ static luashell_command_description_t commands[] = {
     "info_id",
     "print([["
     "playa_info_id() :\n"
-	"Get current music identifier."
+    "Get current music identifier."
     "]])",
     SHELL_COMMAND_C, lua_music_info_id
   },
@@ -2252,7 +2277,7 @@ static luashell_command_description_t commands[] = {
     0,
     "print([["
     "cond_connect(state) : set the connected state of main controller,"
-	"return old state.\n"
+    "return old state.\n"
     "]])",
     SHELL_COMMAND_C, lua_cond_connect
   },
@@ -2288,55 +2313,64 @@ static luashell_command_description_t commands[] = {
     SHELL_COMMAND_C, lua_vcolor
   },
   {
-	"clear_cd_cache",
-	0,
+    "clear_cd_cache",
+    0,
     "print([["
     "clear_cd_cache()\n"
     "]])",
     SHELL_COMMAND_C, lua_clear_cd_cache
   },
   { 
-	"canonical_path",
-	"canonical",
+    "canonical_path",
+    "canonical",
     "print([["
     "canonical(path) : get canonical file path.\n"
     "]])",
     SHELL_COMMAND_C, lua_canonical_path
   },
   { 
-	"test",
-	0,
+    "test",
+    0,
     "print([["
     "test(switch,file) : various file test.\n"
-	"switch is one of :"
-	" -e : file exist\n"
-	" -d : file exist and is a directory\n"
-	" -f : file exist and is a regular file\n"
-	" -s : file is not an empty regular file\n"
+    "switch is one of :"
+    " -e : file exist\n"
+    " -d : file exist and is a directory\n"
+    " -f : file exist and is a regular file\n"
+    " -s : file is not an empty regular file\n"
     "]])",
     SHELL_COMMAND_C, lua_test
   },
 
   { 
-	"vmu_set_text",
-	0,
+    "vmu_set_text",
+    0,
     "print([["
     "vmu_set_text(text) : set text to display on VMS lcd.\n"
     "]])",
     SHELL_COMMAND_C, lua_vmu_set_text
   },
   { 
-	"vmu_set_visual",
-	0,
+    "vmu_set_visual",
+    0,
     "print([["
-    "vmu_set_visual(<effects-number>) : set/get vmu display effects.\n"
+    "vmu_set_visual([fx-number]) : set/get vmu display effects.\n"
     "]])",
     SHELL_COMMAND_C, lua_vmu_set_visual
   },
+  { 
+    "vmu_set_db",
+    0,
+    "print([["
+    "vmu_set_db([boolean]) : set/get vmu display decibel scaling.\n"
+    "]])",
+    SHELL_COMMAND_C, lua_vmu_set_db
+  },
+
 
   {
-	"filetype",
-	0,
+    "filetype",
+    0,
     "print([["
     "filetype(filename) : get type, major-name, minor-name of given file.\n"
     "]])",
@@ -2344,47 +2378,62 @@ static luashell_command_description_t commands[] = {
   },
 
   {
-	"filetype_add",
-	0,
-	"print([["
+    "filetype_add",
+    0,
+    "print([["
     "filetype_add(major [, minor ] ) : add and return a filetype.\n"
     "]])",
     SHELL_COMMAND_C, lua_filetype_add
   },
 
   {
-	"load_background",
-	0,
-	"print([["
+    "load_background",
+    0,
+    "print([["
     "load_background(filename | texure-id [ , type ]) :"
-	" load background image.\n"
-	" type := [\"scale\" \"center\" \"tile\", default:\"scale\"\n"
-	" Returns a table with 4 vertrices { {x,y,u,v} * 4 }.\n"
+    " load background image.\n"
+    " type := [\"scale\" \"center\" \"tile\", default:\"scale\"\n"
+    " Returns a table with 4 vertrices { {x,y,u,v} * 4 }.\n"
     "]])",
     SHELL_COMMAND_C, lua_load_background
   },
 
   {
-	"frame_to_second",
-	0,
-	"print([["
+    "frame_to_second",
+    0,
+    "print([["
     "frame_to_second(frames) : "
-	" Convert a number of frame (vertical refresh) into seconds.\n"
+    " Convert a number of frame (vertical refresh) into seconds.\n"
     "]])",
     SHELL_COMMAND_C, lua_frame_to_second
   },
 
   {
-	"controler_read",
-	0,
-	"print([["
+    "controler_read",
+    0,
+    "print([["
     "controler_read([num]) :"
-	" Read either all or a given controler.\n"
-	" Returns respectively a table of controler table or a controler table.\n"
+    " Read either all or a given controler.\n"
+    " Returns respectively a table of controler table or a controler table.\n"
     "]])",
     SHELL_COMMAND_C, lua_read_controler
   },
 
+  {
+    "cdrom_status",
+    "cdstat",
+    "print([["
+    "cdrom_status([update]) :"
+    " Read CDROM status. If update is set the status is checked otherwise the"
+    " function returns last checked status.\n"
+    " Returns status,disk,id. Where :\n"
+    " id := a number (0:no-disk)\n"
+    " status := [busy,paused,standby,playing,seeking,"
+    "scaning,open,nodisk,error]\n"
+    " disk := [CDDA,CDROM,CDXA,CDI,GDROM,UNKNOWN];\n"
+    "]])",
+    SHELL_COMMAND_C, lua_cdrom_status
+  },
 
   {0},
 };
@@ -2431,10 +2480,10 @@ static void shell_register_lua_commands()
   /* register functions */
   for (i=0; commands[i].name; i++) {
     lua_register(L, 
-				 commands[i].name, commands[i].function);
+		 commands[i].name, commands[i].function);
     if (commands[i].short_name) {
       lua_register(L, 
-				   commands[i].short_name, commands[i].function);
+		   commands[i].short_name, commands[i].function);
     }
   }
 
@@ -2445,10 +2494,10 @@ static void shell_register_lua_commands()
   for (i=0; commands[i].name; i++) {
     if (commands[i].usage) {
       dynshell_command("addhelp ([[%s]], [[%s]])", 
-					   commands[i].name, commands[i].usage);
+		       commands[i].name, commands[i].usage);
       if (commands[i].short_name)
-		dynshell_command("addhelp ([[%s]], [[%s]])",
-						 commands[i].short_name, commands[i].usage);
+	dynshell_command("addhelp ([[%s]], [[%s]])",
+			 commands[i].short_name, commands[i].usage);
     }
   }
 
@@ -2506,6 +2555,8 @@ shutdown_func_t lef_main()
   shell_register_lua_commands();
 
   old_command_func = shell_set_command_func(dynshell_command);
+
+  printf("shell: dynamic shell initialized.\n");
 
   // Return pointer on shutdown function
   return shutdown;
