@@ -52,6 +52,11 @@
 #include "wave6581.h"
 #include "wave8580.h"
 
+// VP : temporary
+extern "C" {
+#include <stdio.h>
+}
+
 extern ubyte masterVolume; 
 extern uword masterVolumeAmplIndex;
 
@@ -496,7 +501,7 @@ inline void waveCalcCycleLen(struct sidOperator* pVoice)
   //	}  // see above (opening bracket)
 }
 
-inline void waveCalcFilter(struct sidOperator* pVoice)
+/*inline*/ void waveCalcFilter(struct sidOperator* pVoice)
 {
   if ( pVoice->filtEnabled )
     {
@@ -525,10 +530,28 @@ inline void waveCalcFilter(struct sidOperator* pVoice)
 	    }
 	  else
 	    {
+#if 1
+	      // VP : special fix for SH4 FPU ...
+	      // Too small values cause exception of the FPU ...
+	      if (pVoice->filtRef > -1e-20 && pVoice->filtRef < 1e-20)
+		pVoice->filtRef = 0;
+
 	      pVoice->filtLow += ( pVoice->filtRef * filterDy );
 	      filterfloat sample = pVoice->filtIO;
-	      filterfloat sample2 = sample - pVoice->filtLow;
+	      filterfloat sample2;
+	      sample2 = sample - pVoice->filtLow;
+#if 0
+	      printf("%g %g, %g\n", sample, pVoice->filtLow, sample2);
+	      if (sample2 > -1e-5 && sample2 < 1e-5) {
+		pVoice->filtLow = sample;
+		sample2 = 0;
+		printf("TOTO !!\n");
+	      }
+#endif
 	      int tmp = (int)sample2;
+	      //filterfloat tmp = int(sample2);
+	      //printf("%g %g %g\n", sample2, pVoice->filtRef, filterResDy);
+
 	      sample2 -= pVoice->filtRef * filterResDy;
 	      pVoice->filtRef += ( sample2 * filterDy );
 	      //	      /*$$$*/      *(int*)(0x1) = 0xDEAD9999;
@@ -544,6 +567,7 @@ inline void waveCalcFilter(struct sidOperator* pVoice)
 	      else if ( filterType == 0x50 )
 		{
 		  pVoice->filtIO = (sbyte)(sample - (tmp >> 1));
+		  //pVoice->filtIO = (sbyte)(sample - (tmp / 2));
 		}
 	      else if ( filterType == 0x60 )
 		{
@@ -552,7 +576,9 @@ inline void waveCalcFilter(struct sidOperator* pVoice)
 	      else if ( filterType == 0x70 )
 		{
 		  pVoice->filtIO = (sbyte)(sample - (tmp >> 1));
+		  //pVoice->filtIO = (sbyte)(sample - (tmp / 2));
 		}
+#endif
 	    }
 	}
       else // filterType == 0x00

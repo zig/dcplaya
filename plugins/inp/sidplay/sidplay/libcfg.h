@@ -61,7 +61,8 @@
 #undef SIDTUNE_REJECT_UNKNOWN_FIELDS
 
 /* Do filter calculations at floating-point precision.  */
-//#define SID_FPUFILTER
+#define SID_FPUFILTER
+//#undef SID_FPUFILTER
 
 /* Do initialization of mixing tables at floating-point precision.  */
 #define SID_FPUMIXERINIT
