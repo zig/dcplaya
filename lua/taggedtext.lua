@@ -393,7 +393,7 @@ tt = tt_build(
 	      [[
 Hello <img name="vmu"> World ! <br>
 <center> <font size="24" color="#00ffff"> Centered !! <br>
-<right> <font size="48" color="#ffff00"> <img name="dcplaya" src="dcplaya.tga"> TITI <img name="colorpicker" src="colorpicker.tga"> TOTO
+<right> <font size="14" color="#ffffff"> right aligned <font size="48" color="#ffff00"> <img name="dcplaya" src="dcplaya.tga"> TITI <img name="colorpicker" src="colorpicker.tga"> TOTO
 ]], 
 	      { 
 		 box = { 100, 100, 600, 200 },
