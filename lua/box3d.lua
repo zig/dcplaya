@@ -5,16 +5,35 @@
 --- @brief   Draw a box with 3D border.
 ---
 
--- Unload library
-box3d_loaded = nil
-
 -- Load required libraries
 if not dolib("color") then return end
 
---- @name Box-3D functions
---- @ingroup dcplaya_lua_gui
+--- @defgroup  dcplaya_lua_box3d  Bordered Boxes.
+--- @ingroup   dcplaya_lua_graphics
+--- @brief     draw bordered box
 --- @{
 ---
+
+--- box3d object.
+--- struct box3d {
+---
+---    box3d(box, border, bkg, top, left, bottom, right); ///< @see ::box3d()
+---
+---    /** Box vertrices.
+---     *
+---     *  inner-box (vtx[1][1], vtx[1][2], vtx[4][1], vtx[4][2])
+---     *
+---     *   outer_box(vtx[5][1], vtx[5][2], vtx[20][1], vtx[20][2])
+---     */
+---    mtx vtx;
+---    mtx trans; ///< Transformed vertrices
+---    boolean background; ///< Draw box background default.
+---
+---    draw(b3d, dl, mat, clip); ///< @see box3d_draw()
+---
+---
+---
+--- };
 
 --- Create a box3d object.
 ---
@@ -80,7 +99,7 @@ function box3d(box, border, bkg, top, left, bottom, right)
    ---  @param  b3d  box3d
    ---  @param  dl   Display list
    ---  @param  mat  Transform matrix (or nil)
-   ---  @param  clip Override box3d clip properties
+   ---  @param  clip Append dl_set_clipping() 
    function box3d_draw(b3d, dl, mat, clip)
       local vtx, i
 
@@ -179,7 +198,9 @@ function box3d(box, border, bkg, top, left, bottom, right)
    return b3d
 end
 
+--
 --- @}
+--
 
 if nil then
    b=box3d({50,50,200,80},
@@ -202,6 +223,4 @@ if nil then
    dl = nil
 end
 
-box3d_loaded = 1
-return box3d_loaded
-
+return 1

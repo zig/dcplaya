@@ -1,12 +1,33 @@
---- @ingroup dcplaya_lua
+--- @ingroup dcplaya_lua_background
 --- @file    background.lua
 --- @author  benjamin gerard <ben@sashipa.com>
 --- @date    2002/12/16
 --- @brief   Background image.
 ---
 
--- Unload library
-background_loaded = nil
+--- @defgroup  dcplaya_lua_background  Background
+--- @ingroup   dcplaya_lua_graphics
+--- @brief     background graphic objects
+--- @author    benjamin gerard <ben@sashipa.com>
+--- @{
+---
+
+--- Background object.
+--- struct background {
+---
+---   texture tex;     ///< texture id
+---   matrix  vtx;     ///< Backgound vertex definition.
+---   display_list dl; ///< Background display list
+---
+---  static display_list background_dl;  ///< Displayed background
+---  static tag background_tag;          ///< Background object unic tag
+---  
+---   set_color();   ///< @see background_set_colors()
+---   set_texture(); ///< @see background_set_texture()
+---   draw();        ///< @see background_draw()
+---   
+--- };
+
 
 -- Load required libraries
 if not dolib("color") then return end
@@ -109,10 +130,6 @@ background = background_create()
 if background then
    background_dl = dl_new_list(128,1,nil,"background_dl")
    background:set_texture("/rd/dcpbkg2.jpg", "scale")
-   --   background:set_texture(home.."data/img/dcpbkg2.jpg", "scale")
-   --   background:set_texture("/pc/ptest.jpg","tile")
-   --   background:set_texture(home.."lua/rsc/icons/dcplaya.jpg","tile")
-   --   background:set_color( {1,1,0,0}, {1,0.5,0.5,0.5}, nil,  {1,0,1,1} )
    dl_set_trans(background.dl, mat_scale(640,480,1))
    dl_set_trans(background_dl, mat_trans(0,0,0.0001))
    background:draw(background_dl)
@@ -121,3 +138,7 @@ end
 
 background_loaded = 1
 return background_loaded
+
+--
+--- @}
+--

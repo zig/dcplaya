@@ -30,12 +30,13 @@ Most of them are included to the dynshell. Others may be added by plugins.
 This is the main purpose of dcplaya executable plugins. Other plugins may
 adds extensions (new functions) to dcplaya too. 
 
-@link dcplaya_user_doc Browse... @endlink
+@link dcplaya_lua Browse... @endlink
 
 @section dcplaya_user User documentation
 
 This section is dcplaya user manual. Unfortunatly this manual is currently
 very poor.
 
+@link dcplaya_user Browse... @endlink
 
 */

@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.59 2003-03-22 06:24:48 ben Exp $
+--- $Id: song_browser.lua,v 1.60 2003-03-22 10:19:16 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song Browser
@@ -21,6 +21,7 @@
 ---
 --- @author   benjamin gerard <ben@sashipa.com>
 ---
+--- @{
 
 song_browser_loaded = nil
 if not dolib("textlist") then return end
@@ -29,149 +30,6 @@ if not dolib("sprite") then return end
 if not dolib("fileselector") then return end
 if not dolib("playlist") then return end
 if not dolib("lua_colorize") then return end
-
---
---- Create an icon sprite.
---- @internal
---
-
---
---- Create all icon sprites. 
---- @internal
---
-function song_browser_create_sprites(sb)
-   if sb then
-      song_browser_create_dcpsprite(sb)
-   end
-
-   -- filetypes
-   menu_create_sprite("ft_dir", "folder.tga",32)
-   menu_create_sprite("ft_file", "type_file.tga",32)
-   menu_create_sprite("ft_cdda", "type_cdda.tga",32)
-   menu_create_sprite("floppy", "floppy2.tga", 32)
-   menu_create_sprite("info", "info.tga", 32)
-   menu_create_sprite("textviewer", "textviewer.tga", 32)
-   menu_create_sprite("yes", "stock_button_apply.tga", 20)
-   menu_create_sprite("no", "stock_button_cancel.tga", 20)
-end
-
---- Creates some sprites.
---- @internal
-function song_browser_create_dcpsprite(sb)
-   sb.sprites = {}
-   sb.sprites.texid = tex_exist("dcpsprites") or tex_new("/rd/dcpsprites.tga")
-
-   local x1,y1,w,h
-
-   x1,y1,w,h = 0,0,408,29
-   sb.sprites.logo = sprite(nil,
-			    w/2, h/2,
-			    w, h,
-			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
-			    sb.sprites.texid)
-
-   x1,y1,w,h = 1,31,165,14
-   sb.sprites.file = sprite(nil,
-			    w/2, h/2,
-			    w, h,
-			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
-			    sb.sprites.texid)
-
-   x1,y1,w,h = 170,31,249,14
-   sb.sprites.list = sprite(nil,
-			    w/2, h/2,
-			    w, h,
-			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
-			    sb.sprites.texid)
-
-   x1,y1,w,h = 1,46,184,19
-   sb.sprites.copy = sprite(nil,
-			    w/2, h/2,
-			    w, h,
-			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
-			    sb.sprites.texid)
-
-   x1,y1,w,h = 187,52,186,12
-   sb.sprites.url = sprite(nil,
-			   w/2, h/2,
-			   w, h,
-			   x1/512, y1/128, (x1+w)/512, (y1+h)/128,
-			   sb.sprites.texid)
-
-   x1,y1,w,h = 1,71,107,55
-   sb.sprites.jess = sprite(nil,
-			    w/2, h/2,
-			    w, h,
-			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
-			    sb.sprites.texid)
-
-   x1,y1,w,h = 454,0,58,81
-   sb.sprites.proz = sprite(nil,
-			    w/2, h/2,
-			    w, h,
-			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
-			    sb.sprites.texid)
-
-   --    x1,y1,w,h = 109,65,104,63
-   --    sb.sprites.vmu = sprite(nil,
-   -- 			   w/2, h/2,
-   -- 			   w, h,
-   -- 			   x1/512, y1/128, (x1+w)/512, (y1+h)/128,
-   -- 			   sb.sprites.texid,1)
-
-   sb.fl.title_sprite = sb.sprites.file
-   sb.fl.icon_sprite = sb.sprites.jess
-   sb.pl.title_sprite = sb.sprites.list
-   sb.pl.icon_sprite = sb.sprites.proz
-
-end
-
---- Creates some sprites.
---- @internal
-function song_browser_create_box(sb, box, style)
-   local bstyle = style_get(style)
-   local fcol, tcol, lcol, bcol, rcol
-
-   fcol = bstyle:get_color(0)
-   tcol = bstyle:get_color(1,0)
-   lcol = bstyle:get_color(1,0) * { 1, 0.7, 0.7, 0.7 }
-   bcol = bstyle:get_color(0,1)
-   rcol = bstyle:get_color(0,1) * { 1, 0.7, 0.7, 0.7 }
-
-   local mf, mt, ml, mr, mb
-   mf = { 0.5, 1, 1, 1 }
-   mt = { 1, 1, 1, 1 }
-   ml = { 1, 0.7, 0.7, 0.7 }
-   mb = { 1, 0.5, 0.5, 0.5 }
-   mr = { 1, 0.4, 0.4, 0.4 }
-
-   -- 1  2
-   --  34
-   --  56
-   -- 7  8
-   local borcol = {
-      bstyle:get_color(1,0),     --1 
-      bstyle:get_color(0.5,1),   --2
-      bstyle:get_color(1,0.5),   --3
-      bstyle:get_color(1,1),     --4
-      bstyle:get_color(1,1),     --5
-      bstyle:get_color(1,0),     --6
-      bstyle:get_color(0.5,1),   --7
-      bstyle:get_color(0,1),     --8
-   }
-
-   fcol = {
-      mf * bstyle:get_color(0.5,0.5),
-      mf * bstyle:get_color(0.25,0.25),
-      nil,
-      mf * bstyle:get_color(0)
-   }
-   tcol = { mt * borcol[1], mt * borcol[2], mt * borcol[3], mt * borcol[4] }
-   lcol = { ml * borcol[1], ml * borcol[3], ml * borcol[7], ml * borcol[5] }
-   bcol = { mb * borcol[5], mb * borcol[6], mb * borcol[7], mb * borcol[8] }
-   rcol = { mr * borcol[4], mr * borcol[2], mr * borcol[6], mr * borcol[8] }
-   sb.fl_box = box3d(box, -4, fcol, tcol, lcol, bcol, rcol)
-end
 
 
 
@@ -1654,6 +1512,146 @@ end
 --- @{
 --
 
+--
+--- Create all icon sprites. 
+--- @internal
+--
+function song_browser_create_sprites(sb)
+   if sb then
+      song_browser_create_dcpsprite(sb)
+   end
+
+   -- filetypes
+   menu_create_sprite("ft_dir", "folder.tga",32)
+   menu_create_sprite("ft_file", "type_file.tga",32)
+   menu_create_sprite("ft_cdda", "type_cdda.tga",32)
+   menu_create_sprite("floppy", "floppy2.tga", 32)
+   menu_create_sprite("info", "info.tga", 32)
+   menu_create_sprite("textviewer", "textviewer.tga", 32)
+   menu_create_sprite("yes", "stock_button_apply.tga", 20)
+   menu_create_sprite("no", "stock_button_cancel.tga", 20)
+end
+
+--- Creates some sprites.
+--- @internal
+function song_browser_create_dcpsprite(sb)
+   sb.sprites = {}
+   sb.sprites.texid = tex_exist("dcpsprites") or tex_new("/rd/dcpsprites.tga")
+
+   local x1,y1,w,h
+
+   x1,y1,w,h = 0,0,408,29
+   sb.sprites.logo = sprite(nil,
+			    w/2, h/2,
+			    w, h,
+			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
+			    sb.sprites.texid)
+
+   x1,y1,w,h = 1,31,165,14
+   sb.sprites.file = sprite(nil,
+			    w/2, h/2,
+			    w, h,
+			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
+			    sb.sprites.texid)
+
+   x1,y1,w,h = 170,31,249,14
+   sb.sprites.list = sprite(nil,
+			    w/2, h/2,
+			    w, h,
+			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
+			    sb.sprites.texid)
+
+   x1,y1,w,h = 1,46,184,19
+   sb.sprites.copy = sprite(nil,
+			    w/2, h/2,
+			    w, h,
+			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
+			    sb.sprites.texid)
+
+   x1,y1,w,h = 187,52,186,12
+   sb.sprites.url = sprite(nil,
+			   w/2, h/2,
+			   w, h,
+			   x1/512, y1/128, (x1+w)/512, (y1+h)/128,
+			   sb.sprites.texid)
+
+   x1,y1,w,h = 1,71,107,55
+   sb.sprites.jess = sprite(nil,
+			    w/2, h/2,
+			    w, h,
+			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
+			    sb.sprites.texid)
+
+   x1,y1,w,h = 454,0,58,81
+   sb.sprites.proz = sprite(nil,
+			    w/2, h/2,
+			    w, h,
+			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
+			    sb.sprites.texid)
+
+   --    x1,y1,w,h = 109,65,104,63
+   --    sb.sprites.vmu = sprite(nil,
+   -- 			   w/2, h/2,
+   -- 			   w, h,
+   -- 			   x1/512, y1/128, (x1+w)/512, (y1+h)/128,
+   -- 			   sb.sprites.texid,1)
+
+   sb.fl.title_sprite = sb.sprites.file
+   sb.fl.icon_sprite = sb.sprites.jess
+   sb.pl.title_sprite = sb.sprites.list
+   sb.pl.icon_sprite = sb.sprites.proz
+
+end
+
+--- Creates box3d.
+--- 
+--- @internal
+function song_browser_create_box(sb, box, style)
+   local bstyle = style_get(style)
+   local fcol, tcol, lcol, bcol, rcol
+
+   fcol = bstyle:get_color(0)
+   tcol = bstyle:get_color(1,0)
+   lcol = bstyle:get_color(1,0) * { 1, 0.7, 0.7, 0.7 }
+   bcol = bstyle:get_color(0,1)
+   rcol = bstyle:get_color(0,1) * { 1, 0.7, 0.7, 0.7 }
+
+   local mf, mt, ml, mr, mb
+   mf = { 0.5, 1, 1, 1 }
+   mt = { 1, 1, 1, 1 }
+   ml = { 1, 0.7, 0.7, 0.7 }
+   mb = { 1, 0.5, 0.5, 0.5 }
+   mr = { 1, 0.4, 0.4, 0.4 }
+
+   -- 1  2
+   --  34
+   --  56
+   -- 7  8
+   local borcol = {
+      bstyle:get_color(1,0),     --1 
+      bstyle:get_color(0.5,1),   --2
+      bstyle:get_color(1,0.5),   --3
+      bstyle:get_color(1,1),     --4
+      bstyle:get_color(1,1),     --5
+      bstyle:get_color(1,0),     --6
+      bstyle:get_color(0.5,1),   --7
+      bstyle:get_color(0,1),     --8
+   }
+
+   fcol = {
+      mf * bstyle:get_color(0.5,0.5),
+      mf * bstyle:get_color(0.25,0.25),
+      nil,
+      mf * bstyle:get_color(0)
+   }
+   tcol = { mt * borcol[1], mt * borcol[2], mt * borcol[3], mt * borcol[4] }
+   lcol = { ml * borcol[1], ml * borcol[3], ml * borcol[7], ml * borcol[5] }
+   bcol = { mb * borcol[5], mb * borcol[6], mb * borcol[7], mb * borcol[8] }
+   rcol = { mr * borcol[4], mr * borcol[2], mr * borcol[6], mr * borcol[8] }
+   sb.fl_box = box3d(box, -4, fcol, tcol, lcol, bcol, rcol)
+end
+
+
 --- Create a song-browser application.
 ---
 --- @param  owner  Owner application (default to  desktop).
@@ -2038,6 +2036,11 @@ end
 ---   - @b default
 --: function song_browser_filelist_actions[action][major-type];;
 
+--
+--- @}
+--
+
+-- end of defgroup
 --
 --- @}
 --

@@ -4,9 +4,12 @@
 --- @author   benjamin gerard <ben@sashipa.com>
 --- @brief    Directory and filename support.
 ---
---- $Id: dirfunc.lua,v 1.15 2003-03-14 18:51:03 ben Exp $
+--- $Id: dirfunc.lua,v 1.16 2003-03-22 10:19:16 ben Exp $
 ---
 
+--- Current path.
+--- @ingroup dcplaya_lua_shell
+--: string PWD;
 PWD = PWD or home or "/"
 
 --- @name Directory and file functions.

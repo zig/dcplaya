@@ -7,14 +7,6 @@
 @brief     Programming dcplaya high level extensions.
  **/
 
-
-/**
-@defgroup  dcplaya_lua_basics  Basic components
-@ingroup   dcplaya_lua
-@author    benjamin gerard <ben@sashipa.com>
-@brief     LUA low level tool-kit.
- **/
-
 /**
 @defgroup  dcplaya_lua_shell  Shell commands
 @ingroup   dcplaya_lua
@@ -27,6 +19,13 @@
 @ingroup   dcplaya_lua
 @author    benjamin gerard <ben@sashipa.com>
 @brief     Programming dcplaya graphic user interface.
+ **/
+
+/**
+@defgroup  dcplaya_lua_graphics Graphic components
+@ingroup   dcplaya_lua
+@author    benjamin gerard <ben@sashipa.com>
+@brief     Low level graphics API.
  **/
 
 /**

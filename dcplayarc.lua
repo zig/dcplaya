@@ -1,64 +1,59 @@
 --- @ingroup  dcplaya_lua_files
 --- @file     dcplayarc.lua
---- @author   Benjamin Gerard <ben@sashipa.com>
---- @author   Penne Vincent <ziggy@sashipa.com>
+--- @author   benjamin gerard <ben@sashipa.com>
+--- @author   penne vincent <ziggy@sashipa.com>
 --- @date     2002
 --- @brief    Main dcplaya lua script.
 ---
---- $Id: dcplayarc.lua,v 1.37 2003-03-20 01:46:54 zigziggy Exp $
+--- $Id: dcplayarc.lua,v 1.38 2003-03-22 10:19:16 ben Exp $
 ---
----   The @b home..dcplayarc.lua file is dcplaya main script. It is executed
----   after the dynshell has been loaded.
+---   The @b home.."dcplayarc.lua" file is dcplaya main script.
+---   It is executed after the dynshell has been loaded.
+---   This script setup much stuff like loading dcplaya lua library as well
+---   as plugin files and more ressources.
 ---
----   This script does much setup stuff. He should load lua library as well
----   as plugin files and does many other things.
+--- @par Roadmap:
 ---
----   Users have different entry points to this file.
+---   Order things have to be done :
+---
 ---   -# The @b "/ram/dcplaya/dcplayarc.lua" file should have been extracted
 ---      from the fist dcplaya file found on your VMU. This file is called
 ---      really early in that script before any lua library have been loaded.
 ---      @b `home`, @b `__DEBUG`, @b `__RELEASE` @b `__VERSION` global
 ---      variables should be defined.
----   -# The @b "/ram/dcplaya/userconf.lua" file is called at near the end
----      of this script if it exists and @b skip_vmu_userconf is not set.
----      User can do what they want here, such as lauching application or
----      setting options. Notice that it could be useful to set the
----      @b skip_home_userconf variable here to prevent the
----      @b home.."userconf.lua" file to overide choices.
----   -# The @b home.."userconf.lua" file is called just after the
----      @b "/ram/dcplaya/userconf.lua" file if @b skip_home_userconf is not
----      set.
+---   -# The @b home.."userconf.lua" file is called after all standard
+---      initialization have been done (lua library loading...).
+---      Setting the global variable skip_home_userconf prevents this script
+---      to be launched.
+---   -# The @b "/ram/dcplaya/userconf.lua" file is called just after
+---      @b home.."userconf.lua". Since it is call near the end and 
+---      after all other config files and it is a local file, this
+---      file defines the user configuration. It could be use to patch
+---      dcplaya standard behaviours.
+---      Setting the global variable skip_vmu_userconf prevents this script
+---      from launching.
 ---
---- @warning This script or/and scripts called from it need the dynshell to be
+--- @par Useful variables:
+---
+--- Here is a @b non @b exhaustive list of @b global @b variables that could
+--- be set to modify this script and dcplaya behaviours :
+---
+---  - shell_substitut [nil] [Table of type that the shell is allowed to
+---    substitute] [shell.lua]
+---  - vmu_auto_save [nil] [nil for no autosaving.] [control_center.lua]
+---  - vmu_never_confirm_write [nil] [Disable VMU write confirmation.
+---    Use with @b CAUTION] [vmu_init.lua]
+---  - vmu_no_default_file [nil] [Disable VMU default file.
+---    User should beprompted for a file. @b Not @b TESTED] [dynshell.c]
+---  - skip_vmu_userconf [nil] [Disable the execution of the ramdisk
+---    userconf.lua] [dcplayarc.lua]
+---  - skip_home_userconf Disable the execution home userconf.lua
+---    [dcplayarc.lua]
+---
+--- @warning This script or/and scripts called assumes the dynshell to be
 ---          loaded for proper execution.
-
+---
 --
--- Here is a NON EXHAUSTIVE list of GLOBAL variables that could be set
--- to modify this script and dcplaya behaviours.
---
--- +--------------------------------------------------------------------------+
---      VARIABLE NAME      | DEF |       DESCRIPTION       |       FILES
--- +--------------------------------------------------------------------------+
--- shell_substitut         | nil | Table of type that the  | shell.lua
---                         |     | shell is allowed to     |
---                         |     | substitute.             |
--- +--------------------------------------------------------------------------+
--- vmu_auto_save           | nil | nil for no autosaving.  | control_center.lua
--- +--------------------------------------------------------------------------+
--- vmu_never_confirm_write | nil | Disable VMU write       | vmu_init.lua
---                         |     | confirmation.           |
---                         |     | !!! USE WITH CAUTON     | 
--- +--------------------------------------------------------------------------+
--- vmu_no_default_file     | nil | Disable VMU default     | dynshell.c
---                         |     | file. User should be    |
---                         |     | prompted for a file.    |
---                         |     | !!! NOT TESTED          |
--- +--------------------------------------------------------------------------+
--- skip_vmu_userconf       | nil | Disable the execution   | dcplayarc.lua
---                         |     | ramdisk userconf.lua    |
--- +--------------------------------------------------------------------------+
--- skip_home_userconf      | nil | Disable the execution   | dcplayarc.lua
---                         |     | home userconf.lua       |
 
 showconsole()
 
@@ -119,7 +114,7 @@ if type(test) == "function" and type(driver_load) == "function" then
    end
 end
 
--- Standard stuffs
+-- Standard libraries
 dolib ("basic")
 dolib ("evt")
 dolib ("dirfunc")
@@ -181,18 +176,7 @@ if not skip_vmu_userconf and test("-f","/ram/dcplaya/userconf.lua") then
    dofile ("/ram/dcplaya/userconf.lua")
 end
 
---
--- Example of command to put into userconf.lua :
---
---    driver_load(home.."plugins/inp/spc/spc.lez")
--- or driver_load(plug_spc)
---
--- or
---
---    list=dir_load()
---    call(driver_load, list)
---
-
 -- Final steps :
 help()  -- print available commands
 shell() -- launch the enhanced shell
+

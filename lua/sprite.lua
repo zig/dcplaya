@@ -1,18 +1,23 @@
 --- @file      sprite.lua
---- @ingroup   dcplaya_lua_graphics
+--- @ingroup   dcplaya_lua_sprite
 --- @author    benjamin gerard <ben@sashipa.com>
 --- @date      2002/11/06
 --- @brief     lua sprite
 ---
 
-sprite_loaded = nil
 if not dolib("basic") then return end
 if not dolib("dirfunc") then return end
 
 if not sprite_tag then sprite_tag = newtag() end
 
---- Sprite object.
+--- @defgroup  dcplaya_lua_sprite  Sprite
 --- @ingroup   dcplaya_lua_graphics
+--- @brief     sprite graphic objects
+--- @author    benjamin gerard <ben@sashipa.com>
+--- @{
+---
+
+--- Sprite object.
 --- struct sprite {
 ---
 ---   string name;  ///< Sprite name
@@ -24,18 +29,18 @@ if not sprite_tag then sprite_tag = newtag() end
 ---   matrix  vtx;  ///< Sprite vertex definition
 ---   matrix  tra;  ///< Sprite vertex transform buffer
 ---
+--- static tag sprite_tag; ///< Sprite object unic tag.
+---
 ---   draw();       ///< Draw sprite into display list
 ---   set_color();  ///< Set sprite color
 ---   
 --- };
-
 
 if not sprite_list then
    sprite_list = { }
 end
 
 --- Get a named sprite
---- @ingroup   dcplaya_lua_graphics
 ---
 --- @param  name  sprite name.
 function sprite_get(name)
@@ -43,7 +48,6 @@ function sprite_get(name)
 end
 
 --- Create a sprite and add it in the list of named sprite.
---- @ingroup   dcplaya_lua_graphics
 ---
 --- @param  name  sprite name.
 --- @param  x     X coordinate of sprite origine (default 0).
@@ -176,7 +180,6 @@ end
 
 
 --- Create a sprite from an image file.
---- @ingroup   dcplaya_lua_graphics
 ---
 --- @param  name      optionnal sprite name.
 --- @param  filename  image file path (can be a texture name too).
@@ -227,5 +230,9 @@ function sprite_set_color(spr, a, r, g, b)
    end
 end
 
-sprite_loaded = 1
-return sprite_loaded
+--
+--- @}
+--
+
+return 1
+

@@ -1,14 +1,68 @@
---
--- shell extension
---
--- author : Vincent Penne
---
--- $Id: shell.lua,v 1.14 2003-03-17 05:05:59 ben Exp $
+--- @ingroup  dcplaya_lua_enhanced_shell
+--- @file     shell.lua
+--- @author   vincent penne <ziggy@sashipa.com>
+--- @author   benjamin gerard <ben@sashipa.com>
+--- @brief    LUA enhanced shell
+---
+--- $Id: shell.lua,v 1.15 2003-03-22 10:19:16 ben Exp $
 --
 
--- Added by ben :
+--- @defgroup  dcplaya_lua_enhanced_shell  LUA enhanced shell
+--- @ingroup   dcplaya_lua_shell
+--- @brief     LUA enhanced shell
+---
+--- @par Introduction
+---
+---   LUA enhanced shell improved basic shell. It adds common syntax to
+---   shell commands, a smartest line edition with command historic recall.
+---
+--- @par Edition enhancement
+---
+---   LUA enhanced shell use @link dcplaya_lua_zed zed @endlink to edit
+---   the command line. left / right / home / end keys (may be others ?)
+---   could be use with great advantage here.
+---
+--- @par Syntax enhancement
+---
+---   LUA enhanced shell adds UNIX like shell command syntax. Since LUA shell
+---   only understand LUA statement, this shell transforms UNIX like commands
+---   into LUA statement. To do this the enhanced shell parse the command line
+---   end tries to determine if it is a LUA syntax or not. If it is a LUA
+---   syntax the shell will perform some supplemental checks like function
+---   or object:method existence. For enhanced commands the same checks are
+---   performed and other substition can be done depending on the
+---   shell_substitut variable. By default this variable is unset so that
+---   any substition is disable and all parameters will be sent as string.
+---
+--- @par Historic enhancement
+---
+---   LUA enhanced shell allow to recall a previous command and to edit
+---   it in a new line buffer. The historic is stored in shell_recalltable
+---   table and its maximum size is set in shell_toggleconsolekey.
+---
+--- @warning The enhanced shell is in charge to call the getchar() function
+---   which responsible of @link dcplaya_lua_event event @endlink dispatching.
+---   Sometime the shell is shutdowned by LUA error at shell level (typically
+---   when a application handler or update function failed). In that case
+---   the shell should fallback to basic shell, and enhanced shell should
+---   be start again by typing `shell()`. If the error occurs in update
+---   function you probably have to kill the application that fault this
+---   the evt_shutdown_app() function. If the error appends in the handle
+---   function, sometime the application could continue to work properly
+---   depending on which event causes the fault.
+---
+---
+--- @todo historic search.
+--- @todo completion.
+--- @todo handling CTRL for terminal control codes.
+---
+--- @author   vincent penne <ziggy@sashipa.com>
+--- @author   benjamin gerard <ben@sashipa.com>
+--
 
--- Keywords that could begin a lua sentence.
+--- Keywords that could begin a lua sentence.
+--- @ingroup dcplaya_lua_enhanced_shell
+--: boolean shell_lua_key_words[keyword];
 shell_lua_key_words = {
    ["function"] = 1,
    ["if"] = 1,
@@ -21,21 +75,41 @@ shell_lua_key_words = {
    ["break"] = 1,
 }
 
--- Default table of variable type that the shell is allowed to substitut.
-shell_default_substitut = {
-   ["string"] = 1,
-   ["number"] = 1,
-}
+--- Default table of variable type that the shell is allowed to substitut.
+--- @ingroup dcplaya_lua_enhanced_shell
+--- @deprecated Not used.
+--: boolean shell_default_substitut[type_name];
+-- shell_default_substitut = {
+--    ["string"] = 1,
+--    ["number"] = 1,
+-- }
 
--- Current table for shell substitution
-shell_substitut = nil --shell_default_substitut
+--- Current table for shell substitution.
+--- @ingroup dcplaya_lua_enhanced_shell
+--- @ingroup dcplaya_lua_files
+--- @file shell.lua
+--- @file dcplayarc.lua
+---
+---   If this variable is set, it must be a table indexed by type name
+---   which are allowed to be substitued from the shell command line
+---   in shell enhanced syntax mode.
+---
+---   shell_substitut is unset by default.
+---
+--: table shell_substitut[typename];
+shell_substitut = nil
 
--- We reimplement the doshellcommand function to extend the shell syntax.
--- The new syntax is backward compatible with lua normal syntax (? I hope !)
--- and add possibility to type more usual command like "ls" without trailing ()
--- or "cd plugins" without the string quotes.
--- This only replace syntax at shell level, the lua syntax remains unchanged
--- so lua scripts should use normal syntax ...
+--- Enhanced doshellcommand() reimplementation.
+--- @ingroup dcplaya_lua_enhanced_shell
+---
+--- Reimplementation of the doshellcommand function to extend the shell syntax.
+--- Hopefully this new syntax should be backward compatible with lua normal
+--- syntax. It adds possibility to type more usual command like "ls" without
+--- brackets () or a `cd plugins` without quoting.
+---
+--- This only replace syntax at shell level, the lua syntax remains unchanged
+--- so lua scripts should use normal syntax ...
+---
 function doshellcommand(string)
    list = {}
    force_string = {}
@@ -166,11 +240,31 @@ function check_zed()
    return 1
 end
 
--- function to input a string on one line
--- this handles command recall too
+--- Enhanced shell command historic table.
+--- @ingroup dcplaya_lua_enhanced_shell
+--: string shell_recalltable[];
 shell_recalltable = {}
-shell_maxrecall = 20         -- maximum number of recallable commands
+
+--- Enhanced shell command historic table maximum size (default:20).
+--- @ingroup dcplaya_lua_enhanced_shell
+--: number shell_maxrecall;
+shell_maxrecall = 20
+
+--- Enhanced shell toggle key.
+--- @ingroup dcplaya_lua_enhanced_shell
+--- @warning Do not redefime it, lotsa hard code in other modules !!!
+--: number shell_toggleconsolekey;
 shell_toggleconsolekey = 96  -- configurable ... ( currently = ` )
+
+
+--- Read a string shell command.
+--- @ingroup dcplaya_lua_enhanced_shell
+---  
+---   Do line edition, command historic and more ...
+---
+---  @param  string  Initial string (typically "").
+---  @return read string
+--
 function shell_input(string)
 
    if not check_zed() then
@@ -262,12 +356,14 @@ function shell_input(string)
 
 end
 
-
-
--- error exception handling : relaunch the shell !
--- does not seem necessary actually ... NOT USED
---function shell_error(...)
---	shell_olderror(arg)
+--
+--- Shell error exception handling.
+--- @ingroup dcplaya_lua_enhanced_shell
+---
+---  This function relaunch the shell !
+---
+--- @deprecated Does not seem necessary actually.
+--
 function shell_error(err)
    print(err)
    _ERRORMESSAGE=shell_olderror
@@ -276,10 +372,11 @@ function shell_error(err)
    print [[Return from shell_error]]
 end
 
-
--- Call a new shell with enhanced line editing.
--- Type "exit" to quit.
--- Also, since it uses getchar, it will dispatch events to other applications.
+--- Call a new shell with enhanced line editing and more.
+--- @ingroup dcplaya_lua_enhanced_shell
+---
+---   Just type `exit` to quit that shell.
+---   
 function shell()
 
    local command=""

@@ -1,17 +1,24 @@
 <hr><small>
-<table align="center" border=0 width="99%">
-<tr>
-<td>
-$projectname documentation version $dox-version$ 
-</td>
+
 <style>
-td.dcplaya_footer {
+td.dcplaya_footerl {
+	text-align: left;
+	text-decoration: italic;
+	font-size: 80%;
+}
+td.dcplaya_footerr {
 	text-align: right;
 	text-decoration: italic;
 	font-size: 80%;
 }
 </style>
-<td class="dcplaya_footer">
+
+<table align="center" border=0 width="99%">
+<tr>
+<td class="dcplaya_footerl">
+$projectname documentation version $dox-version$ 
+</td>
+<td class="dcplaya_footerr">
 Generated on $datetime by
 <a href="http://www.doxygen.org/index.html">
 doxygen

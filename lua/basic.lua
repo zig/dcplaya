@@ -4,11 +4,25 @@
 --- @author  benjamin gerard <ben@sashipa.com>
 --- @brief   basic things used into other library (evt, keyboard_emu, gui)
 ---
---- $Id: basic.lua,v 1.16 2003-03-20 06:05:34 ben Exp $
+--- $Id: basic.lua,v 1.17 2003-03-22 10:19:16 ben Exp $
 ---
 
--- @defgroup dcplaya_lua_basics_linklist doubly linked list support.
---- @ingroup dcplaya_lua_basics
+--
+--- @defgroup  dcplaya_lua_basics  Basic components
+--- @ingroup   dcplaya_lua
+--- @brief     LUA low level tool-kit.
+---
+--- @author    benjamin gerard <ben@sashipa.com>
+--- @author    vincent penne <ziggy@sashipa.com>
+--
+
+--
+--- @defgroup dcplaya_lua_basics_linklist doubly linked list support.
+--- @ingroup  dcplaya_lua_basics
+--- @brief    doubly linked list support
+---
+--- @author    vincent penne <ziggy@sashipa.com>
+--
 
 --- insert a new element in list as first element (or as last simply by swaping
 --- ofirst and olast, iprev and inext).
