@@ -16,6 +16,7 @@ TOP_DIR="`pwd`"
 
 # ENABLE OPTIONS
 AC_ARG_ENABLE(debug,    [  --enable-debug          Compile with debug facilities [default=no]], DEBUG="yes", DEBUG="no")
+AC_ARG_ENABLE(release,  [  --enable-release        Compile for release version [default=no]], RELEASE="yes", RELEASE="no")
 
 # WITH OPTIONS
 AC_ARG_WITH(sh-prefix,  [  --with-sh-prefix        Specify sh tools prefix [default=]],  SHPREFIX="$with_sh_prefix", SHPREFIX="")
@@ -53,6 +54,10 @@ AC_SUBST(DREAMMP3_URL_STR)
 test $DEBUG != "yes"
 DEBUG=$?
 AC_SUBST(DEBUG)
+
+test $RELEASE != "yes"
+RELEASE=$?
+AC_SUBST(RELEASE)
 
 DEL="rm -f"
 
@@ -152,6 +157,14 @@ if test -z "$MAKEDEPEND"; then
     AC_PATH_PROG(MAKEDEPEND, makedepend, echo, $PATH)
 fi
 
+if test -z "$DOXYGEN"; then
+    AC_PATH_PROG(DOXYGEN, doxygen, echo,  $PATH)
+fi
+
+DOC_DIR=""
+if test "x$doxygen" != "xecho"; then
+    DOC_DIR=doc
+fi
 
 AC_MSG_RESULT([***************************])
 AC_MSG_RESULT([*                       ***])
@@ -178,6 +191,7 @@ fi
 AC_MSG_RESULT([--------------------------------------])
 
 
+
 CC="$SH_CC"
 CFLAGS="$SH_CFLAGS -I."
 CXX="$SH_CXX"
@@ -197,6 +211,8 @@ AC_PROG_MAKE_SET
 
 AC_SUBST(DREAMMP3URL)
 AC_SUBST(TOP_DIR)
+AC_SUBST(DOC_DIR)
+AC_SUBST(DOXYGEN)
 AC_SUBST(LIBCOMMAND)
 AC_SUBST(DEL)
 
@@ -243,7 +259,11 @@ AC_SUBST(KOS_BASE)
 AC_SUBST(KOS_GENROMFS)
 AC_SUBST(KOS_BIN2O)
 
-AC_OUTPUT([Makefile.inc arm/Makefile include/config.h:config.h.in])
+AC_OUTPUT(
+ [Makefile.inc]
+ [arm/Makefile]
+ [doc/Makefile]
+ [include/config.h:config.h.in])
 
 echo -n "making required files... " >&6
 reply="success"
@@ -251,14 +271,19 @@ touch .depends
 ${MAKE} -s required >&5 || reply="failed"
 echo "$reply" >&6
 
+if test $DEBUG -eq 0; then DEBUG=no; else DEBUG=yes; fi
+if test $RELEASE -eq 0; then RELEASE=no; else RELEASE=yes; fi
+
 AC_MSG_RESULT([**************************************])
 AC_MSG_RESULT([* Compilation options summary:])
 AC_MSG_RESULT([*   debug-mode          : $DEBUG])
+AC_MSG_RESULT([*   release-mode        : $RELEASE])
 AC_MSG_RESULT([*   sh (core) prefix    : $SHPREFIX])
 AC_MSG_RESULT([*   arm (audio) prefix  : $ARMPREFIX])
 AC_MSG_RESULT([*   kos                 : $KOS_BASE])
+AC_MSG_RESULT([*   doxygen             : $DOXYGEN])
 AC_MSG_RESULT([**************************************])
 
 dnl#
-dnl# End of "$Id: configure.in,v 1.5 2002-09-06 01:14:28 zig Exp $".
+dnl# End of "$Id: configure.in,v 1.6 2002-09-10 23:41:53 ben Exp $".
 dnl#

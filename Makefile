@@ -2,7 +2,7 @@ TARGETS=dreammp3.elf
 
 SH_LDFLAGS=-ml -m4-single-only -nostartfiles -nostdlib -static  -Wl,-Ttext=0x8c010000
 
-SUBDIRS += arm plugins src data
+SUBDIRS = arm plugins src data doc
 
 WHOLE_LIBS=-ldreammp3,-ldcutils,-lkallisti
 OPT_LIBS= -los -lgcc -lm
@@ -62,6 +62,9 @@ send:
 r: send
 
 run: my_all send
+
+doc: _dir_doc
+
 
 DEPEND_EXTRA=depend_extra
 depend_extra:
