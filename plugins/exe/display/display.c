@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.4 2002-10-10 06:07:39 benjihan Exp $
+ * $Id: display.c,v 1.5 2002-10-12 17:13:50 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -331,7 +331,8 @@ static int lua_new_list(lua_State * L)
   l = dl_new_list(heapsize, active);
   if (l) {
 
-    /* insert the new display list into list of all display lists (used in shutdown) */
+    /* insert the new display list into list of all display lists
+	   (used in shutdown) */
     lua_getglobal(L, "dl_lists");
     lua_pushusertag(L, l, dl_list_tag);
     lua_pushnumber(L, 1);
@@ -420,65 +421,249 @@ DL_FUNCTION_START(clear)
 }
 DL_FUNCTION_END()
 
-
-struct dl_draw_box_command {
+struct dl_clipping_command {
   dl_command_t uc;
 
-  float x1, y1, x2, y2, z, a1, r1, g1, b1, a2, r2, g2, b2;
+  float x1, y1, x2, y2;
 };
 
-void dl_draw_box_render_transparent(void * pcom)
+void dl_render_clipping(void * pcom)
 {
-  struct dl_draw_box_command * c = pcom;  
+  struct dl_clipping_command * c = pcom;
+  draw_set_clipping(dl_trans[0][0] * c->x1 + dl_trans[3][0], 
+					dl_trans[1][1] * c->y1 + dl_trans[3][1], 
+					dl_trans[0][0] * c->x2 + dl_trans[3][0], 
+					dl_trans[1][1] * c->y2 + dl_trans[3][1]);
 
-/*  static int toto;
-  if ( (toto++) % 60 == 1) {
-    printf("%g, %g, %g, %g, %g, %g\n", c->x1, c->y1, c->x2, c->y2, c->z, c->a1);
-  }*/
+/*   printf("set clipping [%f %f %f %f]\n", */
+/* 		 dl_trans[0][0] * c->x1 + dl_trans[3][0],  */
+/* 		 dl_trans[1][1] * c->y1 + dl_trans[3][1],  */
+/* 		 dl_trans[0][0] * c->x2 + dl_trans[3][0],  */
+/* 		 dl_trans[1][1] * c->y2 + dl_trans[3][1]); */
 
-  draw_poly_box(dl_trans[0][0] * c->x1 + dl_trans[3][0], 
-		dl_trans[1][1] * c->y1 + dl_trans[3][1], 
-		dl_trans[0][0] * c->x2 + dl_trans[3][0], 
-		dl_trans[1][1] * c->y2 + dl_trans[3][1], 
-		dl_trans[2][2] * c->z + dl_trans[3][2], 
-		dl_color[0] * c->a1, dl_color[1] * c->r1, 
-		dl_color[2] * c->g1, dl_color[3] * c->b1, 
-		dl_color[0] * c->a2, dl_color[1] * c->r2, 
-		dl_color[2] * c->g2, dl_color[3] * c->b2);
 }
 
-void dl_draw_box(dl_list_t * dl, 
-		 float x1, float y1, float x2, float y2, float z,
-		 float a1, float r1, float g1, float b1,
-		 float a2, float r2, float g2, float b2)
+void dl_set_clipping(dl_list_t * dl,
+					 float x1, float y1, float x2, float y2)
 {
-  struct dl_draw_box_command * c = dl_alloc(dl, sizeof(*c));
+  struct dl_clipping_command * c = dl_alloc(dl, sizeof(*c));
+
+  if (c) {
+    c->x1 = x1; c->y1 = y1; c->x2 = x2; c->y2 = y2;
+    dl_insert(dl, c, 0, dl_render_clipping);
+  }
+}
+
+struct dl_draw_box1_command {
+  dl_command_t uc;
+
+  float x1, y1, x2, y2, z;
+  float a, r, g, b;
+};
+
+struct dl_draw_box2_command {
+  dl_command_t uc;
+
+  int type; /* Gradiant type : 0:diagonal 1:horizontal 2:vertical */
+  float x1, y1, x2, y2, z;
+  float a1, r1, g1, b1;
+  float a2, r2, g2, b2;
+};
+
+struct dl_draw_box4_command {
+  dl_command_t uc;
+
+  float x1, y1, x2, y2, z;
+  float a1, r1, g1, b1;
+  float a2, r2, g2, b2;
+  float a3, r3, g3, b3;
+  float a4, r4, g4, b4;
+};
+
+
+void dl_draw_box1_render_transparent(void * pcom)
+{
+  struct dl_draw_box1_command * c = pcom;
+
+  draw_box1(dl_trans[0][0] * c->x1 + dl_trans[3][0], 
+			dl_trans[1][1] * c->y1 + dl_trans[3][1], 
+			dl_trans[0][0] * c->x2 + dl_trans[3][0], 
+			dl_trans[1][1] * c->y2 + dl_trans[3][1], 
+			dl_trans[2][2] * c->z  + dl_trans[3][2], 
+			dl_color[0] * c->a, dl_color[1] * c->r, 
+			dl_color[2] * c->g, dl_color[3] * c->b);
+}
+
+void dl_draw_box2_render_transparent(void * pcom)
+{
+  struct dl_draw_box2_command * c = pcom;  
+  void (*f)(float, float, float, float, float, float, float, float, float,
+			float, float, float, float) = draw_box2d;
+
+  switch(c->type) {
+  case 1:
+	f = draw_box2h;
+	break;
+  case 2:
+	f = draw_box2v;
+	break;
+  }
+  f(dl_trans[0][0] * c->x1 + dl_trans[3][0], 
+	dl_trans[1][1] * c->y1 + dl_trans[3][1], 
+	dl_trans[0][0] * c->x2 + dl_trans[3][0], 
+	dl_trans[1][1] * c->y2 + dl_trans[3][1], 
+	dl_trans[2][2] * c->z + dl_trans[3][2], 
+	dl_color[0] * c->a1, dl_color[1] * c->r1, 
+	dl_color[2] * c->g1, dl_color[3] * c->b1, 
+	dl_color[0] * c->a2, dl_color[1] * c->r2, 
+	dl_color[2] * c->g2, dl_color[3] * c->b2);
+}
+
+void dl_draw_box4_render_transparent(void * pcom)
+{
+  struct dl_draw_box4_command * c = pcom;
+
+  draw_box4(dl_trans[0][0] * c->x1 + dl_trans[3][0], 
+			dl_trans[1][1] * c->y1 + dl_trans[3][1], 
+			dl_trans[0][0] * c->x2 + dl_trans[3][0], 
+			dl_trans[1][1] * c->y2 + dl_trans[3][1], 
+			dl_trans[2][2] * c->z  + dl_trans[3][2], 
+			dl_color[0] * c->a1, dl_color[1] * c->r1, 
+			dl_color[2] * c->g1, dl_color[3] * c->b1, 
+			dl_color[0] * c->a2, dl_color[1] * c->r2, 
+			dl_color[2] * c->g2, dl_color[3] * c->b2,
+			dl_color[0] * c->a3, dl_color[1] * c->r3, 
+			dl_color[2] * c->g3, dl_color[3] * c->b3, 
+			dl_color[0] * c->a4, dl_color[1] * c->r4, 
+			dl_color[2] * c->g4, dl_color[3] * c->b4);
+}
+
+
+void dl_draw_box1(dl_list_t * dl,
+				  float x1, float y1, float x2, float y2, float z,
+				  float a, float r, float g, float b)
+{
+  struct dl_draw_box1_command * c = dl_alloc(dl, sizeof(*c));
+
+  if (c) {
+    c->x1 = x1; c->y1 = y1; c->x2 = x2; c->y2 = y2; c->z = z;
+    c->a = a;   c->r = r;   c->g = g;   c->b = b;
+    c->a = a;   c->r = r;   c->g = g;   c->b = b;
+    dl_insert(dl, c, 0, dl_draw_box1_render_transparent);
+  }
+}
+
+void dl_draw_box2(dl_list_t * dl, int type,
+				  float x1, float y1, float x2, float y2, float z,
+				  float a1, float r1, float g1, float b1,
+				  float a2, float r2, float g2, float b2)
+{
+  struct dl_draw_box2_command * c = dl_alloc(dl, sizeof(*c));
+
+  if (c) {
+	c->type = type;
+    c->x1 = x1;    c->y1 = y1;    c->x2 = x2;    c->y2 = y2;    c->z = z;
+    c->a1 = a1;    c->r1 = r1;    c->g1 = g1;    c->b1 = b1;
+    c->a2 = a2;    c->r2 = r2;    c->g2 = g2;    c->b2 = b2;
+    dl_insert(dl, c, 0, dl_draw_box2_render_transparent);
+  }
+}
+
+void dl_draw_box4(dl_list_t * dl,
+				  float x1, float y1, float x2, float y2, float z,
+				  float a1, float r1, float g1, float b1,
+				  float a2, float r2, float g2, float b2,
+				  float a3, float r3, float g3, float b3,
+				  float a4, float r4, float g4, float b4)
+{
+  struct dl_draw_box4_command * c = dl_alloc(dl, sizeof(*c));
 
   if (c) {
     c->x1 = x1;    c->y1 = y1;    c->x2 = x2;    c->y2 = y2;    c->z = z;
     c->a1 = a1;    c->r1 = r1;    c->g1 = g1;    c->b1 = b1;
     c->a2 = a2;    c->r2 = r2;    c->g2 = g2;    c->b2 = b2;
-    dl_insert(dl, c, 0, dl_draw_box_render_transparent);
+    c->a3 = a3;    c->r3 = r3;    c->g3 = g3;    c->b3 = b3;
+    c->a4 = a4;    c->r4 = r4;    c->g4 = g4;    c->b4 = b4;
+    dl_insert(dl, c, 0, dl_draw_box4_render_transparent);
   }
 }
 
-DL_FUNCTION_START(draw_box)
+DL_FUNCTION_START(draw_box1)
 {
-  dl_draw_box(dl, 
-	      lua_tonumber(L, 2),
-	      lua_tonumber(L, 3),
-	      lua_tonumber(L, 4),
-	      lua_tonumber(L, 5),
-	      lua_tonumber(L, 6),
-	      lua_tonumber(L, 7),
-	      lua_tonumber(L, 8),
-	      lua_tonumber(L, 9),
-	      lua_tonumber(L, 10),
-	      lua_tonumber(L, 11),
-	      lua_tonumber(L, 12),
-	      lua_tonumber(L, 13),
-	      lua_tonumber(L, 14)
-	      );
+  dl_draw_box1(dl, 
+			   lua_tonumber(L, 2), /* X1 */
+			   lua_tonumber(L, 3), /* Y1 */
+			   lua_tonumber(L, 4), /* X2 */
+			   lua_tonumber(L, 5), /* Y2 */
+			   lua_tonumber(L, 6), /* Z  */
+			   lua_tonumber(L, 7), /* A  */
+			   lua_tonumber(L, 8), /* R  */
+			   lua_tonumber(L, 9), /* G  */
+			   lua_tonumber(L, 10) /* B  */
+			   );
+  return 0;
+}
+DL_FUNCTION_END()
+
+DL_FUNCTION_START(draw_box2)
+{
+  dl_draw_box2(dl, 
+			   lua_tonumber(L, 15), /* TYPE */
+			   lua_tonumber(L, 2),  /* X1 */
+			   lua_tonumber(L, 3),  /* Y1 */
+			   lua_tonumber(L, 4),  /* X2 */
+			   lua_tonumber(L, 5),  /* Y2 */
+			   lua_tonumber(L, 6),  /* Z  */
+			   lua_tonumber(L, 7),  /* A1 */
+			   lua_tonumber(L, 8),  /* R1 */
+			   lua_tonumber(L, 9),  /* G1 */
+			   lua_tonumber(L, 10), /* B1 */
+			   lua_tonumber(L, 11), /* A2 */
+			   lua_tonumber(L, 12), /* R2 */
+			   lua_tonumber(L, 13), /* G2 */
+			   lua_tonumber(L, 14)  /* B2 */
+			   );
+  return 0;
+}
+DL_FUNCTION_END()
+
+DL_FUNCTION_START(draw_box4)
+{
+  dl_draw_box4(dl, 
+			   lua_tonumber(L, 2),  /* X1 */
+			   lua_tonumber(L, 3),  /* Y1 */
+			   lua_tonumber(L, 4),  /* X2 */
+			   lua_tonumber(L, 5),  /* Y2 */
+			   lua_tonumber(L, 6),  /* Z  */
+			   lua_tonumber(L, 7),  /* A1 */
+			   lua_tonumber(L, 8),  /* R1 */
+			   lua_tonumber(L, 9),  /* G1 */
+			   lua_tonumber(L, 10), /* B1 */
+			   lua_tonumber(L, 11), /* A2 */
+			   lua_tonumber(L, 12), /* R2 */
+			   lua_tonumber(L, 13), /* G2 */
+			   lua_tonumber(L, 14), /* B2 */
+			   lua_tonumber(L, 15), /* A3 */
+			   lua_tonumber(L, 16), /* R3 */
+			   lua_tonumber(L, 17), /* G3 */
+			   lua_tonumber(L, 18), /* B3 */
+			   lua_tonumber(L, 19), /* A4 */
+			   lua_tonumber(L, 20), /* R4 */
+			   lua_tonumber(L, 21), /* G4 */
+			   lua_tonumber(L, 22)  /* B4 */
+			   );
+  return 0;
+}
+DL_FUNCTION_END()
+
+DL_FUNCTION_START(set_clipping)
+{
+  dl_set_clipping(dl, 
+				  lua_tonumber(L, 2),  /* X1 */
+				  lua_tonumber(L, 3),  /* Y1 */
+				  lua_tonumber(L, 4),  /* X2 */
+				  lua_tonumber(L, 5)   /* Y2 */
+				  );
   return 0;
 }
 DL_FUNCTION_END()
@@ -497,10 +682,10 @@ void dl_draw_text_render_transparent(void * pcom)
 
   text_set_color(c->a * dl_color[0], c->r * dl_color[1],
 				 c->g * dl_color[2], c->b * dl_color[3]);
-  draw_poly_text(dl_trans[0][0] * c->x + dl_trans[3][0],
-				 dl_trans[1][1] * c->y + dl_trans[3][1],
-				 dl_trans[2][2] * c->z + dl_trans[3][2],
-				 c->text);
+  text_draw_str(dl_trans[0][0] * c->x + dl_trans[3][0],
+				dl_trans[1][1] * c->y + dl_trans[3][1],
+				dl_trans[2][2] * c->z + dl_trans[3][2],
+				c->text);
 }
 
 void dl_draw_text(dl_list_t * dl, 
@@ -540,7 +725,7 @@ DL_FUNCTION_END()
 
 DL_FUNCTION_START(measure_text)
 {
-  lua_pushnumber(L, measure_poly_text(lua_tostring(L, 2)));
+  lua_pushnumber(L, text_measure_str(lua_tostring(L, 2)));
   lua_pushnumber(L, 16); // this is constant for now !!!
   return 2;
 }
@@ -721,12 +906,40 @@ static luashell_command_description_t display_commands[] = {
     SHELL_COMMAND_C, lua_clear           /* function */
   },
   {
+    "dl_set_clipping", 0,                /* long and short names */
+    "print [["
+	"dl_set_clipping(list, x1, y1, x2, y2) : set clipping box"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_set_clipping    /* function */
+  },
+  {
+    "dl_draw_box1", 0,                    /* long and short names */
+    "print [["
+	"dl_draw_box(list, x1, y1, x2, y2, z, a, r, g, b) : draw a flat box"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_draw_box1       /* function */
+  },
+  {
     "dl_draw_box", 0,                    /* long and short names */
     "print [["
-      "dl_draw_box(list, x1, y1, x2, y2, z, a1, r1, g1, b1, a2, r2, g2, b2) : draw a box"
+	"dl_draw_box(list, x1, y1, x2, y2, z,"
+	" a1, r1, g1, b1, a2, r2, g2, b2, type) : draw gradiant box\n"
+	" - type is gradiant orientation (0:diagonal, 1:horizontal 2:vertical"
     "]]",                                /* usage */
-    SHELL_COMMAND_C, lua_draw_box        /* function */
+    SHELL_COMMAND_C, lua_draw_box2       /* function */
   },
+  {
+    "dl_draw_box4", 0,                   /* long and short names */
+    "print [["
+	"dl_draw_box(list, x1, y1, x2, y2, z, "
+	"a1, r1, g1, b1,"
+	"a2, r2, g2, b2,"
+	"a3, r3, g3, b3,"
+	"a4, r4, g4, b4) : draw a colored box"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_draw_box4       /* function */
+  },
+
   {
     "dl_draw_text", 0,                   /* long and short names */
     "print [["
