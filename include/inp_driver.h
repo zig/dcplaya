@@ -3,7 +3,7 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: inp_driver.h,v 1.1 2002-08-26 14:15:00 ben Exp $
+ * $Id: inp_driver.h,v 1.2 2002-09-02 16:05:38 ben Exp $
  */
 
 #ifndef _INP_DRIVER_H_
@@ -11,6 +11,14 @@
 
 #include "playa_info.h"
 #include "any_driver.h"
+
+/* Return bits code for decode() handler */
+#define INP_DECODE_ERROR -1 /**< Decoder reach end because of error */
+#define INP_DECODE_CONT   1 /**< Decoder has decode some sample     */
+#define INP_DECODE_END    2 /**< Decoder has reach end of track     */
+#define INP_DECODE_INFO   4 /**< Decoder has detect some info
+			          change. Call info() handler to
+				  retrieve them.                   */      
 
 /** Input driver */
 typedef struct

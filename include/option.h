@@ -3,6 +3,8 @@
 #ifndef _OPTION_H_
 #define _OPTION_H_
 
+#include "vis_driver.h"
+
 typedef enum {
   OPTION_LCD_VISUAL_NONE,
   OPTION_LCD_VISUAL_SCOPE,
@@ -12,7 +14,7 @@ typedef enum {
 
 int option_volume();
 int option_filter();
-int option_visual();
+vis_driver_t * option_visual();
 int option_lcd_visual();
 int option_shuffle();
 

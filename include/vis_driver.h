@@ -3,7 +3,7 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: vis_driver.h,v 1.1 2002-08-26 14:15:00 ben Exp $
+ * $Id: vis_driver.h,v 1.2 2002-09-02 16:05:38 ben Exp $
  */
 
 
@@ -11,6 +11,7 @@
 #define _VIS_DRIVER_H_
 
 #include "any_driver.h"
+#include "viewport.h"
 #include "matrix.h"
 
 /** Input driver */
@@ -26,13 +27,13 @@ typedef struct
   int (*stop)(void);
 
   /** Process visual calculation. */
-  void (*process)(matrix_t projection, int elapsed_ms);
+  int (*process)(viewport_t * vp, matrix_t projection, int elapsed_ms);
 
   /** Process TA opaque list. */
-  void (*opaque_render)(void);
+  int (*opaque_render)(void);
 
   /** Process TA transparent list. */
-  void (*transparent_render)(void);
+  int (*transparent_render)(void);
 
 } vis_driver_t;
 

@@ -6,12 +6,11 @@
 #ifndef __MATRIX_H
 typedef float matrix_t[4][4];
 #endif
-typedef const float constmatrix_t[4][4];
 
-void MtxCopy(matrix_t m, constmatrix_t m2);
+void MtxCopy(matrix_t m, matrix_t m2);
 void MtxIdentity(matrix_t m);
-void MtxMult(matrix_t m, constmatrix_t m2);
-void MtxVectMult(float *v, const float *u, constmatrix_t m);
+void MtxMult(matrix_t m, matrix_t m2);
+void MtxVectMult(float *v, const float *u, matrix_t m);
 void MtxTranspose(matrix_t m);
 void MtxScale(matrix_t m, const float s);
 void MtxRotateX(matrix_t m, const float a);
