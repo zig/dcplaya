@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.17 2003-01-03 19:05:39 ben Exp $
+ * $Id: playa.c,v 1.18 2003-01-17 13:23:28 ben Exp $
  */
 
 #include <kos.h>
@@ -604,10 +604,11 @@ int playa_start(const char *fn, int track, int immediat) {
   playa_info_update(&info);
 
   /* Set sampling rate for next music */
-  if (!immediat) {
+  if (play_samples_start > 0) {
     next_frq = info.info[PLAYA_INFO_FRQ].v;
   } else {
-    stream_frq(current_frq = info.info[PLAYA_INFO_FRQ].v);
+    stream_frq(next_frq = current_frq = info.info[PLAYA_INFO_FRQ].v);
+    SDDEBUG("Set stream frq := [%d]\n",current_frq);
   }
 
   /* Wait for player thread to be ready */

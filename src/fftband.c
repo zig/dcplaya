@@ -7,7 +7,7 @@
 
 #include "sysdebug.h"
 
-#define FFT_BAND_FIX 12
+#define FFT_BAND_FIX 8
 
 float R(const float radix, int band)
 {
@@ -187,7 +187,7 @@ fftbands_t * fftband_create(int n, int fft_size, int sampling,
 static unsigned int fftband_calc_value(fftband_t * band, const uint16 * fft)
 {
   unsigned int w;
-  int i = band->bmin >> 12, j = band->bmax >> 12;
+  int i = band->bmin >> FFT_BAND_FIX, j = band->bmax >> FFT_BAND_FIX;
 
   // Calculates power of this band from FFT
   w = fft[i] * band->bminscale;
@@ -207,6 +207,7 @@ void fftband_update(fftbands_t * bands, const uint16 * fft)
 /*   int previdx = bands->tapidx; */
 /*   int idx = (previdx+1) & 3; */
 /*   bands->tapidx = idx; */
+  if (!bands) return;
 
   for (i=0,l=0; i<bands->n; ++i) {
     fftband_t * b = bands->band + i;

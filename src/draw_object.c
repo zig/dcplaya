@@ -1,5 +1,5 @@
 /**
- * $Id: draw_object.c,v 1.9 2002-12-19 18:43:20 ben Exp $
+ * $Id: draw_object.c,v 1.10 2003-01-17 13:23:28 ben Exp $
  */
 
 #include <stdio.h>
@@ -33,14 +33,14 @@ static int transform_sz = 0;
 
 static uv_t uvlinks[8][4] =
   {
-	/* 0 cba */  { {U1,U2},   {U1,U1},    {U2,U1},   {0,0} },
-	/* 1 cbA */  { {U3,U1},   {U3,U2},    {U4,U1},   {0,0} },
-	/* 2 cBa */  { {U4,U1},   {U3,U2},    {U3,U1},   {0,0} },
-	/* 3 cBA */  { {U1,U4},   {U1,U3},    {U2,U3},   {0,0} },
-	/* 4 Cba */  { {U3,U1},   {U4,U1},    {U3,U2},   {0,0} },
-	/* 5 CbA */  { {U1,U3},   {U2,U3},    {U1,U4},   {0,0} },
-	/* 6 CBa */  { {U2,U3},   {U1,U4},    {U1,U3},   {0,0} },
-	/* 7 CBA */  { {U3,U4},   {U3,U3},    {U4,U3},   {0,0} },
+    /* 0 cba */  { {U1,U2},   {U1,U1},    {U2,U1},   {0,0} },
+    /* 1 cbA */  { {U3,U1},   {U3,U2},    {U4,U1},   {0,0} },
+    /* 2 cBa */  { {U4,U1},   {U3,U2},    {U3,U1},   {0,0} },
+    /* 3 cBA */  { {U1,U4},   {U1,U3},    {U2,U3},   {0,0} },
+    /* 4 Cba */  { {U3,U1},   {U4,U1},    {U3,U2},   {0,0} },
+    /* 5 CbA */  { {U1,U3},   {U2,U3},    {U1,U4},   {0,0} },
+    /* 6 CBa */  { {U2,U3},   {U1,U4},    {U1,U3},   {0,0} },
+    /* 7 CBA */  { {U3,U4},   {U3,U3},    {U4,U3},   {0,0} },
   };
 
 static int sature(const float a)
@@ -49,7 +49,7 @@ static int sature(const float a)
 
   v = (int)a;
   v = v & ~(v>>31);
-  v = v | (((255-v)>>31) & 255);
+  v = (v | (((255-v)>>31))) & 255;
   return v;
 }
 
@@ -63,7 +63,7 @@ static unsigned int argb255(const vtx_t *color)
 }
 
 static unsigned int argb4(const float a, const float r,
-						  const float g, const float b)
+			  const float g, const float b)
 {
   return
     (sature(a) << 24) |
@@ -90,7 +90,7 @@ static int init_transform(int nb)
 }
 
 static void TransformVtx(vtx_t * d, const obj_t *o,
-						 const viewport_t *vp, matrix_t m)
+			 const viewport_t *vp, matrix_t m)
 {
   int n = o->nbv;
 
@@ -160,12 +160,12 @@ typedef int cl_t;
 static void set_clipping(cl_t xmin, cl_t ymin, cl_t xmax, cl_t ymax)
 {
   struct {
-	uint32 com;
-	uint32 r0,r1,r2;
-	cl_t xmin;
-	cl_t ymin;
-	cl_t xmax;
-	cl_t ymax;
+    uint32 com;
+    uint32 r0,r1,r2;
+    cl_t xmin;
+    cl_t ymin;
+    cl_t xmax;
+    cl_t ymax;
   } c;
   c.com = 0x1<<29; // USER CLIP
   c.xmin = xmin;
@@ -181,7 +181,7 @@ static void set_clipping(cl_t xmin, cl_t ymin, cl_t xmax, cl_t ymax)
 extern controler_state_t controler68;
 
 int DrawObjectPostProcess(viewport_t * vp, matrix_t local, matrix_t proj,
-						  obj_t *o)
+			  obj_t *o)
 {
   if (!vp || !o) {
     return -1;
@@ -201,7 +201,7 @@ int DrawObjectPostProcess(viewport_t * vp, matrix_t local, matrix_t proj,
 }
 
 int DrawObjectSingleColor(viewport_t * vp, matrix_t local, matrix_t proj,
-						  obj_t *o, vtx_t *color)
+			  obj_t *o, vtx_t *color)
 {
   unsigned int col;
 
@@ -230,7 +230,7 @@ int DrawObjectSingleColor(viewport_t * vp, matrix_t local, matrix_t proj,
       uv_t * uvl;
 
       if (f->flags) {
-		continue;
+	continue;
       }
 
       lflags  = t[l->a].flags << 0;
@@ -270,8 +270,8 @@ int DrawObjectSingleColor(viewport_t * vp, matrix_t local, matrix_t proj,
 }
 
 int DrawObjectLighted(viewport_t * vp, matrix_t local, matrix_t proj,
-					  obj_t *o,
-					  vtx_t *ambient, vtx_t *light, vtx_t *diffuse)
+		      obj_t *o,
+		      vtx_t *ambient, vtx_t *light, vtx_t *diffuse)
 {
   float aa, ar, ag, ab;
   float la, lr, lg, lb;
@@ -317,18 +317,18 @@ int DrawObjectLighted(viewport_t * vp, matrix_t local, matrix_t proj,
       float coef;
 
       if (f->flags) {
-		continue;
+	continue;
       }
 
       coef = nrm->x * tlight.x 
-		+ nrm->y * tlight.y 
-		+ nrm->z * tlight.z;
+	+ nrm->y * tlight.y 
+	+ nrm->z * tlight.z;
 	  
       if (coef < 0) {
-		coef = 0;
+	coef = 0;
       }
       hw->col = argb4(aa + coef * la, ar + coef * lr,
-					  ag + coef * lg, ab + coef * lb);
+		      ag + coef * lg, ab + coef * lb);
 	
       lflags  = t[l->a].flags << 0;
       lflags |= t[l->b].flags << 1;
@@ -368,8 +368,8 @@ int DrawObjectLighted(viewport_t * vp, matrix_t local, matrix_t proj,
 }
 
 int DrawObjectFrontLighted(viewport_t * vp, matrix_t local, matrix_t proj,
-						   obj_t *o,
-						   vtx_t *ambient, vtx_t *diffuse)
+			   obj_t *o,
+			   vtx_t *ambient, vtx_t *diffuse)
 {
   float aa, ar, ag, ab;
   float la, lr, lg, lb;
@@ -413,15 +413,15 @@ int DrawObjectFrontLighted(viewport_t * vp, matrix_t local, matrix_t proj,
       float coef;
 
       if (f->flags) {
-		continue;
+	continue;
       }
 
       coef = m02 * nrm->x + m12 * nrm->y + m22 * nrm->z;
       if (coef < 0) {
-		coef = 0;
+	coef = 0;
       }
       hw->col = argb4(aa + coef * la, ar + coef * lr,
-					  ag + coef * lg, ab + coef * lb);
+		      ag + coef * lg, ab + coef * lb);
 	
       lflags  = t[l->a].flags << 0;
       lflags |= t[l->b].flags << 1;
@@ -462,7 +462,7 @@ int DrawObjectFrontLighted(viewport_t * vp, matrix_t local, matrix_t proj,
 
 
 int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
-						 obj_t *o)
+			 obj_t *o)
 {
   if (DrawObjectPostProcess(vp, local, proj, o) < 0) {
     return -1;
@@ -490,7 +490,7 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
       uv_t * uvl;
 
       if (f->flags) {
-		continue;
+	continue;
       }
 
       col = *(int *)&nrm->w;
@@ -500,22 +500,22 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
 
       // $$$ ben : hack to remove invible face glitch! There is lotsa optimize to do here.
       {
-		const int m2 = 0x7f7f7f7f;
-		int tmp, m;
-		col  = (col  >> 1) & 0x7f7f7f7f;
-		tmp = col/* >> 1*/;
+	const int m2 = 0x7f7f7f7f;
+	int tmp, m;
+	col  = (col  >> 1) & 0x7f7f7f7f;
+	tmp = col/* >> 1*/;
 
-		m = -t[l->a].flags;
-		m = -1;
-		cola = (((cola >> 1) & ~m) | (tmp & m)) & m2;  
+	m = -t[l->a].flags;
+	m = -1;
+	cola = (((cola >> 1) & ~m) | (tmp & m)) & m2;  
 
-		m = -t[l->b].flags;
-		m = -1;
-		colb = (((colb >> 1) & ~m) | (tmp & m)) & m2;  
+	m = -t[l->b].flags;
+	m = -1;
+	colb = (((colb >> 1) & ~m) | (tmp & m)) & m2;  
 
-		m = -t[l->c].flags;
-		m = -1;
-		colc = (((colc >> 1) & ~m) | (tmp & m)) & m2;  
+	m = -t[l->c].flags;
+	m = -1;
+	colc = (((colc >> 1) & ~m) | (tmp & m)) & m2;  
       }
 
       lflags  = t[l->a].flags << 0;

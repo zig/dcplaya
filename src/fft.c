@@ -3,7 +3,7 @@
  * @file    fft.c
  * @author  benjamin gerard <ben@sashipa.com>
  * 
- * @version $Id: fft.c,v 1.12 2003-01-05 18:08:39 zigziggy Exp $
+ * @version $Id: fft.c,v 1.13 2003-01-17 13:23:28 ben Exp $
  */
 
 #include <stdlib.h>
@@ -102,7 +102,7 @@ void fft_queue(void)
   fft_R[0] >>= 1;
   fft_I[0] = 0;
 
-  fft[0] = fft_R[0] < 0 ? -fft_R[0] : fft_R[0];
+  fft[0] = 0; // $$$ fft_R[0] < 0 ? -fft_R[0] : fft_R[0];
   for (j = 1; j <= FFT_SIZE/2; ++j) {
     int rea, imm, v;
     rea = (int)fft_R[j];
@@ -225,11 +225,14 @@ void fft_fill_pcm(short * pcm, int n)
 
   start = pcm_start;
   end   = pcm_end;
-  m     = end - start;
+  /// $$$ TEST : cool result !
+  end = FFT_SIZE;
+  m  = end - start;
   if (m<=0 || m > FFT_SIZE) {
     start = 0;
     m = FFT_SIZE;
   }
+
   step = (m << 12) / n;
   for (i=0, j=(start<<12); i<n; ++i, j = k) {
     int ij,ik,v;

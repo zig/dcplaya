@@ -101,9 +101,9 @@ void MtxVectorsMult(float *v, const float *u, matrix_t m, int nmemb,
 
 void MtxScale(matrix_t m, const float s)
 {
-  int i,j;
   matrix_t sm;
-  for (i=0; i<4; ++i) for (j=0; j<4; ++j) sm[i][j] = (i==j) ? s : 0;
+  MtxIdentity(sm);
+  sm[0][0] = sm[1][1] = sm[2][2] = s;
   MtxMult(m,sm);
 }
 
