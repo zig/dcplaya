@@ -3,34 +3,34 @@
 /**
 @defgroup  dcplaya_lua  LUA extensions
 @ingroup   dcplaya
-@author    benjamin gerard <ben@sashipa.com>
+@author    benjamin gerard
 @brief     Programming dcplaya high level extensions.
  **/
 
 /**
 @defgroup  dcplaya_lua_shell  Shell commands
 @ingroup   dcplaya_lua
-@author    benjamin gerard <ben@sashipa.com>
+@author    benjamin gerard
 @brief     LUA shell commands
 */
 
 /**
 @defgroup  dcplaya_lua_graphics Graphic components
 @ingroup   dcplaya_lua
-@author    benjamin gerard <ben@sashipa.com>
+@author    benjamin gerard
 @brief     Low level graphics API.
  **/
 
 /**
 @defgroup  dcplaya_lua_app  Applications
 @ingroup   dcplaya_lua
-@author    benjamin gerard <ben@sashipa.com>
+@author    benjamin gerard
 @brief     Programming dcplaya LUA applications.
  **/
 
 /**
 @defgroup  dcplaya_lua_event  Events
 @ingroup   dcplaya_lua
-@author    benjamin gerard <ben@sashipa.com>
+@author    benjamin gerard
 @brief     Events and messaging system description.
  **/

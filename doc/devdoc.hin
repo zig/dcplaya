@@ -3,15 +3,15 @@
 /**
 @defgroup  dcplaya_devel  C API
 @ingroup   dcplaya
-@author    benjamin gerard <ben@sashipa.com>
-@brief     Programming dcplaya low-level extensions
+@author    benjamin gerard
+@brief     programming dcplaya C components
  **/
 
 /**
 @defgroup  dcplaya_exe_plugin_devel Executable Plugin API
 @ingroup   dcplaya_plugin_devel
-@author    benjamin gerard <ben@sashipa.com>
-@brief     Programming dcplaya executable plugins
+@author    benjamin gerard
+@brief     programming dcplaya executable plugins
  **/
 
 

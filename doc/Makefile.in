@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.15 2003-03-25 09:22:01 ben Exp $
+# $Id: Makefile.in,v 1.16 2003-03-26 22:51:07 ben Exp $
 #
 
 VERSION = @VERSION@
@@ -101,7 +101,7 @@ PROJECT	+= -D PROJECT_NAME="dcplaya"
 ## doxygene global configuration
 #
 DOXALL	:= $(PROJECT)
-DOXALL	+= -D QUIET=YES
+DOXALL	+= -D QUIET=NO
 DOXALL	+= -D WARNINGS=YES
 
 DOXALL	+= -D OUTPUT_DIRECTORY='$(DOC_DIR)'
@@ -154,7 +154,9 @@ txt: all txt_only
 
 txt_only:
 	@mkdir -p $(DOC_DIR)/text
-	@for i in `find $(DOC_DIR)/html -type f -name '*.html'`; do lynx -dump $$i > $(DOC_DIR)/text/`basename $$i .html`.txt ; done
+	@for i in `find $(DOC_DIR)/html -type f -name '*.html'`; do\
+	lynx -width=64 -dump $$i > $(DOC_DIR)/text/`basename $$i .html`.txt;\
+	done
 
 Makefile : Makefile.in
 	(cd ..; ./config.status) 
