@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  sgml text and gui element formater.
 ---
---- $Id: taggedtext.lua,v 1.26 2003-03-20 06:05:34 ben Exp $
+--- $Id: taggedtext.lua,v 1.27 2003-03-20 21:59:19 ben Exp $
 ---
 
 if not dolib("dirfunc") then return end
@@ -114,7 +114,6 @@ tt_color_table = {
 -- UGLY !!!  - $$$ ben : not anymore :)
 function tt_tocolor(s)
    if type(s) == "string" then
-      print("tt_color:"..s)
       local first = strsub(s,1,1)
       if first then
 	 if first == "$" then
@@ -157,10 +156,9 @@ function tt_font_cmd(mode, param)
       draw = function(block)
 		-- $$$ ben hack : Remove filtering for font 1 (fixed)
 		dl_text_prop(block.dl, block.id, block.h, nil,
-			     block.id ~= 1 or 0)
+			     block.id and (block.id ~= 1 or 0))
 	     end
    }
-
    return block
 end
 
@@ -337,15 +335,35 @@ tt_commands = {
        end,
 
    pre = function(mode,param)
+	    if param.color then
+	       mode.color = tt_tocolor(param.color)
+	    end
+	    if mode.preformatted then
+	       print ("ERROR NESTED <PRE>")
+	    end
 	    mode.preformatted = 1
-	    mode.tabsize = param.tabsize or mode.tabsize or 3
+	    -- Preformatted default don't wrap
+	    mode.wrap = param.wrap or mode.wrap or 0
+	    mode.tabsize = tonumber(param.tabsize) or mode.tabsize or 3
+	    if mode.tabsize <= 0 then mode.tabsize = 3 end
 	    mode.tabchar = param.tabchar or mode.tabchar or " "
+	    -- 	    printf ("<PRE tab=%d char=%q>",mode.tabsize,mode.tabchar)
 	 end,
 
    ["/pre"] = function(mode,param)
+		 if not mode.preformatted then
+		    print ("WARNING TT </PRE> without <PRE>")
+		 end
 		 mode.preformatted = nil
 	      end,
 
+   ["nowrap"] = function(mode,param)
+		   mode.wrap = 0
+		end,
+   
+   ["wrap"] = function(mode,param)
+		    mode.wrap = 1
+		 end,
 
    lineup = function(mode)
 	     mode.align_line_v = tt_align_line_up
@@ -623,8 +641,10 @@ end
 
 function tt_insert_block(mode, block)
    local w = mode.w
+   local wrap = mode.wrap or 1 -- Default mode is wrapping
 
-   if w + block.w > mode.bw then
+   -- $$$ add wrapping test here !
+   if wrap == 1 and w + block.w > mode.bw then
       tt_endline(mode)
       w = 0
       mode.fill_totalw = 0
@@ -758,16 +778,6 @@ function tt_build(text, mode)
    local prevstart = start-1
 
    while start <= len do
---      local e1, e2 = strfind(text, "[%s%p]*%w+[%s%p]+", start)
-      local e1, e2
-      if not mode.preformatted then
-	 e1,e2 = strfind(text, "[^%s]+%s+", start)
-      else
-	 e1,e2 = strfind(text, "[^\n]+\n+", start)
-      end
-      if not e2 then
-	 e2 = len
-      end
 
       if prevstart >= start then
 	 printf("tagged text internal error : rollback [%d %d]",
@@ -775,6 +785,21 @@ function tt_build(text, mode)
 	 return
       end
       prevstart = start
+
+
+--      local e1, e2 = strfind(text, "[%s%p]*%w+[%s%p]+", start)
+      local e1, e2
+--      printf("READ @ %d",start)
+      if not mode.preformatted then
+	 e1,e2 = strfind(text, "[^%s]+%s+", start)
+      else
+	 e1,e2 = strfind(text, ".-\n", start)
+      end
+      if not e2 then
+--	 printf("last token [%s],%d %d",strsub(text,start,len),start,len)
+	 e2 = len
+      end
+
 
       -- Get next word
       local t = strsub(text, start, e2)
@@ -789,6 +814,7 @@ function tt_build(text, mode)
 	 end
 	 if e3 then
 	    e3, e4 = strfind(text, "%b<>", start)
+	    
 	 end
 	 if e3 then
 	    -- Get text
@@ -801,7 +827,7 @@ function tt_build(text, mode)
 
       -- Create text block
       if start <= e2 then
-
+	 local newline
 	 local block = {
 	    type = "text",
 	    draw = tt_text_draw,
@@ -818,35 +844,64 @@ function tt_build(text, mode)
 	    block.text = (gsub(t, "%s", "").." ")
 	 else
 	    -- preformatted, Keep the text as is but insert EOL when '\n'
-	    local tabstr = strrep(mode.tabchar,mode.tabsize)
-	    local aa = 1
-	    local a,b = strfind(t,"(.-)\n",aa)
-	    while a do
-	       local blk = tt_copymode(block)
-	       -- Make a new text block
-	       blk.text = gsub(strsub(t,a,b-1),"\t",tabstr)
-	       text_nude = text_nude .. blk.text
-	       blk.w, blk.h =
-		  dl_measure_text(blk.dl, blk.text,
-				  blk.font_id, blk.font_h, blk.font_aspect)
-	       tt_insert_block(mode, blk)
-	       tt_endline(mode)
-	       aa = b+1
-	       a,b = strfind(t,"(.-)\n", aa)
+
+	    newline = strsub(t,-1) == "\n"
+	    if newline then
+	       t = strsub(t, 1, -2)
 	    end
-	    block.text = gsub(strsub(t,aa),"\t",tabstr)
+	    if t ~= "" then
+	       -- Do tabstop
+	       local s,l = 1,strlen(t)
+	       local a,b
+	       local pos = 0
+
+	       block.text = ""
+	       local tab = strchar(9)
+
+	       while s <= l do
+		  a,b = strfind(t,tab,s)
+		  if not a then
+		     break
+		  end
+		  -- Copy before tab
+		  block.text = block.text .. strsub(t,s,a-1)
+		  pos = pos + (a - s)
+		  local tabstop = pos+mode.tabsize-intop(pos,'%',mode.tabsize)
+		  tabstop = tabstop - pos
+		  block.text = block.text .. strrep(mode.tabchar,tabstop)
+		  pos = pos + tabstop
+
+-- 		  if (pos ~= strlen(block.text)) then
+-- 		     printf("tab-error : %d ~= %d", pos, strlen(block.text))
+-- 		  end
+-- 		  if intop(pos,'%',mode.tabsize) ~= 0 then
+-- 		     print("tab error : pos mod = "..intop(pos,'%',mode.tabsize))
+-- 		  end
+		  s = a + 1
+	       end
+	       block.text = block.text .. strsub(t, s)
+	    else
+	       block = nil
+	    end
 	 end
-	 text_nude = text_nude .. block.text
+	 
+	 if block then
+	    block.w, block.h =
+	       dl_measure_text(block.dl, block.text,
+			       block.font_id, block.font_h,
+			       block.font_aspect)
+	    text_nude = text_nude .. block.text
+	    tt_insert_block(mode, block)
+	 end
+	 if newline then
+	    tt_endline(mode)
+	 end
 
---	 print("text", block.text)
-	 block.w, block.h = dl_measure_text(block.dl, block.text, block.font_id, block.font_h, block.font_aspect)
-
-	 tt_insert_block(mode, block)
-
-	 --print(block.text, block.w, block.h)
+	 start = e2 + 1
       end
-     
+      
       if tag then
+
 	 e2 = e4
 
 	 local i = 1
@@ -855,12 +910,8 @@ function tt_build(text, mode)
 	 if command then
 	    local param = { }
 	    local key, value
---	    print("command", "'"..command.."'")
 	    key, value, i = tt_getparam(tag, i)
 	    while key do
---	       if value then
---		  print("'"..key.."'", "'"..value.."'")
---	       end
 	       param[key] = value
 	       key, value, i = tt_getparam(tag, i)
 	    end
@@ -878,9 +929,10 @@ function tt_build(text, mode)
 	       end
 	    end
 	 end
+	 start = e2 + 1
       end
 
-      start = e2 + 1
+
    end
 
    -- end all unclosed groups
@@ -917,7 +969,6 @@ function tt_draw(tt)
 	 block.x = w
 
 	 if block.fill_w then
---	    print(block.fill_w)
 	    block.w = block.w + fill * block.fill_w / totalw
 	    line.align_line_h = tt_align_line_left
 	 end

@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.56 2003-03-20 06:05:34 ben Exp $
+--- $Id: song_browser.lua,v 1.57 2003-03-20 21:59:19 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song-browser
@@ -31,7 +31,7 @@ if not dolib("gui") then return end
 if not dolib("sprite") then return end
 if not dolib("fileselector") then return end
 if not dolib("playlist") then return end
-
+if not dolib("lua_colorize") then return end
 
 --
 --- Create an icon sprite.
@@ -667,6 +667,9 @@ function song_browser_create(owner, name)
 
       if major == "lua" then
 	 preformatted = 3
+	 gui_text_viewer(nil, luacolor_file(entry_path), width, leaf, nil,
+			 preformatted)
+	 return
       elseif major == "playlist" then
 	 preformatted = 1
       elseif major == "text" then
