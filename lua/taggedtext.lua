@@ -528,14 +528,14 @@ function tt_draw(tt)
 end
 
 
-if not nil then
+if nil then
 
    box = { 100, 100, 600, 400 }
    tt = tt_build(
 		 [[
-		       Hello <img name="vmu" scale="0.5"> World ! <br>
-			  <center> <font size="24" color="#00ffff"> Centered !! <br>
-			  <right> <font size="14" color="#ffffff"> right aligned <font size="48" color="#ffff00"> <img name="dcplaya" src="dcplaya.tga"> TITI <img name="colorpicker" src="colorpicker.tga"> TOTO TUTU
+Hello <img name="vmu" scale="0.5"> World ! <br>
+<center> <font size="24" color="#00ffff"> Centered !! <br>
+<right> <font size="14" color="#ffffff"> right aligned <font size="48" color="#ffff00"> <img name="dcplaya" src="dcplaya.tga"> TITI <img name="colorpicker" src="colorpicker.tga"> TOTO TUTU
 		 ]], 
 		 { 
 		    --		 x = "leftout",
