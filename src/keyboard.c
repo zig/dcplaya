@@ -23,6 +23,8 @@ cont_cond_t * controler_get_cond(int idx);
 
 static int kbd_frame_matrix[256] = {0};
 
+int kbd_present = 2;
+
 /* Update the keyboard status; this will handle debounce handling as well as
    queueing keypresses for later usage. The key press queue uses 16-bit
    words so that we can store "special" keys as such. This needs to be called
@@ -31,13 +33,12 @@ int kbd_poll_repeat(uint8 addr, int elapsed_frame)
 {
   kbd_cond_t cond;
   int i, j;
-  static int kbd_ok = -1;
 	
   /* Poll the keyboard for currently pressed keys */
-  if (!kbd_get_cond(addr, &cond)) {
-    if (kbd_ok != 1) {
+  if (addr && !kbd_get_cond(addr, &cond)) {
+    if ((kbd_present&255) != 1) {
       SDNOTICE("[kbd_poll_repeat] : keyboard detected\n");
-      kbd_ok = 1;
+      kbd_present = 0x101;
     }
     /* Check the shift state */
     kbd_shift_keys = cond.modifiers;
@@ -56,9 +57,9 @@ int kbd_poll_repeat(uint8 addr, int elapsed_frame)
     }
 
   } else {
-    if (kbd_ok != 0) {
+    if ((kbd_present&255) != 0) {
       SDNOTICE("[kbd_poll_repeat] : no keyboard\n");
-      kbd_ok = 0;
+      kbd_present = 0x100;
     }
     kbd_shift_keys = 0;
   }

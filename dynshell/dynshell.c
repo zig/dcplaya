@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.80 2003-03-14 18:51:03 ben Exp $
+ * @version    $Id: dynshell.c,v 1.81 2003-03-17 03:26:32 ben Exp $
  */
 
 #include "dcplaya/config.h"
@@ -2516,6 +2516,22 @@ static int lua_ramdisk_notify_path(lua_State * L)
   return 0;
 }
 
+/* defined in keyboard.c */
+extern volatile int kbd_present;
+static int lua_keyboard_present(lua_State * L)
+{
+  int present = kbd_present;
+  int status;
+
+  kbd_present = status = present & 255;
+  lua_pushnumber(L,status);
+  if (present & 0x100) {
+    lua_pushnumber(L,1);
+    return 2;
+  }
+  return 1;
+}
+
 static int LUA_setgcthreshold(lua_State * L)
 {
   lua_setgcthreshold(L, lua_tonumber(L, 1));
@@ -3233,6 +3249,18 @@ static luashell_command_description_t commands[] = {
     "]])",
     SHELL_COMMAND_C, lua_ramdisk_notify_path
   },
+
+  {
+    "keyboard_present",
+    0,
+    "print([["
+    "keyboard_present() : "
+    "Check the presence of keyboard controller.\n"
+    "Returns status [0|1], change [nil|1]"
+    "]])",
+    SHELL_COMMAND_C, lua_keyboard_present
+  },
+
 
   {0},
 };
