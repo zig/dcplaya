@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.70 2003-04-05 16:33:31 ben Exp $
+--- $Id: song_browser.lua,v 1.71 2003-04-06 18:03:34 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song Browser
@@ -1010,7 +1010,7 @@ function sbfl_make_default_menudef(fl, sb, action, entry_path, entry)
 
    local path,leaf = get_path_and_leaf(entry_path)
    local ty,major,minor = filetype(entry_path, entry.size)
-
+   leaf = leaf or "<root>"
    local def = {
       root = ":" .. leaf,
       cb = {}
@@ -1160,40 +1160,59 @@ end
 
 function sbfl_menu_playlist(fl, sb, action, entry_path, entry)
    local def = {
-      root = "load{load},insert{load},append{load}",
+      root = "load{pl_load},insert{pl_insert},append{pl_append}",
       cb = {
-	 load = function (menu, idx)
-		   local root_menu = menu.root_menu
-		   local sb = root_menu.target
-		   local entry_path = root_menu.__entry_path or ""
-		   local dir = playlist_load(entry_path)
-		   local odir = sb.pl.dir
-		   if not dir then return end
-		   if idx == 1 then
+	 pl_load = function (menu, idx)
+		      local root_menu = menu.root_menu
+		      local sb = root_menu.target
+		      local entry_path = root_menu.__entry_path or ""
+		      local dir = playlist_load(entry_path)
+		      if not dir then return end
 		      sb.pl:change_dir(dir)
 		      return 1
-		   elseif idx == 2 and odir then
-		      pos = (sb.pl:get_pos() or 0) + 1
-		      local i,v
-		      for i,v in dir do
-			 if type(v) == "table" then
-			    tinsert(odir, pos, v)
-			    pos = pos+1
+		   end,
+	 pl_insert = function (menu, idx)
+			local root_menu = menu.root_menu
+			local sb = root_menu.target
+			local entry_path = root_menu.__entry_path or ""
+			local dir = playlist_load(entry_path)
+			local odir = sb.pl.dir
+			if odir and dir then
+			   pos = (sb.pl:get_pos() or 0) + 1
+			   local i,v
+			   for i,v in dir do
+			      if type(v) == "table" then
+				 tinsert(odir, pos, v)
+				 pos = pos+1
+			      end
+			   end
+			   dir = odir
+			end
+			if dir then
+			   sb.pl:change_dir(dir)
+			   return 1
+			end
+		     end,
+	 pl_append =  function (menu, idx)
+			 local root_menu = menu.root_menu
+			 local sb = root_menu.target
+			 local entry_path = root_menu.__entry_path or ""
+			 local dir = playlist_load(entry_path)
+			 local odir = sb.pl.dir
+			 if odir and dir then
+			    local i,v
+			    for i,v in dir do
+			       if type(v) == "table" then
+				  tinsert(odir, v)
+			       end
+			    end
+			    dir = odir
 			 end
-		      end
-		      sb.pl:change_dir(odir)
-		      return 1
-		   elseif idx == 3 and odir then
-		      local i,v
-		      for i,v in dir do
-			 if type(v) == "table" then
-			    tinsert(odir,v)
+			 if dir then
+			    sb.pl:change_dir(dir)
+			    return 1
 			 end
-		      end
-		      sb.pl:change_dir(odir)
-		      return 1
-		   end
-		end,
+		      end,
       },
    }
    return def

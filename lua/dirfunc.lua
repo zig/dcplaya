@@ -4,7 +4,7 @@
 --- @author   benjamin gerard
 --- @brief    Directory and filename support.
 ---
---- $Id: dirfunc.lua,v 1.22 2003-04-06 17:22:37 ben Exp $
+--- $Id: dirfunc.lua,v 1.23 2003-04-06 18:03:34 ben Exp $
 ---
 
 --- Current path.
@@ -238,7 +238,7 @@ end
 
 --
 --- @}
-----
+---
 
 addhelp
 (deltree, nil, "file",
