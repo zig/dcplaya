@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  sgml text and gui element formater
 ---
---- $Id: taggedtext.lua,v 1.13 2003-01-12 15:33:00 zigziggy Exp $
+--- $Id: taggedtext.lua,v 1.14 2003-01-13 14:01:16 zigziggy Exp $
 ---
 
 if not dolib("sprite") then return end
@@ -285,8 +285,9 @@ tt_commands = {
 	   tt_endline(mode)
 	end,
 
-   p = function(mode)
+   p = function(mode, param)
 	  tt_endline(mode)
+	  mode.vspace = param.vspace
        end,
 
    lineup = function(mode)
@@ -340,6 +341,25 @@ tt_commands = {
 --	       mode.w = mode.w + w
 	       return { w = w, h = 0, draw = function() end }
 	    end,
+
+   macro = function(mode, param)
+	      local name = param["macro-name"]
+	      local cmd = param["macro-cmd"]
+	      if name and cmd and tt_commands[cmd] then
+		 print("macro", name, cmd)
+		 local fcmd = tt_commands[cmd]
+		 local mp = tt_copymode(param)
+		 tt_commands[name] = function(mode, param)
+					local i, v
+					for i,v in %mp do
+					   print("macro param", i, v, param[i])
+					   param[i] = param[i] or v
+					end
+					return %fcmd(mode, param)
+				     end
+	      end
+		 
+	   end,
 
    ["dialog"] = tt_dialog_cmd,
    ["/dialog"] = tt_end_dialog_cmd,
