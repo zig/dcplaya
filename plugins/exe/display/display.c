@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.25 2002-12-24 04:49:17 ben Exp $
+ * $Id: display.c,v 1.26 2002-12-26 07:15:17 ben Exp $
  */
 
 #include <stdlib.h>
@@ -178,7 +178,7 @@ DL_FUNCTION_START(destroy_list)
 /*   lua_pushnil(L); */
 /*   lua_settable(L, 1); */
 
-  dl_destroy(dl);
+/*   dl_destroy(dl); */
   return 0;
 }
 DL_FUNCTION_END()
@@ -355,7 +355,7 @@ static luashell_command_description_t display_commands[] = {
     "dl_destroy_list", "dl_destroy",     /* long and short names */
     "print [["
 	"dl_destroy_list(list) : "
-	"Destroy the given list."
+	"Destroy the given list. ** OBSOLETE ! DO NOT USE **."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_destroy_list    /* function */
   },
