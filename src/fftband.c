@@ -89,11 +89,16 @@ static void fftband_setup(fftband_t * band,
   bMin = band->fmin * oof0;
   bMax = band->fmax * oof0;
 
-  if (bMin >= nbSamples/2) {
-    bMin = (nbSamples/2)-1;
+  if (bMin < (1 << FFT_BAND_FIX)) {
+    bMin = (1 << FFT_BAND_FIX);
+  } else if (bMin > nbSamples/2) {
+    bMin = (nbSamples/2);
   }
-  if (bMax >= nbSamples/2) {
-    bMax = nbSamples/2-1;
+
+  if (bMax < (1 << FFT_BAND_FIX)) {
+    bMax = (1 << FFT_BAND_FIX);
+  } else if (bMax > nbSamples/2) {
+    bMax = nbSamples/2;
   }
 
   band->bmin = bMin;
@@ -179,13 +184,13 @@ static unsigned int fftband_calc_value(fftband_t * band, const uint16 * fft)
 
 void fftband_update(fftbands_t * bands, const uint16 * fft)
 {
-  unsigned int w;
+  unsigned int w, l;
   int i;
 /*   int previdx = bands->tapidx; */
 /*   int idx = (previdx+1) & 3; */
 /*   bands->tapidx = idx; */
 
-  for (i=0; i<bands->n; ++i) {
+  for (i=0,l=0; i<bands->n; ++i) {
     fftband_t * b = bands->band + i;
     w = fftband_calc_value(b,fft);
 /*     b->tapacu -= b->tap[idx]; */
@@ -194,5 +199,7 @@ void fftband_update(fftbands_t * bands, const uint16 * fft)
 /*     b->tapacu += w; */
 
     b->v = (w + b->v) >> 1;
+    l += w;
   }
+  bands->loudness = (bands->loudness + l/bands->n) >> 1;
 }

@@ -77,7 +77,7 @@ int option_setup(void)
     SDDEBUG("++ NO OPTION VISUAL\n");
   }
 
-  lcd_visual = OPTION_LCD_VISUAL_FFT_FULL;
+  lcd_visual = OPTION_LCD_VISUAL_FFT;
   track_offset = 0;
   /*   joyfx_onoff = -1; */
   return 0;

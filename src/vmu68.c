@@ -1,5 +1,5 @@
 /**
- * $Id: vmu68.c,v 1.10 2002-12-30 20:08:32 ben Exp $
+ * $Id: vmu68.c,v 1.11 2003-01-03 07:06:32 ben Exp $
  */
 #include "config.h"
 
@@ -18,12 +18,12 @@
 #include  "vmu_font.h"
 
 #include "fft.h"
-#include "vupeek.h"
+/*#include "vupeek.h"*/
 #include "option.h"
 #include "playa.h"
 #include "math_int.h"
 
-static fftbands_t * bands;
+static fftbands_t * bands, * bands6;
 static char vmu_text_str[256];
 
 static const char vmu_scrolltext[] =
@@ -70,8 +70,8 @@ static uint8 font[40][64 / 8];
 static int titleInit = 0;
 static uint8 title[32][48 / 8];
 static uint8 vmutmp[32][48 / 8];
-static int vmu_visual = OPTION_LCD_VISUAL_FFT_FULL;
-
+static int vmu_visual = OPTION_LCD_VISUAL_FFT;
+static int vmu_db = 1;
 
 /* From dreamcast68.c */
 extern int dreamcast68_isplaying(void);
@@ -207,6 +207,15 @@ static void vmu_create_bitmap_2(uint8 * dest, char *src, int w, int h)
 
 int vmu68_init(void)
 {
+  static fftband_limit_t limits[] = {
+    { 0,    125   },
+    { 125,  250   },
+    { 250,  500   },
+    { 500,  1000  },
+    { 1000, 2000  },
+    { 2000, 44100 },
+  }; 
+
   /* Create font bitmap */
   if (!fontInit) {
     vmu_create_bitmap(font[0], vmu_font, 64, 40);
@@ -219,10 +228,11 @@ int vmu68_init(void)
     titleInit = 1;
   }
 
-  bands = fft_create_bands(48,0);
+  bands  = fft_create_bands(48,0);
+  bands6 = fft_create_bands(6,limits);
 
   memset(vmu_text_str,0,sizeof(vmu_text_str));
-  vmu_visual = OPTION_LCD_VISUAL_FFT_FULL;
+  vmu_visual = OPTION_LCD_VISUAL_FFT;
 
   return 0;
 }
@@ -247,6 +257,15 @@ int vmu_set_visual(int visual)
   int old = vmu_visual;
   if (visual >= 0) {
     vmu_visual = visual;
+  }
+  return old;
+}
+
+int vmu_set_db(int db)
+{
+  int old = vmu_db;
+  if (db >= 0) {
+    vmu_db = !!db;
   }
   return old;
 }
@@ -279,18 +298,21 @@ static void draw_samples(char *buf)
   }
 
   for (x = 0; x < 48; ++x) {
-    int h = spl[x];
+    int h = spl[47-x];
     int xi = x >> 3;
     int xb = 0x80 >> (x & 7);
     int o1, o2;
     if (h<0) {
-      h = -int_sqrt(-(h+1) << 15);
-    } else {
+      h = h+1;
+      if (vmu_db) {
+	h = -int_sqrt(-h << 15);
+      }
+    } else if (vmu_db) {
       h = int_sqrt(h << 15);
     }
     h = h >> 12; // -8 - 8
     if (h<-8 || h>8) {
-      SDDEBUG("H:%d\n", h);
+      SDWARNING("H:%d\n", h);
       h = h < 0 ? -8 : 8;
     }
     o1 = xi + (48 / 8) * (h + 8);
@@ -318,6 +340,74 @@ static struct {
   int dummy;
 } fft_bar[48];
 
+static void draw_band(unsigned char * buf)
+{
+  static int old[6];
+  static int val[6];
+  static int fall[6];
+  const unsigned int maxmin = 100;
+  static unsigned int max = maxmin;
+  int i,mask;
+  const int fall_speed = 500;
+
+  if (!bands6) {
+    return;
+  }
+
+  fft_fill_bands(bands6);
+
+  for (i=0; i<6; ++i) {
+    int v = bands6->band[i].v;
+    if (v<0) {
+      v = 0;
+    } else if (v>32767) {
+      v = 32767;
+    }
+    val[i] = v;
+    if (v > max) max = v;
+  }
+  if (max<maxmin) {
+    max = maxmin;
+  }
+  
+  for (i=0; i<6; ++i) {
+    int xi = 5-i;
+    int v,w;
+
+    v = val[i];
+
+    /* New entry */
+    if (vmu_db) {
+      v -= 100;
+      if (v<0) v=0;
+      v = int_decibel[v>>3];
+    } else {
+      v = (v<<15) / max;
+    }
+
+    if (v >= old[i]) {
+      fall[i] = 0;
+    } else {
+      fall[i] += fall_speed;
+      w = old[i] - fall[i];
+      if (w <= v) {
+	w = v;
+      }
+      v = w;
+    }
+    old[i] = v;
+    v = (v * 20) >> 15;
+    if (v>20) v=20;
+
+    buf[xi] = 0xfe;
+    mask = 0xd6;
+    for (w=1, xi += 48/8; w<v; ++w, xi += 48/8, mask ^= 0x7c) {
+      buf[xi] = mask;
+    }
+    buf[xi] = 0xfe;
+  }
+  if (max > 0) --max;
+}
 
 static void draw_fft(unsigned char * buf)
 {
@@ -330,7 +420,7 @@ static void draw_fft(unsigned char * buf)
   }
 
   fft_fill_bands(bands);
-
+  
   for (x = 47; x >= 0; --x) {
     int xi = x >> 3;
     int xb = 0x80 >> (x & 7);
@@ -528,19 +618,19 @@ void vmu_lcd_update(/*int *spl, int nbSpl, int splFrame*/)
   playa_info_release(info);
 
   /* Display VU-meters */
-  if (1) {
-    int bar_1 = (peek1.dyn * 48) >> 16;
-    //    int bar_2 = (peek2.dyn * 48) >> 16;
-    int bar_3 = (peek3.dyn * 48) >> 16;
+/*   if (1) { */
+/*     int bar_1 = (peek1.dyn * 48) >> 16; */
+/*     //    int bar_2 = (peek2.dyn * 48) >> 16; */
+/*     int bar_3 = (peek3.dyn * 48) >> 16; */
 
-    /*  draw_bar(vmutmp[31-3], bar_1, 2); */
-    draw_bar(vmutmp[31 - 6], bar_1, 2);
-    draw_bar(vmutmp[31 - 9], bar_3, 2);
-  }
+/*     /\*  draw_bar(vmutmp[31-3], bar_1, 2); *\/ */
+/*     draw_bar(vmutmp[31 - 6], bar_1, 2); */
+/*     draw_bar(vmutmp[31 - 9], bar_3, 2); */
+/*   } */
 
   /* Display either OPTION or SONG-MENU-ENTRY */
   if (vmu_text_str[0]) {
-    putstr(vmutmp[0], 0, 2 * 5 + 1, vmu_text_str);
+    putstr(vmutmp[0], 0, 1 * 5 + 1, vmu_text_str);
   }
 	
   if (1) {
@@ -548,12 +638,15 @@ void vmu_lcd_update(/*int *spl, int nbSpl, int splFrame*/)
     case OPTION_LCD_VISUAL_SCOPE:
       draw_samples(vmutmp[0]);
       break;
-    case OPTION_LCD_VISUAL_FFT_FULL:
+    case OPTION_LCD_VISUAL_FFT:
       draw_fft(vmutmp[0]);
+      break;
+    case OPTION_LCD_VISUAL_BAND:
+      draw_band(vmutmp[0]);
       break;
     }
   }
-	
+
   /* Finally copy temporary buffer to VMU LCD */
   draw_lcd(vmutmp[0]);
 }

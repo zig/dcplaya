@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.15 2002-12-30 06:28:18 ben Exp $
+ * $Id: playa.c,v 1.16 2003-01-03 07:06:32 ben Exp $
  */
 
 #include <kos.h>
@@ -585,10 +585,6 @@ int playa_start(const char *fn, int track, int immediat) {
     goto error;
   }
 
-  // $$$ DEBUG
-  SDDEBUG("------- after driver start ----\n");
-  playa_info_dump(&info);
-
   // $$$ ben: Validate all fields ? Not sure this is really wise.
   info.update_mask = (1 << PLAYA_INFO_SIZE) - 1;
   if (!info.info[PLAYA_INFO_TITLE].s) {
@@ -612,7 +608,7 @@ int playa_start(const char *fn, int track, int immediat) {
   playastatus = PLAYA_STATUS_PLAYING;
   sem_signal(playa_haltsem);
   //  wait_playastatus(PLAYA_STATUS_STARTING);
-  playa_info_dump(&info);
+/*   playa_info_dump(&info); */
 
  error:
   SDUNINDENT;
