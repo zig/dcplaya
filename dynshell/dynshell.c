@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.13 2002-09-17 19:47:08 zig Exp $
+ * @version    $Id: dynshell.c,v 1.14 2002-09-19 08:18:12 vincentp Exp $
  */
 
 #include <stdio.h>
@@ -92,7 +92,7 @@ static int lua_malloc_stats(lua_State * L)
   malloc_stats();
 
   // Testing exception handling ...
-  * (int *) 1 = 0xdeadbeef;
+  //* (int *) 1 = 0xdeadbeef;
 
   return 0; // 0 return values
 }
@@ -285,6 +285,27 @@ static int lua_consolesize(lua_State * L)
   return 2;
 }
 
+static int lua_toggleconsole(lua_State * L)
+{
+  shell_toggleconsole();
+
+  return 0;
+}
+
+static int lua_showconsole(lua_State * L)
+{
+  shell_showconsole();
+
+  return 0;
+}
+
+static int lua_hideconsole(lua_State * L)
+{
+  shell_hideconsole();
+
+  return 0;
+}
+
 
 static char shell_basic_lua_init[] = 
 "\n shell_help_array = {}"
@@ -322,7 +343,6 @@ static char shell_basic_lua_init[] =
 "\n function doshellcommand(string)"
 "\n   dostring(string)"
 "\n end"
-"\n "
 "\n "
 "\n usage=help"
 "\n "
@@ -386,10 +406,40 @@ static shell_command_description_t commands[] = {
     "cs",
 
     "print([["
-    "consolesize( ... ) : return width and height of the console in character\n"
+    "consolesize() : return width and height of the console in character\n"
     "]])",
 
     SHELL_COMMAND_C, lua_consolesize
+  },
+  { 
+    "toggleconsole",
+    "tc",
+
+    "print([["
+    "toggleconsole() : toggle console visibility\n"
+    "]])",
+
+    SHELL_COMMAND_C, lua_toggleconsole
+  },
+  { 
+    "showconsole",
+    "sc",
+
+    "print([["
+    "showconsole() : show console\n"
+    "]])",
+
+    SHELL_COMMAND_C, lua_showconsole
+  },
+  { 
+    "hideconsole",
+    "hc",
+
+    "print([["
+    "hideconsole() : hide console\n"
+    "]])",
+
+    SHELL_COMMAND_C, lua_hideconsole
   },
   {0},
 };

@@ -1,6 +1,6 @@
 -- This is main DCplaya lua script
 --
--- $Id: dcplayarc.lua,v 1.7 2002-09-18 12:19:30 zig Exp $
+-- $Id: dcplayarc.lua,v 1.8 2002-09-19 08:18:05 vincentp Exp $
 --
 
 print ("Welcome to DCplaya !\n")
@@ -38,6 +38,8 @@ print("")
 
 
 
+-- launch the enhanced shell
+shell()
 
 
 --

@@ -3,7 +3,7 @@
 --
 -- (C) 2002 Vincent Penne (aka Ziggy Stardust)
 --
--- $Id: zed.lua,v 1.5 2002-09-18 12:19:30 zig Exp $
+-- $Id: zed.lua,v 1.6 2002-09-19 08:18:12 vincentp Exp $
 --
 
 rp ("Initializing ZED ... ")
@@ -254,9 +254,9 @@ function zed(filename)
 	repeat
 
 		-- make sure current line exists
---		if not buffer[line] then
---			buffer[line] = ""
---		end
+		if not buffer[line] then
+			buffer[line] = ""
+		end
 
 		-- update scroll position if necessary
 		if line > scroll + zed_h - 2 then
@@ -398,9 +398,9 @@ function zed(filename)
 			-- line level editing
 
 			-- make sure current line exists
-			if not buffer[line] then
-				buffer[line] = ""
-			end
+--			if not buffer[line] then
+--				buffer[line] = ""
+--			end
 
 			local l = strlen(buffer[line])+1
 			if col > l then

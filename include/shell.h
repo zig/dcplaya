@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/12
  * @brief     shell support for dcplaya
- * @version   $Id: shell.h,v 1.3 2002-09-14 06:57:36 zig Exp $
+ * @version   $Id: shell.h,v 1.4 2002-09-19 08:18:12 vincentp Exp $
  */
 
 
@@ -14,7 +14,7 @@ int shell_init();
 
 void shell_shutdown();
 
-/** Update keyboard and console echoing, to be called once per frame (and not more) */
+/** Update shell console position on screen */
 void shell_update(float frameTime);
 
 /** Issue the given command on currently loaded shell */
@@ -32,3 +32,7 @@ void shell_load(const char * fname);
  *
  */
 void shell_wait();
+
+void shell_toggleconsole();
+void shell_showconsole();
+void shell_hideconsole();

@@ -1,12 +1,7 @@
 /* 2002/02/13  */
 
-#define CONTROLER_LOCK 1
-
 #include <stdio.h>
-#ifdef CONTROLER_LOCK
-# include <kos/thread.h>
-# include <arch/spinlock.h>
-#endif
+#include <kos.h>
 #include <dc/maple.h>
 
 #include "controler.h"
@@ -25,9 +20,12 @@ static uint32 last_frame;
 static const uint32 controler_smooth_mult =
 CONTROLER_SMOOTH_FACTOR / (CONTROLER_NO_SMOOTH_FRAMES-2);
 //  ((CONTROLER_NO_SMOOTH_FRAMES-1)<<16) / CONTROLER_SMOOTH_FACTOR;
-#ifdef CONTROLER_LOCK
+
 static spinlock_t controler_mutex;
-#endif
+
+enum { RUNNING, QUIT, ZOMBIE };
+static int status;
+
 
 static void clear_cond(void)
 {
@@ -38,9 +36,8 @@ static void clear_cond(void)
 }
 
 /* try to get controler cond or clear it. */
-static void controler_get(uint32 frame)
+static void controler_get()
 {
-  last_frame = frame;
   if (!mcont) {
     mcont = maple_first_controller();
     //if (!mcont) {
@@ -83,57 +80,88 @@ static void controler_smooth(uint32 factor)
   cond.joy2y = (cond.joy2y * factor + oldcond.joy2y * oofactor) >> 16;
 }
 
+
+int controler_thread(void * dummy)
+{
+  while (status != QUIT) {
+
+    uint32 frame = ta_state.frame_counter;
+    uint32 elapsed_frame = last_frame;
+
+    elapsed_frame = frame - elapsed_frame;
+
+    if (elapsed_frame) {
+      spinlock_lock(&controler_mutex);
+
+      /* pad */
+      controler_get();
+
+      if (elapsed_frame < CONTROLER_NO_SMOOTH_FRAMES) {
+	int i;
+	uint32 factor = 65536 - CONTROLER_SMOOTH_FACTOR;
+	
+	for (i=1; i<elapsed_frame; ++i) {
+	  factor = (factor * factor) >> 16;
+	}
+	factor = 65536 - factor;
+	controler_smooth(factor);
+      }
+
+
+      /* keyboard */
+      kbd_poll_repeat(maple_first_kb(), ta_state.frame_counter - last_frame);
+
+
+      spinlock_unlock(&controler_mutex);
+
+      last_frame = frame;
+    }
+
+    thd_pass();
+  }
+
+  status = ZOMBIE;
+}
+
+
 int controler_init(uint32 frame)
 {
   int err = 0;
   
   dbglog(DBG_DEBUG, ">> " __FUNCTION__ "\n" );
-#ifdef CONTROLER_LOCK
   spinlock_init(&controler_mutex);
-#endif  
   dbglog(DBG_DEBUG, "** " __FUNCTION__ " : GetControler, frame=%u\n", frame);
-  controler_get(frame);
+
+  controler_get();
   oldcond = cond;
+
+  status = RUNNING;
+  thd_create(controler_thread, 0);
   
-  dbglog(DBG_DEBUG, "<< " __FUNCTION__ " : error line [%d]\n", err);
+  dbglog(DBG_DEBUG, "<< " __FUNCTION__ " : return code [%d]\n", err);
+
+  return err;
+}
+
+void controler_shutdown()
+{
+  status = QUIT;
+  while (status != ZOMBIE)
+    thd_pass();
 }
 
 int controler_read(controler_state_t * state, uint32 frame)
 {
   uint32 elapsed_frame = last_frame;
   
-#ifdef CONTROLER_LOCK
-  spinlock_lock(&controler_mutex);
-#endif  
-
   elapsed_frame = frame - elapsed_frame;
-  if (elapsed_frame) {
-    controler_get(frame);
-  }
 
-  // $$$
-  /*
-    if (elapsed_frame != 1) {
-    dbglog(DBG_DEBUG, "** " __FUNCTION__ " : elapsed frame = %d\n", elapsed_frame);
-    }
-  */
+  spinlock_lock(&controler_mutex);
 
-  if (elapsed_frame && elapsed_frame < CONTROLER_NO_SMOOTH_FRAMES) {
-    int i;
-    uint32 factor = 65536 - CONTROLER_SMOOTH_FACTOR;
-
-    for (i=1; i<elapsed_frame; ++i) {
-      factor = (factor * factor) >> 16;
-    }
-    factor = 65536 - factor;
-    controler_smooth(factor);
-  }
   fill_controler_state(state, elapsed_frame);
   oldcond = cond;
 
-#ifdef CONTROLER_LOCK
   spinlock_unlock(&controler_mutex);
-#endif  
   return 0;
 }
 
@@ -176,3 +204,44 @@ void controler_print(void)
 	 cond.joy2x, cond.joy2y);
 }
 
+
+
+int controler_getchar()
+{
+  int k;
+
+  for ( ;; ) {
+    
+    k = controler_peekchar();
+    if (k != -1)
+      return k;
+
+    thd_pass();
+  }
+
+}
+
+
+
+// defined in src/keyboard.c
+extern int kbd_poll_repeat(uint8 addr, int elapsed_frame);
+
+int controler_peekchar()
+{
+  //static last_frame = -1;
+  int k;
+
+
+  //if (ta_state.frame_counter != last_frame) {
+    spinlock_lock(&controler_mutex);
+    k = kbd_get_key();
+    spinlock_unlock(&controler_mutex);
+
+    //last_frame = ta_state.frame_counter;
+    
+    if (k != -1)
+      return k;
+    //}
+
+  return -1;
+}

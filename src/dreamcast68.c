@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.22 2002-09-17 20:11:03 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.23 2002-09-19 08:18:12 vincentp Exp $
  */
 
 //#define RELEASE
@@ -790,6 +790,9 @@ void main_thread(void *cookie)
   /* Stop songmenu */
   songmenu_kill();
   err = 0;
+
+  /* Stop controller thread */
+  controler_shutdown();
 
  error:
   if (cookie) {

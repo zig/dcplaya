@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     shell support for dcplaya
- * @version   $Id: shell.c,v 1.7 2002-09-16 05:25:08 zig Exp $
+ * @version   $Id: shell.c,v 1.8 2002-09-19 08:18:12 vincentp Exp $
  */
 
 #include <kos.h>
@@ -156,6 +156,7 @@ void shell_load(const char * fname)
 static void shell_thread(void * param)
 {
   for (;;) {
+    char * com;
 
     while (write_command == read_command) {
       thd_pass();
@@ -164,15 +165,20 @@ static void shell_thread(void * param)
       shell_update_keyboard();
     }
 
+    lockshell();
+
+    com = commands[read_command];
+
     if (shell_command_func) {
-      lockshell();
-      shell_command_func(commands[read_command]);
-      unlockshell();
-    } else
-      printf("shell: don't know what to do with command '%s' (no shell loaded !)\n", commands[read_command]);
+      shell_command_func(com);
+    } else {
+      printf("shell: don't know what to do with command '%s' (no shell loaded !)\n", com);
+    }
 
     free(commands[read_command]);
     read_command = (read_command+1)%MAX_COMMANDS;
+
+    unlockshell();
 
  }
 }
@@ -198,7 +204,7 @@ void shell_update(float frameTime)
 {
 
   /* Console movement handling */
-  if (show_console || read_command != write_command) {
+  if (show_console/* || read_command != write_command*/) {
     console_y += 5 * frameTime * (CONSOLE_Y - console_y);
   } else {
     console_y += 5 * frameTime * (CONSOLE_OUT_Y - console_y);
@@ -232,8 +238,13 @@ int shell_command(const char * com)
 
   lockcommand();
 
-  commands[write_command] = strdup(com);
-  write_command = (write_command+1) % MAX_COMMANDS;
+  if ((write_command+1) % MAX_COMMANDS != read_command) {
+    commands[write_command] = strdup(com);
+    write_command = (write_command+1) % MAX_COMMANDS;
+  } else {
+    printf("shell : command buffer full ! could not enqueue command '%s'\n", 
+	   com);
+  }
 
   unlockcommand();
 
@@ -255,3 +266,19 @@ shell_command_func_t shell_set_command_func(shell_command_func_t func)
 
   return old;
 }
+
+void shell_toggleconsole()
+{
+  show_console = !show_console;
+}
+
+void shell_showconsole()
+{
+  show_console = 1;
+}
+
+void shell_hideconsole()
+{
+  show_console = 0;
+}
+

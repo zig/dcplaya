@@ -1,4 +1,4 @@
-/* $Id: controler.h,v 1.2 2002-09-06 23:16:09 ben Exp $ */
+/* $Id: controler.h,v 1.3 2002-09-19 08:18:12 vincentp Exp $ */
 /* 2002/02/13 */
 
 #ifndef _CONTROLER_H_
@@ -26,9 +26,14 @@ typedef struct
 } controler_state_t;
 
 int controler_init(uint32 frame);
+void controler_shutdown();
+
 int controler_read(controler_state_t * state, uint32 frame);
 int controler_pressed(const controler_state_t * state, uint32 mask);
 int controler_released(const controler_state_t * state, uint32 mask);
+
+int controler_getchar();
+int controler_peekchar();
 
 void controler_print(void);
 

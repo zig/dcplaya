@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.10 2002-09-16 05:25:08 zig Exp $
+ * @version   $Id: console.c,v 1.11 2002-09-19 08:18:12 vincentp Exp $
  */
 
 
@@ -406,39 +406,10 @@ void csl_vprintf(csl_console_t * console, const char *fmt, va_list args )
 
 int csl_getchar()
 {
-  int k;
-
-  for ( ;; ) {
-    
-    k = csl_peekchar();
-    if (k != -1)
-      return k;
-
-    thd_pass();
-  }
-
+  return controler_getchar();
 }
-
-
-
-// defined in src/keyboard.c
-extern int kbd_poll_repeat(uint8 addr, int elapsed_frame);
 
 int csl_peekchar()
 {
-  static last_frame = -1;
-  int k;
-
-
-  if (ta_state.frame_counter != last_frame) {
-    kbd_poll_repeat(maple_first_kb(), ta_state.frame_counter - last_frame);
-    k = kbd_get_key();
-
-    last_frame = ta_state.frame_counter;
-    
-    if (k != -1)
-      return k;
-  }
-
-  return -1;
+  return controler_peekchar();
 }
