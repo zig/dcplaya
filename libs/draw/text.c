@@ -5,7 +5,7 @@
  * @date    2002/02/11
  * @brief   drawing and formating text primitives
  *
- * $Id: text.c,v 1.10 2003-03-13 04:21:46 zigziggy Exp $
+ * $Id: text.c,v 1.11 2003-03-18 14:48:20 ben Exp $
  */
 
 #include <stdarg.h>
@@ -44,7 +44,7 @@ typedef struct {
 } font_t;
 
 static font_t dummyfont = {
-  0, 16, 16, 1, 1, 1, { { 16, 16, 0, 1, 0, 1 } }
+  0, 16, 16, 1, 1, 1, 0, { { 16, 16, 0, 1, 0, 1 } }
 };
 
 static spinlock_t mutex;

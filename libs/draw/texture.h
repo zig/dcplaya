@@ -4,7 +4,7 @@
  * @date    2002/10/20
  * @brief   texture manager
  *
- * $Id: texture.h,v 1.6 2003-03-18 10:44:26 zigziggy Exp $
+ * $Id: texture.h,v 1.7 2003-03-18 14:48:20 ben Exp $
  */
 
 #ifndef _TEXTURE_H_
@@ -174,5 +174,8 @@ void texture_memstats();
 
 /** Twiddle or de-twiddle a texture as required */
 void texture_twiddle(texture_t * t, int wanted);
+
+/* Check for twiddlable texture and set twiddlable bit properly. */
+int texture_twiddlable(texture_t * t);
 
 #endif /* #define _TEXTURE_H_ */

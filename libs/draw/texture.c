@@ -5,7 +5,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.17 2003-03-18 10:44:25 zigziggy Exp $
+ * $Id: texture.c,v 1.18 2003-03-18 14:48:20 ben Exp $
  */
 
 #include <stdlib.h>
@@ -163,19 +163,15 @@ void texture_shutdown(void)
 }
 
 
-/* check that a texture is twiddlable */
-static int texture_twiddlable(texture_t * t)
+/* Check for twiddlable texture and set twiddlable bit properly */
+int texture_twiddlable(texture_t * t)
 {
-  if (t->height > t->width) /* this case is not tested yet */
-    return 0;
-
-  if ( (t->height - 1) & t->height ) /* the height is not a power of two */
-    return 0;
-
-  if ( (t->width - 1) & t->width ) /* the width is not a power of two */
-    return 0;
-
-  return 1;
+  return 
+    t->twiddlable = 1
+    && (t->height > t->width)          /* this case is not tested yet      */
+    && ( (t->height - 1) & t->height ) /* the height is not a power of two */
+    && ( (t->width - 1) & t->width )   /* the width is not a power of two  */
+    ;
 }
 
 void texture_twiddle(texture_t * t, int wanted)
@@ -183,7 +179,8 @@ void texture_twiddle(texture_t * t, int wanted)
   /* twiddle or de-twiddle the texture, need a temporary buffer,
      this cannot be done in place unfortunatly ... */
   /* works only in 16bps for now ! */
-  if (wanted != t->twiddled) {
+  /* $$$ ben : Add a check for twiddlable */
+  if (texture_twiddlable(t) && wanted != t->twiddled) {
     int w = t->width;
     int h = t->height;
     int bpp = 16; /* <---- just set this variable to change bits per pixel */
@@ -308,13 +305,15 @@ texid_t texture_dup(texid_t texid, const char * name)
     goto error;
   }
 
-  ts = texture_lock(texid);
+  ts = texture_fastlock(texid);
   if (!ts) {
     SDERROR("Texture [#%d] not found.\n", texid);
     goto error;
   }
   /* de-twiddle the texture if necessary */
-  texture_twiddle(ts, 0);
+  /* $$$ ben : What if twiddled ? Just copying the texture ? And set twiddle
+               flags like source texture. */
+/*   texture_twiddle(ts, 0); */
 
   /* Alloc a texture. */ 
   t = allocator_alloc_inside(texture);
@@ -328,13 +327,14 @@ texid_t texture_dup(texid_t texid, const char * name)
   t->wlog2  = ts->wlog2;
   t->hlog2  = ts->hlog2;
   t->format = ts->format;
+  t->twiddlable = ts->twiddlable;
+  t->twiddled = ts->twiddled;
   size = t->height << t->wlog2;
 
   if (vid_alloc(t, size<<1) == NULL)
     goto error;
 
   memcpy(t->addr, ts->addr, size<<1);
-  t->twiddlable = ts->twiddlable;
   texture_release(ts);
   return allocator_index(texture, t);
 
@@ -408,7 +408,7 @@ texid_t texture_create(texture_create_t * creator)
   if (addr == NULL)
     goto error;
 
-  t->twiddlable = texture_twiddlable(t);
+  texture_twiddlable(t);
 
   if (creator->width == 1<<wlog2) {
     int n;
