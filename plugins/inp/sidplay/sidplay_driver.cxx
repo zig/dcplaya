@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/09/03
  * @brief     sidplay input plugin for dcplaya
- * @version   $Id: sidplay_driver.cxx,v 1.10 2002-10-11 12:06:59 benjihan Exp $
+ * @version   $Id: sidplay_driver.cxx,v 1.11 2002-10-16 23:25:00 benjihan Exp $
  */
 
 /* generated config include */
@@ -79,7 +79,7 @@ static int init(any_driver_t *d)
   sidbuffer = 0;
   sidbuffer_len = 0;
   minMs = 6<<10;       /* All tracks hav 6 seconds time minimum */
-  maxMs = (60*8)<<10; /* All tracks have 8 minutes time maximum */
+  maxMs = (60*8)<<10;  /* All tracks have 8 minutes time maximum */
   zeroMs = 6<<10;      /* Successive zero time for end detection */
   tune = 0;
   engine = new emuEngine;
