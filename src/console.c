@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.5 2002-09-13 16:48:39 zig Exp $
+ * @version   $Id: console.c,v 1.6 2002-09-14 04:46:45 zig Exp $
  */
 
 
@@ -41,8 +41,8 @@ static void csl_printk_func(const char * s)
 {
   csl_putstring(csl_main_console, s);
 
-  if (old_printk_func)
-    old_printk_func(s);
+/*  if (old_printk_func)
+    old_printk_func(s);*/
 }
 
 void csl_init_main_console()

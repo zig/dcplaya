@@ -1,5 +1,5 @@
 /*
- * $Id: spc_driver.c,v 1.3 2002-09-12 17:57:31 ben Exp $
+ * $Id: spc_driver.c,v 1.4 2002-09-14 04:46:45 zig Exp $
  */
 
 #include "config.h"
@@ -16,6 +16,8 @@ DCPLAYA_EXTERN_C_END
 #include "playa.h"
 #include "fifo.h"
 #include "inp_driver.h"
+
+#include "exceptions.h"
 
 
 volatile static int ready; /**< Ready flag : 1 when music is playing */
@@ -44,6 +46,8 @@ static void clean_spc_info(void)
 
 static int init(any_driver_t *d)
 {
+  EXPT_GUARD_BEGIN;
+
   dbglog(DBG_DEBUG, "sc68 : Init [%s]\n", d->name);
   ready = 0;
   buf = 0;
@@ -51,6 +55,10 @@ static int init(any_driver_t *d)
   buf_cnt = 0;
   clean_spc_info();
 
+
+  EXPT_GUARD_CATCH;
+
+  EXPT_GUARD_END;
   return 0;
 }
 
@@ -73,12 +81,20 @@ static int stop(void)
   
 static int shutdown(any_driver_t *d)
 {
+  EXPT_GUARD_BEGIN;
+
   stop();
+
+  EXPT_GUARD_CATCH;
+
+  EXPT_GUARD_END;
   return 0;
 }
 
 static int start(const char *fn, decoder_info_t *info)
 {
+  EXPT_GUARD_BEGIN;
+
   stop();
 
   buf_size = SPC_init(&spc_config);
@@ -111,12 +127,18 @@ static int start(const char *fn, decoder_info_t *info)
 
  error:
   stop();
+
+  EXPT_GUARD_CATCH;
+
+  EXPT_GUARD_END;
   return -1;
 }
 
 static int decoder(decoder_info_t *info)
 {
   int n;
+
+  EXPT_GUARD_BEGIN;
 
   if (!ready) {
     return INP_DECODE_ERROR;
@@ -134,6 +156,10 @@ static int decoder(decoder_info_t *info)
     return INP_DECODE_ERROR;
   }
 
+
+  EXPT_GUARD_CATCH;
+
+  EXPT_GUARD_END;
   return -(n>0) & INP_DECODE_CONT;
 }
 
@@ -166,6 +192,8 @@ static int id_info(playa_info_t *info, SPC_ID666 * idinfo)
 {
   char tmp[256];
 
+  EXPT_GUARD_BEGIN;
+
   if ( ! idinfo) {
     idinfo = &spcinfo;
   }
@@ -193,11 +221,17 @@ static int id_info(playa_info_t *info, SPC_ID666 * idinfo)
     sprintf(tmp, "Ripped by %s", idinfo->dumper);
     info->comments = mystrdup(tmp);
   }
+
+  EXPT_GUARD_CATCH;
+
+  EXPT_GUARD_END;
   return 0;
 }
 
 static int info(playa_info_t *info, const char *fname)
 {
+  EXPT_GUARD_BEGIN;
+
   if (fname) {
     SPC_ID666 id666;
 
@@ -206,6 +240,10 @@ static int info(playa_info_t *info, const char *fname)
   } else {
     return id_info(info, 0);
   }
+
+  EXPT_GUARD_CATCH;
+
+  EXPT_GUARD_END;
 }
 
 
