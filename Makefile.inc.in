@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile.inc.in,v 1.12 2002-09-13 10:24:02 ben Exp $
+# $Id: Makefile.inc.in,v 1.13 2002-09-13 14:54:27 ben Exp $
 #
 
 TOP_DIR="@TOP_DIR@"
@@ -194,7 +194,7 @@ depend_subdirs: $(patsubst %, _depend_dir_%, $(SUBDIRS))
 $(patsubst %, _depend_dir_%, $(SUBDIRS)):
 	@$(MAKE) -s -C $(patsubst _depend_dir_%, %, $@) depend
 
-dep depend: dep_local depend_subdirs $(DEPEND_EXTRA)
+dep depend: Makefile.dep  depend_subdirs $(DEPEND_EXTRA)
 	@echo "[$@ `pwd`]"
 
 Makefile.dep: $(DEPS)
