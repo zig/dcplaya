@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.57 2003-03-20 21:59:19 ben Exp $
+--- $Id: song_browser.lua,v 1.58 2003-03-21 05:45:37 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song-browser
@@ -212,6 +212,7 @@ function song_browser_create(owner, name)
    --- @param sb song-browser application
    --- @param cd cdrom_change_event
    --- @internal
+   --
    function song_browser_update_cdrom(sb, cd)
       local st,ty,id = cd.cdrom_status,cd.cdrom_disk,cd.cdrom_id
       if id == 0 or sb.cdrom_id == 0 then
@@ -230,32 +231,38 @@ function song_browser_create(owner, name)
       sb.cdrom_stat, sb.cdrom_type, sb.cdrom_id = st, ty, id
    end
 
+   --- Update the loaddir status.
+   --- @internal
+   --
    function song_browser_update_loaddir(sb, frametime)
-      if sb.loaddir then
-	 local loading = (tag(sb.loaddir) == entrylist_tag and
-			  sb.loaddir.loading) or 2
+      if sb.loaded_dir then
+	 local loading = (tag(sb.loaded_dir) == entrylist_tag and
+			  sb.loaded_dir.loading) or 2
 	 if loading == 2 then
 	    local i
 	    if type(sb.locatedir) == "string" then
-	       i = sb.loaddir.n
-	       while i >= 1 and sb.loaddir[i].file ~= sb.locatedir do
+	       i = sb.loaded_dir.n
+	       while i >= 1 and sb.loaded_dir[i].file ~= sb.locatedir do
 		  i = i - 1
 	       end
 	    end
 	    sb.locatedir = nil
-	    sb.fl:change_dir(sb.loaddir, i)
-	    sb.loaddir = nil
+	    sb.fl:change_dir(sb.loaded_dir, i)
+	    sb.loaded_dir = nil
 	 end
       end
    end
 
+   --- Update the playlist recursive directory loading.
+   --- @internal
+   --
    function song_browser_update_recloader(sb, frametime)
       if sb.recloader then
 	 local dir,i = sb.recloader.dir, sb.recloader.cur
 	 local filter = sb.recloader.el_filter or sb.el_filter or "DM"
 
 	 if not dir.loading and i >= dir.n then
-	    i = sb.recloader.cur2
+	    i = (sb.recursive_mode and sb.recloader.cur2) or dir.n
 	    while i < dir.n do
 	       i = i + 1
 	       local entry = dir[i]
@@ -263,10 +270,11 @@ function song_browser_create(owner, name)
 		  entry.file ~= "." and entry.file ~= ".."
 	       then
 		  local subel = entrylist_new()
-		  if subel then
-		     entrylist_load(subel,
-				    canonical(dir.path.."/"..entry.file),
-				    filter)
+		  if subel and entrylist_load(subel,
+					      canonical(dir.path .. "/"
+							.. entry.file),
+					      filter)
+		  then
 		     sb.recloader.cur2 = i
 		     sb.recloader = {
 			parent = sb.recloader,
@@ -286,7 +294,10 @@ function song_browser_create(owner, name)
 	 else
 	    while i < dir.n do
 	       i = i + 1
-	       if dir[i].size > 0 then
+	       local typ,major,minor = filetype(dir[i].file,dir[i].size)
+	       -- Only enqueue rnnable types
+	       if type(sb.pl.actions.run[major]) ==
+		  "function" then
 		  sbpl_insert(sb, dir[i],nil,1)
 		  sb.recloader.cur = i
 		  return 1
@@ -297,8 +308,20 @@ function song_browser_create(owner, name)
       end
    end
 
-   --- Song-Browser update (handles fade in / fade out).
-   --  ------------------------------------------------
+   --- song-browser update handler.
+   ---
+   ---   This is the main update handler.
+   ---   It performs several update functions:
+   ---    - updates filelist directory loading
+   ---    - updates song-browser recursive directory loading
+   ---    - handles fall asleep.
+   ---    - handles key rate for keyboard browsing
+   ---    - handles music fade / stop
+   ---    - runs playlist
+   ---    - call update for both filelist and playlist textlist.
+   ---
+   --- @internal
+   -- 
    function song_browser_update(sb, frametime)
       song_browser_update_loaddir(sb, frametime)
       song_browser_update_recloader(sb, frametime)
@@ -323,20 +346,35 @@ function song_browser_create(owner, name)
 	 playa_stop()
 	 sb.stopping = nil
 	 sb.playlist_idx = nil
-      elseif sb.playlist_idx then
+      elseif sb.playlist_start_pos then
+	 -- $$$$
+	 print("playlist starting:")
+	 print("@:",sb.playlist_start_pos)
+	 print("LOOP:",sb.playlist_loop_pos)
+	 playa_stop(1) -- Don't want any music at start
+	 sb.playlist_idx = sb.playlist_start_pos
+	 sb.playlist_start_pos = nil
+      end
+      
+      if sb.playlist_idx then
 	 if not sb.pl.dir or not sb.pl.dir.n then
+	    -- $$$$
+	    print("playlist stopping : no dir !! ")
 	    sb.playlist_idx = nil
-	 else 
+	    sb.playlist_loop_pos = nil
+	 else
+	    
 	    local n = sb.pl.dir.n
 	    while playa_play() == 0 and sb.playlist_idx < n do
 	       sb.playlist_idx = sb.playlist_idx + 1
 	       local path = sb.pl:fullpath(sb.pl.dir[sb.playlist_idx])
 	       if path then
 		  song_browser_play(sb, path, 0, 0)
+		  sb.pl:draw()
 	       end
 	    end
 	    if playa_play() == 0 then
-	       song_browser_stop(sb)
+	       sb:stop()
 	    end
 	 end
       end
@@ -424,7 +462,7 @@ function song_browser_create(owner, name)
    end
 
    --- Song-Browser asleep.
-   --  -------------------
+   --
    function song_browser_asleep(sb)
       sb.sleeping = 1
       if not sb.closed then
@@ -434,7 +472,7 @@ function song_browser_create(owner, name)
    end
 
    --- Song-Browser awake.
-   --  ------------------
+   --
    function song_browser_awake(sb)
       sb.sleeping = nil
       sb.idle_time = 0
@@ -444,7 +482,7 @@ function song_browser_create(owner, name)
    end
 
    --- Song-Browser open.
-   --  -----------------
+   --
    function song_browser_open(sb, which)
       sb.closed = nil
       if not which then
@@ -460,7 +498,7 @@ function song_browser_create(owner, name)
    end
 
    --- Song-Browser close.
-   --  ------------------
+   --
    function song_browser_close(sb, which)
       if not which then
 	 sb.fl.fade_min = 0
@@ -479,7 +517,8 @@ function song_browser_create(owner, name)
    end
 
    --- Song-Browser shutdown.
-   --  ---------------------
+   --- @internal
+   --
    function song_browser_shutdown(sb)
       if not sb then return end
       sb.fl:shutdown()
@@ -490,7 +529,8 @@ function song_browser_create(owner, name)
    end
 
    --- Song-Browser draw.
-   --  -----------------
+   --- @internal
+   --
    function song_browser_draw(sb)
       dl_clear(sb.dl)
       sb.fl:draw()
@@ -509,46 +549,36 @@ function song_browser_create(owner, name)
    end
 
    --- Song-Browser set color.
+   --- @internal
    --
    function song_browser_set_color(sb, a, r, g, b)
       sb.fl:set_color(a,r,g,b)
       sb.pl:set_color(a,r,g,b)
    end
 
-   function song_browser_loaddir(sb,path,locate)
-      if not test("-d",path) or sb.loaddir then
-	 return
-      end
-      sb.loaddir = entrylist_new()
-      if sb.loaddir then
-	 if entrylist_load(sb.loaddir,path,sb.el_filter) then
-	    sb.locatedir = locate
-	    return 1
-	 end
-      end
-      sb.locatedir = nil
-      sb.loaddir = nil
-   end
-
    --- Song-Browser confirm.
+   --- @internal
    --
    function song_browser_confirm(sb)
       return sb.cl:confirm(sb)
    end
 
    --- Song-Browser cancel.
+   --- @internal
    --
    function song_browser_cancel(sb)
       return sb.cl:cancel(sb)
    end
 
    --- Song-Browser select.
+   --- @internal
    --
    function song_browser_select(sb)
       return sb.cl:select(sb)
    end
 
    --- Songbrowser contextual menu create.
+   --- @internal
    function song_browser_contextmenu(sb, name, fl, def, entry_path)
       if sb.menu then
 --	 printf("Kill old menu : %q",sb.menu.name)
@@ -566,6 +596,87 @@ function song_browser_create(owner, name)
 	 sb.menu.__entry_path = entry_path
       end
    end
+
+   --- Stop current music and playlist running.
+   --- @param  sb   song-browser application (default to song_browser)
+   function song_browser_stop(sb)
+      sb = sb or song_browser
+      sb.stopping = 1
+      sb.playlist_idx = nil
+      sb.playlist_start_pos = nil
+--      sb.playlist_loop_pos = nil
+      sb:draw()
+      playa_fade(-1)
+   end
+
+   --- Start a new music.
+   --- @param  sb   song-browser application (default to song_browser)
+   --- @param  filename  filename of music to play
+   --- @param  track-number 0:file default
+   --- @param  immediat  flush sound buffer if setted (some sound will be lost)
+   --          Do not set it to play chain tracks properly.
+   function song_browser_play(sb, filename, track, immediat)
+      sb = sb or song_browser
+      sb.stopping = nil
+      playa_play(filename, track, immediat)
+--      sb:draw()
+      playa_fade(2)
+   end
+
+   --- Run the playlist.
+   --- @param  sb    song-browser application (default to song_browser)
+   --- @param  pos   running position  (default to cursor)
+   --- @param  loop  loop at this position if setted
+   function song_browser_run(sb,pos,loop)
+
+      print("song_browser_run",pos,loop)
+
+      sb = sb or song_browser
+      local pl = sb.pl
+      pos = (type(pos) == "number" and pos) or pl:get_pos()
+      if not pos then return end
+      pos = pos - 1
+      if pl.dir and pl.dir.n and pos < pl.dir.n then
+	 sb.playlist_start_pos = pos
+	 sb.playlist_loop_pos = type(loop) == "number" and loop
+	 print("song_browser_run",sb.playlist_start_pos,sb.playlist_loop_pos)
+
+	 sb.stopping = nil
+	 
+-- 	 playa_stop()
+-- 	 sb.playlist_idx = pos
+      end
+   end
+
+   --- Load directory into filelist.
+   --- @param  sb      song-browser application (default to song_browser)
+   --- @param  path    path of directory to load.
+   --- @param  locate  name of entry to locate in this directory (optionnal)
+   --- @return error-code
+   --- @retval 1 success
+   --- @retval 1 success
+   --- @warning The fonction use a diffrent thread to load  and returns before
+   ---          the directory is really loaded. Only one directory is available
+   ---          and the function will fail if another loding is in progress.
+   ---          To know if you can start a loadir or if your loading is done
+   ---          check the loaded_dir (entrylist) member.
+   --
+   function song_browser_loaddir(sb, path, locate)
+      sb = sb or song_browser
+      if not test("-d",path) or sb.loaded_dir then
+	 return
+      end
+      sb.loaded_dir = entrylist_new()
+      if sb.loaded_dir then
+	 if entrylist_load(sb.loaded_dir, path, sb.el_filter) then
+	    sb.locatedir = locate
+	    return 1
+	 end
+      end
+      sb.locatedir = nil
+      sb.loaded_dir = nil
+   end
+
 
    sb = {
       -- Application
@@ -586,6 +697,13 @@ function song_browser_create(owner, name)
       shutdown = song_browser_shutdown,
       asleep = song_browser_asleep,
       awake = song_browser_awake,
+
+      -- Music and file control methods
+      play = song_browser_play,
+      stop = song_browser_stop,
+      run = song_browser_run,
+      loaddir = song_browser_loaddir,
+
       
       -- Members
       style = style,
@@ -602,21 +720,6 @@ function song_browser_create(owner, name)
    y = 110
    z = sb.z - 2
 
-   --- Stop current music and playlist running.
-   function song_browser_stop(sb)
-      sb.stopping = 1
-      sb.playlist_idx = nil
-      sb:draw()
-      playa_fade(-1)
-   end
-
-   --- Start a new music
-   function song_browser_play(sb, filename, track, immediat)
-      sb.stopping = nil
-      playa_play(filename, track, immediat)
-      sb:draw()
-      playa_fade(2)
-   end
 
    function song_browser_ask_background_load(sb)
       if tag(background) == background_tag then
@@ -666,9 +769,8 @@ function song_browser_create(owner, name)
       local width,preformatted,view = 550,4,1
 
       if major == "lua" then
-	 preformatted = 3
-	 gui_text_viewer(nil, luacolor_file(entry_path), width, leaf, nil,
-			 preformatted)
+	 gui_text_viewer(nil, { [leaf] = luacolor_file(entry_path) },
+			 width, leaf)
 	 return
       elseif major == "playlist" then
 	 preformatted = 1
@@ -812,8 +914,56 @@ function song_browser_create(owner, name)
    end
    
    function sbfl_select_dir(fl, sb, action, entry_path, entry)
+
+      print("sbfl_select_dir:"..entry_path)
+
       if not test("-d", entry_path) then return end
-      return sbpl_insertdir(sb, entry_path)
+
+      print("sbfl_select_dir is dir")
+
+      local path,leaf = get_path_and_leaf(entry_path)
+
+      print("sbfl_select_dir:",path,leaf)
+
+      if not leaf then return end
+      
+      local def = {
+	 root = ":"
+	    .. leaf
+	    .. ":enter{enter},load{load},enqueue{enqueue},append{append},"
+	    .. menu_yesno_menu(sb.recursive_mode,"recursive",'recurse'),
+	 cb = {
+	    enter = function (menu, idx)
+		       local root_menu = menu.root_menu
+		       local sb = root_menu.target
+		       sbfl_confirm_dir(sb.fl, sb, "confirm",
+					root_menu.__entry_path)
+		    end,
+	    load =  function (menu, idx)
+		       local root_menu = menu.root_menu
+		       local sb = menu.root_menu.target
+		       local entry_path = root_menu.__entry_path or ""
+		       sbpl_clear(sb)
+		       sbpl_insertdir(sb, entry_path)
+		    end,
+
+	    load =  function (menu, idx)
+		       local root_menu = menu.root_menu
+		       local sb = menu.root_menu.target
+		       local entry_path = root_menu.__entry_path or ""
+		       sbpl_clear(sb)
+		       sbpl_insertdir(sb, entry_path)
+		    end,
+
+	    recurse = function (menu, idx)
+			 local sb = menu.root_menu.target
+			 sb.recursive_mode = not sb.recursive_mode
+			 menu_yesno_image(menu, idx, sb.recursive_mode,
+					  'recursive')
+		      end,
+	 },
+      }
+      song_browser_contextmenu(sb, "directory-menu,", fl, def, entry_path)
    end
    
    function sbfl_select_music(fl, sb, action, entry_path, entry)
@@ -833,7 +983,7 @@ function song_browser_create(owner, name)
       if not leaf then return end
       
       local def = {
-	 root = ":"..leaf..":load{load},insert{load},append{load},{menu_textviewer}view{view}",
+	 root = ":" .. leaf .. ":load{load},insert{load},append{load},{menu_textviewer}view{view}",
 	 cb = {
 	    load = function (menu, idx)
 		      local root_menu = menu.root_menu
@@ -892,7 +1042,9 @@ function song_browser_create(owner, name)
       end
 
       local def = {
-	 root = ":"..leaf..":{menu_info}info{info},{menu_bkg}background>",
+	 root = ":" .. leaf
+	    .. ":{menu_info}info{info},{menu_bkg}background>"
+	 ,
 	 cb = {
 	    info = function (menu, idx)
 		      local root_menu = menu.root_menu
@@ -1042,7 +1194,7 @@ function song_browser_create(owner, name)
 
    function sbfl_cancel_default(fl, sb, action, entry_path, entry)
       if playa_play() == 1 then
-	 song_browser_stop(sb);
+	 sb:stop();
       end
    end
 
@@ -1053,6 +1205,7 @@ function song_browser_create(owner, name)
 
    sb.fl = textlist_create(
 			   {
+			      name = "filelist",
 			      pos = {x, y, z},
 			      box = minmax,
 			      flags=nil,
@@ -1075,8 +1228,8 @@ function song_browser_create(owner, name)
    sb.fl.draw_background_old = sb.fl.draw_background
    sb.fl.draw_background = song_browser_list_draw_background
 
-   sb.fl.curplay_color = {1,1,0,0}
-
+   sb.fl.curplay_color = color_new(1,0,1,0)
+   sb.fl.curloop_color = color_new(1,1,0,0)
 
    function sbpl_clear(sb)
       sb.pl:change_dir(nil)
@@ -1096,21 +1249,25 @@ function song_browser_create(owner, name)
 	    cur2 = 0,
 	    el_filter = "DM"  -- Only insert music in playlist
 	 }
-	 entrylist_load(dir,path,sb.el_filter)
+	 if not entrylist_load(dir,path,sb.el_filter) then
+	    sb.recloader = nil
+	 end
       end
    end
 
+   -- Stop the playlist.
+   -- @param  sb  song-browser application
+   -- @internal
    function sbpl_stop(sb)
-      song_browser_stop(sb)
+      sb:stop()
    end
 
+   -- Run the playlist.
+   -- @param  sb   song-browser application (default to song_browser)
+   -- @param  pos  running position  (default to cursor)
+   -- @internal
    function sbpl_run(sb,pos)
-      local pl = sb.pl
-      pos = (pos and pos-1) or pl.pos
-      if pl.dir.n and pos < pl.dir.n then
-	 playa_stop()
-	 sb.playlist_idx = pos
-      end
+      sb:run(pos, sb.playlist_loop_pos)
    end
 
    function sbpl_remove(sb,pos)
@@ -1279,12 +1436,19 @@ function song_browser_create(owner, name)
 
 
    function sbpl_open_menu(pl, sb)
+
+
+      local idx = pl:get_pos()
+
+      --- $$$$
+      print("sbpl_open_menu idx, loop",idx, sb.playlist_loop_pos)
+
       local entry = pl:get_entry()
       if not entry then return end
       local root = ""
       local fname = entry.file or entry.name
       if type(fname) == "string" then root = ":"..fname..":" end
-      root = root.."run{run},remove{remove},shuffle{shuffle},sort>sort,clear{clear},save{save}"
+      root = root.."run{run},remove{remove},shuffle{shuffle},sort>sort,clear{clear},save{save}," .. menu_yesno_menu(sb.playlist_loop_pos and sb.playlist_loop_pos == idx, 'loop point','loop')
 
       function sbpl_make_menu_sort_func(sb,str,nocache)
 	 sb.sort_func_cache = (type(sb.sort_func_cache) == "table" and
@@ -1343,6 +1507,23 @@ function song_browser_create(owner, name)
 		      sbpl_shuffle(sb)
 		   end,
 
+	 loop = function (menu, idx)
+		   local sb = menu.root_menu.target
+		   local r
+		   local pos = sb.pl:get_pos()
+		   if sb.playlist_loop_pos and sb.playlist_loop_pos == pos then
+		      sb.playlist_loop_pos = nil
+		      print("unset loop at "..pos)
+		   else
+		      -- $$$$
+		      print("set loop at "..pos)
+		      sb.playlist_loop_pos = pos
+		      r = 1
+		   end
+		   menu_yesno_image(menu, idx, r,'loop point')
+		   sb.pl:draw()
+		end,
+
 	 sort_by_nt = sbpl_make_menu_sort_func(sb,"ntp"),
 	 sort_by_np = sbpl_make_menu_sort_func(sb,"npt"),
 	 sort_by_tn = sbpl_make_menu_sort_func(sb,"tnp"),
@@ -1374,6 +1555,92 @@ function song_browser_create(owner, name)
       pl:open_menu(sb)
    end
 
+   x = 341
+   sb.pl = textlist_create(
+			   {
+			      name = "playlist",
+			      pos = {x, y, 0},
+			      box = minmax,
+			      flags=nil,
+			      dir={},
+			      filecolor = sb.style.file_color,
+			      dircolor  = sb.style.dir_color,
+			      bkgcolor  = sb.style.bkg_color,
+			      curcolor  = sb.style.cur_color,
+			      border    = sb.style.border,
+			      span      = sb.style.span,
+			      owner     = sb,
+			      not_use_tt = 1
+			   } )
+   sb.pl.cookie = sb -- $$$ This should be owner !!!
+   sb.pl.confirm = sbpl_confirm
+   sb.pl.cancel = sbpl_cancel
+   sb.pl.select = sbpl_select
+   sb.pl.open_menu = sbpl_open_menu
+   sb.pl.curplay_color = sb.fl.curplay_color
+   sb.pl.curloop_color = sb.fl.curloop_color
+
+   sb.pl.draw_entry = function (fl, dl, idx, x , y, z)
+			 local sb = fl.cookie
+			 local entry = fl.dir[idx]
+			 local color = fl.dircolor
+			 local colora,colorb
+			 if sb.playlist_idx
+			    and idx == sb.playlist_idx then
+			    colora = fl.curplay_color
+			 end
+			 if sb.playlist_loop_pos
+			    and idx == sb.playlist_loop_pos then
+			    colorb = fl.curloop_color
+			 end
+			 if colora and colorb then
+			    dl_draw_text(dl,
+					 x-1, y-1, z,
+					 colorb[1],colorb[2],
+					 colorb[3],colorb[4],
+					 entry.name)
+			    dl_draw_text(dl,
+					 x+1, y+1, z+10,
+					 0.6*colora[1],colora[2],
+					 colora[3],colora[4],
+					 entry.name)
+--			    dl_text_prop(dl,nil,14)
+--			    dl_text_prop(dl,nil,16)
+			 else
+			    color = colora or colorb or color
+			    dl_draw_text(dl,
+					 x, y, z,
+					 color[1],color[2],
+					 color[3],color[4],
+					 entry.name)
+			 end
+		      end
+
+
+   sb.pl.fade_min = sb.fl.fade_min
+   sb.pl.draw_background_old = sb.pl.draw_background
+   sb.pl.draw_background = sb.fl.draw_background
+
+   -- Defining actions
+
+   --- song-browser filelist actions table.
+   ---
+   ---  Actions are:
+   ---   - @b confirm (A)
+   ---   - @b select (X)
+   ---   - @b confirm (B)
+   ---
+   ---  Major-types are :
+   ---   - @b dir
+   ---   - @b music
+   ---   - @b image
+   ---   - @b playlist
+   ---   - @b lua
+   ---   - @b plugin
+   ---   - @b text
+   ---   - @b default
+   --: function song_browser_filelist_actions[action][major-type];;
+
    song_browser_filelist_actions = {
       confirm = {
 	 dir = sbfl_confirm_dir,
@@ -1400,47 +1667,33 @@ function song_browser_create(owner, name)
       },
    }
 
+   --- song-browser playlist run action table.
+   ---
+   ---    For the playlist, only run action is needed :
+   ---      - @b confirm always start the playlist
+   ---      - @b select opens menu
+   ---      - @b cancel removes entru
+   ---
+   ---  Major-types are :
+   ---   - @b music
+   ---   - @b image
+   ---
+   --: function song_browser_playlist_actions[run][major-type];
+   song_browser_playlist_actions = {
+      run = {
+	 music = function () 
+		    print("song_browser_playlist_actions : music")
+		 end,
+	 image = function () 
+		    print("song_browser_playlist_actions : image")
+		 end,
+      }
+   }
+
+
    sb.fl.actions = song_browser_filelist_actions
+   sb.pl.actions = song_browser_playlist_actions
 
-   x = 341
-   sb.pl = textlist_create(
-			   {
-			      pos = {x, y, 0},
-			      box = minmax,
-			      flags=nil,
-			      dir={},
-			      filecolor = sb.style.file_color,
-			      dircolor  = sb.style.dir_color,
-			      bkgcolor  = sb.style.bkg_color,
-			      curcolor  = sb.style.cur_color,
-			      border    = sb.style.border,
-			      span      = sb.style.span,
-			      owner     = sb,
-			      not_use_tt = 1
-			   } )
-   sb.pl.cookie = sb -- $$$ This should be owner !!!
-   sb.pl.confirm = sbpl_confirm
-   sb.pl.cancel = sbpl_cancel
-   sb.pl.select = sbpl_select
-   sb.pl.open_menu = sbpl_open_menu
-   sb.pl.curplay_color = sb.fl.curplay_color
-   sb.pl.draw_entry = function (fl, dl, idx, x , y, z)
-			 local sb = fl.cookie
-			 local entry = fl.dir[idx]
-			 local color = fl.dircolor
-			 if sb.playlist_idx and idx == sb.playlist_idx then
-			    color = fl.curplay_color or color
-			 end
-			 dl_draw_text(dl,
-				      x, y, z,
-				      color[1],color[2],color[3],color[4],
-				      entry.name)
-		      end
-
-
-   sb.pl.fade_min = sb.fl.fade_min
-   sb.pl.draw_background_old = sb.pl.draw_background
-   sb.pl.draw_background = sb.fl.draw_background
 
    sb.cl = sb.fl
 

@@ -3,7 +3,7 @@
 --- @date 2003/03/20
 --- @brief LUA source colorizer.
 ---
---- $Id: lua_colorize.lua,v 1.1 2003-03-20 21:59:19 ben Exp $
+--- $Id: lua_colorize.lua,v 1.2 2003-03-21 05:45:37 ben Exp $
 --
 
 --- LUA keywords.
@@ -44,12 +44,11 @@ lua_color_modes = {
 	 .. '<macro macro-name="fnm" macro-cmd="pre" color="$lua_color_fnm">'
 	 .. '<macro macro-name="pct" macro-cmd="pre" color="$lua_color_pct">'
 	 .. '<macro macro-name="dgt" macro-cmd="pre" color="$lua_color_dgt">'
-	 .. '<font id="1" size="8.5">'
+	 .. '<font id="1" size="16">'
 	 .. '<pre id="1" tabsize="8" tabchar=" "></pre>'
    },
    { -- 2 : finish
-      start = '<font id="0" size="20" color="text_color"><br>Start closing',
-      stop = "<br>",
+      start = '<font id="0" size="20" color="text_color"><wrap>',
    },
    { -- 3 : code
       start = "<cod>",
