@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.18 2003-03-31 16:51:00 ben Exp $
+# $Id: Makefile.in,v 1.19 2003-04-01 13:18:55 ben Exp $
 #
 
 VERSION = @VERSION@
@@ -127,6 +127,28 @@ DOXALL	+= -D INTERNAL_DOCS=NO
 DOXALL	+= -D DETAILS_AT_TOP=YES
 DOXALL	+= -D DISABLE_INDEX=NO
 
+## ZML generation
+#
+
+DOXZML	+= -D REPEAT_BRIEF=NO
+DOXZML	+= -D GENERATE_TODOLIST=NO
+DOXZML	+= -D GENERATE_TESTLIST=NO
+DOXZML	+= -D GENERATE_BUGLIST=NO
+DOXZML	+= -D GENERATE_DEPRECATEDLIST=NO
+DOXZML	+= -D VERBATIM_HEADERS=NO
+DOXZML	+= -D SHOW_INCLUDE_FILES=NO
+DOXZML	+= -D REFERENCED_BY_RELATION=NO
+DOXZML	+= -D REFERENCES_RELATION=NO
+DOXZML	+= -D HTML_ALIGN_MEMBERS=NO
+DOXZML	+= -D CLASS_DIAGRAMS=NO
+DOXZML	+= -D CLASS_GRAPH=NO
+DOXZML	+= -D COLLABORATION_GRAPH=NO
+DOXZML	+= -D TEMPLATE_RELATIONS=NO
+DOXZML	+= -D INCLUDE_GRAPH=NO
+DOXZML	+= -D INCLUDED_BY_GRAPH=NO
+DOXZML	+= -D GRAPHICAL_HIERARCHY=NO
+DOXZML	+= -D HTML_OUTPUT=html4zml
+
 ## DEVELOPER documentation
 #
 DOXDEV	:=
@@ -156,15 +178,6 @@ DOXDEV	+= -D GENERATE_LATEX=NO
 all: Makefile devdoc
 xml: all
 txt: all txt_only
-zml: txt zml_only
-
-zml_only:
-	@mkdir -p $(DOC_DIR)/zml
-	@for i in `find $(DOC_DIR)/text -type f -name '*.txt'`; do\
-	echo "[`basename "$$i"`]";\
-	cat zmlheader.zml > $(DOC_DIR)/zml/`basename "$$i" .txt`.zml; \
-	$(TXT2ZML) "$$i" >> $(DOC_DIR)/zml/`basename "$$i" .txt`.zml;\
-	done
 
 txt_only:
 	@mkdir -p $(DOC_DIR)/text
@@ -172,6 +185,24 @@ txt_only:
 	lynx -width=64 -dump $$i > $(DOC_DIR)/text/`basename $$i .html`.txt;\
 	done
 
+special: Makefile zmldoc
+txt4zml: special txt4zml_only
+zml: txt4zml zml_only
+
+txt4zml_only:
+	@mkdir -p $(DOC_DIR)/text4zml
+	@for i in `find $(DOC_DIR)/html4zml -type f -name '*.html'`; do\
+	lynx -width=4096 -dump $$i \
+	> $(DOC_DIR)/text4zml/`basename $$i .html`.txt;\
+	done
+
+zml_only:
+	@mkdir -p $(DOC_DIR)/zml
+	@for i in `find $(DOC_DIR)/text4zml -type f -name '*.txt'`; do\
+	echo "[`basename "$$i"`]";\
+	cat zmlheader.zml > $(DOC_DIR)/zml/`basename "$$i" .txt`.zml; \
+	$(TXT2ZML) "$$i" >> $(DOC_DIR)/zml/`basename "$$i" .txt`.zml;\
+	done
 
 
 Makefile : Makefile.in
@@ -201,12 +232,19 @@ luadoc: $(LUADOCFILES)
 devdoc: devdoc.dox $(DEVDOCFILES) luadoc $(HTML_EXTRA)
 	@$(DOXYGEN) $<
 
+zmldoc: zmldoc.dox $(DEVDOCFILES) luadoc $(HTML_EXTRA)
+	@$(DOXYGEN) $<
+
 # Phony since xml could be modified by goal !
-.PHONY: devdoc.dox
+.PHONY: devdoc.dox zmldoc.dox
 
 devdoc.dox : devdoc.doxin
 	@echo "make [$@] from [$<]"
 	@$(DOXYGENERIC) $@ $(DOXALL) $(DOXDEV) < $< 
+
+zmldoc.dox : devdoc.doxin
+	@echo "make [$@] from [$<]"
+	@$(DOXYGENERIC) $@ $(DOXALL) $(DOXDEV) $(DOXZML) < $< 
 
 devdoc.doxin:
 	@echo "make [$@]"
@@ -228,7 +266,7 @@ clean_local:
 	@find $(LUADOCDIR) -name '*.lua' -type f -exec rm "{}" \;
 
 clean: clean_local
-	@rm -rf $(foreach i, html xml zml man text latex,$(DOC_DIR)/$(i)) 
+	@rm -rf $(foreach i, html xml zml man text latex text4zml html4zml,$(DOC_DIR)/$(i)) 
 
 distclean: clean
 	@rm -rf Makefile *~ $(LUADOCDIR)

@@ -4,52 +4,8 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.47 2003-03-29 15:33:06 ben Exp $
+--- $Id: textlist.lua,v 1.48 2003-04-01 13:18:56 ben Exp $
 ---
-
--- DL hierarchy :
--- dl (main display list)
---  +-- textprop
---  +-- bdl (background sublist)
---  +-- ldl (sublist for item ans cursor)
---        +-- clipping Y only (allow cursor text outside texlist box!)
---        +-- cdl (cursor display list)
---              +-- cursor-box
---              +-- text or tag-text
---        +-- clipping XY (item will be clipped in box)
---        +-- idl (item sublist)
---              +-- lotsa text  ot tagged-text
---              +-- ... etc ...
---        +-- udl (user sublist)
---
--- space organization :
--- dl global textlist Z := [0..100]
--- Z : [00..25] reserved for background
--- Z : [25..75] reserved for items and cursor
--- Z : [75..100] reserved for user overlay
---
--- Each sub-list as a transformation setted properly. This mean than each
--- sub-list (bdl,cdl,idl,udl) as a useable Z space range [0..100]
---
-
---
--- bdl background dl. Z:[00..25]
--- mat(bdl) = mat_scale(1,1,0.25) * mat(dl)
---
--- ldl item and cursor Z[25..75]
--- mat(ldl) = mat_scale(1,1,0.5) * mat_trans(0,0,25) * mat(dl)
---
--- idl item sublist Z:[25..50]
--- mat(idl) = mat_scale(1,1,0.5) * mat(ldl)
---
--- cdl item sublist Z:[50..75]
--- mat(idl) = mat_scale(1,1,0.5) * mat_trans(0,0,25) * mat(ldl)
---
-
-
--- Unload the library
-textlist_loaded = nil
-
 
 -- z shift of textlist entry text
 textlist_entry_z = 25
@@ -64,7 +20,7 @@ if not dolib("taggedtext") then return end
 --- @ingroup  dcplaya_lua_gui
 --- @brief    text list (graphic browser).
 ---
---- @par display-list hierarchy
+--- @par display-list hierarchy:
 ---
 --- dl (main display list)
 ---  - textprop
@@ -96,44 +52,44 @@ if not dolib("taggedtext") then return end
 
 --- Entry displayed in textlist.
 ---
---- struct flentry {
----   name; ///< Displayed text
----   size; ///< Optionnal. -1 for highlight (directories).
---- };
+--: struct flentry {
+--:   name; ///< Displayed text
+--:   size; ///< Optionnal. -1 for highlight (directories).
+--: };
 
 --- textlist object definition.
 ---
---- struct textlist {
----
----   flentry dir[];     ///< Current fllist object
----   table dirinfo[];   ///< dir supplemental information
----   pos;       ///< Current select item
----   top;       ///< Top displayed line
----   lines;     ///< Computed max displayed lines
----   maxlines;  ///< Real maximum od displayed lines
----   n;         ///< Number of entry in "dir"
----   dl;        ///< Current display list
----   cdl;       ///< Cursor display list
----
----   /** Confirm callback.
----    *  This method is call when confirm button is pressed.
----    *   @return
----    *     - @b nil  if action failed
----    *     - @b 0    ok but no change
----    *     - @b 1    if entry is "confirmed"
----    *     - @b 2    if entry is "not confirmed" but change occurs
----    *     - @b 3    if entry is "confirmed" and change occurs
----    */
----   confirm();
----   /** Some flags.
----    *  flags are :
----    *  - @b align    Entry text horizontal alignment :
----    *     - @b "left". This is the default.
----    *     - @b "center".
----    *     - @b "right".
----    */
----   flags;
---- };
+--: struct textlist {
+--:
+--:   flentry dir[];     ///< Current fllist object
+--:   table dirinfo[];   ///< dir supplemental information
+--:   pos;       ///< Current select item
+--:   top;       ///< Top displayed line
+--:   lines;     ///< Computed max displayed lines
+--:   maxlines;  ///< Real maximum od displayed lines
+--:   n;         ///< Number of entry in "dir"
+--:   dl;        ///< Current display list
+--:   cdl;       ///< Cursor display list
+--:
+--:   /** Confirm callback.
+--:    *  This method is call when confirm button is pressed.
+--:    *   @return
+--:    *     - @b nil  if action failed
+--:    *     - @b 0    ok but no change
+--:    *     - @b 1    if entry is "confirmed"
+--:    *     - @b 2    if entry is "not confirmed" but change occurs
+--:    *     - @b 3    if entry is "confirmed" and change occurs
+--:    */
+--:   confirm();
+--:   /** Some flags.
+--:    *  flags are :
+--:    *  - @b align    Entry text horizontal alignment :
+--:    *     - @b "left". This is the default.
+--:    *     - @b "center".
+--:    *     - @b "right".
+--:    */
+--:   flags;
+--: };
 
 --- Create a textlist object.
 --- 
@@ -219,7 +175,7 @@ function textlist_create(flparm, owner)
    --- @param  y   New vertical position of textlist or nil.
    --- @param  z   New depth of textlist box or nil.
    ---
-   --- @see textlist_set_box
+   --- @see textlist_set_box()
    ---
    function textlist_set_pos(fl,x,y,z)
       fl:set_box(x,y,nil,nil,z)
@@ -266,7 +222,7 @@ function textlist_create(flparm, owner)
    --- @param  h   Height of the outer box or nil.
    --- @param  z   New depth of textlist box or nil.
    ---
-   --- @see textlist_set_pos
+   --- @see textlist_set_pos()
    ---
    function textlist_center(fl, x, y, w, h, z)
       if x and w then
@@ -852,7 +808,7 @@ function textlist_update(fl, frametime)
 
 end
 
---- Create a textlist applcation from a textlist object.
+--- Create a textlist application from a textlist object.
 ---
 --- @param  fl     textlist
 --- @param  owner  Parent of the created application
@@ -994,13 +950,4 @@ end
 --- @}
 ---
 
-if nil then
-   fl = gui_textlist(evt_desktop_app, { dir=dirlist("/") })
-   if fl then 
-      getchar()
-      evt_shutdown_app(fl)
-   end
-end
-
-textlist_loaded = 1
-return textlist_loaded
+return 1

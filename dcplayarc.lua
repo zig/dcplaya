@@ -5,7 +5,7 @@
 --- @date     2002
 --- @brief    Main dcplaya lua script.
 ---
---- $Id: dcplayarc.lua,v 1.43 2003-03-29 15:33:05 ben Exp $
+--- $Id: dcplayarc.lua,v 1.44 2003-04-01 13:18:55 ben Exp $
 ---
 ---   The @b home.."dcplayarc.lua" file is dcplaya main script.
 ---   It is executed after the dynshell has been loaded.
@@ -144,8 +144,8 @@ dolib ("basic")
 dolib("display_init")
 if type(scrolltext) == "function" then
    scroll_dl = scrolltext(scroll_dl,
-			  "Welcome to dcplaya " .. __VERSION
-			     .. ". Please wait while loading resources ...")
+ 			  "Welcome to dcplaya " .. __VERSION
+ 			     .. ". Please wait while loading resources ...")
 end
 
 -- Add filetype some useful filetypes.

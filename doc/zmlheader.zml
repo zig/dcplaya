@@ -1,11 +1,24 @@
 <zml>
-<macro macro-name="title-color" macro-cmd="font" id="0" color="red" size="24">
+<macro macro-name="title-color" macro-cmd="font" id="0" color="aquamarine1" size="24">
 
 <macro macro-name="chapter" macro-cmd="vspace" h="16">
-<macro macro-name="chapter-color" macro-cmd="font" id="0" color="green" size="20">
+<macro macro-name="chapter-color" macro-cmd="font" id="0" color="gold1" size="20">
 
 <macro macro-name="section" macro-cmd="vspace" h="10">
-<macro macro-name="section-color" macro-cmd="font" id="0" color="blue" size="18">
+<macro macro-name="section-color" macro-cmd="font" id="0" color="gold2" size="18">
+
+<macro macro-name="ssection" macro-cmd="vspace" h="8">
+<macro macro-name="ssection-color" macro-cmd="font" id="0" color="gold3" size="16">
+
+<macro macro-name="function" macro-cmd="vspace" h="8">
+<macro macro-name="function-color" macro-cmd="font" id="0" color="LightSteelBlue1" size="16">
+
+<macro macro-name="footer" macro-cmd="vspace" h="14">
+<macro macro-name="footer-color" macro-cmd="font" id="0" color="aquamarine1" size="14">
 
 <macro macro-name="body" macro-cmd="vspace" h="8">
-<macro macro-name="body-color" macro-cmd="font" size="16" color="text_color">
+<macro macro-name="body-color" macro-cmd="font" size="14" color="text_color">
+
+<macro macro-name="li" macro-cmd="img" h="12" name="bullet" src="bullet.tga">
+<macro macro-name="ol" macro-cmd="img" h="12" name="bullet" src="bullet.tga">
+

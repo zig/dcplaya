@@ -4,7 +4,7 @@
 --- @author  benjamin gerard
 --- @brief   hyper text viewer gui.
 ---
---- $Id: textviewer.lua,v 1.20 2003-03-28 19:57:17 ben Exp $
+--- $Id: textviewer.lua,v 1.21 2003-04-01 13:18:56 ben Exp $
 ---
 
 if not dolib("taggedtext") then return end
@@ -441,8 +441,17 @@ function gui_text_viewer(owner, texts, box, label, mode, help)
       if tag(dial.cur_tt) == tt_tag and 
 	 type(dial.cur_tt.anchors) == "table" then
 	 local i,v
+	 local tmp = {}
 	 for i,v in dial.cur_tt.anchors do
-	    anchor = anchor .. tostring(i) .. "{settext},"
+	    tinsert(tmp,
+		    { pos = v.y * 4000 + v.x , name = tostring(i) }
+		 )
+	 end
+	 tmp.n = nil
+	 sort(tmp,
+	      function (a,b) return a.pos < b.pos end )
+	 for i,v in tmp do
+	    anchor = anchor .. tostring(v.name) .. "{settext},"
 	 end
       end
 
@@ -475,7 +484,7 @@ end
 --- @param  mode   label mode.
 --- @param  preformatted  if defined text is load as preformatted and
 ---                       preformatted is the tab size.
---- @see gui_text_viewer
+--- @see gui_text_viewer()
 ---
 function gui_file_viewer(owner, fname, box, label, mode, preformatted)
    fname = canonical_path(fname)

@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.93 2003-03-29 15:33:05 ben Exp $
+ * @version    $Id: dynshell.c,v 1.94 2003-04-01 13:18:55 ben Exp $
  */
 
 #include "dcplaya/config.h"
@@ -857,16 +857,19 @@ static int lua_console_setcolor(lua_State * L)
   float colors[4][4];
   int read_access = 0x0F; /* read denied by default */
 
-  printf("lua_console_setcolor : %d\n",n);
+/*   printf("lua_console_setcolor : n=%d\n",n); */
 
   /* Get colors */
   j = 1;
   for (k=0; k<4; ++k) {
+/*     printf("lua_console_setcolor : do color #%d j=%d\n",k,j); */
     colors[k][0] = 1;
     colors[k][1] = colors[k][2] = colors[k][3] = (k == 2);
     if (j<=n) {
+/*       printf("lua_console_setcolor : j<n : process\n"); */
       switch (lua_type(L,j)) {
       case LUA_TNUMBER:
+/* 	printf("lua_console_setcolor : found a number\n"); */
 	read_access &= ~(1<<k);
 	for (i=0; i<4; ++i) {
 	  colors[k][i] = lua_tonumber(L,j++);
@@ -874,21 +877,29 @@ static int lua_console_setcolor(lua_State * L)
 	break;
 	
       case LUA_TTABLE:
+/* 	printf("lua_console_setcolor : found a table\n"); */
 	read_access &= ~(1<<k);
 	for (i=0; i<4; ++i) {
-	  lua_rawgeti(L,j,i);
+	  lua_rawgeti(L,j,i+1);
 	  colors[k][i] = lua_tonumber(L,-1);
-	  lua_pop(L,1);
 	}
+	lua_settop(L,n);
+	++j;
+	break;
+
       case LUA_TNIL:
       default:
+/* 	printf("lua_console_setcolor : found a nil or unknown\n"); */
 	++j;
       }
     }
+/*     printf("lua_console_setcolor : j=%d [%.2f %.2f %.2f %.2f] %X\n", */
+/* 	   j, colors[k][0], colors[k][1] ,colors[k][2], colors[k][3], */
+/* 	   read_access); */
   }
   
   /* Set / Get console colors */
-  csl_console_setcolor(0,colors[0],colors[1],colors[2],colors[4],read_access);
+  csl_console_setcolor(0,colors[0],colors[1],colors[2],colors[3],read_access);
 
   /* Write returned values back */
   lua_settop(L,0);
@@ -901,7 +912,7 @@ static int lua_console_setcolor(lua_State * L)
       lua_rawseti(L, table, i+1);
     }
   }
-  printf("lua_console_setcolor top=%d\n", lua_gettop(L));
+/*   printf("lua_console_setcolor top=%d\n", lua_gettop(L)); */
   return lua_gettop(L);
 }
 
