@@ -3,7 +3,7 @@
 #
 # (C) COPYRIGHT 2002 benjamin gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.12 2002-09-13 16:04:19 zig Exp $ 
+# $Id: Makefile,v 1.13 2002-09-17 23:38:21 ben Exp $ 
 #
 TARGETS=dreammp3.elf
 
@@ -69,6 +69,9 @@ send:
 r: send
 
 run: my_all send
+
+backup: maintainer-clean
+	N="`basename $(TOP_DIR)`"; tar cjvf ../$${N}-"`date -I`".tar.bz2 -C .. "$${N}" 
 
 .PHONY: doc
 doc:

@@ -1,4 +1,7 @@
 -- This is main DCplaya lua script
+--
+-- $Id: dcplayarc.lua,v 1.6 2002-09-17 23:38:21 ben Exp $
+--
 
 print ("Welcome to DCplaya !\n")
 
@@ -19,7 +22,6 @@ plug_sidplay	= home.."plugins/inp/sidplay/sidplay.lef"
 plug_obj	= home.."plugins/obj/obj.lef"
 plug_lpo	= home.."plugins/vis/lpo/lpo.lef"
 plug_fftvlr	= home.."plugins/vis/fftvlr/fftvlr.lef"
-
 
 
 

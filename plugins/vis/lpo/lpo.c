@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.5 2002-09-13 14:44:54 ben Exp $
+ * $Id: lpo.c,v 1.6 2002-09-17 23:38:21 ben Exp $
  */
 
 #include <stdio.h>
@@ -40,7 +40,7 @@ static float ozoom;
 /* Automatic object changes */
 static int random_mode = 1;
 static int change_cnt;
-static int change_time = 10000;
+static int change_time = 5*1000;
 
 /* Rotation FX */
 static float rps_min = 0.1f;   /**< Minimum rotation per second */
@@ -175,11 +175,17 @@ static obj_driver_t * find_object(const char *name)
 {
   any_driver_t * d;
 
+  //  SDDEBUG("find '%s'\n",name);
+
   for (d=obj_drivers.drivers; d; d=d->nxt) {
+    //    SDDEBUG("-- '%s'\n",d->name);
+    
     if (!strcmp(name, d->name)) {
+      //      SDDEBUG("OK\n");
       return (obj_driver_t *)d;
     }
   }
+  SDERROR("%s(%s) : failed\n", __FUNCTION__, name);
   return 0;
 }
 
@@ -247,8 +253,19 @@ static int start(void)
 
   curobj = 0;
 
+  /* $$$ */
+#if DEBUG
+ {
+   any_driver_t *d;
+   for (d=obj_drivers.drivers; d; d=d->nxt) {
+     SDDEBUG("OBJECT: %s\n", d->name);
+   }
+ }
+#endif
+
+
   /* Select mine_3 as 1st object */
-  o = find_object("mine_3");
+  o = find_object("bebop");
   if (!o) {
     /* If it does not exist, try another */
     o = random_object(curobj);
