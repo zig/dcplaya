@@ -20,8 +20,9 @@
 ** nsf.c
 **
 ** NSF loading/saving related functions
-** $Id: nsf.c,v 1.2 2003-04-09 14:50:32 ben Exp $
+** $Id: nsf.c,v 1.3 2003-05-01 22:34:20 benjihan Exp $
 */
+
 
 #include <stdio.h>
 #include <string.h>
@@ -50,25 +51,34 @@ static void nsf_setcontext(nsf_t *nsf)
 
 static uint8 read_mirrored_ram(uint32 address)
 {
-   return cur_nsf->cpu->mem_page[0][address & 0x7FF];
+  nes6502_chk_mem_access(&cur_nsf->cpu->acc_mem_page[0][address & 0x7FF],
+			 NES6502_READ_ACCESS);
+  return cur_nsf->cpu->mem_page[0][address & 0x7FF];
 }
 
 static void write_mirrored_ram(uint32 address, uint8 value)
 {
-   cur_nsf->cpu->mem_page[0][address & 0x7FF] = value;
+  nes6502_chk_mem_access(&cur_nsf->cpu->acc_mem_page[0][address & 0x7FF],
+			 NES6502_WRITE_ACCESS);
+  cur_nsf->cpu->mem_page[0][address & 0x7FF] = value;
 }
 
 /* can be used for both banked and non-bankswitched NSFs */
 static void nsf_bankswitch(uint32 address, uint8 value)
 {
    int cpu_page;
+   int roffset;
    uint8 *offset;
 
    cpu_page = address & 0x0F;
-   offset = (cur_nsf->data - (cur_nsf->load_addr & 0x0FFF)) + (value << 12);
+   roffset = -(cur_nsf->load_addr & 0x0FFF) + ((int)value << 12);
+   offset = cur_nsf->data + roffset;
 
    nes6502_getcontext(cur_nsf->cpu);
    cur_nsf->cpu->mem_page[cpu_page] = offset;
+#ifdef NES6502_MEM_ACCESS_CTRL
+   cur_nsf->cpu->acc_mem_page[cpu_page] = offset + cur_nsf->length;
+#endif
    nes6502_setcontext(cur_nsf->cpu);
 }
 
@@ -248,6 +258,18 @@ static void nsf_inittune(nsf_t *nsf)
    memset(nsf->cpu->mem_page[6], 0, 0x1000);
    memset(nsf->cpu->mem_page[7], 0, 0x1000);
 
+#ifdef NES6502_MEM_ACCESS_CTRL
+   memset(nsf->cpu->acc_mem_page[0], 0, 0x800);
+   memset(nsf->cpu->acc_mem_page[6], 0, 0x1000);
+   memset(nsf->cpu->acc_mem_page[7], 0, 0x1000);
+   memset(nsf->data+nsf->length, 0, nsf->length);
+#endif
+   nsf->cur_frame = 0;
+/*    nsf->last_access_frame = 0; */
+   nsf->cur_frame_end = !nsf->song_frames
+     ? 0
+     : nsf->song_frames[nsf->current_song];
+   
    if (nsf->bankswitched)
    {
       /* the first hack of the NSF spec! */
@@ -291,9 +313,24 @@ void nsf_frame(nsf_t *nsf)
 {
    //nsf_setcontext(nsf); /* future expansion =) */
 
+
    /* one frame of NES processing */
    nsf_setup_routine(nsf->play_addr, 0, 0);
    nes6502_execute((int) NES_FRAME_CYCLES);
+
+   ++nsf->cur_frame;
+#if defined(NES6502_MEM_ACCESS_CTRL) && 0
+   if (nes6502_mem_access) {
+     uint32 sec =
+       (nsf->last_access_frame + nsf->playback_rate - 1) / nsf->playback_rate;
+     nsf->last_access_frame = nsf->cur_frame;
+     fprintf(stderr,"nsf : memory access [%x] at frame #%u [%u:%02u]\n",
+		nes6502_mem_access,
+		nsf->last_access_frame,
+		sec/60, sec%60);
+   }
+#endif
+
 }
 
 /* Deallocate memory */
@@ -306,12 +343,20 @@ void nes_shutdown(nsf_t *nsf)
    if (nsf->cpu)
    {
       if (nsf->cpu->mem_page[0])
-         free(nsf->cpu->mem_page[0]);
-      for (i = 5; i <= 7; i++)
-      {
-         if (nsf->cpu->mem_page[i])
-            free(nsf->cpu->mem_page[i]);
+	free(nsf->cpu->mem_page[0]);
+      for (i = 5; i <= 7; i++) {
+	if (nsf->cpu->mem_page[i])
+	  free(nsf->cpu->mem_page[i]);
       }
+
+#ifdef NES6502_MEM_ACCESS_CTRL
+      if (nsf->cpu->acc_mem_page[0])
+	free(nsf->cpu->acc_mem_page[0]);
+      for (i = 5; i <= 7; i++) {
+	if (nsf->cpu->acc_mem_page[i])
+	  free(nsf->cpu->acc_mem_page[i]);
+      }
+#endif
       free(nsf->cpu);
    }
 }
@@ -345,18 +390,27 @@ static int nsf_cpuinit(nsf_t *nsf)
          return -1;
    }
 
+#ifdef NES6502_MEM_ACCESS_CTRL
+   nsf->cpu->acc_mem_page[0] = malloc(0x800);
+   if (NULL == nsf->cpu->acc_mem_page[0])
+      return -1;
+   /* allocate some space for the NSF "player" MMC5 EXRAM, and WRAM */
+   for (i = 5; i <= 7; i++)
+   {
+      nsf->cpu->acc_mem_page[i] = malloc(0x1000);
+      if (NULL == nsf->cpu->acc_mem_page[i])
+         return -1;
+   }
+#endif
+
    nsf->cpu->read_handler = nsf_readhandler;
    nsf->cpu->write_handler = nsf_writehandler;
 
    return 0;
 }
 
-static void nsf_setup(nsf_t *nsf)
+static unsigned int nsf_playback_rate(nsf_t *nsf)
 {
-   int i;
-
-   nsf->current_song = nsf->start_song;
-
    if (nsf->pal_ntsc_bits & NSF_DEDICATED_PAL)
    {
       if (nsf->pal_speed)
@@ -371,9 +425,16 @@ static void nsf_setup(nsf_t *nsf)
       else
          nsf->playback_rate = 60; /* 60 Hz */
    }
+}
+
+static void nsf_setup(nsf_t *nsf)
+{
+   int i;
+
+   nsf->current_song = nsf->start_song;
+   nsf_playback_rate(nsf);
 
    nsf->bankswitched = FALSE;
-
    for (i = 0; i < 8; i++)
    {
       if (nsf->bankswitch_info[i])
@@ -435,7 +496,7 @@ static int nfs_open_file(struct nsf_loader_t *loader)
     }
     /* try with .nsf extension. */
     strcpy(fname, floader->fname);
-    strcpy(fname + (ext - floader->fname), ".nsf");
+    strcat(fname, ".nsf");
     floader->fp = fopen(fname,"rb");
     if (!floader->fp) {
       free(fname);
@@ -455,7 +516,7 @@ static void nfs_close_file(struct nsf_loader_t *loader)
     floader->fp = 0;
   }
   if (floader->fname && floader->name_allocated) {
-    free(floader->name_allocated);
+    free(floader->fname);
     floader->fname = 0;
     floader->name_allocated = 0;
   }
@@ -482,6 +543,14 @@ static int nfs_length_file(struct nsf_loader_t *loader)
   return pos;
 }
 
+static int nfs_skip_file(struct nsf_loader_t *loader, int n)
+{
+  struct nsf_file_loader_t * floader = (struct nsf_file_loader_t *)loader;
+  int r;
+  r = fseek(floader->fp, n, SEEK_CUR);
+  return r;
+}
+
 static const char * nfs_fname_file(struct nsf_loader_t *loader)
 {
   struct nsf_file_loader_t * floader = (struct nsf_file_loader_t *)loader;
@@ -494,6 +563,7 @@ static struct nsf_file_loader_t nsf_file_loader = {
     nfs_close_file,
     nfs_read_file,
     nfs_length_file,
+    nfs_skip_file,
     nfs_fname_file
   },
   0,0,0
@@ -552,6 +622,14 @@ static int nfs_length_mem(struct nsf_loader_t *loader)
   return mloader->len;
 }
 
+static int nfs_skip_mem(struct nsf_loader_t *loader, int n)
+{
+  struct nsf_mem_loader_t * mloader = (struct nsf_mem_loader_t *)loader;
+  unsigned long goal = mloader->cur + n;
+  mloader->cur = (goal > mloader->len) ? mloader->len : goal;
+  return goal - mloader->cur;
+}
+
 static const char * nfs_fname_mem(struct nsf_loader_t *loader)
 {
   struct nsf_mem_loader_t * mloader = (struct nsf_mem_loader_t *)loader;
@@ -559,7 +637,7 @@ static const char * nfs_fname_mem(struct nsf_loader_t *loader)
 }
 
 static struct nsf_mem_loader_t nsf_mem_loader = {
-  { nfs_open_mem, nfs_close_mem, nfs_read_mem, nfs_length_mem },
+  { nfs_open_mem, nfs_close_mem, nfs_read_mem, nfs_length_mem, nfs_skip_mem },
   0,0,0
 };
 
@@ -568,6 +646,12 @@ nsf_t * nsf_load_extended(struct nsf_loader_t * loader)
   nsf_t *temp_nsf = 0;
   int length;
   char id[6];
+
+  struct {
+    uint8 magic[4]; /* always "NESM" */
+    uint8 type[4];  /* defines extension type */
+    uint8 size[4];  /* extension data size (this struct include) */
+  } nsf_file_ext;
 
   /* no loader ! */ 
   if (!loader) {
@@ -583,11 +667,14 @@ nsf_t * nsf_load_extended(struct nsf_loader_t * loader)
    * and more since it does not make sens to have header without data.
    */
   length = loader->length(loader);
+  /* For version 2, we do not need file length. just check error later. */
+#if 0
   if (length <= NSF_HEADER_SIZE) {
     log_printf("nsf : [%s] not an NSF format file\n",
 	       loader->fname(loader));
     goto error;
   }
+#endif
 
   /* Read magic */
   if (loader->read(loader, id, 5)) {
@@ -630,29 +717,134 @@ nsf_t * nsf_load_extended(struct nsf_loader_t * loader)
   temp_nsf->play_addr = SWAP_16(temp_nsf->play_addr);
   temp_nsf->ntsc_speed = SWAP_16(temp_nsf->ntsc_speed);
   temp_nsf->pal_speed = SWAP_16(temp_nsf->pal_speed);
-  
-  temp_nsf->length = length - NSF_HEADER_SIZE;
 
   /* we're now at position 80h */
 
-   /* Allocate NSF space, and load it up! */
-   temp_nsf->data = malloc(temp_nsf->length);
-   if (NULL == temp_nsf->data) {
-     log_printf("nsf : [%s] error allocating nsf data\n",
-		loader->fname(loader));
-     goto error;
-   }
 
-   /* Read data */
-   if (loader->read(loader, temp_nsf->data, temp_nsf->length)) {
-     log_printf("nsf : [%s] error reading NSF data\n",
-		loader->fname(loader));
-     goto error;
-   }
+  /* Here comes the specific codes for spec version 2 */
 
-   /* Close "file" */
-   loader->close(loader);
-   loader = 0;
+  temp_nsf->length = 0;
+
+  if (temp_nsf->version > 1) {
+    /* Get specified data size in reserved field (3 bytes). */
+    temp_nsf->length = 0
+      + temp_nsf->reserved[0]
+      + (temp_nsf->reserved[1]<<8)
+      + (temp_nsf->reserved[2]<<16);
+
+  }
+  /* no specified size : try to guess with file length. */
+  if (!temp_nsf->length) {
+    temp_nsf->length = length - NSF_HEADER_SIZE;
+  }
+
+  if (temp_nsf->length <= 0) {
+    log_printf("nsf : [%s] not an NSF format file (missing data)\n",
+	       loader->fname(loader));
+    goto error;
+  }
+
+  /* Allocate NSF space, and load it up! */
+  {
+    int len = temp_nsf->length;
+#ifdef NES6502_MEM_ACCESS_CTRL
+    /* $$$ twice memory for access control shadow mem. */
+    len <<= 1;
+#endif
+   temp_nsf->data = malloc(len);
+  }
+  if (NULL == temp_nsf->data) {
+    log_printf("nsf : [%s] error allocating nsf data\n",
+	       loader->fname(loader));
+    goto error;
+  }
+
+  /* Read data */
+  if (loader->read(loader, temp_nsf->data, temp_nsf->length)) {
+    log_printf("nsf : [%s] error reading NSF data\n",
+	       loader->fname(loader));
+    goto error;
+  }
+
+  /* Here comes the second part of spec > 1 : get extension */
+  while (!loader->read(loader, &nsf_file_ext, sizeof(nsf_file_ext))
+	 && !memcmp(nsf_file_ext.magic,id,4)) {
+    /* Got a NESM extension here. Checks for known extension type :
+     * right now, the only extension is "TIME" which give songs length.
+     * in frames.
+     */
+    int size;
+    size = 0
+      + nsf_file_ext.size[0]
+      + (nsf_file_ext.size[1] << 8)
+      + (nsf_file_ext.size[2] << 16)
+      + (nsf_file_ext.size[3] << 24);
+
+    if (size < sizeof(nsf_file_ext)) {
+      log_printf("nsf : [%s] corrupt extension size (%d)\n",
+		 loader->fname(loader), size);
+      /* Not a fatal error here. Just skip extension loading. */
+      break;
+    }
+    size -= sizeof(nsf_file_ext);
+
+    if (!temp_nsf->song_frames
+	&& !memcmp(nsf_file_ext.type,"TIME", 4)
+	&& !(size & 3)
+	&& (size >= 2*4)
+	&& (size <= 256*4)) {
+
+      uint8 tmp_time[256][4];
+      int tsongs = size >> 2;
+      int i;
+      int songs = temp_nsf->num_songs;
+
+      /* Add 1 for 0 which contains total time for all songs. */
+      ++songs;
+
+      if (loader->read(loader, tmp_time, size)) {
+	log_printf("nsf : [%s] missing extension data\n",
+		   loader->fname(loader));
+	/* Not a fatal error here. Just skip extension loading. */
+	break;
+      }
+      /* Alloc song_frames for songs (not tsongs). */
+      temp_nsf->song_frames = malloc(sizeof(*temp_nsf->song_frames) * songs);
+      if (!temp_nsf->song_frames) {
+	log_printf("nsf : [%s] extension alloc failed\n",
+		   loader->fname(loader));
+	/* Not a fatal error here. Just skip extension loading. */
+	break;
+      }
+
+      if (tsongs > songs) {
+	tsongs = songs;
+      }
+      
+      /* Copy time info. */
+      for (i=0; i<tsongs; ++i) {
+	temp_nsf->song_frames[i] = 0
+	  | tmp_time[i][0]
+	  | (tmp_time[i][1] << 8)
+	  | (tmp_time[i][2] << 16)
+	  | (tmp_time[i][2] << 24);
+      }
+      /* Clear missing (safety net). */
+      for (; i<songs; ++i) {
+	temp_nsf->song_frames[i] = 0;
+      }
+    } else if (loader->skip(loader, size)) {
+	log_printf("nsf : [%s] extension skip failed\n",
+		   loader->fname(loader));
+	/* Not a fatal error here. Just skip extension loading. */
+	break;
+    }
+  }
+  
+
+  /* Close "file" */
+  loader->close(loader);
+  loader = 0;
 
    /* Set up some variables */
    nsf_setup(temp_nsf);
@@ -719,6 +911,10 @@ void nsf_free(nsf_t **pnsf)
     if (nsf->data)
       free(nsf->data);
 
+    if (nsf->song_frames) {
+      free (nsf->song_frames);
+    }
+
     free(nsf);
 
   }
@@ -733,49 +929,53 @@ int nsf_setchan(nsf_t *nsf, int chan, boolean enabled)
    return apu_setchan(chan, enabled);
 }
 
-int nsf_playtrack(nsf_t *nsf, int track, int sample_rate, int sample_bits, boolean stereo)
+int nsf_playtrack(nsf_t *nsf, int track, int sample_rate, int sample_bits,
+		  boolean stereo)
 {
-   ASSERT(nsf);
+  if (!nsf) {
+    return -1;
+  }
 
-   /* make this NSF the current context */
-   nsf_setcontext(nsf);
+  /* make this NSF the current context */
+  nsf_setcontext(nsf);
 
-   /* create the APU */
-   if (nsf->apu)
-      apu_destroy(nsf->apu);
+  /* create the APU */
+  if (nsf->apu) {
+    apu_destroy(nsf->apu);
+  }
 
-   nsf->apu = apu_create(sample_rate, nsf->playback_rate, sample_bits, stereo);
-   if (NULL == nsf->apu)
-   {
-     /* $$$ ben : from my point of view this is not clean. Function should
-      *	never destroy object it has not created...
-      */
-      nsf_free(&nsf);
+  nsf->apu = apu_create(sample_rate, nsf->playback_rate, sample_bits, stereo);
+  if (NULL == nsf->apu)
+    {
+      /* $$$ ben : from my point of view this is not clean. Function should
+       *	never destroy object it has not created...
+       */
+      /*       nsf_free(&nsf); */
       return -1;
-   }
+    }
 
-   apu_setext(nsf->apu, nsf_getext(nsf));
+  apu_setext(nsf->apu, nsf_getext(nsf));
 
-   /* go ahead and init all the read/write handlers */
-   build_address_handlers(nsf);
+  /* go ahead and init all the read/write handlers */
+  build_address_handlers(nsf);
+  
+  /* convenience? */
+  nsf->process = nsf->apu->process;
+  
+  nes6502_setcontext(nsf->cpu);
 
-   /* convenience? */
-   nsf->process = nsf->apu->process;
+  if (track > nsf->num_songs)
+    track = nsf->num_songs;
+  else if (track < 1)
+    track = 1;
 
-   nes6502_setcontext(nsf->cpu);
-
-   if (track > nsf->num_songs)
-      track = nsf->num_songs;
-   else if (track < 1)
-      track = 1;
-
-   nsf->current_song = track;
+  nsf->current_song = track;
    
-   apu_reset();
+  apu_reset();
 
-   nsf_inittune(nsf);
+  nsf_inittune(nsf);
 
-   return nsf->current_song;
+  return nsf->current_song;
 }
 
 int nsf_setfilter(nsf_t *nsf, int filter_type)
@@ -789,7 +989,10 @@ int nsf_setfilter(nsf_t *nsf, int filter_type)
 
 /*
 ** $Log: nsf.c,v $
-** Revision 1.2  2003-04-09 14:50:32  ben
+** Revision 1.3  2003-05-01 22:34:20  benjihan
+** New NSF plugin
+**
+** Revision 1.2  2003/04/09 14:50:32  ben
 ** Clean NSF api.
 **
 ** Revision 1.1  2003/04/08 20:53:00  ben

@@ -20,7 +20,7 @@
 ** nsf.h
 **
 ** NSF loading/saving related defines / prototypes
-** $Id: nsf.h,v 1.2 2003-04-09 14:50:32 ben Exp $
+** $Id: nsf.h,v 1.3 2003-05-01 22:34:20 benjihan Exp $
 */
 
 #ifndef _NSF_H_
@@ -91,6 +91,11 @@ typedef struct nsf_s
    uint8  current_song;       /* current song */
    boolean bankswitched;      /* is bankswitched? */
 
+  /* $$$ ben : Playing time ... */
+  uint32 cur_frame;
+  uint32 cur_frame_end;
+  uint32 * song_frames;
+
   /* $$$ ben : Last error string */
    const char * errstr;       
 
@@ -118,6 +123,9 @@ struct nsf_loader_t {
   /* Get file length. */
   int (*length) (struct nsf_loader_t * loader);
 
+  /* Skip n bytes. */
+  int (*skip) (struct nsf_loader_t * loader,int n);
+
   /* Get filename (for debug). */
   const char * (*fname) (struct nsf_loader_t * loader);
 
@@ -130,8 +138,8 @@ extern nsf_t * nsf_load_extended(struct nsf_loader_t * loader);
 extern nsf_t *nsf_load(const char *filename, void *source, int length);
 extern void nsf_free(nsf_t **nsf_info);
 
-extern int nsf_playtrack(nsf_t *nsf, int track, int sample_rate, int sample_bits, 
-                          boolean stereo);
+extern int nsf_playtrack(nsf_t *nsf, int track, int sample_rate,
+			 int sample_bits, boolean stereo);
 extern void nsf_frame(nsf_t *nsf);
 extern int nsf_setchan(nsf_t *nsf, int chan, boolean enabled);
 extern int nsf_setfilter(nsf_t *nsf, int filter_type);
@@ -140,7 +148,10 @@ extern int nsf_setfilter(nsf_t *nsf, int filter_type);
 
 /*
 ** $Log: nsf.h,v $
-** Revision 1.2  2003-04-09 14:50:32  ben
+** Revision 1.3  2003-05-01 22:34:20  benjihan
+** New NSF plugin
+**
+** Revision 1.2  2003/04/09 14:50:32  ben
 ** Clean NSF api.
 **
 ** Revision 1.1  2003/04/08 20:53:00  ben

@@ -20,7 +20,7 @@
 ** nes6502.c
 **
 ** NES custom 6502 (2A03) CPU implementation
-** $Id: nes6502.c,v 1.1 2003-04-08 20:53:00 ben Exp $
+** $Id: nes6502.c,v 1.2 2003-05-01 22:34:19 benjihan Exp $
 */
 
 
@@ -1117,8 +1117,17 @@
 */
 
 /* register push/pull */
-#define  PUSH(value)             stack_page[S--] = (uint8) (value)
-#define  PULL()                  stack_page[++S]
+#ifdef NES6502_MEM_ACCESS_CTRL
+
+# define  PUSH(value)             stack_push((S--),(value))
+# define  PULL()                  stack_pull((++S))
+
+#else
+
+# define  PUSH(value)             stack_page[S--] = (uint8) (value)
+# define  PULL()                  stack_page[++S]
+
+#endif /* #ifdef NES6502_MEM_ACCESS_CTRL */
 
 /* Sets the Z and N flags based on given data, taken from precomputed table */
 #define  SET_NZ_FLAGS(value)     P &= ~(N_FLAG | Z_FLAG); \
@@ -1166,24 +1175,98 @@ static uint8 *nes6502_banks[NES6502_NUMBANKS];
 static uint8 *ram = NULL;
 static uint8 *stack_page = NULL;
 
+/* access flag for memory 
+ * $$$ ben : I add this for the playing time calculation.
+ * Only if compiled with NES6502_MEM_ACCESS.
+ */
+#ifdef NES6502_MEM_ACCESS_CTRL
+
+static uint8 *acc_nes6502_banks[NES6502_NUMBANKS];
+static uint8 *acc_ram = NULL;
+static uint8 *acc_stack_page = NULL;
+uint8 nes6502_mem_access = 0;
+
+/* $$$ ben :
+ * Set memory access check flags, and store ORed frame global check
+ * for music time calculation.
+ */
+static void chk_mem_access(uint8 * access, int flags)
+{
+  uint8 oldchk = * access;
+  if ((oldchk&flags) != flags) {
+    nes6502_mem_access |= flags;
+    *access = oldchk|flags;
+  }
+}
+
+INLINE void stack_push(uint8 s, uint8 v)
+{
+  chk_mem_access(acc_stack_page+s, NES6502_WRITE_ACCESS);
+  stack_page[s] = v;
+}
+
+INLINE uint8 stack_pull(uint8 s)
+{ 
+  chk_mem_access(acc_stack_page+s, NES6502_READ_ACCESS);
+  return stack_page[s];
+}
+
+INLINE uint8 zp_read(register uint32 addr)
+{
+  chk_mem_access(acc_ram+addr, NES6502_READ_ACCESS);
+  return ram[addr];
+}
+
+INLINE void zp_write(register uint32 addr, uint8 v)
+{
+  chk_mem_access(acc_ram+addr, NES6502_WRITE_ACCESS);
+  ram[addr] = v;
+}
+
+#define  ZP_READ(addr)           zp_read((addr))
+#define  ZP_WRITE(addr, value)   zp_write((addr),(value))
+
+#define bank_readbyte(address) _bank_readbyte((address), NES6502_READ_ACCESS)
+#define bank_readbyte_pc(address) _bank_readbyte((address), NES6502_EXE_ACCESS)
+
+#else
+# define chk_mem_access(access, flags)
 
 /*
 ** Zero-page helper macros
 */
-
 #define  ZP_READ(addr)           ram[(addr)]
 #define  ZP_WRITE(addr, value)   ram[(addr)] = (uint8) (value)
 
+#define bank_readbyte(address)    _bank_readbyte((address))
+#define bank_readbyte_pc(address) _bank_readbyte((address))
 
-INLINE uint8 bank_readbyte(register uint32 address)
+#endif /* #ifdef NES6502_MEM_ACCESS_CTRL */
+
+#ifdef NES6502_MEM_ACCESS_CTRL
+INLINE uint8 _bank_readbyte(register uint32 address, const uint8 flags)
+#else
+INLINE uint8 _bank_readbyte(register uint32 address)
+#endif
 {
    ASSERT(nes6502_banks[address >> NES6502_BANKSHIFT]);
-   return nes6502_banks[address >> NES6502_BANKSHIFT][address & NES6502_BANKMASK];
+
+   chk_mem_access(acc_nes6502_banks[address>>NES6502_BANKSHIFT]
+		  + (address & NES6502_BANKMASK),
+		  flags);
+
+   return
+     nes6502_banks[address >> NES6502_BANKSHIFT][address & NES6502_BANKMASK];
 }
 
 INLINE void bank_writebyte(register uint32 address, register uint8 value)
 {
    ASSERT(nes6502_banks[address >> NES6502_BANKSHIFT]);
+
+   chk_mem_access(acc_nes6502_banks[address>>NES6502_BANKSHIFT]
+		  + (address & NES6502_BANKMASK),
+		  NES6502_WRITE_ACCESS);
+
    nes6502_banks[address >> NES6502_BANKSHIFT][address & NES6502_BANKMASK] = value;
 }
 
@@ -1196,9 +1279,13 @@ INLINE void bank_writebyte(register uint32 address, register uint8 value)
 
 INLINE uint32 zp_address(register uint8 address)
 {
+  chk_mem_access(acc_ram+address, NES6502_READ_ACCESS);
+  chk_mem_access(acc_ram+address+1, NES6502_READ_ACCESS);
+
 #if defined (HOST_LITTLE_ENDIAN) && defined(HOST_UNALIGN_WORD)
    /* TODO: this fails if src address is $xFFF */
    /* TODO: this fails if host architecture doesn't support byte alignment */
+   /*       $$$ ben : DONE */
    return (uint32) (*(uint16 *)(ram + address));
 #elif defined(TARGET_CPU_PPC)
    return __lhbrx(ram, address);
@@ -1212,32 +1299,49 @@ INLINE uint32 zp_address(register uint8 address)
 
 INLINE uint32 bank_readaddress(register uint32 address)
 {
+
+#ifdef NES6502_MEM_ACCESS_CTRL
+  {
+    const unsigned int offset = address & NES6502_BANKMASK;
+    uint8 * addr = acc_nes6502_banks[address >> NES6502_BANKSHIFT];
+    chk_mem_access(addr+offset+0, NES6502_READ_ACCESS);
+    chk_mem_access(addr+offset+1, NES6502_READ_ACCESS);
+  }
+#endif
+
 #if defined (HOST_LITTLE_ENDIAN) && defined(HOST_UNALIGN_WORD)
    /* TODO: this fails if src address is $xFFF */
    /* TODO: this fails if host architecture doesn't support byte alignment */
+   /*       $$$ ben : DONE */
    return (uint32) (*(uint16 *)(nes6502_banks[address >> NES6502_BANKSHIFT] + (address & NES6502_BANKMASK)));
 #elif defined(TARGET_CPU_PPC)
    return __lhbrx(nes6502_banks[address >> NES6502_BANKSHIFT], address & NES6502_BANKMASK);
 #else
+ {
    const unsigned int offset = address & NES6502_BANKMASK;
    return READ_SNES_16(nes6502_banks[address >> NES6502_BANKSHIFT], offset);
+ }
 /*    uint32 x = (uint32) *(uint16 *)(nes6502_banks[address >> NES6502_BANKSHIFT] + (address & NES6502_BANKMASK)); */
 /*    return (x << 8) | (x >> 8); */
 //#endif /* TARGET_CPU_PPC */
 #endif /* HOST_LITTLE_ENDIAN */
 }
 
+
 /* read a byte of 6502 memory */
 static uint8 mem_read(uint32 address)
 {
    /* TODO: following cases are N2A03-specific */
    /* RAM */
-   if (address < 0x800)
-      return ram[address];
+  if (address < 0x800) {
+    chk_mem_access(acc_ram + address, NES6502_READ_ACCESS);
+    return ram[address];
+  }
    /* always paged memory */
 //   else if (address >= 0x6000)
-   else if (address >= 0x8000)
-      return bank_readbyte(address);
+  else if (address >= 0x8000) {
+    return bank_readbyte(address);
+  }
    /* check memory range handlers */
    else
    {
@@ -1258,6 +1362,7 @@ static void mem_write(uint32 address, uint8 value)
    /* RAM */
    if (address < 0x800)
    {
+     chk_mem_access(acc_ram + address, NES6502_WRITE_ACCESS);
       ram[address] = value;
       return;
    }
@@ -1286,11 +1391,19 @@ void nes6502_setcontext(nes6502_context *cpu)
    ASSERT(cpu);
    
    /* Set the page pointers */
-   for (loop = 0; loop < NES6502_NUMBANKS; loop++)
+   for (loop = 0; loop < NES6502_NUMBANKS; loop++) {
       nes6502_banks[loop] = cpu->mem_page[loop];
+#ifdef NES6502_MEM_ACCESS_CTRL
+      acc_nes6502_banks[loop] = cpu->acc_mem_page[loop];
+#endif
+   }
 
    ram = nes6502_banks[0];  /* quicker zero-page/RAM references */
    stack_page = ram + STACK_OFFSET;
+#ifdef NES6502_MEM_ACCESS_CTRL
+   acc_ram = acc_nes6502_banks[0];  /* quicker zero-page/RAM references */
+   acc_stack_page = acc_ram + STACK_OFFSET;
+#endif
 
    pmem_read = cpu->read_handler;
    pmem_write = cpu->write_handler;
@@ -1311,8 +1424,12 @@ void nes6502_getcontext(nes6502_context *cpu)
    int loop;
 
    /* Set the page pointers */
-   for (loop = 0; loop < NES6502_NUMBANKS; loop++)
+   for (loop = 0; loop < NES6502_NUMBANKS; loop++) {
       cpu->mem_page[loop] = nes6502_banks[loop];
+#ifdef NES6502_MEM_ACCESS_CTRL
+      cpu->acc_mem_page[loop] = acc_nes6502_banks[loop];
+#endif
+   }
 
    cpu->read_handler = pmem_read;
    cpu->write_handler = pmem_write;
@@ -1361,6 +1478,11 @@ int nes6502_execute(int remaining_cycles)
 
    GET_GLOBAL_REGS();
 
+#ifdef NES6502_MEM_ACCESS_CTRL
+   /* reset global memory access for this execute loop. */
+   nes6502_mem_access = 0;
+#endif   
+
    /* Continue until we run out of cycles */
 
 
@@ -1403,7 +1525,7 @@ int nes6502_execute(int remaining_cycles)
       /* Fetch instruction */
       //nes6502_disasm(PC, P, A, X, Y, S);
 
-      opcode = bank_readbyte(PC++);
+      opcode = bank_readbyte_pc(PC++);
 
       /* Execute instruction */
 
@@ -2394,9 +2516,19 @@ void nes6502_setdma(int cycles)
    dma_cycles += cycles;
 }
 
+#ifdef NES6502_MEM_ACCESS_CTRL
+void nes6502_chk_mem_access(uint8 * access, int flags)
+{
+  chk_mem_access(access, flags);
+}
+#endif
+
 /*
 ** $Log: nes6502.c,v $
-** Revision 1.1  2003-04-08 20:53:00  ben
+** Revision 1.2  2003-05-01 22:34:19  benjihan
+** New NSF plugin
+**
+** Revision 1.1  2003/04/08 20:53:00  ben
 ** Adding more files...
 **
 ** Revision 1.6  2000/07/04 04:50:07  matt

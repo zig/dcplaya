@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/04/08
  *
- *  $Id: nsf_driver.c,v 1.3 2003-04-12 12:46:28 ben Exp $
+ *  $Id: nsf_driver.c,v 1.4 2003-05-01 22:34:19 benjihan Exp $
  */ 
 
 /* Adapted from nosefart main_linux.c */
@@ -16,8 +16,8 @@
 #include "pcm_buffer.h"
 #include "fifo.h"
 #include "sysdebug.h"
-#include "gzip.h"
 
+#include "gzip.h"
 #include "types.h"
 #include "nsf.h"
 
@@ -41,7 +41,6 @@ static unsigned int splGoal;    // Sample goal (end of track)
 static unsigned int zeroCnt;    // Number of successive zero sample recieved
 static unsigned int zeroGoal;   // Number of zero samples to detect end.
 static uint16 oldspl;
-/* static void *nsfbuffer; */
 
 static char * make_desc(nsf_t * nsf, char *tmp)
 {
@@ -73,6 +72,39 @@ static char * make_title(nsf_t * nsf, char * tmp)
   return tmp;
 }
 
+static unsigned int make_time(nsf_t * nsf)
+{
+  unsigned int t = 0;
+  int track = nsf->current_song;
+
+  SDDEBUG("nsf: make_time #%d\n", track);
+
+  if (!nsf->song_frames) {
+    SDDEBUG("nsf: NO TIME INFO\n");
+  } else if (!nsf->song_frames[track]) {
+    SDDEBUG("nsf: NO TIME INFO FOR THIS TRACK\n");
+  }
+
+  if (nsf->song_frames
+      && track >= 0
+      && track <= nsf->num_songs
+      && (t = nsf->song_frames[track], t)) {
+    unsigned long long ms = (unsigned long long)t << 10;
+    ms /= nsf->playback_rate ? nsf->playback_rate : 60;
+    t = ms;
+  }
+
+  return t;
+}
+
+static int nsf_update_info(playa_info_t *info, nsf_t * nsf, char * tmp)
+{
+  playa_info_time(info, make_time(nsf));
+  playa_info_title(info, make_title(nsf,tmp));
+  playa_info_track(info, make_track(nsf,tmp));
+
+  return 0;
+}
 
 static int nsf_info(playa_info_t *info, nsf_t * nsf)
 {
@@ -81,11 +113,8 @@ static int nsf_info(playa_info_t *info, nsf_t * nsf)
   if (!info || !nsf) {
     return -1;
   }
-
-  playa_info_time(info, 0);
+  nsf_update_info(info, nsf, tmp);
   playa_info_desc(info, make_desc(nsf,tmp));
-  playa_info_track(info, make_track(nsf,tmp));
-  playa_info_title(info, make_title(nsf,tmp));
   playa_info_bits(info,1);
   playa_info_stereo(info,pcm_stereo);
   playa_info_frq(info, freq);
@@ -134,20 +163,23 @@ static int nsf_setupsong(void)
 
   SDDEBUG("nsf_setupsong : "
 	  "nsf-length=%d nsf-rate:%d nsf-track:%d data-size:%d\n",
-	  nsf->length,nsf->playback_rate,nsf->current_song, dataSize);
+	  nsf->length,nsf->playback_rate, nsf->current_song, dataSize);
 
   nsf_setfilter(nsf, NSF_FILTER_NONE);
   nsf_playtrack(nsf, nsf->current_song, freq, bits, pcm_stereo);
   return nsf->current_song;
 }
 
-static int set_track(int track)
+static int set_track(int track, playa_info_t * info)
 {
+  char tmp[512];
+
   if (!nsf) return -1;
 
   if (track == 0) {
     SDDEBUG("SETTING DEFAULT TRACK\n");
-    track = nsf->start_song;
+    /* Currently setting track 1, so we can hear all tracks... */
+    track = 1; /*nsf->start_song;*/
   } else if (track == -1) {
     SDDEBUG("SETTING NEXT TRACK\n");
     track = nsf->current_song+1;
@@ -156,6 +188,10 @@ static int set_track(int track)
     return 0;
   }
   nsf->current_song = track;
+  if (info) {
+    nsf_update_info(info, nsf, tmp);
+  }
+
   return track;
 }
 
@@ -166,9 +202,9 @@ static int play(int track, playa_info_t * info)
   unsigned int ms;
   const int sht = 5;
 
-  track = set_track(track);
-  if (track < 0) {
-    return -1;
+  track = set_track(track, info);
+  if (track <= 0) {
+    return track;
   }
 
   ms = info->info[PLAYA_INFO_TIME].v;
@@ -191,7 +227,7 @@ static int play(int track, playa_info_t * info)
 
   err = nsf_setupsong();
   if (err > 0) {
-    nsf_info(info, nsf);
+/*     nsf_info(info, nsf); */
   } else {
     err = -1;
   }
@@ -215,7 +251,6 @@ static int init(any_driver_t * driver)
 
   nsf_init();
   nsf = 0;
-/*   nsfbuffer = 0; */
   minMs = 6<<10;       /* All tracks have 6 seconds time minimum */
   maxMs = (60*8)<<10;  /* All tracks have 8 minutes time maximum */
   zeroMs = 6<<10;      /* Successive zero time for end detection */
@@ -227,10 +262,6 @@ static int stop(void)
 {
   SDDEBUG("%s()\n", __FUNCTION__);
   close_nsf_file();
-/*   if (nsfbuffer) { */
-/*     free(nsfbuffer); */
-/*     nsfbuffer = 0; */
-/*   } */
   pcm_buffer_shutdown();
   pcm_count = 0;
   pcm_ptr = 0;
@@ -249,7 +280,8 @@ int start(const char *fn, int track, playa_info_t *inf)
     stop();
     nsf = load_nsf_file(fn);
   }
-  err = play(track+1, inf) < 0;
+  err = nsf_info(inf, nsf);
+  err = err || play(track+1, inf) < 0;
 
   if (!err) {
     const int size = (dataSize + 32) << pcm_stereo;
@@ -344,7 +376,7 @@ static int decoder(playa_info_t * info)
   }
 
   if (splCnt >= splGoal) {
-    SDDEBUG("sidplay: reach end [%u > %u]\n",splCnt, splGoal);
+    SDDEBUG("nsf: reach end [%u > %u]\n",splCnt, splGoal);
     int track;
     track = play(-1, info);
     if (track < 0) {
@@ -367,6 +399,7 @@ static int info(playa_info_t *info, const char *fname)
     err = nsf_info(info, nsf);
   } else {
     nsf_t * nsf = load_nsf_file(fname);
+    nsf->current_song = 0; /* Get total time. */
     err = nsf_info(info, nsf);
     nsf_free(&nsf);
   }

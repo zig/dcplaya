@@ -3,9 +3,9 @@
 
 CC = gcc
 CFLAGS = 
-LDFLAGS =
+LDFLAGS = -lm
 PREFIX = /usr/local
-# WANT_DEBUG = TRUE
+WANT_DEBUG=TRUE
 
 # nothing below here should need to be changed
 
@@ -15,77 +15,90 @@ PREFIX = /usr/local
 NAME = nosefart
 VERSION = 1.92c-mls
 
-BUILDDIR = nsfobj
+BUILDTOP = nsfobj
+BUILDDIR = $(BUILDTOP)/build
 SRCDIR = src
 
+CFLAGS += -DNSF_PLAYER
 
 ifeq "$(WANT_DEBUG)" "TRUE"
-	CFLAGS += -ggdb -DNSF_PLAYER
+	CFLAGS += -ggdb
 else
-	CFLAGS += -O2 -fomit-frame-pointer -ffast-math -funroll-loops -DNSF_PLAYER
+	CFLAGS += -O2 -fomit-frame-pointer -ffast-math -funroll-loops
 	DEBUG_OBJECTS =
 endif
 
-CFLAGS += -I$(SRCDIR)\
-	-I$(SRCDIR)/linux\
-	-I$(SRCDIR)/sndhrdw\
-	-I$(SRCDIR)/machine\
-	-I$(SRCDIR)/cpu/nes6502\
-	-I$(BUILDDIR)\
-	-I/usr/local/include/\
-	-lm
+CFLAGS +=\
+ -I$(SRCDIR)\
+ -I$(SRCDIR)/linux\
+ -I$(SRCDIR)/sndhrdw\
+ -I$(SRCDIR)/machine\
+ -I$(SRCDIR)/cpu/nes6502\
+ -I$(BUILDTOP)\
+ -I/usr/local/include/
+
+NSFINFO_CFLAGS = $(CFLAGS) -DNES6502_MEM_ACCESS_CTRL
 
 ################################
 # Here's where the directory tree gets ugly
 
-FILES = log\
-	memguard\
-	cpu/nes6502/nes6502\
-	cpu/nes6502/dis6502\
-	machine/nsf\
-	sndhrdw/nes_apu\
-	sndhrdw/vrcvisnd\
-	sndhrdw/fmopl\
-	sndhrdw/vrc7_snd\
-	sndhrdw/mmc5_snd\
-	sndhrdw/fds_snd\
-	linux/main_linux
+FILES =\
+ log\
+ memguard\
+ cpu/nes6502/nes6502\
+ cpu/nes6502/dis6502\
+ machine/nsf\
+ sndhrdw/nes_apu\
+ sndhrdw/vrcvisnd\
+ sndhrdw/fmopl\
+ sndhrdw/vrc7_snd\
+ sndhrdw/mmc5_snd\
+ sndhrdw/fds_snd
 
-SRCS = $(addsuffix .c, $(FILES))
+SRCS = $(addsuffix .c, $(FILES) linux/main_linux)
 SOURCES = $(addprefix $(SRCDIR)/, $(SRCS))
-OBJS = $(addsuffix .o, $(FILES))
-OBJECTS = $(addprefix $(BUILDDIR)/, $(OBJS))
+OBJECTS = $(patsubst $(SRCDIR)/%.c,$(BUILDDIR)/%.o,$(SOURCES))
+
+NSFINFO_SRCS = $(addsuffix .c, $(FILES) nsfinfo/nsfinfo)
+NSFINFO_SOURCES = $(addprefix $(SRCDIR)/, $(NSFINFO_SRCS))
+NSFINFO_OBJECTS = $(patsubst $(SRCDIR)/%.c,$(BUILDDIR)/%-acc.o,$(NSFINFO_SOURCES))
+
+ALL_OBJECTS = $(OBJECTS) $(NSFINFO_OBJECTS)
+
+ALL_TARGETS = $(BUILDTOP)/$(NAME) $(BUILDTOP)/nsfinfo
 
 ################################
 # Rules
 
-all: $(BUILDDIR)/$(NAME)
+all: $(ALL_TARGETS)
 
 ################################
 # Support
 
 $(BUILDDIR):
-	-mkdir -p $(BUILDDIR)/cpu/nes6502 $(BUILDDIR)/machine $(BUILDDIR)/sndhrdw $(BUILDDIR)/linux
+	mkdir -p $(sort $(dir $(ALL_OBJECTS)))
+#	-mkdir -p $(BUILDDIR)/cpu/nes6502 $(BUILDDIR)/machine $(BUILDDIR)/sndhrdw $(BUILDDIR)/linux  $(BUILDDIR)/nsfinfo
 
-$(BUILDDIR)/config.h: $(BUILDDIR) Makefile
-	echo "#define VERSION \"$(VERSION)\"" > $(BUILDDIR)/config.h
-	echo "#define NAME \"$(NAME)\"" >> $(BUILDDIR)/config.h
+$(BUILDTOP)/config.h: $(BUILDDIR) Makefile
+	@echo "[$@]"
+	@echo "#define VERSION \"$(VERSION)\"" > $@
+	@echo "#define NAME \"$(NAME)\"" >> $@
 
-$(BUILDDIR)/dep: $(BUILDDIR)/config.h
+$(BUILDDIR)/dep: $(BUILDTOP)/config.h
 	$(CC) $(CFLAGS) -M $(SOURCES) > $@
 
-include $(BUILDDIR)/dep/
+-include $(BUILDDIR)/dep/
 
-install: $(BUILDDIR)/$(NAME)
+install: all
 	mkdir -p $(PREFIX)/bin
-	cp $(BUILDDIR)/$(NAME) $(PREFIX)/bin
+	cp $(ALL_TARGETS) $(PREFIX)/bin
 	@echo "-----------------------------------------------"
 	@echo "Be sure to run chmod +s $(PREFIX)/bin/$(NAME) if you want ordinary users"
-	@echo "to be able to use /dev/dsp.  SUID isn't necessary, though, if you want to"
+	@echo "to be able to use /dev/dsp.  SUID isn't necessaryx, though, if you want to"
 	@echo "run $(NAME) with a wrapper, like artsdsp from arts or esddsp from esound."
 	@echo "-----------------------------------------------"
 	@echo "Also, make sure that $(PREFIX)/bin is in your PATH."
-	
+
 uninstall:
 	rm -f $(PREFIX)/bin/$(NAME)
 clean: 
@@ -95,8 +108,14 @@ clean:
 ################################
 # The real heavy lifting
 
-$(BUILDDIR)/$(NAME): $(OBJECTS)
-	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $(OBJECTS)
+$(BUILDTOP)/$(NAME): $(OBJECTS)
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $^
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) $(CFLAGS) -o $@ -c $<
+
+$(BUILDTOP)/nsfinfo: $(NSFINFO_OBJECTS)
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $^
+
+$(BUILDDIR)/%-acc.o: $(SRCDIR)/%.c
+	$(CC) $(NSFINFO_CFLAGS) -o $@ -c $<
