@@ -1,8 +1,63 @@
+--- @ingroup  dcplaya_lua_files
+--- @file     dcplayarc.lua
+--- @author   Benjamin Gerard <ben@sashipa.com>
+--- @author   Penne Vincent <ziggy@sashipa.com>
+--- @date     2002
+--- @brief    Main dcplaya lua script.
+--- $Id: dcplayarc.lua,v 1.34 2003-03-13 23:03:37 ben Exp $
+---
+---   The @b home..dcplayarc.lua file is dcplaya main script. It is executed
+---   after the dynshell has been loaded.
+---
+---   This script does much setup stuff. He should load lua library as well
+---   as plugin files and does many other things.
+---
+---   Users have different entry points to this file.
+---   -# The @b "/ram/dcplaya/dcplayarc.lua" file should have been extracted
+---      from the fist dcplaya file found on your VMU. This file is called
+---      really early in that script before any lua library have been loaded.
+---      @b `home`, @b `__DEBUG`, @b `__RELEASE` @b `__VERSION` global
+---      variables should be defined.
+---   -# The @b "/ram/dcplaya/userconf.lua" file is called at near the end
+---      of this script if it exists and @b skip_vmu_userconf is not set.
+---      User can do what they want here, such as lauching application or
+---      setting options. Notice that it could be useful to set the
+---      @b skip_home_userconf variable here to prevent the
+---      @b home.."userconf.lua" file to overide choices.
+---   -# The @b home.."userconf.lua" file is called just after the
+---      @b "/ram/dcplaya/userconf.lua" file if @b skip_home_userconf is not
+---      set.
+---
+--- @warning This script or/and scripts called from it need the dynshell to be
+---          loaded for proper execution.
+
 --
--- This is main DCplaya lua script
+-- Here is a NON EXHAUSTIVE list of GLOBAL variables that could be set
+-- to modify this script and dcplaya behaviours.
 --
--- $Id: dcplayarc.lua,v 1.33 2003-03-12 22:03:24 ben Exp $
---
+-- +--------------------------------------------------------------------------+
+--      VARIABLE NAME      | DEF |       DESCRIPTION       |       FILES
+-- +--------------------------------------------------------------------------+
+-- shell_substitut         | nil | Table of type that the  | shell.lua
+--                         |     | shell is allowed to     |
+--                         |     | substitute.             |
+-- +--------------------------------------------------------------------------+
+-- vmu_auto_save           | nil | nil for no autosaving.  | control_center.lua
+-- +--------------------------------------------------------------------------+
+-- vmu_never_confirm_write | nil | Disable VMU write       | vmu_init.lua
+--                         |     | confirmation.           |
+--                         |     | !!! USE WITH CAUTON     | 
+-- +--------------------------------------------------------------------------+
+-- vmu_no_default_file     | nil | Disable VMU default     | dynshell.c
+--                         |     | file. User should be    |
+--                         |     | prompted for a file.    |
+--                         |     | !!! NOT TESTED          |
+-- +--------------------------------------------------------------------------+
+-- skip_vmu_userconf       | nil | Disable the execution   | dcplayarc.lua
+--                         |     | ramdisk userconf.lua    |
+-- +--------------------------------------------------------------------------+
+-- skip_home_userconf      | nil | Disable the execution   | dcplayarc.lua
+--                         |     | home userconf.lua       |
 
 showconsole()
 
@@ -83,19 +138,39 @@ dolib ("io_control")
 dolib ("gui")
 
 -- vmu initialisation.
-hideconsole()
+
 dolib ("vmu_init")
+
 if type(ramdisk_init) == "function" then
    ramdisk_init()
 end
-if type(vmu_init) == "function" then
-   vmu_init()
+
+if type(vmu_file) == "function" then
+   local defvmu = vmu_file()
+   if defvmu then
+      printf("Default VMU file is %q.",defvmu)
+   else
+      print("No default VMU file.")
+      if type(vmu_init) == "function" then
+	 hideconsole()
+	 vmu_init()
+	 showconsole()
+      end
+   end
 end
-showconsole()
 
 -- reading user config
 print ("Reading user config file 'userconf.lua'")
-dofile (home.."userconf.lua")
+
+if not skip_vmu_userconf and test("-f","/ram/dcplaya/userconf.lua") then
+   print("Running [/ram/dcplaya/userconf.lua]")
+   dofile ("/ram/dcplaya/userconf.lua")
+end
+
+if not skip_home_userconf then
+   dofile (home.."userconf.lua")
+end
+
 if test("-f","/ram/dcplaya/userconf.lua") then
    print("Running [/ram/dcplaya/userconf.lua]")
    dofile ("/ram/dcplaya/userconf.lua")
