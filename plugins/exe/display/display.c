@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.27 2003-01-11 07:44:59 zigziggy Exp $
+ * $Id: display.c,v 1.28 2003-03-09 11:12:19 ben Exp $
  */
 
 #include <stdlib.h>
@@ -67,6 +67,7 @@ DL_FUNCTION_DECLARE(draw_strip);
 DL_FUNCTION_DECLARE(tex_new);
 DL_FUNCTION_DECLARE(tex_destroy);
 DL_FUNCTION_DECLARE(tex_get);
+DL_FUNCTION_DECLARE(tex_exist);
 DL_FUNCTION_DECLARE(tex_info);
 
 /* display_commands.c */
@@ -635,6 +636,16 @@ static luashell_command_description_t display_commands[] = {
 	"Get texture identifier."
 	"]]",                                /* usage */
 	SHELL_COMMAND_C, lua_tex_get         /* function */
+  },
+
+  {
+	"tex_exist", 0,                      /* long and short names */
+	"print [["
+	"tex_exist(texture-name|texture-id) : "
+	"Get texture identifier if it exist. This function works like "
+	"text_get() excepted that it does not print error message."
+	"]]",                                /* usage */
+	SHELL_COMMAND_C, lua_tex_exist       /* function */
   },
 
   {

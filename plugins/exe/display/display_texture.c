@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, texture interface
  * 
- * $Id: display_texture.c,v 1.6 2003-03-03 08:35:24 ben Exp $
+ * $Id: display_texture.c,v 1.7 2003-03-09 11:12:19 ben Exp $
  */
 
 #include <stdio.h>
@@ -15,19 +15,19 @@
 #include "draw/texture.h"
 #include "sysdebug.h"
 
-#define GET_TEXID(v,i) \
+#define GET_TEXID(v,i,verb) \
   if (lua_type(L,i) == LUA_TNUMBER) {\
     int w = lua_tonumber(L,1);\
     v = (w <= 0) ? -1 : texture_exist(w);\
     if (v<0) { \
-      printf("%s : invalid texture-id [%d]\n", __FUNCTION__, w);\
+      if (verb) printf("%s : invalid texture-id [%d]\n", __FUNCTION__, w);\
       return 0;\
     }\
   } else {\
     const char * name = lua_tostring(L,1);\
     v = texture_get(name); \
     if (v<0) { \
-      printf("%s : invalid texture-name [%s]\n",\
+      if (verb) printf("%s : invalid texture-name [%s]\n",\
              __FUNCTION__,name?name:"<null>");\
       return 0;\
     }\
@@ -93,7 +93,7 @@ DL_FUNCTION_DECLARE(tex_destroy)
   int err;
   const char *reason;
 
-  GET_TEXID(texid,1);
+  GET_TEXID(texid,1,1);
   err = texture_destroy(texid, lua_tonumber(L,2));
   switch (err) {
   case 0:
@@ -126,10 +126,22 @@ DL_FUNCTION_DECLARE(tex_get)
 {
   texid_t texid;
 
-  GET_TEXID(texid,1);
+  GET_TEXID(texid,1,1);
   lua_settop(L,0);
   lua_pushnumber(L,texid);
   return 1;
+}
+
+/* Like tex_get, exept it does not write error message. */
+DL_FUNCTION_DECLARE(tex_exist)
+{
+  texid_t texid;
+
+  GET_TEXID(texid,1,0);
+  lua_settop(L,0);
+  lua_pushnumber(L,texid);
+  return 1;
+
 }
 
 /* Get info on texture. */
@@ -138,7 +150,7 @@ DL_FUNCTION_DECLARE(tex_info)
   texture_t * t;
   texid_t texid;
 
-  GET_TEXID(texid,1);
+  GET_TEXID(texid,1,1);
 
   if (t = texture_lock(texid), !t) {
 	printf("%s : invalid texture\n", __FUNCTION__);
