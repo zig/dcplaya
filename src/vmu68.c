@@ -1,5 +1,5 @@
 /**
- * $Id: vmu68.c,v 1.13 2003-02-27 10:05:26 ben Exp $
+ * $Id: vmu68.c,v 1.14 2003-03-01 14:53:43 ben Exp $
  */
 #include "config.h"
 
@@ -14,7 +14,7 @@
 #include "playa_info.h"
 
 /* Update the VMU LCD */
-#include  "vmu_sc68.h"
+#include  "vmu_dcplaya.h"
 #include  "vmu_font.h"
 
 #include "fft.h"
@@ -226,7 +226,7 @@ int vmu68_init(void)
 
   /* Create title page bitmap */
   if (!titleInit) {
-    vmu_create_bitmap(title[0], vmu_sc68, 48, 32);
+    vmu_create_bitmap(title[0], vmu_dcplaya, 48, 32);
     titleInit = 1;
   }
 

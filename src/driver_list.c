@@ -5,7 +5,7 @@
  * @date    2002
  * @brief   Registered driver list.
  *
- * $Id: driver_list.c,v 1.14 2003-01-20 20:44:09 ben Exp $
+ * $Id: driver_list.c,v 1.15 2003-03-01 14:53:43 ben Exp $
  */
 
 #include <string.h>
@@ -313,6 +313,22 @@ inp_driver_t * inp_driver_list_search_by_id(int id)
   return d;
 }
 
+any_driver_t * driver_lock(any_driver_t * drv)
+{
+  if (drv) {
+    spinlock_lock((spinlock_t *) &drv->mutex);
+    ++drv->count;
+  }
+  return drv;
+}
+
+void driver_unlock(any_driver_t * drv)
+{
+  if (drv) {
+    --drv->count;
+    spinlock_unlock((spinlock_t *) &drv->mutex);
+  }
+}
 
 int driver_reference(any_driver_t * drv)
 {

@@ -70,7 +70,7 @@ static img_driver_t driver =
     "The Independent "
     "JPEG Group",         /* Driver authors */
     "jpeg (jpg) image"
-    "translator",         /**< Description */
+    " translator",        /**< Description */
     0,                    /**< DLL handler */
     init,                 /**< Driver init */
     shutdown,             /**< Driver shutdown */

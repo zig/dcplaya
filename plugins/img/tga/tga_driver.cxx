@@ -68,7 +68,7 @@ img_driver_t tga_driver =
     "targa",              /* Driver name */
     "Benjamin Gerard",    /* Driver authors */
     "targa (tga) image"
-	"translator",         /**< Description */
+    " translator",        /**< Description */
     0,                    /**< DLL handler */
     init,                 /**< Driver init */
     shutdown,             /**< Driver shutdown */

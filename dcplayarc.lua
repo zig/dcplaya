@@ -1,7 +1,7 @@
 --
 -- This is main DCplaya lua script
 --
--- $Id: dcplayarc.lua,v 1.28 2003-03-01 14:33:49 zigziggy Exp $
+-- $Id: dcplayarc.lua,v 1.29 2003-03-01 14:53:43 ben Exp $
 --
 
 showconsole()
@@ -54,6 +54,11 @@ showconsole()
 -- reading user config
 print ("Reading user config file 'userconf.lua'")
 dofile (home.."userconf.lua")
+if test("-f","/ram/dcplaya/userconf.lua") then
+   print("Executing local 'userconf.lua'")
+   dofile ("/ram/dcplaya/userconf.lua")
+end
+
 --
 -- Example of command to put into userconf.lua :
 --

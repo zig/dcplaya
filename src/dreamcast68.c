@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.47 2003-03-01 14:33:49 zigziggy Exp $
+ * @version   $Id: dreamcast68.c,v 1.48 2003-03-01 14:53:43 ben Exp $
  */
 
 //#define RELEASE
@@ -694,6 +694,8 @@ void main_thread(void *cookie)
   int err = 0;
 
   SDDEBUG(">> %s()\n", __FUNCTION__);
+
+  vmu_lcd_title();
 
   //  vid_border_color(0,0,0);
 

@@ -5,7 +5,7 @@
  * @date    2002
  * @brief   Registered driver list.
  *
- * $Id: driver_list.h,v 1.10 2003-01-20 20:44:09 ben Exp $
+ * $Id: driver_list.h,v 1.11 2003-03-01 14:53:43 ben Exp $
  */
 
 #ifndef _DRIVER_LIST_H_
@@ -59,7 +59,7 @@ extern driver_list_t exe_drivers;
 extern driver_list_t img_drivers;
 
 /** Table of all driver lists. */
-driver_list_reg_t * driver_lists;
+extern driver_list_reg_t * driver_lists;
 
 /*@}*/
 
@@ -178,6 +178,8 @@ any_driver_t * driver_list_search(driver_list_t * dl, const char *name);
  *   The driver_reference() function adds a reference to a driver. 
  *   If it is the first reference the driver init method is call.
  *
+ *  @param  drv  driver to reference. It is safe to pass 0.
+ *
  *  @return error-code
  *  @retval 0, on success
  *
@@ -191,9 +193,45 @@ int driver_reference(any_driver_t * drv);
  *   If it is the last reference the driver shutdown method is call and the
  *   driver is free.
  *
+ *  @param  drv  driver to reference. It is safe to pass 0.
+ *
  *  @see driver_reference()
  */
 void driver_dereference(any_driver_t * drv);
+
+/** Lock a already refernced driver and add reference to it.
+ *
+ *   The driver_lock() function locks the driver and adds a reference to it.
+ *
+ *  @param  drv  driver to reference. It is safe to pass 0.
+ *
+ *  @return pointer to the locked driver.
+ *  @retval 0, on error (passed drv was null)
+ *
+ *  @see driver_unlock()
+ *
+ *  @warning Do not forget to unlock driver when your done with it.
+ *  @warning Calling this function with unreferenced driver will not crash
+ *           but no initialisation stuff is performed.
+ *
+ */
+any_driver_t * driver_lock(any_driver_t * drv);
+
+/** Unlock a previously locker driver and dereference it.
+ *
+ *   The driver_unlock() function unlocks the driver and dereference it.
+ *
+ *  @param  drv  driver to dereference. It is safe to pass 0.
+ *
+ *  @see driver_lock()
+ *
+ *  @warning Only call this function with a previously locked driver.
+ *  @warning Calling this function with unreferenced driver will not crash
+ *           but no shutdown stuff is performed.
+ *
+ */
+void driver_unlock(any_driver_t * drv);
+
 
 /*@}*/
 
