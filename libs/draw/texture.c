@@ -5,7 +5,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.19 2003-03-18 16:11:10 ben Exp $
+ * $Id: texture.c,v 1.20 2003-03-19 00:32:00 zigziggy Exp $
  */
 
 #include <stdlib.h>
@@ -187,7 +187,7 @@ int texture_twiddle(texture_t * t, int wanted)
     int size = w*h*bpp/8;
     void * buf = malloc(size);
     if (buf == NULL)
-      return;
+      return t->twiddled;
     memcpy(buf, t->addr, size);
     if (!wanted) {
       int tmp = w;

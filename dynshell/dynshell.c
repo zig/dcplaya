@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.86 2003-03-19 00:13:06 ben Exp $
+ * @version    $Id: dynshell.c,v 1.87 2003-03-19 00:32:00 zigziggy Exp $
  */
 
 #include "dcplaya/config.h"
@@ -2170,6 +2170,7 @@ static int lua_load_background(lua_State * L)
       stexture = &tmp;
       ARGB32toRGB565(tmp.addr, tmp.addr, tmp.width * tmp.height);
       stexture->format = texture_strtoformat("0565");
+      stexture->twiddled = stexture->twiddlable = 0;
     }
     break;
   }
@@ -2214,14 +2215,12 @@ static int lua_load_background(lua_State * L)
   if (type == 2) {
     btexture->width  = dw;
     btexture->height = dh;
-    btexture->wlog2  = greaterlog2(btexture->width);
-    btexture->hlog2  = greaterlog2(btexture->height);
   } else {
     btexture->width  = 1024;
     btexture->height = 512;
-    btexture->wlog2  = greaterlog2(btexture->width);
-    btexture->hlog2  = greaterlog2(btexture->height);
   }
+  btexture->wlog2  = greaterlog2(btexture->width);
+  btexture->hlog2  = greaterlog2(btexture->height);
   btexture->format = stexture->format;
   btexture->twiddled = 0;  /* Force non twiddle */
   texture_twiddlable(btexture);
@@ -2266,12 +2265,16 @@ static int lua_load_background(lua_State * L)
        There was a probleme, the texture could be destroyed if we unlock it.
        I have removed the above texture_release() and out it here.
     */
-    texture_twiddle(stexture,1);
+    /* VP : don't call twiddle on a texture, it is done automatically at
+       rendering time IF necessary */
+/*    texture_twiddle(stexture,1);*/
     texture_release(stexture);
   }
 
   /* Twiddle the texture :) */
-  texture_twiddle(btexture,1);
+  /* VP : don't call twiddle on a texture, it is done automatically at
+     rendering time IF necessary */
+/*  texture_twiddle(btexture,1); */
   /* Finally unlock the background texture */
   texture_release(btexture);
 
