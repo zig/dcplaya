@@ -27,9 +27,16 @@ stream.elf: $(OBJS)
 clean:
 	-rm -f *.o *.srec *.elf 1ST_READ.BIN prog.bin *.bck stream.drv aica_fw.h
 
-depend:
-	-makedepend  $(DC_ARM7INCS) $(filter %.c,$(SRCS)) && rm -f Makefile.bak
-# DO NOT DELETE
+depend-clean:
+	@rm -f .depends
+	@touch .depends
 
-main.o: aica.h aica_cmd_iface.h
-aica.o: aica.h
+.PHONY: .depends
+.depends:
+	@makedepend -f$@ $(DC_ARM7INCS) $(filter %.c,$(SRCS)) && rm -f $@.bak
+
+dep depend: .depends
+
+
+required:
+	@touch .depends

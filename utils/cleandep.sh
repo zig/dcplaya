@@ -5,8 +5,11 @@
 #
 # (C) 2002 ben(jamin) gerard <ben@sashipa.com> 
 #
-# $Id: cleandep.sh,v 1.1 2002-08-26 15:21:55 ben Exp $
+# $Id: cleandep.sh,v 1.2 2002-08-26 20:12:22 ben Exp $
 #
+
+echo "This script does not currently works !!!" >&2
+exit 1
 
 read line
 while [ $? -eq 0 ]; do

@@ -1,4 +1,4 @@
-TARGETS = dreammp3.elf
+TARGETS=dreammp3.elf
 
 SH_LDFLAGS=-ml -m4-single-only -nostartfiles -nostdlib -static  -Wl,-Ttext=0x8c010000
 
@@ -64,11 +64,11 @@ mp3lib:
 # ROMDISK
 # -------
 romdisk.img: romimg romdisk/stream.drv
-	@$(KOS_GENROMFS) -f romdisk.img -d romdisk -v 2> /dev/null
+	@$(KOS_GENROMFS) -f $@ -d romdisk -v 2> /dev/null
 
-romdisk.o: romdisk.img
-	@echo "Build [$@]"
-	KOS_ARCH=$(KOS_ARCH) KOS_LD=$(KOS_LD) $(KOS_BASE)/utils/bin2o/bin2o romdisk.img romdisk romdisk.o
+#romdisk.o: romdisk.img
+#	@echo "Build [$@]"
+#	KOS_ARCH=$(KOS_ARCH) KOS_LD=$(KOS_LD) $(KOS_BASE)/utils/bin2o/bin2o romdisk.img romdisk romdisk.o
 
 symtab.o: symtab.h 
 .PHONY: symtab.h
@@ -78,8 +78,6 @@ symtab.h :
 	@utils/makesymb.sh $(TARGETS) > tmp_$@
 	@diff tmp_$@ $@ || mv -fv tmp_$@ $@
 	@rm -f tmp_$@
-
-#$(sort $(OBJS) $^)
 
 force_$(TARGETS): symtab.o main.o force_math.o romdisk.o
 	@echo "Build [$@]"
@@ -122,15 +120,15 @@ depend_extra:
 include Makefile.inc
 # DO NOT DELETE
 
-force_math.o: /home/ben/kos/./include/math.h
-force_math.o: /home/ben/kos/./include/newlib-libm-sh4/math.h
-force_math.o: /home/ben/kos/./include/newlib-libm-sh4/sys/reent.h
-force_math.o: /home/ben/kos/./include/newlib-libm-sh4/_ansi.h
-force_math.o: /home/ben/kos/./include/newlib-libm-sh4/sys/config.h
-force_math.o: /home/ben/kos/./include/newlib-libm-sh4/time.h
-force_math.o: /home/ben/kos/./include/newlib-libm-sh4/machine/time.h
-force_math.o: /home/ben/kos/./include/newlib-libm-sh4/machine/types.h
-force_math.o: /home/ben/kos/./include/newlib-libm-sh4/machine/ieeefp.h
+force_math.o: /home/ben/kos/include/math.h
+force_math.o: /home/ben/kos/include/newlib-libm-sh4/math.h
+force_math.o: /home/ben/kos/include/newlib-libm-sh4/sys/reent.h
+force_math.o: /home/ben/kos/include/newlib-libm-sh4/_ansi.h
+force_math.o: /home/ben/kos/include/newlib-libm-sh4/sys/config.h
+force_math.o: /home/ben/kos/include/newlib-libm-sh4/time.h
+force_math.o: /home/ben/kos/include/newlib-libm-sh4/machine/time.h
+force_math.o: /home/ben/kos/include/newlib-libm-sh4/machine/types.h
+force_math.o: /home/ben/kos/include/newlib-libm-sh4/machine/ieeefp.h
 symtab.o: include/lef.h
-symtab.o: /home/ben/kos/./kernel/arch/dreamcast/include/arch/types.h
-symtab.o: /home/ben/kos/./include/sys/queue.h symtab.h
+symtab.o: /home/ben/kos/kernel/arch/dreamcast/include/arch/types.h
+symtab.o: /home/ben/kos/include/sys/queue.h symtab.h

@@ -3,7 +3,7 @@
 #
 # (C) COPYRIGHT Ben(jamin) Gerard <ben@sasahipa.com>
 #
-# $Id: Makefile,v 1.1 2002-08-26 14:14:50 ben Exp $
+# $Id: Makefile,v 1.2 2002-08-26 20:12:22 ben Exp $
 #
 
 UTILS=../../utils
@@ -48,6 +48,7 @@ special: $(SRC)
 
 .SECONDARY: $(SRC)
 src/%.c : ase/%.ase $(ASE2C) $(UTILS)/mkobjlinks.c
+	@mkdir -p src
 	@CC=gcc CFLAGS="-I. -I../../include" $(ASE2C) $< >$@
 
 include ../../Makefile.inc

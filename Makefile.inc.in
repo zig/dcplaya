@@ -7,7 +7,13 @@
 # Get default target object files
 #
 
+TOP_DIR="@TOP_DIR@"
+UTILS_DIR=$(TOP_DIR)/Utils
+export TOP_DIR UTILS_DIR
+
+# ----------------------------------------------------------------------
 # Setup for KOS
+# ----------------------------------------------------------------------
 
 # Build architecture
 KOS_ARCH="dreamcast"
@@ -16,6 +22,8 @@ KOS_ARCH="dreamcast"
 KOS_BASE=@KOS_BASE@
 KOS_INCS+= -I$(KOS_BASE)/include
 
+export KOS_ARCH KOS_BASE KOS_INCS
+
 # Make utility
 @SET_MAKE@
 KOS_MAKE=$(MAKE)
@@ -23,10 +31,13 @@ KOS_MAKE=$(MAKE)
 # Dreamcast loader utility
 KOS_LOADER=@KOS_LOADER@
 
-export KOS_ARCH KOS_BASE KOS_INCS KOS_MAKE KOS_LOADER
-
 # Genromfs utility
-export KOS_GENROMFS=@KOS_GENROMFS@
+KOS_GENROMFS=@KOS_GENROMFS@
+
+# Binary to object
+KOS_BIN2O=@KOS_BIN2O@
+
+export KOS_MAKE KOS_LOADER KOS_BIN2O
 
 # SH-4 compile tools
 KOS_CC=@SH_CC@
@@ -141,10 +152,36 @@ $(LIBNAME) : $(OBJS)
 %.bin : %.elf
 	@$(KOS_OBJCOPY) -O binary $< $@
 
+
+subdirs: $(patsubst %, _dir_%, $(SUBDIRS))
+
+$(patsubst %, _dir_%, $(SUBDIRS)):
+	$(MAKE) -C $(patsubst _dir_%, %, $@)
+
+# ----------------------------------------------------------------------
+# Clean rules
+# ----------------------------------------------------------------------
+clean_subdirs: $(patsubst %, _clean_dir_%, $(SUBDIRS))
+
+$(patsubst %, _clean_dir_%, $(SUBDIRS)):
+	$(MAKE) -C $(patsubst _clean_dir_%, %, $@) clean
+
 clean: clean_subdirs clean_local
+
 clean_local:
 	rm -f $(LEFS) $(OBJS) *~ $(CLEAN_LOCAL) $(LIBNAME) $(TARGETS)
 
+distclean: depend-clean clean
+	@rm -f include/config.h configure Makefile.inc
+	@find . -name '*~' -exec rm -f {} \;
+
+maintainer-clean: distclean 
+	@rm -f config.cache config.log config.status
+	@find . -name .depends -exec rm -f {} \;
+
+# ----------------------------------------------------------------------
+# Dependencies
+# ----------------------------------------------------------------------
 $(patsubst %, _dep_dir_%, $(SUBDIRS)):
 	@$(MAKE) -C $(patsubst _dir_%, %, $@)
 
@@ -153,21 +190,36 @@ depend_subdirs: $(patsubst %, _depend_dir_%, $(SUBDIRS))
 $(patsubst %, _depend_dir_%, $(SUBDIRS)):
 	@$(MAKE) -C $(patsubst _depend_dir_%, %, $@) depend
 
-depend: depend_subdirs $(DEPEND_EXTRA)
-	makedepend \
-	 -Y \
+.PHONY: .depends
+.depends:
+	makedepend -f$@\
+	-Y \
 	$(filter -I%, $(DEPEND_INCS)) \
 	$(filter -D%, $(DEPEND_DEFINES)) \
-	$(OBJS:%.o=%.c) && rm -f Makefile.bak
+	$(OBJS:%.o=%.c) && rm -f $@.bak
+	echo "DEPENDENCIES $@"
 
-distclean: clean
-	@rm -f include/config.h configure Makefile.inc
-	@find . -name '*~' -exec rm -f {} \;
+dep depend: .depends depend_subdirs $(DEPEND_EXTRA)
 
-maintainer-clean: distclean
-	@rm -f config.cache config.log config.status
+$(patsubst %, _depend-clean_dir_%, $(SUBDIRS)):
+	@$(MAKE) -C $(patsubst _depend-clean_dir_%, %, $@) depend-clean
 
+depend-clean_subdirs: $(patsubst %, _depend-clean_dir_%, $(SUBDIRS))
 
+dependclean depclean clean-depend depend-clean : depend-clean_subdirs
+	@rm -f .depends
+	@touch .depends
+
+# ----------------------------------------------------------------------
+# Required
+# ----------------------------------------------------------------------
+$(patsubst %, _required_dir_%, $(SUBDIRS)):
+	@$(MAKE) -C $(patsubst _required_dir_%, %, $@) required
+
+required_subdirs: $(patsubst %, _required_dir_%, $(SUBDIRS))
+
+req required: required_subdirs
+	@touch .depends $(addsuffix /.depends, $(SUBDIRS))
 
 # ----------------------------------------------------------------------
 
@@ -184,18 +236,10 @@ KOS_INC_RULES=$(KOS_LOCAL_INCS) -I- -I. $(KOS_INCS) -I$(KOS_BASE)/kernel/arch/$(
 %.o: %.s
 	$(KOS_AS) $(KOS_AFLAGS) $< -o $@
 
-subdirs: $(patsubst %, _dir_%, $(SUBDIRS))
-
-$(patsubst %, _dir_%, $(SUBDIRS)):
-	$(MAKE) -C $(patsubst _dir_%, %, $@)
-
-clean_subdirs: $(patsubst %, _clean_dir_%, $(SUBDIRS))
-
-$(patsubst %, _clean_dir_%, $(SUBDIRS)):
-	$(MAKE) -C $(patsubst _clean_dir_%, %, $@) clean
+%.o: %.img
+	KOS_ARCH=$(KOS_ARCH) KOS_LD=$(KOS_LD) $(KOS_BIN2O) $< $(notdir $*) $@
 
 # Some extra variables
 KOS_ARCH_DIR = $(KOS_BASE)/kernel/arch/$(KOS_ARCH)
 KOS_START = $(KOS_ARCH_DIR)/kernel/startup.o
-
 
