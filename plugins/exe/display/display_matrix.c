@@ -6,7 +6,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, matrix interface
  * 
- * $Id: display_matrix.c,v 1.4 2002-10-22 10:35:47 benjihan Exp $
+ * $Id: display_matrix.c,v 1.5 2003-01-11 07:44:59 zigziggy Exp $
  */
 
 #include <stdlib.h>
@@ -88,7 +88,7 @@ DL_FUNCTION_START(get_trans)
   NEW_MATRIX(m, md, 4, 4);
   memcpy(md->v, dl_get_trans(dl), sizeof(matrix_t));
   lua_settop(L, 0);
-  lua_pushusertag(L, m, matrix_tag);
+  lua_pushusertagsz(L, m, matrix_tag, sizeof(lua_matrix_t) + sizeof(lua_matrix_def_t));
   return 1;
 }
 DL_FUNCTION_END()
@@ -196,7 +196,7 @@ DL_FUNCTION_DECLARE(mat_gettable)
 	}
 	REF_MATRIX(r, md, &md->v[l * md->c]);
 	lua_settop(L, 0);
-	lua_pushusertag(L, r, matrix_tag);
+	lua_pushusertagsz(L, r, matrix_tag, sizeof(lua_matrix_t) + sizeof(lua_matrix_def_t));
 /* 	m->li = &md->v[l<<md->log2]; */
 /* 	lua_settop(L, 1); */
  	return 1;
@@ -266,7 +266,7 @@ DL_FUNCTION_DECLARE(mat_getglobal)
 /*   printf("%s : [%s] m:%p d:%p c:%d -> m:%p d:%p c:%d\n", __FUNCTION__, global, */
 /* 		 mat, md, md->refcount-1, r, r->md, r->md->refcount); */
   lua_settop(L,0);
-  lua_pushusertag(L, r, matrix_tag);
+  lua_pushusertagsz(L, r, matrix_tag, sizeof(lua_matrix_t) + sizeof(lua_matrix_def_t));
   return 1;
 }
 
@@ -300,7 +300,7 @@ DL_FUNCTION_DECLARE(mat_setglobal)
 /* 	printf("m:%p r:%p c:%d\n", mat, rd, rd->refcount); */
 	lua_settop(L,1);
 	/* NAME */
-	lua_pushusertag(L, mat, matrix_tag);
+	lua_pushusertagsz(L, mat, matrix_tag, sizeof(lua_matrix_t) + sizeof(lua_matrix_def_t));
 	/* NAME VALUE */
   }
   /* NAME VALUE */
@@ -343,7 +343,7 @@ DL_FUNCTION_DECLARE(mat_mult)
 
   mat_mult(rd,leftd,rightd);
   lua_settop(L, 0);
-  lua_pushusertag(L, r, matrix_tag);
+  lua_pushusertagsz(L, r, matrix_tag, sizeof(lua_matrix_t) + sizeof(lua_matrix_def_t));
   return 1;
 }
 
@@ -373,7 +373,7 @@ DL_FUNCTION_DECLARE(mat_mult_self)
   }
   mat_mult(rd,leftd,rightd);
   lua_settop(L, 0);
-  lua_pushusertag(L, r, matrix_tag);
+  lua_pushusertagsz(L, r, matrix_tag, sizeof(lua_matrix_t) + sizeof(lua_matrix_def_t));
   return 1;
 }
 
@@ -450,7 +450,7 @@ DL_FUNCTION_DECLARE(mat_new)
 	}
   }
   lua_settop(L, 0);
-  lua_pushusertag(L, r, matrix_tag);
+  lua_pushusertagsz(L, r, matrix_tag, sizeof(lua_matrix_t) + sizeof(lua_matrix_def_t));
   return 1;
 }
 
@@ -495,7 +495,7 @@ DL_FUNCTION_DECLARE(mat_rotx)
   NEW_MATRIX(r,rd,4,4);
   myMtxRotateX(* (matrix_t *) rd->v, lua_tonumber(L, 1));
   lua_settop(L, 0);
-  lua_pushusertag(L, r, matrix_tag);
+  lua_pushusertagsz(L, r, matrix_tag, sizeof(lua_matrix_t) + sizeof(lua_matrix_def_t));
   return 1;
 }
 
@@ -507,7 +507,7 @@ DL_FUNCTION_DECLARE(mat_roty)
   NEW_MATRIX(r,rd,4,4);
   myMtxRotateY(* (matrix_t *) rd->v, lua_tonumber(L, 1));
   lua_settop(L, 0);
-  lua_pushusertag(L, r, matrix_tag);
+  lua_pushusertagsz(L, r, matrix_tag, sizeof(lua_matrix_t) + sizeof(lua_matrix_def_t));
   return 1;
 }
 
@@ -518,7 +518,7 @@ DL_FUNCTION_DECLARE(mat_rotz)
 
   NEW_MATRIX(r,rd,4,4);
   myMtxRotateZ(* (matrix_t *) rd->v, lua_tonumber(L, 1));
-  lua_pushusertag(L, r, matrix_tag);
+  lua_pushusertagsz(L, r, matrix_tag, sizeof(lua_matrix_t) + sizeof(lua_matrix_def_t));
   return 1;
 }
 
@@ -534,7 +534,7 @@ DL_FUNCTION_DECLARE(mat_scale)
   rd->v[10] = lua_tonumber(L, 3);
   rd->v[15] = 1.0f;
   lua_settop(L, 0);
-  lua_pushusertag(L, r, matrix_tag);
+  lua_pushusertagsz(L, r, matrix_tag, sizeof(lua_matrix_t) + sizeof(lua_matrix_def_t));
   return 1;
 }
 
@@ -550,7 +550,7 @@ DL_FUNCTION_DECLARE(mat_trans)
   rd->v[14] = lua_tonumber(L, 3);
   rd->v[15] = 1.0f/* + lua_tonumber(L, 4)*/;
   lua_settop(L, 0);
-  lua_pushusertag(L, r, matrix_tag);
+  lua_pushusertagsz(L, r, matrix_tag, sizeof(lua_matrix_t) + sizeof(lua_matrix_def_t));
   return 1;
 }
 

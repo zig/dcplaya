@@ -1,5 +1,5 @@
 /*
-** $Id: lapi.c,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
+** $Id: lapi.c,v 1.3 2003-01-11 07:44:59 zigziggy Exp $
 ** Lua API
 ** See Copyright Notice in lua.h
 */
@@ -236,7 +236,18 @@ LUA_API void lua_pushusertag (lua_State *L, void *u, int tag) {
   /* ORDER LUA_T */
   if (!(tag == LUA_ANYTAG || tag == LUA_TUSERDATA || validtag(tag)))
     luaO_verror(L, "invalid tag for a userdata (%d)", tag);
-  tsvalue(L->top) = luaS_createudata(L, u, tag);
+
+  tsvalue(L->top) = luaS_createudata(L, u, tag, 0);
+  ttype(L->top) = LUA_TUSERDATA;
+  api_incr_top(L);
+}
+
+/* Added by VP : version of pushusertag with size parameter */
+LUA_API void lua_pushusertagsz (lua_State *L, void *u, int tag, size_t sz) {
+  /* ORDER LUA_T */
+  if (!(tag == LUA_ANYTAG || tag == LUA_TUSERDATA || validtag(tag)))
+    luaO_verror(L, "invalid tag for a userdata (%d)", tag);
+  tsvalue(L->top) = luaS_createudata(L, u, tag, 300);
   ttype(L->top) = LUA_TUSERDATA;
   api_incr_top(L);
 }

@@ -1,5 +1,5 @@
 /*
-** $Id: lua.h,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
+** $Id: lua.h,v 1.3 2003-01-11 07:44:59 zigziggy Exp $
 ** Lua - An Extensible Extension Language
 ** TeCGraf: Grupo de Tecnologia em Computacao Grafica, PUC-Rio, Brazil
 ** e-mail: lua@tecgraf.puc-rio.br
@@ -122,6 +122,8 @@ LUA_API void  lua_pushlstring (lua_State *L, const char *s, size_t len);
 LUA_API void  lua_pushstring (lua_State *L, const char *s);
 LUA_API void  lua_pushcclosure (lua_State *L, lua_CFunction fn, int n);
 LUA_API void  lua_pushusertag (lua_State *L, void *u, int tag);
+/* Added by VP : version of pushusertag with size parameter */
+LUA_API void lua_pushusertagsz (lua_State *L, void *u, int tag, size_t sz);
 
 
 /*
@@ -197,6 +199,7 @@ LUA_API void lua_collectgarbage (lua_State *L, int step);
 
 #define lua_register(L,n,f)	(lua_pushcfunction(L, f), lua_setglobal(L, n))
 #define lua_pushuserdata(L,u)	lua_pushusertag(L, u, 0)
+#define lua_pushuserdatasz(L,u,sz) lua_pushusertagsz(L, u, 0, sz)
 #define lua_pushcfunction(L,f)	lua_pushcclosure(L, f, 0)
 #define lua_clonetag(L,t)	lua_copytagmethods(L, lua_newtag(L), (t))
 

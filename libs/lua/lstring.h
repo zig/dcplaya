@@ -1,5 +1,5 @@
 /*
-** $Id: lstring.h,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
+** $Id: lstring.h,v 1.3 2003-01-11 07:44:59 zigziggy Exp $
 ** String table (keep all strings handled by Lua)
 ** See Copyright Notice in lua.h
 */
@@ -27,7 +27,7 @@
 void luaS_init (lua_State *L);
 void luaS_resize (lua_State *L, stringtable *tb, int newsize);
 TString *luaS_newudata (lua_State *L, size_t s, void *udata);
-TString *luaS_createudata (lua_State *L, void *udata, int tag);
+TString *luaS_createudata (lua_State *L, void *udata, int tag, size_t sz);
 void luaS_freeall (lua_State *L);
 TString *luaS_newlstr (lua_State *L, const char *str, size_t l);
 TString *luaS_new (lua_State *L, const char *str);

@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.26 2002-12-26 07:15:17 ben Exp $
+ * $Id: display.c,v 1.27 2003-01-11 07:44:59 zigziggy Exp $
  */
 
 #include <stdlib.h>
@@ -149,7 +149,7 @@ static int lua_new_list(lua_State * L)
     
     /* return the display list to the happy user */
     lua_settop(L, 0);
-    lua_pushusertag(L, l, dl_list_tag);
+    lua_pushusertagsz(L, l, dl_list_tag, sizeof(*l));
     return 1;
   }
 

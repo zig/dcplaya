@@ -1,5 +1,5 @@
 /*
-** $Id: lgc.c,v 1.3 2003-01-05 18:08:39 zigziggy Exp $
+** $Id: lgc.c,v 1.4 2003-01-11 07:44:59 zigziggy Exp $
 ** Garbage Collector
 ** See Copyright Notice in lua.h
 */
@@ -25,6 +25,11 @@
 
 /* dcplaya specific */
 #include "sysdebug.h"
+
+
+
+//#define VCOLOR(r,g,b)  vid_border_color(r,g,b)
+#define VCOLOR(r,g,b)
 
 
 static int hasmark (const TObject *o) {
@@ -385,6 +390,7 @@ static int _luaC_collect (lua_State *L, int *count, int flag) {
 
 void luaC_collectgarbage (lua_State *L, int count) {
   if (L->gcstage == LUA_GCIDLE) {	/* let's start marking important stuffs */
+    VCOLOR(255, 255, 0);
     markvalue((GCValue*)L->gt, L, 0);  /* mark table of globals */
     marktagmethods(L);  /* mark tag methods */
     marklock(L); /* mark locked objects */
@@ -393,21 +399,27 @@ void luaC_collectgarbage (lua_State *L, int count) {
   }
   if (L->gcstage == LUA_GCMARK) {	/* continue to mark */
     int r;
+    VCOLOR(255, 128, 128);
     markstack(L); /* mark stack objects */
+    VCOLOR(255, 0, 255);
     r = luaC_mark(L, &count);
     if (r == 1) {	/* reach the end of it, should change to sweep */    
       L->gcstage = LUA_GCSWEEPSTART;
       L->gcptr = NULL;
     }
+    //SDDEBUG("mark done %ld %ld\n", L->GCthreshold, L->nblocks);
   }
   if (L->gcstage == LUA_GCSWEEPSTART) {
+    VCOLOR(0, 255, 0);
     invalidaterefs(L);  /* check unlocked references */
     L->gcTM = -1;
     L->gcstage = LUA_GCSWEEP;
     L->gcptr = L->gcroot;
+    //SDDEBUG("sweep start done %ld %ld\n", L->GCthreshold, L->nblocks);
   }
   if (L->gcstage == LUA_GCSWEEP) {	/* continue to sweep */
     int r;
+    VCOLOR(0, 255, 255);
     r = _luaC_collect(L, &count, 0);
     if (r == 1) {	/* finish collecting */
       L->gcstage = LUA_GCIDLE;
@@ -417,19 +429,22 @@ void luaC_collectgarbage (lua_State *L, int count) {
       checkMbuffer(L);
       L->gcstage = LUA_GCTMCALLBACK;
     }
+    //SDDEBUG("sweep done %ld %ld\n", L->GCthreshold, L->nblocks);
   }
   if (L->gcstage == LUA_GCTMCALLBACK) {
     int r = 1;
+    VCOLOR(255, 255, 255);
     if (L->gcTM >= 0) 
 	r = callgcTMudata(L, &count);
     if (r) {
       L->gcstage = LUA_GCIDLE;
       L->gcTM = 0;        
       callgcTM(L, &luaO_nilobject);
-      SDDEBUG("collect done %ld %ld\n", L->GCthreshold, L->nblocks);
+      //SDDEBUG("collect done %ld %ld\n", L->GCthreshold, L->nblocks);
     }
   }
 
+  VCOLOR(0, 0, 0);
 }
 
 int luaC_collect (lua_State *L, int step) {
@@ -460,8 +475,12 @@ void luaC_checkGC (lua_State *L) {
 
   if (L->GCthreshold < L->nblocks) {
       do {
-      	luaC_collect(L, 1000);
+      	luaC_collect(L, 10000);
       } while (L->gcstage != LUA_GCIDLE);
       L->GCthreshold = L->nblocks * 2;
+      //      L->GCthreshold = L->nblocks + 100*1024;
+      //      L->GCthreshold = L->nblocks * 1.2;
+/*      L->GCthreshold = L->GCthreshold < 4096*1024? 4096*1024 : L->GCthreshold;*/
   }
 }
+

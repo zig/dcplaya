@@ -68,21 +68,15 @@ function sprite(name, x, y, w, h, u1, v1, u2, v2, texture, rotate)
 	spr.tra  = mat_new(spr.vtx);
 	spr.tex  = tex_get(texture)
 	if not spr.tex and type(texture) == "string" then
-		spr.tex = tex_new(texture)
+	   spr.tex = tex_new(texture)
 	end
 	spr.draw = sprite_draw
 	spr.set_color = sprite_set_color
 
-	local x1,y1,x2,y2
-	x1 = -x
-	y1 = -y
-	x2 = x1+w
-	y2 = y1+h
-
-	set_vertex(spr.vtx[1], { 0, 0, 0, 1, 1,1,1,1, u1, v1 } )
-	set_vertex(spr.vtx[2], { w, 0, 0, 1, 1,1,1,1, u2, v1 } )
-	set_vertex(spr.vtx[3], { 0, h, 0, 1, 1,1,1,1, u1, v2 } )
-	set_vertex(spr.vtx[4], { w, h, 0, 1, 1,1,1,1, u2, v2 } )
+	set_vertex(spr.vtx[1], { 0, 0, 0, 1, 1,1,1,1, u1+0.5/w, v1+0.5/h } )
+	set_vertex(spr.vtx[2], { w, 0, 0, 1, 1,1,1,1, u2+0.5/w, v1+0.5/h } )
+	set_vertex(spr.vtx[3], { 0, h, 0, 1, 1,1,1,1, u1+0.5/w, v2+0.5/h } )
+	set_vertex(spr.vtx[4], { w, h, 0, 1, 1,1,1,1, u2+0.5/w, v2+0.5/h } )
 
 	local org
 	local mat

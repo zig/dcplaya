@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.58 2003-01-08 17:08:39 ben Exp $
+ * @version    $Id: dynshell.c,v 1.59 2003-01-11 07:44:59 zigziggy Exp $
  */
 
 #include <stdio.h>
@@ -1958,6 +1958,34 @@ static int lua_cdrom_status(lua_State * L)
   return 3;
 }
 
+static int LUA_setgcthreshold(lua_State * L)
+{
+  lua_setgcthreshold(L, lua_tonumber(L, 1));
+  return 0;
+}
+
+static int LUA_getgcthreshold(lua_State * L)
+{
+  lua_settop(L,0);
+  lua_pushnumber(L, lua_getgcthreshold(L));
+  return 1;
+}
+
+static int LUA_getgccount(lua_State * L)
+{
+  lua_settop(L,0);
+  lua_pushnumber(L, lua_getgccount(L));
+  return 1;
+}
+
+static int lua_collect(lua_State * L)
+{
+  luaC_collect(L, (int) lua_tonumber(L, 1));
+
+  //  printf("collect %d\n", (int) lua_tonumber(L, 1));
+
+  return 0;
+}
 
 #if 0
 static char shell_basic_lua_init[] = 
@@ -2433,6 +2461,40 @@ static luashell_command_description_t commands[] = {
     " disk := [CDDA,CDROM,CDXA,CDI,GDROM,UNKNOWN];\n"
     "]])",
     SHELL_COMMAND_C, lua_cdrom_status
+  },
+
+  {
+    "getgcthreshold",
+    0,
+    "print([["
+    "getgcthreshold :\nReturn current garbage collection threshold value in Kbytes."
+    "]])",
+    SHELL_COMMAND_C, LUA_getgcthreshold
+  },
+  {
+    "setgcthreshold",
+    0,
+    "print([["
+    "setgcthreshold(new_value) :\nSet current garbage collection threshold value in Kbytes."
+    "]])",
+    SHELL_COMMAND_C, LUA_setgcthreshold
+  },
+  {
+    "getgccount",
+    0,
+    "print([["
+    "getgccount :\nReturn approximate allocated blocks by the garbage collector in Kbytes."
+    "]])",
+    SHELL_COMMAND_C, LUA_getgccount
+  },
+
+  {
+    "collect",
+    0,
+    "print([["
+    "collect(step) :\nPerform the given number of step of garbage collection."
+    "]])",
+    SHELL_COMMAND_C, lua_collect
   },
 
   {0},

@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist.c,v 1.8 2002-12-13 17:06:53 ben Exp $
+ * $Id: entrylist.c,v 1.9 2003-01-11 07:45:00 zigziggy Exp $
  */
 
 #include <stdlib.h>
@@ -141,7 +141,7 @@ EL_FUNCTION_DECLARE(new)
   if (el) {
 	printf("%s : entrylist [%p,%d] created.\n", __FUNCTION__,
 		   el, allocator_index(lists,el));
-	lua_pushusertag(L, el, entrylist_tag);
+	lua_pushusertagsz(L, el, entrylist_tag, sizeof(*el));
     return 1;
   }
   return 0;
