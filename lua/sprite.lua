@@ -39,9 +39,8 @@ end
 ---
 --- @param  name  sprite name.
 function sprite_get(name)
-   return sprite_list[name]
+   return name and sprite_list and sprite_list[name]
 end
-
 
 --- Create a sprite and add it in the list of named sprite.
 --- @ingroup   dcplaya_lua_graphics

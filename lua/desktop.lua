@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.20 2003-03-04 15:21:17 zigziggy Exp $
+--- $Id: desktop.lua,v 1.21 2003-03-05 08:42:44 ben Exp $
 ---
 
 if not dolib("evt") then return end
@@ -47,11 +47,14 @@ function dskt_killmenu(dial)
 end
 
 function dskt_openmenu(dial, target, x, y)
-   local spr_name = "menu_close"
+   local spr_name, wmm_name = "menu_close", "menu_wmm"
    dskt_killmenu(dial)
 
    if tag(sprite_get(spr_name)) ~= sprite_tag then
       sprite(spr_name, 0, 0, 22, 22, 0, 0, 1, 1, tex_get("close"))
+   end
+   if tag(sprite_get(wmm_name)) ~= sprite_tag then
+      sprite(wmm_name, 0, 0, 22, 22, 0, 0, 1, 1, tex_get("windowmanager"))
    end
 
    local name = target.name or "app"
@@ -59,8 +62,9 @@ function dskt_openmenu(dial, target, x, y)
    local user_def = menu_create_defs(target.mainmenu_def, target)
    local default_def = menu_create_defs
    ({
---       root=":"..name..":{".. spr_name .."}kill{kill}",
-       root=":"..name..":switch to{switch},{".. spr_name .."}kill{kill}",
+       root = ":" .. name .. ":{"
+	  .. wmm_name .. "}switch to{switch},{"
+	  .. spr_name .. "}kill{kill}",
        cb = {
 	  kill = function(menu) 
 		    evt_shutdown_app(%dial)
@@ -464,7 +468,7 @@ function dskt_create()
 end
 
 -- Load application icons
-for k,v in { "close", "console" } do
+for k,v in { "close", "console", "windowmanager" } do
    local tex = tex_get(v) or
 		    tex_new(home .. "lua/rsc/icons/" .. v .. ".tga")
 end

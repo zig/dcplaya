@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.8 2003-03-04 19:44:53 ben Exp $
+--- $Id: control_center.lua,v 1.9 2003-03-05 08:42:44 ben Exp $
 ---
 
 control_center_loaded = nil
@@ -20,7 +20,6 @@ function control_center_create(owner, name)
 
    function control_center_volume(menu)
       local cc = menu.target
-      print("cc-volume II");
       volume_control_create(); -- $$$ do not works with cc has owner
    end
 
@@ -119,7 +118,7 @@ function control_center_create(owner, name)
    function control_center_create_sprites(cc)
       control_center_create_sprite(cc, "cc_dcp", "dcplaya.tga", 32)
       control_center_create_sprite(cc, "cc_vmu", "vmu32.tga",32)
-      control_center_create_sprite(cc, "cc_vol", "volume.tga", 32)
+      control_center_create_sprite(cc, "cc_vol", "volume2.tga", 32)
 --				   24, 24) --, 0 , 0, 8/64, 48/64)
    end
 
