@@ -1,6 +1,7 @@
 /*  #include <kos.h> //$$$ for debug */
 #include "vupeek.h"
 #include "math_int.h"
+#include "sysdebug.h"
 
 static int last_id;
 
@@ -39,7 +40,8 @@ static void do_group(vupeek_t *p)
   val = p->acu / p->cnt;
   
   if (val > 65534) {
-    *(int*)0x3 = 0x12345678;
+    SDDEBUG("val = %d\n",val);
+    BREAKPOINT(0xFAFADADA);
   }
   val = int_sqrt(val<<16);
   
