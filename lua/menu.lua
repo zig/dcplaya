@@ -517,8 +517,7 @@ function menu_create(owner, name, def, box, x1, y1)
 				bkgcolor  = nil,
 				curcolor  = menu.style.body_curcolor,
 				border    = menu.style.border,
-				span      = menu.style.span,
-			     } )
+				span      = menu.style.span,			     } )
 
    menu.fl.fade_spd = 4
    menu.fl.draw_background = menufl_draw_background
