@@ -4,7 +4,7 @@
  * @date      2002/09/21
  * @brief     dcplaya archive.
  *
- * $Id: dcar.c,v 1.5 2002-12-09 16:26:49 ben Exp $
+ * $Id: dcar.c,v 1.6 2002-12-13 17:06:53 ben Exp $
  */
 
 #include <stdio.h>
@@ -22,12 +22,10 @@ const int dcar_align = 4;
 dcar_filter_e dcar_default_filter(const dirent_t *de, int level)
 {
   dcar_filter_e code = DCAR_FILTER_ERROR;
-
   level = level;
   if (de) {
     int type = filetype_get(de->name, de->size);
-
-    code = (type >= FILETYPE_DIR) ? DCAR_FILTER_ACCEPT : DCAR_FILTER_REJECT;
+    code = (type >= filetype_dir) ? DCAR_FILTER_ACCEPT : DCAR_FILTER_REJECT;
   }
   return code;
 }

@@ -72,7 +72,8 @@ int driver_list_register(driver_list_t *dl, any_driver_t * driver)
      file type. */
   if (driver->type == INP_DRIVER) {
 	inp_driver_t * d = (inp_driver_t *) driver;
-	d->id = filetype_add(d->extensions);
+	d->id = filetype_add(filetype_major_add("music"),
+						 driver->name, d->extensions);
     SDDEBUG("Driver '%s' : filetype %d\n", driver->name, d->id);
   }
 

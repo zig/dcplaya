@@ -4,7 +4,7 @@
  * @date    2002/09/30
  * @brief   File manipulation utilities.
  *
- * $Id: file_utils.c,v 1.5 2002-12-09 16:26:49 ben Exp $
+ * $Id: file_utils.c,v 1.6 2002-12-13 17:06:53 ben Exp $
  */
 
 /* #include "sysdebug.h" */
@@ -303,10 +303,15 @@ int fu_read_dir_cb(const char *dirname, fu_addentry_f addentry, void * cookie)
   while (dir=fs_readdir(fd), dir) {
 	int err;
 
+/* 	SDDEBUG("[%s] : [%s]\n", __FUNCTION__, dir->name); */
+
     memset(&local,0,sizeof(local));
     strncpy(local.name,dir->name,sizeof(local.name)-1);
     local.size = dir->size;
 	err = addentry(&local, cookie);
+
+/* 	SDDEBUG("-> %d\n", err); */
+
 	if (err < 0) {
 	  count = err;
 	  break;

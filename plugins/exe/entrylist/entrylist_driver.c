@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist_driver.c,v 1.4 2002-11-04 22:41:53 benjihan Exp $
+ * $Id: entrylist_driver.c,v 1.5 2002-12-13 17:06:53 ben Exp $
  */
 
 #include <stdlib.h>
@@ -241,11 +241,19 @@ static luashell_command_description_t driver_commands[] = {
     DRIVER_NAME"_load", 0,                /* long and short names */
     "print [["
 	DRIVER_NAME"_load(entrylist, path [,filter]) : "
-	"Load a directory into entry-list."
+	"Load a directory into entry-list.\n"
+	"filter is a string composed of control characters. Lowercase/uppercase "
+	"chars respectively reject/accept a major filetype.\n"
+	" <d> dir\n"
+	" <f> file\n"
+	" <x> plugin\n"
+	" <i> image\n"
+	" <m> music\n"
+	" <p> playlist\n"
+	" <l> lua\n"
     "]]",                                 /* usage */
     SHELL_COMMAND_C, lua_entrylist_load   /* function */
   },
-
  
   {0},                                    /* end of the command list */
 };

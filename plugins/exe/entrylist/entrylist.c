@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist.c,v 1.7 2002-11-14 23:40:27 benjihan Exp $
+ * $Id: entrylist.c,v 1.8 2002-12-13 17:06:53 ben Exp $
  */
 
 #include <stdlib.h>
@@ -14,6 +14,9 @@
 #include "entrylist_driver.h"
 #include "entrylist_loader.h"
 #include "entrylist_path.h"
+#include "filetype.h"
+
+#include "sysdebug.h"
 
 el_list_t * entrylist_create(void)
 {
@@ -381,8 +384,22 @@ EL_FUNCTION_END()
 EL_FUNCTION_START(load)
 {
   const char * path, * filterstr;
-  int type;
-  el_filter_t filter;
+  int type, filter ,i, c;
+
+  static struct {
+	char c;            /* control char */
+	const char * name; /* corresponding major name */
+	int type;          /* result major type number. */
+  } table[] = {
+	{ 'd', "dir" },
+	{ 'f', "file" },
+	{ 'x', "plugin" },
+	{ 'i', "image" },
+	{ 'm', "music" },
+	{ 'p', "playlist" },
+	{ 'l', "lua" },
+	{ 0,0 }
+  };
 
   type = lua_type(L,2);
   if (type != LUA_TSTRING ) {
@@ -395,52 +412,45 @@ EL_FUNCTION_START(load)
 	printf("%s : invalid path <%s>\n", __FUNCTION__, path);
 	return 0;
   }
-  
-  filter.dir      = 1;
-  filter.regular  = 0;
-  filter.playlist = 1;
-  filter.plugins  = 0;
-  filter.playable = 1;
-  if (filterstr = lua_tostring(L,3), filterstr) {
-	int c;
-	while (c = *filterstr++, c) {
-	  switch (c) {
-	  case 'd':
-		filter.dir      = 0;
+
+  /* Init opcode table. */
+  for (i=0; table[i].c; ++i) {
+	int type = filetype_major(table[i].name);
+	if (type >= 0) {
+	  type = FILETYPE_MAJOR_NUM(type);
+	  SDDEBUG("table : '%c' [%s] %04x\n", table[i].c, table[i].name, type);
+	}
+	table[i].type = type;
+  }
+
+  filterstr = 0;
+  if (lua_type(L,3) == LUA_TSTRING) {
+	filterstr = lua_tostring(L,3);
+  }
+  if (!filterstr) {
+	filterstr = "DPM";
+  }
+
+  filter = 0;
+  while (c = *filterstr++, c) {
+	for (i=0; table[i].c; ++i) {
+	  if (table[i].type < 0) {
+		SDDEBUG("Unknown type [%s]\n", table[i].name);
+		continue;
+	  }
+	  if (c == table[i].c) {
+		SDDEBUG("reject type [%s]\n", table[i].name);
+		filter &= ~(1<<table[i].type);
 		break;
-	  case 'D':
-		filter.dir      = 1;
+	  } else if ((c ^ 32) == table[i].c) {
+		SDDEBUG("accept type [%s]\n", table[i].name);
+		filter |= 1<<table[i].type;
 		break;
-	  case 'x':
-		filter.plugins  = 0;
-		break;
-	  case 'X':
-		filter.plugins  = 1;
-		break;
-	  case 'f':
-		filter.regular  = 0;
-		break;
-	  case 'F':
-		filter.regular  = 1;
-		break;
-	  case 'l':
-		filter.playlist  = 0;
-		break;
-	  case 'L':
-		filter.playlist  = 1;
-		break;
-	  case 'p':
-		filter.playable  = 0;
-		break;
-	  case 'P':
-		filter.playable  = 1;
-		break;
-	  case '*':
-		filter.all = -1;
 	  }
 	}
   }
 
+  SDDEBUG("FINAL FILTER = %x\n", filter);
 
   if (el_loader_loaddir(el,  path, filter) < 0) {
 	printf("%s : failed\n", __FUNCTION__);

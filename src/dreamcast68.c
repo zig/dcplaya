@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.34 2002-11-28 04:22:44 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.35 2002-12-13 17:06:53 ben Exp $
  */
 
 //#define RELEASE
@@ -23,6 +23,7 @@
 //#include <dc/ta.h>
 #include <stdio.h>
 
+#include "filetype.h"
 #include "sndstream.h"
 #include "songmenu.h"
 //#include "gp.h"
@@ -157,6 +158,8 @@ static int sound_init(void)
   playa_init();
   return 0;
 }
+
+int	filetype_elf, filetype_lef;
 
 static void sature(float *a, const float min, const float max)
 {
@@ -422,10 +425,20 @@ static int load_builtin_driver(void)
 
 static int driver_init(void)
 {
-  int err=0;
+  int err=0, type;
 
   SDDEBUG(">> %s()\n", __FUNCTION__);
   SDINDENT;
+
+  /* Init plugin filetype. */
+  type = filetype_major_add("plugin");
+  if (type >= 0) {
+	filetype_elf = filetype_add(type, 0, ".elf\0");
+	filetype_lef = filetype_add(type, 0, ".lef\0.lez\0");
+  }
+  /* Init "music" and "image" major type. */
+  type = filetype_major_add("music");
+  type = filetype_major_add("image");
 
   /* Init driver list */
   SDDEBUG("Init decoder driver list\n");

@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist_loader.c,v 1.4 2002-11-04 22:41:53 benjihan Exp $
+ * $Id: entrylist_loader.c,v 1.5 2002-12-13 17:06:53 ben Exp $
  */
 
 #include <stdio.h>
@@ -18,6 +18,8 @@
 
 #include "file_utils.h"
 #include "filetype.h"
+
+#include "sysdebug.h"
 
 typedef enum {
   LOADER_INIT = 0,
@@ -34,7 +36,7 @@ static volatile loader_status_e loader_status = 0;
 static kthread_t * loader_thd = 0; 
 
 static struct loader_cookie_s {
-  el_filter_t filter;
+  int filter;
   el_list_t  * el;
   el_path_t  * save_path;
   const char * path;
@@ -110,27 +112,21 @@ static int loader_addentry(const fu_dirent_t * dir, void * cookie)
   int i;
   int type; 
 
+/*   SDDEBUG("[%s] [%s,%d]\n", __FUNCTION__, dir->name, dir->size); */
   e.type = filetype_get(dir->name, dir->size);
-  type = FILETYPE(e.type);
+/*   SDDEBUG("[%s] [%s,%d,%04x]\n", __FUNCTION__, dir->name, dir->size, e.type); */
 
-  if (type < FILETYPE_DIR) {
-	/* Remove '.', '..' */
+  if (e.type < filetype_dir) {
+/* 	SDDEBUG("skipping [%s,%04x]\n",dir->name, e.type); */
+	/* Remove error, root, '.', '..' */
 	return 0;
-  } else if (type < FILETYPE_FILE) {
-	/* Dir ... */
-	if (!loader->filter.dir) return 0;
-  } else if (type < FILETYPE_EXE) {
-	/* Regular files ... */
-	if (!loader->filter.regular) return 0;
-  } else if (type < FILETYPE_PLAYLIST) {
-	/* Exe (plugins) ... */
-	if (!loader->filter.plugins) return 0;
-  } else if (type < FILETYPE_PLAYABLE) {
-	/* Playlists ... */
-	if (!loader->filter.playlist) return 0;
-  } else {
-	/* playable */
-	if (!loader->filter.playable) return 0;
+  }
+  type = FILETYPE_MAJOR_NUM(e.type);
+
+  if (! (loader->filter & (1<<type))) {
+/* 	SDDEBUG("filter [%s,%04x]\n",dir->name, e.type); */
+	/* Filter major type */
+	return 0;
   }
 
   e.size = dir->size;
@@ -180,6 +176,7 @@ static void loader_thread(void *cookie)
 
 	case LOADER_LOADING: {
 	  el_path_t * path = loader.el->path;
+	  printf("entrylist_loader_thread LOADING\n");
 
 	  if (!fu_is_dir(path->path)) {
 		printf("entrylist_loader_thread : not a directory '%s'\n", path->path);
@@ -188,7 +185,7 @@ static void loader_thread(void *cookie)
 		loader.save_path = 0;
 	  } else {
 		int j;
-		struct {
+		static struct {
 		  const char * file, * name;
 		} files[] = {
 		  {"..", "<parent>" },
@@ -214,7 +211,7 @@ static void loader_thread(void *cookie)
 		  memcpy(e.buffer+e.iname, files[j].name, l);
 
 		  eltsize += e.iname + l;
-		  e.type = filetype_dir(files[j].file);
+		  e.type = filetype_directory(files[j].file);
 		  e.size = -1;
 		  e.path = elpath_addref(path);
 		  if (entrylist_insert(loader.el, -1, &e, eltsize) < 0) {
@@ -223,7 +220,17 @@ static void loader_thread(void *cookie)
 		}
 		entrylist_unlock(loader.el);
 	
-		fu_read_dir_cb(path->path, loader_addentry, &loader);
+		printf("ENTERING CB [%s]\n",path->path);
+		{
+		  int err = 
+			fu_read_dir_cb(path->path, loader_addentry, &loader);
+		  if (err < 0) {
+			printf("Error loading [%s] : %s\n", path->path, fu_strerr(err));
+		  } else {
+			printf("-> %d entries added\n", err);
+		  }
+		}
+		printf("EXITING CB\n");
 	  }
 	  /* Finish loading. */
 	  loader.el->loading = 2; /* $$$ Atomik op */
@@ -268,9 +275,9 @@ static void loader_thread(void *cookie)
 }
 
 
-int el_loader_loaddir(el_list_t * el, const char * path, el_filter_t filter)
+int el_loader_loaddir(el_list_t * el, const char * path, int filter)
 {
-  printf("entrylist_loader_loaddir (%p,%s,%x)\n",el,path,*(int*)&filter);
+  printf("entrylist_loader_loaddir (%p,%s,%x)\n",el,path,filter);
 
   if (!loader_thd) {
 	printf("entrylist_loader_loaddir : no loader thread\n");

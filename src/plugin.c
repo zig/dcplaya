@@ -3,7 +3,7 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: plugin.c,v 1.9 2002-09-27 02:01:38 vincentp Exp $
+ * $Id: plugin.c,v 1.10 2002-12-13 17:06:53 ben Exp $
  */
 #include <stdio.h>
 #include <string.h>
@@ -149,6 +149,8 @@ int plugin_load_and_register(const char *fname)
   return count;
 }
 
+extern int filetype_lef;
+
 static int r_plugin_path_load(char *path, unsigned int level)
 {
   dirent_t *de;
@@ -178,7 +180,7 @@ static int r_plugin_path_load(char *path, unsigned int level)
 
     type = filetype_get(de->name, de->size);
 
-    if (type == FILETYPE_DIR) {
+    if (type == filetype_dir) {
       int cnt;
       strcpy(path_end+1, de->name);
       cnt = r_plugin_path_load(path, level-1);
@@ -186,7 +188,7 @@ static int r_plugin_path_load(char *path, unsigned int level)
       continue;
     }
 
-    if (type != FILETYPE_LEF) {
+    if (type != filetype_lef) {
       continue;
     }
 

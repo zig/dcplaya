@@ -1,163 +1,368 @@
 /**
+ * @ingroup dcplaya_devel
  * @file    filetype.c
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   Deal with file types and extensions.
  *
- * $Id: filetype.c,v 1.7 2002-11-14 23:40:29 benjihan Exp $
+ * $Id: filetype.c,v 1.8 2002-12-13 17:06:53 ben Exp $
  */
 
+#include <stdlib.h>
 #include <string.h>
 #include "filetype.h"
 #include "filename.h"
 
-typedef struct {
-  const char *ext;
-  int type;
-} _ext_list_t;
+#include "sysdebug.h"
 
-#define MAX_PLAY_TYPES 16u
-static const char * playables[MAX_PLAY_TYPES];
+typedef struct minor_type_s {
+  struct minor_type_s * next; /* Next in list */
+  int type;                   /* File type */
+  const char * name;          /* Filetype name */
+  const char * exts;          /* Extension list (double '\0' terminated) */
+} minor_type_t;
 
-static int filetype_findfree(void)
+typedef struct major_type_s {
+  const char * name;          /* Major name */
+  minor_type_t * minor;       /* Mijor list */
+} major_type_t;
+
+static minor_type_t dir_minor    = { 0,             0x0003, "*",      "*\0"  };
+static minor_type_t parent_minor = { &dir_minor,    0x0002, "parent", "..\0" };
+static minor_type_t self_minor   = { &parent_minor, 0x0001, "self",   ".\0"  };
+static minor_type_t root_minor   = { &self_minor,   0x0000, "root",   "\0"   };
+static minor_type_t file_minor   = { 0,             0x1000, "*",      "*\0"  };
+
+static major_type_t major[16] = {
+  { "dir",  &root_minor },
+  { "file", &file_minor },
+};
+
+const int filetype_root   = 0x0000;
+const int filetype_self   = 0x0001;
+const int filetype_parent = 0x0002;
+const int filetype_dir    = 0x0003;
+const int filetype_file   = 0x1000;
+
+static minor_type_t * find_minor(int type)
+{
+  minor_type_t * m;
+  if (type == -1) {
+	return 0;
+  }
+  for (m = major[(type>>12)&15].minor; m && m->type != type; m = m->next)
+	;
+  return m;
+}
+
+static minor_type_t * find_minor_name(const minor_type_t * m,
+									  const char * name)
+{
+  if (!name) {
+	return 0;
+  }
+  for (; m && stricmp(name, m->name); m = m->next)
+	;
+  return (minor_type_t *)m;
+}
+
+
+static int findfree_minor(int majornum)
+{
+  int expected;
+  minor_type_t * m;
+  for (m = major[majornum].minor, expected = majornum << 12;
+	   m && m->type == expected;
+	   m = m->next, ++expected)
+	;
+  return (expected < ((majornum+1)<<12)) ? expected : -1;
+}
+
+static void insert_minor(minor_type_t * minor)
+{
+  minor_type_t * m, ** prev;
+  int type = minor->type;
+  major_type_t * maj = &major[(type>>12)&15];
+
+  for (prev = &maj->minor, m = maj->minor;
+	   m && m->type < type;
+	   prev = &m->next, m = m->next)
+	;
+
+  *prev = minor;
+  minor->next = m;
+}
+
+static int reserved_type(int type)
+{
+  return 0
+	|| (type == -1)
+	|| (type >= filetype_root && type <= filetype_dir)
+	|| (type == filetype_file);
+}
+
+static void delete_minor(int type)
+{
+  minor_type_t * m, ** prev;
+  major_type_t * maj = &major[FILETYPE_MAJOR_NUM(type)];
+  type = FILETYPE(type);
+
+  /* Protected filetype */
+  if (reserved_type(type)) {
+	return;
+  }
+
+  for (prev = &maj->minor, m = maj->minor; m; prev = &m, m = m->next) {
+	if (m->type == type) {
+	  (*prev)->next = m->next;
+	  free(m);
+	  return;
+	}
+  }
+}
+
+int filetype_major(const char * name)
 {
   int i;
-  for (i=0; i<MAX_PLAY_TYPES; ++i) {
-	if (!playables[i]) {
-	  return i;
+  for (i = 0; i < 16; ++i) {
+	if (!stricmp(name, major[i].name)) {
+	  return (i << 12);
 	}
   }
   return -1;
 }
 
-int filetype_add(const char *exts)
+int filetype_minor(const char * name, int type)
 {
   int i;
-  i = filetype_findfree();
-  if (i < 0) {
-	return i;
+  if (type < 0 || type > 0xFFFF) {
+	return -1;
   }
-  playables[i] = exts;
-
-  {
-	int len;
-	while(len = strlen(exts), len > 0) {
-/* 	  printf("add as %d : '%s'\n", i+ FILETYPE_PLAYABLE, exts); */
-	  exts+= len+1;
+  for (i = FILETYPE_MAJOR_NUM(type); i < 16; ++i) {
+	const minor_type_t * m;
+	for (m = major[i].minor; m; m = m->next) {
+	  if (!stricmp(name, m->name) && m->type >= type) {
+		return m->type;
+	  }
 	}
   }
+  return -1;
+}
+
+const char * filetype_major_name(int type)
+{
+  return (type == -1) ? 0 : major[FILETYPE_MAJOR_NUM(type)].name;
+}
 
 
-  return i + FILETYPE_PLAYABLE;
+const char * filetype_minor_name(int type)
+{
+  minor_type_t * m = find_minor(type);
+  return m ? m->name : 0;
+}
+
+int filetype_names(int type, const char ** maj, const char ** min)
+{
+  minor_type_t * m;
+
+  if (m = find_minor(type), m) {
+	if (maj) *maj = major[FILETYPE_MAJOR_NUM(type)].name;
+	if (min) *min = m->name;
+	return 0;
+  }
+  return -1;
+}
+
+int filetype_major_add(const char * name)
+{
+  if (name) {
+	int i;
+	i = filetype_major(name);
+	if (i != -1) {
+	  SDDEBUG("Existing Major type [%04x, %s]\n", i, name);
+	  return i;
+	}
+	for (i = 0; i < 16; ++i) {
+	  if (!major[i].name) {
+		major[i].name = name;
+		major[i].minor = 0;
+
+		SDDEBUG("Add Major type [%04x, %s]\n", i<<12, name); 
+
+		return i << 12;
+	  }
+	}
+  }
+  return -1;
+}
+
+void filetype_major_del(int type)
+{
+  major_type_t * maj;
+  minor_type_t * m, * n;
+  int major_num = FILETYPE_MAJOR_NUM(type);
+
+  if (reserved_type(type)) return;
+  maj = &major[major_num];
+  for (m = maj->minor; m; m = n) {
+	n = m->next;
+	free(m);
+  }
+  maj->name = 0;
+  maj->minor = 0;
+}
+
+int filetype_add(int major_type, const char * name, const char *exts)
+{
+  int i;
+  minor_type_t * m;
+
+  if (major_type == -1) {
+	return -1;
+  }
+  exts = exts ? exts : "\0";
+  name = name ? name : (exts + (exts[0]=='.'));
+
+  major_type = FILETYPE_MAJOR_NUM(major_type);
+  m = find_minor_name(major[major_type].minor, name);
+  if (m) {
+	SDDEBUG("Replacing filetype [%04x, %s:%s]\n",
+			m->type, major[major_type].name, name);
+	m->exts = exts;
+	return m->type;
+  }
+
+  i = findfree_minor(major_type);
+  if (i < 0) {
+	return -1;
+  }
+  m = malloc(sizeof(*m));
+  if (!m) {
+	return -1;
+  }
+  m->type = i;
+  m->name = name;
+  m->exts = exts;
+  insert_minor(m);
+  SDDEBUG("Adding filetype [%04x, %s:%s]\n",
+		  m->type, major[major_type].name, name); 
+
+  return i;
 }
 
 void filetype_del(int type)
 {
-  type -= FILETYPE_PLAYABLE;
-  if ((unsigned int)type >= MAX_PLAY_TYPES) {
+  if (type == -1) {
 	return;
   }
-  playables[type] = 0;
+  delete_minor(type);
 }
 
-/* Find extension ext in extension list exts */
-static int find_ext(const char *ext, const _ext_list_t *exts)
-{
-  int i;
-
-  for (i=0; exts[i].ext && stricmp(ext, exts[i].ext); ++i)
-    ;
-  return exts[i].type;
-}
-
+/* Return 0:not found, 1:exact match 2:wildcard match */
 static int extfind(const char * extlist, const char * ext)
 {
+  int found = 0;
   if (extlist && ext) {
 	int len;
-	while (len = strlen(extlist), len > 0) {
-/* 	  printf("cmp ('%s','%s')\n", ext,extlist);  */
-	  if (!stricmp(ext,extlist)) {
-		return 1;
+	while (!found && (len = strlen(extlist), len > 0)) {
+/* 	  SDDEBUG("   -- [%s] into [%s]\n", ext, extlist); */
+	  found = !stricmp(ext,extlist);
+	  if (!found && len == 1 && extlist[0] == '*') {
+		found = 2;
 	  }
 	  extlist += len+1;
 	}
   }
-  return 0;
+  return found;
 }
 
-static int find_playable(const char *ext)
+static const minor_type_t * find_minor_ext(const minor_type_t * m,
+										   const char * ext, int * alt)
 {
-  int i;
+  const minor_type_t * fm = 0;
 
-  for (i=0; i<MAX_PLAY_TYPES; ++i) {
-	if (extfind(playables[i], ext)) {
-	  return FILETYPE_PLAYABLE + i;
+  *alt = 1;
+
+/*   SDDEBUG("find [%s] into [%s]\n", */
+/* 		  ext, major[FILETYPE_MAJOR_NUM(m->type)].name); */
+
+  for ( ; m ; m=m->next) {
+	int r;
+/* 	SDDEBUG(" -- [%s] into [%s]\n", ext, m->name); */
+
+	r = extfind(m->exts, ext);
+	if (r) {
+	  fm = m;
+	  if (r==1) {
+		*alt = 0;
+		break;
+	  }
 	}
   }
-  return FILETYPE_UNKNOWN;
+  return fm;
 }
+
+static int get_regular(const char * fname, int mask)
+{
+  const minor_type_t * m;
+  const char * e;
+  int i, type, alt;
+
+  if (!fname) {
+	return -1;
+  }
+
+  type = filetype_file;
+  e = fn_secondary_ext(fname,".gz");
+  if (e && e[0]) {
+	for (i = 1; i < 16; ++i) {
+	  if (!(mask&(1<<i)) || !major[i].minor) continue;
+	  m = find_minor_ext(major[i].minor, e, &alt);
+	  if (m) {
+		type = m->type;
+		if (!alt) break;
+	  }
+	}
+  } else {
+	/* No extension, may be a filetype defined by filename */
+	fname = fn_basename(fname);
+	for (i = 1; i < 16; ++i) {
+	  if (!(mask&(1<<i)) || !major[i].minor) continue;
+	  m = find_minor_ext(major[i].minor, fname, &alt);
+	  if (m) {
+		type = m->type;
+		if (!alt) break;
+	  }
+	}
+  }
+
+  return type;
+}
+
+ 
 
 /* Get type for a regular file (not a dir!) */
 int filetype_regular(const char * fname)
 {
-  int type = FILETYPE_UNKNOWN;
-  const _ext_list_t ext[] = 
-    {
-      { ".m3u", FILETYPE_M3U },
-      { ".pls", FILETYPE_PLS },
-      { ".elf", FILETYPE_ELF },
-      { ".lef", FILETYPE_LEF },
-      { ".lez", FILETYPE_LEF },
-	  { ".gz",  FILETYPE_UNKNOWN | FILETYPE_GZ },
-      {      0, FILETYPE_UNKNOWN }
-    };
-  const char * e, * e2;
-
-/*   printf("find-type [%s] : ",fname); */
-
-  e = fn_ext(fname);
-  if (e && e[0]) {
-/* 	printf("ext:[%s] ", e); */
-
-    type = find_ext(e, ext);
-	if (FILETYPE(type) == FILETYPE_UNKNOWN) {
-	  e2 = e;
-	  if (type & FILETYPE_GZ) {
-		e2 = fn_secondary_ext(fname,0);
-/* 		printf("ext2:[%s] ", e2); */
-	  }
-	  if (e2 && e2[0]) {
-		int playtype = find_playable(e2);
-		if (playtype) {
-		  type = (type & FILETYPE_GZ) | playtype;
-		}
-	  }
-	}
-
-	if (type == (FILETYPE_GZ | FILETYPE_UNKNOWN)) {
-	  unsigned int len;
-	  e2 = fn_secondary_ext(fname,0);
-	  if (len = e-e2, (len > 0 && len < 7u)) {
-		char tmp[8];
-		memcpy(tmp,e2,len);
-		tmp[len] = 0;
-		type = find_ext(tmp, ext) | FILETYPE_GZ;
-	  }
-	}
-  }
-/*   printf(" -> %04X\n", type); */
-  return type;
+  return get_regular(fname, -1);
 }
 
-int filetype_dir(const char * fname) 
+int filetype_directory(const char * fname)
 {
-  int type;
+  int type = -1;
 
-  if (!strcmp(fname, ".")) {
-    type = FILETYPE_SELF;
-  } else if (!strcmp(fname, "..")) {
-    type = FILETYPE_PARENT;
-  } else {
-    type = FILETYPE_DIR;
+  if (!fname) {
+	return -1;
+  }
+  
+  if (!fname[0]) {
+    type = filetype_root;
+  }	else {
+	int alt;
+	const minor_type_t * m;
+	m = find_minor_ext(major[0].minor, fn_basename(fname), &alt);
+	if (m) {
+	  type = m->type;
+	}
   }
   return type;
 }
@@ -167,9 +372,21 @@ int filetype_get(const char *fname, int size)
   int type;
 
   if (size == -1) {
-    type = filetype_dir(fname);
+    type = filetype_directory(fname);
   } else {
     type = filetype_regular(fname);
+  }
+  return type;
+}
+
+int filetype_get_filter(const char *fname, int major_mask)
+{
+  int type;
+
+  if (major_mask == 1) {
+    type = filetype_directory(fname);
+  } else {
+	type = get_regular(fname, major_mask);
   }
   return type;
 }

@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.46 2002-12-12 18:35:24 zigziggy Exp $
+ * @version    $Id: dynshell.c,v 1.47 2002-12-13 17:06:53 ben Exp $
  */
 
 #include <stdio.h>
@@ -511,6 +511,8 @@ static int lua_dirlist(lua_State * L)
 
 #define MAX_DIR 32
 
+extern int filetype_lef;
+
 static int r_path_load(lua_State * L, char *path, unsigned int level, const char * ext, int count)
 {
   dirent_t *de;
@@ -542,8 +544,7 @@ static int r_path_load(lua_State * L, char *path, unsigned int level, const char
     int type;
 
     type = filetype_get(de->name, de->size);
-
-    if (type == FILETYPE_DIR) {
+    if (type == filetype_dir) {
       strcpy(dirs[ndirs++], de->name);
       if (!ext)
 		continue;
@@ -555,7 +556,7 @@ static int r_path_load(lua_State * L, char *path, unsigned int level, const char
 		continue;
       }
     } else {
-      if (type != FILETYPE_LEF) {
+      if (type != filetype_lef) {
 		continue;
       }
     }
@@ -1532,39 +1533,11 @@ static int lua_test(lua_State * L)
 	  /* Directory */
 	  result = fu_is_dir(fname);
 	  break;
-	case 'f': case 's': case 'x': case 'l': case 'p': case 'i':
-	  result = 0;
-	  if (fu_is_regular(fname)) {
-		if (test[1] == 'f') {
-		  /* Regular */
-		  result = 1;
-		} else if (test[1] == 's') {
-		  /* Empty */
-		  result = fu_size(fname) > 0;
-		} else {
-		  int type = FILETYPE(filetype_regular(fname));
-		  int first = -1, last = 0;
-		  if (test[1] == 'x') {
-			/* Executable (plugins) */
-			first = FILETYPE_EXE;
-			last = FILETYPE_EXE_LAST;
-		  } else if (test[1] == 'l') {
-			/* Playlist */
-			first = FILETYPE_PLAYLIST;
-			last = FILETYPE_PLAYLIST_LAST;
-		  } else if (test[1] == 'p') {
-			/* Playable (music file) */
-			first = FILETYPE_PLAYABLE;
-			last = FILETYPE_PLAYABLE_LAST;
-		  } else if (test[1] == 'i') {
-			/* Image */
-			first = FILETYPE_IMAGE;
-			last = FILETYPE_IMAGE_LAST;
-		  }
-		  if (first > 0) {
-			result = (type >= first) && (type <= last);
-		  }
-		}
+	case 'f': case 's':
+	  result = fu_is_regular(fname);
+	  if (result && test[1] == 's') {
+		/* Empty */
+		result = fu_size(fname) > 0;
 	  }
 	  break;
 	}
@@ -1977,10 +1950,6 @@ static luashell_command_description_t commands[] = {
 	" -d : file exist and is a directory\n"
 	" -f : file exist and is a regular file\n"
 	" -s : file is not an empty regular file\n"
-	" -x : file is an executable (plugin) file\n"
-	" -p : file is a playable (music) file\n"
-	" -i : file is an image file\n"
-	" -l : file is an playlist file\n"
     "]])",
     SHELL_COMMAND_C, lua_test
   },
