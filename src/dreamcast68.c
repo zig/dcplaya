@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.56 2003-03-17 05:05:59 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.57 2003-03-17 15:37:38 ben Exp $
  */
 
 //#define RELEASE
@@ -19,6 +19,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <dc/maple.h> /* $$$ ben : hack for START short-cut vmu load */
+#include <dc/spu.h>
+#include <dc/cdrom.h>
 
 #include "dcplaya/config.h"
 
@@ -68,6 +71,9 @@
 #include "fifo.h"
 
 #include "exceptions.h"
+
+/* from rand.c */
+extern void srandom(unsigned int nseed);
 
 float fade68;
 uint32 frame_counter68 = 0;
@@ -1072,10 +1078,22 @@ int dreammp3_main(int argc, char **argv)
     fs_ramdisk_modified();
   }
 
+
   /* Initialize the vmu file module as soon as possible... */
+
   if (!vmu_file_init()) {
-    /* load default (1st) dcplaya vmu file */
-    vmu_load();
+    /* Read controller state to short cut the vmu file init */
+    cont_cond_t cond;
+    int addr,skip;
+    skip = (addr = maple_first_controller(), addr)
+      && !cont_get_cond(addr, &cond) && !(cond.buttons & CONT_START);
+
+    if (!skip) {
+      /* load default (1st) dcplaya vmu file */
+      vmu_load();
+    } else {
+      SDDEBUG("START pressed : skipping VMU load\n");
+    }
   }
 
   /* Initialize shell and LUA */
