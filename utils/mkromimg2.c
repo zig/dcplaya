@@ -56,97 +56,110 @@ static int fputint(FILE *out, int v, int size)
   return 0;
 }
 
-static int do_gz(const char *zname, const char *iname, int size)
+
+/* ===========================================================================
+ * Test deflate() with small buffers
+ */
+static int do_deflate(FILE * out, const char *iname, ulong len)
 {
-  char tmp[256];
-  FILE * in;
-  gzFile out;
-
-/*   fprintf(stderr,"compress [%s] <= [%s] %d\n", zname, iname, size); */
-
-  in = fopen(iname,"rb");
-  if (!in) {
-    perror(iname);
-    return -1;
-  }
-  out = gzopen(zname,"wb9");
-  if (!out) {
-    fclose(in);
-    perror("gzopen");
-    return -1;
-  }
-
-  while(size) {
-    int n;
-
-    n = sizeof(tmp);
-    if (n > size) n = size;
-
-    if (fread(tmp,1,n,in) != n) {
-      perror(iname);
-      break;
-    }
-    if (gzwrite(out,tmp,n) != n) {
-      perror("gzwrite");
-      break;
-    }
-    size -= n;
-  }
-  gzflush(out, Z_SYNC_FLUSH);
-  gzclose(out);
-  fclose(in);
-
-  if (size) {
-    size = -1;
-  } else {
-    in = fopen(zname,"rb");
-    if (!in) {
-      perror(zname);
-      size = -1;
-    } else {
-      fseek(in,0,SEEK_END);
-      size = ftell(in);
-      fclose(in);
-    }
-  }
-  return size;
-}
-
-static int fappend(FILE * out, const char *iname, int size)
-{
-  char tmp[256];
-  FILE * in;
-  int pad = 0; //-size & 3;
+  FILE * in = 0;
+  Byte tmpIn[1024];
+  Byte tmpOut[1024];
+  z_stream c_stream; /* compression stream */
+  int err;
+  int total_out = 0;
+  int r,w;
+  int rtotal,wtotal;
+  int inited = 0;
 
   in = fopen(iname, "rb");
   if (!in) {
     return -1;
   }
 
-  while(size) {
-    int n;
+  c_stream.zalloc = (alloc_func)0;
+  c_stream.zfree = (free_func)0;
+  c_stream.opaque = (voidpf)0;
 
-    n = sizeof(tmp);
-    if (n > size) n = size;
+  err = deflateInit(&c_stream, Z_BEST_COMPRESSION);
+  if (err != Z_OK) {
+    fprintf(stderr, "error : deflate init := [%d]\n",err);
+    goto error;
+  }
+  inited = 1;
 
-    if (fread(tmp,1,n,in) != n) {
-      perror("read error");
-      break;
+  c_stream.avail_in = 0;
+  wtotal = rtotal = 0;
+
+  do {
+    r = sizeof(tmpIn) - c_stream.avail_in;
+    memmove(tmpIn, c_stream.next_in, c_stream.avail_in);
+    r = fread(tmpIn + c_stream.avail_in, 1, r, in);
+    if (r == -1) {
+      perror("deflate input read");
+      goto error;
     }
-    if (fwrite(tmp,1,n,out) != n) {
-      perror(tmp);
-      break;
+    rtotal += r;
+    c_stream.next_in   = tmpIn;
+    c_stream.avail_in  += r;
+    c_stream.next_out  = tmpOut;
+    c_stream.avail_out = sizeof(tmpOut);
+
+    err = deflate(&c_stream, r ? Z_NO_FLUSH : Z_FINISH);
+    if (err < 0) {
+      fprintf(stderr, "error : deflate error := [%d]\n",err);
+      goto error;
     }
-    size -= n;
+    w = sizeof(tmpOut) - c_stream.avail_out;
+/*     printf("total out: %d\n" */
+/* 	   "available: %d\n" */
+/* 	   "written:   %d\n", */
+/* 	   c_stream.total_out, c_stream.avail_out, w); */
+    if (fwrite(tmpOut, 1, w, out) != w) {
+      fprintf(stderr, "error : writing deflate data\n");
+      goto error;
+    }
+    wtotal += w;
+  } while (err != Z_STREAM_END);
+
+  if (c_stream.avail_in) {
+    fprintf(stderr, "error : deflate unexecped available input [%d]\n",
+	    c_stream.avail_in);
+    goto error;
   }
 
-  memset(tmp,0,pad);
-  if(fwrite(tmp,1,pad,out) != pad) {
-    size = pad;
+  err = deflateEnd(&c_stream);
+  if (err != Z_OK) {
+    fprintf(stderr, "warning : deflate end := [%d]\n",err);
   }
+  inited = 0;
+
+  if (rtotal != len || rtotal != c_stream.total_in) {
+    fprintf(stderr,
+	    "deflate unexpected input size "
+	    "[expected:%d read:%d deflate:%d]\n",
+	    len, rtotal, c_stream.total_in);
+    goto error;
+  }
+
+  if (wtotal != c_stream.total_out) {
+    fprintf(stderr,
+	    "deflate unexpected output size "
+	    "[write:%d deflate:%d]\n",
+	    wtotal, c_stream.total_in);
+    goto error;
+  }
+/*   printf("expected in  : %d\n", len); */
+/*   printf("total in     : %d\n", c_stream.total_in); */
+/*   printf("total out    : %d\n", c_stream.total_out); */
 
   fclose(in);
-  return -!!size;
+  return c_stream.total_out;
+
+ error:
+    if (inited) deflateEnd(&c_stream);
+    if (in) fclose(in);
+    return -1;
 }
 
 int main(int na, char **a)
@@ -231,55 +244,43 @@ int main(int na, char **a)
 
   for (e=phead; e; e = e->next) {
     const char * name = basename(e->name);
-    const char * tname = "tmp.z"; /* $$$ fix me */
     int namelen = strlen(name)+1;
+    int pos;
     if (verbose) fprintf(stderr, "SOURCE \"%s\"(%d) %d\n",
 			 name, namelen, e->size);
-
-    if (e->next) {
-      if (verbose) fprintf(stderr, "COMPRESS\n");
-      e->clen = do_gz(tname, e->name, e->size);
-      if (e->clen < 0) {
-	unlink(tname);
-	perror("compress");
-	goto error;
-      }
-      head.clen += e->clen;
-      if (verbose) fprintf(stderr, "COMPRESS %d / %d / %d%%\n",
-			   e->size,e->clen, e->clen*100/e->size);
-    }
     
-    if (verbose) fprintf(stderr, "DIR \"%s\" %d/%d %d]\n",
-			 name, e->size, e->clen, namelen);
     if (namelen > 32) {
-      unlink(tname);
       perror("name too long");
       goto error;
     }
+
     fputint(out, namelen, 1);
     fputint(out, e->size, 3);
+    pos = ftell(out);
     fputint(out, e->clen, 3);
-
-    if (fwrite(name, 1, namelen, out) != namelen) {
-      unlink(tname);
+    if (fwrite(name,1,namelen,out) != namelen) {
       perror(e->name);
       goto error;
     }
+
     if (e->next) {
-      if (verbose) fprintf(stderr, "DATA\n");
-      if (fappend(out, tname, e->clen) < 0) {
-	unlink(tname);
-	perror(e->name);
+      e->clen = do_deflate(out, e->name, e->size);
+      if (e->clen < 0) {
 	goto error;
       }
-      unlink(tname);
+      if (verbose) fprintf(stderr, "DIR \"%s\"(%d) %d / %d / %d%%]\n",
+			   name, namelen,
+			   e->size, e->clen, e->clen*100/e->size);
+      fseek(out,pos,SEEK_SET);
+      fputint(out, e->clen, 3);
+      fseek(out,0,SEEK_END);
+      head.clen += e->clen;
     } else {
       if (verbose) fprintf(stderr, "TOTAL %d / %d / %d%%\n",
-			   e->size,e->clen, e->clen*100/e->size);
+			   e->size, e->clen, e->clen*100/e->size);
     }
   }
   err = 0;
- 
 
  error:
   if (out && out != stdout) {
