@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.54 2003-03-13 23:12:55 ben Exp $
+--- $Id: gui.lua,v 1.55 2003-03-14 17:08:20 zigziggy Exp $
 ---
 
 --
@@ -162,6 +162,8 @@ end
 
 
 -- place child of a dialog box
+dskt_zmin = 100
+dskt_zmax = 200
 function gui_child_autoplacement(app)
    if not app._dl1 then
       app._dl1 = dl_new_list(256, 1)
