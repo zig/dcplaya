@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.9 2002-09-15 15:31:03 zig Exp $
+ * @version    $Id: dynshell.c,v 1.10 2002-09-16 05:25:08 zig Exp $
  */
 
 #include <stdio.h>
@@ -269,6 +269,13 @@ static int lua_rawprint(lua_State * L)
   return 0;
 }
 
+static int lua_consolesize(lua_State * L)
+{
+  lua_pushnumber(L, csl_main_console->w);
+  lua_pushnumber(L, csl_main_console->h);
+
+  return 2;
+}
 
 
 static char shell_basic_lua_init[] = 
@@ -355,6 +362,16 @@ static shell_command_description_t commands[] = {
     "]])",
 
     SHELL_COMMAND_C, lua_rawprint
+  },
+  { 
+    "consolesize",
+    "cs",
+
+    "print([["
+    "consolesize( ... ) : return width and height of the console in character\n"
+    "]])",
+
+    SHELL_COMMAND_C, lua_consolesize
   },
   {0},
 };

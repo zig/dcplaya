@@ -1,3 +1,11 @@
+/**
+ * @file      shell.c
+ * @author    vincent penne <ziggy@sashipa.com>
+ * @date      2002/08/11
+ * @brief     shell support for dcplaya
+ * @version   $Id: shell.c,v 1.7 2002-09-16 05:25:08 zig Exp $
+ */
+
 #include <kos.h>
 
 #include <ctype.h>
@@ -26,6 +34,10 @@ static shell_command_func_t shell_command_func;
 
 #define MAX_COMMANDS 128
 
+static char * history[MAX_COMMANDS];
+static int write_history;
+static int read_history;
+
 static char * commands[MAX_COMMANDS];
 static int write_command;
 static int read_command;
@@ -53,6 +65,7 @@ static void shell_update_keyboard()
     break;
 
   case KBD_KEY_F2<<8: // F2
+    csl_putstring(csl_main_console, "dofile(home..[[autorun.lua]])\n");
     shell_command("dofile(home..[[autorun.lua]])");
     break;
 
@@ -74,7 +87,7 @@ static void shell_update_keyboard()
     break;
 
   case '`':
-    show_console = ~show_console;
+    show_console = !show_console;
     break;
 
   default:

@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.20 2002-09-14 09:46:22 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.21 2002-09-16 05:25:08 zig Exp $
  */
 
 //#define RELEASE
@@ -852,19 +852,6 @@ int dreammp3_main(int argc, char **argv)
 
   /* change main console render mode */
   csl_disable_render_mode(csl_main_console, CSL_RENDER_BASIC);
-  csl_window_configure(csl_main_console, 50, 50, csl_main_console->w * 16, csl_main_console->h * 16, 1, 1);
-  csl_main_console->window.ba1 = 0.5;
-  csl_main_console->window.ba2 = 0.5;
-  csl_main_console->window.br1 = 0.2;
-  csl_main_console->window.bg1 = 0.0;
-  csl_main_console->window.bb1 = 0.0;
-  csl_main_console->window.br2 = 0.2;
-  csl_main_console->window.bg2 = 0.2;
-  csl_main_console->window.bb2 = 0.0;
-  csl_main_console->window.ta = 0.8;
-  csl_main_console->window.tr = 1.0;
-  csl_main_console->window.tg = 1.0;
-  csl_main_console->window.tb = 0.0;
   csl_enable_render_mode(csl_main_console, CSL_RENDER_WINDOW);
   
   /* WARNING MESSAGE */

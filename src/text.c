@@ -37,7 +37,11 @@ typedef struct {
   float u1, u2, v1, v2;
 } myglyph_t;
 
-static myglyph_t myglyph[128];
+static myglyph_t myglyph_p[128]; // proportional spacing
+static myglyph_t myglyph_f[128]; // fixed spacing
+static myglyph_t * myglyph = myglyph_p;
+
+static int escape_char = '%';
 
 static void bounding(uint8 *img, int w, int h, int bpl, int *box)
 {
@@ -128,7 +132,7 @@ int text_setup()
         bounding(g + x*FONT_CHAR_W + y*FONT_TEXTURE_W*FONT_CHAR_H, FONT_CHAR_W, FONT_CHAR_H, FONT_TEXTURE_W, b);
         
         if (c<128) {
-          myglyph_t *m = myglyph+c;
+          myglyph_t *m = myglyph_p+c;
           
           m->w = (float)(b[2] - b[0] + 2);
           m->u1 = (float)(x*FONT_CHAR_W+b[0]) * xs;
@@ -139,17 +143,33 @@ int text_setup()
 	    dbglog(DBG_DEBUG, "%02x '%c' w:%.2f [%.2f %.2f %.2f %.2f]\n", c, c, 
             m->w, m->u1, m->v1, m->u2, m->v2);
           */
+
+          m = myglyph_f+c;
+          m->w = (float)(11);
+          m->u1 = (float)(x*FONT_CHAR_W+(b[0]+b[2])/2 - 5) * xs;
+          m->u2 = (float)(x*FONT_CHAR_W+(b[0]+b[2])/2 + 6-1) * xs;
+          m->v1 = (float)y * yscale;
+          m->v2 = m->v1 + yscale;
+
         }
       }
     }
     
     /* Special case for char 4[pad] & 6[joy] */
     for (c=4; c<8; c+=2) {
-      myglyph[c].u1 = (myglyph[c+16  ].u1 < myglyph[c     ].u1)  ? myglyph[c+16  ].u1 : myglyph[c     ].u1;
-      myglyph[c].v1 = (myglyph[c+ 1  ].v1 < myglyph[c     ].v1)  ? myglyph[c+ 1  ].v1 : myglyph[c     ].v1;
-      myglyph[c].u2 = (myglyph[c+1+16].u2 > myglyph[c+1   ].u2)  ? myglyph[c+1+16].u2 : myglyph[c+1   ].u2;
-      myglyph[c].v2 = (myglyph[c+16  ].v2 > myglyph[c+1+16].v2)  ? myglyph[c+16  ].v2 : myglyph[c+1+16].v2;
-      myglyph[c].w  = 32.0f;
+      for (myglyph = myglyph_p ; 
+	   myglyph; 
+	   myglyph = (myglyph==myglyph_p? myglyph_f : 0) ) {
+	myglyph[c].u1 = (myglyph[c+16  ].u1 < myglyph[c     ].u1)  ? 
+	  myglyph[c+16  ].u1 : myglyph[c     ].u1;
+	myglyph[c].v1 = (myglyph[c+ 1  ].v1 < myglyph[c     ].v1)  ? 
+	  myglyph[c+ 1  ].v1 : myglyph[c     ].v1;
+	myglyph[c].u2 = (myglyph[c+1+16].u2 > myglyph[c+1   ].u2)  ? 
+	  myglyph[c+1+16].u2 : myglyph[c+1   ].u2;
+	myglyph[c].v2 = (myglyph[c+16  ].v2 > myglyph[c+1+16].v2)  ? 
+	  myglyph[c+16  ].v2 : myglyph[c+1+16].v2;
+	myglyph[c].w  = 32.0f;
+      }
     }
   }
 	
@@ -346,7 +366,7 @@ static float draw_poly_textv(float x1, float y1, float z1,
       default:
 	dbglog(DBG_DEBUG, "** " __FUNCTION__ " weird escape char : 0x%02X\n",c);
       }
-    } else if (c=='%') {
+    } else if (c==escape_char) {
       c = 0;
       esc = 1;
     }
@@ -401,7 +421,7 @@ float draw_poly_center_text(float y1, float z1,
       esc = 0;
       continue;
     }
-    if (c == '%') {
+    if (c == escape_char) {
       esc = 1;
       continue;
     }
@@ -472,3 +492,23 @@ float text_set_font_size(float size)
   text_xscale = text_yscale = size / (float)FONT_CHAR_W;
   return save;
 }
+
+
+int text_set_font(int n)
+{
+  int old = (myglyph == myglyph_f);
+
+  myglyph = n? myglyph_f : myglyph_p;
+
+  return old;
+}
+
+int text_set_escape(int n)
+{
+  int old = escape_char;
+
+  escape_char = n;
+
+  return old;
+}
+

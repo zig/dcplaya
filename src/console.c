@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.9 2002-09-15 15:31:04 zig Exp $
+ * @version   $Id: console.c,v 1.10 2002-09-16 05:25:08 zig Exp $
  */
 
 
@@ -41,7 +41,7 @@ static void csl_printk_func(const char * s)
 {
   csl_putstring(csl_main_console, s);
 
-  if ( !(csl_main_console->render_modes & CSL_RENDER_WINDOW) ) {
+/*  if ( !(csl_main_console->render_modes & CSL_RENDER_WINDOW) ) */{
     if (old_printk_func)
       old_printk_func(s);
   }
@@ -53,15 +53,29 @@ void csl_init_main_console()
   if (csl_main_console)
     return;
 
-#if 0
+#if 1
   csl_main_console = csl_console_create((640 - 2*CSL_BASIC_OFFSET_X)/12, 
-					(480 - 2*CSL_BASIC_OFFSET_Y)/24, 
+					(512 - 2*CSL_BASIC_OFFSET_Y)/24, 
 					CSL_RENDER_BASIC);
 #else
   csl_main_console = csl_console_create(60, 
 					20, 
 					0/*CSL_RENDER_BASIC*/);
 #endif
+
+  csl_window_configure(csl_main_console, 50, 50, csl_main_console->w * 11, csl_main_console->h * 16, 1, 1);
+  csl_main_console->window.ba1 = 0.5;
+  csl_main_console->window.ba2 = 0.5;
+  csl_main_console->window.br1 = 0.2;
+  csl_main_console->window.bg1 = 0.0;
+  csl_main_console->window.bb1 = 0.0;
+  csl_main_console->window.br2 = 0.2;
+  csl_main_console->window.bg2 = 0.2;
+  csl_main_console->window.bb2 = 0.0;
+  csl_main_console->window.ta = 0.8;
+  csl_main_console->window.tr = 1.0;
+  csl_main_console->window.tg = 1.0;
+  csl_main_console->window.tb = 0.0;
 
   old_printk_func = dbgio_set_printk(csl_printk_func);
   
@@ -164,6 +178,8 @@ void csl_basic_render(csl_console_t * c)
   debug++;
   debug = 1;
 
+  //spinlock_lock(&c->mutex);
+
   for (y=0; y<c->term->nline; y++) {
     MUterm_char_t * ptr;
     
@@ -188,7 +204,8 @@ void csl_basic_render(csl_console_t * c)
       old_printk_func("\n");
     }
   }
-  
+
+  //spinlock_unlock(&c->mutex);
 }
 
 void csl_window_transparent_render(csl_console_t * c)
@@ -197,9 +214,14 @@ void csl_window_transparent_render(csl_console_t * c)
   char s[128]; // warning : console with 128 cars width max
   char * p;
   float oldscale;
+  int oldfont, oldescape;
 
   //oldscale = text_set_font_size(c->window.scalex);
 
+  //spinlock_lock(&c->mutex);
+
+  oldfont = text_set_font(1); // Select fixed spacing font
+  oldescape = text_set_escape(-1); // No escape character
 
   draw_poly_box(c->window.x, c->window.y,
 		c->window.x + c->window.w, c->window.y + c->window.h, 
@@ -258,6 +280,11 @@ void csl_window_transparent_render(csl_console_t * c)
   }
 
   //text_set_font_size(oldscale);
+
+  text_set_font(oldfont);
+  text_set_escape(oldescape);
+  
+  spinlock_unlock(&c->mutex);
 
 }
 
@@ -394,6 +421,9 @@ int csl_getchar()
 
 
 
+// defined in src/keyboard.c
+extern int kbd_poll_repeat(uint8 addr, int elapsed_frame);
+
 int csl_peekchar()
 {
   static last_frame = -1;
@@ -401,8 +431,10 @@ int csl_peekchar()
 
 
   if (ta_state.frame_counter != last_frame) {
-    kbd_poll(maple_first_kb());
+    kbd_poll_repeat(maple_first_kb(), ta_state.frame_counter - last_frame);
     k = kbd_get_key();
+
+    last_frame = ta_state.frame_counter;
     
     if (k != -1)
       return k;

@@ -36,6 +36,8 @@ void song_menu_render();
 /* text.c */
 int text_setup();
 float text_set_font_size(float size);
+int text_set_font(int n);
+int text_set_escape(int n);
 float draw_poly_text(float x1, float y1, float z1,
                      float a, float r, float g, float b,
                      const char *s, ...);
@@ -58,7 +60,7 @@ typedef struct {
 
 int border_setup();
 extern borderuv_t borderuv[];
-extern uint32 bordertex;
+extern uint32 bordertex, bordertex2;
 
 DCPLAYA_EXTERN_C_END
 

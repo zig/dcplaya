@@ -8,7 +8,7 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.8 2002-09-14 19:48:47 zig Exp $
+ * $Id: fftvlr.c,v 1.9 2002-09-16 05:25:08 zig Exp $
  */
 
 #include <stdlib.h>
@@ -205,7 +205,7 @@ static void vlr_update(void)
   for (ow=i=j=k=0, stp=(1<<(FFT_LOG_2-1+12))/VLR_W; i<VLR_W; ++i, j += stp) {
     //    int w = fft_F[j>>12];
     const float r = 0.45f;
-    //const float r = 0.25f;
+    //const float r = 0.75f;
     int w = 0;
     int n = 0;
     int l = (j>>12);
@@ -268,7 +268,7 @@ static int fftvlr_process(viewport_t * vp, matrix_t projection, int elapsed_ms)
 
     MtxIdentity(fftvlr_mtx);
     MtxRotateZ(fftvlr_mtx, 3.14159);
-    MtxRotateY(fftvlr_mtx, ay += 0.014);
+    MtxRotateY(fftvlr_mtx, ay += 0.014*0.15);
     MtxRotateX(fftvlr_mtx, 0.3f);
     fftvlr_mtx[3][2] = 0.6;
 

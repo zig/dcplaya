@@ -144,5 +144,5 @@ end
 -- standard keys
  KBD_BACKSPACE	=	8
  KBD_ENTER	=	13
-
+ KBD_ESC	=	27
 
