@@ -4,7 +4,7 @@
 --- @author   benjamin gerard
 --- @brief    Directory and filename support.
 ---
---- $Id: dirfunc.lua,v 1.21 2003-03-29 15:33:06 ben Exp $
+--- $Id: dirfunc.lua,v 1.22 2003-04-06 17:22:37 ben Exp $
 ---
 
 --- Current path.
@@ -79,7 +79,7 @@ addhelp
 --- @retval nil on error (invalid directory)
 --
 function chdir(path)
-   if path ~= nil then
+   if type(path) == "string" then
       local p = fullpath(path)
       if not p or (type(test) == "function" and not test("-d",p)) then
 	 print ("cd : invalid path ["..tostring(p).."]")
@@ -93,7 +93,7 @@ function chdir(path)
    return PWD
 end
 
-addhelp("cd",nil,"shell",'cd([path]) : set/get current directory')
+addhelp("chdir","cd","shell",'cd([path]) : set/get current directory')
 
 --
 -- reimplement basic io function with relative path support
