@@ -39,7 +39,7 @@ function background_set_texture(bkg, texture, type)
 			  v[3],v[4] } )
 	 end
       end
-      bkg.tex = tex_get("background")
+      bkg.tex = tex_get("__background__")
    end
    bkg:draw()
    return vtx ~= nil
@@ -79,8 +79,8 @@ end
 function background_create()
    local bkg
 
-   if not tex_exist("background") then
-      tex_new("background", 1024,512, 1, 0, 0, 0)
+   if not tex_exist("__background__") then
+      tex_new("__background__", 1024,512, 1, 0, 0, 0)
    end
 
    bkg = {

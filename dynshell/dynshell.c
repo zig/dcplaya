@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.85 2003-03-18 16:11:09 ben Exp $
+ * @version    $Id: dynshell.c,v 1.86 2003-03-19 00:13:06 ben Exp $
  */
 
 #include "dcplaya/config.h"
@@ -2142,12 +2142,12 @@ static int lua_load_background(lua_State * L)
     float x,y,u,v;
   } vdef[2];
 
-  texid = texture_get("background");
+  texid = texture_get("__background__");
   if (texid < 0) {
-    texid = texture_create_flat("background",1024,512,0xFFFFFFFF);
+    texid = texture_create_flat("__background__",1024,512,0xFFFFFFFF);
   }
   if (texid < 0) {
-    printf("load_background : no [background] texture.\n");
+    printf("load_background : no [__background__] texture.\n");
     return 0;
   }
 
