@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile.inc.in,v 1.29 2003-04-20 02:23:20 vincentp Exp $
+# $Id: Makefile.inc.in,v 1.30 2003-07-30 00:38:26 benjihan Exp $
 #
 
 .SUFFIXES:
@@ -11,7 +11,8 @@ TOP_DIR="@TOP_DIR@"
 UTILS_DIR=$(TOP_DIR)/utils
 DOC_DIR=@DOC_DIR@
 DCPLAYA_VERSION=@VERSION_STR@
-export TOP_DIR UTILS_DIR DOC_DIR DCPLAYA_VERSION
+DCPLAYA_VERSION_NUM=@VERSION@
+export TOP_DIR UTILS_DIR DOC_DIR DCPLAYA_VERSION DCPLAYA_VERSION_NUM
 
 MASTER=@MASTER@
 RELEASE=@RELEASE@
@@ -21,12 +22,14 @@ export MASTER RELEASE DEBUG
 # Liste of rules that discard dependencies rebuild
 NODEP_RULES := clean dependclean depclean clean-depend depend-clean req required maintainer-clean distclean clean_local
 
+export PPMTOXPM=@PPMTOXPM@
+
 # ----------------------------------------------------------------------
 # Setup for KOS
 # ----------------------------------------------------------------------
 
 # Build architecture
-KOS_ARCH="dreamcast"
+KOS_ARCH="@KOS_ARCH@"
 
 # KOS base paths
 KOS_BASE=@KOS_BASE@
@@ -37,10 +40,14 @@ export KOS_ARCH KOS_BASE KOS_INCS
 # Make utility
 @SET_MAKE@
 KOS_MAKE=$(MAKE)
-MAKEDEPEND=@MAKEDEPEND@
+
+# Host compiler
+HOST_CC=@HOST_CC@
+HOST_CFLAGS=@HOST_CFLAGS@
 
 # Dreamcast loader utility
 KOS_LOADER=@KOS_LOADER@
+KOS_LOADER_FLAGS=@KOS_LOADER_FLAGS@
 
 # Genromfs utility
 KOS_GENROMFS=@KOS_GENROMFS@

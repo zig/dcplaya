@@ -1,43 +1,60 @@
 dnl# -*- sh -*-
 dnl# the "configure" script is made from this by running GNU "autoconf"
 dnl#
-dnl# Configuration script for Dreammp3
+dnl# Configuration script for dcplaya
 dnl#
-dnl# by BeN(jamin) Gerard <ben@sashipa.com>
+dnl# by Benjamin Gerard <ben@sashipa.com>
 
 
 AC_INIT(main.c)
 AC_PROG_MAKE_SET
 
 PACKAGE=dcplaya
-VERSION=1.1
+VERSION=1.2
 VERSION_STAT=""
 DREAMMP3_URL="http://sashipa.ben.free.fr/dcplaya"
 TOP_DIR="`pwd`"
 
-# ENABLE OPTIONS
+AC_MSG_RESULT([])
+AC_MSG_RESULT([***************************])
+AC_MSG_RESULT([*                       ***])
+AC_MSG_RESULT([** Configure $PACKAGE $VERSION **])
+AC_MSG_RESULT([***                       *])
+AC_MSG_RESULT([***************************])
+
+
+# enable options
 AC_ARG_ENABLE(debug,    [  --enable-debug          compile with debug facilities [[default=no]]], DEBUG="yes", DEBUG="no")
 AC_ARG_ENABLE(release,  [  --enable-release        compile for release version [[default=no]]], RELEASE="yes", RELEASE="no")
 AC_ARG_ENABLE(master,   [  --enable-master         compile for master test emulation [[default=no]]], MASTER="yes", MASTER="no")
 
-echo "DEBUG = $DEBUG"
+# with options
+AC_ARG_WITH(sh-prefix,  [  --with-sh-prefix        Specify sh tools prefix [[default=sh-elf-]]],  SH_PREFIX="$with_sh_prefix", SH_PREFIX="sh-elf-")
+AC_ARG_WITH(arm-prefix, [  --with-arm-prefix       Specify arm tools prefix [[default=arm-elf-]]],  ARM_PREFIX="$with_arm_prefix", ARM_PREFIX="arm-elf-")
+AC_ARG_WITH(sh-path,    [  --with-sh-path          Specify sh tools path [[default=]]],  SH_PATH="$with_sh_path", SH_PATH="")
+AC_ARG_WITH(arm-path,   [  --with-arm-path         Specify arm tools path [[default=]]],  ARM_PATH="$with_arm_path", ARM_PATH="")
+AC_ARG_WITH(kos,        [  --with-kos              Specify kos [[default=../kos]]], KOS_BASE="$with_kos", KOS_BASE="../kos")
 
-# WITH OPTIONS
-AC_ARG_WITH(sh-prefix,  [  --with-sh-prefix        Specify sh tools prefix [[default=]]],  SHPREFIX="$with_sh_prefix", SHPREFIX="")
-AC_ARG_WITH(arm-prefix, [  --with-arm-prefix       Specify arm tools prefix [[default=]]],  ARMPREFIX="$with_arm_prefix", ARMPREFIX="")
-AC_ARG_WITH(kos,        [  --with-kos              Specify kos [[default=kos]]], KOS_BASE="$with_kos", KOS_BASE="kos")
-
-# Display a warning message if target specific prefix nor specific target
-# compiler have been setted.
-# This test is not very accurate since it does not test for other tools.
-if test -z "$SHPREFIX" -a -z "$SH_CC"; then
-    AC_MSG_RESULT([WARNING: You do *NOT* have specified an sh-prefix nor a default sh compiler (SH_CC).])
-    SHPREFIX="sh-elf-"
+# Setup SH and ARM tools path.
+if test "x$SH_PATH" = "x"; then
+    SH_PATH="$PATH"
+else
+    SH_PATH="$SH_PATH:$PATH"
 fi
 
-if test -z "$ARMPREFIX" -a -z "$ARM_CC"; then
-    AC_MSG_RESULT([WARNING: You do *NOT* have specified an arm-prefix nor a default arm compiler (ARM_CC).])
-    ARMPREFIX="arm-elf-"
+if test "x$ARM_PATH" = "x"; then
+    ARM_PATH="$PATH"
+else
+    ARM_PATH="$ARM_PATH:$PATH"
+fi
+
+# Display a warning message if target specific prefix nor specific path
+# have been given. host tools will probably be use instead.
+if test "x" = "x$SH_PREFIX" -a "x" = "x$SH_PATH"; then
+    AC_MSG_RESULT([WARNING: You do *NOT* have specified sh-prefix nor sh-path.])
+fi
+if test "x" = "x$ARM_PREFIX" -a "x" = "x$ARM_PATH"; then
+    AC_MSG_RESULT([WARNING: You do *NOT* have specified arm-prefix nor arm-path.])
 fi
 
 # Configure include/config.h
@@ -51,6 +68,17 @@ BREAKPOINT="if (1) {*(int *)1 = (N);} else  "
 DREAMMP3_URL_STR="\"$DREAMMP3_URL\""
 ]
 
+test "x$DEBUG" != "xyes"
+DEBUG=$?
+test "x$RELEASE" != "xyes"
+RELEASE=$?
+test "x$MASTER" != "xyes"
+MASTER=$?
+
+DCPLAYA_TOPDIR="\"${TOP_DIR}\""
+
+AC_SUBST(DREAMMP3URL)
+AC_SUBST(TOP_DIR)
 AC_SUBST(PACKAGE)
 AC_SUBST(PACKAGE_STR)
 AC_SUBST(VERSION)
@@ -59,98 +87,133 @@ AC_SUBST(VERSION_STR)
 AC_SUBST(VERSION_NUM)
 AC_SUBST(BREAKPOINT)
 AC_SUBST(DREAMMP3_URL_STR)
-
-
-test "x$DEBUG" != "xyes"
-DEBUG=$?
 AC_SUBST(DEBUG)
-
-test "x$RELEASE" != "xyes"
-RELEASE=$?
 AC_SUBST(RELEASE)
-
-test "x$MASTER" != "xyes"
-MASTER=$?
 AC_SUBST(MASTER)
-
-DCPLAYA_TOPDIR="\"${TOP_DIR}\""
 AC_SUBST(DCPLAYA_TOPDIR)
 
-DEL="rm -f"
+########################################################################
 
+AC_MSG_RESULT([])
+AC_MSG_RESULT([**************************])
+AC_MSG_RESULT([*                      ***])
+AC_MSG_RESULT([** Configure HOST tools **])
+AC_MSG_RESULT([***                      *])
+AC_MSG_RESULT([**************************])
+
+DEL="rm -f"
+AC_PROG_MAKE_SET
+AC_PROG_CC
+HOST_CC="$CC"
+HOST_CFLAGS="$CFLAGS"
+AC_PATH_PROG(PPMTOXPM,ppmtoxpm,echo,[$PATH])
+
+AC_SUBST(MAKE)
+AC_SUBST(HOST_CC)
+AC_SUBST(HOST_CFLAGS)
+AC_SUBST(DEL)
+AC_SUBST(PPMTOXPM)
+
+########################################################################
+
+AC_MSG_RESULT([])
+AC_MSG_RESULT([***********************************])
+AC_MSG_RESULT([*                               ***])
+AC_MSG_RESULT([** Configure documentation tools **])
+AC_MSG_RESULT([***                               *])
+AC_MSG_RESULT([***********************************])
+
+AC_PROG_AWK()
+AC_PATH_PROG(LYNX,lynx,echo,[$PATH])
+AC_PATH_PROG(DOXYGEN, doxygen, echo, [$PATH])
+AC_PATH_PROG(LUA, lua, echo, [$PATH])
+if test "x$LUA" != "xecho"; then
+    LUA_VERSION="`$LUA -v`"
+    if test "x`expr "$LUA_VERSION" : 'Lua 4'`" != "x5"; then
+	AC_MSG_RESULT([WARNING: LUA version may be not supported.])
+    fi
+fi
+
+DOC_TOOLS="no"
+DOC_DIR=""
+if test "x$DOXYGEN" = "xecho"; then
+    AC_MSG_RESULT([WARNING: You need to install doxygen to build dcplaya documentation.])
+elif test "x$AWK" = "x"; then
+    AC_MSG_RESULT([WARNING: You need to install awk to build dcplaya documentation.])
+else
+    DOC_TOOLS="yes"
+    DOC_DIR=doc
+    
+    if test "x$LYNX" == "xecho" || test "x$LUA" == "xecho"; then
+	AC_MSG_RESULT([WARNING: Some prerequired tools for building dcplaya documentation are missing. This is not critical, but you will not be able to build the documentation if you intend to burn a dcplaya distrib CD.])
+    DOC_TOOLS="incomplet"
+    fi
+fi
+
+AC_SUBST(AWK)
+AC_SUBST(DOXYGEN)
+AC_SUBST(LUA)
+AC_SUBST(LYNX)
+AC_SUBST(DOC_DIR)
+
+########################################################################
+
+AC_MSG_RESULT([])
+AC_MSG_RESULT([*************************])
+AC_MSG_RESULT([*                     ***])
+AC_MSG_RESULT([** Configure CDR tools **])
+AC_MSG_RESULT([***                     *])
+AC_MSG_RESULT([*************************])
+
+AC_PATH_PROG(CDRECORD,cdrecord,echo,[$PATH])
+AC_PATH_PROG(MKISOFS, mkisofs, echo, [$PATH])
+AC_PATH_PROG(MAKEIP, makeip, echo, [$PATH])
+AC_PATH_PROG(SCRAMBLE, scramble, echo [$PATH])
+AC_PATH_PROG(DD, dd, echo [$PATH])
+
+CDR_TOOLS="yes"
+if test "x$CDRECORD" = "xecho" || test "x$MKISOFS" = "xecho" ||
+    test "x$SCRAMBLE" = "xecho" || test "x$DD" = "xdd";
+    then
+    CDR_TOOLS="no"
+    AC_MSG_RESULT([WARNING: Some prerequired tools for building dcplaya CD are missing. You will not be able to burn a dcplaya distrib CD.])
+fi
+
+AC_SUBST(CDRECORD)
+AC_SUBST(MKISOFS)
+AC_SUBST(MAKEIP)
+AC_SUBST(SCRAMBLE)
+AC_SUBST(CDR_TOOLS)
+
+########################################################################
+
+AC_MSG_RESULT([])
 AC_MSG_RESULT([*******************************])
 AC_MSG_RESULT([*                           ***])
 AC_MSG_RESULT([** Configure DREAMCAST tools **])
 AC_MSG_RESULT([***                           *])
 AC_MSG_RESULT([*******************************])
 
-if test -z "$SH_CC"; then
-    AC_PATH_PROG(SH_CC,       ${SHPREFIX}gcc,       ${SHPREFIX}gcc,      echo, [$PATH])
-fi
-if test -z "$SH_CXX"; then
-    AC_PATH_PROG(SH_CXX,      ${SHPREFIX}g++,      ${SHPREFIX}g++,      echo, [$PATH])
-fi
-if test -z "$SH_AS"; then
-    AC_PATH_PROG(SH_AS,       ${SHPREFIX}as,       ${SHPREFIX}as,       echo, [$PATH])
-fi
-if test -z "$SH_AR"; then
-    AC_PATH_PROG(SH_AR,       ${SHPREFIX}ar,       ${SHPREFIX}ar,       echo, [$PATH])
-fi
-if test -z "$SH_RANLIB"; then
-    AC_PATH_PROG(SH_RANLIB,   ${SHPREFIX}ranlib,   ${SHPREFIX}ranlib,   echo, [$PATH])
-fi
-if test -z "$SH_OBJCOPY"; then
-    AC_PATH_PROG(SH_OBJCOPY,  ${SHPREFIX}objcopy,  ${SHPREFIX}objcopy,  echo, [$PATH])
-fi
-if test -z "$SH_OBJDUMP"; then
-    AC_PATH_PROG(SH_OBJDUMP,  ${SHPREFIX}objdump,  ${SHPREFIX}objdump,  echo, [$PATH])
-fi
-if test -z "$SH_LD"; then
-    AC_PATH_PROG(SH_LD,       ${SHPREFIX}ld,       ${SHPREFIX}ld,       echo, [$PATH])
-fi
-if test -z "$SH_NM"; then
-    AC_PATH_PROG(SH_NM,       ${SHPREFIX}nm,       ${SHPREFIX}nm,       echo, [$PATH])
-fi
-if test -z "$SH_STRIP"; then
-    AC_PATH_PROG(SH_STRIP,       ${SHPREFIX}strip,       ${SHPREFIX}strip,       echo, [$PATH])
-fi
-REQUIRED_SH_TOOLS="$SH_AS $SH_CC $SH_LD"
-REQUIRED_SH_TOOLS="$REQUIRED_SH_TOOLS $SH_AR $SH_RANLIB"
-REQUIRED_SH_TOOLS="$REQUIRED_SH_TOOLS $SH_NM $SH_OBJCOPY $SH_OBJDUMP $SH_STRIP"
 
-if test -z "$ARM_CC"; then
-    AC_PATH_PROG(ARM_CC,       ${ARMPREFIX}gcc,       ${ARMPREFIX}gcc,      echo, [$PATH])
-fi
-if test -z "$ARM_CXX"; then
-    AC_PATH_PROG(ARM_CXX,      ${ARMPREFIX}g++,      ${ARMPREFIX}g++,      echo, [$PATH])
-fi
-if test -z "$ARM_AS"; then
-    AC_PATH_PROG(ARM_AS,       ${ARMPREFIX}as,       ${ARMPREFIX}as,       echo, [$PATH])
-fi
-if test -z "$ARM_AR"; then
-    AC_PATH_PROG(ARM_AR,       ${ARMPREFIX}ar,       ${ARMPREFIX}ar,       echo, [$PATH])
-fi
-if test -z "$ARM_RANLIB"; then
-    AC_PATH_PROG(ARM_RANLIB,   ${ARMPREFIX}ranlib,   ${ARMPREFIX}ranlib,   echo, [$PATH])
-fi
-if test -z "$ARM_OBJCOPY"; then
-    AC_PATH_PROG(ARM_OBJCOPY,  ${ARMPREFIX}objcopy,  ${ARMPREFIX}objcopy,  echo, [$PATH])
-fi
-if test -z "$ARM_LD"; then
-    AC_PATH_PROG(ARM_LD,       ${ARMPREFIX}ld,       ${ARMPREFIX}ld,       echo, [$PATH])
-fi
-if test -z "$ARM_NM"; then
-    AC_PATH_PROG(ARM_NM,       ${ARMPREFIX}nm,       ${ARMPREFIX}nm,       echo, [$PATH])
-fi
-REQUIRED_ARM_TOOLS="$ARM_CC $ARM_AS $ARM_AR $ARM_RANLIB $ARM_LD $ARM_NM $ARM_OBJCOPY"
+AC_MSG_RESULT([])
+AC_MSG_RESULT([** Configure general tools **])
+AC_MSG_RESULT([])
 
-REQUIRED_DC_TOOLS="$REQUIRED_SH_TOOLS $REQUIRED_ARM_TOOLS"
+test "x" = "x$DCTOOL" && DCTOOL="dc-tool"
+test "x" = "x$DCTOOL_FLAGS" && DCTOOL_FLAGS="-x"
+AC_PATH_PROG(KOS_LOADER, ${DCTOOL}, echo, [$PATH])
+if test "x$KOS_LOADER" != "xecho"; then
+    KOS_LOADER_FLAGS="$DCTOOL_FLAGS"
+else
+    KOS_LOADER_FLAGS=""
+fi
 
-for i in $REQUIRED_DC_TOOLS; do
-    if test "x$i" = "xecho"; then
-        AC_MSG_ERROR([Could not find all required tools to compile for dreamcast in your PATH.])
-    fi
-done
+AC_SUBST(KOS_LOADER)
+AC_SUBST(KOS_LOADER_FLAGS)
+
+AC_MSG_RESULT([])
+AC_MSG_RESULT([** Configure SH tools **])
+AC_MSG_RESULT([])
 
 SH_CFLAGS="-Wall -O4 -Wno-multichar"
 if test $DEBUG -ne 0; then
@@ -164,51 +227,16 @@ SH_ASFLAGS="-little"
 SH_ARFLAGS="cr"
 SH_LDFLAGS="-ml -m4-single-only -nostartfiles -nostdlib -static -Wl,-Ttext=0x8c010000"
 
-ARM_CFLAGS="-mcpu=arm7 -Wall -O2"
-ARM_AFLAGS="-marm7"
-
-if test -z "$MAKE"; then
-    AC_PATH_PROG(MAKE, make, echo, [$PATH])
-fi
-
-if test -z "$MAKEDEPEND"; then
-    AC_PATH_PROG(MAKEDEPEND, makedepend, echo, $PATH)
-fi
-
-if test -z "$DOXYGEN"; then
-    AC_PATH_PROG(DOXYGEN, doxygen, echo,  $PATH)
-fi
-
-DOC_DIR=""
-if test "x$doxygen" != "xecho"; then
-    DOC_DIR=doc
-fi
-
-AC_MSG_RESULT([***************************])
-AC_MSG_RESULT([*                       ***])
-AC_MSG_RESULT([** Configure KallistiOS  **])
-AC_MSG_RESULT([***                       *])
-AC_MSG_RESULT([***************************])
-if test ! -d "$KOS_BASE" ; then
-    AC_MSG_ERROR([KallistiOS '$KOS_BASE' not found. Use --with-kos.])
-else
-    AC_MSG_RESULT([checking for KalistiOS... $KOS_BASE])
-fi
-SH_LDFLAGS="$SH_LDFLAGS -L$KOS_BASE"
-
-AC_PATH_PROG(KOS_GENROMFS, $KOS_BASE/utils/genromfs/genromfs, $KOS_BASE/utils/genromfs/genromfs, no, $PATH:$KOS_BASE/utils/genromfs)
-if test "x$KOS_GENROMFS" = "xno"; then
-    AC_MSG_ERROR([Could not find kos gemromfs program.])
-fi
-
-AC_PATH_PROG(KOS_BIN2O, $KOS_BASE/utils/bin2o/bin2o, $KOS_BASE/utils/bin2o/bin2o, no, $PATH:$KOS_BASE/utils/bin2o)
-if test "x$KOS_BIN2O" = "xno"; then
-    AC_MSG_ERROR([Could not find kos bin2o program.])
-fi
-
-AC_MSG_RESULT([--------------------------------------])
-
-
+AC_PATH_PROG(SH_CC,      ${SH_PREFIX}gcc,      no, [$SH_PATH])
+AC_PATH_PROG(SH_CXX,     ${SH_PREFIX}g++,      no, [$SH_PATH])
+AC_PATH_PROG(SH_AS,      ${SH_PREFIX}as,       no, [$SH_PATH])
+AC_PATH_PROG(SH_AR,      ${SH_PREFIX}ar,       no, [$SH_PATH])
+AC_PATH_PROG(SH_RANLIB,  ${SH_PREFIX}ranlib,   no, [$SH_PATH])
+AC_PATH_PROG(SH_OBJCOPY, ${SH_PREFIX}objcopy,  no, [$SH_PATH])
+AC_PATH_PROG(SH_OBJDUMP, ${SH_PREFIX}objdump,  no, [$SH_PATH])
+AC_PATH_PROG(SH_LD,      ${SH_PREFIX}ld,       no, [$SH_PATH])
+AC_PATH_PROG(SH_NM,      ${SH_PREFIX}nm,       no, [$SH_PATH])
+AC_PATH_PROG(SH_STRIP,   ${SH_PREFIX}strip,    no, [$SH_PATH])
 
 CC="$SH_CC"
 CFLAGS="$SH_CFLAGS -I."
@@ -223,88 +251,146 @@ LD="$SH_LD"
 LDFLAGS="$SH_LDFLAGS"
 OBJCOPY="$SH_OBJCOPY"
 
-#AC_PROG_CC
-#AC_PROG_RANLIB
-AC_PROG_MAKE_SET
-
-AC_SUBST(DREAMMP3URL)
-AC_SUBST(TOP_DIR)
-AC_SUBST(DOC_DIR)
-AC_SUBST(DOXYGEN)
-AC_SUBST(LIBCOMMAND)
-AC_SUBST(DEL)
-
 AC_SUBST(SH_AS)
 AC_SUBST(SH_CC)
 AC_SUBST(SH_CXX)
 AC_SUBST(SH_LD)
-
 AC_SUBST(SH_AR)
 AC_SUBST(SH_RANLIB)
-
 AC_SUBST(SH_OBJCOPY)
 AC_SUBST(SH_OBJDUMP)
 AC_SUBST(SH_STRIP)
-
-AC_SUBST(MAKE)
-AC_SUBST(MAKEDEPEND)
-
 AC_SUBST(SH_CFLAGS)
 AC_SUBST(SH_CXXFLAGS)
 AC_SUBST(SH_ASFLAGS)
 AC_SUBST(SH_ARFLAGS)
 AC_SUBST(SH_LDFLAGS)
 
+AC_MSG_RESULT([])
+AC_MSG_RESULT([** Configure ARM tools **])
+AC_MSG_RESULT([])
+
+ARM_CFLAGS="-mcpu=arm7 -Wall -O2"
+ARM_AFLAGS="-marm7"
+
+AC_PATH_PROG(ARM_CC,      ${ARM_PREFIX}gcc,     no, [$ARM_PATH])
+AC_PATH_PROG(ARM_CXX,     ${ARM_PREFIX}g++,     no, [$ARM_PATH])
+AC_PATH_PROG(ARM_AS,      ${ARM_PREFIX}as,      no, [$ARM_PATH])
+AC_PATH_PROG(ARM_AR,      ${ARM_PREFIX}ar,      no, [$ARM_PATH])
+AC_PATH_PROG(ARM_RANLIB,  ${ARM_PREFIX}ranlib,  no, [$ARM_PATH])
+AC_PATH_PROG(ARM_OBJCOPY, ${ARM_PREFIX}objcopy, no, [$ARM_PATH])
+AC_PATH_PROG(ARM_LD,      ${ARM_PREFIX}ld,      no, [$ARM_PATH])
+AC_PATH_PROG(ARM_NM,      ${ARM_PREFIX}nm,      no, [$ARM_PATH])
+
 AC_SUBST(ARM_AS)
 AC_SUBST(ARM_CC)
 AC_SUBST(ARM_CXX)
-
 AC_SUBST(ARM_AR)
 AC_SUBST(ARM_RANLIB)
-
 AC_SUBST(ARM_OBJCOPY)
 AC_SUBST(ARM_LD)
-
 AC_SUBST(ARM_CFLAGS)
 AC_SUBST(ARM_CXXFLAGS)
 AC_SUBST(ARM_ASFLAGS)
 AC_SUBST(ARM_ARFLAGS)
 AC_SUBST(ARM_LDFLAGS)
 
+# Finally test required tools for both SH and ARM architecture.
+
+REQUIRED_SH_TOOLS="$SH_AS $SH_CC $SH_LD $SH_AR $SH_RANLIB $SH_NM $SH_OBJCOPY $SH_OBJDUMP $SH_STRIP"
+
+REQUIRED_ARM_TOOLS="$ARM_CC $ARM_AS $ARM_AR $ARM_RANLIB $ARM_LD $ARM_NM $ARM_OBJCOPY"
+
+REQUIRED_DC_TOOLS="$REQUIRED_SH_TOOLS $REQUIRED_ARM_TOOLS"
+
+for i in $REQUIRED_DC_TOOLS; do
+    if test "x$i" = "xno"; then
+        AC_MSG_ERROR([Tool missing in action! Use --with-sh-path, --with-arm-path or set PATH.])
+    fi
+done
+
+
+########################################################################
+
+AC_MSG_RESULT([])
+AC_MSG_RESULT([***************************])
+AC_MSG_RESULT([*                       ***])
+AC_MSG_RESULT([** Configure KallistiOS  **])
+AC_MSG_RESULT([***                       *])
+AC_MSG_RESULT([***************************])
+
+KOS_ARCH="dreamcast"
+
+if test "x`expr substr "$KOS_BASE" 1 1`" != "x/"; then
+	KOS_BASE="$TOP_DIR/$KOS_BASE"
+fi
+
+if test ! -d "$KOS_BASE" ; then
+    AC_MSG_ERROR([KallistiOS (KOS) [$KOS_BASE] not found. Use --with-kos.])
+else
+    AC_MSG_RESULT([checking for KalistiOS... $KOS_BASE])
+fi
+# $$$ben : Fix me 
+#SH_LDFLAGS="$SH_LDFLAGS -L$KOS_BASE"
+
+AC_PATH_PROG(KOS_GENROMFS, genromfs, no, $KOS_BASE/utils/genromfs:$PATH)
+AC_PATH_PROG(KOS_BIN2O,    bin2o,    no, $KOS_BASE/utils/bin2o)
+
+if test "x$KOS_GENROMFS" = "xno"; then
+    AC_MSG_ERROR([Could not find kos gemromfs program.])
+fi
+
+if test "x$KOS_BIN2O" = "xno"; then
+    AC_MSG_ERROR([Could not find kos bin2o program.])
+fi
+
 AC_SUBST(KOS_ARCH)
-AC_SUBST(KOS_LOADER)
 AC_SUBST(KOS_BASE)
 AC_SUBST(KOS_GENROMFS)
 AC_SUBST(KOS_BIN2O)
+
+########################################################################
+
+AC_MSG_RESULT([])
+AC_MSG_RESULT([**************************])
+AC_MSG_RESULT([*                      ***])
+AC_MSG_RESULT([** Process config files **])
+AC_MSG_RESULT([***                      *])
+AC_MSG_RESULT([**************************])
 
 AC_OUTPUT(
  [Makefile.inc]
  [arm/Makefile]
  [doc/Makefile]
+ [make-cd/Makefile]
  [VERSION]
  [include/dcplaya/config.h:config.h.in])
 
-echo -n "making required files... " >&6
-reply="success"
-${MAKE} -s required >&5 || reply="failed"
-echo "$reply" >&6
+########################################################################
 
-if test $DEBUG -eq 0; then DEBUG=no; else DEBUG=yes; fi
+if test $DEBUG   -eq 0; then DEBUG=no;   else DEBUG=yes; fi
 if test $RELEASE -eq 0; then RELEASE=no; else RELEASE=yes; fi
-if test $MASTER -eq 0; then MASTER=no; else MASTER=yes; fi
+if test $MASTER  -eq 0; then MASTER=no;  else MASTER=yes; fi
 
-AC_MSG_RESULT([**************************************])
-AC_MSG_RESULT([* Compilation options summary:])
-AC_MSG_RESULT([*   top dir             : $DCPLAYA_TOPDIR])
-AC_MSG_RESULT([*   master-test         : $MASTER])
-AC_MSG_RESULT([*   debug-mode          : $DEBUG])
-AC_MSG_RESULT([*   release-mode        : $RELEASE])
-AC_MSG_RESULT([*   sh (core) prefix    : $SHPREFIX])
-AC_MSG_RESULT([*   arm (audio) prefix  : $ARMPREFIX])
-AC_MSG_RESULT([*   kos                 : $KOS_BASE])
-AC_MSG_RESULT([*   doxygen             : $DOXYGEN])
-AC_MSG_RESULT([**************************************])
+AC_MSG_RESULT([])
+AC_MSG_RESULT([***************************])
+AC_MSG_RESULT([*                       ***])
+AC_MSG_RESULT([** Configuration summary **])
+AC_MSG_RESULT([***                       *])
+AC_MSG_RESULT([***************************])
+AC_MSG_RESULT([ top dir             : $DCPLAYA_TOPDIR])
+AC_MSG_RESULT([ master-test         : $MASTER])
+AC_MSG_RESULT([ debug-mode          : $DEBUG])
+AC_MSG_RESULT([ release-mode        : $RELEASE])
+AC_MSG_RESULT([ sh (core) prefix    : $SH_PREFIX])
+AC_MSG_RESULT([ arm (audio) prefix  : $ARM_PREFIX])
+AC_MSG_RESULT([ kos                 : $KOS_BASE])
+AC_MSG_RESULT([ dc-tool             : $KOS_LOADER ($KOS_LOADER_FLAGS)])
+AC_MSG_RESULT([ host C compiler     : $HOST_CC ($HOST_CFLAGS)])
+AC_MSG_RESULT([ Documentation tools : $DOC_TOOLS])
+AC_MSG_RESULT([ CDR tools           : $CDR_TOOLS])
+AC_MSG_RESULT([])
 
 dnl#
-dnl# End of "$Id: configure.in,v 1.15 2003-05-04 12:53:58 benjihan Exp $".
+dnl# End of "$Id: configure.in,v 1.16 2003-07-30 00:38:26 benjihan Exp $".
 dnl#
