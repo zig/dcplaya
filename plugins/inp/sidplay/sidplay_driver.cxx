@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/09/03
  * @brief     sidplay input plugin for dcplaya
- * @version   $Id: sidplay_driver.cxx,v 1.8 2002-09-27 08:17:52 benjihan Exp $
+ * @version   $Id: sidplay_driver.cxx,v 1.9 2002-10-10 22:02:47 benjihan Exp $
  */
 
 /* generated config include */
@@ -62,8 +62,15 @@ static sidTune * tune;
 static ubyte * sidbuffer;
 static int sidbuffer_len;
 
-static unsigned int splCnt;    // Sample counter
-static unsigned int splGoal;   // Sample goal (end of track)
+static unsigned int minMs;      // Min time (1024th of second) for music
+static unsigned int maxMs;      // Max time (1024th of second) for music
+static unsigned int zeroMs;     // Time of successive zero for end detect.
+
+static unsigned int splCnt;     // Sample counter
+static unsigned int splGoalMin; // Mimimum sample for music stop
+static unsigned int splGoal;    // Sample goal (end of track)
+static unsigned int zeroCnt;    // Number of successive zero sample recieved
+static unsigned int zeroGoal;   // Number of zero samples to detect end.
 
 static int init(any_driver_t *d)
 {
@@ -71,7 +78,9 @@ static int init(any_driver_t *d)
 
   sidbuffer = 0;
   sidbuffer_len = 0;
-
+  minMs = 6<<10;       /* All tracks have 6 seconds time minimum */
+  maxMs = (60*17)<<10; /* All tracks have 17 minutes time maximum */
+  zeroMs = 6<<10;      /* Successive zero time for end detection */
   tune = 0;
   engine = new emuEngine;
   if (!engine) {
@@ -195,17 +204,32 @@ static int start(const char *fn, int track, playa_info_t *info)
   }
   disk_info(info, tune);
 
-  splCnt = 0;
-  splGoal = 0x192d500;
-    /*
-    (info->info[PLAYA_INFO_TIME].v >>
-     (10 -
-      info->info[PLAYA_INFO_STEREO].v -
-      info->info[PLAYA_INFO_BITS].v)) * 
-      config.frequency;*/
+  {
+	unsigned int ms = info->info[PLAYA_INFO_TIME].v;
+	const int sht = 5;
+// 	- info->info[PLAYA_INFO_STEREO].v -
+// 	  info->info[PLAYA_INFO_BITS].v;
+
+	zeroGoal = zeroCnt = splCnt = 0;
+
+	if (!ms) {
+	  /* No time, need to */
+	  ms = maxMs;
+	  splGoalMin = (config.frequency * (minMs>>5))  >> sht;
+	  splGoal    = (config.frequency * (maxMs>>5))  >> sht;
+	  zeroGoal   = (config.frequency * (zeroMs>>5)) >> sht;
+	} else {
+	  splGoal = (config.frequency * (ms >> 5)) >> sht;
+	}
+  }
   
-  if (!splGoal) {
-    SDWARNING("Music has no time : goal=%u\n", splGoal);
+  if (zeroGoal) {
+    SDWARNING("Music has no time info. Auto detect parameters:\n"
+			  " Min  sample:%u\n"
+			  " Max  sample:%u\n"
+			  " Zero sample:%u\n",splGoalMin, splGoal, zeroGoal);
+  } else {
+    SDWARNING("Music has time. Max sample:%u\n", splGoal);
   }
 
   err = 0;
@@ -259,8 +283,25 @@ static int decoder(playa_info_t *info)
   }
 
   status = INP_DECODE_CONT;
-
   splCnt += n;
+
+  /* Auto detect end */
+  if (zeroGoal) {
+	int i;
+	for (i=0; i<(n>>1) && !buffer[i]; ++i);
+	if (i == (n>>1) && !( (n&1) && ((short*)buffer)[n-1])) {
+		zeroCnt += n;
+// 		SDDEBUG("Idle: %u %u\n", n, zeroCnt);
+		if (zeroCnt >= zeroGoal && splCnt >= splGoalMin) {
+		  /* End detected */
+		  SDDEBUG("sid: End detected @%u\n",splCnt);
+		  splCnt = splGoal;
+		}
+	} else {
+	  zeroCnt = 0;
+	}
+  }
+
   if (splCnt >= splGoal) {
     SDDEBUG("sidplay: reach end [%u > %u]\n",splCnt, splGoal);
     status |= INP_DECODE_END ;
@@ -287,7 +328,8 @@ static int update_info(playa_info_t *info, sidTuneInfo & sidinfo, char *tmp)
     return -1;
   }
 
-  playa_info_time(info, 5*60<<10);
+  playa_info_time(info, sidinfo.lengthInSeconds<<10);
+
   sprintf(tmp,"%02d/%02d", sidinfo.currentSong, sidinfo.songs);
   playa_info_track(info, tmp);
   playa_info_title(info, sidinfo.nameString);
@@ -316,7 +358,7 @@ static int disk_info(playa_info_t *info, sidTune * sidtune)
   playa_info_bits(info, config.bitsPerSample >> 4);
   playa_info_stereo(info, config.channels-1);
   playa_info_frq(info, config.frequency);
-  playa_info_time(info, (5*60) << 10);
+//   playa_info_time(info, (5*60) << 10);
   playa_info_bps(info, 0);
   playa_info_bytes(info, 0);
   
