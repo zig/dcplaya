@@ -2,22 +2,27 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.4 2002-10-25 21:06:24 benjihan Exp $
+# $Id: Makefile.in,v 1.5 2002-10-26 11:42:10 benjihan Exp $
 #
 
 VERSION = @VERSION@
 DOXYGEN = "@DOXYGEN@"
 
 DEVDOCDIR  	:= . .. ../include
-DEVDOCFILES	:= doc.h ../BUGS
+DEVDOCFILES	:= doc.h devdoc.h
 
 LUADOCDIR   := lua
 LUASRCDIR   := ../lua
 LUASRCFILES	:= $(wildcard $(LUASRCDIR)/*.lua)
-LUADOCFILES := $(LUASRCFILES:$(LUASRCDIR)/%=$(LUADOCDIR)/%)
+LUADOCFILES :=\
+ $(LUASRCFILES:$(LUASRCDIR)/%=$(LUADOCDIR)/%)\
+ $(LUADOCDIR)/doc.lua
 
+DOCINPUTS=$(DEVDOCDIR) $(DEVDOCFILES) $(LUADOCDIR)
 
 SHASUBST=../utils/shasubst.sh
+LUA2DOX=../utils/lua2dox.sh
+
 
 # Build shasubst definition
 #
@@ -28,6 +33,8 @@ DATE	:= $(shell date +"%B %Y")
 
 DOXALL	:= -D date="$(DATE)"
 DOXALL	+= -D dox-version=$(VERSION)
+DOXALL	+= -D dox-project="dcplaya"
+DOXALL	+= -D dox-file-patterns='*.h *.lua'
 DOXALL	+= -D dox-quiet=NO
 DOXALL	+= -D dox-warnings=NO
 DOXALL	+= -D dox-extract-all=NO
@@ -37,7 +44,6 @@ DOXALL  += -D dox-javadoc_autobrief=yes
 DOXALL  += -D distribute_group_doc=yes
 DOXALL  += -D optimize_output_for_c=yes
 DOXALL	+= -D dox-tab-size=12
-DOXALL	+= -D dox-file-patterns='*.h *.lua'
 DOXALL	+= -D dox-destination=.
 DOXALL	+= -D dox-preprocessing=YES
 DOXALL	+= -D dox-macro_expansion=YES
@@ -49,9 +55,8 @@ DOXALL	+= -D dox-internal-docs=YES
 # DEVELOPER DOCUMENTATION
 ###################################################
 
-DOXDEV	=
-DOXDEV	+= -D dox-project="dcplaya - Developer"
-DOXDEV	+= -D dox-input="$(DEVDOCDIR) $(DEVDOCFILES)"
+DOXDEV	:=
+DOXDEV	+= -D dox-input="$(DOCINPUTS)"
 DOXDEV	+= -D dox-predefined="DEBUG"
 DOXDEV	+= -D dox-include_path=..
 DOXDEV	+= -D dox-optimize-output-for-c=YES
@@ -68,14 +73,20 @@ DOXDEV	+= -D dox-generate-latex=NO
 # MAKE RULES
 ###################################################
 
-all: devdoc
+all: Makefile devdoc
+
+Makefile : Makefile.in
+	(cd ..; ./config.status) 
+
+$(LUADOCDIR)/doc.lua : luadoc.h
+	cp -f $< $@
 
 $(LUADOCDIR)/%.lua : $(LUASRCDIR)/%.lua Makefile
 	$(LUA2DOX) < $< > $@
 
 luadoc: $(LUADOCFILES)
 
-devdoc: devdoc.dox luadoc  $(DEVDOCFILES)
+devdoc: devdoc.dox $(DEVDOCFILES) luadoc
 	$(DOXYGEN) $<
 
 devdoc.dox: generic.doxin Makefile
@@ -83,11 +94,11 @@ devdoc.dox: generic.doxin Makefile
 	grep -E -v '^ *$$' |\
 	$(SHASUBST) $(DOXALL) $(DOXDEV) > $@
 
-doc.h : doc.hin
+%.h : %.hin
 	cat $< > $@
 
 clean_local:
-	@rm -f *.dox *.h $
+	@rm -f *.dox *.h *~
 
 clean: clean_local
 	@rm -rf html latex man $(LUADOCDIR)/*

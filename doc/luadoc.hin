@@ -1,0 +1,21 @@
+/**
+
+@defgroup dcplaya_lua  dcplaya lua components and extensions documeation
+This documentation intends to help developers to use dcplaya LUA components.
+
+ **/
+
+/**
+@defgroup dcplaya_lua_basics	dcplaya lua basic components documentation
+@ingroup  dcplaya_lua
+ **/
+
+/**
+@defgroup dcplaya_lua_files		dcplaya lua file organization documentation
+@ingroup  dcplaya_lua
+ **/
+
+/**
+@defgroup dcplaya_lua_gui		dcplaya lua GUI components  documentation
+@ingroup  dcplaya_lua
+ **/

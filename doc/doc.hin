@@ -1,6 +1,6 @@
 /**
 
-@mainpage dcplaya developer documentation
+@mainpage dcplaya documentation
 
 @section copyright Copyright
 
@@ -9,14 +9,5 @@ Copyright (C) 2002 Ben(jamin) Gerard
 @section intro Introduction
 
 This documentation intends to help developers to use or modify dcplaya
-components. 
+components.
 */
-
-/**
-@defgroup dcplaya_devel		dcplaya main code documentation
- **/
-
-/**
-@defgroup dcplaya_plugin_devel	dcplaya plugins documentation
- **/
-

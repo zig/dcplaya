@@ -1,0 +1,15 @@
+/**
+
+@section intro Introduction
+
+This documentation intends to help developers to use or modify dcplaya
+components. 
+*/
+
+/**
+@defgroup dcplaya_devel		dcplaya main code documentation
+ **/
+
+/**
+@defgroup dcplaya_plugin_devel	dcplaya plugins documentation
+ **/
