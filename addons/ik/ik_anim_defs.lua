@@ -6,6 +6,17 @@
 --
 
 return {
+   ["idle"] = {
+      { "kamae0", 500},
+      { "wait", 40 },
+      { loop=-100 },
+   },
+
+   ["barai"] = {
+      { "barai", 0.3 },
+      { "barai", 0 },
+   },
+
    ["walk"] = {
       { "kamae0", 1 },
       { "kamae1", 1 },
@@ -105,7 +116,7 @@ return {
    },
 
    ["salut"] = {
-      { "kamae0", 2 },
+      { "kamae0", 3 },
       { "salut0", 2 },
       { "salut1", 1.5 },
       { "salut2", 2 },

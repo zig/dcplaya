@@ -76,6 +76,11 @@ function ik()
 	 end
 	 for ia,va in %ik_target_boxes do
 	    if in_box(box, va) then
+	       if not %ik_sprites[i].targets then
+		  print ("creating targets for "..i)
+		  %ik_sprites[i].targets = {}
+	       end
+	       %ik_sprites[i].targets[ia] =  va - { x1+x,y1+y,0,0,0 }
 	       allocated_boxes = allocated_boxes+1
 	    end
 	 end
@@ -143,12 +148,20 @@ function ik()
 	 end
 	 if option then
 	    for j,w in option do
-	       print("copying option ["..j.."] ["..w.."]")
+--	       print("copying option ["..j.."] ["..w.."]")
 	       anim[j] = w
 	    end
 	 end
 	 tinsert(%ik_anims, anim)
       end
+
+      -- Copy anim to named field
+      for i,v in %ik_anims do
+	 if type(v) == "table" then
+	    %ik_anims[v.name] = v
+	 end
+      end
+
       return 1
    end
 
@@ -179,22 +192,111 @@ function ik()
       local dl, sdl1, sdl2
 
       dl = dl_new_list(0,1)
-      sdl1 = dl_new_list(0,0,1)
-      sdl2 = dl_new_list(0,0,1)
-      dl_sublist(dl, sdl1)
-      dl_sublist(dl, sdl2)
+      dl1 = dl_new_list(0,0,1)
+      dl2 = dl_new_list(0,0,1)
+      dl_sublist(dl, dl1)
+      dl_sublist(dl, dl2)
       dl_set_trans(dl, mat_trans(320,400,2000))
       dl_draw_box1(dl,-128,1,128,3,0, 1,1,0,0)
 
-      repeat
-	 key = getchar()
-	 if key == 27 then return end
-	 local num = mod(key,getn(%ik_anims))
-	 if not num then return end
-	 local anim = %ik_anims[num+1]
-	 if not anim then return end
-	 ik_play_anim(sdl1, sdl2, anim)
-      until nil
+      cond_connect(1)
+
+      local player = {
+	 id = 2,
+	 cont = nil,
+	 status = "salut",
+	 anim = nil,
+      }
+      player.anim = ik_anim_start(%ik_anims[player.status], 0.1)
+      print("init : "..player.anim.ref.name)
+      print(framecounter())
+      evt_peekchar() -- Reset time counter
+
+      -- wait a while.
+      local i
+      for i=1,60 do
+	 framecounter()
+	 evt_peekchar() -- Reset time counter
+      end
+
+      local key
+      while not key or key ~= 27 do
+	 local elapsed_time = frame_to_second(framecounter())
+
+	 --- Read controler
+	 player.cont = controler_read(player.id)
+	 if player.cont then
+
+	    if player.release_button and player.anim.wait
+	       and not player.cont.buttons[player.release_button] then
+	       player.release_button = nil
+	       player.anim.release = 1
+	    end
+
+	    if player.status == "idle" then
+	       if player.cont.buttons.a and player.cont.buttons.center then
+		  player.status = "barai"
+		  player.release_button = "a"
+		  player.anim = nil
+
+	       elseif player.cont.buttons.x then
+		  player.release_button = "x"
+		  player.anim = nil
+		  if player.cont.buttons.down then
+		     player.status = "mpunch"
+		  else
+		     player.status = "hpunch"
+		  end
+
+	       elseif player.cont.buttons.b then
+		  player.release_button = "b"
+		  player.anim = nil
+		  if player.cont.buttons.down then
+		     player.status = "lkick"
+		  elseif player.cont.buttons.up then
+		     player.status = "hkick"
+		  elseif player.cont.buttons.left then
+		     player.status = "backkick"
+		  else
+		     player.status = "mkick"
+		  end
+	       end
+
+	    end
+
+	 end
+
+	 -- End of current anim : set "idle"
+	 if player.anim then
+	    if player.anim.step == 0 then
+	       player.anim = nil
+	       print("Going idle ["..tostring(player.status).."]")
+	       player.status = "idle"
+	    end
+	 end
+
+	 -- No anim : start new one
+	 if not player.anim then
+	    player.anim = ik_anim_start(%ik_anims[player.status], 0.1)
+	    print("starting ["..tostring(player.status).."]")
+	 end
+
+	 -- Draw sprite
+	 dl_clear(dl1)
+	 if player.anim then
+	    dl_draw_text(dl1,-16,24,20,1,1,1,1, 
+			 format("%q %.2f", player.anim.ref.name,
+				elapsed_time * 60))
+	    ik_anim_draw(player.anim, dl1,1,1,1)
+	    dl_set_active2(dl1,dl2,1)
+	    dl1,dl2 = dl2,dl1
+	    ik_anim_play(player.anim, elapsed_time)
+	 end
+	 
+	 key = evt_peekchar()
+      end
+
+      cond_connect(-1)
    end
 
 
