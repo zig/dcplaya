@@ -1,21 +1,45 @@
 /* FIFO */
 
 #include <kos.h>
+#include "sysdebug.h"
 
 static spinlock_t fifo_mutex;
-static int fifo_buffer[1024 * 64]; /* power of 2 */
+static int *fifo_buffer; /* power of 2 */
 static int fifo_r;
 static int fifo_w;
 static int fifo_b;
-static const int fifo_s = sizeof(fifo_buffer) / sizeof(*fifo_buffer);
+static int fifo_s;
 
-void fifo_init()
+int fifo_init(int size)
 {
-  dbglog(DBG_DEBUG, " ** " __FUNCTION__ "(%d)\n", sizeof(fifo_buffer)); 
+  SDDEBUG("[%s] : size=%d\n", __FUNCTION__, size); 
   /* Create mutex object */
   spinlock_init(&fifo_mutex);
-  fifo_r = fifo_w = fifo_b = 0;
+  fifo_s = fifo_r = fifo_w = fifo_b = 0;
+  fifo_buffer = (int *)malloc(size * sizeof(*fifo_buffer));
+  if (fifo_buffer) {
+	fifo_s = size;
+  }
   spinlock_unlock(&fifo_mutex);
+  return fifo_buffer ? fifo_s : -1;
+}
+
+int fifo_resize(int size)
+{
+  int * b;
+  SDDEBUG("[%s] : size=%d\n", __FUNCTION__, size); 
+  spinlock_lock(&fifo_mutex);
+  b = (int *)realloc(fifo_buffer, size * sizeof(*fifo_buffer));
+  if (b) {
+	fifo_buffer = b;
+	fifo_s = size;
+	fifo_b &= (fifo_s-1);
+	fifo_r &= (fifo_s-1);
+	fifo_w &= (fifo_s-1);
+  }
+  spinlock_unlock(&fifo_mutex);
+  SDDEBUG("[%s] := [%d]\n", __FUNCTION__, fifo_s); 
+  return fifo_s;
 }
 
 int fifo_start(void)

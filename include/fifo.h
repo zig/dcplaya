@@ -1,4 +1,4 @@
-/* $Id: fifo.h,v 1.2 2002-09-06 23:16:09 ben Exp $ */
+/* $Id: fifo.h,v 1.3 2002-10-11 12:09:28 benjihan Exp $ */
 
 #ifndef _FIFO_H_
 #define _FIFO_H_
@@ -9,7 +9,8 @@
 DCPLAYA_EXTERN_C_START
 
 
-void fifo_init();
+int fifo_init(int size);
+int fifo_resize(int size);
 int fifo_start();
 void fifo_stop();
 

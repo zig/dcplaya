@@ -1,12 +1,17 @@
-/* 2002/02/11 */
+/**
+ * @file   text.c
+ * @author benjamin gerard <ben@sashipa.com> 
+ * @date   2002/02/11
+ * @brief  drawing and formating text primitives
+ *
+ * $Id: text.c,v 1.6 2002-10-11 12:09:28 benjihan Exp $
+ */
 
 #include <stdarg.h>
 #include "sysdebug.h"
 #include "gp.h"
 
 #define CLIP(a, min, max) ((a)<(min)? (min) : ((a)>(max)? (max) : (a)))
-
-
 
 static uint32 fnttexture = 0;
 static float xscale;
@@ -23,18 +28,27 @@ static unsigned int text_argb_save;
 //static float text_color_a, text_color_r, text_color_g, text_color_b;
 
 /* define me to use 16x16 instead of 8x12 font */
-#define USE_FONT_16x16 1
+#undef USE_FONT_16x16
+//#define USE_FONT_16x16 1
+//#undef USE_FONT_8x14
+#define USE_FONT_8x14
 
 #ifdef USE_FONT_16x16
 # define FONT_TEXTURE_W 256
 # define FONT_TEXTURE_H 128
 # define FONT_CHAR_W 16
 # define FONT_CHAR_H 16
-#else
+# define FONT_FIRST_CHAR 0
+# define FONT_LAST_CHAR 128u
+#elif defined USE_FONT_8x14
 # define FONT_TEXTURE_W 128
-# define FONT_TEXTURE_H 128
+# define FONT_TEXTURE_H 256
 # define FONT_CHAR_W 8
-# define FONT_CHAR_H 12
+# define FONT_CHAR_H 14
+# define FONT_FIRST_CHAR 0
+# define FONT_LAST_CHAR 256u
+#else
+# error "NO FONT DEFINED"
 #endif
 
 typedef struct {
@@ -43,13 +57,13 @@ typedef struct {
   float u1, u2, v1, v2;
 } myglyph_t;
 
-static myglyph_t myglyph_p[128]; // proportional spacing
-static myglyph_t myglyph_f[128]; // fixed spacing
+static myglyph_t myglyph_p[FONT_LAST_CHAR]; // proportional spacing
+static myglyph_t myglyph_f[FONT_LAST_CHAR]; // fixed spacing
 static myglyph_t * myglyph = myglyph_p;
 
 static int escape_char = '%';
 
-static float clipbox[4];
+extern float clipbox[];
 
 static int do_escape(int c, va_list * list);
 
@@ -116,8 +130,8 @@ int text_setup()
   const char *fontname = 
 #ifdef USE_FONT_16x16
     "/rd/font16x16.ppm";
-#else  
-  "/rd/font8x12.ppm";
+#elif defined USE_FONT_8x14
+  "/rd/font8x14.ppm";
 #endif
 	
   /* set clip box */
@@ -149,7 +163,7 @@ int text_setup()
         bounding(g + x*FONT_CHAR_W + y*FONT_TEXTURE_W*FONT_CHAR_H,
 				 FONT_CHAR_W, FONT_CHAR_H, FONT_TEXTURE_W, b);
         
-        if (c<128) {
+        if (c>=FONT_FIRST_CHAR && c<FONT_LAST_CHAR) {
           myglyph_t *m = myglyph_p+c;
           
           m->w = (float)(b[2] - b[0] + 2);
@@ -164,9 +178,15 @@ int text_setup()
           */
 
           m = myglyph_f+c;
+#ifdef USE_FONT_16x16
           m->w = (float)(11);
           m->u1 = (float)(x*FONT_CHAR_W+(b[0]+b[2])/2 - 5) * xs;
           m->u2 = (float)(x*FONT_CHAR_W+(b[0]+b[2])/2 + 6-1) * xs;
+#else
+          m->w = (float)(7+2);
+          m->u1 = (float)(x*FONT_CHAR_W) * xs;
+          m->u2 = (float)((x+1)*FONT_CHAR_W) * xs;
+#endif
           m->v1 = (float)y * yscale;
           m->v2 = m->v1 + yscale;
 
@@ -187,8 +207,8 @@ int text_setup()
 		  myglyph[c+1+16].u2 : myglyph[c+1   ].u2;
 		myglyph[c].v2 = (myglyph[c+16  ].v2 > myglyph[c+1+16].v2)  ? 
 		  myglyph[c+16  ].v2 : myglyph[c+1+16].v2;
-		myglyph[c].w  = 32.0f;
-		myglyph[c].h  = 32.0f;
+		myglyph[c].w  = FONT_CHAR_W*2;
+		myglyph[c].h  = FONT_CHAR_H*2;
       }
     }
   }
@@ -213,14 +233,14 @@ static void restore_state(void)
 
 static float size_of_char(float * h, int c)
 {
-  if ((unsigned int)c >= 128u) {
+  if ((unsigned int)c >= FONT_LAST_CHAR) {
     c = 0;
   }
   if (h) *h = myglyph[c].h * text_yscale;
   return myglyph[c].w * text_xscale;
 }
 
-float measure_poly_char(int c)
+float text_measure_char(int c)
 {
   return (size_of_char(0, c));
 }
@@ -229,8 +249,8 @@ static float size_of_str(float * h, const char *s)
 {
   int c;
   float sum = 0, max_h = 0;
-  while ((c=*s++), c) {
-    if ((unsigned int)c >= 128u) {
+  while ((c=(*s++)&255), c) {
+    if ((unsigned int)c >= FONT_LAST_CHAR) {
       c = 0;
     }
 	if (myglyph[c].h > max_h) max_h = myglyph[c].h;
@@ -246,18 +266,18 @@ static float size_of_strf(float *h, const char *s, va_list list)
   float sum = 0, maxh = 0;
 
   save_state();
-  while ((c=*s++), c) {
+  while ((c=(*s++)&255), c) {
 	if (esc) {
 	  c = do_escape(c, &list);
 	  esc = 0;
 	} else if (c==escape_char) {
       esc = 1;
 	  c = -1;
-    } else if ((unsigned int)c >= 128u) {
+    } else if ((unsigned int)c >= FONT_LAST_CHAR) {
 		c = 0;
 	}
 	if (c == -1) continue;
-	if ((unsigned int)c >= 128u) c = 0;
+	if ((unsigned int)c >= FONT_LAST_CHAR) c = 0;
 	{
 	  float ch = myglyph[c].h * text_yscale;
 	  if (ch > maxh) maxh = ch;
@@ -269,17 +289,17 @@ static float size_of_strf(float *h, const char *s, va_list list)
   return sum;
 }
 
-float measure_poly_text(const char * s)
+float text_measure_str(const char * s)
 {
   return size_of_str(0, s);
 }
 
-float measure_poly_vtextf(const char * s, va_list list)
+float text_measure_vstrf(const char * s, va_list list)
 {
   return size_of_strf(0, s, list);
 }
 
-float measure_poly_textf(const char * s, ...)
+float text_measure_strf(const char * s, ...)
 {
   float h;
   va_list list;
@@ -290,14 +310,21 @@ float measure_poly_textf(const char * s, ...)
   return h;
 }
 
+void text_size_str(const char * s, float * w, float * h)
+{
+  float w2;
+  w2 =  size_of_str(h, s);
+  if (w) *w = w2;
+}
+
 /* Draw one font character (16x16); assumes polygon header already sent */
 static float draw_text_char(float x1, float y1, float z1,
                             float scalex, float scaley,
 /*                             float a, float r, float g, float b, */
                             int c)
 {
-  float hc = (float)FONT_CHAR_H * scaley;
-  int ix,iy;
+  float wc, hc = (float)FONT_CHAR_H * scaley;
+/*   int ix,iy; */
   float u1,u2,v1,v2;
   float x2,y2;
 	
@@ -310,40 +337,67 @@ static float draw_text_char(float x1, float y1, float z1,
 
   volatile v_t * const hw = (v_t *)(0xe0<<24);
 
-#ifndef USE_FONT_16x16
-  c -= 32;
-#endif
-/*   if ((unsigned int)c >= 128) c = 0; */
-
+  /* Compute width and height */
+  wc = myglyph[c].w * scalex;
   if (c==4 || c==6) {
     y1 -= hc * 0.5f;
     hc *= 2.0f;
   }
+  /* Clip very small char */
+  if (hc < 1E-5 || wc < 1E-5) {
+	return 0;
+  }
 
+  /* Clip right out and bottom out*/
   if (x1 >= clipbox[2] || y1 >= clipbox[3]) {
 	return 0;
   }
-  x2 = x1 + myglyph[c].w * scalex;
+  /* Compute right and bottom */
+  x2 = x1 + wc;
   y2 = y1 + hc;
-  if (x2 < clipbox[0] || y2 < clipbox[1]) {
+
+  /* Clip left oout and top out */
+  if (x2 <= clipbox[0] || y2 <= clipbox[1]) {
 	return 0;
   }
 	
-  ix = (unsigned int)c % (FONT_TEXTURE_W/FONT_CHAR_W);
-  iy = (unsigned int)c / (FONT_TEXTURE_W/FONT_CHAR_W);
-  u1 = (float)ix * xscale;
-  u2 = u1 + xscale;
-  v1 = (float)iy * yscale;
-  v2 = v1 + yscale;
-	
+/*   ix = (unsigned int)c % (FONT_TEXTURE_W/FONT_CHAR_W); */
+/*   iy = (unsigned int)c / (FONT_TEXTURE_W/FONT_CHAR_W); */
+/*   u1 = (float)ix * xscale; */
+/*   u2 = u1 + xscale; */
+/*   v1 = (float)iy * yscale; */
+/*   v2 = v1 + yscale; */
+
+  /* Compute UV */
   u1 = myglyph[c].u1;
   u2 = myglyph[c].u2;
   v1 = myglyph[c].v1;
   v2 = myglyph[c].v2;
   
-  
-
-  //  dbglog(DBG_DEBUG, "'%c' : %d,%d %.2f,%.2f,%.2f,%.2f\n", c, ix,iy, u1,v1,u2,v2);
+  /* Left clip */
+  if (x1 < clipbox[0]) {
+	float f = (clipbox[0] - x1) / wc;
+	x1 = clipbox[0];
+	u1 = u2 * f + u1 * (1.0f-f);
+  }
+  /* Top clip */
+  if (y1 < clipbox[1]) {
+	float f = (clipbox[1] - y1) / hc;
+	y1 = clipbox[1];
+	v1 = v2 * f + v1 * (1.0f-f);
+  }
+  /* Right clip */
+  if (x2 > clipbox[2]) {
+	float f = (x2 - clipbox[2]) / wc;
+	x2 = clipbox[2];
+	u2 = u1 * f + u2 * (1.0f-f);
+  }
+  /* Bottom clip */
+  if (y2 > clipbox[3]) {
+	float f = (y2 - clipbox[3]) / hc;
+	y2 = clipbox[3];
+	v2 = v1 * f + v2 * (1.0f-f);
+  }
 
   hw->flags = TA_VERTEX_NORMAL;
   hw->x = x1;
@@ -427,9 +481,8 @@ static int do_escape(int c, va_list *list)
 
 /* Draw a set of textured polygons at the given depth and color that
    represent a string of text. */
-static float draw_poly_textv(float x1, float y1, float z1,
-/* 			     float a, float r, float g, float b, */
-			     const char *s, va_list list)
+float text_draw_vstrf(float x1, float y1, float z1,
+							 const char *s, va_list list)
 {
   poly_hdr_t poly;
   int esc = 0, c;
@@ -448,10 +501,8 @@ static float draw_poly_textv(float x1, float y1, float z1,
   ta_commit_poly_hdr(&poly);
 
 
-  while (c=*s++, c) {
+  while (c=(*s++)&255, c) {
 	float curh;
-
-
 
     if (esc) {
       esc = 0;
@@ -466,7 +517,7 @@ static float draw_poly_textv(float x1, float y1, float z1,
       x1 += myglyph[32].w * text_xscale;
 	  curh = myglyph[32].h * text_yscale;
     } else {
-	  if ((unsigned int)c >= 128) c = 0;
+	  if ((unsigned int)c >= FONT_LAST_CHAR) c = 0;
       x1 = draw_text_char(x1, y1, z1, text_xscale, text_yscale, c);
 	  curh = myglyph[c].h * text_yscale;
     }
@@ -482,22 +533,35 @@ static float draw_poly_textv(float x1, float y1, float z1,
 
 /* Draw a set of textured polygons at the given depth and color that
    represent a string of text. */
-float draw_poly_text(float x1, float y1, float z1,
-/*                      float a, float r, float g, float b, */
-                     const char *s, ...)
+float text_draw_strf(float x1, float y1, float z1, const char *s, ...)
 {
   va_list list;
   float res;
 
   va_start(list, s);
-  res = draw_poly_textv(x1, y1, z1, /*a, r, g, b,*/ s, list);
+  res = text_draw_vstrf(x1, y1, z1, s, list);
   va_end(list);
   return res;
 }
 
+float text_draw_str(float x1, float y1, float z1, const char *s)
+{
+  va_list list;
+  float res;
+  int save_escape = escape_char;
+  escape_char = 0;
+
+/*   va_start(list, s); */
+  res = text_draw_vstrf(x1, y1, z1, s, list);
+/*   va_end(list); */
+  escape_char = save_escape;
+  return res;
+}
+
+
 
 /* */
-float draw_poly_center_text(float x1, float y1, float x2, float y2, float z1,
+float text_draw_strf_center(float x1, float y1, float x2, float y2, float z1,
                             const char *s, ...)
 {
   float res, w, h;
@@ -510,27 +574,22 @@ float draw_poly_center_text(float x1, float y1, float x2, float y2, float z1,
   y1 = y1 + ((y2-y1)-h) * 0.5f;
   
   va_start(list, s);
-  res = draw_poly_textv(x1, y1, z1, s, list);
+  res = text_draw_vstrf(x1, y1, z1, s, list);
 
   va_end(list);
   return res;
 }
 
-void draw_poly_get_text_size(const char *s, float * w, float * h)
-{
-  *w = size_of_str(h, s);
-}
-
 /* Draw a set of textured polygons at the given depth and color that
    represent a string of text. */
-float draw_poly_layer_text(float y1, float z1, const char *s)
+float text_draw_str_inside(float x1, float y1, float x2, float y2, float z1,
+						   const char *s)
 {
-  const float border=30.0f;
-  const float screen=640.0f-2.0f*border;
-  float scale = 2.0f, h;
+  const float boxw = x2 - x1;
+  const float boxh = y2 - y1;
+  float scale = 2.0f, strw, strh;
   poly_hdr_t poly;
   int c;
-  float strw, x1=border;
 	
   if (!s) {
     return 0.0f;
@@ -538,47 +597,40 @@ float draw_poly_layer_text(float y1, float z1, const char *s)
 
   save_state();
   text_xscale = text_yscale = scale;
-  strw = size_of_str(&h, s);
-  if (strw > screen) {
-	const float f = screen / strw;
-	scale *= f;
-	h *= f;
-  } else {
-    x1 += (screen - strw) * 0.5f;
+  strw = size_of_str(&strh, s);
+  if (strw > boxw || strh > boxh) {
+	float f1 = boxw / strw, f2 =  boxh / strh;
+	if (f2 < f1) f1 = f2;
+	scale *= f1;
+	strw *= f1;
+	strh *= f1;
   }
-  text_argb = 0xFF00FF00;
+  x1 += (boxw - strw) * 0.5f;
+  y1 += (boxh - strh) * 0.5f;
 
   ta_poly_hdr_txr(&poly, TA_TRANSLUCENT, TA_ARGB4444, 
-		  FONT_TEXTURE_W, FONT_TEXTURE_H, fnttexture, TA_NO_FILTER);
+				  FONT_TEXTURE_W, FONT_TEXTURE_H, fnttexture, TA_NO_FILTER);
   poly.flags1 &= ~(3<<4);
   ta_commit_poly_hdr(&poly);
-  while (c=*s++, c) {
+  while (c=(*s++)&255, c) {
     if (c == ' ') {
       x1 += myglyph[32].w * scale;
     } else {
-	  if ((unsigned int)c >= 128u) c = 0;
+	  if ((unsigned int)c >= FONT_LAST_CHAR) c = 0;
       x1 = draw_text_char(x1, y1, z1, scale, scale, c);
     }
   }
   restore_state();
-  return h;
+  return strh;
 }
 
 float text_set_font_size(float size)
 {
   float save = text_xscale * (float)FONT_CHAR_W;
-  text_xscale = text_yscale = size / (float)FONT_CHAR_W;
+  text_xscale = text_yscale = size / (float)FONT_CHAR_H;
   return save;
 }
 
-void text_set_clipping(const float xmin, const float ymin,
-					   const float xmax, const float ymax)
-{
-  clipbox[0] = xmin;
-  clipbox[1] = ymin;
-  clipbox[2] = xmax;
-  clipbox[3] = ymax;
-}
 
 int text_set_font(int n)
 {

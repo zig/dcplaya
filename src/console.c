@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.12 2002-10-10 06:05:37 benjihan Exp $
+ * @version   $Id: console.c,v 1.13 2002-10-11 12:09:28 benjihan Exp $
  */
 
 
@@ -63,19 +63,17 @@ void csl_init_main_console()
 					0/*CSL_RENDER_BASIC*/);
 #endif
 
-  csl_window_configure(csl_main_console, 50, 50, csl_main_console->w * 11, csl_main_console->h * 16, 1, 1);
-  csl_main_console->window.ba1 = 0.5;
-  csl_main_console->window.ba2 = 0.5;
-  csl_main_console->window.br1 = 0.2;
-  csl_main_console->window.bg1 = 0.0;
-  csl_main_console->window.bb1 = 0.0;
-  csl_main_console->window.br2 = 0.2;
-  csl_main_console->window.bg2 = 0.2;
-  csl_main_console->window.bb2 = 0.0;
-  csl_main_console->window.ta = 0.8;
-  csl_main_console->window.tr = 1.0;
+  csl_window_configure(csl_main_console, 50, 50, csl_main_console->w * 11,
+					   csl_main_console->h * 16, 1, 1);
+  csl_main_console->window.ba1 = 0.4;   csl_main_console->window.ba2 = 0.7;
+  csl_main_console->window.br1 = 0.25;  csl_main_console->window.br2 = 0.00;
+  csl_main_console->window.bb1 = 0.25;  csl_main_console->window.bg2 = 0.25;
+  csl_main_console->window.bg1 = 0.00;  csl_main_console->window.bb2 = 0.00;
+
+  csl_main_console->window.ta = 1.0;
+  csl_main_console->window.tr = 0.26;
   csl_main_console->window.tg = 1.0;
-  csl_main_console->window.tb = 0.0;
+  csl_main_console->window.tb = 0.18;
 
   old_printk_func = dbgio_set_printk(csl_printk_func);
   
@@ -223,11 +221,11 @@ void csl_window_transparent_render(csl_console_t * c)
   oldfont = text_set_font(1); // Select fixed spacing font
   oldescape = text_set_escape(-1); // No escape character
 
-  draw_poly_box(c->window.x, c->window.y,
-		c->window.x + c->window.w, c->window.y + c->window.h, 
-		200.0f,
-		c->window.ba1, c->window.br1, c->window.bg1, c->window.bb1,
-		c->window.ba2, c->window.br2, c->window.bg2, c->window.bb2);
+  draw_box2v(c->window.x, c->window.y,
+			 c->window.x + c->window.w, c->window.y + c->window.h, 
+			 200.0f,
+			 c->window.ba1, c->window.br1, c->window.bg1, c->window.bb1,
+			 c->window.ba2, c->window.br2, c->window.bg2, c->window.bb2);
   
 
   for (y=0; y<c->term->nline; y++) {
@@ -249,8 +247,8 @@ void csl_window_transparent_render(csl_console_t * c)
 
     if (*p) {
 	  text_set_color(c->window.ta, c->window.tr, c->window.tg, c->window.tb);
-      draw_poly_text(c->window.x, c->window.y + y*16*c->window.scaley, 
-		     205.0f, p);
+      text_draw_str(c->window.x, c->window.y + y*16*c->window.scaley, 
+					205.0f, p);
       //      printf(p);
     }
 
@@ -260,18 +258,18 @@ void csl_window_transparent_render(csl_console_t * c)
       int i;
       
       for (i=0; i<c->term->cursor.x; i++)
-	px += measure_poly_char(p[i]);
+		px += text_measure_char(p[i]);
 
       if (p[i])
-	w = measure_poly_char(p[i]);
+		w = text_measure_char(p[i]);
       else
-	w = 8;
+		w = 8;
 
-      draw_poly_box(px, c->window.y + y*16*c->window.scaley,
-		    px + w, c->window.y + y*16*c->window.scaley + 16*c->window.scaley, 
-		    200.0f,
-		    1.0f, 0.0f, 1.0f, 1.0f,
-		    1.0f, 0.0f, 1.0f, 1.0f);
+      draw_box1(px, c->window.y + y*16*c->window.scaley,
+				px + w,
+				c->window.y + y*16*c->window.scaley + 16*c->window.scaley, 
+				200.0f,
+				1.0f, 0.0f, 1.0f, 1.0f);
     }
 
 
@@ -412,3 +410,4 @@ int csl_peekchar()
 {
   return controler_peekchar();
 }
+

@@ -1,5 +1,5 @@
 
-$Id: TODO,v 1.21 2002-10-08 08:25:16 benjihan Exp $
+$Id: TODO,v 1.22 2002-10-11 12:09:28 benjihan Exp $
 
 ** TODO :
 
@@ -158,3 +158,26 @@ $Id: TODO,v 1.21 2002-10-08 08:25:16 benjihan Exp $
 
 - [2002-10-08 06:30:04 AM, ben]
   Gui inactive mode does not seem to work.
+
++ [2002-10-08 11:00:19 AM, ben]
+  Dirty display list. You can see it when you run a visual plugin.
+
+  [2002-10-10 07:05:52 AM, ben]
+  Fixed. It was just a clipping test I forgot to remove. :)
+
++ [2002-10-09 02:53:45 AM, ben]
+  '%' char vanished ! May be it is KOS printf.
+
+  [2002-10-10 04:33:12 AM, ben]
+  Fixed. KOS use sprintf result with other printf functions. This makes '%'
+  char vanish. I adds a dbgio_puts function and use it in printf.c file.
+
+- [2002-10-09 02:53:45 AM, ben]
+  dolib function makes dc reset sometime when nested. It is probably a bug with
+  lua dofile() function.
+
+- [2002-10-09 02:55:13 AM, ben]
+  Add libpath parameter to dolib function (init.lua)
+
+- [2002-10-10 07:05:52 AM, ben]
+  SID auto detect end. Set a max time and an idle time (playing 0 sample).

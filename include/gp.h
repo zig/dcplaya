@@ -10,37 +10,64 @@
 
 DCPLAYA_EXTERN_C_START
 
-
-/* Floating-point Sin/Cos; 256 angles, -1.0 to 1.0 */
-extern float sintab[];
-#define msin(angle) sintab[angle]
-#define mcos(angle) sintab[((angle)+64) % 256]
-
-/* bkg.c */
+/** @name Background functions.
+ *  @{
+ */
+/** Init background. */
 int bkg_init(void);
+/** Render background in opaque mode */
 void bkg_render(float fade, int info_flag);
+/**@}*/
 
-/* 3dutils.c */
-void rotate(int zang, int xang, int yang, float *x, float *y, float *z);
-void draw_poly_mouse(int ptrx, int ptry);
-void draw_poly_char(float x1, float y1, float z1, float a, float r, float g, float b, int c);
-void draw_poly_strf(float x1, float y1, float z1, float a, float r, float g, float b, char *fmt, ...);
-void draw_poly_box(float x1, float y1, float x2, float y2, float z,
-		float a1, float r1, float g1, float b1,
-		float a2, float r2, float g2, float b2);
-float measure_poly_char(int c);
-float measure_poly_text(const char * s);
-float measure_poly_vtextf(const char * s, va_list list);
-float measure_poly_textf(const char * s, ...);
+/** @name Draw primitives
+ *  @{
+ */
+
+/** Draw uniform box in translucent mode. */
+void draw_box1(float x1, float y1, float x2, float y2, float z,
+			   float a, float r, float g, float b);
+/** Draw horizontal gradiant box. */
+void draw_box2h(float x1, float y1, float x2, float y2, float z,
+				float a1, float r1, float g1, float b1,
+				float a2, float r2, float g2, float b2);
+/** Draw vertical gradiant box. */
+void draw_box2v(float x1, float y1, float x2, float y2, float z,
+				float a1, float r1, float g1, float b1,
+				float a2, float r2, float g2, float b2);
+/** Draw diagonal gradiant box. */
+void draw_box2d(float x1, float y1, float x2, float y2, float z,
+				float a1, float r1, float g1, float b1,
+				float a2, float r2, float g2, float b2);
+/** Draw general gradiant box. */
+void draw_box4(float x1, float y1, float x2, float y2, float z,
+			   float a1, float r1, float g1, float b1,
+			   float a2, float r2, float g2, float b2,
+			   float a3, float r3, float g3, float b3,
+			   float a4, float r4, float g4, float b4);
+/** Draw line.*/
+void draw_line(float x1, float y1, float z1, float x2, float y2, float z2,
+			   float a1, float r1, float g1, float b1,
+			   float a2, float r2, float g2, float b2,
+			   float w);
+/**@}*/
+
+/** @name Clipping fucntions.
+ *  @{
+ */
+/** Set clipping box. */
+void draw_set_clipping(const float xmin, const float ymin,
+					   const float xmax, const float ymax);
+/** Gt clipping box. */
+void draw_get_clipping(float * xmin, float * ymin,
+					   float * xmax, float * ymax);
+/**@}*/
 
 /* songmenu.c */
 void song_menu_render();
 
 /* text.c */
-int text_setup();
-
-void text_set_clipping(const float xmin, const float ymin,
-					   const float xmax, const float ymax);
+int text_setup(void);
+int text_set_escape(int n);
 
 float text_set_font_size(float size);
 int text_set_font(int n);
@@ -51,16 +78,25 @@ void text_set_color(const float a, const float r,
 					const float g, const float b);
 void text_set_argb(unsigned int argb);
 
+float text_draw_vstrf(float x1, float y1, float z1, const char *s,
+					  va_list list);
+float text_draw_strf(float x1, float y1, float z1, const char *s, ...);
+float text_draw_str(float x1, float y1, float z1, const char *s);
+float text_draw_str_inside(float x1, float y1, float x2, float y2, float z1,
+						   const char *s);
 
-int text_set_escape(int n);
-float draw_poly_text(float x1, float y1, float z1,
-/*                      float a, float r, float g, float b, */
-                     const char *s, ...);
-float draw_poly_center_text(float x1, float y1, float x2, float y2, float z1,
+float text_draw_strf_center(float x1, float y1, float x2, float y2, float z1,
                             const char *s, ...);
+
+float text_measure_char(int c);
+float text_measure_str(const char * s);
+float text_measure_vstrf(const char * s, va_list list);
+float text_measure_strf(const char * s, ...);
+void text_size_str(const char * s, float * w, float * h);
+
+/* 3dutils.c */
+
                      
-float draw_poly_layer_text(float y1, float z1, const char *s);
-void draw_poly_get_text_size(const char *txt, float *w, float *h);
 
 /* border.c */
 

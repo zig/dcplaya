@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.h,v 1.2 2002-09-27 02:01:37 vincentp Exp $
+ * @version   $Id: display_list.h,v 1.3 2002-10-11 12:09:28 benjihan Exp $
  */
 
 
@@ -45,6 +45,9 @@ typedef struct dl_list {
   int    heap_pos;             /**< position in heap */
 
   spinlock_t mutex;            /**< mutex */
+
+  /*  float clip_box[4]; */           /**< Current clip box */
+  float save_clip_box[4];      /**< Saved clip box (restore at end) */
 
   int    active;               /**< active state */
 

@@ -17,13 +17,13 @@ typedef enum {
   OPTION_SHUFFLE,
   OPTION_VISUAL,
   OPTION_LCD_VISUAL,
-//  OPTION_TRACKS,
-//  OPTION_TIME,
-//  OPTION_DELAY,
-//  OPTION_DELAY_STRENGTH,
-//  OPTION_DELAY_TIME,
-//  OPTION_AMIGA_BLEND,
-//  OPTION_JOY_FX,
+  //  OPTION_TRACKS,
+  //  OPTION_TIME,
+  //  OPTION_DELAY,
+  //  OPTION_DELAY_STRENGTH,
+  //  OPTION_DELAY_TIME,
+  //  OPTION_AMIGA_BLEND,
+  //  OPTION_JOY_FX,
   OPTION_MAX
 } option_e;
 
@@ -74,7 +74,7 @@ int option_setup(void)
 
   lcd_visual = OPTION_LCD_VISUAL_FFT_FULL;
   track_offset = 0;
-/*   joyfx_onoff = -1; */
+  /*   joyfx_onoff = -1; */
   return 0;
 }
 
@@ -127,7 +127,8 @@ static int get_latch_frames()
 void option_render(unsigned int elapsed_frame)
 {
   const float z = 100.0f;
-  float y = 400.0f;
+  float x1 = 30.0f, x2 = 680.0f - x1;
+  float y1 = 385.0f, y2 = 420.0f;
   int hmove = 0;
   int prev_option;
   
@@ -138,7 +139,7 @@ void option_render(unsigned int elapsed_frame)
     if (controler68.buttons_change&CONT_Y) {
       /* Y change state : just going out of options, restore some value */
  
- #if 0     
+#if 0     
       if (cur_option == OPTION_TRACKS && track_offset) {
         /* Leaving TRACK mode with a different track number 
            causes a change track ! */
@@ -192,11 +193,13 @@ void option_render(unsigned int elapsed_frame)
   }
 #endif
 
+  text_set_argb(0xFF00FF00);
   switch(cur_option) {
-    case OPTION_VOLUME:
+  case OPTION_VOLUME:
     {
       char tmp[32];
       int v;
+	  float h;
 
       volume += (hmove << 3);
       if (volume < 0) {
@@ -207,78 +210,79 @@ void option_render(unsigned int elapsed_frame)
       playa_volume(volume);
 
       strcpy(option_str, "Vol ");
-      y += draw_poly_layer_text (y, z, "VOLUME");
+      h = text_draw_str_inside(x1, y1, x2, y2, z, "VOLUME");
+	  y1 += h;
+	  y2 += h;
       v = volume * 100;
       sprintf (tmp, "%d.%d%%", v / 255, v % 255 * 9 / 255);
       strcat(option_str,tmp);
-      y += draw_poly_layer_text (y, z, tmp);
+      h = text_draw_str_inside(x1, y1, x2, y2, z, tmp);
     } break;
     
-    case OPTION_FILTER:
+  case OPTION_FILTER:
     {
       filter = (filter + hmove) & 1;
       strcpy(option_str, !filter ? "All files" : ".mp3 only"); 
-      y += draw_poly_layer_text (y, z, option_str);
+      text_draw_str_inside(x1, y1, x2, y2, z, option_str);
     } break;
     
-    case OPTION_SHUFFLE:
+  case OPTION_SHUFFLE:
     {
       shuffle = (shuffle + hmove) & 1;
       strcpy(option_str,  !shuffle ? "Shuffle OFF" : "Shuffle ON");
-      y += draw_poly_layer_text (y, z, option_str);
+      text_draw_str_inside(x1, y1, x2, y2, z, option_str);
     } break;
 
-    case OPTION_VISUAL:
+  case OPTION_VISUAL:
     {
       vis_driver_t * save = visual;
       char tmp [256];
       
       if (hmove > 0) {
-	/* Find next visual */
-	if (!visual) {
-	  visual = (vis_driver_t *)vis_drivers.drivers;
-	} else {
-	  visual = (vis_driver_t *) visual->common.nxt;
-	}
+		/* Find next visual */
+		if (!visual) {
+		  visual = (vis_driver_t *)vis_drivers.drivers;
+		} else {
+		  visual = (vis_driver_t *) visual->common.nxt;
+		}
       } else if (hmove < 0) {
-	/* Find previous visual */
-	any_driver_t *p, *v;
+		/* Find previous visual */
+		any_driver_t *p, *v;
 
-	for (p=0, v=vis_drivers.drivers;
-	     v && v != &visual->common;
-	     p=v, v=v->nxt)
-	  ;
-	visual = (vis_driver_t *)p;
+		for (p=0, v=vis_drivers.drivers;
+			 v && v != &visual->common;
+			 p=v, v=v->nxt)
+		  ;
+		visual = (vis_driver_t *)p;
       }
 
       /* Do plugin stop/start op */
       if (visual != save) {
-	/* Only if visual changes */
-	if (save) {
-	  /* Stop previous ... if any */
-	  save->stop();
-	}
-	if (visual) {
-	  /* Start new one ... if any */
-	  visual->start();
-	}
+		/* Only if visual changes */
+		if (save) {
+		  /* Stop previous ... if any */
+		  save->stop();
+		}
+		if (visual) {
+		  /* Start new one ... if any */
+		  visual->start();
+		}
       }
-
+	  
       sprintf(tmp,"Visual %s", !visual ? "OFF" : visual->common.name);
       option_str[sizeof(option_str)-1] = 0;
       strcpy(option_str, tmp);
-      y += draw_poly_layer_text (y, z, option_str);
-
+      text_draw_str_inside(x1, y1, x2, y2, z, option_str);
+	  
     } break;
 
-    case OPTION_LCD_VISUAL:
+  case OPTION_LCD_VISUAL:
     {
       static const char * str[] =
-	{ "LCD OFF", "LCD Scope", "LCD FFT", "LCD FFT (x2)" };
+		{ "LCD OFF", "LCD Scope", "LCD FFT", "LCD FFT (x2)" };
       lcd_visual = (lcd_visual + hmove) & 3;
       strcpy(option_str,  str[lcd_visual]);
-      y += draw_poly_layer_text (y, z, option_str);
+      text_draw_str_inside(x1, y1, x2, y2, z, option_str);
     } break;
   }
-  
 }

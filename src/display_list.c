@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.c,v 1.2 2002-09-27 02:01:37 vincentp Exp $
+ * @version   $Id: display_list.c,v 1.3 2002-10-11 12:09:28 benjihan Exp $
  */
 
 
@@ -53,6 +53,11 @@ dl_list_t * dl_new_list(int heapsize, int active)
   l->color[1] = 1.0f;
   l->color[2] = 1.0f;
   l->color[3] = 1.0f;
+
+/*   l->clipbox[0] = l->clipbox[1] = 0; */
+/*   l->clipbox[1] = 640; */
+/*   l->clipbox[3] = 480; */
+
   MtxIdentity(l->trans);
 
   locklists();
@@ -139,6 +144,9 @@ void dl_clear(dl_list_t * dl)
   unlock(dl);
 }
 
+void draw_get_clipping(float*,float*,float*,float*);
+void draw_set_clipping(const float,const float,const float,const float);
+
 static void dl_render(int opaque)
 {
   dl_list_t * l;
@@ -150,19 +158,23 @@ static void dl_render(int opaque)
 
     lock(l);
 
+	draw_get_clipping(l->save_clip_box+0, l->save_clip_box+1,
+					  l->save_clip_box+2, l->save_clip_box+3);
     memcpy(dl_trans, l->trans, sizeof(dl_trans));
     memcpy(dl_color, l->color, sizeof(dl_color));
     c = l->command_list;
     while (c) {
       if (opaque) {
-	if (c->render_opaque)
-	  c->render_opaque(c);
+		if (c->render_opaque)
+		  c->render_opaque(c);
       } else {
-	if (c->render_transparent)
-	  c->render_transparent(c);
+		if (c->render_transparent)
+		  c->render_transparent(c);
       }
       c = c->next;
     }
+ 	draw_set_clipping(l->save_clip_box[0], l->save_clip_box[1],
+ 					  l->save_clip_box[2], l->save_clip_box[3]);
 
     unlock(l);
   }

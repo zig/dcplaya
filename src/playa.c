@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.9 2002-10-10 06:05:37 benjihan Exp $
+ * $Id: playa.c,v 1.10 2002-10-11 12:09:28 benjihan Exp $
  */
 
 #include <kos.h>
@@ -53,7 +53,6 @@ void playa_get_buffer(int **b, int *samples, int * counter, int * frq)
   *counter = out_count;
   *frq = current_frq;
 }
-
 
 static int fade_v, fade_ms;
 static const int fade_max = (1<<(16+9))-1;
@@ -160,16 +159,18 @@ static void * sndstream_callback(int size)
     int pbs = play_samples_start;
 
     if (pbs) {
+/* 	  SDDEBUG("Real start in %u samples (%d)\n", pbs, n); */
       pbs -= n;
       if (pbs < 0) {
         /* We reach the new music in the fifo.
             We had to change stream_parameters */
         if (next_frq != current_frq) {
-          dbglog(DBG_DEBUG, "^^ On the fly sampling change : %d->%d\n",
-          current_frq, next_frq);
+          SDDEBUG("[%s] :  On the fly sampling change : %d->%d\n",
+				  __FUNCTION__, current_frq, next_frq);
           stream_frq(current_frq = next_frq);
         }
         play_samples = -pbs-n;
+		SDDEBUG("New sample count:%u\n", play_samples+n);
         pbs = 0;
       }
       play_samples_start = pbs;
@@ -367,7 +368,7 @@ int playa_init()
   playa_paused = 0;
 
   playa_info_init();
-  fifo_init();
+  fifo_init(1024 * 256);
   playa_haltsem = sem_create(0);
 
   SDDEBUG("Create soundstream thread\n");
@@ -494,6 +495,7 @@ int playa_stop(int flush)
 
   /* If flush or paused, clean PCM FIFO */
   if (flush || playa_paused) {
+	SDDEBUG("[%s] : Fush FIFO\n", __FUNCTION__);
     fifo_start(0);
     play_samples = play_samples_start = 0;
 	fade_ms = 0;
@@ -549,6 +551,7 @@ int playa_start(const char *fn, int track, int immediat) {
       SDWARNING("fifo used : %d !!!\n", pbs);
       pbs = 0;
     }
+	SDWARNING("Real start in %u samples!!!\n", pbs);
     play_samples_start = pbs;
   } else {
 	/* */

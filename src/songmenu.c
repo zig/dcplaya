@@ -4,7 +4,7 @@
  * @date    2002/02/10
  * @brief   file and playlist browser
  * 
- * $Id: songmenu.c,v 1.9 2002-10-10 06:05:37 benjihan Exp $
+ * $Id: songmenu.c,v 1.10 2002-10-11 12:09:28 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -631,8 +631,8 @@ static int draw_any_listing(entry_window_t * win)
   /* List is busy ... skip refresh */
   if (!win->list->sync) {
 	text_set_color(fade68, 1.0f, 1.0f, 1.0f);
-    draw_poly_text(xs, ys, 100.0f, 
-		   "> Please wait . . . busy . . . <");
+    text_draw_str(xs, ys, 100.0f, 
+				  "> Please wait . . . busy . . . <");
     return 1;
   }
 	
@@ -644,7 +644,7 @@ static int draw_any_listing(entry_window_t * win)
   if (num_entries <= 0) {
 	text_set_color(colors[0].a * halftint, colors[0].r, colors[0].g,
 				   colors[0].b);
-    draw_poly_text(xs, y, 100.0f, "<empty>");
+    text_draw_str(xs, y, 100.0f, "<empty>");
   } else {
     top      = win->top;
     selected = win->selected;
@@ -718,14 +718,14 @@ static int draw_any_listing(entry_window_t * win)
 
 	  text_set_color(colors[color_idx].a * halftint, colors[color_idx].r,
 					 colors[color_idx].g, colors[color_idx].b);
-      ystep = draw_poly_text(xs, y, 100.0f, s);
+      ystep = text_draw_str(xs, y, 100.0f, s);
     }
   	
     /* Put a highlight bar under one of them */
-    draw_poly_box(xs, ys + esel * ystep - 1.0f,
-		  xs+256.0f, ys + (esel+1) * ystep, 95.0f,
-		  throb*halftint, throb*0.5f, throb*.5f, 0,
-		  throb*halftint, throb, throb, 0);
+    draw_box2v(xs, ys + esel * ystep - 1.0f,
+			   xs+256.0f, ys + (esel+1) * ystep, 95.0f,
+			   throb*halftint, throb*0.5f, throb*.5f, 0,
+			   throb*halftint, throb, throb, 0);
   }
 
   entrylist_sync(win->list, 0);
