@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/09/03
  * @brief     sidplay input plugin for dcplay
- * @version   $Id: sidplay_driver.cxx,v 1.1 2002-09-07 11:38:31 ben Exp $
+ * @version   $Id: sidplay_driver.cxx,v 1.2 2002-09-08 12:28:09 ben Exp $
  */
 
 /* generated config include */
@@ -103,7 +103,7 @@ static int init(any_driver_t *d)
   config.channels = SIDEMU_STEREO;
   config.bitsPerSample = SIDEMU_16BIT;
   config.sampleFormat = SIDEMU_SIGNED_PCM;
-  config.emulateFilter = true;
+  config.emulateFilter = true; //false; //
   // Set new config
   engine->setConfig(config);
   if (!engine->getStatus()) {

@@ -49,7 +49,10 @@
  * Don't touch these!
  * --------------------------------------------------------------------------
  */
-#undef SID_NO_STDIN_LOADER
+//$$$ BEN: I touch it !
+// #undef SID_NO_STDIN_LOADER
+//#define SID_NO_STDIN_LOADER
+
 #define SIDEMU_TIME_COUNT
 #undef SID_REFTIMES
 #undef LARGE_NOISE_TABLE
@@ -58,7 +61,7 @@
 #undef SIDTUNE_REJECT_UNKNOWN_FIELDS
 
 /* Do filter calculations at floating-point precision.  */
-#define SID_FPUFILTER
+//#define SID_FPUFILTER
 
 /* Do initialization of mixing tables at floating-point precision.  */
 #define SID_FPUMIXERINIT
