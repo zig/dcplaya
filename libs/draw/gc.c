@@ -4,7 +4,7 @@
  * @author   ben(jamin) gerard <ben@sashipa.com>
  * @brief    graphic context interface.
  *
- * $Id: gc.c,v 1.5 2002-12-11 14:18:50 ben Exp $
+ * $Id: gc.c,v 1.6 2002-12-12 00:08:04 ben Exp $
  */
 
 #include "draw/gc.h"
@@ -37,7 +37,7 @@ void gc_default(void)
 
   /* Default text properties. */
   text_set_color(1,1,1,1);
-  text_set_properties(0,16,1);
+  text_set_properties(0,16,1,1);
   text_set_escape('%');
 }
 
@@ -107,6 +107,11 @@ static void gc_copy(gc_t * dst, const gc_t * src, int flags)
   /* Restore text color. */
   if (flags & GC_RESTORE_TEXT_COLOR) {
 	dst->text.argb = src->text.argb;
+  }
+
+  /* Restore text filter. */
+  if (flags & GC_RESTORE_TEXT_FILTER) {
+	dst->text.filter = src->text.filter;
   }
 
   /* Restore background colors. */

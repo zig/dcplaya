@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.9 2002-12-11 14:18:50 ben Exp $
+--- $Id: song_browser.lua,v 1.10 2002-12-12 00:08:04 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -239,6 +239,7 @@ function song_browser_create(owner, name)
 		sb.fl:shutdown()
 		sb.pl:shutdown()
 		sb.dl = nil;
+		vmu_set_text("dcplaya")
 	end
 
 	--- Song-Browser draw.
@@ -438,9 +439,11 @@ function song_browser_create(owner, name)
 	end
 
 	function sbpl_confirm(pl, sb)
-	   sb.playlist_idx = pl.pos
-	   print("START PLAYLIST AT " .. sb.playlist_idx)
-	   playa_stop()
+	   if pl.dir.n and pl.dir.n >= 1 then
+		  sb.playlist_idx = pl.pos
+		  --	   print("START PLAYLIST AT " .. sb.playlist_idx)
+		  playa_stop()
+	   end
 	end
 
 	function sbpl_cancel(pl, sb)

@@ -4,7 +4,7 @@
 --- @date    2002/11/29
 --- @brief   Song info application.
 ---
---- $Id: song_info.lua,v 1.6 2002-12-11 14:18:50 ben Exp $
+--- $Id: song_info.lua,v 1.7 2002-12-12 00:08:04 ben Exp $
 
 song_info_loaded = nil
 
@@ -144,7 +144,7 @@ function song_info_create(owner, name)
 			   if si.info and si.info.valid then
 				  local i,v
 				  for i,v in si.info_fields do
-					 print("update "..i..":"..si.info[i])
+					 print("update "..i..":" .. tostring(si.info[i]))
 					 v.value = si.info[i]
 					 song_info_draw_field(v)
 				  end
@@ -155,7 +155,7 @@ function song_info_create(owner, name)
 
 		 -- Refresh time
 		 dl_clear(si.time_dl)
-		 dl_text_prop(si.time_dl, 1, 1, 1)
+		 dl_text_prop(si.time_dl, 1, 1, 1, 0)
 		 local s,fs = playtime();
 		 if not fs then fs = "??:??" end
 		 if si.info and si.info.valid ~= 0 and si.info.track then
@@ -323,7 +323,7 @@ function song_info_create(owner, name)
 -- Comment
 
    function song_info_draw_field(field)
-	  local x,y = 70,1
+	  local x,y = 60,1
 	  dl_clear(field.dl)
 	  field.box:draw(field.dl,nil,1)
 	  if type(field.label) == "string" then
@@ -349,22 +349,32 @@ function song_info_create(owner, name)
    end
 
    color = color_new(0.5,1,1,1)
-   local lbox
-   lbox = box3d({0,0,inner[3]-inner[1]-12,18},
-				-2,
-				{0.5,0,0,0},
-				color * cb,
-				color * cr,
-				color * cl,
-				color * ct)
+   local lbox, mbox, sbox
+   local lw = inner[3]-inner[1]-12
+   local sw = 100
+   local mw = lw - sw - 10
+   local h = 18
 
+   lbox = box3d({0,0,lw,h}, -2,
+				{0.5,0,0,0}, color * cb, color * cr, color * cl, color * ct)
+
+   mbox = box3d({0,0,mw,h}, -2,
+				{0.5,0,0,0}, color * cb, color * cr, color * cl, color * ct)
+
+   sbox = box3d({0,0,sw,h}, -2,
+				{0.5,0,0,0}, color * cb, color * cr, color * cl, color * ct)
+  
    si.info_fields = {}
    local ob = box3d_outer_box(lbox)
    local h = (ob[4] - ob[2]) + 3
-   si.info_fields.format  = song_info_field("Format", lbox,0,h*0)
-   si.info_fields.artist  = song_info_field("Artist", lbox,0,h*1)
-   si.info_fields.album   = song_info_field("Album", lbox,0,h*2)
-   si.info_fields.title   = song_info_field("Title", lbox,0,h*3)
+   si.info_fields.format = song_info_field("Format", mbox,0,h*0)
+   si.info_fields.genre  = song_info_field(nil, sbox, mw+10, h*0)
+
+   si.info_fields.artist = song_info_field("Artist", lbox,0,h*1)
+   si.info_fields.album  = song_info_field("Album",  mbox,0,h*2)
+   si.info_fields.year   = song_info_field(nil, sbox, mw+10, h*2)
+
+   si.info_fields.title   = song_info_field("Title",  lbox,0,h*3)
    dl_set_active(si.help_dl,0)
 
    dl_set_trans(si.info_dl,

@@ -4,7 +4,7 @@
  * @author   ben(jamin) gerard <ben@sashipa.com>
  * @brief    drawing text interface
  *
- * $Id: text.h,v 1.2 2002-11-27 09:58:09 ben Exp $
+ * $Id: text.h,v 1.3 2002-12-12 00:08:04 ben Exp $
  */
 
 #ifndef _TEXT_H_
@@ -56,12 +56,17 @@ float text_set_font_size(const float size);
 /** Set text font aspect ratio (Y/X). */
 float text_set_font_aspect(const float aspect);
 
+/** Set text font filtering. */
+int text_set_font_filter(int filter);
+
 /** Set text font properties.
  *  @see text_set_font()
  *  @see text_set_font_size()
  *  @see text_set_font_aspect()
+ *  @see text_set_font_filter()
  */
-void text_set_properties(fontid_t n, const float size, const float aspect);
+void text_set_properties(fontid_t n, const float size, const float aspect,
+						 int filter);
 
 /**@}*/
 

@@ -5,7 +5,7 @@
  * @date    2002/02/11
  * @brief   drawing and formating text primitives
  *
- * $Id: text.c,v 1.4 2002-12-11 14:18:50 ben Exp $
+ * $Id: text.c,v 1.5 2002-12-12 00:08:04 ben Exp $
  */
 
 #include <stdarg.h>
@@ -562,7 +562,7 @@ float text_draw_vstrf(float x1, float y1, float z1,
 
   flags = 0
 	| DRAW_TRANSLUCENT
-	| DRAW_BILINEAR
+	| (current_gc->text.filter ? DRAW_BILINEAR : DRAW_NO_FILTER)
 	| (curfont->texid << DRAW_TEXTURE_BIT);
 
   DRAW_SET_FLAGS(flags);
@@ -679,7 +679,7 @@ float text_draw_str_inside(float x1, float y1, float x2, float y2, float z1,
 
   flags = 0
 	| DRAW_TRANSLUCENT
-	| DRAW_BILINEAR
+	| (current_gc->text.filter ? DRAW_BILINEAR : DRAW_NO_FILTER)
 	| (curfont->texid << DRAW_TEXTURE_BIT);
 
   DRAW_SET_FLAGS(flags);
@@ -723,7 +723,8 @@ fontid_t text_set_font(fontid_t n)
   return old;
 }
 
-void text_set_properties(fontid_t n, const float size, const float aspect)
+void text_set_properties(fontid_t n, const float size, const float aspect,
+						 int filter)
 {
   if (n < nfont) {
 	current_gc->text.fontid = n;
@@ -733,6 +734,9 @@ void text_set_properties(fontid_t n, const float size, const float aspect)
   }
   if (aspect >= 0) {
 	current_gc->text.aspect = aspect;
+  }
+  if (filter >= 0) {
+	current_gc->text.filter = !!filter;
   }
 }
 

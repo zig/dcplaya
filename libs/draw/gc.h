@@ -4,7 +4,7 @@
  * @author   ben(jamin) gerard <ben@sashipa.com>
  * @brief    Graphic context interface
  *
- * $Id: gc.h,v 1.4 2002-11-29 08:29:41 ben Exp $
+ * $Id: gc.h,v 1.5 2002-12-12 00:08:04 ben Exp $
  */
 
 #ifndef _GC_H_
@@ -23,15 +23,16 @@
 #define GC_RESTORE_TEXT_FONT   (1<<0) /**< Restore text font.       */
 #define GC_RESTORE_TEXT_SIZE   (1<<1) /**< Restore text size.       */
 #define GC_RESTORE_TEXT_COLOR  (1<<2) /**< Restore text color.      */
-#define GC_RESTORE_TEXT        (7<<0) /**< Restore text properties. */
+#define GC_RESTORE_TEXT_FILTER (1<<3) /**< Restore text filter.     */
+#define GC_RESTORE_TEXT        (15<<0) /**< Restore text properties. */
 
-#define GC_RESTORE_COLORS_0    (1<<3)  /**< Restore left/top color.     */
-#define GC_RESTORE_COLORS_1    (1<<4)  /**< Restore right/top color.    */
-#define GC_RESTORE_COLORS_2    (1<<5)  /**< Restore left/bottom color.  */
-#define GC_RESTORE_COLORS_3    (1<<6)  /**< Restore right/bottom color. */
-#define GC_RESTORE_COLORS      (16<<3) /**< Restore all colors.         */
+#define GC_RESTORE_COLORS_0    (1<<4)  /**< Restore left/top color.     */
+#define GC_RESTORE_COLORS_1    (1<<5)  /**< Restore right/top color.    */
+#define GC_RESTORE_COLORS_2    (1<<6)  /**< Restore left/bottom color.  */
+#define GC_RESTORE_COLORS_3    (1<<7)  /**< Restore right/bottom color. */
+#define GC_RESTORE_COLORS      (15<<4) /**< Restore all colors.         */
 
-#define GC_RESTORE_CLIPPING    (1<<7)  /**< Restore clipping box.    */
+#define GC_RESTORE_CLIPPING    (1<<8)  /**< Restore clipping box.    */
 
 /**@}*/
 
@@ -45,6 +46,7 @@ typedef struct {
   draw_argb_t argb;    /**< text ARGB packed color.         */
   draw_color_t color;  /**< text floating point color.      */
   int escape;          /**< text escape char.               */
+  int filter;          /**< text filter mode.               */
 } gc_text_t;
 
 /** Graphic context structure.

@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.20 2002-12-01 19:19:14 ben Exp $
+ * $Id: display.c,v 1.21 2002-12-12 00:08:04 ben Exp $
  */
 
 #include <stdlib.h>
@@ -497,7 +497,8 @@ static luashell_command_description_t display_commands[] = {
   {
     "dl_text_prop", 0,                   /* long and short names */
     "print [["
-      "dl_text_prop(list, [fontid, [size, [aspect] ] ]) : set text properties"
+      "dl_text_prop(list [,fontid [,size [,aspect [,filter ] ] ] ]) : "
+	"set text properties (nil keeps old value)."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_text_prop       /* function */
   },

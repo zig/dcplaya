@@ -4,7 +4,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.16 2002-11-27 09:58:09 ben Exp $
+ * @version   $Id: console.c,v 1.17 2002-12-12 00:08:04 ben Exp $
  */
 
 
@@ -228,10 +228,11 @@ void csl_window_transparent_render(csl_console_t * c)
 
   //spinlock_lock(&c->mutex);
   
-  oldfont = text_set_font(1); // Select fixed spacing font
-  oldsize = text_set_font_size(8);
-  oldaspect = text_set_font_aspect(1); // Select fixed spacing font
-
+  text_set_properties(1,8,1,1);
+/*   oldfont = text_set_font(1); // Select fixed spacing font */
+/*   oldsize = text_set_font_size(8); */
+/*   oldaspect = text_set_font_aspect(1); // Select fixed spacing font */
+/*   oldfilter = text_set */
   oldescape = text_set_escape(-1); // No escape character
 
   draw_box2v(c->window.x, c->window.y,
@@ -286,7 +287,7 @@ void csl_window_transparent_render(csl_console_t * c)
   }
 
   text_set_escape(oldescape);
-  text_set_properties(oldfont,oldsize,oldaspect);
+/*   text_set_properties(oldfont,oldsize,oldaspect); */
   
   //  spinlock_unlock(&c->mutex);
 

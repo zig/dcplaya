@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, text interface
  * 
- * $Id: display_text.c,v 1.4 2002-11-29 08:29:42 ben Exp $
+ * $Id: display_text.c,v 1.5 2002-12-12 00:08:04 ben Exp $
  */
 
 #include <string.h>
@@ -26,6 +26,7 @@ struct textprop_command {
   fontid_t font;
   float size;
   float aspect;
+  int filter;
 };
 
 static dl_code_e text_render_transparent(void * pcom,
@@ -60,22 +61,24 @@ static dl_code_e properties_render_transparent(void * pcom,
 	aspect *= context->trans[1][1] / context->trans[0][0];
   }
 
-  text_set_properties(c->font, size, aspect);
+  text_set_properties(c->font, size, aspect, c->filter);
   return DL_COMMAND_OK;
 }
 
 static void properties(dl_list_t * dl,
-					   fontid_t fontid, const float size, const float aspect)
+					   fontid_t fontid, const float size, const float aspect,
+					   int filter)
 {
   struct textprop_command * c;
 
-  if (fontid < 0 && size <= 0) {
+  if (fontid < 0 || size <= 0) {
 	return;
   }
   if (c = dl_alloc(dl, sizeof(*c)), c) {
     c->font = fontid;
 	c->size = size;
 	c->aspect = aspect;
+	c->filter = filter;
 	dl_insert(dl, c, 0, properties_render_transparent);
   }
 }
@@ -125,7 +128,7 @@ DL_FUNCTION_START(measure_text)
 {
   float w,h;
   ///$$$
-  text_set_properties(0,16,1);
+  text_set_properties(0,16,1,-1);
 
   text_size_str(lua_tostring(L, 2), & w, & h);
   lua_pushnumber(L, w);
@@ -139,6 +142,7 @@ DL_FUNCTION_START(text_prop)
   int fontid = -1;
   float size = -1;
   float aspect = -1;
+  int filter = -1;
 
   if (lua_type(L,2) == LUA_TNUMBER) {
 	fontid = (int)lua_tonumber(L, 2);
@@ -149,8 +153,11 @@ DL_FUNCTION_START(text_prop)
   if (lua_type(L,4) == LUA_TNUMBER) {
 	aspect = lua_tonumber(L, 4);
   }
+  if (lua_type(L,5) == LUA_TNUMBER) {
+	filter = lua_tonumber(L, 5);
+  }
 
-  properties(dl, fontid, size, aspect);
+  properties(dl, fontid, size, aspect, filter);
   return 0;
 }
 DL_FUNCTION_END()
