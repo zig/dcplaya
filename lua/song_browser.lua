@@ -2,6 +2,59 @@
 song_browser_loaded = nil
 if not dolib("textlist") then return end
 if not dolib("gui") then return end
+if not dolib("sprite") then return end
+
+function song_browser_create_sprite(sb)
+   sb.sprites = {}
+   sb.sprites.texid = tex_get("dcpsprites") or tex_new("/rd/dcpsprites.tga")
+
+   sb.sprites.logo = sprite("dcplogo",
+							408/2, 29/2,
+							408, 29,
+							0, 0, 408/512, 29/128,
+							sb.sprites.texid)
+
+   sb.sprites.file = sprite("file",	
+							129/2, 12/2,
+							129, 12, 0, 32/128, 129/512, 44/128,
+							sb.sprites.texid)
+
+   sb.sprites.list = sprite("list",	
+							247/2, 12/2,
+							247, 12,
+							164/512, 32/128, 411/512, 44/128,
+							sb.sprites.texid)
+
+   sb.sprites.copy = sprite("copy",	
+							185/2, 19/2,
+							185, 19,
+							0, 48/128, 185/512, 67/128,
+							sb.sprites.texid)
+
+   sb.sprites.url = sprite("url",	
+						   185/2, 19/2,
+						   185, 19,
+						   186/512, 48/128, 371/512, 67/128,
+						   sb.sprites.texid)
+
+   sb.sprites.jess = sprite("jess",	
+							107/2, 53/2,
+							107, 53,
+							0/512, 72/128, 107/512, 125/128,
+							sb.sprites.texid)
+
+   sb.sprites.proz = sprite("prozak",	
+							56/2, 80/2,
+							56, 80,
+							453/512, 0/128, 510/512, 80/128,
+							sb.sprites.texid)
+
+   sb.fl.title_sprite = sb.sprites.file
+   sb.fl.icon_sprite = sb.sprites.jess
+   sb.pl.title_sprite = sb.sprites.list
+   sb.pl.icon_sprite = sb.sprites.proz
+
+end
 
 function song_browser_create(owner, name, box)
 	local sb
@@ -31,23 +84,14 @@ function song_browser_create(owner, name, box)
 			sb.fl:change_dir(sb.fl.dir)
 		 end
 
+		 if sb.stopping and playa_fade() == 0 then
+			print("REAL STOP")
+			playa_stop()
+			sb.stopping = nil
+		 end
+
 		 sb.fl:update(frametime)
 		 sb.pl:update(frametime)
-
--- 		if sb.fade == 0 then return end
--- 		local a = sb.alpha
--- 		a = a + sb.fade * frametime
--- 		if a > 1 then
--- 			a = 1
--- 			sb.fade  = 0
--- 		elseif a < 0 then
--- 			a = 0
--- 			sb.fade  = 0
--- 			dl_set_active(sb.fdl, 0)
--- 			dl_set_active(sb.pdl, 0)
--- 		end
--- 		sb.alpha = a
--- 		sb:set_color(a, 1, 1, 1)
 	end
 
 	-- Song-Browser handle
@@ -63,11 +107,11 @@ function song_browser_create(owner, name, box)
 		end
 
 		if gui_keyconfirm[key] then
-			sb:confirm()
-			return
+		   sb:confirm()
+		   return
 		elseif gui_keycancel[key] then
-			evt_shutdown_app(sb)
-			return
+		   sb:cancel()
+		   return
 		elseif key == gui_item_change_event then
 			return
 		elseif gui_keyup[key] then
@@ -194,10 +238,15 @@ function song_browser_create(owner, name, box)
 		  dl_draw_strip(dl,v);
 	   end
 
--- 	   dl_draw_box1(dl, x1, y1, x2, y4,0, 1,1,1,1)
--- 	   dl_draw_box1(dl, x3, y1, x4, y4,0, 1,1,1,1)
--- 	   dl_draw_box1(dl, x1, y1, x4, y2,0, 1,1,1,1)
--- 	   dl_draw_box1(dl, x1, y3, x4, y4,0, 1,1,1,1)
+	   if fl.title_sprite then
+		  fl.title_sprite:draw(dl, (x1+x4) * 0.5, y1-fl.title_sprite.h, 0)
+	   end
+
+	   if fl.icon_sprite then
+		  local w,h = fl.icon_sprite.w, fl.icon_sprite.h
+		  fl.icon_sprite:set_color(0.4,r2,g2,b2)
+		  fl.icon_sprite:draw(dl, x3 - w * 0.5, y3 - h * 0.5, 0.05)
+	   end
 
 	   if fl.draw_background_old then
 		  fl:draw_background_old(dl)
@@ -224,10 +273,16 @@ function song_browser_create(owner, name, box)
 -- 		sb.pl:set_color(a*f2,r,g,b)
 	end
 
-	--- Song-Browser confirm
+	--- Song-Browser confirm.
 	--
 	function song_browser_confirm(sb)
 		return sb.cl:confirm(sb)
+	end
+
+	--- Song-Browser cancel.
+	--
+	function song_browser_cancel(sb)
+		return sb.cl:cancel(sb)
 	end
 
 	sb = {
@@ -243,6 +298,7 @@ function song_browser_create(owner, name, box)
 		set_color = song_browser_set_color,
 		draw = song_browser_draw,
 		confirm = song_browser_confirm,
+		cancel = song_browser_cancel,
 		shutdown = song_browser_shutdown,
 
 		-- Members
@@ -283,6 +339,20 @@ function song_browser_create(owner, name, box)
 	   end 
 	end
 
+	function songbrowser_stop(sb)
+	   sb.stopping = 1
+	   playa_fade(-1)
+	end
+
+	function sbfl_cancel(fl, sb)
+	   print("sbfl_cancel")
+	   if playa_play() == 1 then
+		  songbrowser_stop(sb);
+	   else
+		  evt_shutdown_app(sb)
+	   end
+	end
+
 	sb.fl = textlist_create(
 			{
 			   pos = {x, y, z},
@@ -297,6 +367,8 @@ function song_browser_create(owner, name, box)
 			   span      = sb.style.span,
 			   confirm   = sbfl_confirm,
 			})
+	sb.fl.cancel = sbfl_cancel
+
 	sb.fl.fade_min = 0.3
 	sb.fl.draw_background_old = sb.fl.draw_background
 	sb.fl.draw_background = songbrowser_list_draw_background
@@ -304,6 +376,10 @@ function song_browser_create(owner, name, box)
 
 
 	function sbpl_confirm(fl)
+	end
+
+	function sbpl_cancel(fl, sb)
+	   evt_shutdown_app(sb)
 	end
 
 	x = 341
@@ -319,12 +395,15 @@ function song_browser_create(owner, name, box)
 					border    = sb.style.border,
 					span      = sb.style.span,
 				} )
+	sb.pl.cancel = sbpl_cancel
+
 	sb.pl.fade_min = sb.fl.fade_min
 	sb.pl.draw_background_old = sb.pl.draw_background
 	sb.pl.draw_background = sb.fl.draw_background
 
 	sb.cl = sb.fl
 
+	song_browser_create_sprite(sb)
 	entrylist_load(sb.fl.dir,"/")
 	sb.fl:change_dir(sb.fl.dir)
 	sb:set_color(0, 1, 1, 1)

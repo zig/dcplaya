@@ -2,21 +2,21 @@
 --
 -- author : vincent penne <ziggy@sashipa.com>
 --
--- $Id: keydefs.lua,v 1.7 2002-10-12 09:40:13 benjihan Exp $
+-- $Id: keydefs.lua,v 1.8 2002-12-04 18:46:49 ben Exp $
 --
 
-if not keydefs_included then
-keydefs_included = 1
+-- if not keydefs_loaded then
+keydefs_loaded = nil
 
 -- modifier keys
  KBD_MOD_LCTRL		=	(2^0)
  KBD_MOD_LSHIFT		=	(2^1)
  KBD_MOD_LALT		=	(2^2)
- KBD_MOD_S1		=	(2^3)
+ KBD_MOD_S1		    =	(2^3)
  KBD_MOD_RCTRL		=	(2^4)
  KBD_MOD_RSHIFT		=	(2^5)
  KBD_MOD_RALT		=	(2^6)
- KBD_MOD_S2		=	(2^7)
+ KBD_MOD_S2		    =	(2^7)
 
 -- bits for leds : this is not comprensive (need for japanese kbds also)
  KBD_LED_NUMLOCK	=	(2^0)
@@ -227,6 +227,7 @@ end
  KBD_ENTER		=	13
  KBD_ESC		=	27
 
-end -- it not keydefs_included then
+-- end -- it not keydefs_loaded then
 
 keydefs_loaded=1
+return keydefs_loaded

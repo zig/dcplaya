@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.18 2002-12-04 13:46:11 zigziggy Exp $
+--- $Id: gui.lua,v 1.19 2002-12-04 18:46:49 ben Exp $
 ---
 
 --
@@ -93,6 +93,13 @@ gui_keycancel = {
 	[KBD_CONT2_B] = 1, 
 	[KBD_CONT3_B] = 1, 
 	[KBD_CONT4_B] = 1, 
+}
+gui_keymenu = { 
+	[KBD_TAB] = 1, 
+	[KBD_CONT1_Y] = 1, 
+	[KBD_CONT2_Y] = 1, 
+	[KBD_CONT3_Y] = 1, 
+	[KBD_CONT4_Y] = 1, 
 }
 
 -- compute an automatic guess if none is given
@@ -226,6 +233,11 @@ function gui_dialog_handle(app, evt)
    if focused then
 	  if gui_keyconfirm[key] then
 		 evt_send(focused, { key = gui_press_event })
+		 return
+	  end
+
+	  if gui_keymenu[key] then
+		 evt_send(focused, { key = gui_menu_event })
 		 return
 	  end
 	  
@@ -740,6 +752,7 @@ function gui_init()
 	gui_shutdown()
 	gui_curz = 1000
 	gui_press_event		= evt_new_code()
+	gui_menu_event		= evt_new_code()
 	gui_focus_event		= evt_new_code()
 	gui_unfocus_event	= evt_new_code()
 	gui_input_confirm_event	= evt_new_code()
