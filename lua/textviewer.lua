@@ -4,7 +4,7 @@
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  hyper text viewer gui.
 ---
---- $Id: textviewer.lua,v 1.14 2003-03-20 06:05:34 ben Exp $
+--- $Id: textviewer.lua,v 1.15 2003-03-22 06:18:19 ben Exp $
 ---
 
 if not dolib("taggedtext") then return end
@@ -523,7 +523,7 @@ function gui_file_viewer(owner, fname, box, label, mode, preformatted)
       if not file then return end
       local header,footer
       if preformatted then
-	 header = format('<font id="1" size="8.5" color="text_color"><pre tabsize="%d" tabchar=" ">', preformatted)
+	 header = format('<font id="1" size="16" color="text_color"><pre tabsize="%d" tabchar=" ">', preformatted)
 	 footer = '</pre><font id="0">'
       else
 	 header,footer = "",""

@@ -1,4 +1,4 @@
---- @ingroup dcplaya_lua_basics
+--- @ingroup dcplaya_lua_playlist
 --- @file    playlist.lua
 --- @author  benjamin gerard <ben@sashipa.com>
 --- @date    2002/12/12
@@ -6,12 +6,58 @@
 ---
 playlist_loaded = nil
 
---- @name Playlist functions.
---- @ingroup dcplaya_lua_basics
---- @{
---
+--- @defgroup dcplaya_lua_playlist Playlist
+--- @ingroup  dcplaya_lua_basics
+--- @brief    loading and saving playlist file.
+---
+---  @par Supported format
+---
+---  Playlist formats supported for loading:
+---    - @b m3u (with extended info)
+---    - @b pls
+---
+---  Playlist formats supported for saving:
+---    - @b m3u (without extended info)
+---
+---  @par Adding new playlist format:
+---
+---    The playlist module allows to add new playlist supported format :
+---      - write a loader function which get a file parameter and return
+---        a playlist entry (playlist_entry). This function will be call
+---        by the generic playlist loader function playlist_load_generic()
+---        until it returns nil.
+---      - Add a new filetype for this playlist format with the function
+---        filetype_add().
+---      - Reference the new loader with the playlist_add_loader() function.
+---
+--- @verbatim
+--- function mypl_generic_loader(file)
+---    local name=read(file)
+---    return name and ( file=name }
+--- end
+---
+--- filetype_add("playlist", "mypl", ".mypl.\0.mpl\0")
+--- playlist_add_loader("mypl", mypl_generic_loader)
+--- @endverbatim
+---        
+---
+---  @par Limitations
+---
+---    Playlist module could only save m3u playlist, since there is no
+---    generic save function nor saver table.
+---    It should be very easy to add it but it is not very useful !
+---
+
+---- The playlist module handles loading of m3u and pls playlist
+---  file and the saving of m3u only. It allow to add new playlist format
+---  very easily. Currently only new loaders could be added since dcplaya
+---  omly save m3u.
+---
+--- @author  benjamin gerard <ben@sashipa.com>
+---
 
 --- Save a playlist in basic m3u format.
+--- @ingroup dcplaya_lua_playlist
 ---
 ---  @param  fname  Playlist filename.
 ---  @param  dir    Table of entry { [file,] name [,path] }.
@@ -49,6 +95,7 @@ function playlist_save(fname, dir)
 end
 
 --- Make a playlist entry.
+--- @ingroup dcplaya_lua_playlist
 --- @internal
 ---
 ---  @param  path   Default path (should be the playlist file path)
@@ -59,10 +106,14 @@ end
 --
 function playlist_make_entry(path, entry)
    if not entry then return end
+
    local file = entry.file or entry.name
    if type(file) ~= "string" then return end
 
    file = gsub(file, "\\","/") -- Remove DOS backslash
+   local char13 = strchar(13)
+   file, char13 = gsub(file, char13, "") -- Remove DOS fucking 'CR'
+
    if strfind(file,"^%a:.*") then
       if strfind(file,"^%a:/.*") then
 	 file = "/cd/"..strsub(file,4) -- assume DOS absolute path are /cd
@@ -83,6 +134,7 @@ function playlist_make_entry(path, entry)
 end
 
 --- Load playlist generic function.
+--- @ingroup dcplaya_lua_playlist
 --- @internal
 ---
 ---  @param  path        Playlist file path.
@@ -100,6 +152,8 @@ function playlist_load_generic(path, file, read_entry)
       entry = playlist_make_entry(path, entry)
 --      print("playlist_load_generic:"..getn(dir))
 
+--      dump(entry,path)
+
       if entry then
 --	 print("entry:"..entry.name)
 	 --		 dump(entry)
@@ -115,6 +169,7 @@ function playlist_load_generic(path, file, read_entry)
 end
 
 --- Load a mu3 playlist entry.
+--- @ingroup dcplaya_lua_playlist
 --- @internal
 ---
 ---  @param  file  Playlist file handle open in read mode
@@ -145,6 +200,7 @@ function playlist_load_m3u_entry(file)
 end
 
 --- Load a pls playlist entry.
+--- @ingroup dcplaya_lua_playlist
 --- @internal
 ---
 ---  @param  file  Playlist file handle open in read mode
@@ -188,6 +244,15 @@ function playlist_load_pls_entry(file)
    end
 end
 
+--- Load a playlist.
+--- @ingroup dcplaya_lua_playlist
+---
+---  @param  fname  Playlist filename.
+---
+---  @return error-code
+---  @retval nil on error
+---  @retval 1 on success
+--
 function playlist_load(fname)
    if type(fname) ~= "string" then return end
 
@@ -221,6 +286,7 @@ function playlist_load(fname)
 end
 
 --- Reference a new playlist loader.
+--- @ingroup dcplaya_lua_playlist
 ---
 ---   The playlist_add_loader() functions add an entry to the playlist_loaders
 ---   table indexed by minor with the loader function. playlist_loaders will
@@ -245,6 +311,18 @@ function playlist_add_loader(minor, loader)
    playlist_loaders[minor] = loader
    return 1;
 end
+
+--- Referenced playlist loader table.
+--- @ingroup dcplaya_lua_playlist
+---
+---   The playlist_loader table references all playlist type that
+---   could be load. The table is indexed by minor filetype and contains
+---   the loader function for that type.
+---
+---   The loader function get a file as parameter and returns the next
+---   entry read in file.
+---
+--: function playlist_loaders[minor];
 
 --
 --- @}

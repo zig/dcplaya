@@ -1,10 +1,10 @@
---- @ingroup  dcplaya_lua_app
+--- @ingroup  dcplaya_lua_si_app
 --- @file     song_info.lua
 --- @author   benjamin gerard <ben@sashipa.com>
 --- @date     2002/11/29
 --- @brief    Song info application.
 ---
---- $Id: song_info.lua,v 1.23 2003-03-17 18:50:11 ben Exp $
+--- $Id: song_info.lua,v 1.24 2003-03-22 06:18:19 ben Exp $
 
 song_info_loaded = nil
 
@@ -14,9 +14,9 @@ if not dolib("box3d") then return end
 if not dolib("sprite") then return end
 if not dolib("style") then return end
 
---- @defgroup dcplaya_lua_si_app Song-info
---- @ingroup  dcplaya_lua_app
---- @brief    Display music information.
+--- @defgroup  dcplaya_lua_si_app Song Info
+--- @ingroup   dcplaya_lua_app
+--- @brief     song info application displays music information.
 ---
 ---   The song-info application is used to display current playing music
 ---   information. It could be displayed in two modes maximized and
@@ -24,6 +24,8 @@ if not dolib("style") then return end
 ---
 ---   Normal behaviour is to have only one instance of a song-info application.
 ---   It is stored in the global variable song_info.
+---
+--- @author   benjamin gerard <ben@sashipa.com>
 ---
 
 --- Global song_info application

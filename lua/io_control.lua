@@ -1,16 +1,18 @@
---- @ingroup  dcplaya_lua_app
+--- @ingroup  dcplaya_lua_ioctrl_app
+--- @ingroup  dcplaya_lua_ioctrl_event
 --- @file     io_control.lua
 --- @author   benjamin gerard <ben@sashipa.com>
 --- @date     2003/03/08
 --- @brief    IO control application.
 ---
---- $Id: io_control.lua,v 1.4 2003-03-17 03:31:21 ben Exp $
+--- $Id: io_control.lua,v 1.5 2003-03-22 06:18:19 ben Exp $
 ---
 
 if not dolib ("evt") then return end
 
---- @defgroup dcplaya_lua_ioctrl_event IO control events
---- @ingroup dcplaya_lua_event
+--- @defgroup  dcplaya_lua_ioctrl_event  IO control events
+--- @ingroup   dcplaya_lua_event
+--- @brief     IO control events
 ---
 ---  @par IO control event introduction
 ---
@@ -18,6 +20,9 @@ if not dolib ("evt") then return end
 ---   function when its detects an IO status change.
 ---
 --- @see dcplaya_lua_ioctrl_app
+--- @author   benjamin gerard <ben@sashipa.com>
+--
+
 
 --
 --- CDROM change event structure.
@@ -51,8 +56,9 @@ if not dolib ("evt") then return end
 --- };
 --
 
---- @defgroup dcplaya_lua_ioctrl_app IO control application
---- @ingroup dcplaya_lua_app
+--- @defgroup  dcplaya_lua_ioctrl_app IO Control
+--- @ingroup   dcplaya_lua_app
+--- @brief     IO control application dispatch IO control events
 ---
 ---  @par IO control introduction
 ---
@@ -65,6 +71,9 @@ if not dolib ("evt") then return end
 --- @see cdrom_status()
 --- @see ramdisk_is_modified()
 --- @see ramdisk_notify_path()
+--- @see dcplaya_lua_ioctrl_event
+---
+--- @author   benjamin gerard <ben@sashipa.com>
 ---
 
 --

@@ -636,6 +636,8 @@ end
 
 --- Create a yesno menu description string.
 function menu_yesno_menu(flag,label,callback)
+   menu_create_sprite("yes", "stock_button_apply.tga", 20)
+   menu_create_sprite("no", "stock_button_cancel.tga", 20)
    return '{menu_' .. ((flag and 'yes}') or 'no}')
       .. label .. "{" .. callback .. "}"
 end

@@ -1,19 +1,21 @@
---- @ingroup  dcplaya_lua_app
+--- @ingroup  dcplaya_lua_cc_app
 --- @file     control_center.lua
 --- @author   benjamin gerard <ben@sashipa.com>
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.23 2003-03-21 03:35:55 ben Exp $
+--- $Id: control_center.lua,v 1.24 2003-03-22 06:18:19 ben Exp $
 ---
 
---- @defgroup  dcplaya_lua_cc_app  control center application
+--- @defgroup  dcplaya_lua_cc_app  Control Center
 --- @ingroup   dcplaya_lua_app
 --- @brief     control center application
 ---
 ---   The control center application is a multi-purpose application. It
 ---   is used to retrieve dcplaya component information, to configure plugins
 ---   and many things.
+---
+--- @author   benjamin gerard <ben@sashipa.com>
 ---
 
 --
