@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.17 2002-12-06 15:18:35 zigziggy Exp $
+--- $Id: textlist.lua,v 1.18 2002-12-09 16:26:49 ben Exp $
 ---
 
 -- Unload the library
@@ -642,9 +642,6 @@ function textlist_create_gui(fl, owner)
 	  local fl = app.fl
 	  local dir = fl.dir
 
--- 	  print("owner:"..app.owner.name)
--- 	  print("TL-EVT:"..key)
-
 	  if key == evt_shutdown_event then
 		 fl:shutdown()
 		 app.done = 1
@@ -653,7 +650,7 @@ function textlist_create_gui(fl, owner)
 
 	  if dir.n < 1 or not gui_is_focus(app.owner,app) then
 		 -- No dir loaded or no focus, ignore event --
- 		 print("NOFOCUUUUS:", dir.n)
+--  		 print("NOFOCUUUUS:", dir.n)
 		 return evt;
 	  elseif gui_keyup[key] then
 		 local code = fl:move_cursor(-1)

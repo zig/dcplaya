@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.42 2002-12-04 10:47:25 ben Exp $
+ * @version    $Id: dynshell.c,v 1.43 2002-12-09 16:26:49 ben Exp $
  */
 
 #include <stdio.h>
@@ -77,8 +77,8 @@ static int dynshell_command(const char * fmt, ...)
 
   EXPT_GUARD_CATCH;
 
-/*  printf("CATCHING EXCEPTION IN SHELL !\n");
-  irq_dump_regs(0, 0); */
+  /*  printf("CATCHING EXCEPTION IN SHELL !\n");
+	  irq_dump_regs(0, 0); */
 
   {
     lua_Debug ar;
@@ -87,23 +87,23 @@ static int dynshell_command(const char * fmt, ...)
     while (lua_getstack(L, n, &ar)) {
       lua_getinfo (L, "lnS", &ar);
       printf("[%d] "
-	     "currentline = %d, "
-	     "name = %s, "
-	     "namewhat = %s, "
-	     "nups = %d, "
-	     "linedefined = %d, "
-	     "what = %s, "
-	     "source = %s, "
-	     "short_src = %s\n",
-	     n,
-	     ar.currentline,
-	     ar.name,
-	     ar.namewhat,
-	     ar.nups,
-	     ar.linedefined,
-	     ar.what,
-	     ar.source,
-	     ar.short_src);
+			 "currentline = %d, "
+			 "name = %s, "
+			 "namewhat = %s, "
+			 "nups = %d, "
+			 "linedefined = %d, "
+			 "what = %s, "
+			 "source = %s, "
+			 "short_src = %s\n",
+			 n,
+			 ar.currentline,
+			 ar.name,
+			 ar.namewhat,
+			 ar.nups,
+			 ar.linedefined,
+			 ar.what,
+			 ar.source,
+			 ar.short_src);
       n++;
       break; /* crash if going too far ... */
     }
@@ -328,14 +328,14 @@ static int lua_malloc_stats(lua_State * L)
    Each list has been sorted according to sortdir function.
 */
 static int push_dir_as_2_tables(lua_State * L, fu_dirent_t * dir, int count,
-				fu_sortdir_f sortdir)
+								fu_sortdir_f sortdir)
 {
   int k,j,i;
 
   lua_settop(L,0);
-/*   if (!dir) { */
-/*     return 0; */
-/*   } */
+  /*   if (!dir) { */
+  /*     return 0; */
+  /*   } */
   if (sortdir) {
 	fu_sort_dir(dir, count, sortdir);
   }
@@ -358,14 +358,14 @@ static int push_dir_as_2_tables(lua_State * L, fu_dirent_t * dir, int count,
 /* Return a list of struct {name, size} sorted according to the sortdir
    function. */
 static int push_dir_as_struct(lua_State * L, fu_dirent_t * dir, int count,
-			      fu_sortdir_f sortdir)
+							  fu_sortdir_f sortdir)
 {
   int i, table;
 
   lua_settop(L,0);
-/*   if (!dir) { */
-/*     return 0; */
-/*   } */
+  /*   if (!dir) { */
+  /*     return 0; */
+  /*   } */
   if (sortdir) {
 	fu_sort_dir(dir, count, sortdir);
   }
@@ -481,15 +481,15 @@ static int lua_dirlist(lua_State * L)
 
   switch(sort) {
   case 's':
-/* 	printf("sort by > size\n"); */
+	/* 	printf("sort by > size\n"); */
 	sortdir = fu_sortdir_by_ascending_size;
 	break;
   case 'S':
-/* 	printf("sort by < size\n"); */
+	/* 	printf("sort by < size\n"); */
 	sortdir = fu_sortdir_by_descending_size;
 	break;
   case 'n':
-/* 	printf("sort by name\n"); */
+	/* 	printf("sort by name\n"); */
 	sortdir = fu_sortdir_by_name_dirfirst;
 	break;
   default:
@@ -497,13 +497,13 @@ static int lua_dirlist(lua_State * L)
   }
 
   if (two) {
-/* 	printf("Get 2 lists [%d]\n", count); */
+	/* 	printf("Get 2 lists [%d]\n", count); */
 	count = push_dir_as_2_tables(L, dir, count, sortdir);
   } else {
-/* 	printf("Get 1 list [%d]\n", count); */
+	/* 	printf("Get 1 list [%d]\n", count); */
 	count = push_dir_as_struct(L, dir, count, sortdir);
   }
-/*   printf("->%d\n", count); */
+  /*   printf("->%d\n", count); */
 
   if (dir) free(dir);
   return count;
@@ -546,17 +546,17 @@ static int r_path_load(lua_State * L, char *path, unsigned int level, const char
     if (type == FILETYPE_DIR) {
       strcpy(dirs[ndirs++], de->name);
       if (!ext)
-	continue;
+		continue;
     }
 
     if (ext) {
       int l = strlen(de->name);
       if (ext[0] && stricmp(ext, de->name + l - strlen(ext))) {
-	continue;
+		continue;
       }
     } else {
       if (type != FILETYPE_LEF) {
-	continue;
+		continue;
       }
     }
 
@@ -586,8 +586,8 @@ static int r_path_load(lua_State * L, char *path, unsigned int level, const char
   if (path_end) {
     *path_end = 0;
   }
-/*  dbglog(DBG_DEBUG, "<< " __FUNCTION__ "(%2d,[%s]) = %d\n",
-	 level, path, count);*/
+  /*  dbglog(DBG_DEBUG, "<< " __FUNCTION__ "(%2d,[%s]) = %d\n",
+	  level, path, count);*/
   return count;
 }
 
@@ -780,7 +780,7 @@ static int lua_hideconsole(lua_State * L)
 }
 
 static int copyfile(const char *dst, const char *src,
-		    int force, int unlink, int verbose)
+					int force, int unlink, int verbose)
 {
   int err;
   char *fct;
@@ -806,11 +806,11 @@ static int copyfile(const char *dst, const char *src,
 		   src, dst, err);
   }
   
-  return err;
+  return -(err < 0);
 }
 
 static int get_option(lua_State * L, const char *fct,
-		      int * verbose, int * force)
+					  int * verbose, int * force)
 {
   int i, nparam = lua_gettop(L), err = 0;
 
@@ -819,22 +819,22 @@ static int get_option(lua_State * L, const char *fct,
     if (fname[0] == '-') {
       int j;
       for (j=1; fname[j]; ++j) {
-	switch(fname[j]) {
-	case 'v':
-	  if (verbose) {
-	    *verbose = 1;
-	  } else {
-	    ++err;
-	  }
-	  break;
-	case 'f':
-	  if (force) {
-	    *force = 1;
-	  } else {
-	    ++err;
-	  }
-	  break;
-	}
+		switch(fname[j]) {
+		case 'v':
+		  if (verbose) {
+			*verbose = 1;
+		  } else {
+			++err;
+		  }
+		  break;
+		case 'f':
+		  if (force) {
+			*force = 1;
+		  } else {
+			++err;
+		  }
+		  break;
+		}
       }
     }
   }
@@ -994,7 +994,7 @@ static int lua_copy(lua_State * L)
 static int lua_dcar(lua_State * L)
 {
   int nparam = lua_gettop(L);
-  int count=-1, com; 
+  int count=-1, com, value = -1; 
   const char * command=0, *archive=0, *path=0, *error="bad arguments";
   dcar_option_t opt;
 
@@ -1011,19 +1011,19 @@ static int lua_dcar(lua_State * L)
 
   dcar_default_option(&opt);
   opt.in.verbose = 0;
-
+  
   if (!command) {
     command = "?";
   }
-
+  
   for (com = 0; *command; ++command) {
     int c = (*command) & 255;
-
+	
     switch(c) {
-    case 'c': case 's': case 'x': case 't':
+    case 'a': case 'c': case 's': case 'x': case 't':
       if (com) {
-	error = "Multiple commands";
-	goto error;
+		error = "Multiple commands";
+		goto error;
       }
       com = c;
       break;
@@ -1033,25 +1033,35 @@ static int lua_dcar(lua_State * L)
     case 'f':
       break;
     default:
-      if (c>='0' && c<='9') {
-	opt.in.compress = c - '0';
+      if (c>='0' && c<='9' && value==-1) {
+		value = c - '0';
+		while ( (c = command[1] & 255), (c>='0' && c<='9')) {
+		  value = value * 10 + (c-'0');
+		  ++command;
+		}
       } else {
-	error = "Invalid command";
-	goto error;
+		error = "Invalid command";
+		goto error;
       }
     }
   }
+
   
   switch(com) {
-  case 'c':
+  case 'c': case 'a':
     if (archive && path) {
+	  int size;
+	  if (value >= 0) opt.in.compress = value % 10u;
+	  if (com == 'a' && (size=fu_size(archive), size > 0)) {
+		opt.in.skip = size;
+	  }
       count = dcar_archive(archive, path, &opt);
       if (count < 0) {
-	error = "create failure";
+		error = opt.errstr;
       }
     }
     break;
-
+	
   case 't':
     error = "not implemented";
     break;
@@ -1059,16 +1069,17 @@ static int lua_dcar(lua_State * L)
     if (path=archive, path) {
       count = dcar_simulate(path, &opt);
       if (count < 0) {
-	error = "simulate failure";
+		error = opt.errstr;
       }
     }
     break;
-
+	
   case 'x':
     if (path && archive) {
+	  if (value > 0) opt.in.skip = value;
       count = dcar_extract(archive, path, &opt);
       if (count < 0) {
-	error = "extract failure";
+		error = opt.errstr;
       }
     }
     break;
@@ -1076,7 +1087,7 @@ static int lua_dcar(lua_State * L)
     error = "bad command : try help dcar";
     break;
   }
-
+  
  error:  
   if (count < 0) {
     printf("dcar : %s\n", error);
@@ -1390,7 +1401,7 @@ static int lua_vmutools(lua_State * L)
 
   } else {
     printf("vmu_tools : Backup [%s] into [%s]...\n",
-	   vmupath, file);
+		   vmupath, file);
 
     buffer = malloc(128<<10);
     if (!buffer) {
@@ -1442,17 +1453,93 @@ static int lua_canonical_path(lua_State * L)
   }
   path = lua_tostring(L,1);
 
-/*   printf("canonical [%s]\n", path); */
+  /*   printf("canonical [%s]\n", path); */
   res = fn_canonical(buffer, path, sizeof(buffer));
   if (!res) {
 	printf("canonical_path : path [%s] too long\n", path);
 	return 0;
   }
 
-/*   printf("--> [%s]\n", res); */
+  /*   printf("--> [%s]\n", res); */
   lua_settop(L,0);
   lua_pushstring(L,res);
   return 1;
+}
+
+static int lua_test(lua_State * L)
+{
+  int result = -1;
+  int n = lua_gettop(L);
+  const char * test, * fname;
+
+  if (n != 2 ||
+	  lua_type(L,1) != LUA_TSTRING ||
+	  lua_type(L,2) != LUA_TSTRING) {
+	printf("test : bad arguments\n");
+	return 0;
+  }
+
+  test = lua_tostring(L,1);
+  fname = lua_tostring(L,2);
+
+  if (test[0] == '-' && test[1] && !test[2]) {
+	switch(test[1]) {
+	case 'e':
+	  /* Exist */
+	  result = fu_exist(fname);
+	  break;
+	case 'd':
+	  /* Directory */
+	  result = fu_is_dir(fname);
+	  break;
+	case 'f': case 's': case 'x': case 'l': case 'p': case 'i':
+	  result = 0;
+	  if (fu_is_regular(fname)) {
+		if (test[1] == 'f') {
+		  /* Regular */
+		  result = 1;
+		} else if (test[1] == 's') {
+		  /* Empty */
+		  result = fu_size(fname) > 0;
+		} else {
+		  int type = FILETYPE(filetype_regular(fname));
+		  int first = -1, last = 0;
+		  if (test[1] == 'x') {
+			/* Executable (plugins) */
+			first = FILETYPE_EXE;
+			last = FILETYPE_EXE_LAST;
+		  } else if (test[1] == 'l') {
+			/* Playlist */
+			first = FILETYPE_PLAYLIST;
+			last = FILETYPE_PLAYLIST_LAST;
+		  } else if (test[1] == 'p') {
+			/* Playable (music file) */
+			first = FILETYPE_PLAYABLE;
+			last = FILETYPE_PLAYABLE_LAST;
+		  } else if (test[1] == 'i') {
+			/* Image */
+			first = FILETYPE_IMAGE;
+			last = FILETYPE_IMAGE_LAST;
+		  }
+		  if (first > 0) {
+			result = (type >= first) && (type <= last);
+		  }
+		}
+	  }
+	  break;
+	}
+  }
+
+  if (result < 0) {
+	printf("test : invalid test [%s]\n",test);
+	result = 0;
+  }
+
+  lua_settop(L,0);
+  if (result) {
+	lua_pushnumber(L,1);
+  }
+  return lua_gettop(L);
 }
 
 #if 0
@@ -1610,7 +1697,8 @@ static luashell_command_description_t commands[] = {
     "rp",
 
     "print([["
-    "rawprint( ... ) : raw print on console (no extra linefeed like with print)\n"
+    "rawprint( ... ) : "
+	"raw print on console (no extra linefeed like with print)\n"
     "]])",
 
     SHELL_COMMAND_C, lua_rawprint
@@ -1823,6 +1911,23 @@ static luashell_command_description_t commands[] = {
     "]])",
     SHELL_COMMAND_C, lua_canonical_path
   },
+  { 
+	"test",
+	0,
+    "print([["
+    "test(switch,file) : various file test.\n"
+	"switch is one of :"
+	" -e : file exist\n"
+	" -d : file exist and is a directory\n"
+	" -f : file exist and is a regular file\n"
+	" -s : file is not an empty regular file\n"
+	" -x : file is an executable (plugin) file\n"
+	" -p : file is a playable (music) file\n"
+	" -i : file is an image file\n"
+	" -l : file is an playlist file\n"
+    "]])",
+    SHELL_COMMAND_C, lua_test
+  },
 
   {0},
 };
@@ -1843,9 +1948,9 @@ static void shell_register_lua_commands()
 
 
   lua_dostring(L, 
-	       "\n function doshellcommand(string)"
-	       "\n   dostring(string)"
-	       "\n end");
+			   "\n function doshellcommand(string)"
+			   "\n   dostring(string)"
+			   "\n end");
 
   dynshell_command("home = [[%s]]", home);
 
@@ -1854,10 +1959,10 @@ static void shell_register_lua_commands()
   /* register functions */
   for (i=0; commands[i].name; i++) {
     lua_register(L, 
-		 commands[i].name, commands[i].function);
+				 commands[i].name, commands[i].function);
     if (commands[i].short_name) {
       lua_register(L, 
-		   commands[i].short_name, commands[i].function);
+				   commands[i].short_name, commands[i].function);
     }
   }
 
@@ -1867,9 +1972,11 @@ static void shell_register_lua_commands()
   /* register helps */
   for (i=0; commands[i].name; i++) {
     if (commands[i].usage) {
-      dynshell_command("addhelp ([[%s]], [[%s]])", commands[i].name, commands[i].usage);
+      dynshell_command("addhelp ([[%s]], [[%s]])", 
+					   commands[i].name, commands[i].usage);
       if (commands[i].short_name)
-	dynshell_command("addhelp ([[%s]], [[%s]])", commands[i].short_name, commands[i].usage);
+		dynshell_command("addhelp ([[%s]], [[%s]])",
+						 commands[i].short_name, commands[i].usage);
     }
   }
 

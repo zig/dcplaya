@@ -1,10 +1,11 @@
 /**
+ * @ingroup  dcplaya_devel
  * @name     gzip.c
  * @author   ben(jamin) gerard <ben@sashipa.com>
  * @date     2002/09/20
  * @brief    Simple gzipped file access.
  *
- * $Id: gzip.c,v 1.2 2002-09-30 06:44:05 benjihan Exp $
+ * $Id: gzip.c,v 1.3 2002-12-09 16:26:49 ben Exp $
  */
 
 #include <kos/fs.h>
@@ -41,9 +42,9 @@ static int is_gz(int fd, int len)
  error:
   if (inflate_len < 0) {
     inflate_len = -1;
-    SDDEBUG("Not gz file.\n");
+/*     SDDEBUG("Not gz file.\n"); */
   } else {
-    SDDEBUG("gz file : inflate size=%d.\n", inflate_len);
+/*     SDDEBUG("gz file : inflate size=%d.\n", inflate_len); */
   }
   fs_seek(fd,0,SEEK_SET);
   return inflate_len;
@@ -56,8 +57,8 @@ void *gzip_load(const char *fname, int *ptr_ulen)
   int len, ulen = 0;
   void * uncompr = 0;
 
-  SDDEBUG("%s(%s)\n", __FUNCTION__, fname);
-  SDINDENT;
+/*   SDDEBUG("%s(%s)\n", __FUNCTION__, fname); */
+/*   SDINDENT; */
 
   fd = fs_open(fname, O_RDONLY);
   if (!fd) {
@@ -108,12 +109,12 @@ void *gzip_load(const char *fname, int *ptr_ulen)
     *ptr_ulen = ulen;
   }
       
-  if (!uncompr) {
-    SDERROR("Failed\n");
-  } else {
-    SDERROR("Success\n");
-  }
-  SDUNINDENT;
+/*   if (!uncompr) { */
+/*     SDERROR("Failed\n"); */
+/*   } else { */
+/*     SDERROR("Success\n"); */
+/*   } */
+/*   SDUNINDENT; */
   return uncompr;
 }
 
@@ -124,8 +125,8 @@ int gzip_save(const char *fname, const void * buffer, int len)
   int clen = -1;
   int fd = 0, fd2, err;
 
-  SDDEBUG("[%s] : [%s] [%p] [%d]\n", __FUNCTION__, fname, buffer, len);
-  SDINDENT;
+/*   SDDEBUG("[%s] : [%s] [%p] [%d]\n", __FUNCTION__, fname, buffer, len); */
+/*   SDINDENT; */
 
   if (!fname || !buffer || len < 0) {
     goto error;
@@ -158,6 +159,6 @@ int gzip_save(const char *fname, const void * buffer, int len)
     gzclose(f);
   }
 
-  SDUNINDENT;
+/*   SDUNINDENT; */
   return clen;
 }

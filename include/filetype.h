@@ -3,7 +3,7 @@
  * @author  ben(jamin) gerard <ben@sashipa.com> 
  * @brief   Deal with file types and extensions.
  *
- * $Id: filetype.h,v 1.7 2002-11-04 22:41:53 benjihan Exp $
+ * $Id: filetype.h,v 1.8 2002-12-09 16:26:49 ben Exp $
  */
 
 #ifndef _FILETYPE_H_
@@ -25,20 +25,38 @@ DCPLAYA_EXTERN_C_START
 #define FILETYPE_DIR      16  /**< File is a directory               */
 #define FILETYPE_LINK     64  /**< File is a symbolic links. Unused! */
 
-#define FILETYPE_FILE     (256*1)   /**< First available regular filetype */
+/** First available regular filetype. */
+#define FILETYPE_FILE     (256*1)
 #define FILETYPE_UNKNOWN  FILETYPE_FILE /**< Unknown filetype. */
 
-#define FILETYPE_EXE      (256*2)          /**< Executable file */
+/** First available executable filetype (plugins). */
+#define FILETYPE_EXE      (256*2)          
 #define FILETYPE_ELF      (FILETYPE_EXE+1) /**< elf file */
 #define FILETYPE_LEF      (FILETYPE_EXE+2) /**< lef file */
+#define FILETYPE_EXE_LAST (256*3-1)        /**< Last executable filetype */
 
 /** First available playlist filetype. */
 #define FILETYPE_PLAYLIST (256*3)
 #define FILETYPE_M3U      (FILETYPE_PLAYLIST+0) /**< mu3 playlist */
 #define FILETYPE_PLS      (FILETYPE_PLAYLIST+1) /**< pls playlist */
+#define FILETYPE_PLAYLIST_LAST (256*4-1)        /**< Last playlist filetype */
+
+/** First available image filetype. */
+#define FILETYPE_IMAGE    (256*4)
+#define FILETYPE_TGA      (FILETYPE_IMAGE+0)    /**< tga image */
+#define FILETYPE_JPG      (FILETYPE_IMAGE+1)    /**< jpg image */
+#define FILETYPE_GIF      (FILETYPE_IMAGE+2)    /**< gif image */
+#define FILETYPE_TIF      (FILETYPE_IMAGE+3)    /**< tif image */
+#define FILETYPE_BMP      (FILETYPE_IMAGE+4)    /**< bmp image */
+#define FILETYPE_PNM      (FILETYPE_IMAGE+5)    /**< pnm image */
+#define FILETYPE_PNG      (FILETYPE_IMAGE+6)    /**< png image */
+#define FILETYPE_PPM      (FILETYPE_IMAGE+7)    /**< ppm image */
+#define FILETYPE_XPM      (FILETYPE_IMAGE+8)    /**< xpm image */
+#define FILETYPE_IMAGE_LAST (256*5-1)           /**< Last image filetype */
 
 /** First available playable (music) filetype. */
-#define FILETYPE_PLAYABLE (256*4)
+#define FILETYPE_PLAYABLE      (256*8)
+#define FILETYPE_PLAYABLE_LAST (256*9-1)        /**< Last playable filetype */
 
 /** Gzipped file flag. */
 #define FILETYPE_GZ       (1<<16)

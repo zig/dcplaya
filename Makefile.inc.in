@@ -2,13 +2,14 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile.inc.in,v 1.19 2002-10-04 20:59:16 benjihan Exp $
+# $Id: Makefile.inc.in,v 1.20 2002-12-09 16:26:49 ben Exp $
 #
 
 TOP_DIR="@TOP_DIR@"
-UTILS_DIR=$(TOP_DIR)/Utils
+UTILS_DIR=$(TOP_DIR)/utils
 DOC_DIR=@DOC_DIR@
-export TOP_DIR UTILS_DIR DOC_DIR
+DCPLAYA_VERSION=@VERSION_STR@
+export TOP_DIR UTILS_DIR DOC_DIR DCPLAYA_VERSION
 
 # ----------------------------------------------------------------------
 # Setup for KOS

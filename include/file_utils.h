@@ -4,7 +4,7 @@
  * @date    2002/09/30
  * @brief   File manipulation utilities.
  *
- * $Id: file_utils.h,v 1.4 2002-10-25 01:03:54 benjihan Exp $
+ * $Id: file_utils.h,v 1.5 2002-12-09 16:26:49 ben Exp $
  */
 
 #ifndef _FILE_UTILS_H_
@@ -150,6 +150,15 @@ int fu_copy(const char * dstname, const char * srcname, int force);
  * @see fu_remove()
  */
 int fu_move(const char * dstname, const char * srcname, int force);
+
+/** Get size of a file.
+ *
+ * @param  fname  Path of file.
+ *
+ * @return File size in bytes.
+ * @retval <0 fu_error_code_e.
+ */
+int fu_size(const char * fname);
 
 /**@}*/
 

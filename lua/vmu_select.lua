@@ -31,12 +31,16 @@ function vmu_select_create(owner, name, dir, x, y, z)
    function vmu_select_handle(dial,evt)
 	  local key = evt.key
 
-	  print ("EVT:"..key)
 	  if key == gui_item_confirm_event then
-		 print("CONFIRM")
+		 local result =  dial.vs.fl:get_entry()
+		 evt_shutdown_app(dial)
+		 dial._done = 1
+		 dial._result = result
 		 return
 	  elseif key == gui_item_cancel_event then
 		 evt_shutdown_app(dial)
+		 dial._done = 1
+		 dial._result = nil
 		 return
 	  end
 	  return evt
@@ -120,14 +124,15 @@ function vmu_select_create(owner, name, dir, x, y, z)
    return dial
 end
 
-vs = vmu_select_create()
-function k()
-   if vs then evt_shutdown_app(vs) end
-   vs = nil
+if nil then
+   vs = vmu_select_create()
+   function k()
+	  if vs then evt_shutdown_app(vs) end
+	  vs = nil
+   end
+   -- getchar()
+   -- k()
 end
-
--- getchar()
--- k()
 
 -- vmu_select_loaded = 1
 -- return vmu_select_loaded

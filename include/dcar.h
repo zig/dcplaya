@@ -1,10 +1,11 @@
 /**
+ * @ingroup   dcplaya_devel
  * @file      dcar.h
  * @author    benjamin gerard <ben@sashipa.com>
  * @date      2002/09/21
  * @brief     dcplaya archive.
  *
- * $Id: dcar.h,v 1.2 2002-09-25 22:43:17 benjihan Exp $
+ * $Id: dcar.h,v 1.3 2002-12-09 16:26:49 ben Exp $
  *
  * @warning   Architecture dependent code.
  */
@@ -17,7 +18,9 @@
 
 DCPLAYA_EXTERN_C_START
 
-/** dcplaya filter function return codes. */
+/** dcplaya filter function return codes.
+ *  @ingroup dcplaya_devel
+ */
 typedef enum {
   DCAR_FILTER_ACCEPT = 0, /**< Entry is accepted.                       */
   DCAR_FILTER_REJECT,     /**< Entry is rejected.                       */
@@ -25,10 +28,14 @@ typedef enum {
   DCAR_FILTER_ERROR = -1  /**< Entry is rejected, archive is discarded. */
 } dcar_filter_e;
 
-/** dcplaya archive filter function. */
+/** dcplaya archive filter function.
+ *  @ingroup dcplaya_devel
+ */
 typedef dcar_filter_e (*dcar_filter_f)(const dirent_t *de, int level);
 
-/** dcplaya archive tree entry. */
+/** dcplaya archive tree entry.
+ *  @ingroup dcplaya_devel
+ */
 typedef struct {
   char name[32];    /**< entry name, not neccessary 0 terminated. */
   struct {
@@ -38,7 +45,9 @@ typedef struct {
   } attr;
 } dcar_tree_entry_t;
 
-/** dcplaya archive tree. */
+/** dcplaya archive tree.
+ *  @ingroup dcplaya_devel
+ */
 typedef struct {
   union {
     char magic[4];        /**< Magic "DCAR".              */
@@ -48,7 +57,9 @@ typedef struct {
   dcar_tree_entry_t e[1]; /**< Table of all dcar entries. */
 } dcar_tree_t;
 
-/** dcplaya archive option. */
+/** dcplaya archive option.
+ *  @ingroup dcplaya_devel
+ */
 typedef struct {
   
   /** dcplaya archive user option. */
@@ -56,6 +67,7 @@ typedef struct {
     int verbose;            /**< Display archive entry while processing.    */
     dcar_filter_f filter;   /**< Filter function to use. 0 for default.     */
     int compress;           /**< Compress level [0..9].                     */
+	int skip;               /**< Number of byte to skip at start of file.   */
   } in;
 
   /** dcplaya archive returned info. */
@@ -74,9 +86,15 @@ typedef struct {
     char * tmp;             /**< Internal: temporary data buffer for I/O.   */
     int max;                /**< Internal: size of tmp buffer.              */
   } internal;
+
+  const char * errstr;      /**< Error string. */
   
 } dcar_option_t;
 
+/** @name dcar functions.
+ *  @ingroup dcplaya_devel
+ *  @{
+ */
 
 /** Default dcplaya filter function.
  *
@@ -145,6 +163,8 @@ int dcar_archive(const char *name, const char *path, dcar_option_t * opt);
  *  @retval   <0  Failure.
  **/
 int dcar_extract(const char *name, const char *path, dcar_option_t *opt);
+
+/*@}*/
 
 DCPLAYA_EXTERN_C_END
 

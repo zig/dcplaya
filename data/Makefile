@@ -1,10 +1,10 @@
 # Makefile - dcplaya - data
 #
-# $Id: Makefile,v 1.4 2002-11-14 23:40:26 benjihan Exp $
+# $Id: Makefile,v 1.5 2002-12-09 16:26:49 ben Exp $
 #
 
 TARGETS=
-CLEAN_LOCAL=tmp/* romdisk/* romdisk.*
+CLEAN_LOCAL=tmp/* romdisk/* romdisk.* vmu_header.bin
 
 REQUIRED_LOCAL=req_local
 
@@ -36,13 +36,29 @@ romdisk/%.tga : img/%.tga
 romdisk/stream.drv: ../arm/stream.drv
 	cp -fv $< $@
 
+# VMU header file
+# romdisk/vmu_header.gz : vmu_header.bin
+# 	gzip -c --best -n $< > $@
+romdisk/vmu_header.bin : vmu_header.bin
+	cp -fv $< $@
+
+vmu_header.bin:
+	 $(UTILS_DIR)/mkvmuheader \
+		"dcplaya "$(DCPLAYA_VERSION) \
+		"dcplaya user data (playlist...)" \
+		 "dcplaya "$(DCPLAYA_VERSION) \
+		img/vmu_icons.tga 6 $@
+
+.PHONY: vmuheader
+vmuheader: romdisk/vmu_header.bin
+
 # ROM-disk fixed data
 .PHONY: romdisk_data
 romdisk_data:
 	@echo "Building [$@]"
 	@find romdisk_data -type f -exec cp -vf {} romdisk \;
 
-romdisk.img: romdisk_data romimg romdisk/stream.drv
+romdisk.img: romdisk_data vmuheader romimg romdisk/stream.drv
 	@$(KOS_GENROMFS) -f $@ -d romdisk -v 2> /dev/null
 
 .PHONY: romdisk

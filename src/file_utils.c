@@ -4,7 +4,7 @@
  * @date    2002/09/30
  * @brief   File manipulation utilities.
  *
- * $Id: file_utils.c,v 1.4 2002-10-25 01:03:54 benjihan Exp $
+ * $Id: file_utils.c,v 1.5 2002-12-09 16:26:49 ben Exp $
  */
 
 /* #include "sysdebug.h" */
@@ -58,6 +58,21 @@ int fu_exist(const char *fname)
 {
   return fu_is_regular(fname) || fu_is_dir(fname);
 }
+
+int fu_size(const char * fname)
+{
+  int fds, err;
+
+  fds = fs_open(fname, O_RDONLY);
+  if (!fds) {
+    err = FU_OPEN_ERROR;
+  } else {
+	err = fs_total(fds);
+    fs_close(fds);
+  }
+  return err;
+}
+
 
 int fu_remove(const char *fname)
 {

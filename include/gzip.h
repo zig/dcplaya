@@ -1,10 +1,11 @@
 /**
+ * @ingroup  dcplaya_devel
  * @name     gzip.h
  * @author   ben(jamin) gerard <ben@sashipa.com>
  * @date     2002/09/20
  * @brief    Simple gzipped file access.
  *
- * $Id: gzip.h,v 1.2 2002-09-30 06:44:05 benjihan Exp $
+ * $Id: gzip.h,v 1.3 2002-12-09 16:26:49 ben Exp $
  */
 
 #ifndef _GZIP_H_
@@ -13,6 +14,11 @@
 #include "extern_def.h"
 
 DCPLAYA_EXTERN_C_START
+
+/** @name gzip file functions.
+ *  @ingroup  dcplaya_devel
+ *  @{
+ */
 
 /** Load an optionnally gzipped file.
  *
@@ -42,6 +48,8 @@ void *gzip_load(const char *fname, int *ulen);
  * @retval >=0 Success.
  */
 int gzip_save(const char *fname, const void * buffer, int len);
+
+/**@}*/
 
 DCPLAYA_EXTERN_C_END
 

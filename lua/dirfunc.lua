@@ -4,7 +4,7 @@
 --- @author   benjamin gerard <ben@sashipa.com>
 --- @brief    Directory and filename support.
 ---
---- $Id: dirfunc.lua,v 1.11 2002-12-04 10:47:25 ben Exp $
+--- $Id: dirfunc.lua,v 1.12 2002-12-09 16:26:49 ben Exp $
 ---
 
 PWD=home
@@ -95,6 +95,45 @@ function fullpath_convert(name, arglist)
    
    setglobal(name, new)
 end
+
+--- Recursively delete a directory and its files.
+--- @ingroup  dcplaya_lua_basics
+--- @param    path  Directory to delete
+---
+function deltree(path)
+   path = fullpath(path)
+
+   if not test("-d",path) then
+	  print("deltree : [".. tostring(path) .. "] is not a directory.")
+	  return
+   end
+
+   local d,f = dirlist("-2",path)
+   local i,v
+
+   -- Unlink files
+   for i,v in f do
+	  if type(v) == "string" then
+		 unlink(path .. "/" .. v)
+	  end
+   end
+
+   -- Recurse sub-dir
+   for i,v in d do
+	  if type(v) == "string" then
+		 deltree(path .. "/" .. v)
+	  end
+   end
+
+   -- Unlink path
+   unlink(path)
+   return
+end
+
+addhelp("deltree", [[
+print[[deltree(path) : Recursively delete a directory and its files
+]]]])
+
 
 addhelp("fullpath_convert", [[
 print[[fullpath_convert(function_name[, arglist]) : 
