@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.4 2002-09-13 16:04:19 zig Exp $
+ * @version   $Id: console.c,v 1.5 2002-09-13 16:48:39 zig Exp $
  */
 
 
@@ -87,7 +87,7 @@ csl_console_t * csl_console_create(int ncol, int nline, int render_modes)
   console = (csl_console_t *) calloc(1, sizeof(csl_console_t));
 
   if (console == NULL)
-    SERROR(error);
+    STHROW_ERROR(error);
 
   /* Insert into the list */
   console->next = csl_first_console;
@@ -95,7 +95,7 @@ csl_console_t * csl_console_create(int ncol, int nline, int render_modes)
 
   console->term = MUterm_create(ncol, nline, 1);
   if (console->term == NULL)
-    SERROR(error);
+    STHROW_ERROR(error);
 
   console->w = ncol;
   console->h = nline;

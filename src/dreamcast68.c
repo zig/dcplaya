@@ -4,7 +4,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.11 2002-09-13 16:04:19 zig Exp $
+ * @version   $Id: dreamcast68.c,v 1.12 2002-09-13 16:48:39 zig Exp $
  */
 
 //#define RELEASE
@@ -808,7 +808,7 @@ int dreammp3_main(int argc, char **argv)
 
   /* Initialize shell and LUA */
   if (shell_init()) {
-    SERROR(error);
+    STHROW_ERROR(error);
   }
 
   /* Initialize the console debugging log facility */
