@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/14
  *
- *  $Id: hyperpipe.c,v 1.2 2003-01-17 13:17:50 ben Exp $
+ *  $Id: hyperpipe.c,v 1.3 2003-01-17 20:57:24 ben Exp $
  */ 
 
 #include <stdio.h>
@@ -55,17 +55,17 @@ static vtx_t base_color =     /**< Original color */
   {
     1.5f, 0.5f, -1.5f, -0.7f
   };
-static vtx_t flash_color =     /**< Flashing color */
+
+static vtx_t flash_color =    /**< Original color */
   {
-    0.5f, 0.5f, 1.0f, 0.8f
+    1.5f, 1.5f, 1.5f, -0.4f
   };
+static float flash;
 
 /* Ambient color */
 static vtx_t ambient = {
   0.0,0.5,0.8,1.3
 };
-
-
 
 static vtx_t pos;     /**< Object position */
 static texid_t texid;
@@ -73,8 +73,15 @@ static fftbands_t * allbands;
 static fftbands_t * bands3;
 
 /* Automatic object changes */
-static int mode = 2;
-static int change_mode = 0;
+static int mode;
+
+#define CHANGE_MODE   1
+#define CHANGE_FLASH  2
+#define CHANGE_BORDER 4
+
+#define DEFAULT_CHANGE (CHANGE_MODE|CHANGE_BORDER|CHANGE_FLASH)
+
+static int change_mode;
 static int change_cnt;
 static int change_time = 5*1000;
 static int use_remanens = 1;
@@ -93,6 +100,39 @@ static obj_t hyperpipe_obj =
   V,              /* bis */
   T,              /* bis */
 };
+
+static float max(const float a, const float b) {
+  return a > b ? a : b;
+}
+static float min(const float a, const float b) {
+  return a < b ? a : b;
+}
+static float bound(const float a, const float b, const float c) {
+  return a < b ? b : (a > c ? c : a);
+}
+
+/* $$$ Defined in libdcutils */
+extern int rand();
+
+static float inc_angle(float a, const float v)
+{
+  a = a + v;
+  if (a<0) {
+    do { a += 2*PI; } while (a<0);
+  } else if (a>=2*PI) {
+    do { a -= 2*PI; } while (a>=2*PI);
+  }
+  return a;
+}
+
+static void inc_angle_vector(vtx_t *a, const vtx_t * v)
+{
+  int i;
+  for (i=0; i<3; ++i) {
+    float * b = (float *)(&a->x) + i;
+    *b = inc_angle(*b, ((float *)(&v->x))[i]);
+  }
+}
 
 static void set_obj_pointer(void)
 {
@@ -282,28 +322,6 @@ static int start(void)
   return 0;
 }
 
-/* $$$ Defined in libdcutils */
-extern int rand();
-
-static float inc_angle(float a, const float v)
-{
-  a = a + v;
-  if (a<0) {
-    do { a += 2*PI; } while (a<0);
-  } else if (a>=2*PI) {
-    do { a -= 2*PI; } while (a>=2*PI);
-  }
-  return a;
-}
-
-static void inc_angle_vector(vtx_t *a, const vtx_t * v)
-{
-  int i;
-  for (i=0; i<3; ++i) {
-    float * b = (float *)(&a->x) + i;
-    *b = inc_angle(*b, ((float *)(&v->x))[i]);
-  }
-}
 
 static vtx_t light_orgvtx = { 1,0,0,1 };
 static vtx_t light_vtx;
@@ -345,7 +363,7 @@ static void get_pcm(void)
   }
 }
 
-static void anim_occilo()
+static void anim_occilo(const float seconds)
 {
   int i;
   vtx_t * vy;
@@ -375,7 +393,42 @@ static void anim_occilo()
   }
 }
 
-static void anim_fft()
+static void anim_occilo2(const float seconds)
+{
+  int i;
+  vtx_t * vy;
+  const float s = (MAX_RAY-MIN_RAY);
+  static float az=0;
+  float az2;
+  const float saz  = 7 * seconds;
+  const float saz2 = 5 * seconds;
+
+  az2 = az;
+  az = inc_angle(az,saz);
+  
+  get_pcm();
+
+  for (i=0, vy=v; i<W; ++i) {
+    int j;
+    const float v = spl[i], w = (v < 0 ? -sqrtf(-v) : sqrtf(v));
+    const float 
+      w2 = fabs(w) * s,
+      s1 = MIN_RAY + w2,
+      s3 = MIN_RAY + w2 * 0.5,
+      s2 = s1 * ((v<0) ? -0.5 : 0.5);
+
+    const float sy = cosf(az2) * s * 0.3;
+    az2 = inc_angle(az2,saz2);
+
+    for (j=0; j<N; ++j, ++vy) {
+      vy->y = ring[j].x * s3 + sy;
+      vy->z = ring[j].y * s1 + s2;
+    }
+  }
+}
+
+
+static void anim_fft(const float seconds)
 {
   int i;
   vtx_t * vy;
@@ -403,37 +456,20 @@ static void anim_fft()
   }
 }
 
-static float max(const float a, const float b) {
-  return a > b ? a : b;
-}
-static float min(const float a, const float b) {
-  return a < b ? a : b;
-}
-static float bound(const float a, const float b, const float c) {
-  return a < b ? b : (a > c ? c : a);
-}
+static struct {
+  float v,w;
+  float avg,avg2;
+  float max, max2;
+  float thre;
+  float ts;
+  int tacu;
+  float tap[W];
+} b[2];
 
-static void anim_band()
+// return bit:0-2 beat on band 0-2 bit:8 beat on all band.
+static int analyse()
 {
-  int j;
-  vtx_t * vy;
-
-  static int init=0;
-  static struct {
-    float v,w;
-    float avg,avg2;
-    float max, max2;
-    float thre;
-    float ts;
-    int tacu;
-    float tap[W];
-  } b[2];
-
-  if (!init) {
-    memset(b,sizeof(b),0);
-    for (j=0;j<3;++j) b[j].ts = 0.7;
-    init = 1;
-  }
+  int j,r;
 
   if (bands3) {
     float q;
@@ -453,12 +489,6 @@ static void anim_band()
 
       b[j].ts = bound(b[j].ts, 0.1, 0.98);
       b[j].thre = (b[j].max * b[j].ts) + (b[j].avg * (1.0-b[j].ts));
-
-/*       if (b[j].tacu == -31 || b[j].tacu == 31) { */
-/* 	printf("[%d] c:%d v:%.3f a2:%.3f a:%.3f m:%.3f m2:%.3f th:%.3f ts:%.3f\n", */
-/* 	     j,b[j].tacu, b[j].v, b[j].avg2, b[j].avg, */
-/* 	       b[j].max, b[j].max2, b[j].thre, b[j].ts); */
-/*       } */
 
       if (b[j].v > b[j].thre) {
 	if (b[j].tacu <= 0) {
@@ -501,11 +531,32 @@ static void anim_band()
     }
   }
 
+  r = (b[0].w>0) | ((b[1].w>0)<<1);
+  if (r) {
+    r |= 0x100 
+      & -(b[0].tacu>=3 && b[0].tacu<20)
+      & -(b[1].tacu>=3 && b[1].tacu<20);
+  }
+
+  return r;
+}
+
+static void anim_band(const float seconds)
+{
+  int j;
+  vtx_t * vy;
+
+  if (!change_mode) {
+    /* Process analyse if no change mode has been selected. Else it
+       has already be done by process().
+    */
+    analyse();
+  }
+
   /* Filter */
   for (j=0; j<2; ++j) {
     float * dtap=b[j].tap;
-    float s0,s1,s2;
-    static int cnt = 0;
+    float s0,s1/*,s2*/;
     float toto = b[j].w;
     int i;
 
@@ -552,16 +603,17 @@ static void anim_band()
 
 }
 
-static void (*fct[])() = {
-  anim_occilo, anim_fft, anim_band
+static void (*fct[])(const float) = {
+  anim_occilo, anim_occilo2, anim_fft, anim_band
 };
+
 static const unsigned int nfct = sizeof(fct) / sizeof(*fct);
 
 static void anim_object(const float seconds)
 {
   static float ay, az, paz = 0.01f;
 
-  fct[mode % nfct]();
+  fct[mode % nfct](seconds);
 
   /* Build local matrix */
   MtxIdentity(mtx);
@@ -595,9 +647,51 @@ static int anim(const float seconds)
 static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
 {
   const float seconds = elapsed_ms * (1/1000.0f);
+  static int mode_latch = 0;
 
   if (!ready) {
     return -1;
+  }
+
+  if (change_mode) {
+    int result = analyse();
+
+    if (!(result & 3)) {
+      if ((change_cnt += elapsed_ms) >= change_time) {
+	change_cnt -= change_time;
+	result |= 3;
+      }
+    }
+
+    if (mode_latch) --mode_latch;
+
+    if ( !mode_latch && (result & 1) && (change_mode & CHANGE_MODE)) {
+      mode_latch = 30;
+      mode = rand() % nfct;
+    }
+
+    if ((result & 2) && (change_mode & CHANGE_BORDER)) {
+      border_def_t borderdef;
+      border_get_def(borderdef,(unsigned short)rand());
+      border_customize(texid, borderdef);
+    }
+
+    if ((result & 0x100)  && (change_mode & CHANGE_FLASH) ) {
+      flash = 1.0f;
+    }
+
+    if (flash > 0.0001) {
+      const float o = 1.0f - flash;
+      color.x = base_color.x * o + flash_color.x * flash;
+      color.y = base_color.y * o + flash_color.y * flash;
+      color.z = base_color.z * o + flash_color.z * flash;
+      color.w = base_color.w * o + flash_color.w * flash;
+      flash *= 0.94f;
+    } else {
+      color = base_color;
+      flash = 0;
+    }
+
   }
 
   if (!light_object) {
@@ -624,7 +718,6 @@ static int transparent_render(void)
     return -1;
   }
 
-  color = base_color;
   lx = light_vtx.x;
   ly = light_vtx.y;
   lz = light_vtx.z;
@@ -679,6 +772,13 @@ static int init(any_driver_t *d)
   ready = 0;
   allbands = 0;
   bands3 = 0;
+  change_mode = DEFAULT_CHANGE;
+  change_cnt = 0;
+  mode = 1 % nfct;
+  flash = 0;
+
+  memset(b,sizeof(b),0);
+
   v = 0;
   nrm = 0;
   tri = 0;
@@ -763,28 +863,16 @@ static int lua_setambient(lua_State * L)
   return 0;
 }
 
-static int lua_setbasecolor(lua_State * L)
-{
-  lua_setcolor(L,(float *) &base_color);
-  return 0;
-}
-
 static int lua_setflashcolor(lua_State * L)
 {
   lua_setcolor(L,(float *) &flash_color);
   return 0;
 }
 
-static int lua_setremanens(lua_State * L)
+static int lua_setbasecolor(lua_State * L)
 {
-  int remanens = use_remanens;
-
-  use_remanens = lua_type(L,1) != LUA_TNIL;
-  lua_settop(L,0);
-  if (remanens) {
-    lua_pushnumber(L,1);
-  }
-  return lua_gettop(L);
+  lua_setcolor(L,(float *) &base_color);
+  return 0;
 }
 
 static int lua_setchange(lua_State * L)
@@ -803,7 +891,7 @@ static int lua_setchange(lua_State * L)
   lua_settop(L,0);
   lua_pushnumber(L, mode);
   lua_pushnumber(L, time);
-  return 2;
+  return lua_gettop(L);
 }
 
 static int lua_setmode(lua_State * L)
@@ -812,7 +900,11 @@ static int lua_setmode(lua_State * L)
   int n = lua_gettop(L);
   
   if (n>=1 && lua_type(L,1) != LUA_TNIL) {
-    mode = (unsigned int)lua_tonumber(L,1) % nfct;
+    if (nfct>0) {
+      mode = (unsigned int)lua_tonumber(L,1) % nfct;
+    } else {
+      mode = 0;
+    }
   }
   lua_settop(L,0);
   lua_pushnumber(L, omode);
@@ -838,10 +930,11 @@ static luashell_command_description_t commands[] = {
   {
     "hyperpipe_setflashcolor", 0,         /* long and short names */
     "print [["
-    "hyperpipe_setflashcolor(a, r, g, b) : set object flash color."
+    "hyperpipe_setflashcolor(a, r, g, b) : set flash color."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_setflashcolor /* function */
   },
+
   {
     "hyperpipe_setbordertex", 0,            /* long and short names */
     "print [["
@@ -863,18 +956,10 @@ static luashell_command_description_t commands[] = {
   },
 
   {
-    "hyperpipe_setremanens", 0,            /* long and short names */
-    "print [["
-    "hyperpipe_setremanens(boolean) : active/desacitive remanens FX. "
-    "Return old state."
-    "]]",                                /* usage */
-    SHELL_COMMAND_C, lua_setremanens    /* function */
-  },
-  {
     "hyperpipe_setchange", 0,            /* long and short names */
     "print [["
     "hyperpipe_setchange(type [, time]) : Set object change properties. "
-    "type bit0:random-object bit1:active-flash bit2:auto-border."
+    "type bit0:random-mode bit1:active-flash bit2:auto-border."
     "Return old values."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_setchange    /* function */

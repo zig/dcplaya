@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.16 2003-01-14 10:54:02 ben Exp $
+ * $Id: lpo.c,v 1.17 2003-01-17 20:57:24 ben Exp $
  */
 
 #include <stdio.h>
@@ -463,11 +463,13 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
   MtxCopy(projmtx, projection);
 
   /* Check for object change */
-  if ((change_mode&RANDOM_MODE) && (change_cnt += elapsed_ms) >= change_time) {
+  if ((change_cnt += elapsed_ms) >= change_time) {
     change_cnt -= change_time;
-    change_object(random_object(curobj));
-    if (!curobj) {
-      return -1;
+    if (change_mode&RANDOM_MODE) {
+      change_object(random_object(curobj));
+      if (!curobj) {
+	return -1;
+      }
     }
   }
   anim(elapsed_ms);
