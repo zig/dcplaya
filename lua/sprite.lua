@@ -28,7 +28,21 @@ if not sprite_tag then sprite_tag = newtag() end
 ---   
 --- };
 
---- Create a sprite.
+
+if not sprite_list then
+   sprite_list = { }
+end
+
+--- Get a named sprite
+--- @ingroup   dcplaya_lua_graphics
+---
+--- @param  name  sprite name.
+function sprite_get(name)
+   return sprite_list[name]
+end
+
+
+--- Create a sprite and add it in the list of named sprite.
 --- @ingroup   dcplaya_lua_graphics
 ---
 --- @param  name  sprite name.
@@ -46,9 +60,8 @@ if not sprite_tag then sprite_tag = newtag() end
 --- @return  sprite object
 --- @retval  nil  Error.
 ---
-function sprite(name, x, y, w, h, u1, v1, u2, v2, texture, rotate)
+function sprite(name, x, y, w, h, u1, v1, u2, v2, texture, rotate)   
 	local spr = {}
-
 
 	spr.name = name
 	spr.vtx  = mat_new(4,12);
@@ -85,10 +98,15 @@ function sprite(name, x, y, w, h, u1, v1, u2, v2, texture, rotate)
 	end
 
 	mat_mult_self(spr.vtx, mat)
+	spr.x = x
+	spr.y = y
 	spr.w = w
 	spr.h = h
+	spr.rotate = rotate
 
 	settag(spr, sprite_tag)
+
+	sprite_list[spr.name] = spr
 
 	return spr
 end
