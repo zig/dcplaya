@@ -1,3 +1,4 @@
+#if 0
 
 #include <stdio.h>
 #include <malloc.h>
@@ -228,3 +229,4 @@ int set_pointer(long backstep)
 
 
 
+#endif

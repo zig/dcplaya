@@ -1,4 +1,4 @@
-/* $Id: controler.h,v 1.5 2002-12-19 02:25:12 ben Exp $ */
+/* $Id: controler.h,v 1.6 2002-12-23 09:01:36 ben Exp $ */
 /* 2002/02/13 */
 
 #ifndef _CONTROLER_H_
@@ -31,6 +31,8 @@ void controler_shutdown(void);
 int controler_read(controler_state_t * state, unsigned int idx);
 int controler_pressed(const controler_state_t * state, uint32 mask);
 int controler_released(const controler_state_t * state, uint32 mask);
+
+int controler_binding(int clear, int modify);
 
 int controler_getchar(void);
 int controler_peekchar(void);

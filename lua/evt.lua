@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.17 2002-12-20 23:38:37 ben Exp $
+-- $Id: evt.lua,v 1.18 2002-12-23 09:01:36 ben Exp $
 --
 
 
@@ -161,7 +161,8 @@ function evt_peek()
 	 
 	 -- calculate frame time
 	 evt_curframecounter = evt_origframecounter(1)
-	 frametime = evt_curframecounter/60
+	 frametime = frame_to_second(evt_curframecounter)
+	 evt_curelapsedtime = frametime
       end
    until not key
    
@@ -255,6 +256,9 @@ function evt_framecounter()
    return evt_curframecounter
 end
 
+function evt_elapsed_time()
+   return evt_curelapsedtime
+end
 
 ---
 --- call this to shutdown an application, send to it the shutdown event
@@ -394,8 +398,9 @@ function evt_init()
 
    evt_app_insert_first(evt_root_app, evt_desktop_app)
 
-   -- initialize framecounter
+   -- initialize framecounter and elapsed time
    evt_curframecounter = evt_origframecounter(1)
+   evt_curelapsedtime = frame_to_second(evt_curframecounter)
 
    -- last step : replace getchar and cie
    getchar = evt_getchar

@@ -39,7 +39,7 @@ static void do_group(vupeek_t *p)
   
   val = p->acu / p->cnt;
   
-  if (val > 65534) {
+  if (val > 65535) {
     SDDEBUG("val = %d\n",val);
     BREAKPOINT(0xFAFADADA);
   }

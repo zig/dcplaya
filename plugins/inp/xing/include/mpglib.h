@@ -1,18 +1,4 @@
 
-struct buf {
-        unsigned char *pnt;
-	long size;
-	long pos;
-        struct buf *next;
-        struct buf *prev;
-};
-
-struct framebuf {
-	struct buf *buf;
-	long pos;
-	struct frame *next;
-	struct frame *prev;
-};
 
 struct mpstr {
 	struct buf *head,*tail;
@@ -29,6 +15,23 @@ struct mpstr {
         int  synth_bo;
 };
 
+
+struct buf {
+        unsigned char *pnt;
+	long size;
+	long pos;
+        struct buf *next;
+        struct buf *prev;
+};
+
+struct framebuf {
+	struct buf *buf;
+	long pos;
+	struct frame *next;
+	struct frame *prev;
+};
+
+
 #ifndef BOOL
 #define BOOL int
 #endif
@@ -37,6 +40,7 @@ struct mpstr {
 #define MP3_OK  0
 #define MP3_NEED_MORE 1
 
+#if 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,3 +56,4 @@ void ExitMP3(struct mpstr *mp);
 #endif
 
 
+#endif

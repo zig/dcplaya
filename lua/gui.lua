@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.35 2002-12-21 06:18:46 zigziggy Exp $
+--- $Id: gui.lua,v 1.36 2002-12-23 09:01:36 ben Exp $
 ---
 
 --
@@ -279,7 +279,7 @@ function gui_dialog_shutdown(app)
    dl_set_active(app.focusright_dl)
    dl_set_active(app.focusleft_dl)
    evt_app_remove(app)
-   cond_connect(1)
+--   cond_connect(1)
 end
 
 function gui_dialog_handle(app, evt)
@@ -544,7 +544,7 @@ function gui_new_dialog(owner, box, z, dlsize, text, mode, name)
    evt_app_insert_first(owner, dial)
    
    -- disconnect joypad for main app
-   cond_connect(nil)
+--   cond_connect(nil)
    
    return dial
 end

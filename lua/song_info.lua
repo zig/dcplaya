@@ -4,7 +4,7 @@
 --- @date    2002/11/29
 --- @brief   Song info application.
 ---
---- $Id: song_info.lua,v 1.13 2002-12-21 09:27:03 ben Exp $
+--- $Id: song_info.lua,v 1.14 2002-12-23 09:01:36 ben Exp $
 
 song_info_loaded = nil
 
@@ -112,7 +112,7 @@ function song_info_create(owner, name, style)
       end
 
       --- Scroll-text
-      if si.info_comments.scroll then
+      if si.info_comments.scroll and not si.minimized then
 	 local mat = dl_get_trans(si.info_comments.dl)
 	 local x = mat[4][1]
 	 local scroll = si.info_comments.scroll * frametime
@@ -171,12 +171,12 @@ function song_info_create(owner, name, style)
 		     v.value = si.info[i]
 		     song_info_draw_field(si,v)
 		  end
-
+		  
 		  if not si.info.comments then
 		     si.info.comments =
 			"***  < Welcome to DCPLAYA >           ***       <The ultimate music player for Dreamcast>         ***        < (C)2002 Benjamin Gerard >           ***             < Main programming : Benjamin Gerard and Vincent Penne >"
 		  end
-
+		  
 		  if si.info.comments then
 		     local x
 		     local w,h = dl_measure_text(si.info_comments.dl,
@@ -192,7 +192,7 @@ function song_info_create(owner, name, style)
 				  c[1],c[2],c[3],c[4],
 				  si.info.comments)
 		  end
-
+		  
 	       else
 	       end
 	    end
@@ -428,8 +428,9 @@ function song_info_create(owner, name, style)
 		si.label_color[3],si.label_color[4])
 
    dl_sublist(si.shadow1_dl, si.layer1_dl)
-   dl_set_color(si.shadow1_dl,0.5,1,1,1)
-   dl_set_trans(si.shadow1_dl,mat_trans(0.3,0.3,1))
+   dl_set_color(si.shadow1_dl,0.8,0.5,0.5,0.5)
+   dl_set_trans(si.shadow1_dl,mat_trans(0.3,0.3, -10))
+   dl_set_trans(si.layer1_dl,mat_trans(0,0, 10))
 
    dl_sublist(si.layer0_dl, si.layer1_dl)
    dl_sublist(si.layer0_dl, si.shadow1_dl)

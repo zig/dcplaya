@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: keyboard_emu.lua,v 1.13 2002-12-12 18:35:24 zigziggy Exp $
+-- $Id: keyboard_emu.lua,v 1.14 2002-12-23 09:01:36 ben Exp $
 --
 
 dolib("keydefs")
@@ -210,7 +210,7 @@ function ke_handle(app, evt)
 
       if ke_active then
 	 ke_set_active(nil)
-	 cond_connect(1)
+--	 cond_connect(1)
       end
 
       if ke_arrays then
@@ -238,7 +238,7 @@ function ke_handle(app, evt)
    -- activating key toggle
    if ke_keyactivate[key] then
       ke_set_active(not ke_active)
-      cond_connect(not ke_active)
+--      cond_connect(not ke_active)
       return nil
    end
 

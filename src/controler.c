@@ -25,8 +25,7 @@ typedef struct {
 } controler_t;
 
 static controler_t controlers[MAX_CONTROLER];
-static int controler_connected;
-int cond_disconnected;
+static int controler_connected, cond_connected_mask;
 
 static uint32 last_frame;
 
@@ -235,7 +234,7 @@ int controler_init(void)
   spinlock_init(&controler_mutex);
 /*   SDDEBUG("GetControler, frame=%u\n", frame); */
 
-  cond_disconnected = 0;
+  cond_connected_mask = -1;
   last_frame = ta_state.frame_counter;
   controler_get();
   for (cont=controlers; cont<controlers+MAX_CONTROLER; ++cont) {
@@ -345,10 +344,16 @@ int controler_peekchar(void)
 
 cont_cond_t * controler_get_cond(int idx)
 {
-  if ( /*cond_disconnected ||*/
-	   (unsigned int)idx >= MAX_CONTROLER ||
-	   !controlers[idx].connected) {
-	return 0;
+  if ( (unsigned int)idx >= MAX_CONTROLER ||
+       !(controler_connected & cond_connected_mask & (1<<idx))) {
+    return 0;
   }
   return &controlers[idx].cond;
+}
+
+int controler_binding(int clear, int modify)
+{
+  int old = cond_connected_mask;
+  cond_connected_mask = (cond_connected_mask & ~clear) ^ modify;
+  return old;
 }

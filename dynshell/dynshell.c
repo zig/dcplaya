@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.53 2002-12-20 21:17:24 ben Exp $
+ * @version    $Id: dynshell.c,v 1.54 2002-12-23 09:01:36 ben Exp $
  */
 
 #include <stdio.h>
@@ -1380,22 +1380,21 @@ static int lua_music_info_id(lua_State * L)
 
 
 /* THIS IS REALLY DIRTY AND TEMPORARY :)) */
+/* ben : This seems OK to me , now ;) */
 #include "controler.h"
 /* defined in controler.c */
-extern int cond_disconnected;
+
 static int lua_cond_connect(lua_State * L)
 {
-  controler_state_t s;
-  int was_connected = !cond_disconnected;
-  cond_disconnected = !lua_tonumber(L, 1);
-
-  /* read state to avoid unwanted button */
-  controler_read(&s, 0);
-  if (was_connected) {
-	lua_pushnumber(L,1);
-	return 1;
+  int connect;
+  if (lua_gettop(L) < 1 || lua_type(L,1) == LUA_TNIL) {
+    connect = controler_binding(0,0); /* Just read the state. */
+  } else {
+    /* clear all and change wanted => set wanted */
+    connect = controler_binding(-1,lua_tonumber(L, 1));
   }
-  return 0;
+  lua_pushnumber(L,connect);
+  return 1;
 }
 
 /* vmu_tools : 2 commands
@@ -2457,8 +2456,8 @@ static void shutdown()
   shell_set_command_func(old_command_func);
 
   lua_close(shell_lua_state);
-
-  cond_disconnected = 0;
+  
+  controler_binding(-1,-1);
 
 }
 

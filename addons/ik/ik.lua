@@ -24,6 +24,8 @@ function ik()
    local ik_anim_defs = dofile("addons/ik/ik_anim_defs.lua")
    if not ik_anim_defs then return end
 
+   if not dofile("addons/ik/ik_anim.lua") then return end
+
    local ik_sprites = {}
    local ik_anims = {}
 
@@ -115,45 +117,60 @@ function ik()
       local i,v
       for i,v in %ik_anim_defs do
 	 --		 print("Creating anim ["..i.."]")
-	 local anim = { name = i }
+	 local anim = {
+	    name = i,
+	    total_time = 0,
+	 }
 	 
+	 local option = nil
 	 local j,w
 	 for j,w in v do
-	    --			print(" ["..i.."] ["..j.."] ["..w[1].."]")
-	    tinsert(anim, {
-		       sprite = %ik_sprites[w[1]],
-		    })
+-- 	    print(" ["..i.."] ["..j.."] ["..tostring(w[1]).."]")
+	    if type(w) == "table" then
+	       if type(w[1]) == "string" then
+		  tinsert(anim, {
+			     sprite = %ik_sprites[w[1]],
+			     time   = w[2],
+			  })
+		  anim.total_time = anim.total_time + w[2]
+	       elseif option then
+		  print("ik_create_anims : option setted more than once.")
+		  return
+	       else
+		  option = w
+	       end
+	    end
+	 end
+	 if option then
+	    for j,w in option do
+	       print("copying option ["..j.."] ["..w.."]")
+	       anim[j] = w
+	    end
 	 end
 	 tinsert(%ik_anims, anim)
       end
       return 1
    end
 
-   function ik_play_anim(dl1,dl2, anim)
+   function ik_play_anim(dl1,dl2, anim_ref)
       local i,n
-      n = getn(anim)
-      for i=1, n do
-	 local spr1 = anim[i].sprite
-	 local spr2 = anim[i+1] and anim[i+1].sprite
-	 for r=0,1,0.05 do
-	    dl_clear(dl1)
-	    spr1.sprite:draw(dl1)
-	    if spr1.name then
-	       dl_draw_text(dl1, 0, 5, 2, 1,1,1,1, spr1.name)
-	    end
-	    if spr1.attack then
-	       local ab = spr1.attack
-	       if spr2 and spr2.attack then
-		  ab = ab * (1-r) + spr2.attack * r
-	       end
-	       dl_draw_box1(dl1, ab[1],ab[2], ab[1]+ab[3], ab[2]+ab[4], 10,
-			    0.8*ab[5], 1, 1, 0)
-	    end
+      local anim = ik_anim_start(anim_ref, 0.1)
 
-	    dl1,dl2 = dl2,dl1
-	    dl_set_active2(dl1,dl2,2)
-	    evt_peek()
+      while anim.step ~= 0 do
+	 dl_clear(dl1)
+	 ik_anim_draw(anim, dl1)
+	 dl_set_active2(dl1,dl2,1)
+	 dl1,dl2 = dl2,dl1
+	 local key = evt_peekchar()
+	 if key then
+	    if key == 27 then
+	       print("ESCAPE", anim.step)
+	       return
+	    else
+	       anim.release = 1
+	    end
 	 end
+	 ik_anim_play(anim, frame_to_second(framecounter()))
       end
    end
    
@@ -179,6 +196,7 @@ function ik()
 	 ik_play_anim(sdl1, sdl2, anim)
       until nil
    end
+
 
    ik_dl = nil
    if not ik_create_sprites() then return end

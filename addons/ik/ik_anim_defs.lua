@@ -10,54 +10,52 @@ return {
       { "kamae0", 1 },
       { "kamae1", 1 },
       { "kamae2", 1 },
-      { "kamae1", 1 },
-      { "kamae0", 1 },
+      { loop=-4 }
    },
 
    ["mpunch"] = {
       { "kamae0", 1 },
-      { "mpunch0", 1 },
-      { "mpunch1", 1 },
-      { "mpunch0", 1 },
-      { "kamae0", 1 },
+      { "mpunch0", 1.05 },
+      { "mpunch1", 0.2 },
+      { "mpunch1", 0 },
+      { loop=-1 }
    },
 
    ["hpunch"] = {
       { "kamae0", 1 },
       { "hpunch0", 1 },
-      { "hpunch1", 1 },
-      { "hpunch0", 1 },
-      { "kamae0", 1 },
+      { "hpunch1", 0.2 },
+      { "hpunch1", 0 },
+      { loop=-1 }
    },
 
    ["hkick"] = {
       { "kamae0", 1 },
       { "kick0", 1 },
       { "kick1", 1 },
-      { "hkick3", 1 },
-      { "kick1", 1 },
-      { "kick0", 1 },
-      { "kamae0", 1 },
+      { "hkick3", 0.3 },
+      { "hkick3", 0 },
+      { loop=-1, speed=1.06 },
    },
 
    ["mkick"] = {
       { "kamae0", 1 },
       { "kick0", 1 },
       { "kick1", 1 },
-      { "mkick3", 1 },
-      { "kick1", 1 },
-      { "kick0", 1 },
-      { "kamae0", 1 },
+      { "mkick3", 0.3 },
+      { "mkick3", 0 },
+      { loop=-1, speed=1.04 },
    },
 
    ["lkick"] = {
       { "kamae0", 1 },
       { "kick0", 1 },
       { "kick1", 1 },
-      { "lkick3", 1 },
-      --		 { "kick1", 1 },
+      { "lkick3", 0.3 },
+      { "lkick3", 0 },
       { "kick0", 1 },
       { "kamae0", 1 },
+      { speed=1.02 },
    },
 
    ["backkick"] = {
@@ -81,19 +79,11 @@ return {
    },
 
    ["dancing"] = {
-      { "kamae0", 1 },
       { "dancing0", 1 },
       { "dancing1", 1 },
       { "dancing2", 1 },
       { "dancing3", 1 },
-      { "dancing2", 1 },
-      { "dancing1", 1 },
-      { "dancing2", 1 },
-      { "dancing3", 1 },
-      { "dancing2", 1 },
-      { "dancing1", 1 },
-      { "dancing0", 1 },
-      { "kamae0", 1 },
+      { loop=-3, speed=2, loop_start = 2 },
    },
 
    ["jump"] = {
@@ -107,24 +97,27 @@ return {
    },
 
    ["coconut"] = {
-      { "kamae0", 1 },
-      { "coconut0", 1 },
+      { "coconut0", 3 },
       { "coconut1", 1 },
       { "coconut2", 1 },
-      { "coconut3", 1 },
-      { "coconut3", 1 },
-      { "coconut3", 1 },
+      { "coconut3", 4 },
+      { speed=2 },
    },
 
    ["salut"] = {
-      { "kamae0", 1 },
-      { "salut0", 1 },
-      { "salut1", 1 },
-      { "salut2", 1 },
-      { "salut1", 1 },
-      { "salut0", 1 },
-      { "kamae0", 1 },
+      { "kamae0", 2 },
+      { "salut0", 2 },
+      { "salut1", 1.5 },
+      { "salut2", 2 },
+      { loop=-1, speed=1 },
    },
 
+   ["koback"] = {
+      { "koback0", 1 },
+      { "koback1", 1 },
+      { "koback2", 1 },
+      { "koback3", 1 },
+      { "koback4", 10 },
+   },
 
 }

@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @author  Dan Potter
  *
- *  $Id: xing_driver.c,v 1.5 2002-12-22 19:17:35 ben Exp $
+ *  $Id: xing_driver.c,v 1.6 2002-12-23 09:01:36 ben Exp $
  */ 
 
  /* Based on :
@@ -86,22 +86,26 @@ static int bs_fill(int min_bytes)
   if (mp3_fd) {
     int n;
     n = fs_read(mp3_fd, bs_buffer+bs_count, BS_SIZE - bs_count);
+    ///$$$ ben: Because of a KOS bug , this does not work correctly !
     if (n < 0) {
-      return -2;
+      SDDEBUG("xing : Read error.\n");
+      return INP_DECODE_ERROR;
     }
+
     bs_count += n;
   }
-  return (bs_count < min_bytes) ? -1 : 0;
+  return (bs_count < min_bytes) ? INP_DECODE_END : 0;
 }
 
 static int read_more_bytes(void)
 {
+  int code;
   /* Pull in some more data (and check for EOF) */
-  if (bs_fill(frame_bytes) < 0) {
-    SDDEBUG("xing : Decode complete.\n");
-    return INP_DECODE_END;
+  code = bs_fill(frame_bytes);
+  if (code == INP_DECODE_END) {
+    SDDEBUG("xing : Read complete.\n");
   }
-  return 0;
+  return code;
 }
 
 static int decode_frame(void)
@@ -121,7 +125,6 @@ static int decode_frame(void)
     if (x.in_bytes <= 0) {
       SDDEBUG("xing : Bad sync in MPEG file [%02X%02x]\n",
 	      bs_ptr[0]&255,bs_ptr[1]&255);
-      SDDEBUG("Try to resync !\n");
       do {
 	if (++ resync == max_resync) {
 	  SDDEBUG("Resync : maximum resync (%u bytes) threshold reached,\n",
@@ -131,14 +134,14 @@ static int decode_frame(void)
 	bs_ptr      += 1;
 	bs_count    -= 1;
 	if (bs_count < frame_bytes) {
+	  int code;
 	  SDDEBUG("Resyncing : %u bytes\n", resync);
-	  if (!read_more_bytes()) {
-	    return 0;
-	  } else {
+	  code = read_more_bytes();
+	  if (code) {
 	    SDDEBUG("Resync : failed end of file reach after %u bytes\n",
 		    resync);
-	    return INP_DECODE_ERROR;
 	  }
+	  return code;
 	}
 	x = audio_decode(&mpeg, bs_ptr, (short *) pcm_buffer);
       } while (x.in_bytes <= 0);
@@ -178,7 +181,7 @@ static int xing_init(const char *fn, playa_info_t * info)
   /* Open the file */
   mp3_fd = fd = fs_open(fn, O_RDONLY);
   if (fd == 0) {
-    SDERROR("xing : Can't open input file %s\n", fn);
+    SDERROR("xing : open input file [%s] failed.\n", fn);
     return -1;
   }
   playa_info_bytes(info,fs_total(fd));
@@ -188,13 +191,15 @@ static int xing_init(const char *fn, playa_info_t * info)
   pcm_ptr = pcm_buffer; pcm_count = 0;
 	
   /* Fill bitstream buffer */
-  if (bs_fill(8) < 0) {
-    SDERROR("xing : can't read file header\n");
+  if (bs_fill(8)) {
+    SDERROR("xing : can't read file header.\n");
     goto errorout;
   }
   frame_bytes = 0;
 
   /* Are we looking at a RIFF file? (stupid Windows encoders) */
+#if 0 /* Do not need thsi code anymore : rsync will do it */
+  
   if (!memcmp(bs_ptr,"RIFF",4)) {
     unsigned int riffSize, riffCount;
     int found = 0;
@@ -210,7 +215,7 @@ static int xing_init(const char *fn, playa_info_t * info)
     /* Found a RIFF header, scan through it until we find the data section */
     for (riffCount=riffSize; riffCount>=4; --riffCount) {
       /* Need at least 8 bytes for 'data' chunk. */
-      if (bs_fill(8) < 0) {
+      if (bs_fill(8)) {
 	break;
       }
 
@@ -243,6 +248,8 @@ static int xing_init(const char *fn, playa_info_t * info)
     goto errorout;
   }
 
+#endif
+
   /* Initialize MPEG engines */
   mpeg_init(&mpeg);
   mpeg_eq_init(&mpeg);
@@ -251,10 +258,10 @@ static int xing_init(const char *fn, playa_info_t * info)
   {
     int forward;
     bs_fill(BS_SIZE); /* Fill as much data as possible, no error check ! */
-    SDERROR("xing: Find info within %d bytes.\n", bs_count);
+    SDDEBUG("xing: Find info within %d bytes.\n", bs_count);
     
     frame_bytes = head_info3(bs_ptr, bs_count, &head, &bitrate, &forward);
-    SDERROR("xing: forward = %d.\n", forward);
+    SDDEBUG("xing: forward = %d.\n", forward);
     bs_ptr += forward;
     bs_count -= forward;
   }
@@ -274,7 +281,7 @@ static int xing_init(const char *fn, playa_info_t * info)
   audio_decode_info(&mpeg, &decinfo);
 
   if (decinfo.channels < 1 || decinfo.channels > 2 || decinfo.bits != 16) {
-    SDERROR("xing: unsupported audio outout format\n");
+    SDERROR("xing: unsupported audio output format\n");
     goto errorout;
   }
 
