@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, text interface
  * 
- * $Id: display_text.c,v 1.9 2003-03-20 22:00:10 ben Exp $
+ * $Id: display_text.c,v 1.10 2003-03-21 05:46:30 ben Exp $
  */
 
 #include <string.h>
@@ -296,15 +296,15 @@ DL_FUNCTION_DECLARE(measure_text)
   if (n>5) n = 5;
   switch (n) {
   case 5:
-    if (lua_type(L,5) != LUA_TNIL) {
+    if (lua_type(L,5) == LUA_TNUMBER) {
       aspect = lua_tonumber(L,5);
     } 
   case 4:
-    if (lua_type(L,4) != LUA_TNIL) {
+    if (lua_type(L,4) == LUA_TNUMBER) {
       size = lua_tonumber(L,4);
     } 
   case 3:
-    if (lua_type(L,3) != LUA_TNIL) {
+    if (lua_type(L,3) == LUA_TNUMBER) {
       font = lua_tonumber(L,3);
     } 
   }
@@ -324,20 +324,20 @@ DL_FUNCTION_START(text_prop)
 
   if (n>5) n = 5;
   switch (n) {
-    case 5:
-      if (lua_type(L,5) != LUA_TNIL) {
-	filter = lua_tonumber(L, 5);
-      }
+  case 5:
+    if (lua_type(L,5) == LUA_TNUMBER) {
+      filter = lua_tonumber(L, 5);
+    }
   case 4:
-    if (lua_type(L,4) != LUA_TNIL) {
+    if (lua_type(L,4) == LUA_TNUMBER) {
       aspect = lua_tonumber(L, 4);
     }
   case 3:
-    if (lua_type(L,3) != LUA_TNIL) {
+    if (lua_type(L,3) == LUA_TNUMBER) {
       size = lua_tonumber(L, 3);
     }
   case 2:
-    if (lua_type(L,2) != LUA_TNIL) {
+    if (lua_type(L,2) == LUA_TNUMBER) {
       fontid = (int)lua_tonumber(L, 2);
     }
   }
