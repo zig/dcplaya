@@ -2,21 +2,22 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.23 2003-07-30 09:30:11 benjihan Exp $
+# $Id: Makefile.in,v 1.24 2003-08-05 11:27:28 benjihan Exp $
 #
 
-VERSION = @VERSION@
-DOXYGEN = @DOXYGEN@
-AWK=@AWK@
-LUA=@LUA@
-LYNX=@LYNX@
-DOC_TOOLS=@DOC_TOOLS@
-
-PLG_HEADERS	 := $(shell find ../plugins -maxdepth 3 -type f -name '*.h')
-PLG_HEADERS_PATH := $(sort . $(dir $(PLG_HEADERS)))
-
-PLUG_TOP = ../plugins
-PLUG_DIR = exe img inp vis
+## Tools
+#
+VERSION		:= @VERSION@
+DOXYGEN 	:= @DOXYGEN@
+AWK		:= @AWK@
+LUA		:= @LUA@
+LYNX		:= @LYNX@
+DOC_TOOLS	:= @DOC_TOOLS@
+LUA2DOX		:= $(AWK) -f ../utils/lua2dox.awk
+TXT2ZML		:= $(LUA) -f ../utils/txt2zml.lua
+DOXYGENERIC	:= ../utils/doxygeneric.sh
+SHASUBST	:= ../utils/shasubst.sh
+DATE		:= $(shell date +"%B %Y")
 
 ALL_HEADERS_PATH :=\
  . \
@@ -28,24 +29,40 @@ ALL_HEADERS_PATH :=\
  ../libs/translator/SHAR \
  ../libs/translator/SHAwrapper \
  ../libs/translator/SHAtranslator \
- ../libs/translator/SHAblitter \
- $(PLG_HEADERS_PATH) \
- user_doc
+ ../libs/translator/SHAblitter
 
-# Local doc files
-HINFILES    := $(wildcard *.hin)
+.SUFFIXES:
 
-# user doc files
-USERDOCFILES := $(wildcard user_doc/*.h)
+vpath
+vpath %.h $(ALL_HEADERS_PATH)
+vpath %.lua .. ../lua
+vpath %.gif images
 
-DEVDOCFILES := $(HINFILES:%.hin=%.h) $(USERDOCFILES)
+## Documentation source files
+#
 
+IMG_DOC_FILES	:= $(patsubst images/%, doc/html/%, $(wildcard images/*.gif))
+PLG_SRC_FILES	:= $(shell find ../plugins/ -maxdepth 3 -type f -name '*.h')
+USR_SRC_FILES	:= $(wildcard user_doc/*.h)
+DOC_SRC_FILES	:= $(patsubst %.hin,%.h,$(wildcard *.hin))
+HDR_SRC_FILES	:= $(foreach dir,$(ALL_HEADERS_PATH), $(wildcard *.h))
+ifeq 'x$(AWK)' 'x'
+LUA_ORG_FILES	:=
+else
+LUA_ORG_FILES	:= $(wildcard ../lua/*.lua) ../dcplayarc.lua ../userconf.lua
+endif
+LUA_SRC_FILES	:= $(LUA_ORG_FILES:../%=lua-doc/%)
 
 HTML_EXTRA	:= dcplaya_doc.css dcplaya_header.html dcplaya_footer.html 
 
-DOC_DIR 	:= doc
-LUADOCDIR	:= lua_doc
-LUASRCDIR	:= ..
+ALL_SRC_FILES	:=\
+ $(PLG_SRC_FILES)\
+ $(USR_SRC_FILES)\
+ $(DOC_SRC_FILES)\
+ $(HDR_SRC_FILES)\
+ $(LUA_SRC_FILES)
+
+ALL_DOC_FILES	:= $(ALL_SRC_FILES) $(IMG_DOC_FILES) $(HTML_EXTRA)
 
 
 # Select targets that could be build with current configuration.
@@ -63,54 +80,18 @@ LUASRCDIR	:= ..
 ALL_TARGETS	:= doxygen-is-missing
 DISTRIB_TARGETS	:=
 ifneq 'x$(DOXYGEN)' 'xecho'
-ALL_TARGETS := Makefile devdoc
+ALL_TARGETS	:= all-doc
 ifeq 'x$(LYNX)' 'xecho'
-DISTRIB_TARGETS := Makefile devdoc
+DISTRIB_TARGETS	:= devdoc-stamp
 else
-DISTRIB_TARGETS := Makefile txt
+DISTRIB_TARGETS := all-doc
 ifneq 'x$(LUA)' 'xecho'
-DISTRIB_TARGETS += zml
+DISTRIB_TARGETS += all-zml
 endif
 endif
 endif
 
-ifeq 'x$(AWK)' 'xecho'
-LUAALLFILES	:=
-else
-LUAALLFILES	:=\
- $(wildcard $(LUASRCDIR)/*.lua)\
- $(wildcard $(LUASRCDIR)/lua/*.lua)
-endif
-LUASRCFILES:=$(LUAALLFILES:$(LUASRCDIR)/%=%)
-LUADOCFILES:=$(addprefix $(LUADOCDIR)/,$(LUASRCFILES:%.lua=%.lua)\
- userconf.lua\
- dcplayarc.lua\
-)
-# ben : This file is missing from repository !!
-# autorun.lua\
-
-DOCINPUTS=$(ALL_HEADERS_PATH) $(LUADOCDIR) $(LUADOCDIR)/lua
-
-SHASUBST=../utils/shasubst.sh
-
-# Shell version
-#LUA2DOX=cat $< | ../utils/lua2dox.sh
-# Sed version
-#LUA2DOX=sed --silent -f ../utils/lua2dox.sed $<
-# Awk version
-LUA2DOX=$(AWK) -f ../utils/lua2dox.awk $<
-#TXT2ZML=sed --silent -f ../utils/txt2zml.sed
-TXT2ZML=$(LUA) -f ../utils/txt2zml.lua
-
-DOXYGENERIC=../utils/doxygeneric.sh
-
-vpath
-vpath %.h $(ALL_HEADERS_PATH)
-vpath %.lua .. ../lua
-
-# Build shasubst definition
-#
-DATE	:= $(shell date +"%B %Y")
+DOCINPUTS	:= $(ALL_SRC_FILES)
 
 # style sheet configuration
 ###################################################
@@ -153,7 +134,6 @@ DOXALL	+= -D QUIET=YES
 DOXALL	+= -D WARNINGS=YES
 DOXALL	+= -D WARN_IF_UNDOCUMENTED=NO
 
-DOXALL	+= -D OUTPUT_DIRECTORY='$(DOC_DIR)'
 DOXALL	+= -D FILE_PATTERNS='*.h *.lua'
 DOXALL	+= -D IMAGE_PATH=images 
 
@@ -177,6 +157,7 @@ DOXALL	+= -D DISABLE_INDEX=NO
 ## ZML generation
 #
 
+DOXZML	+= -D OUTPUT_DIRECTORY='zml-temp'
 DOXZML	+= -D REPEAT_BRIEF=NO
 DOXZML	+= -D GENERATE_TODOLIST=NO
 DOXZML	+= -D GENERATE_TESTLIST=NO
@@ -194,25 +175,23 @@ DOXZML	+= -D TEMPLATE_RELATIONS=NO
 DOXZML	+= -D INCLUDE_GRAPH=NO
 DOXZML	+= -D INCLUDED_BY_GRAPH=NO
 DOXZML	+= -D GRAPHICAL_HIERARCHY=NO
-DOXZML	+= -D HTML_OUTPUT=html4zml
+DOXZML	+= -D GENERATE_XML=NO
 
 ## DEVELOPER documentation
 #
 DOXDEV	:=
+DOXDEV	+= -D OUTPUT_DIRECTORY='doc'
 DOXDEV	+= -D INPUT='$(DOCINPUTS)'
 DOXDEV	+= -D PREDEFINED="DEBUG"
 DOXDEV	+= -D INCLUDE_PATH="../include ../include/dcplaya"
 DOXDEV	+= -D OPTIMIZE_OUTPUT_FOR_C=YES
 DOXDEV	+= -D ENABLED_SECTIONS=""
 DOXDEV	+= -D GENERATE_HTML=YES
-ifeq "$(strip $(MAKECMDGOALS))" "xml"
 DOXDEV	+= -D GENERATE_XML=YES
-else
-DOXDEV	+= -D GENERATE_XML=NO
-endif
 DOXDEV	+= -D HTML_HEADER=dcplaya_header.html
 DOXDEV	+= -D HTML_FOOTER=dcplaya_footer.html
 DOXDEV	+= -D HTML_STYLESHEET=dcplaya_doc.css
+DOXDEV	+= -D HTML_OUTPUT=html
 DOXDEV	+= -D GENERATE_TREEVIEW=NO
 DOXDEV	+= -D GENERATE_MAN=NO
 DOXDEV	+= -D MAN_EXTENSION=.1
@@ -222,7 +201,9 @@ DOXDEV	+= -D GENERATE_LATEX=NO
 #
 
 all: $(ALL_TARGETS)
+
 distrib: $(DISTRIB_TARGETS)
+	@mkdir -p doc
 	@echo "Documentation distribution has been builded from [$^]"
 
 .PHONY: lynx-is-missing lua-is-missing awk-is-missing doxygen-is-missing
@@ -230,89 +211,86 @@ lynx-is-missing lua-is-missing awk-is-missing doxygen-is-missing:
 	@echo "You need to install $(patsubst %-is-missing,%,$@) for building this documentation."
 	@test "1" = "2"
 
+.PHONY: txt-transform
 ifeq '$(LYNX)' 'echo'
 # These targets need lynx to be configured.
-txt_only txt4zml_only: lynx-is-missing
-
+txt-transform: lynx-is-missing
 else
 
-
-txt_only:
-	@mkdir -p $(DOC_DIR)/text
-	@for i in `find $(DOC_DIR)/html -type f -name '*.html'`; do\
-	$(LYNX) -width=64 -dump $$i > $(DOC_DIR)/text/`basename $$i .html`.txt;\
-	done
-
-txt4zml_only:
-	@mkdir -p $(DOC_DIR)/text4zml
-	@for i in `find $(DOC_DIR)/html4zml -type f -name '*.html'`; do\
-	$(LYNX) -width=4096 -dump $$i \
-	> $(DOC_DIR)/text4zml/`basename $$i .html`.txt;\
-	done; rm -rf "$(DOC_DIR)/html4zml"
-
+# This rules converts HTML files to txt using lynx. Some rules variables
+# have to be properly set.
+txt-transform-doc txt-transform-zml:
+	@test -n "$(DST_DIR)" &&\
+	test -n "$(SRC_DIR)" &&\
+	mkdir -p "$(DST_DIR)" &&\
+	for i in `find $(SRC_DIR) -type f -name '*.html'`; do\
+		SRC="$$i"; DST="$(DST_DIR)/`basename $$i .html`.txt";\
+		if test ! "$$SRC" -ot "$$DST"; then \
+			echo "[$$DST]";\
+			$(LYNX) -width=$(OUT_WIDTH) -dump "$$SRC"\
+	 		> "$$DST" || break;\
+		else test 0 -eq 0; fi;\
+	done && echo "[$@]"
 endif
 
-xml: all
-txt: all txt_only
+all-doc: SRC_DIR=doc/html
+all-doc: DST_DIR=doc/text
+all-doc: OUT_WIDTH=64
+all-doc: devdoc-stamp txt-transform-doc
+	@echo "[$@]"
 
-special: Makefile zmldoc
-txt4zml: special txt4zml_only
-zml: txt4zml zml_only
+all-zml-txt: SRC_DIR=zml-temp/html
+all-zml-txt: DST_DIR=zml-temp/text
+all-zml-txt: OUT_WIDTH=4096
+all-zml-txt: zmldoc-stamp txt-transform-zml
+	@echo "[$@]"
+
+all-zml: zml-transform
 
 ifeq '$(LUA)' 'echo'
-
-zml_only : lua-is-missing
-
+zml-transform: lua-is-missing
 else
 
 # This target does not required lynx because text files should
 # have been processed before.
-zml_only:
-	@mkdir -p $(DOC_DIR)/zml
-	@for i in `find $(DOC_DIR)/text4zml -type f -name '*.txt'`; do\
-	echo "[`basename "$$i"`]";\
-	cat zmlheader.zml > $(DOC_DIR)/zml/`basename "$$i" .txt`.zml; \
-	$(TXT2ZML) "$$i" >> $(DOC_DIR)/zml/`basename "$$i" .txt`.zml;\
-	done; rm -rf "$(DOC_DIR)/text4zml"
-
+zml-transform: all-zml-txt
+	@mkdir -p doc/zml && \
+	for i in `find zml-temp/text -type f -name '*.txt'`; do\
+		SRC="$$i"; DST="doc/zml/`basename $$i .txt`.zml";\
+		if test ! "$$SRC" -ot "$$DST"; then \
+			echo "[$$DST]";\
+			cat zmlheader.zml > "$$DST" && \
+			$(TXT2ZML) "$$SRC" >> "$$DST" || break;\
+		else test 0 -eq 0; fi;\
+	done && echo "[$@]"
 endif
 
 Makefile : Makefile.in
 	(cd ..; ./config.status) 
 
-$(LUADOCDIR)/userconf.lua : $(LUASRCDIR)/userconf-release.lua # Makefile
-	@echo "make [$@] from [$<]"
+lua-doc/userconf.lua : userconf-release.lua
+	@echo "[$@] from [$<]"
 	@mkdir -p $(dir $@)
-	@$(LUA2DOX) > $@
+	@$(LUA2DOX) $< > $@ 2> /dev/null
 
-$(LUADOCDIR)/%.lua : %.lua  # Makefile
+lua-doc/%.lua : %.lua
+	@echo "[$@] [$<]"
 	@mkdir -p $(dir $@)
-	@echo "make [$@] from [$<]"
-	@$(LUA2DOX) > $@
+	@$(LUA2DOX) $< > $@ 2> /dev/null
 
-$(DOC_DIR) $(LUADOCDIR) $(DOC_DIR)/html:
-	@echo "Create directory [$@]"
-	@mkdir -p $@
+doc/html/%.gif : %.gif
+	@echo "[$@]"
+	@mkdir -p "$(@D)" && cp -f $< $@
 
-luadoc: $(LUADOCDIR) $(LUADOCFILES)
+%-stamp: %.dox
+	@echo "[$@]"
+	@rm -f $@ && $(DOXYGEN) $< && touch $@
 
-imgdoc: $(DOC_DIR)/html
-	cp -f images/*.gif $(DOC_DIR)/html
-
-devdoc: devdoc.dox $(DEVDOCFILES) luadoc $(HTML_EXTRA) imgdoc
-	$(DOXYGEN) $<
-
-zmldoc: zmldoc.dox $(DEVDOCFILES) luadoc $(HTML_EXTRA)
-	@$(DOXYGEN) $<
-
-# Phony since xml could be modified by goal !
-.PHONY: devdoc.dox zmldoc.dox
-
-devdoc.dox : devdoc.doxin
+devdoc.dox : devdoc.doxin Makefile $(ALL_DOC_FILES)
 	@echo "make [$@] from [$<]"
 	@$(DOXYGENERIC) $@ $(DOXALL) $(DOXDEV) < $< 
 
-zmldoc.dox : devdoc.doxin
+zmldoc.dox : devdoc.doxin Makefile $(ALL_DOC_FILES)
 	@echo "make [$@] from [$<]"
 	@$(DOXYGENERIC) $@ $(DOXALL) $(DOXDEV) $(DOXZML) < $< 
 
@@ -331,17 +309,16 @@ devdoc.doxin:
 	@echo "make [$@] from [$<]"
 	@cat $< > $@
 
+## Clean rules
+#
+
 clean_local:
-	@rm -f *.dox* *.h *~ *.html *.css *.lua
-	@find $(LUADOCDIR) -name '*.lua' -type f -exec rm "{}" \;
+	@rm -f *.dox* *.h *~ *.html *.css *.lua *-stamp
 
 clean: clean_local
-	@rm -rf $(foreach i, html xml zml man text latex text4zml html4zml,$(DOC_DIR)/$(i)) 
+	@rm -rf doc lua-doc zml-temp
 
 distclean: clean
-	@rm -rf Makefile *~ $(LUADOCDIR)
+	@rm -f Makefile *~
 
 dep depend depend-clean:
-
-required:
-	mkdir -p "$(LUADOCDIR)/lua" "$(DOC_DIR)"
