@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.21 2002-12-15 12:27:18 zigziggy Exp $
+--- $Id: textlist.lua,v 1.22 2002-12-15 22:43:08 zigziggy Exp $
 ---
 
 -- Unload the library
@@ -86,6 +86,7 @@ function textlist_create(flparm)
    --- @param  w   New width of textlist box or nil.
    --- @param  h   New height of textlist box or nil.
    --- @param  z   New depth of textlist box or nil.
+   --- @param  owner Owner application
    ---
    function textlist_set_box(fl,x,y,w,h,z)
 	  if not fl.box then fl.box = {} end
@@ -530,6 +531,7 @@ function textlist_create(flparm)
 	  if flparm.dircolor  then fl.dircolor	= flparm.dircolor	end
 	  if flparm.bkgcolor  then fl.bkgcolor	= flparm.bkgcolor	end
 	  if flparm.curcolor  then fl.curcolor	= flparm.curcolor	end
+	  fl.owner = flparm.owner
    end
 
    textlist_reset(fl)
@@ -623,13 +625,21 @@ function textlist_create_app(fl,owner)
    end
 
    app = {
-	  name	    = "textlist",
-	  version	= "0.1",
-	  handle	= textlist_app_handle,
-	  update    = textlist_app_update,
-	  fl		= fl,
+      name      = "textlist",
+      version	= "0.1",
+      handle	= textlist_app_handle,
+      update    = textlist_app_update,
+      fl	= fl,
+      dl        = owner.dl
    }
    evt_app_insert_first(owner, app)
+
+   -- added by Vincent
+   if app.dl then
+      dl_sublist(app.dl, fl.dl)
+   end
+
+   fl.owner = app
 
    return app
 end
@@ -693,7 +703,6 @@ function textlist_create_gui(fl, owner)
    app.fl			= fl
    app.name	    	= "gui "..app.name
    app.box			= app.fl.box
-   app.dl			= nil
    app.handle		= textlist_gui_handle
    app.event_table  = {}
    app.flags		= {}

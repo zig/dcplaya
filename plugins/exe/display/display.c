@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.21 2002-12-12 00:08:04 ben Exp $
+ * $Id: display.c,v 1.22 2002-12-15 22:43:08 zigziggy Exp $
  */
 
 #include <stdlib.h>
@@ -132,7 +132,7 @@ static int lua_new_list(lua_State * L)
 /*     } */
 /*   } */
   ///$$$
-  printf("Creating new %s-list %d %d\n", sub?"sub":"main",heapsize, active);
+    //printf("Creating new %s-list %d %d\n", sub?"sub":"main",heapsize, active);
   lua_settop(L, 0);
   l = dl_create(heapsize, active, sub);
   if (l) {

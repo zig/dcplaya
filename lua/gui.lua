@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.27 2002-12-15 12:27:18 zigziggy Exp $
+--- $Id: gui.lua,v 1.28 2002-12-15 22:43:08 zigziggy Exp $
 ---
 
 --
@@ -40,6 +40,10 @@
 --   focusing would then be able to modify color/placement of items 
 --   individually with respect to its focused or active state ...
 --
+
+if not dolib "evt" or not dolib "box3d" then
+   return
+end
 
 gui_box_color1 = { 0.8, 0.2, 0.3, 0.3 }
 gui_box_color2 = { 0.8, 0.1, 0.1, 0.1 }
@@ -114,7 +118,7 @@ function gui_orphanguess_z(z)
    if not z then
 --      z = gui_curz
 --      gui_curz = gui_curz + 100
-      z = 2000
+      z = 0
    end
    return z
 end
@@ -156,16 +160,18 @@ function gui_child_autoplacement(app)
       i = i.next
    end
 
+   n = n+1
    local scale = 1/n
    i = app.sub
 --   n = 0
    while i do
+      n = n - 1
+
       if i._dl then
-	 dl_set_trans(i._dl, mat_scale(1, 1, scale) * mat_trans(0, 0, 100*n*scale))
+	 dl_set_trans(i._dl, mat_trans(0, 0, 100/scale + 100*n) * mat_scale(1, 1, scale/2))
 	 dl_sublist(app._dl1, i._dl)
       end
       
-      n = n - 1
       i = i.next
    end
 
@@ -265,11 +271,11 @@ function gui_dialog_shutdown(app)
    if app.sub then
       evt_send(app.sub, { key = gui_unfocus_event, app = app.sub }, 1)
    end
-   dl_destroy_list(app.dl)
-   dl_destroy_list(app.focusup_dl)
-   dl_destroy_list(app.focusdown_dl)
-   dl_destroy_list(app.focusright_dl)
-   dl_destroy_list(app.focusleft_dl)
+   dl_set_active(app.dl)
+   dl_set_active(app.focusup_dl)
+   dl_set_active(app.focusdown_dl)
+   dl_set_active(app.focusright_dl)
+   dl_set_active(app.focusleft_dl)
    evt_app_remove(app)
    cond_connect(1)
 end
@@ -291,12 +297,17 @@ function gui_dialog_handle(app, evt)
    end
 
    if (key == evt_app_insert_event or key == evt_app_remove_event) and evt.app.owner == app then
+      if key == evt_app_remove_event and focused and focused == evt.app then
+	 focused = focused.next
+      end
 
       if focused ~= app.focused then
 	 if app.focused then
 	    evt_send(app.focused, { key = gui_unfocus_event, app = app.focused }, 1)
 	 end
-	 evt_send(focused, { key = gui_focus_event, app = focused }, 1)
+	 if focused then
+	    evt_send(focused, { key = gui_focus_event, app = focused }, 1)
+	 end
 	 app.focused = focused
 	 app.focus_time = 0
       end
@@ -308,6 +319,7 @@ function gui_dialog_handle(app, evt)
    if focused then
       if key == gui_focus_event or key == gui_unfocus_event then
 	 -- translate and pass down the event to the focused item
+--	 print("unfocus", focused.name)
 	 evt.app = focused
 	 evt_send(focused, evt, 1)
 	 return
@@ -416,21 +428,52 @@ function gui_dialog_update(app, frametime)
    
 end
 
-function gui_new_dialog(owner, box, z, dlsize, text, mode)
+function gui_dialog_box_draw(dl, box, z, bcolor, color)
+   
+   if nil then
+      local t, l, b, r = 1.6*bcolor, 0.8*bcolor, 0.2*bcolor, 0.4*bcolor
+      t[1] = bcolor[1]
+      l[1] = bcolor[1]
+      b[1] = bcolor[1]
+      r[1] = bcolor[1]
+      local b3d = box3d(box, 6, color, t, l, b, r)
+      box3d_draw(b3d,dl)
+   else
+      dl_draw_box(dl, box, z, gui_box_color1, gui_box_color2)
+   end
+end
+
+function gui_button_box_draw(dl, box, z, bcolor, color)
+   if nil then
+      local t, l, b, r = 1.6*bcolor, 0.8*bcolor, 0.2*bcolor, 0.4*bcolor
+      t[1] = bcolor[1]
+      l[1] = bcolor[1]
+      b[1] = bcolor[1]
+      r[1] = bcolor[1]
+      local b3d = box3d(box, 2, color, t, l, b, r)
+      box3d_draw(b3d,dl)
+   else
+      dl_draw_box(dl, box, z, gui_button_color1, gui_button_color2)
+   end
+end
+
+
+function gui_new_dialog(owner, box, z, dlsize, text, mode, name)
    local dial
 
    --  $$$ ben : default owner is desktop
    if not owner then owner = evt_desktop_app end
    if not owner then print("gui_new_dialog : no desktop") return nil end
    
-   z = gui_orphanguess_z(z)
+   z = gui_guess_z(owner, z)
+--   print(z)
 
    if not dlsize then
       dlsize = 10*1024
    end
    dial = { 
 
-      name = "gui_dialog",
+      name = name or "gui_dialog",
       version = "0.9",
       
       handle = gui_dialog_handle,
@@ -457,7 +500,7 @@ function gui_new_dialog(owner, box, z, dlsize, text, mode)
    end
    
    -- draw surrounding box
-   dl_draw_box(dial.dl, box, z, gui_box_color1, gui_box_color2)
+   gui_dialog_box_draw(dial.dl, box, z, gui_box_color1, gui_box_color1)
    
    -- draw the focus cursor
    local focus_dl
@@ -465,7 +508,7 @@ function gui_new_dialog(owner, box, z, dlsize, text, mode)
       { dial.focusup_dl, dial.focusdown_dl, 
       dial.focusleft_dl, dial.focusright_dl } do
       dl_draw_box(focus_dl, { 0, 0,  1, 1 }, 
-		  z+0.5, { 1, 1, 1, 1 }, { 1, 1, 1, 1 })
+		  z+99, { 1, 1, 1, 1 }, { 1, 1, 1, 1 })
    end
    
    if text then
@@ -506,7 +549,8 @@ end
 function gui_new_button(owner, box, text, mode, z)
    local app
 
-   z = gui_guess_z(owner, z)
+   z = gui_guess_z(owner, z) + 10
+--   print("button", z)
 
    app = { 
 
@@ -525,7 +569,8 @@ function gui_new_button(owner, box, text, mode, z)
 
    }
 
-   dl_draw_box(app.dl, app.box, z, gui_button_color1, gui_button_color2)
+   --dl_draw_box(app.dl, app.box, z, gui_button_color1, gui_button_color2)
+   gui_button_box_draw(app.dl, app.box, z, gui_button_color1, gui_button_color1)
 
    if text then
       gui_label(app, text, mode)
@@ -694,7 +739,7 @@ end
 
 function gui_destroy_text(app)
    if app then
-      dl_destroy_list(app.dl)
+      dl_set_active(app.dl)
    end
 end
 
@@ -833,7 +878,7 @@ end
 -- add a label to a gui item
 function gui_label(app, text, mode)
    --	gui_justify(app.dl, app.box + gui_text_shiftbox, app.z+1, gui_text_color, text, mode)
-   gui_justify(app.dl, app.box, app.z+1, gui_text_color, text, mode)
+   gui_justify(app.dl, app.box, app.z+10, gui_text_color, text, mode)
    -- TODO use an optional mode.boxcolor and render a box around text if it is set ...
 end
 
@@ -877,8 +922,8 @@ function dialog_test(parent)
       box[3] = box[3] + parent.box[1] + 100
       box[4] = box[4] + parent.box[2]
    end
-   dial = gui_new_dialog(parent, box, 2000, nil,
-			 "My dialog box", { x = "left", y = "upout" } )
+   dial = gui_new_dialog(parent, box, nil, nil,
+			 "My dialog box", { x = "left", y = "upout" }, "dialog-test" )
    
    -- add some text inside the dialog box
    gui_label(dial, 
@@ -930,7 +975,7 @@ function dialog_test(parent)
 
    -- create subdialog
    for i=1, 4, 1 do
-      local subdial = gui_new_dialog(dial, { x + 120, y + 300, x + 180, y + 350 }, 0, nil, "Sub dialog", { x = "left", y="upout" })
+      local subdial = gui_new_dialog(dial, { x + 120, y + 300, x + 180, y + 350 }, nil, nil, "Sub dialog", { x = "left", y="upout" })
       but = gui_new_button(subdial, { x + 130, y + 310, x + 180, y + 340 }, "TOTO")
 --      but.event_table[gui_press_event] =
 --	 function(but, evt)

@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.14 2002-12-12 18:35:24 zigziggy Exp $
+-- $Id: evt.lua,v 1.15 2002-12-15 22:43:08 zigziggy Exp $
 --
 
 
@@ -228,7 +228,7 @@ function evt_app_insert_last(parent, app)
    evt_app_remove(app)
    dlist_insert(parent, "sublast", "sub", app, "next", "prev", "owner")
 
-   evt_send(parent, { key = evt_app_insert_event, app = app })
+   evt_send(parent, { key = evt_app_insert_event, app = app, owner = parent })
 end
 
 
@@ -236,8 +236,8 @@ end
 function evt_app_remove(app)
    local owner = app.owner
    if owner then
-      evt_send(owner, { key = evt_app_remove_event, app = app })
-      
+      evt_send(owner, { key = evt_app_remove_event, app = app, owner = owner })
+
       dlist_remove("sub", "sublast", app, "prev", "next", "owner")
    end
 end

@@ -4,7 +4,7 @@
 --- @date   2002/10/04
 --- @brief  fileselector gui
 ---
---- $Id: fileselector.lua,v 1.18 2002-12-10 15:20:42 ben Exp $
+--- $Id: fileselector.lua,v 1.19 2002-12-15 22:43:08 zigziggy Exp $
 --
 -- TODO : select item with space 
 --        completion with tab        
@@ -330,8 +330,8 @@ function fileselector(name,path,filename)
 	  if not name then name="File Selector" end
 	  if not path then path=PWD end
 	  dial = gui_new_dialog(evt_desktop_app,
-							{x, y, x2, y2 }, nil, nil, name,
-							{ x = "left", y = "up" } )
+				{x, y, x2, y2 }, nil, nil, name,
+				{ x = "left", y = "up" }, "fileselector" )
 	  dial.event_table = {
 		 [gui_item_confirm_event]	= fileselector_handle,
 		 [gui_item_cancel_event]	= fileselector_handle,

@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.10 2002-12-12 00:08:04 ben Exp $
+--- $Id: song_browser.lua,v 1.11 2002-12-15 22:43:08 zigziggy Exp $
 ---
 
 song_browser_loaded = nil
@@ -355,6 +355,7 @@ function song_browser_create(owner, name)
 		style = style,
 		z = gui_guess_z(owner,z),
 		fade = 0,
+		dl = dl_new_list(1024, 1)
 
 	}
 
@@ -425,6 +426,7 @@ function song_browser_create(owner, name)
 			   border    = sb.style.border,
 			   span      = sb.style.span,
 			   confirm   = sbfl_confirm,
+			   owner     = sb
 			})
 	sb.fl.cancel = sbfl_cancel
 	sb.fl.select = sbfl_select
@@ -466,6 +468,7 @@ function song_browser_create(owner, name)
 			   curcolor  = sb.style.cur_color,
 			   border    = sb.style.border,
 			   span      = sb.style.span,
+			   owner     = sb
 			} )
 	sb.pl.confirm = sbpl_confirm
 	sb.pl.cancel = sbpl_cancel

@@ -4,7 +4,7 @@
 --- @date    2002/10/11
 --- @brief   Colorpicker GUI.
 ---
---- $Id: colorpicker.lua,v 1.9 2002-12-12 18:35:24 zigziggy Exp $
+--- $Id: colorpicker.lua,v 1.10 2002-12-15 22:43:08 zigziggy Exp $
 
 -- Load required libraries
 --
@@ -468,7 +468,7 @@ function colorpicker(owner, name, pos, color)
    color = color_new(color)
    if not owner then owner = evt_desktop_app end
    dial = gui_new_dialog(owner,
-						 {x, y, x2, y2 }, nil, nil, name, { x = "left", y = "up" } )
+						 {x, y, x2, y2 }, nil, nil, name, { x = "left", y = "up" }, "colorpicker" )
    dial.event_table = {
 	  [gui_input_confirm_event]	= dial_handle
    }

@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.1 2002-12-15 12:27:18 zigziggy Exp $
+--- $Id: desktop.lua,v 1.2 2002-12-15 22:43:08 zigziggy Exp $
 ---
 
 if not dolib("evt") then return end
@@ -61,7 +61,7 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 
       if key == gui_item_change_event then
 	 local dir = dial.dir
-	 print("dir = ", dir)
+--	 print("dir = ", dir)
 	 if dir then
 	    local a = dir[evt.pos+1].app
 	    gui_new_focus(evt_desktop_app, a)
@@ -94,7 +94,7 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
    local dial
    dial = gui_new_dialog(owner,
 			 { x, y, x2, y2 }, z, nil, name,
-			 { x = "left", y = "up" } )
+			 { x = "left", y = "up" }, "app_switcher" )
    dial.event_table = {
       [gui_item_change_event]	= dskt_switcher_handle,
       [gui_item_confirm_event]	= dskt_switcher_handle,
@@ -184,11 +184,19 @@ function dskt_handle(app, evt)
 
    if (key == evt_app_insert_event or key == evt_app_remove_event) and evt.app.owner == app then
 
+      local focused = app.sub
+      if key == evt_app_remove_event and focused and focused == evt.app then
+	 focused = focused.next
+      end
       if focused ~= app.focused then
 	 if app.focused then
+--	    print("unfocus", app.focused.name)
 	    evt_send(app.focused, { key = gui_unfocus_event, app = app.focused }, 1)
 	 end
-	 evt_send(focused, { key = gui_focus_event, app = focused }, 1)
+	 if focused then
+	    evt_send(focused, { key = gui_focus_event, app = focused }, 1)
+--	    print("new focused", focused.name)
+	 end
 	 app.focused = focused
 	 app.focus_time = 0
       end
@@ -213,6 +221,7 @@ function dskt_create()
    if not app.dl then
       app.dl = dl_new_list(256, 1)
    end
+   app.z = 0
 
    return app
 end
