@@ -3,7 +3,7 @@
 #
 # (C) COPYRIGHT 2002 benjamin gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.10 2002-09-11 03:53:08 ben Exp $ 
+# $Id: Makefile,v 1.11 2002-09-13 10:24:02 ben Exp $ 
 #
 TARGETS=dreammp3.elf
 
@@ -72,12 +72,12 @@ run: my_all send
 
 .PHONY: doc
 doc:
-	$(MAKE) -C doc	
+	@$(MAKE) -s -C doc	
 
 
 DEPEND_EXTRA=depend_extra
 depend_extra:
-	touch "symtab.h"
+	@touch "symtab.h"
 
 # ----------------------------------------------------------------------
 

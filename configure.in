@@ -41,7 +41,7 @@ VERSION_STR="\"$VERSION\""
 VERSION_MAJOR=`expr "$VERSION" : '\([0-9]*\).*' \| 1`
 VERSION_MINOR=`expr "$VERSION" : '[0-9]*\.\([0-9]*\)' \| 0`]
 VERSION_NUM=0x`printf "%d%02d" $VERSION_MAJOR $VERSION_MINOR`
-BREAKPOINT="[if (1) {*(int *)1 = (N);} else  ]"
+BREAKPOINT="[{*(int *)1 = (N)}]"
 DREAMMP3_URL_STR="\"$DREAMMP3_URL\""
 ]
 AC_SUBST(PACKAGE)
@@ -135,7 +135,7 @@ for i in $REQUIRED_DC_TOOLS; do
     fi
 done
 
-SH_CFLAGS="-Wall -O4 -Wno-multichar"
+SH_CFLAGS="-Wall -O4"
 if test $DEBUG -ne 0; then
     SH_CFLAGS="$SH_CFLAGS -g"
 fi
@@ -284,5 +284,5 @@ AC_MSG_RESULT([*   doxygen             : $DOXYGEN])
 AC_MSG_RESULT([**************************************])
 
 dnl#
-dnl# End of "$Id: configure.in,v 1.8 2002-09-13 00:27:11 ben Exp $".
+dnl# End of "$Id: configure.in,v 1.7 2002-09-13 10:24:02 ben Exp $".
 dnl#
