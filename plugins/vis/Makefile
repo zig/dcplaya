@@ -3,9 +3,9 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sasahipa.com>
 #
-# $Id: Makefile,v 1.8 2003-01-20 12:03:16 zigziggy Exp $
+# $Id: Makefile,v 1.9 2003-01-21 13:07:33 zigziggy Exp $
 #
 
-SUBDIRS = fftvlr lpo hyperpipe #fime # VP : fime_beatdetect.h missing !!
+SUBDIRS = fftvlr lpo hyperpipe fime
 
 include ../../Makefile.inc
