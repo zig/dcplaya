@@ -3,7 +3,7 @@
 --
 -- (C) 2002 Vincent Penne (aka Ziggy Stardust)
 --
--- $Id: zed.lua,v 1.3 2002-09-16 07:06:19 zig Exp $
+-- $Id: zed.lua,v 1.4 2002-09-17 19:47:08 zig Exp $
 --
 
 rp ("Initializing ZED ... ")
@@ -323,7 +323,7 @@ function zed(filename)
 		update_from = line
 		update_to = line-1
 
-		if key == KBD_KEY_F1 then
+		if key == KBD_KEY_F10 then
 
 			zed_pline(zed_h-1, "Quit (Y/N) ? ")
 			local answer = strchar(max(1, min(255, getchar())))

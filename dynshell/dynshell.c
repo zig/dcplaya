@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.12 2002-09-16 23:57:11 zig Exp $
+ * @version    $Id: dynshell.c,v 1.13 2002-09-17 19:47:08 zig Exp $
  */
 
 #include <stdio.h>
@@ -61,7 +61,11 @@ static int dynshell_command(const char * fmt, ...)
     vsprintf(com, fmt, args);
     va_end(args);
       
-    result = lua_dostring(shell_lua_state, com);
+    //result = lua_dostring(shell_lua_state, com);
+    lua_getglobal(shell_lua_state, "doshellcommand");
+    lua_pushstring(shell_lua_state, com);
+    lua_call(shell_lua_state, 1, 0);
+    result = 0;
   } else
     result = 0;
 
@@ -292,6 +296,9 @@ static char shell_basic_lua_init[] =
 "\n function help(fname)"
 "\n   local h = nil"
 "\n   if fname then"
+"\n     if type(fname)==[[string]] then"
+"\n 	  fname = getglobal(fname)"
+"\n 	end"
 "\n     h = shell_help_array[fname]"
 "\n   end"
 "\n   if h then"
@@ -300,7 +307,9 @@ static char shell_basic_lua_init[] =
 "\n     print [[commands are:]]"
 "\n     local t = { } local n = 1"
 "\n     for i, v in shell_help_array do"
-"\n       t[n] = getinfo(i).name .. [[, ]]"
+"\n       local name=getinfo(i).name"
+"\n       if not name then name = [[(?)]] end"
+"\n       t[n] = name .. [[, ]]"
 "\n       n = n+1"
 "\n     end"
 "\n     call (print, t)"
@@ -309,6 +318,11 @@ static char shell_basic_lua_init[] =
 "\n--     end"
 "\n   end"
 "\n end"
+"\n "
+"\n function doshellcommand(string)"
+"\n   dostring(string)"
+"\n end"
+"\n "
 "\n "
 "\n usage=help"
 "\n "
@@ -332,7 +346,7 @@ static shell_command_description_t commands[] = {
     "dirl",
 
     "print([["
-    "dir_load(path, [max_recurse], [extension]) : enumerate all .lef file in given path with max_recurse recursion, return an array of file names\n"
+    "dir_load(path, [max_recurse], [extension]) : enumerate all files (by default all .lef files) in given path with max_recurse recursion, return an array of file names\n"
     "]])",
 
     SHELL_COMMAND_C, lua_path_load

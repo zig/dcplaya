@@ -5,9 +5,10 @@ print ("Welcome to DCplaya !\n")
 print ("Home is set to '", home, "'\n")
 
 
--- print available commands
-help()
-print("")
+-- standard stuffs
+dofile (home.."shell.lua")
+dofile (home.."dirfunc.lua")
+dofile (home.."zed.lua")
 
 
 -- reading directory on PC is slow through serial port, 
@@ -26,6 +27,15 @@ plug_fftvlr	= home.."plugins/vis/fftvlr/fftvlr.lef"
 -- reading user config
 print ("Reading user config file 'userconf.lua'")
 dofile (home.."userconf.lua")
+
+
+
+-- print available commands
+help()
+print("")
+
+
+
 
 
 --

@@ -52,11 +52,9 @@ function ls(path)
 
 	local list = dirl(path, "", 1)
 	print("Files in "..path)
-	local i
-	local j
-	local n=getn(list)
-	local w
-	local h
+
+	local i, j, n, w, h
+ n=getn(list)
 	w,h = consolesize()
 	h = h-2
 	for i=0,n/h, 1 do
@@ -90,6 +88,9 @@ function appendto(filename, ...)
 end
 function remove(filename, ...)
 	return %remove(fullpath(filename), arg)
+end
+function dofile(filename, ...)
+	return %dofile(fullpath(filename), arg)
 end
 function rename(from, to)
 	return %rename(fullpath(from), fullpath(to))

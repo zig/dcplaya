@@ -1,11 +1,11 @@
 /**
  * @ingroup    dcplaya
- * @file       exceptions.c
+ * @file       exceptions.h
  * @author     vincent penne <ziggy@sashipa.com>
  * @date       2002/11/09
  * @brief      Exceptions and guardians handling
  *
- * @version    $Id: exceptions.h,v 1.2 2002-09-15 15:31:03 zig Exp $
+ * @version    $Id: exceptions.h,v 1.3 2002-09-17 19:47:08 zig Exp $
  */
 
 
@@ -46,7 +46,7 @@ extern void irq_dump_regs(int , int);
 
 #define EXPT_GUARD_END                                    \
     }                                                     \
-    thd_current->expt_guard_stack_pos--;                               \
+    thd_current->expt_guard_stack_pos--;                  \
   } else
 
 #endif // #ifndef _EXECEPTIONS_H_
