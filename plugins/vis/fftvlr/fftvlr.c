@@ -8,7 +8,7 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.23 2003-01-05 18:08:39 zigziggy Exp $
+ * $Id: fftvlr.c,v 1.24 2003-01-22 19:12:56 ben Exp $
  */
 
 #include <stdlib.h>
@@ -21,6 +21,7 @@
 #include "obj3d.h"
 //#include "draw_vertex.h"
 #include "draw_object.h"
+#include "sysdebug.h"
 
 //#define BENSTYLE
 
@@ -39,7 +40,9 @@ void FaceNormal(float *d, const vtx_t * v, const tri_t *t);
 #define VLR_W 30
 #define VLR_H 30
 
-/* Resulting number of triangles */
+
+/* Resulting number of triangles and vertrices */
+#define VLR_V (VLR_W*VLR_H)
 #define VLR_TPL ((VLR_W-1)*2)
 #define VLR_T   (VLR_TPL * (VLR_H-1))
 
@@ -164,13 +167,14 @@ static int fftvlr_alloc(void)
 {
   fftvlr_free(); /* Safety net */
   v   = (vtx_t *)malloc(sizeof(vtx_t) * (VLR_H*VLR_W));
-  nrm = (vtx_t *)malloc(sizeof(vtx_t) * (VLR_T));
+  nrm = (vtx_t *)malloc(sizeof(vtx_t) * (VLR_T+1));
   tri = (tri_t *)malloc(sizeof(tri_t) * (VLR_T+1)); /* +1 for invisible */
-  tlk = (tlk_t *)malloc(sizeof(tlk_t) * (VLR_T));
+  tlk = (tlk_t *)malloc(sizeof(tlk_t) * (VLR_T+1));
   if (!v || !nrm || !tri || !tlk) {
     fftvlr_free();
     return -1;
   }
+  memset(nrm, 0, sizeof(*nrm) * (VLR_T+1));
   set_obj_pointer();
 
   return 0;
@@ -224,7 +228,36 @@ static int fftvlr_start(void)
       tlk[k+1].c = k;
     }
   }
+  /* Verify */
+  if (k != VLR_T) {
+    SDERROR("Bad number of face [%d != %d]\n", k,VLR_T);
+    return -1;
+  }
+
+  tri[k].a = tri[k].b = tri[k].c = 0;
   tri[k].flags = 1; /* Setup invisible face */
+  tlk[k].a = tlk[k].b = tlk[k].c = i;
+  tlk[k].flags = 0;
+
+  /* More verify */
+  k = 0;
+  for (i=0; i<VLR_TPL; ++i) {
+    int * t = &tri[i].a, * l = &tlk[i].a;
+    for (j=0; j<3; ++j) {
+      if (t[j] >= VLR_V) {
+	SDDEBUG("tri %03d, %c out of range : [%d >= %d]\n",i,'A'+j,t[j],VLR_V);
+	++k;
+      }
+      if (l[j] > VLR_T) {
+	SDDEBUG("tlk %03d, %c out of range : [%d > %d]\n",i,'A'+j,l[j], VLR_T);
+	++k;
+      }
+    }
+  }
+  if (k) {
+    SDERROR("%d error in mesh generation.\n",k);
+    return -1;
+  }
 
   /* Setup matrix*/
   MtxIdentity(fftvlr_proj);
@@ -239,8 +272,9 @@ static int sature(const float a)
   int v;
 
   v = (int)a;
-  v = v & ~(v>>31);
-  v = v | (((255-v)>>31) & 255);
+  v &= ~(v>>31);
+  v |= ((255-v)>>31);
+  v &= 255;
   return v;
 }
 
@@ -281,30 +315,51 @@ static void vlr_update(void)
   }
 
   {
-    const float la = light_color.w * 255.0f, aa = ambient_color.w * 255.0f;
-    const float lr = light_color.x * 255.0f, ar = ambient_color.x * 255.0f;
-    const float lg = light_color.y * 255.0f, ag = ambient_color.y * 255.0f;
-    const float lb = light_color.z * 255.0f, ab = ambient_color.z * 255.0f;
+    /* const */ float la = light_color.w * 255.0f, aa = ambient_color.w * 255.0f;
+    /* const */ float lr = light_color.x * 255.0f, ar = ambient_color.x * 255.0f;
+    /* const */ float lg = light_color.y * 255.0f, ag = ambient_color.y * 255.0f;
+    /* const */ float lb = light_color.z * 255.0f, ab = ambient_color.z * 255.0f;
 
     /* Face normal calculation  and lightning */
     for (i=0; i<VLR_TPL; i++) {
-      vtx_t *n = &nrm[(VLR_H-2)*VLR_TPL+i];
+      const int idx = (VLR_H-2)*VLR_TPL+i;
+      vtx_t *n = &nrm[idx];
       float coef;
       
-      FaceNormal(&n->x, v,
-		 tri+(VLR_H-2)*VLR_TPL+i);
+      FaceNormal(&n->x, v, tri+idx);
+
+      //$$$ REMOVE ME !!! DEBUGZZZZ
+      if ( Fabs(vtx_norm(n) - 1.0) > MF_EPSYLON) {
+	printf("normal #%03d : %f\n",idx, vtx_norm(n));
+      }
       
-      coef = n->x * tlight_normal.x 
-	+ n->y * tlight_normal.y 
-	+ n->z * tlight_normal.z;
+      coef = vtx_dot_product(n,&tlight_normal);
+
+      coef = (float)i / (float)VLR_TPL;
+      coef = n->z;
 
       if (coef < 0) {
 	coef = 0;
       }
+
+/*       { */
+/* 	static int t = 0; */
+/* 	int j = i; */
+
+/* 	coef = 1; */
+/* 	aa=ar=ag=ab=0; */
+/* 	la = 255.0f; */
+/* 	lr = (j&1) ? 255.0f : 128.0f; */
+/* 	lg = (j&2) ? 255.0f : 128.0f; */
+/* 	lb = (j&4) ? 255.0f : 128.0f; */
+/* 	++t; */
+/*       } */
+
       *(int*)&n->w = argb4(aa + coef * la, ar + coef * lr,
 			   ag + coef * lg, ab + coef * lb);
       
     }
+    *(int*)&nrm[i].w = -1;
   }
 }
 
@@ -390,15 +445,21 @@ static int fftvlr_opaque(void)
 
 static int fftvlr_transparent(void)
 {
-/*   static vtx_t color = { */
-/*     80.0f, 0.90f, 0.0f, 0.4f */
-/*   }; */
   if (ready) {
+#if 1
+  static vtx_t color = {
+    80.0f, 0.90f, 0.0f, 0.4f
+  };
+
 /*     DrawObjectSingleColor(&viewport, fftvlr_mtx, fftvlr_proj, */
 /* 			  &fftvlr_obj, &color); */
+  DrawObjectFrontLighted(&viewport, fftvlr_mtx, fftvlr_proj,
+			 &fftvlr_obj, &ambient_color, &light_color);
+
+#else
     DrawObjectPrelighted(&viewport, fftvlr_mtx, fftvlr_proj,
 			  &fftvlr_obj);
-
+#endif
     return 0;
   } else {
     return -1;

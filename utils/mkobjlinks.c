@@ -280,8 +280,8 @@ static void PrintLinks(tlk_t *l, int n)
     printf("  { %3d, %3d, %3d, 0 },\n", l->a>>2, l->b>>2, l->c>>2);
     l++;
   } 
+  printf("  { -1, -1, -1, 0 },\n");
   printf("};\n");
-  
 }
 
 static void scramble(tri_t *t, int n)
@@ -325,6 +325,12 @@ int main(int na, char **a)
 /* DON'T DO THAT !!!! */
 /*   Error("******** Scramble Faces ********\n"); */
 /*   scramble(o->tri, o->nbf); */
+
+/* #define TOTO(O) (O##_tlk) */
+/*   if (o->nbf != sizeof(TOTO(OBJECTNAME)) / sizeof(*TOTO(OBJECTNAME))) { */
+/*     Error("Bad number of link faces\n"); */
+/*     return 23; */
+/*   } */
 
   indent = 2;
   Error("- Build Nornals...\n");

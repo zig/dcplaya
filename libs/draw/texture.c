@@ -4,7 +4,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.8 2003-01-20 14:57:24 zigziggy Exp $
+ * $Id: texture.c,v 1.9 2003-01-22 19:12:56 ben Exp $
  */
 
 #include <stdlib.h>
@@ -38,9 +38,9 @@ static int log2(int v)
 {
   int i;
   for (i=0; i<(sizeof(int)<<3); ++i) {
-	if ((1<<i) == v) {
-	  return i;
-	}
+    if ((1<<i) == v) {
+      return i;
+    }
   }
   return -1;
 }
@@ -50,9 +50,9 @@ static int greaterlog2(int v)
 {
   int i;
   for (i=0; i<(sizeof(int)<<3); ++i) {
-	if ((1<<i) >= v) {
-	  return i;
-	}
+    if ((1<<i) >= v) {
+      return i;
+    }
   }
   return -1;
 }
@@ -71,7 +71,7 @@ static int texture_enlarge(void)
 
 static eh_block_t * freeblock_alloc(eh_heap_t * heap)
 {
-/*  printf("freeblock_alloc %x\n", ta_txr_map(heap->current_offset));*/
+  /*  printf("freeblock_alloc %x\n", ta_txr_map(heap->current_offset));*/
 
   /* use video memory to maintain free blocks structure */
   return ta_txr_map(heap->current_offset);
@@ -79,13 +79,13 @@ static eh_block_t * freeblock_alloc(eh_heap_t * heap)
 
 static void freeblock_free(eh_heap_t * heap, eh_block_t * b)
 {
-/*  printf("freeblock_free %x\n", b);*/
+  /*  printf("freeblock_free %x\n", b);*/
 
 }
 
 static eh_block_t * usedblock_alloc(eh_heap_t * heap)
 {
-/*  printf("usedblock_alloc %x\n", heap->userdata);*/
+  /*  printf("usedblock_alloc %x\n", heap->userdata);*/
 
   /* use texture structure ehb entry to store used block structure */
   return (eh_block_t *) heap->userdata;
@@ -93,7 +93,7 @@ static eh_block_t * usedblock_alloc(eh_heap_t * heap)
 
 static void usedblock_free(eh_heap_t * heap, eh_block_t * b)
 {
-/*  printf("usedblock_free %x\n", b);*/
+  /*  printf("usedblock_free %x\n", b);*/
 
 }
 
@@ -104,7 +104,7 @@ static size_t vid_sbrk(eh_heap_t * heap, size_t size)
   SDDEBUG("vid_sbrk : asked %d, gives %d\n", size, total);
 
   /* return the maximum amount of memory */
-/*  return 3*1024*1024; */
+  /*  return 3*1024*1024; */
   return total;
 }
 
@@ -121,8 +121,9 @@ int texture_init(void)
   vid_heap->usedblock_alloc = usedblock_alloc;
   vid_heap->usedblock_free = usedblock_free;
   vid_heap->sbrk = vid_sbrk;
-  vid_heap->small_threshold = 10*1024; /* small allocs are at the end of memory */
-
+  //  vid_heap->small_threshold = 10*1024; /* small allocs are at the end of memory */
+  // $$$ BEN TEST
+  vid_heap->small_threshold = 0;
 
   texture_locks = 0;
   texture_references = 0;
@@ -167,7 +168,7 @@ static texture_t * get_texture(texid_t texid)
   texture_t * t;
   const int data_size = sizeof(texture_t)+sizeof(allocator_elt_t);
   if (texid<0 || texid>texture->elements) {
-	return 0;
+    return 0;
   }
   e = (allocator_elt_t *) (texture->buffer + texid * data_size);
   t = (texture_t *)(e+1);
@@ -177,7 +178,7 @@ static texture_t * get_texture(texid_t texid)
 texid_t texture_get(const char * texture_name)
 {
   if (!texture_name) {
-	return -1;
+    return -1;
   }
   return allocator_index(texture, find_name(texture_name));
 }
@@ -193,7 +194,7 @@ static void * vid_alloc(texture_t * t, size_t size)
   }
   t->ta_tex = t->ehb.offset;
   SDDEBUG("ta_tex = %x\n", t->ta_tex);
-/*  t->ta_tex = ta_txr_allocate(size); */
+  /*  t->ta_tex = ta_txr_allocate(size); */
   /* $$$ TODO check alloc error */ 
   t->addr = ta_txr_map(t->ta_tex);
   /** $$$ Don't know if it is a good things to do ... */
@@ -215,26 +216,26 @@ texid_t texture_dup(texid_t texid, const char * name)
   int size;
 
   SDDEBUG("[%s] : %d [%s]\n",
-		  __FUNCTION__, texid, name);
+	  __FUNCTION__, texid, name);
 
   /* Look for an existing texture */
   ts = find_name(name);
   if (ts) {
-	SDERROR("Texture [%s] already exist.\n", name);
-	ts = 0;
-	goto error;
+    SDERROR("Texture [%s] already exist.\n", name);
+    ts = 0;
+    goto error;
   }
 
   ts = texture_lock(texid);
   if (!ts) {
-	SDERROR("Texture [#%d] not found.\n", texid);
-	goto error;
+    SDERROR("Texture [#%d] not found.\n", texid);
+    goto error;
   }
 
   /* Alloc a texture. */ 
   t = allocator_alloc_inside(texture);
   if (!t) {
-	goto error;
+    goto error;
   }
   texture_clean(t);
   strncpy(t->name, name, sizeof(t->name)-1);
@@ -254,11 +255,11 @@ texid_t texture_dup(texid_t texid, const char * name)
 
  error:
   if (ts) {
-	texture_release(ts);
+    texture_release(ts);
   }
   if (t) {
-	texture_clean(t);
-	allocator_free(texture, t);
+    texture_clean(t);
+    allocator_free(texture, t);
   }
   return -1;
 }
@@ -271,41 +272,41 @@ texid_t texture_create(texture_create_t * creator)
   void * addr;
 
   if (!creator || ! creator->reader) {
-	return -1;
+    return -1;
   }
 
   wlog2 = greaterlog2(creator->width);
   hlog2 = greaterlog2(creator->height);
 
   SDDEBUG("[%s] : [%s] %dx%d -> %dx%d %s\n",
-		  __FUNCTION__, creator->name, creator->width, creator->height,
-		  1<<wlog2, 1<<hlog2, creator->formatstr);
+	  __FUNCTION__, creator->name, creator->width, creator->height,
+	  1<<wlog2, 1<<hlog2, creator->formatstr);
 
   /* Check texture dimension */
   if (wlog2 < 3 || wlog2 > 10 || hlog2 < 3 || hlog2 > 10) {
-	SDERROR("Invalid texture size %dx%d\n", creator->width, creator->height);
-	goto error;
+    SDERROR("Invalid texture size %dx%d\n", creator->width, creator->height);
+    goto error;
   }
 
   /* Check texture format */
   format = texture_strtoformat(creator->formatstr);
   if (format<0) {
-	SDERROR("Invalid texture format [%s]\n", creator->formatstr);
-	goto error;
+    SDERROR("Invalid texture format [%s]\n", creator->formatstr);
+    goto error;
   }
 
   /* Look for an existing texture */
   t = find_name(creator->name);
   if (t) {
-	SDERROR("Texture [%s] already exist.\n", creator->name);
-	t = 0;
-	goto error;
+    SDERROR("Texture [%s] already exist.\n", creator->name);
+    t = 0;
+    goto error;
   }
 
   /* Alloc a texture. */ 
   t = allocator_alloc_inside(texture);
   if (!t) {
-	goto error;
+    goto error;
   }
   texture_clean(t); /* $$$ safety net, texture should have been cleaned */
 
@@ -381,11 +382,11 @@ static int memreader(uint8 *buffer, int n, texture_create_t * tc)
   texture_create_memory_t * tcm = (texture_create_memory_t *)tc;
   int rem;
   if (n <= 0 || !tcm->convertor) {
-	return 0;
+    return 0;
   }
   rem = (tcm->end - tcm->cur) >> tcm->bpplog2;
   if (n > rem) {
-	n = rem;
+    n = rem;
   }
   tcm->convertor(buffer, tcm->cur, n);
   tcm->cur += n << tcm->bpplog2;
@@ -404,17 +405,17 @@ static int flatreader(uint8 *buffer, int n, texture_create_t * tc)
   int i;
   uint16 val;
   if (n <= 0) {
-	return 0;
+    return 0;
   }
   val = tcm->color;
   for (i=0; i<n; ++i) {
-	((uint16 *)buffer)[i] = val;
+    ((uint16 *)buffer)[i] = val;
   }
   return n;
 }
 
 texid_t texture_create_flat(const char *name, int width, int height,
-							unsigned int argb)
+			    unsigned int argb)
 {
   int alpha,dst_format;
   texture_create_flat_t flatcreator;
@@ -429,11 +430,11 @@ texid_t texture_create_flat(const char *name, int width, int height,
   /* Determine destination format depending on alpha value */
   alpha = argb & 0xFF000000;
   if (alpha && alpha != 0xFF000000) { 
-	dst_format = TA_ARGB4444;
-	ARGB32toARGB4444(&flatcreator.color, &argb, 1);
+    dst_format = TA_ARGB4444;
+    ARGB32toARGB4444(&flatcreator.color, &argb, 1);
   } else {
-	dst_format = TA_RGB565;
-	ARGB32toRGB565(&flatcreator.color, &argb, 1);
+    dst_format = TA_RGB565;
+    ARGB32toRGB565(&flatcreator.color, &argb, 1);
   }
 
   flatcreator.creator.width     = width;
@@ -455,18 +456,18 @@ texid_t texture_create_file(const char *fname, const char * formatstr)
   texture_t * t;
 
   if (!fname) {
-	SDERROR("Invalid NULL filename\n");
-	return -1;
+    SDERROR("Invalid NULL filename\n");
+    return -1;
   }
 
   /* Check the format string  */
   dst_format = -2;
   if (formatstr) {
-	dst_format = texture_strtoformat(formatstr);
-	if (dst_format < 0) {
-	  SDERROR("Invalid texture format [%s]\n", formatstr);
-	  goto error;
-	}
+    dst_format = texture_strtoformat(formatstr);
+    if (dst_format < 0) {
+      SDERROR("Invalid texture format [%s]\n", formatstr);
+      goto error;
+    }
   }
 
   /* Build texture name from filename */
@@ -474,8 +475,8 @@ texid_t texture_create_file(const char *fname, const char * formatstr)
   fext  = fn_ext(fbase);
   len   = fext-fbase;
   if (len >= sizeof(memcreator.creator.name)) {
-	SDWARNING("Texture truncated name\n");
-	len = sizeof(memcreator.creator.name)-1;
+    SDWARNING("Texture truncated name\n");
+    len = sizeof(memcreator.creator.name)-1;
   }
   memset(&memcreator, 0, sizeof(memcreator));
   memcpy(memcreator.creator.name,fbase,len);
@@ -483,14 +484,14 @@ texid_t texture_create_file(const char *fname, const char * formatstr)
   /* Look for an existing texture */
   t = find_name(memcreator.creator.name);
   if (t) {
-	SDERROR("Texture [%s] already exist.\n", memcreator.creator.name);
-	goto error;
+    SDERROR("Texture [%s] already exist.\n", memcreator.creator.name);
+    goto error;
   }
 
   /* Load image file to memory. */
   img = LoadImageFile(fname);
   if (!img) {
-	SDERROR("Load image file [%s] failed\n", fname);
+    SDERROR("Load image file [%s] failed\n", fname);
     goto error;
   }
   SDDEBUG("type    : %x\n", img->type);
@@ -513,60 +514,60 @@ texid_t texture_create_file(const char *fname, const char * formatstr)
     src_format = -2;
     break;
   default:
-	src_format = -1;
+    src_format = -1;
   }
 
 
   if (dst_format == -2) {
-	/* Asked for a default format */
-	dst_format = src_format;
+    /* Asked for a default format */
+    dst_format = src_format;
   }
   if (dst_format == -2) {
-	/* Source format was ARGB32. Need to choose another one.
-	 * $$$ Later we can check for valid alpha info and choose the best format.
-	 */
-	int i, n;
-	int alphav = 0;
-	uint32 * data = (uint32 *)img->data;
-	/* Scan alpha channel */
-	for (i = 0, n=img->width*img->height; i < n && !(alphav & ~0x8001); ++i) {
-	  alphav |= 1 << (data[i]>>28);
-	}
-	SDDEBUG("alpha scanning : %04x\n", alphav);
-	if (alphav & ~0x8001) {
-	  /* Found some alpha value : use 4444 */
-	  dst_format = TA_ARGB4444;
-	} else if (alphav == 0x8001) {
-	  /* Found full opacity and full transparency : use 1555 */
-	  dst_format = TA_ARGB1555;
-	} else {
-	  /* Full opacity or full transparency (meaningless !). */
-	  dst_format = TA_RGB565;
-	}
+    /* Source format was ARGB32. Need to choose another one.
+     * $$$ Later we can check for valid alpha info and choose the best format.
+     */
+    int i, n;
+    int alphav = 0;
+    uint32 * data = (uint32 *)img->data;
+    /* Scan alpha channel */
+    for (i = 0, n=img->width*img->height; i < n && !(alphav & ~0x8001); ++i) {
+      alphav |= 1 << (data[i]>>28);
+    }
+    SDDEBUG("alpha scanning : %04x\n", alphav);
+    if (alphav & ~0x8001) {
+      /* Found some alpha value : use 4444 */
+      dst_format = TA_ARGB4444;
+    } else if (alphav == 0x8001) {
+      /* Found full opacity and full transparency : use 1555 */
+      dst_format = TA_ARGB1555;
+    } else {
+      /* Full opacity or full transparency (meaningless !). */
+      dst_format = TA_RGB565;
+    }
   }
 
   /** Choose the pixel convertor. */
   if (src_format == dst_format) {
-	memcreator.convertor = ARGB16toARGB16;
-	memcreator.bpplog2 = 1;
+    memcreator.convertor = ARGB16toARGB16;
+    memcreator.bpplog2 = 1;
   } else if (src_format == -2) {
-	memcreator.bpplog2 = 2;
-	switch(dst_format) {
-	case TA_ARGB1555:
-	  memcreator.convertor = ARGB32toARGB1555;
-	  break;
-	case TA_RGB565:
-	  memcreator.convertor = ARGB32toRGB565;
-	  break;
-	case TA_ARGB4444:
-	  memcreator.convertor = ARGB32toARGB4444;
-	  break;
-	}
+    memcreator.bpplog2 = 2;
+    switch(dst_format) {
+    case TA_ARGB1555:
+      memcreator.convertor = ARGB32toARGB1555;
+      break;
+    case TA_RGB565:
+      memcreator.convertor = ARGB32toRGB565;
+      break;
+    case TA_ARGB4444:
+      memcreator.convertor = ARGB32toARGB4444;
+      break;
+    }
   }
 
   if (!memcreator.convertor) {
-	SDERROR("Could not find a proper pixel convertor.\n");
-	goto error;
+    SDERROR("Could not find a proper pixel convertor.\n");
+    goto error;
   }
 
   memcreator.creator.width     = img->width;
@@ -576,12 +577,12 @@ texid_t texture_create_file(const char *fname, const char * formatstr)
   memcreator.org = img->data;
   memcreator.cur = img->data;
   memcreator.end = img->data
-	+ ((img->width*img->height) << memcreator.bpplog2);
+    + ((img->width*img->height) << memcreator.bpplog2);
 
   texid = texture_create(&memcreator.creator);
  error:
   if (img) {
-	free(img);
+    free(img);
   }
   return texid;
 }
@@ -617,11 +618,11 @@ int texture_reference(texid_t texid, int count)
 
   allocator_lock(texture);
   if (t=get_texture(texid), t) {
-	ref = t->ref+count;
-	if (ref < 0) {
-	  ref = 0;
-	}
-	t->ref = ref;
+    ref = t->ref+count;
+    if (ref < 0) {
+      ref = 0;
+    }
+    t->ref = ref;
   }
   allocator_unlock(texture);
   return ref;
@@ -633,14 +634,14 @@ texture_t * texture_lock(texid_t texid)
 
   allocator_lock(texture);
   if (t=get_texture(texid), t) {
-	if (t->lock) {
-	  SDERROR("[%s] : #%d [%s] already locked\n",
-			  __FUNCTION__, texid, t->name);
-	  t = 0;
-	} else {
-	  t->lock = 1;
-	  texture_locks++;
-	}
+    if (t->lock) {
+      SDERROR("[%s] : #%d [%s] already locked\n",
+	      __FUNCTION__, texid, t->name);
+      t = 0;
+    } else {
+      t->lock = 1;
+      texture_locks++;
+    }
   }
   allocator_unlock(texture);
   return t;
@@ -649,12 +650,12 @@ texture_t * texture_lock(texid_t texid)
 void texture_release(texture_t * t)
 {
   if (!allocator_is_inside(texture,t)) {
-	return;
+    return;
   }
   allocator_lock(texture);
   if (t->lock) {
-	t->lock--;
-	texture_locks--;
+    t->lock--;
+    texture_locks--;
   }
   allocator_unlock(texture);
 }
@@ -665,19 +666,19 @@ void texture_collector(void)
 
 static struct _argbflist_s  { char str[4]; int n; } flist[] =
   {
-	{ "0565", TA_RGB565   },
-	{ "1555", TA_ARGB1555 },
-	{ "4444", TA_ARGB4444 },
-	{ ""    , -1          }
+    { "0565", TA_RGB565   },
+    { "1555", TA_ARGB1555 },
+    { "4444", TA_ARGB4444 },
+    { ""    , -1          }
   };
 
 const char * texture_formatstr(int format)
 {
   int i;
   for (i=0; flist[i].str[0]; ++i) {
-	if (flist[i].n == format) {
-	  return flist[i].str;
-	}
+    if (flist[i].n == format) {
+      return flist[i].str;
+    }
   }
   return "????";
 }
@@ -686,9 +687,9 @@ int texture_strtoformat(const char * formatstr)
 {
   int i;
   if (!formatstr) {
-	return -1;
+    return -1;
   }
   for (i=0; flist[i].str[0] && strncmp(flist[i].str, formatstr, 4); ++i)
-	;
+    ;
   return flist[i].n;
 }

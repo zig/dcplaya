@@ -4,7 +4,7 @@
  *  @date    2003/01/19
  *  @brief   Vertex.
  *
- * $Id: vtx.h,v 1.3 2003-01-22 02:08:53 ben Exp $
+ * $Id: vtx.h,v 1.4 2003-01-22 19:12:56 ben Exp $
  */
 
 #ifndef _VTX_H_
@@ -192,6 +192,37 @@ float vtx_sqdist(const vtx_t * a, const vtx_t * b);
 /** Distance between 2 vertrices.
  */
 float vtx_dist(const vtx_t * a, const vtx_t * b);
+
+/** Apply homogenous coordinate a = [x/w, y/w, z/w, w]
+ *  @ return a
+ *  @warning For optimize behaviour this function does not affect w.
+ *  @see vtx_apply2()
+ */
+vtx_t * vtx_apply(vtx_t * a);
+
+/** Apply homogenous coordinate r = [a.x/a.w, a.y/a.w, a.z/a.w, 1]
+ *  @ return r
+ *  @see vtx_apply()
+ */
+vtx_t * vtx_apply2(vtx_t * r, const vtx_t * a);
+
+/** Determine clipping flags.
+ *  @return bit-field
+ *         - bit 0 : Xmin
+ *         - bit 1 : Xmax
+ *         - bit 2 : Ymin
+ *         - bit 3 : Ymax
+ *         - bit 4 : Znear
+ *         - bit 5 : Zfar
+ */
+int vtx_clip_flags(const vtx_t *a);
+
+/** Determine Znear clipping flags.
+ *  @return Znear clipping flag
+ *  @retval 0 not clipped
+ *  @retval 1 clipped
+ */
+int vtx_znear_clip_flags(const vtx_t *a);
 
 /** @} */
 

@@ -22,23 +22,23 @@ function background_set_texture(bkg, texture, type)
    if tag(bkg) ~= background_tag then return end
    local i,v
    if not texture then
-	  bkg.tex = nil
-	  set_vertex(bkg.vtx[1],{ 0, 0, 0, 1 })
-	  set_vertex(bkg.vtx[2],{ 1, 0, 0, 1 })
-	  set_vertex(bkg.vtx[3],{ 0, 1, 0, 1 })
-	  set_vertex(bkg.vtx[4],{ 1, 1, 0, 1 })
+      bkg.tex = nil
+      set_vertex(bkg.vtx[1],{ 0, 0, 0, 1 })
+      set_vertex(bkg.vtx[2],{ 1, 0, 0, 1 })
+      set_vertex(bkg.vtx[3],{ 0, 1, 0, 1 })
+      set_vertex(bkg.vtx[4],{ 1, 1, 0, 1 })
    else
-	  local vtx = load_background(texture, type)
-	  if vtx then
--- 		 dump(vtx)
-		 for i,v in vtx do
-			set_vertex(bkg.vtx[i],
-					   { v[1], v[2], 0, 1,
-						  nil,nil,nil,nil,
-						  v[3],v[4] } )
-		 end
-	  end
-	  bkg.tex = tex_get("background")
+      local vtx = load_background(texture, type)
+      if vtx then
+	 -- 		 dump(vtx)
+	 for i,v in vtx do
+	    set_vertex(bkg.vtx[i],
+		       { v[1], v[2], 0, 1,
+			  nil,nil,nil,nil,
+			  v[3],v[4] } )
+	 end
+      end
+      bkg.tex = tex_get("background")
    end
    bkg:draw()
 end
@@ -52,16 +52,16 @@ function background_set_colors(bkg, color1, color2, color3, color4)
    color4 = color4 or color3
    local i,v
    for i,v in { color1, color2, color3, color4 } do
-	  set_vertex(bkg.vtx[i],
-					{ nil, nil, nil, nil,
-					   v[1], v[2], v[3], v[4] })
--- 	  bkg.vtx[i][5] = v[1]
--- 	  bkg.vtx[i][6] = v[2]
--- 	  bkg.vtx[i][7] = v[3]
--- 	  bkg.vtx[i][8] = v[4]
+      set_vertex(bkg.vtx[i],
+		 { nil, nil, nil, nil,
+		    v[1], v[2], v[3], v[4] })
+      -- 	  bkg.vtx[i][5] = v[1]
+      -- 	  bkg.vtx[i][6] = v[2]
+      -- 	  bkg.vtx[i][7] = v[3]
+      -- 	  bkg.vtx[i][8] = v[4]
    end
    bkg.noalpha = (color1[1] == 1) and (color2[1] == 1)
-	  and (color3[1] == 1) and (color4[1] == 1)
+      and (color3[1] == 1) and (color4[1] == 1)
    bkg:draw()
 end
 
@@ -78,24 +78,24 @@ function background_create()
    local bkg
 
    if not tex_get("background") then
-	  tex_new("background", 1024,512, 1, 0, 0, 0)
+      tex_new("background", 1024,512, 1, 0, 0, 0)
    end
 
    bkg = {
-	  -- Vertrices
-	  vtx = mat_new(4,12),
+      -- Vertrices
+      vtx = mat_new(4,12),
 
-	  -- Display list
-	  dl = dl_new_list(256, 1, 1),
+      -- Display list
+      dl = dl_new_list(256, 1, 1),
 
-	  -- Set color method
-	  set_color = background_set_colors,
+      -- Set color method
+      set_color = background_set_colors,
 
-	  -- Set texture method
-	  set_texture = background_set_texture,
-		 
-	  -- Draw method
-	  draw = background_draw,
+      -- Set texture method
+      set_texture = background_set_texture,
+      
+      -- Draw method
+      draw = background_draw,
    }
    settag(bkg, background_tag)
    bkg:set_texture()
@@ -107,10 +107,10 @@ background = background_create()
 if background then
    background_dl = dl_new_list(128,1)
    background:set_texture("/rd/dcpbkg2.jpg", "scale")
---   background:set_texture(home.."data/img/dcpbkg2.jpg", "scale")
---   background:set_texture("/pc/ptest.jpg","tile")
---   background:set_texture(home.."lua/rsc/icons/dcplaya.jpg","tile")
---   background:set_color( {1,1,0,0}, {1,0.5,0.5,0.5}, nil,  {1,0,1,1} )
+   --   background:set_texture(home.."data/img/dcpbkg2.jpg", "scale")
+   --   background:set_texture("/pc/ptest.jpg","tile")
+   --   background:set_texture(home.."lua/rsc/icons/dcplaya.jpg","tile")
+   --   background:set_color( {1,1,0,0}, {1,0.5,0.5,0.5}, nil,  {1,0,1,1} )
    dl_set_trans(background.dl, mat_scale(640,480,1))
    dl_set_trans(background_dl, mat_trans(0,0,0.0001))
    background:draw(background_dl)

@@ -4,7 +4,7 @@
  * @author   ben(jamin) gerard <ben@sashipa.com>
  * @brief    draw color definitions.
  *
- * $Id: color.h,v 1.2 2002-11-27 09:58:09 ben Exp $
+ * $Id: color.h,v 1.3 2003-01-22 19:12:56 ben Exp $
  */
 
 #ifndef _DRAW_COLOR_H_
@@ -34,7 +34,7 @@ draw_argb_t draw_color_float_to_argb(const draw_color_t * col);
 
 /** Create a draw_argb_t from 4 float components. */
 draw_argb_t draw_color_4float_to_argb(const float a, const float r,
-									  const float g, const float b);
+				      const float g, const float b);
 
 /** Create a draw_color_float_t from a draw_argb_t. */
 void draw_color_argb_to_float(draw_color_t * col, const draw_argb_t argb);
@@ -85,25 +85,25 @@ void draw_color_clip3(draw_color_t *d, const float min, const float max);
  *	without clipping.
  */
 void draw_color_add(draw_color_t *d,
-					const draw_color_t *a, const draw_color_t *b);
+		    const draw_color_t *a, const draw_color_t *b);
 
 /** Creates a color by adding two colors,
  *  with result in the range [0..1].
  */
 void draw_color_add_clip(draw_color_t *d,
-						 const draw_color_t *a, const draw_color_t *b);
+			 const draw_color_t *a, const draw_color_t *b);
 
 /** Creates a color by multiplying two colors,
  *	with result in the range [0..1].
  */
 void draw_color_mul_clip(draw_color_t *d,
-						 const draw_color_t *a, const draw_color_t *b);
+			 const draw_color_t *a, const draw_color_t *b);
 
 /** Creates a color by multiplying two colors, 
  *	without clipping.
  */
 void draw_color_mul(draw_color_t *d,
-					const draw_color_t *a, const draw_color_t *b);
+		    const draw_color_t *a, const draw_color_t *b);
 
 /**@}*/
 

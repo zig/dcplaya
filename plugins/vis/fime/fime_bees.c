@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/17
  *  @brief   FIME : bees 
- *  $Id: fime_bees.c,v 1.5 2003-01-22 02:08:54 ben Exp $
+ *  $Id: fime_bees.c,v 1.6 2003-01-22 19:12:56 ben Exp $
  */ 
 
 #include <stdlib.h>
@@ -199,7 +199,6 @@ static void bee_update(matrix_t leader_mtx, matrix_t mtx, fime_bee_t * bee)
 
     d = vtx_inorm(&new_axe);
     if (d < 0) {
-      printf("%f\n",d);
       vtx_scale3(&bee->axe, &axe, id);
     } else {
       vtx_scale3(&bee->axe, &new_axe, d);
@@ -416,15 +415,22 @@ int fime_bees_update(void)
 }
 
 static int render_it(viewport_t *vp, matrix_t mtx, matrix_t proj,
-		     const vtx_t * ambient, const vtx_t * color)
+		     const vtx_t * ambient, const vtx_t * diffuse)
 {
   const int opaque = 1;
+  int flags;
   cur_obj->flags = 0
     | DRAW_NO_FILTER
     | (opaque ? DRAW_OPAQUE : DRAW_TRANSLUCENT)
     | (texid << DRAW_TEXTURE_BIT);
-  return DrawObjectFrontLighted(vp, mtx, proj,
-				cur_obj, ambient, color);
+
+  flags = DrawObject(vp, mtx, proj, cur_obj, ambient, diffuse, 0);
+  if (flags)
+    printf("%x ",flags);
+  return -(flags<0);
+/*     return DrawObjectFrontLighted(vp, mtx, proj, */
+/* 				  cur_obj, */
+/* 				  ambient, diffuse); */
 }
 
 static int bee_render(fime_bee_t * bee,

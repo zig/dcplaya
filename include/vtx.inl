@@ -6,7 +6,7 @@
  *
  *  @wraning Do NOT include this file directly. Use "vtx.h" indeed.
  *
- * $Id: vtx.inl,v 1.1 2003-01-22 02:08:54 ben Exp $
+ * $Id: vtx.inl,v 1.2 2003-01-22 19:12:56 ben Exp $
  */
 
 #ifndef _VTX_INL_
@@ -312,6 +312,46 @@ VTX_FUNCTION
 float vtx_dist(const vtx_t * a, const vtx_t * b)
 {
   return Sqrt(vtx_sqdist(a,b));
+}
+
+VTX_FUNCTION
+vtx_t * vtx_apply(vtx_t * a)
+{
+  const float iw = Inv(a->w);
+  a->x *= iw;
+  a->y *= iw;
+  a->z *= iw;
+  return a;
+}
+
+VTX_FUNCTION
+vtx_t * vtx_apply2(vtx_t * r, const vtx_t * a)
+{
+  const float iw = Inv(a->w);
+  r->x = a->x * iw;
+  r->y = a->y * iw;
+  r->z = a->z * iw;
+  r->w = 1;
+  return r;
+}
+
+VTX_FUNCTION
+int vtx_clip_flags(const vtx_t *a)
+{
+  const float W = a->w;
+  return
+    (Fsign(a->x + W) << 0) |
+    (Fsign(W - a->x) << 1) |
+    (Fsign(a->y + W) << 2) |
+    (Fsign(W - a->y) << 3) |
+    (Fsign(a->z)     << 4) |
+    (Fsign(W - a->z) << 5);
+}
+
+VTX_FUNCTION
+int vtx_znear_clip_flags(const vtx_t *a)
+{
+  return Fsign(a->z);
 }
 
 #endif /* #ifndef _VTX_INL_ */

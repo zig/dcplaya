@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/14
  *
- *  $Id: hyperpipe.c,v 1.8 2003-01-21 02:38:16 ben Exp $
+ *  $Id: hyperpipe.c,v 1.9 2003-01-22 19:12:56 ben Exp $
  */ 
 
 #include <stdio.h>
@@ -166,9 +166,9 @@ static int hyperpipe_alloc(void)
 {
   hyperpipe_free(); /* Safety net */
   v   = (vtx_t *)malloc(sizeof(vtx_t) * hyperpipe_obj.nbv);
-  nrm = (vtx_t *)malloc(sizeof(vtx_t) * hyperpipe_obj.nbf+2);
-  tri = (tri_t *)malloc(sizeof(tri_t) * (hyperpipe_obj.nbf+2));
-  tlk = (tlk_t *)malloc(sizeof(tlk_t) * hyperpipe_obj.nbf+2);
+  nrm = (vtx_t *)malloc(sizeof(vtx_t) * hyperpipe_obj.nbf+1);
+  tri = (tri_t *)malloc(sizeof(tri_t) * (hyperpipe_obj.nbf+1));
+  tlk = (tlk_t *)malloc(sizeof(tlk_t) * hyperpipe_obj.nbf+1);
   if (!v || !nrm || !tri || !tlk) {
     hyperpipe_free();
     return -1;
@@ -194,10 +194,11 @@ static void build_ring(void)
 static void build_normals(void)
 {
   int i;
-  const int n = hyperpipe_obj.nbf+2;
+  const int n = hyperpipe_obj.nbf;
   for (i=0; i<n; ++i) {
     FaceNormal((float *)(nrm+i),v,tri+i);
   }
+  vtx_identity(nrm+i);
 }
 
 static int tesselate(tri_t * tri, tlk_t * tlk, int base, int n)
@@ -213,9 +214,9 @@ static int tesselate(tri_t * tri, tlk_t * tlk, int base, int n)
       tri[i].b = i+1;
       tri[i].c = i+2;
 
-      tlk[i].a = !i ? T : T+1;
+      tlk[i].a = !i ? T : i;
       tlk[i].b = T;
-      tlk[i].c = (i == n-3) ? T : T+1;
+      tlk[i].c = (i == n-3) ? T : i;
     }
   } else {
     int m = n-2;
@@ -227,8 +228,8 @@ static int tesselate(tri_t * tri, tlk_t * tlk, int base, int n)
       tri[i].c = base+i+1;
       tri[i].b = base+i+2;
 
-      tlk[i].c = T+1;
-      tlk[i].a = T+1;
+      tlk[i].c = i;
+      tlk[i].a = i;
       tlk[i].b = T;
     }
   }
@@ -306,11 +307,16 @@ static int start(void)
 
   k += tesselate(tri+k,tlk+k,V,N);
 
-  //$$$ MUST BE CHECKED ! NOT SURE THAT IS CORRECT !
-  for (j=T; j<T+2; ++j) {
-    tri[j] = tri[0];
-    tri[j].flags = j==T;
+  if (k != T) {
+    printf("[hyperpipe] : bad number of generated face [%d != d]\n",k,T);
+    hyperpipe_free();
+    return -1;
   }
+
+  tri[T] = tri[0];
+  tri[T].flags = 1;
+  tlk[T].a = tlk[T].b = tlk[T].c = T;
+  tlk[T].flags = 0;
 
   build_normals();
 
@@ -687,7 +693,7 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
       flash = 1.0f;
     }
 
-    if (flash > 0.0001) {
+    if (flash > MF_EPSYLON) {
       const float o = 1.0f - flash;
       color.x = base_color.x * o + flash_color.x * flash;
       color.y = base_color.y * o + flash_color.y * flash;

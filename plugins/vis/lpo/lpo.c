@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.18 2003-01-21 02:38:16 ben Exp $
+ * $Id: lpo.c,v 1.19 2003-01-22 19:12:56 ben Exp $
  */
 
 #include <stdio.h>
@@ -69,6 +69,7 @@ static float rps_sign;         /**< Rotation sens */
 static float zoom_min = 0.0f;
 static float zoom_max = 7.0f;
 
+static int lpo_lighted = 1;
 static int lpo_remanens = 1;
 static unsigned int lpo_iframe = 0;
 
@@ -307,8 +308,10 @@ static int anim(unsigned int ms)
   if (flash_latch == 0) {
     a = analysers.analyser + flash_analyser;
     if (!a->state.max && a->ostate.max) {
-      flash = 2.0f;
       if (change_mode & FLASH_MODE) {
+	flash = 2.0f;
+      }
+      if (change_mode & RANDOM_MODE) {
 	change_object(random_object(curobj));
 	change_cnt = 0;
       }
@@ -486,11 +489,6 @@ static int opaque_render(void)
   return 0;
 }
 
-/* Light vector */ 
-static vtx_t light = {
-  0, 0, 1.0, 1.0f
-};
-
 /* Ambient color */
 static vtx_t ambient = {
   0,0,0,0
@@ -498,8 +496,14 @@ static vtx_t ambient = {
 
 static int transparent_render(void)
 {
+  vtx_t flat_color;
   if (!curobj) {
     return -1;
+  }
+
+  if (!lpo_lighted) {
+    draw_color_add((draw_color_t *)&flat_color,
+		   (draw_color_t *)&ambient, (draw_color_t *)&color);
   }
 
   if (lpo_remanens) {
@@ -521,20 +525,30 @@ static int transparent_render(void)
       }
 
       f += r->o->nbf;
-      color.w *= 0.75f;
 
-      DrawObjectFrontLighted(&viewport, r->mtx, projmtx,
-			     r->o,
-			     &ambient, &color);
+      if (lpo_lighted) {
+	color.w *= 0.75f;
 
-      /*       DrawObjectSingleColor(&viewport, r->mtx, projmtx, */
-      /* 			    r->o, &color); */
+	DrawObjectFrontLighted(&viewport, r->mtx, projmtx,
+			       r->o,
+			       &ambient, &color);
+      } else {
+	flat_color.w *= 0.75f;
+	DrawObjectSingleColor(&viewport, r->mtx, projmtx,
+			      r->o, &flat_color);
+      }
     }
-    return 0;
   } else {
-    return DrawObjectSingleColor(&viewport, mtx, projmtx,
-				 &curobj->obj, &color);
+    if (lpo_lighted) {
+      DrawObjectFrontLighted(&viewport, mtx, projmtx,
+			     &curobj->obj,
+			     &ambient, &color);
+    } else {
+      DrawObjectSingleColor(&viewport, mtx, projmtx,
+			    &curobj->obj, &flat_color);
+    }
   }
+  return 0;
 }
 
 static int init(any_driver_t *d)
@@ -634,16 +648,28 @@ static int lua_setflashcolor(lua_State * L)
   return 0;
 }
 
-static int lua_setremanens(lua_State * L)
+static int lua_setboolean(lua_State * L, int * v)
 {
-  int remanens = lpo_remanens;
+  int old = *v;
 
-  lpo_remanens = lua_type(L,1) != LUA_TNIL;
+  if (lua_gettop(L) >= 1) {
+    *v = lua_tonumber(L,1) != 0;
+  }
   lua_settop(L,0);
-  if (remanens) {
+  if (old) {
     lua_pushnumber(L,1);
   }
   return lua_gettop(L);
+}
+
+static int lua_setremanens(lua_State * L)
+{
+  return lua_setboolean(L, &lpo_remanens);
+}
+
+static int lpo_setlighting(lua_State * L)
+{
+  return lua_setboolean(L, &lpo_lighted);
 }
 
 static int lua_setchange(lua_State * L)
@@ -722,7 +748,7 @@ static luashell_command_description_t commands[] = {
   {
     "lpo_setremanens", 0,            /* long and short names */
     "print [["
-    "lpo_setremanens(boolean) : active/desacitive remanens FX. "
+    "lpo_setremanens([boolean]) : get/set remanens FX. "
     "Return old state."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_setremanens    /* function */
@@ -743,6 +769,15 @@ static luashell_command_description_t commands[] = {
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_setobject    /* function */
   },
+  {
+    "lpo_setlighting", 0,            /* long and short names */
+    "print [["
+    "lpo_setlighting([boolean]) : Set/Get lighting process."
+    "Return old values."
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lpo_setlighting    /* function */
+  },
+
 
   {0},                                   /* end of the command list */
 };

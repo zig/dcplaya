@@ -4,7 +4,7 @@
  * @date    2002/02/12
  * @brief   Very simple 3D API.
  *
- * @version $Id: obj3d.c,v 1.6 2003-01-21 02:38:16 ben Exp $
+ * @version $Id: obj3d.c,v 1.7 2003-01-22 19:12:56 ben Exp $
  */
 
 #include <stdio.h>
@@ -120,8 +120,9 @@ static int BuildNormals(obj_t *o)
 {
   int i;
 
+  /* One more for safety-net in lighted object. */
   if (!o->nvx) {
-    o ->nvx = (vtx_t *)malloc(sizeof(vtx_t) * o->nbf);
+    o ->nvx = (vtx_t *)malloc(sizeof(vtx_t) * (o->nbf+1));
   }
   if (!o->nvx) {
     return -1;
@@ -129,6 +130,7 @@ static int BuildNormals(obj_t *o)
   for (i=0; i<o->nbf; ++i) {
     FaceNormal((float *)(o->nvx+i),o->vtx,o->tri+i);
   }
+  o->nvx[i].x = o->nvx[i].y = o->nvx[i].z = o->nvx[i].w = 0;
   return 0;
 }
 
@@ -146,14 +148,20 @@ static void BuildLinks(obj_t *o)
     return;
   }
   
-  /* Make unlinked point to special added faces */
-  for (i=0; i<o->nbf; ++i) {
-    if (o->tlk[i].a < 0) o->tlk[i].a = o->nbf;
-    if (o->tlk[i].b < 0) o->tlk[i].b = o->nbf;
-    if (o->tlk[i].c < 0) o->tlk[i].c = o->nbf;
+  /* Make unlinked point to special added faces : -1, invisible -2:visible. */
+  for (i=0; i<o->nbf+1; ++i) {
+    int * tlk = &o->tlk[i].a;
+    int j;
+    for (j=0;j<3;++j) {
+      if (tlk[j] == -1) {
+	tlk[j] = o->nbf;
+      } else if (tlk[j] == 2) {
+	tlk[j] = j; /* visible points on itself. */
+      }
+    }
   }
   
-  /* Build the special face */
+  /* Build special faces (invisible) */
   o->tri[o->nbf].flags = 1;
   o->tri[o->nbf].a = o->tri[o->nbf].b = o->tri[o->nbf].c = 0;
   
@@ -173,6 +181,7 @@ static void BuildLinks(obj_t *o)
       o->tlk[i].flags |= (res << j);
     }
   }
+
 }
 
 static void PrepareObject(obj_t *o)

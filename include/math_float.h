@@ -4,13 +4,19 @@
  *  @date     2003/01/21
  *  @brief    floating point macros and defines
  *
- * $Id: math_float.h,v 1.2 2003-01-21 05:44:06 ben Exp $
+ * $Id: math_float.h,v 1.3 2003-01-22 19:12:56 ben Exp $
  */
 
 #ifndef _MATH_FLOAT_H_
 #define _MATH_FLOAT_H_
 
-#include <dc/fmath.h>
+#ifdef _arch_dreamcast
+# include <dc/fmath.h>
+#else
+# define fcos cosf
+# define fsin sinf
+# define fsqrt sqrtf
+#endif
 #include <math.h>
 
 /** Dividing small value threshold. */
@@ -38,6 +44,7 @@
 #define Fbound(V,MIN,MAX) __mf_bound((V),(MIN),(MAX))
 #define Fblend(A,B,F) __mf_blend((A),(B),(F))
 #define FnearZero(A) __mf_near_zero((A))
+#define Fsign(A) ((A)<0)
 
 #define Sq(A,B) __mf_sq(A)
 

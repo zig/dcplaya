@@ -1,5 +1,5 @@
 /**
- * $Id: draw_object.c,v 1.12 2003-01-21 02:38:16 ben Exp $
+ * $Id: draw_object.c,v 1.13 2003-01-22 19:12:56 ben Exp $
  */
 
 #include <stdio.h>
@@ -20,7 +20,15 @@ typedef struct {
 static matrix_t mtx;
 static ta_hw_tex_vtx_t * const hw = HW_TEX_VTX;
 
-static vtx_t * transform = 0;
+typedef struct {
+  vtx_t v;
+  struct {
+    float x,y,z;
+    int flags;
+  } p;
+} tvtx_t;
+
+static tvtx_t * transform = 0;
 static int transform_sz = 0;
 
 #define U1 (02.0f/64.0f)
@@ -45,8 +53,9 @@ static int sature(const float a)
   int v;
 
   v = (int)a;
-  v = v & ~(v>>31);
-  v = (v | (((255-v)>>31))) & 255;
+  v &= ~(v>>31);
+  v |= (255-v) >> 31;
+  v &= 255;
   return v;
 }
 
@@ -71,13 +80,13 @@ static unsigned int argb4(const float a, const float r,
 
 static int init_transform(int nb)
 {
-  vtx_t *t;
+  tvtx_t *t;
 
   if (nb <= transform_sz) {
     return 0;
   }
 
-  t = (vtx_t *)realloc(transform, nb * sizeof(vtx_t));
+  t = (tvtx_t *)realloc(transform, nb * sizeof(*t));
   if (!t) {
     return -1;
   }
@@ -86,11 +95,9 @@ static int init_transform(int nb)
   return 0;
 }
 
-static void TransformVtx(vtx_t * d, const obj_t *o,
+static void TransformVtx(tvtx_t * d, const vtx_t *v, int n,
 			 const viewport_t *vp, matrix_t m)
 {
-  int n = o->nbv;
-
   const float mx = vp->mx;
   const float my = vp->my;
   const float tx = vp->tx;
@@ -116,18 +123,35 @@ static void TransformVtx(vtx_t * d, const obj_t *o,
   const float m32 = m[3][2]; 
   const float m33 = m[3][3];
 
-  const vtx_t * v = o->vtx;
-
   // $$$ Optimize with special opcode
   do { 
     const float x = v->x, y = v->y, z = v->z; 
     const float oow = Inv((x * m03 + y * m13 + z * m23) + m33);
 
-    d->x = ((x * m00 + y * m10 + z * m20) + m30) * oow * mx + tx;
-    d->y = ((x * m01 + y * m11 + z * m21) + m31) * oow * my + ty;
-    d->z = Inv((x * m02 + y * m12 + z * m22) + m32);
-    ++d; 
+    d->p.x = ((x * m00 + y * m10 + z * m20) + m30) * oow * mx + tx;
+    d->p.y = ((x * m01 + y * m11 + z * m21) + m31) * oow * my + ty;
+    d->p.z = Inv((x * m02 + y * m12 + z * m22) + m32);
+    ++d;
     ++v; 
+  } while (--n);
+}
+
+static void ProjectVtx(tvtx_t * d, int n,
+		       const viewport_t *vp)
+{
+  const float mx = vp->mx;
+  const float my = vp->my;
+  const float tx = vp->tx;
+  const float ty = vp->ty;
+
+  // $$$ Optimize with special opcode
+  do { 
+    const float oow = Inv(d->v.w); 
+
+    d->p.x = d->v.x * oow * mx + tx;
+    d->p.y = d->v.y * oow * my + ty;
+    d->p.z = Inv(d->v.z);
+    ++d;
   } while (--n);
 }
 
@@ -136,9 +160,9 @@ static void TestVisibleFace(const obj_t * o)
   tri_t * f = o->tri;
   int     n = o->nbf;
   do {
-    const vtx_t *t0 = transform + f->a;
-    const vtx_t *t1 = transform + f->b;
-    const vtx_t *t2 = transform + f->c;
+    const vtx_t *t0 = (const vtx_t *)&transform[f->a].p;
+    const vtx_t *t1 = (const vtx_t *)&transform[f->b].p;
+    const vtx_t *t2 = (const vtx_t *)&transform[f->c].p;
 
     const float a = t1->x - t0->x;
     const float b = t1->y - t0->y;
@@ -148,6 +172,7 @@ static void TestVisibleFace(const obj_t * o)
     const float sens =  a * d - b * c;
 
     f->flags = (sens < 0);
+
     ++f;
   } while(--n);
 }
@@ -190,20 +215,15 @@ int DrawObjectPostProcess(viewport_t * vp, matrix_t local, matrix_t proj,
 
   MtxMult3(mtx, local, proj);
 
-  TransformVtx(transform, o, vp, mtx);
+  TransformVtx(transform, o->vtx, o->nbv, vp, mtx);
   TestVisibleFace(o);
 
   return 0;
 }
 
-int DrawObjectSingleColor(viewport_t * vp, matrix_t local, matrix_t proj,
-			  obj_t *o, vtx_t *color)
+static int SingleColor(obj_t *o, const vtx_t * color)
 {
   unsigned int col;
-
-  if (DrawObjectPostProcess(vp, local, proj, o) < 0) {
-    return -1;
-  }
   col = argb255(color);
 
   if (o->nbf) {
@@ -238,31 +258,41 @@ int DrawObjectSingleColor(viewport_t * vp, matrix_t local, matrix_t proj,
       uvl = uvlinks[lflags];
 
       hw->flags = TA_VERTEX_NORMAL;
-      hw->x = transform[f->a].x;
-      hw->y = transform[f->a].y;
-      hw->z = transform[f->a].z;
+      hw->x = transform[f->a].p.x;
+      hw->y = transform[f->a].p.y;
+      hw->z = transform[f->a].p.z;
       hw->u = uvl[0].u;
       hw->v = uvl[0].v;
       ta_commit32_nocopy();
 
       //	hw->flags = TA_VERTEX;
-      hw->x = transform[f->b].x;
-      hw->y = transform[f->b].y;
-      hw->z = transform[f->b].z;
+      hw->x = transform[f->b].p.x;
+      hw->y = transform[f->b].p.y;
+      hw->z = transform[f->b].p.z;
       hw->u = uvl[1].u;
       hw->v = uvl[1].v;
       ta_commit32_nocopy();
 
       hw->flags = TA_VERTEX_EOL;
-      hw->x = transform[f->c].x;
-      hw->y = transform[f->c].y;
-      hw->z = transform[f->c].z;
+      hw->x = transform[f->c].p.x;
+      hw->y = transform[f->c].p.y;
+      hw->z = transform[f->c].p.z;
       hw->u = uvl[2].u;
       hw->v = uvl[2].v;
       ta_commit32_nocopy();
     }
   }
   return 0;
+}
+
+int DrawObjectSingleColor(viewport_t * vp, matrix_t local, matrix_t proj,
+			  obj_t *o, const vtx_t *color)
+{
+
+  if (DrawObjectPostProcess(vp, local, proj, o) < 0) {
+    return -1;
+  }
+  return SingleColor(o, color);
 }
 
 int DrawObjectLighted(viewport_t * vp, matrix_t local, matrix_t proj,
@@ -335,25 +365,25 @@ int DrawObjectLighted(viewport_t * vp, matrix_t local, matrix_t proj,
       uvl = uvlinks[lflags];
 
       hw->flags = TA_VERTEX_NORMAL;
-      hw->x = transform[f->a].x;
-      hw->y = transform[f->a].y;
-      hw->z = transform[f->a].z;
+      hw->x = transform[f->a].p.x;
+      hw->y = transform[f->a].p.y;
+      hw->z = transform[f->a].p.z;
       hw->u = uvl[0].u;
       hw->v = uvl[0].v;
       ta_commit32_nocopy();
 
       //	hw->flags = TA_VERTEX;
-      hw->x = transform[f->b].x;
-      hw->y = transform[f->b].y;
-      hw->z = transform[f->b].z;
+      hw->x = transform[f->b].p.x;
+      hw->y = transform[f->b].p.y;
+      hw->z = transform[f->b].p.z;
       hw->u = uvl[1].u;
       hw->v = uvl[1].v;
       ta_commit32_nocopy();
 
       hw->flags = TA_VERTEX_EOL;
-      hw->x = transform[f->c].x;
-      hw->y = transform[f->c].y;
-      hw->z = transform[f->c].z;
+      hw->x = transform[f->c].p.x;
+      hw->y = transform[f->c].p.y;
+      hw->z = transform[f->c].p.z;
       hw->u = uvl[2].u;
       hw->v = uvl[2].v;
       ta_commit32_nocopy();
@@ -364,14 +394,19 @@ int DrawObjectLighted(viewport_t * vp, matrix_t local, matrix_t proj,
 }
 
 int DrawObjectFrontLighted(viewport_t * vp, matrix_t local, matrix_t proj,
-			   obj_t *o,
-			   vtx_t *ambient, vtx_t *diffuse)
+			   obj_t * o,
+			   const vtx_t * ambient, const vtx_t * diffuse)
 {
   float aa, ar, ag, ab;
   float la, lr, lg, lb;
 
-  const float m02 = local[0][2];
-  const float m12 = local[1][2];
+/*   const float m02 = local[0][2]; */
+/*   const float m12 = local[1][2]; */
+/*   const float m22 = local[2][2]; */
+
+/* $$$ test */
+  const float m02 = local[2][0];
+  const float m12 = local[2][1];
   const float m22 = local[2][2];
 
   if (DrawObjectPostProcess(vp, local, proj, o) < 0) {
@@ -414,6 +449,7 @@ int DrawObjectFrontLighted(viewport_t * vp, matrix_t local, matrix_t proj,
 
       coef = m02 * nrm->x + m12 * nrm->y + m22 * nrm->z;
       if (coef < 0) {
+/*  	coef *= coef; */
 	coef = 0;
       }
       hw->col = argb4(aa + coef * la, ar + coef * lr,
@@ -428,25 +464,25 @@ int DrawObjectFrontLighted(viewport_t * vp, matrix_t local, matrix_t proj,
       uvl = uvlinks[lflags];
 
       hw->flags = TA_VERTEX_NORMAL;
-      hw->x = transform[f->a].x;
-      hw->y = transform[f->a].y;
-      hw->z = transform[f->a].z;
+      hw->x = transform[f->a].p.x;
+      hw->y = transform[f->a].p.y;
+      hw->z = transform[f->a].p.z;
       hw->u = uvl[0].u;
       hw->v = uvl[0].v;
       ta_commit32_nocopy();
 
       //	hw->flags = TA_VERTEX;
-      hw->x = transform[f->b].x;
-      hw->y = transform[f->b].y;
-      hw->z = transform[f->b].z;
+      hw->x = transform[f->b].p.x;
+      hw->y = transform[f->b].p.y;
+      hw->z = transform[f->b].p.z;
       hw->u = uvl[1].u;
       hw->v = uvl[1].v;
       ta_commit32_nocopy();
 
       hw->flags = TA_VERTEX_EOL;
-      hw->x = transform[f->c].x;
-      hw->y = transform[f->c].y;
-      hw->z = transform[f->c].z;
+      hw->x = transform[f->c].p.x;
+      hw->y = transform[f->c].p.y;
+      hw->z = transform[f->c].p.z;
       hw->u = uvl[2].u;
       hw->v = uvl[2].v;
       ta_commit32_nocopy();
@@ -480,9 +516,14 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
     DRAW_SET_FLAGS(o->flags);
     hw->addcol = 0;
 
+/* #define SMOOTH_IT */
+
     for(n=o->nbf ;n--; ++f, ++l, ++nrm)  {
       int lflags = 0;
-      unsigned int cola, colb, colc, col;
+      unsigned int col;
+#ifdef SMOOTH_IT
+      unsigned int cola, colb, colc,
+#endif
       uv_t * uvl;
 
       if (f->flags) {
@@ -490,6 +531,8 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
       }
 
       col = *(int *)&nrm->w;
+
+#ifdef SMOOTH_IT
       cola = *(int *)&o->nvx[l->a].w;
       colb = *(int *)&o->nvx[l->b].w;
       colc = *(int *)&o->nvx[l->c].w;
@@ -513,6 +556,7 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
 	m = -1;
 	colc = (((colc >> 1) & ~m) | (tmp & m)) & m2;  
       }
+#endif
 
       lflags  = t[l->a].flags << 0;
       lflags |= t[l->b].flags << 1;
@@ -522,30 +566,40 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
 	
       uvl = uvlinks[lflags];
 
+#ifndef SMOOTH_IT
+      hw->col = col;
+#endif
+
+#ifdef SMOOTH_IT
       hw->col = /*col + */cola + colc;
+#endif
       hw->flags = TA_VERTEX_NORMAL;
-      hw->x = transform[f->a].x;
-      hw->y = transform[f->a].y;
-      hw->z = transform[f->a].z;
+      hw->x = transform[f->a].p.x;
+      hw->y = transform[f->a].p.y;
+      hw->z = transform[f->a].p.z;
       hw->u = uvl[0].u;
       hw->v = uvl[0].v;
       ta_commit32_nocopy();
 
       //	hw->flags = TA_VERTEX;
 
+#ifdef SMOOTH_IT
       hw->col = /*col + */colb + cola;
-      hw->x = transform[f->b].x;
-      hw->y = transform[f->b].y;
-      hw->z = transform[f->b].z;
+#endif
+      hw->x = transform[f->b].p.x;
+      hw->y = transform[f->b].p.y;
+      hw->z = transform[f->b].p.z;
       hw->u = uvl[1].u;
       hw->v = uvl[1].v;
       ta_commit32_nocopy();
 
+#ifdef SMOOTH_IT
       hw->col = /*col + */colc + colb;
+#endif
       hw->flags = TA_VERTEX_EOL;
-      hw->x = transform[f->c].x;
-      hw->y = transform[f->c].y;
-      hw->z = transform[f->c].z;
+      hw->x = transform[f->c].p.x;
+      hw->y = transform[f->c].p.y;
+      hw->z = transform[f->c].p.z;
       hw->u = uvl[2].u;
       hw->v = uvl[2].v;
       ta_commit32_nocopy();
@@ -553,4 +607,64 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
     }
   }
   return 0;
+}
+
+static int set_clipping_flags(tvtx_t * v, int nbv)
+{
+  int aflags = 077;
+  int oflags = 0;
+  if (nbv) {
+    do {
+      int flags = vtx_znear_clip_flags(&v->v);
+      v->p.flags = flags;
+      ++v;
+      oflags |= flags;
+      aflags &= flags;
+    } while (--nbv);
+  }
+  return ((aflags<<6) | oflags) << 4;
+}
+
+int DrawObject(viewport_t * vp, matrix_t local, matrix_t proj,
+	       obj_t *o,
+	       const vtx_t * ambient, 
+	       const vtx_t * diffuse,
+	       const vtx_t * light)
+{
+  matrix_t mtx;
+  int flags;
+
+  /* Check */
+  if (!o) {
+    return -1;
+  }
+
+  /* Init transformed vertex buffer */
+  if (init_transform(o->nbv + 16)) {
+    return -1;
+  }
+
+  /* Compute final matrix */
+  MtxMult3(mtx,local,proj);
+
+  /* Transform vertrices */
+  MtxVectorsMult(&transform->v.x, &o->vtx->x, mtx, o->nbv,
+		 sizeof(*transform), sizeof(*o->vtx));
+  /* Set clipping flags */
+  flags = set_clipping_flags(transform, o->nbv);
+
+  if (0 && (flags & 07700)) {
+    /* All vertrices are clipped in some direction. */
+    return flags;
+  }
+  if (1||!(flags & 0020)) {
+    /* No one is clipped in Znear */
+    ProjectVtx(transform, o->nbv, vp);
+    TestVisibleFace(o);
+    if (SingleColor(o, diffuse) < 0) {
+      return -1;
+    }
+  }
+
+  return flags;
 }
