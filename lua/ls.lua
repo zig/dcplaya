@@ -3,27 +3,37 @@
 --- @author  Benjamin Gerard <ben@sashipa.com>
 --- @brief   Directory listing core function.
 ---
---- $Id: ls.lua,v 1.4 2003-03-14 18:51:04 ben Exp $
+--- $Id: ls.lua,v 1.5 2003-03-22 00:32:27 ben Exp $
 ---
 
 -- Display a directory in optimized column format.
 --
-function ls_column(dir,max)
+function ls_column(dir,maxi, nowait)
    local w,h,i,n,l
-
-   n=getn(dir)
+   if type(dir) ~= "table" then return end
    w,h = consolesize()
-   if max > w then max = w end
-   w = floor(w / max)
+   maxi = min(w, maxi or floor(w/3))
+   n=getn(dir)
+   w = floor(w / maxi)
    l = 10
-   local f=format("%%-%ds",max)
+   local f=format("%%-%ds",maxi)
    for i=1, n, 1 do
       local j,r
-      if l >= h then getchar() l = 1 end
+      if l >= h then
+	 l = 1
+	 if not nowait then getchar() end
+      end
       j=0
       r=""
       while j < w and i <= n do
-	 r = r..format(f,dir[i].name)
+	 local name
+	 if type(dir[i]) == "table" then
+	    name = dir[i].name
+	 end
+	 if type(name) ~= "string" then
+	    name = tostring(dir[i])
+	 end
+	 r = r..format(f,name)
 	 i = i+1
 	 j = j+1
       end
