@@ -1,29 +1,29 @@
-/* Tryptonite
+/** @ingroup dcplaya_inp_driver
+ *  @file    xing_driver.c
+ *  @author  benjamin gerard 
+ *  @author  Dan Potter
+ *
+ *  $Id: xing_driver.c,v 1.5 2002-12-22 19:17:35 ben Exp $
+ */ 
+
+ /* Based on :
 
    sndmp3.c
    (c)2000 Dan Potter
 
    An MP3 player using sndstream and XingMP3
 
-   $Id: xing_driver.c,v 1.4 2002-09-25 03:21:22 benjihan Exp $
-*/
-
-/* This library is designed to be called from another program in a thread. It
+   This library is designed to be called from another program in a thread. It
    expects an input filename, and it will do all the setup and playback work.
   
    This requires a working math library for m4-single-only (such as newlib).
    
  */
 
-/*
-
-  xing-mp3 driver - DreamMp3 version by benjamin gerard
-
-*/
-
 #define VCOLOR(R,G,B) //vid_border_color(R,G,B)
 
 #include <kos.h>
+#include <string.h>
 
 //#include "sndstream.h"
 //#include "sndmp3.h"
@@ -35,19 +35,19 @@
 
 /************************************************************************/
 #include "mhead.h"		/* From xingmp3 */
-#include "port.h"		  /* From xingmp3 */
+#include "port.h"		/* From xingmp3 */
 
 /* Conversion codes: generally you won't play with this stuff */
 #define CONV_NORMAL	    0
-#define CONV_MIXMONO	  1
-#define CONV_DROPRIGHT	2
-#define CONV_DROPLEFT	  3
-#define CONV_8BIT	      8 
+#define CONV_MIXMONO	    1
+#define CONV_DROPRIGHT	    2
+#define CONV_DROPLEFT	    3
+#define CONV_8BIT	    8 
 
 /* Reduction codes: once again, generally won't play with these */
-#define REDUCT_NORMAL	  0
+#define REDUCT_NORMAL	    0
 #define REDUCT_HALF	    1
-#define REDUCT_QUARTER	2
+#define REDUCT_QUARTER	    2
 
 /* Bitstream buffer: this is for input data */
 static char *bs_ptr;
@@ -60,45 +60,54 @@ static int pcm_stereo;
 
 /* MPEG file */
 static uint32     mp3_fd;
-static int		    frame_bytes;
-static MPEG		    mpeg;
-static MPEG_HEAD	head;
-static int		    bitrate;
-static DEC_INFO		decinfo;
+static int	  frame_bytes;
+static MPEG	  mpeg;
+static MPEG_HEAD  head;
+static int        bitrate;
+static DEC_INFO   decinfo;
 
 /* Checks to make sure we have some data available in the bitstream
    buffer; if there's less than a certain "water level", shift the
    data back and bring in some more. */
-static int bs_fill()
+static int bs_fill(int min_bytes)
 {
-  int n = -1;
-
   /* Make sure we don't underflow */
   if (bs_count < 0) bs_count = 0;
-  
-  /* Pull in some more data if we need it */
-  if (bs_count < frame_bytes) {
-    /* Shift everything back */
-    memmove(bs_buffer, bs_ptr, bs_count);
-    
-    if (mp3_fd) {
-      n = fs_read(mp3_fd, bs_buffer+bs_count, BS_SIZE - bs_count);
-    }
-		
-    if (n <= 0) {
-      return -1;
-    }
 
-    /* Shift pointers back */
-    bs_count += n; bs_ptr = bs_buffer;
+  /* Return if there is enought data in buffer. */
+  if (bs_count >= min_bytes) {
+    return 0;
   }
+  
+  /* Shift everything back. */
+  memmove(bs_buffer, bs_ptr, bs_count);
+  bs_ptr = bs_buffer;
+    
+  if (mp3_fd) {
+    int n;
+    n = fs_read(mp3_fd, bs_buffer+bs_count, BS_SIZE - bs_count);
+    if (n < 0) {
+      return -2;
+    }
+    bs_count += n;
+  }
+  return (bs_count < min_bytes) ? -1 : 0;
+}
 
+static int read_more_bytes(void)
+{
+  /* Pull in some more data (and check for EOF) */
+  if (bs_fill(frame_bytes) < 0) {
+    SDDEBUG("xing : Decode complete.\n");
+    return INP_DECODE_END;
+  }
   return 0;
 }
 
-
-static int decode_frame()
+static int decode_frame(void)
 {
+  const unsigned int max_resync = 1<<18; /* 0 = no limit */
+  static unsigned int resync = 0;
   IN_OUT	x;
 	
   pcm_ptr = pcm_buffer;
@@ -110,9 +119,36 @@ static int decode_frame()
     /* Decode a frame */
     x = audio_decode(&mpeg, bs_ptr, (short *) pcm_buffer);
     if (x.in_bytes <= 0) {
-      SDDEBUG("xing : Bad sync in MPEG file\n");
-      return INP_DECODE_ERROR;
+      SDDEBUG("xing : Bad sync in MPEG file [%02X%02x]\n",
+	      bs_ptr[0]&255,bs_ptr[1]&255);
+      SDDEBUG("Try to resync !\n");
+      do {
+	if (++ resync == max_resync) {
+	  SDDEBUG("Resync : maximum resync (%u bytes) threshold reached,\n",
+		  resync);
+	  return INP_DECODE_ERROR;
+	}
+	bs_ptr      += 1;
+	bs_count    -= 1;
+	if (bs_count < frame_bytes) {
+	  SDDEBUG("Resyncing : %u bytes\n", resync);
+	  if (!read_more_bytes()) {
+	    return 0;
+	  } else {
+	    SDDEBUG("Resync : failed end of file reach after %u bytes\n",
+		    resync);
+	    return INP_DECODE_ERROR;
+	  }
+	}
+	x = audio_decode(&mpeg, bs_ptr, (short *) pcm_buffer);
+      } while (x.in_bytes <= 0);
     }
+
+    if (resync) {
+      SDDEBUG("Resync after %d skipped bytes\n", resync);
+      resync = 0;
+    }
+
     bs_ptr      += x.in_bytes;
     bs_count    -= x.in_bytes;
 
@@ -127,10 +163,7 @@ static int decode_frame()
 	  
   } else {
     /* Pull in some more data (and check for EOF) */
-    if (bs_fill() < 0 || bs_count < frame_bytes) {
-      SDDEBUG("xing : Decode complete\n");
-      return INP_DECODE_END;
-    }
+    return read_more_bytes();
   }
   return 0;
 }
@@ -155,38 +188,58 @@ static int xing_init(const char *fn, playa_info_t * info)
   pcm_ptr = pcm_buffer; pcm_count = 0;
 	
   /* Fill bitstream buffer */
-  frame_bytes = 1; /* pipo frame bytes must be > 0 */
-  if (bs_fill() < 0) {
+  if (bs_fill(8) < 0) {
     SDERROR("xing : can't read file header\n");
     goto errorout;
   }
   frame_bytes = 0;
 
   /* Are we looking at a RIFF file? (stupid Windows encoders) */
-  if (bs_ptr[0] == 'R'
-      && bs_ptr[1] == 'I'
-      && bs_ptr[2] == 'F'
-      && bs_ptr[3] == 'F') {
-    /* Found a RIFF header, scan through it until we find the data section */
-    SDDEBUG("xing: Skipping stupid RIFF header\n");
-    while (bs_ptr[0] != 'd'
-	   || bs_ptr[1] != 'a'
-	   || bs_ptr[2] != 't'
-	   || bs_ptr[3] != 'a') {
-      bs_ptr++;
-      if (bs_ptr >= (bs_buffer + BS_SIZE)) {
-	SDERROR("xing : Indeterminately long RIFF header\n");
-	goto errorout;
-      }
-    }
+  if (!memcmp(bs_ptr,"RIFF",4)) {
+    unsigned int riffSize, riffCount;
+    int found = 0;
+    riffSize = (bs_ptr[4] & 255);
+    riffSize += (bs_ptr[5] & 255) << 8;
+    riffSize += (bs_ptr[6] & 255) << 16;
+    riffSize += (bs_ptr[7] & 255) << 24;
+    SDDEBUG("xing: Skipping stupid RIFF header [%u bytes]\n", riffSize);
 
-    /* Skip 'data' and length */
     bs_ptr += 8;
-    bs_count -= (bs_ptr - bs_buffer);
+    bs_count -= 8;
+
+    /* Found a RIFF header, scan through it until we find the data section */
+    for (riffCount=riffSize; riffCount>=4; --riffCount) {
+      /* Need at least 8 bytes for 'data' chunk. */
+      if (bs_fill(8) < 0) {
+	break;
+      }
+
+      found = !memcmp(bs_ptr,"data",4);
+      if (found) {
+	unsigned int dataSize;
+	dataSize = (bs_ptr[4] & 255);
+	dataSize += (bs_ptr[5] & 255) << 8;
+	dataSize += (bs_ptr[6] & 255) << 16;
+	dataSize += (bs_ptr[7] & 255) << 24;
+	SDDEBUG("xing : RIFF 'data' [%u bytes] found.\n",dataSize);
+	bs_ptr += 8;
+	bs_count -= 8;
+	playa_info_bytes(info, dataSize);
+	break;
+      }
+      ++riffCount;
+      ++bs_ptr;
+      --bs_count;
+    }
+    if (!found) {
+      SDERROR("xing : 'data' chunk not found within 'RIFF' header.\n");
+      goto errorout;
+    }
   }
 
   if (((uint8)bs_ptr[0] != 0xff) && (!((uint8)bs_ptr[1] & 0xe0))) {
-    SDERROR("xing : Definitely not an MPEG file\n");
+    SDERROR("xing : Definitely not an MPEG file [%02x%02x]\n",
+	    (uint8)bs_ptr[0], (uint8)bs_ptr[1]);
     goto errorout;
   }
 
@@ -197,15 +250,18 @@ static int xing_init(const char *fn, playa_info_t * info)
   /* Parse MPEG header */
   {
     int forward;
-    frame_bytes = head_info3(bs_ptr, bs_count, &head, &bitrate,&forward);
+    bs_fill(BS_SIZE); /* Fill as much data as possible, no error check ! */
+    SDERROR("xing: Find info within %d bytes.\n", bs_count);
+    
+    frame_bytes = head_info3(bs_ptr, bs_count, &head, &bitrate, &forward);
+    SDERROR("xing: forward = %d.\n", forward);
     bs_ptr += forward;
     bs_count -= forward;
   }
   if (frame_bytes == 0) {
-    SDERROR("xing: Bad or unsupported MPEG file\n");
+    SDERROR("xing: Bad or unsupported MPEG file.\n");
     goto errorout;
   }
-
 
   /* Initialize audio decoder */
   /* $$$ Last parameters looks like cut frequency :
