@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.26 2002-09-28 05:41:14 vincentp Exp $
+ * @version    $Id: dynshell.c,v 1.27 2002-09-30 02:51:13 vincentp Exp $
  */
 
 #include <stdio.h>
@@ -825,11 +825,18 @@ static int lua_stop(lua_State * L)
   return 0;
 }
 
+/* THIS IS REALLY DIRTY AND TEMPORARY :)) */
+#include "controler.h"
 /* defined in controler.c */
 extern int cond_disconnected;
 static int lua_cond_connect(lua_State * L)
 {
+  controler_state_t s;
   cond_disconnected = !lua_tonumber(L, 1);
+
+  /* read state to avoid unwanted button */
+  controler_read(&s, 1);
+
   return 0;
 }
 

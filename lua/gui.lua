@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: gui.lua,v 1.2 2002-09-30 02:28:56 vincentp Exp $
+-- $Id: gui.lua,v 1.3 2002-09-30 02:51:15 vincentp Exp $
 --
 
 --
@@ -112,7 +112,7 @@ function gui_guess_z(owner, z)
 end
 
 
--- change focussed item
+-- change focused item
 function gui_new_focus(app, f)
 	if f and f ~= app.sub then
 		evt_send(app.sub, { key = gui_unfocus_event })
@@ -132,7 +132,7 @@ function gui_more(b1, b2, i)
 	return b1[i] > b2[i]
 end
 
--- find closest item to given box, satisfying given confition
+-- find closest item to given box, satisfying given condition
 gui_closestcoef = { 1, 1, 1, 1 }
 gui_closestcoef_horizontal = { 1, 5, 1, 5 }
 gui_closestcoef_vertical = { 5, 1, 5, 1 }
@@ -433,6 +433,7 @@ function gui_input_display_text(app)
 --	print (x+w, y, x+w+2, y+h)
 end
 
+-- set the input text
 function gui_input_set(app, string, col)
 	if not string then
 		string = ""
