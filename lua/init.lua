@@ -4,7 +4,7 @@
 --- @author   benjamin gerard <ben@sashipa.com>
 --- @brief    Fundamental lua stuff.
 ---
---- $Id: init.lua,v 1.21 2003-03-22 00:31:22 ben Exp $
+--- $Id: init.lua,v 1.22 2003-03-25 09:26:46 ben Exp $
 ---
 
 --- @defgroup  dcplaya_lua_basics_library  LUA libraries
@@ -204,7 +204,9 @@ addhelp(help,
 addhelp(addhelp,
 [[print [[addhelp(command_name, string_to_execute) : add usage information about a command]]]])
 
+--
 --- @}
+----
 
 --- @defgroup  dcplaya_lua_basics_driver driver support commands
 --- @ingroup   dcplaya_lua_basics

@@ -159,7 +159,7 @@ end
 
 --
 --- @}
---
+----
 
 style_add(style_create("fire",
 		       color_new(1,0,0,0),

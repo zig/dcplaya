@@ -4,7 +4,7 @@
 --- @author  benjamin gerard
 --- @brief   hyper text viewer gui.
 ---
---- $Id: textviewer.lua,v 1.17 2003-03-23 23:54:55 ben Exp $
+--- $Id: textviewer.lua,v 1.18 2003-03-25 09:26:47 ben Exp $
 ---
 
 if not dolib("taggedtext") then return end
@@ -542,7 +542,7 @@ end
 
 --
 --- @}
---
+----
 
 -- Create application icon sprite
 sprite_simple(nil,"textviewer.tga")

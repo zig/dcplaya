@@ -1,11 +1,58 @@
---- @file   taggedtext.lua
---- @author Vincent Penne <ziggy@sashipa.com>
---- @brief  sgml text and gui element formater.
+--- @ingroup dcplaya_lua_tt
+--- @file    taggedtext.lua
+--- @author  vincent penne
+--- @author  benjamin gerard
+--- @brief   tagged text aka zml
+--- $Id: taggedtext.lua,v 1.31 2003-03-25 09:26:47 ben Exp $
 ---
---- @bug the A tag does not work in lua source ?? !
+
+--- @defgroup dcplaya_lua_tt Tagged Text
+--- @ingroup dcplaya_lua_gui
+--- @brief   tagged text aka zml
 ---
---- $Id: taggedtext.lua,v 1.30 2003-03-23 23:54:55 ben Exp $
+--- @par Introduction
 ---
+---   Tagged text is a ZML convertor to graphical object. ZML (Ziggy's Markup
+---   Language) is a very simple sgml like text language to format document
+---   and gui elements. Like other (X)ML languages ZML is based on tag.
+---
+--- @par What is a tag ?
+---
+---   A tag is a text sequence between < (inferior) and > (superior).
+---   A tag has a name which is the word directly after the opening <.
+---   This name defines the type of tag and its function. Tags may have
+---   parameters. It consist on other word following the tag name. Optionnaly
+---   a parameter can have value (may be it is mandatory, ask ziggy). This
+---   value is setted by appending a `="value"' to the parameter name. Note
+---   that `"' quotes are mandatory. There is no limit to the number of
+---   parameter for a tag (excepted hardware limits).
+---   The syntax should be something like :
+---@verbatim
+--- <TAG[ PAR1[="VAL1"][ PAR1[="VAL1"]]...]>
+---@endverbatim
+---
+--- @par Conventions
+---
+---   It is better that name for both tag and parameter used only alpha numeric
+---   characters , `_' underscore and '-' minus.
+---   The '/' slash charactere is generally used as the first character of a
+---   tag which meaning is to close a block beginning by the same tag without
+---   the '/'.
+---@verbatim
+---<BLOCK width="32" type="sample"> This is a sample </BLOCK>
+---@endverbatim
+---
+--- @par zml for Tagged Text
+---
+---  Here is a list of zml tags defined by tagged text. Note that it is
+---  possible to add new tags.
+---
+--- @author  vincent penne aka ziggy
+--- @author  benjamin gerard
+---
+--- @{
+---
+
 
 if not dolib("dirfunc") then return end
 if not dolib("sprite") then return end
@@ -96,7 +143,7 @@ function tt_img_cmd(mode, param)
 end
 
 --- Tagged text color table.
---- @TODO Add some more colors
+--: function tt_color_table[];
 tt_color_table = {
    -- Get gui current colors
    box_bcolor = function() return gui_box_bcolor end,
@@ -113,7 +160,28 @@ tt_color_table = {
    input_cursor_color2 = function() return gui_input_cursor_color2 end,
 }
 
--- UGLY !!!  - $$$ ben : not anymore :)
+--- Get a color.
+---
+---   Step by step:
+---      -# Check if color is a string. If not goto step 5.
+---      -# If the string does not begin by '$' a dollar goto step 4.
+---      -# color is substitued by the value of the global variable
+---         of the color name (without the dollar). Goto step 5.
+---      -# If the first char is not # get color is substitued
+---         by the value of the value tt_color_table at this name
+---         index.
+---      -# if the type of the color is a function the color is 
+---         substitued by the return of the function call
+---      -# if the color is a table, the function returns it as reference.
+---      -# return the result of color_new() function with the color
+---         as parameter. That always creates a new color.
+---
+---   @param  s  The color definition. See detailed documentation for
+---              further information.
+---   @return color
+---   @retval In most case a copy of a color.
+---   @warning table substition are not checked for valid color.
+---   @author benjamin gerard
 function tt_tocolor(s)
    if type(s) == "string" then
       local first = strsub(s,1,1)
@@ -963,7 +1031,7 @@ function tt_build(text, mode)
 end
 
 
---- draw a tagged text (must be previously build with tt_build)
+--- draw a tagged text (must be previously build with tt_build).
 function tt_draw(tt)
    local i, j
 
@@ -1011,5 +1079,9 @@ end
 if type(filetype_add) == "function" then
    filetype_add("text", nil, ".zml\0")
 end
+
+-- close @defgroup
+--- @}
+----
 
 return 1

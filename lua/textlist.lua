@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.44 2003-03-21 03:35:55 ben Exp $
+--- $Id: textlist.lua,v 1.45 2003-03-25 09:26:47 ben Exp $
 ---
 
 -- DL hierarchy :
@@ -580,8 +580,10 @@ function textlist_create(flparm, owner)
       end
    end
 
+   --
    --- @}
-
+   ----
+   
    --- Move textlist cursor.
    --
    function textlist_move_cursor(fl,mov)

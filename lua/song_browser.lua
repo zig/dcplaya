@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.63 2003-03-23 23:54:55 ben Exp $
+--- $Id: song_browser.lua,v 1.64 2003-03-25 09:26:46 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song Browser
@@ -316,7 +316,7 @@ end
 
 --
 --- @}
---
+----
 
 
 --- @name Control functions
@@ -470,7 +470,7 @@ end
 
 --
 --- @}
---
+----
 
 --- @name Music and playlist functions
 --- @{
@@ -531,11 +531,12 @@ end
 --- @param  locate  name of entry to locate in this directory (optionnal)
 --- @return error-code
 --- @retval 1 success
---- @warning The fonction use a different thread to load  and returns before
----          the directory is really loaded. Only one directory is available
----          and the function will fail if another loding is in progress.
----          To know if you can start a loadir or if your loading is done
----          check the loaded_dir (entrylist) member.
+--- @warning The fonction use a different thread to load the directory and
+---          returns before it is really loaded. Only one directory can be
+---          loaded at a time and the function will fail if another loading
+---          is in progress.
+---          To know if you can start a loaddir or if your loading is done
+---          check the loaded_dir (entrylist) member in the sb table.
 --
 function song_browser_loaddir(sb, path, locate)
    sb = sb or song_browser
@@ -614,7 +615,7 @@ function song_browser_playlist(sb, path, insert, run)
    else
       -- There is an insert point and a old dir !
       if insert == 0 then
-	 -- After sursor insertion.
+	 -- After cursor insertion.
 	 insert_point = sb.pl:get_pos()
 	 if insert_point then insert_point = insert_point + 1 end
       elseif insert > 0 then
@@ -654,7 +655,7 @@ end
 
 --
 --- @}
---
+----
 
 --- @name File action functions.
 ---
@@ -803,7 +804,7 @@ end
 
 --
 --- @}
---
+----
 
 -- ----------------------------------------------------------------------
 -- filelist "confirm" actions
@@ -2123,9 +2124,8 @@ end
 
 --
 --- @}
---
+----
 
 -- end of defgroup
---
 --- @}
---
+----

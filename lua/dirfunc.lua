@@ -4,7 +4,7 @@
 --- @author   benjamin gerard <ben@sashipa.com>
 --- @brief    Directory and filename support.
 ---
---- $Id: dirfunc.lua,v 1.16 2003-03-22 10:19:16 ben Exp $
+--- $Id: dirfunc.lua,v 1.17 2003-03-25 09:26:46 ben Exp $
 ---
 
 --- Current path.
@@ -228,7 +228,8 @@ end
 
 --
 --- @}
---
+----
+
 
 addhelp("deltree", [[
 print[[deltree(path) : Recursively delete a directory and its files

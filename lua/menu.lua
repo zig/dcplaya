@@ -26,7 +26,7 @@ gui_menu_close_event = gui_menu_close_event or evt_new_code()
 
 --- Menu definition object.
 --- @ingroup dcplaya_lua_menu_gui
---- struct menudef : applcation {
+--- struct menu_def : applcation {
 ---   string     name;    ///< Menu name.
 ---   number     n;       ///< Number of menu entry.
 ---   string     title;   ///< Menu title (or nil is none).
@@ -35,7 +35,7 @@ gui_menu_close_event = gui_menu_close_event or evt_new_code()
 
 --- Menu entry object.
 --- @ingroup dcplaya_lua_menu_gui
---- struct menuentry {
+--- struct menu_entry {
 ---   string     name;    ///< Name of entry (label).
 ---   number     size;    ///< -1:for sub-menu entry
 ---   string     subname; ///< Name of sub-menu (or nil)
@@ -55,9 +55,13 @@ gui_menu_close_event = gui_menu_close_event or evt_new_code()
 ---
 ---   style        style;      ///< Menu style
 ---   display_list dl;         ///< Menu display list
----   menudef      def;        ///< menu definition
+---   menu_def     def;        ///< menu definition
 ---   menu         sub_menu[]; ///< Created sub-menu (indexed by name)
 ---   number       fade;       ///< Current fade step.
+---   /** textlist used by this menu which textlist::dir is a menu_entry
+---    *  table.
+---    */
+---   textlist     fl;
 --- };
 
 --- Create a menu application.

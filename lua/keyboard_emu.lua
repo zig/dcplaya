@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    keyboard emulator.
 ---
---- $Id: keyboard_emu.lua,v 1.23 2003-03-23 23:54:54 ben Exp $
+--- $Id: keyboard_emu.lua,v 1.24 2003-03-25 09:26:46 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_ke_app  Keyboard Emulator
@@ -56,7 +56,7 @@ ke_active_rules = {
 
 --
 --- @}
---
+----
 
 --- Keyboard active status.
 --: boolean ke_active;

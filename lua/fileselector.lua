@@ -4,7 +4,7 @@
 --- @date   2002/10/04
 --- @brief  fileselector gui
 ---
---- $Id: fileselector.lua,v 1.28 2003-03-23 23:54:54 ben Exp $
+--- $Id: fileselector.lua,v 1.29 2003-03-25 09:26:46 ben Exp $
 --
 -- TODO : select item with space 
 --        completion with tab        
@@ -436,8 +436,8 @@ function fileselector(name,path,filename,owner)
 end
 
 --
---- @};
---
+--- @}
+----
 
 if nil then
    dial = nil

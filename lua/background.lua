@@ -13,21 +13,21 @@
 ---
 
 --- Background object.
---- struct background {
----
----   texture tex;     ///< texture id
----   matrix  vtx;     ///< Backgound vertex definition.
----   display_list dl; ///< Background display list
----
----  static display_list background_dl;  ///< Displayed background
----  static tag background_tag;          ///< Background object unic tag
----  
----   set_color();   ///< @see background_set_colors()
----   set_texture(); ///< @see background_set_texture()
----   draw();        ///< @see background_draw()
----   kill();        ///< @see background_kill()
----   
---- };
+--: struct background {
+--:
+--:   texture tex;     ///< texture id
+--:   matrix  vtx;     ///< Backgound vertex definition.
+--:   display_list dl; ///< Background display list
+--:
+--:  static display_list background_dl;  ///< Displayed background
+--:  static tag background_tag;          ///< Background object unic tag
+--:  
+--:   set_color();   ///< @see background_set_colors()
+--:   set_texture(); ///< @see background_set_texture()
+--:   draw();        ///< @see background_draw()
+--:   kill();        ///< @see background_kill()
+--:   
+--: };
 
 
 -- Load required libraries
@@ -171,4 +171,4 @@ return background_loaded
 
 --
 --- @}
---
+----

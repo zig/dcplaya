@@ -4,7 +4,7 @@
 --- @author  benjamin gerard
 ---
 --- @brief   hyper text viwer gui
---- $Id: plugin_info.lua,v 1.2 2003-03-23 23:54:55 ben Exp $
+--- $Id: plugin_info.lua,v 1.3 2003-03-25 09:26:46 ben Exp $
 ---
 
 if not dolib("textviewer") then return end
@@ -151,7 +151,7 @@ end
 
 --
 --- @}
---
+----
 
 -- Create application icon sprite
 --sprite_simple(nil,"textviewer.tga")

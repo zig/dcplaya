@@ -1,50 +1,108 @@
---- @file   gui.lua
---- @author Vincent Penne <ziggy@sashipa.com>
---- @brief  gui lua library on top of evt system
+--- @ingroup dcplaya_lua_gui
+--- @file    gui.lua
+--- @author  vincent penne
+--- @brief   gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.61 2003-03-23 23:54:54 ben Exp $
+--- $Id: gui.lua,v 1.62 2003-03-25 09:26:46 ben Exp $
+---
 ---
 
---
--- a gui item is an application (see in evt.lua for the definition) with
--- additionnal informations :
---
--- box   : the box of the item { x1, y1, x2, y2 } used for focusing
--- dl    : the default display list used to draw inside
--- z     : the z position of the item for reference to draw upon it
--- event_table : table of function(app, evt) indexed by event ID
--- flags : an array whose entry describe some functionalities
--- mainmenu_def : an optional menu definition opened by the application 
--- switcher (see menu.lua for the format of a menu definition)
---
+--- @defgroup  dcplaya_lua_gui  Graphic User Interface
+--- @ingroup   dcplaya_lua
+--- @brief     graphic user interface.
+---
+--- dcplaya graphic user interface (gui) are
+--- @link dcplaya_application applications @endlink. Generally these
+--- application display something on a box. GUI must have required
+--- fields, have a look to the gui structure definition for more information
+---
+---
+--- @par Z space organization
+---
+---
+---
+--- @par Event translation
+--- 
+--- The dialog box handle function take care of translating a few events :
+---   - Button A is translated to event gui_evt_confirm
+---   - Button X is translated to event gui_evt_select
+---   - Button B is translated to event gui_evt_cancel
+---
+--- @par
+---
+--- These translated events are sent @b ONLY to the focused widget into the
+--- dialog.
+--- So if you want to react only when you are focused, check for these
+--- translated events, if you want to react in any cases, then check for
+--- the untranslated events. (Because untranslated events are @b STILL sent
+--- to all child of the dialog with usual convention (first to focused child,
+--- then to the dialog itsef, and at last to other children)
+---
+--- @since 04/03/2003
+---
+--- @see dcplaya_lua_app
+--- @see dcplaya_lua_event
+---
+--- @author    penne vincent
+--- @{
+---
 
--- flags can have :
---
--- "modal"    : the item (usually a dialog box) eats all events except shutdown
---              (can be dangerous !)
--- "inactive" : the item cannot be focused
---
---
--- Event translation : (new note as of 04/03/2003)
--- -------------------
--- 
--- The dialog box handle function take care of translating a few events :
---
--- * Button A is translated to event gui_evt_confirm
--- 
--- * Button X is translated to event gui_evt_select
---
--- * Button B is translated to event gui_evt_cancel
---
--- These translated events are sent ONLY to the focused widget into the dialog.
--- So if you want to react only when you are focused, check for these
--- translated events, if you want to react in any cases, then check for
--- the untranslated events. (Because untranslated events are STILL sent
--- to all child of the dialog with usual convention (first to focused child,
--- then to the dialog itsef, and at last to other children)
---
+--- gui application.
+--- struct gui : application {
+---   /** the item box { x1, y1, x2, y2 } used for focusing.
+---    *  As table are referenced, changing it will affect the focus in
+---    *  both way : display and layout.
+---    */
+---   number box[4];
+---
+---   /** Default display list used to draw inside. */
+---   display_list dl;
+---
+---   /** Z position of the item for reference to draw upon it.
+---    *  @warning  z position should be handle with care. Have a look
+---    *   to the Z space organization in the
+---    *   @link dcplaya_lua_gui gui documentation @endlink.
+---    *  @see gui_child_autoplacement()
+---    *  @see gui_dialog_basic_handle()
+---    **/
+---    number z;
+---
+---   /** Table of function(app, evt) indexed by event key.
+---    *  @see dcplaya_lua_event
+---    */
+---   event_handler event_table[event_key];
+---
+---   /** Table whose entry describe some functionalities. */
+---    boolean flags[flag_enum];
+---
+---   /** Optional @link dcplaya_lua_menu_gui menu definition @endlink opened
+---    *  by the
+---    *  @link dcplaya_lua_application_switcher application switcher @endlink
+---    */
+---    menudef mainmenu_def;
+---
+---   /** gui flags enumeration.
+---    *  @warning This documentation show tou this as "C" enumeration, in lua
+---    *  implementation is value are strings.
+---    */
+---    enum flag_enum {
+---     /** The item (usually a dialog box) eats all events except shutdown
+---      *  (can be dangerous !).
+---      */
+---      "modal", 
+---
+---     /** The item cannot be focused.
+---      *  @deprecated Seems not to be implemented.
+---      */
+---      "inactive"
+---    };
+--- };
+---
 
 
+
+
+--- @todo
 -- IDEAS : (these ideas are now implemented)
 --
 -- * Auto layout of items based on a generalized text justifying algorithm
@@ -609,7 +667,7 @@ function gui_dialog_update(app, frametime)
    
 end
 
-function gui_dialog_box_draw(dl, box, z, bcolor, color1, color2)
+function gui_dialog_box_draw(dl, box, z, bcolor, color1, color2, tranparent)
    
    if not nil then
       local t, l, b, r = 1.6*bcolor, 0.8*bcolor, 0.2*bcolor, 0.4*bcolor
@@ -617,7 +675,6 @@ function gui_dialog_box_draw(dl, box, z, bcolor, color1, color2)
       l[1] = bcolor[1]
       b[1] = bcolor[1]
       r[1] = bcolor[1]
-
       local b3d
 
       b3d= box3d(box, 4, nil, t, l, b, r)
@@ -626,7 +683,9 @@ function gui_dialog_box_draw(dl, box, z, bcolor, color1, color2)
       b3d= box3d(box + { 4, 4, -4, -4 }, 2, nil, b, r, t, l)
       box3d_draw(b3d,dl, mat_trans(0, 0, z))
 
-      dl_draw_box(dl, box + {6,6,-6,-6}, z, color1, color2)
+      if not tranparent then
+	 dl_draw_box(dl, box + {6,6,-6,-6}, z, color1, color2)
+      end
    else
       dl_draw_box(dl, box, z, gui_box_color1, gui_box_color2)
    end
@@ -639,6 +698,7 @@ function gui_button_box_draw(dl, box, z, bcolor, color1, color2)
       l[1] = bcolor[1]
       b[1] = bcolor[1]
       r[1] = bcolor[1]
+
       --local b3d = box3d(box, 2, color1, t, l, b, r)
       local b3d = box3d(box, 2, nil, t, l, b, r)
       box3d_draw(b3d,dl, mat_trans(0, 0, z))
@@ -649,14 +709,14 @@ function gui_button_box_draw(dl, box, z, bcolor, color1, color2)
    end
 end
 
-function gui_input_box_draw(dl, box, z, bcolor, color)
+function gui_input_box_draw(dl, box, z, bcolor, color, transparent)
    if not nil then
       local t, l, b, r = 1.6*bcolor, 0.8*bcolor, 0.2*bcolor, 0.4*bcolor
       t[1] = bcolor[1]
       l[1] = bcolor[1]
       b[1] = bcolor[1]
       r[1] = bcolor[1]
-      local b3d = box3d(box, 2, color, b, r, t, l)
+      local b3d = box3d(box, 2, not transparent and color, b, r, t, l)
       box3d_draw(b3d,dl, mat_trans(0, 0, z))
    else
       dl_draw_box(app.dl, app.box, z, bcolor, color)
@@ -707,7 +767,7 @@ function gui_new_dialog(owner, box, z, dlsize, text, mode, name)
    end
    
    -- draw surrounding box
-   gui_dialog_box_draw(dial.dl, box, z, gui_box_bcolor, gui_box_color1, gui_box_color2)
+   gui_dialog_box_draw(dial.dl, box, z, gui_box_bcolor, gui_box_color1, gui_box_color2, dial.transparent)
    
    -- draw the focus cursor
    local focus_dl
@@ -965,7 +1025,8 @@ function gui_new_input(owner, box, text, mode, string, z)
 
    dl_sublist(app.dl, app.input_dl)
    
-   gui_input_box_draw(app.dl, app.box, z, gui_input_color1, gui_input_color2)
+   gui_input_box_draw(app.dl, app.box, z, gui_input_color1, gui_input_color2,
+		   app.transparent)
    --dl_draw_box(app.dl, app.box, z, gui_input_color1, gui_input_color2)
    
    
@@ -1169,10 +1230,16 @@ function gui_label(app, text, mode)
 end
 
 
+--
+--- Shutdown the GUI.
+--
 function gui_shutdown()
    gui_curz = 1000
 end
 
+--
+--- Initialize the GUI.
+--
 function gui_init()
    gui_shutdown()
    gui_curz = 1000
@@ -1191,6 +1258,8 @@ end
 
 gui_init()
 
-gui_loaded = 1
+--
+--- @}
+----
 
 return 1

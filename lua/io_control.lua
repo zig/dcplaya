@@ -5,7 +5,7 @@
 --- @date     2003/03/08
 --- @brief    IO control application.
 ---
---- $Id: io_control.lua,v 1.5 2003-03-22 06:18:19 ben Exp $
+--- $Id: io_control.lua,v 1.6 2003-03-25 09:26:46 ben Exp $
 ---
 
 if not dolib ("evt") then return end
@@ -247,7 +247,7 @@ end
 
 --
 --- @}
---
+----
 
 io_control_kill()
 io_control()

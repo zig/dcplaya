@@ -4,7 +4,7 @@
 --- @date    2003/03/20
 --- @brief   LUA source colorizer.
 ---
---- $Id: lua_colorize.lua,v 1.4 2003-03-23 23:54:55 ben Exp $
+--- $Id: lua_colorize.lua,v 1.5 2003-03-25 09:26:46 ben Exp $
 --
 
 --- @defgroup  dcplaya_lua_colorize  LUA source colorizer
@@ -391,17 +391,32 @@ function luacolor_file(fname)
 	    break
 	 else
 	    local bs,be = strfind(line,brk,start)
-	    while bs and bs > 1 and strsub(line,bs-1,bs-1) == "\\" do
-	       bs,be = strfind(line,brk,bs+1)
-	       -- $$$$
-	       print(".")
+	    while bs and bs > 1 do
+	       -- Quote break found but it can be escaped, take care of that
+	       -- here.
+	       local ss = bs - 1 -- Position of the preceding char
+	       local slashed     -- non slashed at start
+	       while ss > 0 and strsub(line,ss,ss) == "\\" do
+		  slashed = not slashed
+		  print(".",slashed)
+		  ss = ss - 1
+	       end
+	       if slashed then
+		  -- Finally it was slashed, try to find another break.
+		  bs,be = strfind(line,brk,bs+1)
+	       else
+		  -- Find a break, do a break.
+		  break
+	       end
 	    end
 
+	    -- After while, bs,be must match the ending quote if any.
 	    if not bs then
+	       -- No ending, just append the line to cuurent mode buffer.
 	       flow.text = flow.text .. strsub(line, start)
 	       break
 	    end
-
+	    -- Quote finish here : back to code after flushing string end.
 	    flow.text = flow.text .. strsub(line, start, bs-1)
 	    luacolor_mode(flow, 3)
 	    start = be+1

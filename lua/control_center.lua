@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.24 2003-03-22 06:18:19 ben Exp $
+--- $Id: control_center.lua,v 1.25 2003-03-25 09:26:46 ben Exp $
 ---
 
 --- @defgroup  dcplaya_lua_cc_app  Control Center
@@ -433,7 +433,7 @@ end
 
 --
 --- @}
---
+----
 
 control_center_loaded = 1
 return control_center_loaded

@@ -4,7 +4,7 @@
 --- @date     2002/11/29
 --- @brief    Song info application.
 ---
---- $Id: song_info.lua,v 1.24 2003-03-22 06:18:19 ben Exp $
+--- $Id: song_info.lua,v 1.25 2003-03-25 09:26:47 ben Exp $
 
 song_info_loaded = nil
 
@@ -207,7 +207,7 @@ function song_info_create(owner, name, style)
 
 	 -- Refresh time
 	 dl_clear(si.time_dl)
-	 dl_text_prop(si.time_dl, 1, 1, 1, 0)
+	 dl_text_prop(si.time_dl, 1, 2, 0.75, 0)
 	 local s,fs = playtime();
 	 if not fs then fs = "??:??" end
 	 if si.info and si.info.valid ~= 0 and si.info.track then
@@ -291,9 +291,9 @@ function song_info_create(owner, name, style)
       dl_set_active(si.layer2_dl, not si.minimized)
       local s,x,y
       if si.minimized then
-	 s,x,y = 8, 38, 12
+	 s,x,y = 14, 38, 12
       else
-	 s,x,y = 16, 60, 35
+	 s,x,y = 24, 60, 35
       end
       dl_set_trans(si.layer0_dl, mat_scale(s,s,1) * mat_trans(x,y,10))
       dl_set_active(si.layer0_dl,1)
@@ -657,7 +657,7 @@ end
 
 --
 --- @}
---
+----
 
 -- Load texture for application icon
 local tex = tex_exist("song-info")

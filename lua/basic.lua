@@ -4,7 +4,7 @@
 --- @author  benjamin gerard <ben@sashipa.com>
 --- @brief   basic things used into other library (evt, keyboard_emu, gui)
 ---
---- $Id: basic.lua,v 1.18 2003-03-23 23:54:54 ben Exp $
+--- $Id: basic.lua,v 1.19 2003-03-25 09:26:45 ben Exp $
 ---
 
 --
@@ -384,9 +384,9 @@ end
 --- @ingroup dcplaya_lua_basics
 --- @param  fmt  Format string
 --- @param  ...  Arguments needed by format string.
----
+--- @warning Add a trailing '\n'.
 function printf(...)
-   rawprint(call(format,arg))
+   print(call(format,arg))
 end
 
 settagmethod(tag( {} ), "add", table_add)

@@ -4,7 +4,7 @@
 --- @author   benjamin gerard
 --- @brief    LUA enhanced shell
 ---
---- $Id: shell.lua,v 1.16 2003-03-23 23:54:55 ben Exp $
+--- $Id: shell.lua,v 1.17 2003-03-25 09:26:46 ben Exp $
 --
 
 --- @defgroup  dcplaya_lua_enhanced_shell  LUA enhanced shell
@@ -406,4 +406,4 @@ function shell()
 
 end
 
-shell_loaded=1
+return 1

@@ -1,12 +1,10 @@
---- @ingroup dcplaya_lua_basics
+--- @ingroup dcplaya_lua_colors
 --- @file    color.lua
 --- @author  benjamin gerard
 --- @date    2002/10/14
 --- @brief   color type.
 ---
----   A color is table. Color operators use table' ones.
----
---- $Id: color.lua,v 1.9 2003-03-23 23:54:54 ben Exp $
+--- $Id: color.lua,v 1.10 2003-03-25 09:26:46 ben Exp $
 ---
 
 -- Loaded required libraries
@@ -31,7 +29,7 @@ end
 
 --- Color type.
 ---
---- struct color {
+--- struct color : vector {
 ---   static tag color_tag;              ///< tag for color table.
 ---   static table color_name_to_index;  ///< convert [a,r,g,b] index to number
 ---   number a;                          ///< alpha component (index 1)
@@ -48,12 +46,17 @@ end
 ---   @b table can be any table. rawget() function is used to retrieve color
 ---   components with index 1,2,3,4 for respectively a,r,g,b components.
 ---
+---   @b string := "COLOR-NAME". Picks the rgb_color_table[COLOR-NAME], if
+---      it exists. This conversion is prior to the hexadecimal string
+---      conversion which mean it is possible to short circuit an hexadecimal
+---      value to another color.
+---
 ---   @b string := "[#][AA]RRGGBB". This is an hexacimal description of the
 ---   color. It may start by an optional '#' char. Alpha componant is
 ---   optionnal and its default value is 1.
 ---
 ---   @warning With table or string creation methods the noclip parameter
----            is the 2nd one.
+---            is in 2nd position.
 ---
 --- @param   a        alpha component or a table or a string.
 --- @param   r        red component
@@ -430,4 +433,4 @@ return 1
 
 --
 --- @}
---
+----

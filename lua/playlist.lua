@@ -314,7 +314,7 @@ end
 
 --
 --- @}
---
+----
 
 if type(filetype_add) == "function" then
    filetype_add("playlist")
