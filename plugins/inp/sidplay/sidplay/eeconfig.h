@@ -6,7 +6,6 @@
 #define SIDPLAY1_EECONFIG_H
 
 extern "C" {
-#include <time.h>
 #include <math.h>
 }
 
