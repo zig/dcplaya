@@ -4,7 +4,7 @@
  * @author   ben(jamin) gerard <ben@sashipa.com>
  * @brief    Graphic context interface
  *
- * $Id: gc.h,v 1.3 2002-11-28 04:22:44 ben Exp $
+ * $Id: gc.h,v 1.4 2002-11-29 08:29:41 ben Exp $
  */
 
 #ifndef _GC_H_
@@ -42,8 +42,6 @@ typedef struct {
   fontid_t fontid;     /**< font identifier.                */
   float size;          /**< text size.                      */
   float aspect;        /**< text aspect ratio (Y/X).        */
-  //  float xscale;        /**< text X scale (depends on size). */
-  //  float yscale;        /**< text Y scale (depends on size). */
   draw_argb_t argb;    /**< text ARGB packed color.         */
   draw_color_t color;  /**< text floating point color.      */
   int escape;          /**< text escape char.               */
@@ -80,13 +78,19 @@ extern gc_t default_gc;
  */
 
 /** Initialize graphic context system. */
-int gc_init(const float screen_width, const float screen_height);
+int gc_init(void);
 
 /** Shutdown graphic context system. */
 void gc_shutdown(void);
 
 /** Set current graphic context. */
 gc_t * gc_set(gc_t * gc);
+
+/** Set current graphic context with default value. */
+void gc_default(void);
+
+/** Set current graphic context with default value and clear gc stack. */
+void gc_reset(void);
 
 /** Push (save) current graphic context. */
 int gc_push(int save_flags);

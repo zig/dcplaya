@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, text interface
  * 
- * $Id: display_text.c,v 1.3 2002-11-27 09:58:09 ben Exp $
+ * $Id: display_text.c,v 1.4 2002-11-29 08:29:42 ben Exp $
  */
 
 #include <string.h>
@@ -34,7 +34,7 @@ static dl_code_e text_render_transparent(void * pcom,
   struct text_command * c = pcom;  
 
   ///$$$
-  text_set_properties(0,16,1);
+  //  text_set_properties(0,16,1);
 
   text_set_color(c->a * context->color.a, c->r * context->color.r,
 				 c->g * context->color.g, c->b * context->color.b);
@@ -49,8 +49,18 @@ static dl_code_e properties_render_transparent(void * pcom,
 											   dl_context_t * context)
 {
   struct textprop_command * c = pcom;
+  float size = c->size;
+  float aspect = c->aspect;
 
-  text_set_properties(c->font, c->size, c->aspect);
+  if (size > 0) {
+	size *= context->trans[0][0];
+  }
+  
+  if (aspect > 0 && context->trans[0][0] > 1E-5) {
+	aspect *= context->trans[1][1] / context->trans[0][0];
+  }
+
+  text_set_properties(c->font, size, aspect);
   return DL_COMMAND_OK;
 }
 
@@ -134,10 +144,10 @@ DL_FUNCTION_START(text_prop)
 	fontid = (int)lua_tonumber(L, 2);
   }
   if (lua_type(L,3) == LUA_TNUMBER) {
-	size = (int)lua_tonumber(L, 3);
+	size = lua_tonumber(L, 3);
   }
   if (lua_type(L,4) == LUA_TNUMBER) {
-	aspect = (int)lua_tonumber(L, 4);
+	aspect = lua_tonumber(L, 4);
   }
 
   properties(dl, fontid, size, aspect);

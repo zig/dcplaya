@@ -4,7 +4,7 @@
  * @date    2002/09/23
  * @brief   Music informations
  *
- * $Id: playa_info.h,v 1.3 2002-09-25 03:21:21 benjihan Exp $
+ * $Id: playa_info.h,v 1.4 2002-11-29 08:29:41 ben Exp $
  */
 
 #ifndef _PLAYA_INFO_H_
@@ -73,6 +73,8 @@ typedef struct {
 
 int playa_info_init(void);
 void playa_info_shutdown(void);
+
+char * playa_info_make_timestr(char * time, unsigned int ms);
 
 playa_info_t * playa_info_lock(void);
 void playa_info_release(playa_info_t *info);

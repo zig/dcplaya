@@ -5,7 +5,7 @@
  * @author    benjamin gerard <ben@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.h,v 1.8 2002-11-28 20:15:11 ben Exp $
+ * @version   $Id: display_list.h,v 1.9 2002-11-29 08:29:41 ben Exp $
  */
 
 #ifndef _DISPLAY_LIST_H_
@@ -31,7 +31,8 @@
  *
  *  The display list system will only executes main-lists. As the order
  *  display list execution order is indetermined, the graphic context should
- *  be set at the beginning of each main-list.
+ *  be set at the beginning of each main-list. Anyway it is resetted to
+ *  default values before each main-list execution.
  *
  *  Sub-lists could be executed via the sub-list command from either a
  *  main-list or another sub-list.

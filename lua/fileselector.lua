@@ -1,9 +1,10 @@
+--- @ingroup dcplaya_lua_gui
 --- @file   fileselector.lua
 --- @author benjamin gerard <ben@sashipa.com>
 --- @date   2002/10/04
 --- @brief  fileselector gui
 ---
---- $Id: fileselector.lua,v 1.13 2002-10-30 19:59:30 benjihan Exp $
+--- $Id: fileselector.lua,v 1.14 2002-11-29 08:29:41 ben Exp $
 --
 -- TODO : select item with space 
 --        completion with tab        
@@ -18,9 +19,11 @@ dolib("gui")
 dolib("filelist")
 
 --- fileselector GUI object.
+--- @ingroup dcplaya_lua_gui
 --- struct fileselector{
 
 --- Create a fileselector GUI application.
+---  @ingroup dcplaya_lua_gui
 ---  @param name Fileselector label.
 ---  @param path Fileselector current path. nil for current.
 ---  @param filename Default input filename.

@@ -5,7 +5,7 @@
  * @date    2002/10/10
  * @brief   2D drawing primitives.
  *
- * $Id: primitives.c,v 1.1 2002-11-25 16:42:28 ben Exp $
+ * $Id: primitives.c,v 1.2 2002-11-29 08:29:41 ben Exp $
  */
 
 #include <stdarg.h>
@@ -97,8 +97,6 @@ void draw_strip_no_clip(const draw_vertex_t *vtx,
 {
 
   DRAW_SET_FLAGS(flags);
-/*   make_poly_hdr(&cur_poly, flags); */
-/*   ta_commit32_inline(&cur_poly); */
 
   if (DRAW_TEXTURE(flags) == DRAW_NO_TEXTURE) {
 	/* No texture */
@@ -109,6 +107,7 @@ void draw_strip_no_clip(const draw_vertex_t *vtx,
 	  v->x = vtx->x; v->y = vtx->y; v->z = vtx->z;
 	  v->a = vtx->a; v->r = vtx->r; v->g = vtx->g; v->b = vtx->b;
 	  ta_commit32_nocopy();
+	  ++vtx;
 	}
 	v->flags = TA_VERTEX_EOL;
 	v->x = vtx->x; v->y = vtx->y; v->z = vtx->z;
@@ -120,11 +119,11 @@ void draw_strip_no_clip(const draw_vertex_t *vtx,
 	volatile ta_hw_tex_vtx_t * const v = HW_TEX_VTX;
 
 	v->flags = TA_VERTEX_NORMAL;
+	v->addcol = 0;
 	while (--n > 0) {
 	  v->x = vtx->x; v->y = vtx->y; v->z = vtx->z;
 	  v->u = vtx->u; v->v = vtx->v;
 	  v->col = argb255(vtx);
-	  v->addcol = 0;
 	  ta_commit32_nocopy();
 	  ++vtx;
 	}
@@ -133,7 +132,6 @@ void draw_strip_no_clip(const draw_vertex_t *vtx,
 	v->x = vtx->x; v->y = vtx->y; v->z = vtx->z;
 	v->u = vtx->u; v->v = vtx->v;
 	v->col = argb255(vtx);
-	v->addcol = 0;
 	ta_commit32_nocopy();
   }
 }

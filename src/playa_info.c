@@ -4,7 +4,7 @@
  * @date    2002/09/23
  * @brief   Music informations
  *
- * $Id: playa_info.c,v 1.1 2002-09-25 12:36:20 benjihan Exp $
+ * $Id: playa_info.c,v 1.2 2002-11-29 08:29:42 ben Exp $
  */
 
 #include <stdlib.h>
@@ -31,6 +31,15 @@ static int ToLower(int c)
   c &= 255;
   if (c>='A' && c<='Z') c ^= 32;
   return c;
+}
+
+static int next_info_id(void)
+{
+  /* $$$ LUA rules : 24 bit for floating point precision !!! */
+  if (++info_id >= (1<<24)) {
+	info_id = 1;
+  }
+  return info_id;
 }
 
 static void lockinfo(void)
@@ -69,7 +78,7 @@ void playa_info_clean(void)
   // $$$ ben: We only see help here !
   //  curinfo.info[PLAYA_INFO_FORMAT].s = strdup("No music is playing");
   // $$$ben validate allow vmu to know it must to update its scroller.
-  curinfo.valid = ++info_id;
+  curinfo.valid = next_info_id();
   unlockinfo();
 }
 
@@ -86,22 +95,8 @@ void playa_info_free(playa_info_t *info)
 
 static void make_timestr(playa_info_t *info)
 {
-  unsigned int ms = info->info[PLAYA_INFO_TIME].v;
   char time[32];
-  unsigned int h,m,s;
-
-  h = ms / (3600<<10);
-  ms -= h * (3600<<10);
-  m = ms / (60<<10);
-  ms -= m * (60<<10);
-  s = ms >> 10;
-
-  if (h) {
-    sprintf(time, "%d:%02d:%02d",h,m,s);
-  } else {
-    sprintf(time, "%02d:%02d",m,s);
-  }
-  //  SDDEBUG("time:%s\n", time);
+  playa_info_make_timestr(time, info->info[PLAYA_INFO_TIME].v);
   info->info[PLAYA_INFO_TIMESTR].s = strdup(time);
 }
 
@@ -293,7 +288,7 @@ int playa_info_update(playa_info_t *info)
   }
 
   curinfo.update_mask = u;
-  curinfo.valid = ++info_id;
+  curinfo.valid = next_info_id();
   *info = curinfo; 
   unlockinfo();
 
@@ -456,3 +451,28 @@ char * playa_info_timestr(playa_info_t * info)
   return string(info, PLAYA_INFO_TIMESTR, (char *)-1);
 }
 
+char * playa_info_make_timestr(char * time, unsigned int ms)
+{
+  static char timebuf[32];
+  unsigned int h,m,s;
+
+  if (!time) {
+	time = timebuf;
+  }
+  if (!ms) {
+    strcpy(time, "--:--");
+  } else {
+	h = ms / (3600<<10);
+	ms -= h * (3600<<10);
+	m = ms / (60<<10);
+	ms -= m * (60<<10);
+	s = ms >> 10;
+
+	if (h) {
+	  sprintf(time, "%d:%02d:%02d",h,m,s);
+	} else {
+	  sprintf(time, "%02d:%02d",m,s);
+	}
+  }
+  return time;
+}

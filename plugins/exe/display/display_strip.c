@@ -5,7 +5,7 @@
  * @date     2002/10/17
  * @brief    graphics lua extension plugin, strip interface
  * 
- * $Id: display_strip.c,v 1.3 2002-11-27 09:58:09 ben Exp $
+ * $Id: display_strip.c,v 1.4 2002-11-29 08:29:42 ben Exp $
  */
 
 #include "draw/gc.h"
@@ -13,6 +13,8 @@
 
 #include "display_driver.h"
 #include "display_matrix.h"
+
+#include "sysdebug.h"
 
 struct dl_draw_strip_command {
   dl_command_t uc;
@@ -69,12 +71,15 @@ void dl_draw_strip(dl_list_t * dl,
 											  - sizeof(c->v)
 											  + n * sizeof(c->v[0]));
 
+/*   SDDEBUG("[%s] %d %x\n", __FUNCTION__, n, flags); */
+
   if (c) {
 	int i;
 	c->n = n;
 	c->flags = flags;
 	for (i=0; i<n; ++i) {
 	  c->v[i] = v[i];
+/* 	  SDDEBUG("%02d %f %f %f %f\n\n", i, v[i].x, v[i].y, v[i].w, v[i].w); */
 	}
     dl_insert(dl, c,
 			  dl_draw_strip_render_opaque,
@@ -166,6 +171,11 @@ DL_FUNCTION_START(draw_strip)
 	return 0;
   } else {
 	printf("%s : bad arguments\n", __FUNCTION__);
+	return 0;
+  }
+
+  if (nv<3) {
+	printf("%s : not enought vertrices (%d)\n", __FUNCTION__, nv);
 	return 0;
   }
 

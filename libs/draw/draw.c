@@ -5,7 +5,7 @@
  * @date    2002/11/22
  * @brief   drawing system
  *
- * $Id: draw.c,v 1.2 2002-11-28 04:22:44 ben Exp $
+ * $Id: draw.c,v 1.3 2002-11-29 08:29:41 ben Exp $
  */
 
 #include "draw/draw.h"
@@ -55,7 +55,7 @@ int draw_init(const float screen_width, const float screen_height)
   /* Init graphic context. */
   SDDEBUG("Init graphic context:\n");
   SDINDENT;
-  err = gc_init(screen_width, screen_height);
+  err = gc_init();
   SDUNINDENT;
   if (err < 0) goto error;
 

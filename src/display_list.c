@@ -5,13 +5,14 @@
  * @author    benjamin gerard <ben@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.c,v 1.10 2002-11-28 04:22:44 ben Exp $
+ * @version   $Id: display_list.c,v 1.11 2002-11-29 08:29:42 ben Exp $
  */
 
 #include <malloc.h>
 #include "display_list.h"
 #include "draw/draw.h"
 #include "draw/gc.h"
+#include "draw/text.h"
 #include "sysdebug.h"
 
 #define DLCOM(HEAP,OFFSET) ((dl_command_t *)((char*)(HEAP)+(OFFSET)))
@@ -108,10 +109,6 @@ dl_list_t * dl_create(int heapsize, int active, int sub)
   dl_lists_t * lists;
   dl_list_t * l;
 
-  if (!heapsize) {
-    heapsize = 1024;
-  }
-
   l = calloc(1, sizeof(dl_list_t));
   if (!l) {
 	return 0;
@@ -127,7 +124,7 @@ dl_list_t * dl_create(int heapsize, int active, int sub)
 	lists = &dl_lists;
   }
 
-  l->heap = malloc(heapsize);
+  l->heap = heapsize ? malloc(heapsize) : 0;
   l->heap_size = l->heap ? heapsize : 0;
   l->color.a = l->color.r = l->color.g = l->color.b = 1.0f;
   MtxIdentity(l->trans);
@@ -343,7 +340,7 @@ static dl_code_e dl_render_list(dl_runcontext_t * rc, dl_context_t * parent,
 	MtxCopy(context.trans, l->trans);
 	break;
   default:
-	MtxMult3(context.trans, parent->trans, l->trans);
+	MtxMult3(context.trans, l->trans, parent->trans);
   }
 
   switch (rc->color_inherit) {
@@ -357,7 +354,7 @@ static dl_code_e dl_render_list(dl_runcontext_t * rc, dl_context_t * parent,
 	draw_color_add_clip(&context.color, &parent->color, &l->color);
 	break;
   default:
-	draw_color_add_clip(&context.color, &parent->color, &l->color);
+	draw_color_mul_clip(&context.color, &parent->color, &l->color);
   }
 
   start_idx = 0;
@@ -418,89 +415,13 @@ static void dl_render(int opaque)
 
   locklists();
   LIST_FOREACH(l, &dl_lists, g_list) {
+	gc_reset();
 	lock(l);
 	dl_render_list(&listrc, 0, l, opaque);
 	unlock(l);
   }
   unlocklists();
 }
-
-#if 0
-static void dl_render(int opaque)
-{
-  dl_list_t * l;
-  dl_context_t context;
-
-  static int debug = 0;
-
-  locklists();
-
-  debug = (debug+1) & 1023;
-
-  gc_push();
-
-  LIST_FOREACH(l, &dl_lists, g_list) {
-/*     dl_command_t * c; */
-/* 	float clipx1,clipy1,clipx2,clipy2; */
-
-    lock(l);
-
-/* 	if (debug == 1) { */
-/* 	  SDDEBUG("[%s] : active:[%s] [%d]\n", __FUNCTION__, */
-/* 			  l->flags.active ? "ON" : "OFF", l->n_commands); */
-/* 	} */
-
-	if (l->flags.active) {
-	  
-	  memcpy(context.trans, l->trans, sizeof(context.trans));
-	  memcpy(&context.color, &l->color, sizeof(context.color));
-
-#if 0	
-	  if (l->clip_box.x1 < l->clip_box.x2) {
-		clipx1 = dl_trans[0][0] * l->clip_box.x1 + dl_trans[3][0];
-		clipx2 = dl_trans[0][0] * l->clip_box.x2 + dl_trans[3][0];
-	  } else {
-		clipx1 = 0;
-		clipx2 = draw_screen_width;
-	  }
-	  if(l->clip_box.y1 < l->clip_box.y2) {
-		clipy1 = dl_trans[1][1] * l->clip_box.y1 + dl_trans[3][1];
-		clipy2 = dl_trans[1][1] * l->clip_box.y2 + dl_trans[3][1];
-	  } else {
-		clipy1 = 0;
-		clipy2 = draw_screen_height;
-	  }
-	  draw_set_clipping4(clipx1,clipy1,clipx2,clipy2);
-#endif
-	  draw_set_clipping4(0,0,draw_screen_width,draw_screen_height);
-
-	  {
-		dl_comid_t id;
-		const char * const heap = l->heap;
-		id = l->first_comid;
-
-		while (id != DL_COMID_ERROR) {
-		  dl_command_t * c = DLCOM(heap,id);
-
-		  if (opaque) {
-			if (c->render_opaque)
-			  c->render_opaque(c, &context);
-		  } else {
-			if (c->render_transparent)
-			  c->render_transparent(c, &context);
-		  }
-		  id = c->next_id;
-		}
-
-	
-	  }
-	}
-    unlock(l);
-  }
-  gc_pop(GC_RESTORE_ALL);
-  unlocklists();
-}
-#endif 
 
 void dl_render_opaque()
 {
@@ -578,7 +499,19 @@ static dl_code_e sub_render(struct sublist_command_t * c,
   dl_code_e code;
   dl_list_t * dl = c->sublist;
 
+  static int debug = 0;
+  debug = (debug+1)&1023;
+  debug = 0;
+
   lock(dl);
+  if (debug == 1) {
+	SDDEBUG("[%s] [%p,%s,%s,%d]\n",__FUNCTION__,
+			dl,
+			dl->flags.sublist?"SUB":"MAIN",
+			dl->flags.active?"ON":"OFF",
+			dl->n_commands
+			);
+  }
   code = dl_render_list(&c->rc, context, dl, opaque);
   unlock(c->sublist);
 

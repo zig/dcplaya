@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.18 2002-11-28 20:20:24 ben Exp $
+ * $Id: display.c,v 1.19 2002-11-29 08:29:42 ben Exp $
  */
 
 #include <stdlib.h>
@@ -222,13 +222,16 @@ DL_FUNCTION_END()
 
 DL_FUNCTION_START(set_color)
 {
-  dl_color_t col = { 
-    lua_tonumber(L, 2),
-    lua_tonumber(L, 3),
-    lua_tonumber(L, 4),
-    lua_tonumber(L, 5),
-  };
-  dl_set_color(dl, &col);
+  int i;
+  float col[4];
+  const float * dcol = (const float *) dl_get_color(dl);
+
+  for (i=0; i<4; ++i) {
+	col[i] = (lua_type(L,i+2) == LUA_TNUMBER)
+	  ? lua_tonumber(L, i+2)
+	  : dcol[i];
+  }
+  dl_set_color(dl,(const dl_color_t *) col);
   return 0;
 }
 DL_FUNCTION_END()
@@ -313,7 +316,7 @@ static luashell_command_description_t display_commands[] = {
     DRIVER_NAME"_driver_init", 0,            /* long and short names */
     "print [["
 	DRIVER_NAME"_driver_init : "
-	"INTERNAL ; initialize lua side display driver "
+	"INTERNAL ; initialize lua side display driver."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_init            /* function */
   },
@@ -321,53 +324,56 @@ static luashell_command_description_t display_commands[] = {
     DRIVER_NAME"_driver_shutdown", 0,        /* long and short names */
     "print [["
 	DRIVER_NAME"_driver_shutdown : "
-	"INTERNAL ; shut down lua side display driver "
+	"INTERNAL ; shut down lua side display driver."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_shutdown        /* function */
   },
   {
-    "dl_new_list", 0,                    /* long and short names */
+    "dl_new_list", "dl_new",             /* long and short names */
     "print [["
 	"dl_new_list([heapsize, [active, [sub-list] ] ]) : "
-	"create a new display list, return handle on display list"
+	"Create a new display list, return handle on display list."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_new_list        /* function */
   },
   {
-    "dl_destroy_list", 0,                /* long and short names */
+    "dl_destroy_list", "dl_destroy",     /* long and short names */
     "print [["
-      "dl_destroy_list(list) : destroy the given list"
+	"dl_destroy_list(list) : "
+	"Destroy the given list."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_destroy_list    /* function */
   },
   {
     "dl_heap_size", 0,               /* long and short names */
     "print [["
-      "dl_heap_size(list) : get heap size in bytes"
+	"dl_heap_size(list) : "
+	"Get heap size in bytes."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_heap_size      /* function */
   },
   {
     "dl_heap_used", 0,              /* long and short names */
     "print [["
-      "dl_heap_used(list) : get number of byte used in the heap"
+	"dl_heap_used(list) : "
+	"Get number of byte used in the heap."
     "]]",                               /* usage */
     SHELL_COMMAND_C, lua_heap_used      /* function */
   },
   {
     "dl_set_active", 0,                  /* long and short names */
     "print [["
-      "dl_set_active(list,state) : set active state"
+	"dl_set_active(list,state) : "
+	"Set active state and return old state."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_set_active      /* function */
   },
   {
     "dl_set_active2", 0,                  /* long and short names */
     "print [["
-    "dl_set_active(list1,list2,state) : set active state of 2 lists.\n"
-	" state=0  : desactive both lists.\n"
-	" state!=0 : setted bits toggle state of list.\n"
-	"            bit0 : list1, bit1 : list2\n"
+    "dl_set_active(list1,list2,state) : "
+	"Set active state of 2 lists. Bit:0/1 respectively state of list1/list2.\n"
+	"Return old states."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_set_active2     /* function */
   },

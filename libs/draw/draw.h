@@ -5,7 +5,7 @@
  * @date    2002/11/22
  * @brief   drawing system
  *
- * $Id: draw.h,v 1.1 2002-11-25 16:42:28 ben Exp $
+ * $Id: draw.h,v 1.2 2002-11-29 08:29:41 ben Exp $
  */
 
 #ifndef _DRAW_H_
@@ -14,8 +14,9 @@
 #include "matrix.h"
 #include "draw/viewport.h"
 
-/** @defgroup dcplaya_draw dcplaya drawing system API.
- *  @ingroup  dcplaya_devel
+/** @defgroup  dcplaya_draw  Drawing system.
+ *  @ingroup   dcplaya_devel
+ *  @author    Ben(jamin) Gerard <ben@sashipa.com>
  *
  *  dcplaya drawing system API provides functions for drawing text and
  *  geometrical primitives towards tile accelerator.
@@ -29,11 +30,17 @@
  *  - Strip primitive
  */
 
-/** @defgroup dcplaya_draw_3d dcplaya 3D system API.
+/** @defgroup  dcplaya_draw_3d  3D system API.
  *  @ingroup   dcplaya_draw
+ *  @author    Ben(jamin) Gerard <ben@sashipa.com>
  *
  *  dcplaya 3D system API provides fuctions for calculating and drawing 
  *  3D primitives.
+ */
+
+/** @name  Drawing system globals.
+ *  @ingroup   dcplaya_draw
+ *  @{
  */
 
 /** Current drawing system screen width. */
@@ -48,8 +55,10 @@ extern viewport_t draw_viewport;
 /** Current drawing system projection. */
 extern matrix_t draw_projection;
 
+/**@}*/
+
 /** @name Drawing system initialization funnctions.
- *  @ingroup   dcplaya_draw
+ *  @ingroup dcplaya_draw
  *  @{
  */
 

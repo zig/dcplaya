@@ -4,10 +4,11 @@
  * @author   ben(jamin) gerard <ben@sashipa.com>
  * @brief    graphic context interface.
  *
- * $Id: gc.c,v 1.3 2002-11-28 04:22:44 ben Exp $
+ * $Id: gc.c,v 1.4 2002-11-29 08:29:41 ben Exp $
  */
 
 #include "draw/gc.h"
+#include "draw/draw.h"
 #include "sysdebug.h"
 
 #define MAX_GC 16
@@ -18,24 +19,49 @@ static gc_t * sp_gc;
 gc_t default_gc;
 gc_t * current_gc;
 
-int gc_init(const float width, const float height)
+void gc_default(void)
+{
+  int i;
+  gc_t * gc = current_gc;
+
+  /* Default clipping box. */
+  gc->clipbox.x1 = 0;
+  gc->clipbox.y1 = 0;
+  gc->clipbox.x2 = draw_screen_width;
+  gc->clipbox.y2 = draw_screen_height;
+
+  /* Default colors. */
+  for (i=0; i< sizeof(gc->colors)/ sizeof(*gc->colors); ++i) {
+	gc->colors[i].a = gc->colors[i].r = gc->colors[i].g = gc->colors[i].b = 1;
+  }
+
+  /* Default text properties. */
+  text_set_color(1,1,1,1);
+  text_set_properties(0,16,1);
+  text_set_escape('%');
+}
+
+void gc_reset(void)
+{
+  sp_gc = gc_stack;
+  gc_default();
+}
+
+int gc_init(void)
 {
   int err;
 
-  SDDEBUG("[%s] : W:%.02f H:%.02f\n", __FUNCTION__, width, height);
+  SDDEBUG("[%s]\n", __FUNCTION__);
   SDINDENT;
 
   current_gc = &default_gc;
   sp_gc = gc_stack;
 
-  /* Init clipping box. */
-  current_gc->clipbox.x1 = 0;
-  current_gc->clipbox.y1 = 0;
-  current_gc->clipbox.x2 = width;
-  current_gc->clipbox.y2 = height;
-
   /* Init text drawing system : load font ... */
   err = text_init();
+  if (!err) {
+	gc_reset();
+  }
   
   SDUNINDENT;
   SDDEBUG("[%s] := [%d]\n", __FUNCTION__, err);

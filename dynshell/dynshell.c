@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.40 2002-11-25 20:31:39 ben Exp $
+ * @version    $Id: dynshell.c,v 1.41 2002-11-29 08:29:41 ben Exp $
  */
 
 #include <stdio.h>
@@ -1106,8 +1106,13 @@ static int lua_play(lua_State * L)
   const char * file = 0, *error = 0;
   unsigned int imm = 1;
   int track = 0;
+  int isplaying;
 
   /* Get lua parms */
+  if (!nparam) {
+	goto ok;
+  }
+
   if (nparam >= 1) {
     file = lua_tostring(L, 1);
   }
@@ -1132,29 +1137,22 @@ static int lua_play(lua_State * L)
     printf("play : %s\n", error);
     return 0;
   }
+
+ ok:
+  isplaying = playa_isplaying();
   lua_settop(L,0);
-  lua_pushnumber(L,1);
+  lua_pushnumber(L,isplaying);
   return 1;
 }
 
 static int lua_pause(lua_State * L)
 {
-  int nparam = lua_gettop(L);
-  unsigned int pause = 1;
+  int pause;
 
-  if (!nparam) {
+  if (lua_type(L, 1) != LUA_TNUMBER) {
 	pause = playa_ispaused();
   } else {
-	int p;
-    p = lua_tonumber(L, 1);
-	pause = playa_pause(p);
-/* 	if (p!=pause) { */
-/* 	  if (p) { */
-/* 		print("Music paused\n"); */
-/* 	  } else { */
-/* 		print("Music resumed\n"); */
-/* 	  } */
-/* 	} */
+	pause = playa_pause(lua_tonumber(L, 1) != 0);
   }
   lua_settop(L,0);
   lua_pushnumber(L,pause);
@@ -1199,6 +1197,15 @@ static int lua_stop(lua_State * L)
   lua_settop(L,0);
   lua_pushnumber(L,1);
   return 1;
+}
+
+static int lua_playtime(lua_State * L)
+{
+  unsigned int ms = playa_playtime();
+
+  lua_pushnumber(L, ms / 1024.0f);
+  lua_pushstring(L, playa_info_make_timestr(0, ms));
+  return 2;
 }
 
 static int convert_info(lua_State * L, playa_info_t * info)
@@ -1295,6 +1302,22 @@ static int lua_music_info(lua_State * L)
 
   return err;
 }
+
+static int lua_music_info_id(lua_State * L)
+{
+  playa_info_t * info;
+  int id = 0;
+
+  info = playa_info_lock();
+  if (info) {
+	id = info->valid;
+	playa_info_release(info);
+  }
+  lua_settop(L,0);
+  lua_pushnumber(L,id);
+  return 1;
+}
+
 
 /* THIS IS REALLY DIRTY AND TEMPORARY :)) */
 #include "controler.h"
@@ -1650,18 +1673,19 @@ static luashell_command_description_t commands[] = {
   },
 
   {
+    "playa_play",
     "play",
-    0,
     "print([["
-    "play(music-file [,track, [,immediat] ]) : play a music file\n"
+    "play([music-file [,track, [,immediat] ] ]) : "
+	"Play a music file or get play status.\n"
     "]])",
 
     SHELL_COMMAND_C, lua_play
   },
 
   {
+    "playa_stop",
     "stop",
-    0,
     "print([["
     "stop([immediat]) : stop current music\n"
     "]])",
@@ -1669,16 +1693,17 @@ static luashell_command_description_t commands[] = {
     SHELL_COMMAND_C, lua_stop
   },
   {
+    "playa_pause",
     "pause",
-    0,
     "print([["
     "pause([pause_status]) : pause or resume current music or read status\n"
     "]])",
     SHELL_COMMAND_C, lua_pause
   },
+
   {
+    "playa_fade",
     "fade",
-    0,
     "print([["
     "fade([seconds]) : Music fade-in / fade-out.\n"
 	" If seconds = 0 or no seconds is missing read current fade status.\n"
@@ -1689,23 +1714,43 @@ static luashell_command_description_t commands[] = {
   },
 
   {
-    "info",
-    0,
+    "playa_playtime",
+    "playtime",
     "print([["
-    "info([filename [ ,track ] ]) :\n"
+    "seconds,str = playa_playtime() :\n"
+	"Returns current playing time in seconds and "
+	"into a hh:mm:ss formated string."
+    "]])",
+    SHELL_COMMAND_C, lua_playtime
+  },
+
+  {
+    "playa_info",
+    "info",
+    "print([["
+    "playa_info([filename [ ,track ] ]) :\n"
+	"Get music information table."
     "]])",
     SHELL_COMMAND_C, lua_music_info
+  },
+
+  {
+    "playa_info_id",
+    "info_id",
+    "print([["
+    "playa_info_id() :\n"
+	"Get current music identifier."
+    "]])",
+    SHELL_COMMAND_C, lua_music_info_id
   },
 
   { 
     "cond_connect",
     0,
-
     "print([["
     "cond_connect(state) : set the connected state of main controller,"
 	"return old state.\n"
     "]])",
-
     SHELL_COMMAND_C, lua_cond_connect
   },
   {
