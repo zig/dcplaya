@@ -4,7 +4,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.9 2002-09-11 03:22:33 zig Exp $
+ * @version   $Id: dreamcast68.c,v 1.10 2002-09-11 14:29:13 zig Exp $
  */
 
 //#define RELEASE
@@ -793,7 +793,7 @@ int dreammp3_main(int argc, char **argv)
 
   /* Initialize the console debugging log facility */
   csl_init_main_console();
-  csl_printf(main_console, "TOTO !\n");
+  csl_printf(csl_main_console, "TOTO !\n");
   //SDWARNING("TOTO !\n");
 
 
@@ -810,6 +810,10 @@ int dreammp3_main(int argc, char **argv)
     goto error;
   }
   //return 0;
+
+  /* change main console render mode */
+  csl_disable_render_mode(csl_main_console, CSL_RENDER_BASIC);
+  csl_disable_render_mode(csl_main_console, CSL_RENDER_WINDOW);
   
   /* WARNING MESSAGE */
   dbglog( DBG_DEBUG, "** " __FUNCTION__ " : starting WARNING screen\n");

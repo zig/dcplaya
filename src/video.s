@@ -129,11 +129,14 @@ drawy:
 	! Even line
 	mov	#12,r3
 drawx1:	
+	mov	#0,r5
 	rotl	r4
 	bf/s	nopixel1
 	dt	r3
-	mov.w	r7,@r0	! Set pixel
+	mov	r7,r5
+!	mov.w	r7,@r0	! Set pixel
 nopixel1:
+	mov.w	r5,@r0	! Set pixel
 	bf/s	drawx1
 	add	#2,r0
 	mov.w	drawmod,r3
@@ -141,12 +144,15 @@ nopixel1:
 	add	r3,r0
 	! Odd line
 	mov	#12,r3
-drawx2:	
+drawx2:
+	mov	#0,r5
 	rotl	r4
 	bf/s	nopixel2
 	dt	r3
-	mov.w	r7,@r0	! Set pixel
+	mov	r7,r5
+!	mov.w	r7,@r0	! Set pixel
 nopixel2:
+	mov.w	r5,@r0	! Set pixel
 	bf/s	drawx2
 	add	#2,r0
 	mov.w	drawmod,r3
@@ -166,8 +172,10 @@ drawmod:
 	! Assumes a 640*480 screen with RGB555 or RGB565 pixels
 
 	! r4 = pixel colour
+	! r5 = frame base offset (VP)
 _clrscr:	
 	mov.l	vrambase,r0
+	add	r5,r0   ! VP :	 add frame offset
 	mov.l	clrcount,r1
 clrloop:
 	mov.w	r4,@r0	! clear one pixel

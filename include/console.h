@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.h,v 1.1 2002-09-11 03:23:16 zig Exp $
+ * @version   $Id: console.h,v 1.2 2002-09-11 14:29:13 zig Exp $
  */
 
 
@@ -65,7 +65,7 @@ void csl_vprintf(csl_console_t * console, const char *fmt, va_list args );
 
 
 /* Main console */
-extern csl_console_t * main_console;
+extern csl_console_t * csl_main_console;
 void csl_init_main_console();
 void csl_close_main_console();
 
