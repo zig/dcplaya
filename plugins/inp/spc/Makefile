@@ -4,7 +4,7 @@
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sasahipa.com>
 #
 #
-# $Id: Makefile,v 1.4 2003-04-19 23:53:48 vincentp Exp $
+# $Id: Makefile,v 1.5 2003-04-20 04:43:01 vincentp Exp $
 #
 
 LEZ=yes
@@ -30,3 +30,10 @@ include ../../../Makefile.inc
 $(SPC_LIB):
 	$(MAKE) -C $(SPC_DIR) -f Makefile.dcp
 
+clean : clean_libspc
+clean_libspc:
+	$(MAKE) -C $(SPC_DIR) -f Makefile.dcp clean
+
+depend : depend_libspc
+depend_libspc:
+	$(MAKE) -C $(SPC_DIR) -f Makefile.dcp depend

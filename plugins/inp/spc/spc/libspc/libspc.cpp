@@ -128,29 +128,40 @@ int SPC_set_state(SPC_Config *cfg)
     return so.buffer_size;
 }
 
-//#include <kos.h>
+#include <kos.h>
 
 /* get samples
    ---------------------------------------------------------------- */
 void SPC_update(unsigned char *buf)
 {
   // APU_LOOP
-  int c, ic;
+  int c, ic, oc;
 
-  //vid_border_color(255, 0, 0);
+  vid_border_color(255, 0, 0);
 #if 1
-  for (c = 0; c < 2048000 / 32 / RATE; c ++) {
+  for (c = 0; c < 2048000 / RATE; ) {
+    oc = c;
     if (IAPU.Slowdown > 0) {
       /* VP : in slowdown mode, SPC executes 32 times slower */
-      APU_EXECUTE1();
+      c += 8 * S9xAPUCycleLengths [*IAPU.PC];
+      (*S9xApuOpcodes[*IAPU.PC]) ();
+      //APU_EXECUTE1();
       IAPU.Slowdown --;
     } else {
       /* VP : no slowdown, normal speed of the SPC */
-      for (ic = 0; ic < 32; ic ++)
-	APU_EXECUTE1();
+      for (ic = c + 256; c < ic; ) {
+	c += S9xAPUCycleLengths [*IAPU.PC];
+	(*S9xApuOpcodes[*IAPU.PC]) ();
+	//APU_EXECUTE1();
+      }
     }
-    IAPU.TimerErrorCounter ++;
-    DoTimer();
+
+    /* VP : Execute timer required number of time */
+    for (ic = 0; ic < (c / 32) - (oc / 32) ; ic++) {
+      IAPU.TimerErrorCounter ++;
+      DoTimer();
+    }
+
   }
 #else
   for (APU.Cycles = 0; APU.Cycles < 204800 * 5 / 2 / RATE; APU.Cycles ++) {
@@ -163,9 +174,9 @@ void SPC_update(unsigned char *buf)
   }
 #endif
 
-  //vid_border_color(255, 255, 0);
+  vid_border_color(255, 255, 0);
   S9xMixSamples ((unsigned char *)buf, samples_per_mix);
-  //vid_border_color(0, 0, 0);
+  vid_border_color(0, 0, 0);
 
 }
 

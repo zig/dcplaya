@@ -1,5 +1,5 @@
 /*
- * $Id: spc_driver.c,v 1.9 2003-04-20 02:22:57 vincentp Exp $
+ * $Id: spc_driver.c,v 1.10 2003-04-20 04:43:02 vincentp Exp $
  */
 
 #include "dcplaya/config.h"
@@ -26,7 +26,7 @@ volatile static int ready; /**< Ready flag : 1 when music is playing */
 static SPC_Config spc_config = {
   //26800,
   16000,
-  //  44100,
+  //44100,
   16,
   2,
   0,
