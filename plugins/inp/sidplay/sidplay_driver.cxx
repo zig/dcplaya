@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/09/03
  * @brief     sidplay input plugin for dcplaya
- * @version   $Id: sidplay_driver.cxx,v 1.12 2002-11-14 23:40:27 benjihan Exp $
+ * @version   $Id: sidplay_driver.cxx,v 1.13 2002-12-06 14:41:35 ben Exp $
  */
 
 /* generated config include */
@@ -62,6 +62,8 @@ static sidTune * tune;
 static ubyte * sidbuffer;
 static int sidbuffer_len;
 
+static int auto_next_track = 1;
+
 static unsigned int minMs;      // Min time (1024th of second) for music
 static unsigned int maxMs;      // Max time (1024th of second) for music
 static unsigned int zeroMs;     // Time of successive zero for end detect.
@@ -82,6 +84,7 @@ static int init(any_driver_t *d)
   maxMs = (60*8)<<10;  /* All tracks have 8 minutes time maximum */
   zeroMs = 6<<10;      /* Successive zero time for end detection */
   tune = 0;
+  auto_next_track = 1;
   engine = new emuEngine;
   if (!engine) {
     err = __LINE__;
@@ -169,10 +172,63 @@ static int load_sid(const char *fn)
   return -1;
 }
 
+static int start_track(int track, playa_info_t *info)
+{
+  sidTuneInfo sidinfo;
+  unsigned int ms;
+  const int sht = 5;
+
+  playa_info_t infotmp;
+
+  if (!tune || !tune->getInfo(sidinfo)) {
+	return -1;
+  }
+  
+  if (track == 0) {
+    track = sidinfo.startSong;
+  } else if (track == -1) {
+	track = sidinfo.currentSong+1;
+  }
+  if (track < 1 || track > sidinfo.songs) {
+	return 0;
+  }
+
+  if (!sidEmuInitializeSong(*engine, *tune, track)) {
+	return -1;
+  }
+
+  if (!info) {
+	info = &infotmp;
+  }
+  disk_info(info, tune);
+	  
+  ms = info->info[PLAYA_INFO_TIME].v;
+  zeroGoal = zeroCnt = splCnt = 0;
+
+  if (!ms) {
+	ms = maxMs;
+	splGoalMin = (config.frequency * (minMs>>5))  >> sht;
+	splGoal    = (config.frequency * (maxMs>>5))  >> sht;
+	zeroGoal   = (config.frequency * (zeroMs>>5)) >> sht;
+  } else {
+	splGoal = (config.frequency * (ms >> 5)) >> sht;
+  }
+  
+//   if (zeroGoal) {
+//     SDWARNING("Music has no time info. Auto detect parameters:\n"
+// 			  " Min  sample:%u\n"
+// 			  " Max  sample:%u\n"
+// 			  " Zero sample:%u\n",splGoalMin, splGoal, zeroGoal);
+//   } else {
+//     SDWARNING("Music has time. Max sample:%u\n", splGoal);
+//   }
+
+  return track;
+}
+
 static int start(const char *fn, int track, playa_info_t *info)
 {
   int err = 0;
-  sidTuneInfo sidinfo;
 
   if (!tune) {
     tune = new sidTune(0,0);
@@ -181,60 +237,20 @@ static int start(const char *fn, int track, playa_info_t *info)
     err = __LINE__;
     goto error;
   }
- 
-  if (load_sid(fn) < 0) {
+   if (load_sid(fn) < 0) {
     err = __LINE__;
     goto error;
   }
-
   if (!tune->load(sidbuffer, sidbuffer_len)) {
     err = __LINE__;
     goto error;
   }
-
   /* Sid track are 1 based. */
-  ++track;
-  if (track < 1 || track > sidinfo.songs) {
-    track = sidinfo.startSong;
-  }
+  track = start_track(track+1, info);
+  err = track < 0;
 
-  if (!sidEmuInitializeSong(*engine, *tune, track)) {
-    err = __LINE__;
-    goto error;
-  }
-  disk_info(info, tune);
-
-  {
-	unsigned int ms = info->info[PLAYA_INFO_TIME].v;
-	const int sht = 5;
-// 	- info->info[PLAYA_INFO_STEREO].v -
-// 	  info->info[PLAYA_INFO_BITS].v;
-
-	zeroGoal = zeroCnt = splCnt = 0;
-
-	if (!ms) {
-	  /* No time, need to */
-	  ms = maxMs;
-	  splGoalMin = (config.frequency * (minMs>>5))  >> sht;
-	  splGoal    = (config.frequency * (maxMs>>5))  >> sht;
-	  zeroGoal   = (config.frequency * (zeroMs>>5)) >> sht;
-	} else {
-	  splGoal = (config.frequency * (ms >> 5)) >> sht;
-	}
-  }
-  
-  if (zeroGoal) {
-    SDWARNING("Music has no time info. Auto detect parameters:\n"
-			  " Min  sample:%u\n"
-			  " Max  sample:%u\n"
-			  " Zero sample:%u\n",splGoalMin, splGoal, zeroGoal);
-  } else {
-    SDWARNING("Music has time. Max sample:%u\n", splGoal);
-  }
-
-  err = 0;
  error:
-  return err;
+  return -err;
 }
 
 static int decoder(playa_info_t *info)
@@ -294,7 +310,7 @@ static int decoder(playa_info_t *info)
 // 		SDDEBUG("Idle: %u %u\n", n, zeroCnt);
 		if (zeroCnt >= zeroGoal && splCnt >= splGoalMin) {
 		  /* End detected */
-		  SDDEBUG("sid: End detected @%u\n",splCnt);
+// 		  SDDEBUG("sid: End detected @%u\n",splCnt);
 		  splCnt = splGoal;
 		}
 	} else {
@@ -303,8 +319,16 @@ static int decoder(playa_info_t *info)
   }
 
   if (splCnt >= splGoal) {
-    SDDEBUG("sidplay: reach end [%u > %u]\n",splCnt, splGoal);
-    status |= INP_DECODE_END ;
+//     SDDEBUG("sidplay: reach end [%u > %u]\n",splCnt, splGoal);
+	int track;
+	track = start_track(-1, info);
+	if (track < 0) {
+	  status = INP_DECODE_ERROR;
+	} else if (!track) {
+	  status |= INP_DECODE_END ;
+	} else {
+	  status |= INP_DECODE_INFO;
+	}
   }
 
   return status;
@@ -350,7 +374,7 @@ static int disk_info(playa_info_t *info, sidTune * sidtune)
     return -1;
   }
 
-  SDDEBUG("disk_info(%p)\n",sidtune);
+//   SDDEBUG("disk_info(%p)\n",sidtune);
 
 //$$$ ben: Make stream channel low frq !! Add another variable for replay frq
     //(sidinfo.clock & SIDTUNE_CLOCK_PAL) ? 50 : 60;

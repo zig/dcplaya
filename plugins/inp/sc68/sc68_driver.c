@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: sc68_driver.c,v 1.3 2002-09-25 03:21:22 benjihan Exp $
+ * @version   $Id: sc68_driver.c,v 1.4 2002-12-06 14:41:35 ben Exp $
  */
 
 /* generated config include */
@@ -36,6 +36,8 @@
 
 #include "inp_driver.h"
 #include "fifo.h"
+
+#include "sysdebug.h"
 
 #undef DEBUG
 #define DEBUG 1
@@ -106,7 +108,7 @@ static int init(any_driver_t *d)
   int err = 0;
   int frq;
 
-  dbglog(DBG_DEBUG, "sc68 : Init [%s]\n", d->name);
+/*   SDDEBUG("sc68 : Init [%s]\n", d->name); */
 
   /* check whether EMU68 is compiled without debug option */
   if (EMU68_sizeof_reg68() != sizeof(reg68_t)) {
@@ -129,7 +131,7 @@ static int init(any_driver_t *d)
     err = __LINE__;
     goto error;
   }
-  dbglog(DBG_DEBUG, "sc68: 68K emulator init : OK\n");
+/*   SDDEBUG("sc68: 68K emulator init : OK\n"); */
 
   /* IO replay frequency init */
   app.mix.real_frq = 44100;
@@ -140,13 +142,13 @@ static int init(any_driver_t *d)
 
  error:
   spool_error_message();
-  dbglog(DBG_DEBUG, ">> %s : error line [%d]\n", __FUNCTION__ , err);
-  return err;
+  SDERROR("[%s] : error line [%d]\n", __FUNCTION__ , err);
+  return -!!err;
 }
 
 static int stop(void)
 {
-  dbglog(DBG_DEBUG, "sc68: STOP, Eject disk\n");
+/*   dbglog(DBG_DEBUG, "sc68: STOP, Eject disk\n"); */
 
   SC68stop(&app);
   SC68eject(&app);
@@ -166,7 +168,7 @@ static int start(const char *fn, int track, playa_info_t *info)
   int err = 0;
   disk68_t *disk = 0;
 
-  SDDEBUG("%s(%s)\n", __FUNCTION__, fn);
+/*   SDDEBUG("%s(%s)\n", __FUNCTION__, fn); */
   /* $$$ Hack romdisk */
   fs_romdisk_shutdown();
   fs_romdisk_init(sc68disk);
@@ -193,7 +195,7 @@ static int start(const char *fn, int track, playa_info_t *info)
       char *replay = app.cur_disk->mus[i].replay;
       if (replay && !strcmp("tao_tsd", replay)) {
         app.cur_disk->mus[i].replay = "tao_tsd25";
-        SDDEBUG( "sc68 : Patched #%d for tao_tsd25\n", i+1);
+/*         SDDEBUG( "sc68 : Patched #%d for tao_tsd25\n", i+1); */
       } 
     }
 
@@ -274,9 +276,9 @@ static int FillYM(void)
 
   /* Reach end of track */
   if (app.time.elapsed > app.time.track) {
-    dbglog(DBG_DEBUG, "sc68 : END OF TRACK\n");
+/*     dbglog(DBG_DEBUG, "sc68 : END OF TRACK\n"); */
     if (app.cur_track + 1 >= app.cur_disk->nb_six) {
-      dbglog(DBG_DEBUG, "sc68 : NO MORE TRACK\n");
+/*       dbglog(DBG_DEBUG, "sc68 : NO MORE TRACK\n"); */
       status |= INP_DECODE_END;
     } else {
       SC68track(&app, app.cur_track + 1);
@@ -358,7 +360,7 @@ static char * make_track(disk68_t *d, char * tmp)
 static int update_info(playa_info_t *info, disk68_t *d, music68_t *mus,
 		       char *tmp)
 {
-  SDDEBUG("update info [%p] [%p]\n", d, mus);
+/*   SDDEBUG("update info [%p] [%p]\n", d, mus); */
   info->update_mask = 0;
   if (!d) {
     return -1;
@@ -367,7 +369,7 @@ static int update_info(playa_info_t *info, disk68_t *d, music68_t *mus,
     mus = d->mus + d->default_six;
   }
 
-  SDDEBUG("update info\n");
+/*   SDDEBUG("update info\n"); */
   playa_info_time(info, mus->time << 10);
   playa_info_desc(info, make_desc(mus,tmp));
   playa_info_artist(info, make_author(mus,tmp));
@@ -382,12 +384,12 @@ static int disk_info(playa_info_t *info, disk68_t *d)
   char tmp[256];
   music68_t *mus = 0;
 
-  SDDEBUG("disk info [%p]\n", d);
+/*   SDDEBUG("disk info [%p]\n", d); */
 
   if (!d) {
     return update_info(info, app.cur_disk, app.cur_mus, tmp);
   }
-  SDDEBUG("disk info...\n");
+/*   SDDEBUG("disk info...\n"); */
 
   if (mus = app.cur_mus, !mus) {
     mus = d->mus + d->default_six;
