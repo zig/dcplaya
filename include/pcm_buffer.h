@@ -1,11 +1,11 @@
 /**
- * @ingroup dcplaya_devel
+ * @ingroup dcplaya_pcmbuffer_devel
  * @file    pcm_buffer.h
  * @author  benjamin gerard <ben@sashipa.com>
  * @date    2002
  * @brief   PCM and Bitstream buffer.
  *
- * $Id: pcm_buffer.h,v 1.3 2003-03-17 15:36:21 ben Exp $
+ * $Id: pcm_buffer.h,v 1.4 2003-03-22 00:35:27 ben Exp $
  */
 
 #ifndef _PCM_BUFFER_H_
@@ -18,7 +18,9 @@ DCPLAYA_EXTERN_C_START
 /** @defgroup dcplaya_pcmbuffer_devel PCM and Bitstream buffers
  *  @ingroup  dcplaya_devel
  *  @brief    PCM and Bitstream buffers.
+ *
  *  @warning  Not thread safe.
+ *  @author  benjamin gerard <ben@sashipa.com>
  */
 
 /** Current PCM buffer size (in mono PCM).

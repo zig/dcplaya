@@ -1,10 +1,10 @@
 /**
- * @ingroup   dcplaya_devel
+ * @ingroup   dcplaya_consol_devel
  * @file      console.h
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.h,v 1.6 2003-03-17 05:05:59 ben Exp $
+ * @version   $Id: console.h,v 1.7 2003-03-22 00:35:26 ben Exp $
  */
 
 #ifndef _CONSOLE_H_

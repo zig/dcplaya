@@ -1,11 +1,11 @@
 /**
- * @ingroup   dcplaya_devel
+ * @ingroup   dcplaya_display_list
  * @file      display_list.h
  * @author    vincent penne <ziggy@sashipa.com>
  * @author    benjamin gerard <ben@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.h,v 1.12 2003-03-18 01:10:10 ben Exp $
+ * @version   $Id: display_list.h,v 1.13 2003-03-22 00:35:26 ben Exp $
  */
 
 #ifndef _DISPLAY_LIST_H_
@@ -13,7 +13,7 @@
 
 /** @defgroup  dcplaya_display_list  Display list system.
  *  @ingroup   dcplaya_devel
- *  @author    Ben(jamin) Gerard <ben@sashipa.com>
+ *  @brief     Display list system
  *
  *  A display list is a list that contains commands to be executed every frame.
  *  Commands in a list are execurted sequentially in the order of insertion.
@@ -36,6 +36,10 @@
  *
  *  Sub-lists could be executed via the sub-list command from either a
  *  main-list or another sub-list.
+ *
+ * @author    vincent penne <ziggy@sashipa.com>
+ * @author    benjamin gerard <ben@sashipa.com>
+ *
  */
 
 #include <arch/spinlock.h>

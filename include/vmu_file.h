@@ -1,11 +1,11 @@
 /**
  * @file    vmu_file.h
- * @ingroup dcplaya_devel
+ * @ingroup dcplaya_vmu_file_devel
  * @author  benjamin gerard <ben@sashipa.com>
  * @date    2003/03/10
  * @brief   VMU file load and save function.
  *
- * $Id: vmu_file.h,v 1.3 2003-03-13 23:15:27 ben Exp $
+ * $Id: vmu_file.h,v 1.4 2003-03-22 00:35:27 ben Exp $
  */
 
 #ifndef _VMU_FILE_H_
@@ -13,6 +13,9 @@
 
 /** @defgroup dcplaya_vmu_file_devel VMU file
  *  @ingroup dcplaya_devel
+ *  @brief VMU file
+ *
+ *  @author  benjamin gerard <ben@sashipa.com>
  */
 
 /** VMU transfert status code.

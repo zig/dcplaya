@@ -1,14 +1,18 @@
 /**
- * @ingroup   SHAtranslatorImage
+ * @ingroup   dcplaya_shaimgtranslator_devel
  * @file      SHAtranslatorImage.h
  * @brief     Image translator base class definition
  * @date      2001/07/11
- * @author    BeN(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAtranslatorImage.h,v 1.2 2002-10-05 09:43:58 benjihan Exp $
+ * @author    benjamin gerard <ben@sashipa.com>
+ *
+ * $Id: SHAtranslatorImage.h,v 1.3 2003-03-22 00:35:27 ben Exp $
  */
 
-/** @defgroup   SHAtranslatorImage   Image translator
- *  @ingroup    SHAtranslator
+/** @defgroup   dcplaya_shaimgtranslator_devel   Image translator
+ *  @ingroup    dcplaya_shatranslator_devel
+ *  @brief      Image translator
+ *
+ * @author    benjamin gerard <ben@sashipa.com>
  */
 
 #ifndef _SHATRANSLATORIMAGE_H_
@@ -18,7 +22,7 @@
 
 /** Image translator base class.
  *
- * @ingroup   SHAtranslatorImage
+ * @ingroup   dcplaya_shaimgtranslator_devel
  * @author    BeN(jamin) Gerard <ben@sashipa.com>
  */
 class SHAtranslatorImage : public SHAtranslator

@@ -1,16 +1,18 @@
 /**
- * @ingroup dcplaya_devel
+ * @ingroup dcplaya_playainfo_devel
  * @file    playa_info.h
  * @author  benjamin gerard <ben@sashipa.com>
  * @date    2002/09/23
  * @brief   Music informations
  *
- * $Id: playa_info.h,v 1.5 2003-03-14 18:51:03 ben Exp $
+ * $Id: playa_info.h,v 1.6 2003-03-22 00:35:27 ben Exp $
  */
 
 /** @defgroup dcplaya_playainfo_devel playa info
- *  @ingroup dcplaya_devel
+ *  @ingroup dcplaya_playa_devel
  *  @brief Music information.
+ *
+ * @author  benjamin gerard <ben@sashipa.com>
  */
 
 #ifndef _PLAYA_INFO_H_

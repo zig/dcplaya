@@ -1,11 +1,11 @@
 /**
- * @ingroup dcplaya_devel
+ * @ingroup dcplaya_driverlist_devel
  * @file    driver_list.h
  * @author  benjamin gerard <ben@sashipa.com>
  * @date    2002
  * @brief   Registered driver list.
  *
- * $Id: driver_list.h,v 1.13 2003-03-04 15:26:51 ben Exp $
+ * $Id: driver_list.h,v 1.14 2003-03-22 00:35:26 ben Exp $
  */
 
 #ifndef _DRIVER_LIST_H_
@@ -17,12 +17,18 @@
 
 DCPLAYA_EXTERN_C_START
 
+/** @defgroup  dcplaya_driverlist_devel  Driver and driver type
+ *  @ingroup   dcplaya_devel
+ *  @brief     Driver and driver type
+ *
+ *  @author    benjamin gerard <ben@sashipa.com>
+ */
 
 #include "any_driver.h"
 #include "inp_driver.h"
 
 /** Any driver list.
- * @ingroup dcplaya_devel
+ * @ingroup dcplaya_driverlist_devel
  */
 typedef struct
 {
@@ -33,7 +39,7 @@ typedef struct
 } driver_list_t;
 
 /** Registered driver type.
- *  @ingroup dcplaya_devel
+ *  @ingroup dcplaya_driverlist_devel
  */
 typedef struct _driver_list_reg_s {
   struct _driver_list_reg_s * next; /**< Next registered driver type. */
@@ -48,7 +54,7 @@ typedef struct _driver_list_reg_s {
 } driver_list_reg_t;
 
 /** @name Global driver lists.
- *  @ingroup dcplaya_devel
+ *  @ingroup dcplaya_driverlist_devel
  *  @{
  *  @todo Remove this. Use clean driver_lists api instead.
  */
@@ -71,7 +77,7 @@ extern driver_list_t img_drivers;
 
 
 /** @name Driver lists management.
- *  @ingroup dcplaya_devel
+ *  @ingroup dcplaya_driverlist_devel
  *
  *  Driver lists referes to the list all driver type available.
  *  User can add new driver type (e.g a video driver type should be welcome.)
@@ -107,7 +113,7 @@ void driver_list_shutdown(driver_list_t * dl);
 
 
 /** @name Driver list management.
- *  @ingroup dcplaya_devel
+ *  @ingroup dcplaya_driverlist_devel
  *  @{
  */
 
@@ -198,7 +204,7 @@ any_driver_t * driver_list_index(driver_list_t *dl, int idx);
 
 
 /** @name Driver reference (instance) management.
- *  @ingroup dcplaya_devel
+ *  @ingroup dcplaya_driverlist_devel
  *  @{
  */
 
@@ -266,7 +272,7 @@ void driver_unlock(any_driver_t * drv);
 
 
 /** @name Input driver specific.
- *  @ingroup dcplaya_devel
+ *  @ingroup dcplaya_driverlist_devel
  *  @{
  */
 

@@ -1,11 +1,11 @@
 /**
- * @ingroup dcplaya_devel
+ * @ingroup dcplaya_fn_devel
  * @file    filename.h
- * @author  benjaimn gerard <ben@sashipa.com>
+ * @author  benjamin gerard <ben@sashipa.com>
  * @date    2002/09/30
  * @brief   filename utilities.
  *
- * $Id: filename.h,v 1.4 2003-03-17 15:36:21 ben Exp $
+ * $Id: filename.h,v 1.5 2003-03-22 00:35:26 ben Exp $
  */
 
 #ifndef _FILENAME_H_
@@ -23,7 +23,8 @@ DCPLAYA_EXTERN_C_START
  *    needed to create clean path, to retrieve information on a filename such
  *    as its leaf (basename), its extension ...
  *
- *  @see dcplaya_fu_devel
+ *  @see     dcplaya_fu_devel
+ *  @author  benjamin gerard <ben@sashipa.com>
  */
 
 /** Get extension from file path.

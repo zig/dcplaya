@@ -26,11 +26,11 @@ SHORT_NAMES            = NO
 HIDE_SCOPE_NAMES       = NO
 VERBATIM_HEADERS       = YES
 SHOW_INCLUDE_FILES     = YES
-JAVADOC_AUTOBRIEF      = $dox-javadoc_autobrief$
+JAVADOC_AUTOBRIEF      = $dox-javadoc-autobrief$
 INHERIT_DOCS           = YES
 INLINE_INFO            = YES
 SORT_MEMBER_DOCS       = $dox-sort-member-docs$
-DISTRIBUTE_GROUP_DOC   = $distribute_group_doc$
+DISTRIBUTE_GROUP_DOC   = $dox-distribute-group-doc$
 TAB_SIZE               = $dox-tab-size$
 GENERATE_TODOLIST      = YES
 GENERATE_TESTLIST      = YES
@@ -123,7 +123,7 @@ MAN_LINKS              = NO
 #---------------------------------------------------------------------------
 # configuration options related to the XML output
 #---------------------------------------------------------------------------
-GENERATE_XML           =  $dox-generate-xml$
+GENERATE_XML           = $dox-generate-xml$
 #---------------------------------------------------------------------------
 # configuration options for the AutoGen Definitions output
 #---------------------------------------------------------------------------
@@ -131,13 +131,13 @@ GENERATE_AUTOGEN_DEF   = NO
 #---------------------------------------------------------------------------
 # Configuration options related to the preprocessor   
 #---------------------------------------------------------------------------
-ENABLE_PREPROCESSING   = YES
+ENABLE_PREPROCESSING   = $dox-preprocessing$
 MACRO_EXPANSION        = NO
 EXPAND_ONLY_PREDEF     = NO
 SEARCH_INCLUDES        = YES
 INCLUDE_PATH           = 
 INCLUDE_FILE_PATTERNS  = 
-PREDEFINED             = 
+PREDEFINED             = $dox-predefined$
 EXPAND_AS_DEFINED      = 
 SKIP_FUNCTION_MACROS   = YES
 #---------------------------------------------------------------------------

@@ -1,9 +1,9 @@
-/** @ingroup dcplaya_devel
+/** @ingroup dcplaya_fifo_devel
  *  @file    fifo.h
  *  @author  benjamin gerard <ben@sashipa.com>
  *  @brief   PCM fifo with bak-buffer.
  *
- * $Id: fifo.h,v 1.5 2003-03-17 15:36:21 ben Exp $
+ * $Id: fifo.h,v 1.6 2003-03-22 00:35:26 ben Exp $
  */
 
 #ifndef _FIFO_H_
@@ -20,6 +20,8 @@ DCPLAYA_EXTERN_C_START
  *
  *  dcplaya fifo is a thread safe FIFO that include a back buffer capability
  *  in order to get the old PCM for sound analysis.
+ *
+ *  @author  benjamin gerard <ben@sashipa.com>
  */
 
 /** Initialize the fifo.
@@ -72,9 +74,25 @@ int fifo_bak(void);
 
 void fifo_state(int *r, int *w, int *b);
 int fifo_fill();
+
+/** Read stereo PCM from fifo.
+ *  @ingroup  dcplaya_fifo_devel
+ */
 int fifo_read(int *buf, int n);
+
+/** Read stereo PCM from fifo back-buffer.
+ *  @ingroup  dcplaya_fifo_devel
+ */
 int fifo_readbak(int *buf, int n);
+
+/** Write stereo PCM into fifo.
+ *  @ingroup  dcplaya_fifo_devel
+ */
 int fifo_write(const int *buf, int n);
+
+/** Write mono PCM into fifo.
+ *  @ingroup  dcplaya_fifo_devel
+ */
 int fifo_write_mono(const short *buf, int n);
 
 DCPLAYA_EXTERN_C_END

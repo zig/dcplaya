@@ -1,10 +1,22 @@
-/** @ingroup  dcplaya_devel
+/** @ingroup  dcplaya_math_devel
  *  @file     math_float.h
  *  @author   benjamin gerard <ben@sashipa.com>
  *  @date     2003/01/21
  *  @brief    floating point macros and defines
  *
- * $Id: math_float.h,v 1.6 2003-02-03 19:38:23 ben Exp $
+ * $Id: math_float.h,v 1.7 2003-03-22 00:35:27 ben Exp $
+ */
+
+/** @defgroup  dcplaya_math_devel Mathematics
+ *  @ingroup   dcplaya_devel
+ *  @brief     Mathematics
+ *
+ *  @author   benjamin gerard <ben@sashipa.com>
+ */
+
+/** @name Floating point mathematic basics.
+ *  @ingroup dcplaya_math_devel
+ *  @{
  */
 
 #ifndef _MATH_FLOAT_H_
@@ -37,20 +49,20 @@
 # endif
 #endif
 
-#define Cos(A) fcos((A))
-#define Sin(A) fsin((A))
-#define Inv(A) (1.0f/(A))
-#define Sq(A) __mf_sq(A)
-#define Sqrt(A) sqrtf((A))
-#define ISqrt(A) Inv(Sqrt((A)))
-#define Fabs(A) __mf_abs((A))
-#define Fmax(A,B) __mf_max((A),(B))
-#define Fmin(A,B) __mf_min((A),(B))
-#define Fbound(V,MIN,MAX) __mf_bound((V),(MIN),(MAX))
-#define Fblend(A,B,F) __mf_blend((A),(B),(F))
-#define FnearZero(A) __mf_near_zero((A))
-#define Fsign(A) ((A)<0)
-#define Fmod(A,B) fmod((A),(B))
+#define Cos(A) fcos((A)) /**< Fast cosinus. */
+#define Sin(A) fsin((A)) /**< Fast sinus. */
+#define Inv(A) (1.0f/(A)) /**< Fast 1/X. */
+#define Sq(A) __mf_sq(A) /**< Fast X^2. */
+#define Sqrt(A) sqrtf((A)) /**< Fast square root. */
+#define ISqrt(A) Inv(Sqrt((A))) /**< Fast 1/sqrt(X). */
+#define Fabs(A) __mf_abs((A)) /**< Fast absolute value. */
+#define Fmax(A,B) __mf_max((A),(B)) /**< Fast maximum value. */
+#define Fmin(A,B) __mf_min((A),(B)) /**< Fast minimum value. */
+#define Fbound(V,MIN,MAX) __mf_bound((V),(MIN),(MAX)) /**< Fast range. */
+#define Fblend(A,B,F) __mf_blend((A),(B),(F)) /**< Fast blending. */
+#define FnearZero(A) __mf_near_zero((A)) /**< Fast near zero test. */
+#define Fsign(A) ((A)<0) /**< Fast sign test. */
+#define Fmod(A,B) fmod((A),(B)) /**< Fast modulo. */
 
 inline static float __mf_sq(const float a) {
   return a * a;
@@ -79,5 +91,7 @@ inline static float __mf_max(const float a, const float b) {
 inline static float __mf_bound(const float a, const float b, const float c) {
   return a < b ? b : (a > c ? c : a);
 }
+
+/** @} */
 
 #endif /* #define _MATH_FLOAT_H_ */

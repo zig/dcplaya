@@ -5,7 +5,7 @@
  * @date    2002/11/22
  * @brief   drawing system
  *
- * $Id: draw.h,v 1.3 2003-01-28 06:38:18 ben Exp $
+ * $Id: draw.h,v 1.4 2003-03-22 00:35:27 ben Exp $
  */
 
 #ifndef _DRAW_H_
@@ -16,7 +16,7 @@
 
 /** @defgroup  dcplaya_draw  Drawing system.
  *  @ingroup   dcplaya_devel
- *  @author    Ben(jamin) Gerard <ben@sashipa.com>
+ *  @brief     Drawing system.
  *
  *  dcplaya drawing system API provides functions for drawing text and
  *  geometrical primitives towards tile accelerator.
@@ -28,6 +28,8 @@
  *  - Texture manager
  *  - Triangle primitive
  *  - Strip primitive
+ *
+ *  @author    Ben(jamin) Gerard <ben@sashipa.com>
  */
 
 /** @defgroup  dcplaya_draw_3d  3D system API.

@@ -1,10 +1,11 @@
 /**
- * @ingroup   dcplaya_devel
+ * @ingroup   dcplaya_shatranslator_devel
  * @file      SHAtranslatorResult.h
  * @brief     Translator result class definition.
  * @date      2001/07/11
- * @author    BeN(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAtranslatorResult.h,v 1.3 2002-12-15 16:13:36 ben Exp $
+ * @author    benjamin gerard <ben@sashipa.com>
+ *
+ * $Id: SHAtranslatorResult.h,v 1.4 2003-03-22 00:35:27 ben Exp $
  */
 
 #ifndef _SHATRANSLATORRESULT_H_
@@ -13,7 +14,7 @@
 #include "SHAR/SHARimg.h"
 
 /** Translator result class.
- *  @ingroup   dcplaya_devel
+ *  @ingroup   dcplaya_shatranslator_devel
  */
 class SHAtranslatorResult
 {

@@ -1,11 +1,11 @@
 /**
- *  @ingroup dcplaya_img_plugin_devel
+ *  @ingroup dcplaya_translator_devel
  *  @file    translator.h
  *  @author  benjamin gerard <ben@sashipa.com>
  *  @date    2002/09/27
  *  @brief   Image translators.
  *
- *  $Id: translator.h,v 1.7 2003-03-20 06:05:34 ben Exp $
+ *  $Id: translator.h,v 1.8 2003-03-22 00:35:27 ben Exp $
  */
 
 #ifndef _TRANSLATOR_H_

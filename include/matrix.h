@@ -1,11 +1,11 @@
 /**
- * @ingroup dcplaya_devel
+ * @ingroup dcplaya_matrix_devel
  * @file    matrix.h
  * @author  ben(jamin) gerard <ben@sashipa.com>
  * @date    2002/02/12
  * @brief   Matrix support.
  *
- * $Id: matrix.h,v 1.11 2003-03-19 05:16:16 ben Exp $
+ * $Id: matrix.h,v 1.12 2003-03-22 00:35:27 ben Exp $
  */
 
 #ifndef _MATRIX_H_
@@ -14,12 +14,11 @@
 #include "extern_def.h"
 
 /** @defgroup  dcplaya_matrix_devel  Matrix support.
- *  @ingroup   dcplaya_devel
- *  @author    benjamin gerard <ben@sashipa.com>
+ *  @ingroup   dcplaya_math_devel
  *  @brief     Performing matrix operations.
  *
+ *  @author    benjamin gerard <ben@sashipa.com>
  */
-
 
 DCPLAYA_EXTERN_C_START
 

@@ -1,13 +1,18 @@
 /**
- * @ingroup   SHAtranslator
+ * @ingroup   dcplaya_shatranslator_devel
  * @file      SHAtranslator.h
  * @brief     data translator abstract class definition
  * @date      2001/07/11
- * @author    BeN(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAtranslator.h,v 1.2 2002-10-05 09:43:58 benjihan Exp $
+ * @author    benjamin gerard <ben@sashipa.com>
+ *
+ * $Id: SHAtranslator.h,v 1.3 2003-03-22 00:35:27 ben Exp $
  */
 
-/** @defgroup   SHAtranslator   Data translator
+/** @defgroup   dcplaya_shatranslator_devel   Data translators
+ *  @ingroup    dcplaya_devel
+ *  @brief      Data translators
+ *
+ *  @author     benjamin gerard <ben@sashipa.com>
  */
 
 #ifndef _SHATRANSLATOR_H_
@@ -18,9 +23,7 @@
 #include "SHAtk/SHAstream.h"
 
 /** Data translator abstract class.
- *
- * @ingroup   SHAtranslator
- * @author    BeN(jamin) Gerard <ben@sashipa.com>
+ *  @ingroup dcplaya_shatranslator_devel
  */
 class SHAtranslator
 {

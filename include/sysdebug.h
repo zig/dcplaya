@@ -1,15 +1,18 @@
 /**
- * @ingroup    dcplaya_devel
+ * @ingroup    dcplaya_debug_devel
  * @file       sysdebug.h
  * @author     benjamin gerard <ben@sashipa.com>
  * @date       2002/09/04
  * @brief      Debug fonctions.
  *
- * @version    $Id: sysdebug.h,v 1.6 2003-03-11 13:33:17 ben Exp $
+ * @version    $Id: sysdebug.h,v 1.7 2003-03-22 00:35:27 ben Exp $
  */
 
 /** @defgroup dcplaya_debug_devel Debug facilities
  *  @ingroup  dcplaya_devel
+ *  @brief    Debug facilities
+ *
+ *  @author   benjamin gerard <ben@sashipa.com>
  */
 
 #ifndef _SYSDEBUG_H_

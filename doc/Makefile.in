@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.13 2003-03-19 05:16:15 ben Exp $
+# $Id: Makefile.in,v 1.14 2003-03-22 00:35:26 ben Exp $
 #
 
 VERSION = @VERSION@
@@ -169,6 +169,8 @@ luadoc: $(LUADOCFILES)
 devdoc: devdoc.dox $(DEVDOCFILES) luadoc $(HTML_EXTRA)
 	$(DOXYGEN) $<
 
+# Phony since xml could be modified by goal !
+.PHONY: devdoc.dox
 devdoc.dox: generic.doxin Makefile
 	cat $< | grep -E -v '^#.*$$' |\
 	grep -E -v '^ *$$' |\
