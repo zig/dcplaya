@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: init.lua,v 1.3 2002-09-24 18:29:42 vincentp Exp $
+-- $Id: init.lua,v 1.4 2002-09-25 21:36:44 vincentp Exp $
 --
 
 
@@ -55,11 +55,11 @@ function help(fname)
 		driver = driver_list[fname]
 	end
 	if driver then
-		print ([[driver:]]..driver.name)
-		print ([[description:]]..driver.description)
-		print ([[authors:]]..driver.authors)
-		print ([[version:]]..format("%x", driver.version))
-		print ([[type:]]..format("%d", driver.type))
+		print ([[driver:]], driver.name)
+		print ([[description:]], driver.description)
+		print ([[authors:]], driver.authors)
+		print ([[version:]], format("%x", driver.version))
+		print ([[type:]], format("%d", driver.type))
 		h = driver.luacommands
 		if h then
 			print [[commands are:]]
@@ -138,14 +138,36 @@ function update_driver_list(list, force)
 	for i=1, n, 1 do
 
 		d = list[i]
+		local new=force
+		if not driver_list[d.name] then
+			new = 1
+		end
 		if driver_list[d.name] and driver_list[d.name] ~= d then
 			print("Warning : replacing driver '", d.name, "' in list")
+			new = 1
 		end
 		driver_list[d.name] = d
 --		print (d.name)
 
-		local commands = d.luacommands
-		register_commands(driver_list[d.name], commands, force)
+		if new then
+			-- if a shutdown function exists, then call it
+			local shut
+			shut = getglobal(d.name.."_driver_shutdown")
+			if shut then
+				shut()
+			end
+
+			-- register commands
+			local commands = d.luacommands
+			register_commands(driver_list[d.name], commands, force)
+
+			-- if an init function exists, then call it
+			local init
+			init = getglobal(d.name.."_driver_init")
+			if init then
+				init()
+			end
+		end
 
 	end
 
@@ -162,6 +184,8 @@ end
 update_all_driver_lists(1)
 
 
+-- reimplement driver_load so that it calls update_all_driver_lists()
+-- automatically after
 function driver_load(...)
 	call(%driver_load, arg)
 	update_all_driver_lists()

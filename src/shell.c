@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     shell support for dcplaya
- * @version   $Id: shell.c,v 1.10 2002-09-20 06:08:58 vincentp Exp $
+ * @version   $Id: shell.c,v 1.11 2002-09-25 21:36:45 vincentp Exp $
  */
 
 #include <kos.h>
@@ -18,7 +18,7 @@
 static char input[256];
 static int input_pos;
 
-#define CONSOLE_Y 50
+#define CONSOLE_Y 20
 #define CONSOLE_OUT_Y -600
 static int show_console = 0;
 static float console_y = CONSOLE_OUT_Y;

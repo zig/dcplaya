@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.25 2002-09-25 03:21:22 benjihan Exp $
+ * @version   $Id: dreamcast68.c,v 1.26 2002-09-25 21:36:45 vincentp Exp $
  */
 
 //#define RELEASE
@@ -50,7 +50,7 @@
 #include "syserror.h"
 #include "console.h"
 #include "shell.h"
-
+#include "display_list.h"
 
 #include "exceptions.h"
 
@@ -537,6 +537,9 @@ static int no_mt_init(void)
     goto error;
   }
 
+  /* Start display_list */
+  dl_open();
+
 
   /* Call "dcplayarc.lua" */
   shell_command("dofile (home..[[dcplayarc.lua]])");
@@ -644,10 +647,17 @@ void main_thread(void *cookie)
 
 	/* Update shell */
 	shell_update(elapsed_frames * 1.0f/60.0f);
+
+	/* Display opaque render list */
+	dl_render_opaque();
       
 	ta_commit_eol();
 
 	end = render_intro(elapsed_frames);
+
+	/* Display transparent render list */
+	dl_render_transparent();
+      
 	ta_commit_eol();
 
 	/* Finish the frame *******************************/
@@ -711,6 +721,9 @@ void main_thread(void *cookie)
     /* Visual opaque list */
     render_visual_opaque();
     
+    /* Display opaque render list */
+    dl_render_opaque();
+      
     /* End of opaque list */
     ta_commit_eol();
 
@@ -729,9 +742,11 @@ void main_thread(void *cookie)
     /* Render translucent consoles */
     csl_window_transparent_render_all();
 
+    /* Display transparent render list */
+    dl_render_transparent();
+
     /* End of translucent list */
     ta_commit_eol();
-
 
     /* Finish the frame *******************************/
 
@@ -767,6 +782,9 @@ void main_thread(void *cookie)
 
   /* Stop controller thread */
   controler_shutdown();
+
+  /* Stop display_list */
+  dl_shutdown();
 
  error:
   if (cookie) {

@@ -1,5 +1,5 @@
 
-$Id: TODO,v 1.11 2002-09-25 14:44:52 benjihan Exp $
+$Id: TODO,v 1.12 2002-09-25 21:36:32 vincentp Exp $
 
 ** TODO :
 
@@ -13,7 +13,7 @@ $Id: TODO,v 1.11 2002-09-25 14:44:52 benjihan Exp $
 
 + recall and line editor for shell
 
-- lua binding to get driver informations
++ lua binding to get driver informations
 
 - lua binding to get song informations and play new songs
 
@@ -35,9 +35,10 @@ $Id: TODO,v 1.11 2002-09-25 14:44:52 benjihan Exp $
 
 - cd() command should verify if the path exist and is a dir.
 
-- md() command can't handle relatif path, can it ? --> NOT YET :)
++ md() command can't handle relatif path, can it ? --> OK
 
 - Look at the face-border rendering. Sometime some borders seem to be shifted.
+	--> VP : I think this is the border texture itself which is wrong ...
 
 - Japanese support (encoding / display)
 
@@ -77,7 +78,7 @@ $Id: TODO,v 1.11 2002-09-25 14:44:52 benjihan Exp $
 - File selected is desactivated when reload plugin (side effects of previous
   bug correction for filetype)
 
-- Bug : Lock when killing app to earlier (e.g. while initializing ZED)
+- Bug : Lock when killing app too earlier (e.g. while initializing ZED)
 
 + [2002-09-25 04:16:37 PM, ben]
   Test TODO auto dating.

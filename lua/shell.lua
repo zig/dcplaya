@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: shell.lua,v 1.5 2002-09-24 13:47:04 vincentp Exp $
+-- $Id: shell.lua,v 1.6 2002-09-25 21:36:44 vincentp Exp $
 --
 
 
@@ -106,7 +106,7 @@ function shell_input(string)
 	w = w-2
 	y = h-1
 
-	-- make sure the recall table is not too big
+	-- make sure the recall table does not get too big
 	while getn(shell_recalltable)>shell_maxrecall do
 		tremove(shell_recalltable, 1)
 	end

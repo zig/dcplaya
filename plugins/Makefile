@@ -1,5 +1,5 @@
-# $Id: Makefile,v 1.3 2002-09-12 17:57:31 ben Exp $
+# $Id: Makefile,v 1.4 2002-09-25 21:36:44 vincentp Exp $
 
-SUBDIRS = obj inp vis
+SUBDIRS = obj inp vis exe
 
 include ../Makefile.inc

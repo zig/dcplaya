@@ -1,6 +1,6 @@
 -- This is main DCplaya lua script
 --
--- $Id: dcplayarc.lua,v 1.14 2002-09-25 03:21:19 benjihan Exp $
+-- $Id: dcplayarc.lua,v 1.15 2002-09-25 21:36:33 vincentp Exp $
 --
 
 showconsole()
@@ -49,14 +49,9 @@ dofile (home.."userconf.lua")
 
 
 
+-- FINAL STEPS :
 -- print available commands
 help()
-print("")
-
-
-
--- FINAL STEP :
 -- launch the enhanced shell
 shell()
-
 

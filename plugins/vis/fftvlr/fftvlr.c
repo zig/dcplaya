@@ -8,7 +8,7 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.15 2002-09-25 03:21:22 benjihan Exp $
+ * $Id: fftvlr.c,v 1.16 2002-09-25 21:36:45 vincentp Exp $
  */
 
 #include <stdlib.h>
@@ -479,7 +479,7 @@ static luashell_command_description_t fftvlr_commands[] = {
   {
     "fftvlr_setbordertex", 0,            /* long and short names */
     "print [["
-      "fftvlr_setbordertex(r, g, b, a) : set border texture number (ranging 0..2)"
+      "fftvlr_setbordertex(num) : set border texture type (ranging 0..2)"
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_setbordertex    /* function */
   },

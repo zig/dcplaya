@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.20 2002-09-25 03:21:21 benjihan Exp $
+ * @version    $Id: dynshell.c,v 1.21 2002-09-25 21:36:44 vincentp Exp $
  */
 
 #include <stdio.h>
@@ -898,7 +898,7 @@ static luashell_command_description_t commands[] = {
     "pl",
 
     "print([["
-    "play(music-file [,track, [,immediat]]) : play a music file\n"
+    "play(music-file [,track, [,immediat] ]) : play a music file\n"
     "]])",
 
     SHELL_COMMAND_C, lua_play
