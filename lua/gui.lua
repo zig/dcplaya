@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.24 2002-12-06 15:18:35 zigziggy Exp $
+--- $Id: gui.lua,v 1.25 2002-12-09 13:03:48 zigziggy Exp $
 ---
 
 --
@@ -112,9 +112,9 @@ gui_keyselect = {
 -- compute an automatic guess if none is given
 function gui_orphanguess_z(z)
    if not z then
-      --      z = gui_curz
-      --      gui_curz = gui_curz + 100
-      z = 0
+--      z = gui_curz
+--      gui_curz = gui_curz + 100
+      z = 2000
    end
    return z
 end
@@ -148,12 +148,15 @@ function gui_child_autoplacement(app)
       i = i.next
    end
 
-   local scale = 100/n
+   local scale = 1/n
    i = app.sub
-   n = 0
+--   n = 0
    while i do
+      if i._dl then
+	 dl_set_trans(i._dl, mat_scale(1, 1, scale) * mat_trans(0, 0, 100*n*scale))
+      end
       
-
+      n = n - 1
       i = i.next
    end
 end
@@ -887,23 +890,18 @@ function dialog_test(parent)
 
 
    -- create subdialog
-   local subdial = gui_new_dialog(dial, { x + 120, y + 300, x + 180, y + 350 }, 0, nil, "Sub dialog", { x = "left", y="upout" })
-   but = gui_new_button(subdial, { x + 130, y + 310, x + 180, y + 340 }, "TOTO")
-   but.event_table[gui_press_event] =
-      function(but, evt)
-	 print [[TOTO !!]]
-	 return nil -- block the event
-      end
-
-   x = x + 180
-   subdial = gui_new_dialog(dial, { x + 120, y + 300, x + 180, y + 350 }, 0, nil, "Sub dialog", { x = "left", y="upout" })
-   but = gui_new_button(subdial, { x + 130, y + 310, x + 160, y + 340 }, "TOTO")
-   but.event_table[gui_press_event] =
-      function(but, evt)
-	 print [[TOTO !!]]
-	 return nil -- block the event
-      end
-   
+   for i=1, 4, 1 do
+      local subdial = gui_new_dialog(dial, { x + 120, y + 300, x + 180, y + 350 }, 0, nil, "Sub dialog", { x = "left", y="upout" })
+      but = gui_new_button(subdial, { x + 130, y + 310, x + 180, y + 340 }, "TOTO")
+--      but.event_table[gui_press_event] =
+--	 function(but, evt)
+--	    print [[TOTO !!]]
+--	    return nil -- block the event
+--	 end
+      
+      x = x + 20
+      y = y + 5
+   end
 
    return dial
 end
