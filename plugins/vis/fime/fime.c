@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/17
  *  @brief   Fly Into a Musical Environment
- *  $Id: fime.c,v 1.1 2003-01-18 14:22:17 ben Exp $
+ *  $Id: fime.c,v 1.2 2003-01-19 21:36:33 ben Exp $
  */ 
 
 #include <stdio.h>
@@ -25,6 +25,7 @@
 /* fime includes */
 #include "fime_pcm.h"
 #include "fime_analysis.h"
+#include "fime_beatdetect.h"
 #include "fime_bordertex.h"
 #include "fime_ship.h"
 
@@ -74,9 +75,10 @@ static int stop(void)
 {
   ready = 0;
 
-  fime_pcm_shutdown();
-  fime_analysis_shutdown();
   fime_ship_shutdown();
+  fime_beatdetect_shutdown();
+  fime_analysis_shutdown();
+  fime_pcm_shutdown();
 
   SDDEBUG("[fime] stopped\n");
 
@@ -94,6 +96,7 @@ static int start(void)
 
   err = err || fime_pcm_init();
   err = err || fime_analysis_init();
+  err = err | fime_beatdetect_init();
   err = err || fime_ship_init();
 
   ready = !err;
@@ -121,6 +124,8 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
 
   fime_pcm_update();
   fime_analysis_update();
+  fime_beatdetect_update();
+
   shipmtx = fime_ship_update(seconds);
 
   {
@@ -157,6 +162,9 @@ static int opaque_render(void)
   if (!ready) {
     return -1;
   }
+
+  //$$$
+/*   fime_beatdetect_render(); */
 
 /*   err = err || fime_ship_render(&viewport, camera, proj, */
 /* 				0, 0, 0, 1); */

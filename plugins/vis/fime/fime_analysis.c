@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/17
  *  @brief   FIME. Frquancy and beat analysis.
- *  $Id: fime_analysis.c,v 1.1 2003-01-18 14:22:17 ben Exp $
+ *  $Id: fime_analysis.c,v 1.2 2003-01-19 21:36:33 ben Exp $
  */ 
 
 #include <stdlib.h>
@@ -103,7 +103,7 @@ int fime_analysis_update(void)
       }
       q = 0;
       if (b[j].tacu == 3) {
-	q = 1;
+	q = b[j].max2;
       }
       b[j].w = q;
     }
@@ -121,4 +121,12 @@ int fime_analysis_update(void)
   }
 
   return r;
+}
+
+const fime_analyser_t * fime_analysis_get(int i)
+{
+  if ((unsigned int) i >= 2) {
+    return 0;
+  }
+  return b+i;
 }

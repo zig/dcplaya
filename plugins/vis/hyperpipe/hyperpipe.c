@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/14
  *
- *  $Id: hyperpipe.c,v 1.5 2003-01-18 14:22:17 ben Exp $
+ *  $Id: hyperpipe.c,v 1.6 2003-01-19 21:36:33 ben Exp $
  */ 
 
 #include <stdio.h>
@@ -168,7 +168,7 @@ static int hyperpipe_alloc(void)
 {
   hyperpipe_free(); /* Safety net */
   v   = (vtx_t *)malloc(sizeof(vtx_t) * hyperpipe_obj.nbv);
-  nrm = (vtx_t *)malloc(sizeof(vtx_t) * hyperpipe_obj.nbf);
+  nrm = (vtx_t *)malloc(sizeof(vtx_t) * hyperpipe_obj.nbf+2);
   tri = (tri_t *)malloc(sizeof(tri_t) * (hyperpipe_obj.nbf+2));
   tlk = (tlk_t *)malloc(sizeof(tlk_t) * hyperpipe_obj.nbf+2);
   if (!v || !nrm || !tri || !tlk) {
@@ -196,7 +196,7 @@ static void build_ring(void)
 static void build_normals(void)
 {
   int i;
-  const int n = hyperpipe_obj.nbf;
+  const int n = hyperpipe_obj.nbf+2;
   for (i=0; i<n; ++i) {
     FaceNormal((float *)(nrm+i),v,tri+i);
   }
@@ -310,9 +310,8 @@ static int start(void)
 
   //$$$ MUST BE CHECKED ! NOT SURE THAT IS CORRECT !
   for (j=T; j<T+2; ++j) {
-    tri[j].a = tri[j].b = tri[j].c = 0;
-    tlk[j].a = tlk[j].b = tlk[j].c = j;
-    tri[T].flags = j==T;
+    tri[j] = tri[0];
+    tri[j].flags = j==T;
   }
 
   build_normals();
