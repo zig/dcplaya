@@ -1,5 +1,5 @@
 /*
- * $Id: spc_driver.c,v 1.1 2002-09-06 23:12:40 ben Exp $
+ * $Id: spc_driver.c,v 1.2 2002-09-09 12:38:01 ben Exp $
  */
 
 #include "config.h"
@@ -22,11 +22,11 @@ volatile static int ready; /**< Ready flag : 1 when music is playing */
 
 /** SPC config */
 static SPC_Config spc_config = {
-    44100,
+    16000,
     16,
     2,
-    1,
-    1
+    0,
+    0
 };
 
 /** Current SPC info */
