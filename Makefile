@@ -3,7 +3,7 @@
 #
 # (C) COPYRIGHT 2002 benjamin gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.27 2003-07-31 10:01:24 benjihan Exp $ 
+# $Id: Makefile,v 1.28 2003-08-01 11:11:54 benjihan Exp $ 
 #
 TARGETS=dcplaya.elf
 
@@ -102,7 +102,7 @@ depend_extra:
 include Makefile.inc
 
 ifeq '$(MASTER)' '1'
-MAKEDATA=$(MAKE) -C make-cd minimal dcplaya-data
+MAKEDATA=$(MAKE) -C make-cd iso
 else
 MAKEDATA=@echo "NO make data"
 endif
