@@ -15,13 +15,6 @@
 */
 
 /**
-@defgroup  dcplaya_lua_gui  GUI components
-@ingroup   dcplaya_lua
-@author    benjamin gerard <ben@sashipa.com>
-@brief     Programming dcplaya graphic user interface.
- **/
-
-/**
 @defgroup  dcplaya_lua_graphics Graphic components
 @ingroup   dcplaya_lua
 @author    benjamin gerard <ben@sashipa.com>

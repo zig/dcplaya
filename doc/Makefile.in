@@ -2,24 +2,20 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.14 2003-03-22 00:35:26 ben Exp $
+# $Id: Makefile.in,v 1.15 2003-03-25 09:22:01 ben Exp $
 #
 
 VERSION = @VERSION@
 DOXYGEN = "@DOXYGEN@"
 
-#ALL_HEADERS		:= $(shell find .. -type f -name '*.h')
-#ALL_HEADERS_PATH	:= $(sort . $(dir $(ALL_HEADERS)))
-
-PLG_HEADERS	:= $(shell find ../plugins -maxdepth 3 -type f -name '*.h')
-PLG_HEADERS_PATH	:= $(sort . $(dir $(PLG_HEADERS)))
-
+PLG_HEADERS	 := $(shell find ../plugins -maxdepth 3 -type f -name '*.h')
+PLG_HEADERS_PATH := $(sort . $(dir $(PLG_HEADERS)))
 
 PLUG_TOP = ../plugins
 PLUG_DIR = exe img inp vis
 
-
-ALL_HEADERS_PATH := . \
+ALL_HEADERS_PATH :=\
+ . \
  ../include \
  ../libs/draw \
  ../libs/translator \
@@ -30,11 +26,10 @@ ALL_HEADERS_PATH := . \
  ../libs/translator/SHAtranslator \
  ../libs/translator/SHAblitter \
  $(PLG_HEADERS_PATH)
-# $(foreach i,$(PLUG_DIR),$(PLUG_TOP)/$(i))
 
 # Local doc files
-HINFILES		:= $(wildcard *.hin)
-DEVDOCFILES		:= $(HINFILES:%.hin=%.h)
+HINFILES    := $(wildcard *.hin)
+DEVDOCFILES := $(HINFILES:%.hin=%.h)
 
 HTML_EXTRA	:= dcplaya_doc.css dcplaya_header.html dcplaya_footer.html 
 
@@ -45,13 +40,21 @@ LUASRCDIR	:= ..
 LUAALLFILES  :=\
  $(wildcard $(LUASRCDIR)/*.lua)\
  $(wildcard $(LUASRCDIR)/lua/*.lua)
-LUASRCFILES  := $(LUAALLFILES:$(LUASRCDIR)/%=%)
-LUADOCFILES := $(addprefix $(LUADOCDIR)/,$(LUASRCFILES:%.lua=%.lua) doc.lua) 
+LUASRCFILES:=$(LUAALLFILES:$(LUASRCDIR)/%=%)
+LUADOCFILES:=$(addprefix $(LUADOCDIR)/,$(LUASRCFILES:%.lua=%.lua) userconf.lua)
 
 DOCINPUTS=$(ALL_HEADERS_PATH) $(LUADOCDIR) $(LUADOCDIR)/lua
 
 SHASUBST=../utils/shasubst.sh
-LUA2DOX=../utils/lua2dox.sh
+
+# Shell version
+#LUA2DOX=cat $< | ../utils/lua2dox.sh
+# Sed version
+#LUA2DOX=sed --silent -f ../utils/lua2dox.sed $<
+# Awk version
+LUA2DOX=awk -f ../utils/lua2dox.awk $<
+
+DOXYGENERIC=../utils/doxygeneric.sh
 
 vpath
 vpath %.h $(ALL_HEADERS_PATH)
@@ -65,7 +68,6 @@ DATE	:= $(shell date +"%B %Y")
 ###################################################
 CSS	:=
 CSS	+= -D "background=\#c4bdac"
-#808080"
 CSS	+= -D "text=\#59564e"
 
 CSS	+= -D "font-family=arial, tahoma, verdana, sans-serif"
@@ -73,12 +75,10 @@ CSS	+= -D "font-size=12pt"
 CSS	+= -D "font-weight=normal"
 
 CSS	+= -D "anchor-color=\#000000"
-#CSS	+= -D "anchor-color=\#e0e0e0"
 CSS	+= -D "hi-color=\#FFFFFF"
 
 CSS	+= -D "barcolor=\#a0937b"
 CSS	+= -D "barcolorlight=\#b7a88d"
-#e59900"
 CSS	+= -D "bartext=\#000000"
 CSS	+= -D "barborder=1px solid"
 CSS	+= -D "barbordercolor=\#000000"
@@ -92,55 +92,60 @@ CSS	+= -D "preprocessor=\#404080"
 CSS	+= -D "stringliteral=\#307030"
 CSS	+= -D "charliteral=\#307030"
 
-# doxygene global configuration
-###################################################
+## project configuration.
+#
+PROJECT	:= -D DATE="$(DATE)"
+PROJECT	+= -D PROJECT_NUMBER="$(VERSION)"
+PROJECT	+= -D PROJECT_NAME="dcplaya"
 
-DOXALL	:= -D date="$(DATE)"
-DOXALL	+= -D dox-version=$(VERSION)
-DOXALL	+= -D dox-project="dcplaya"
-DOXALL	+= -D dox-file-patterns='*.h *.lua'
-DOXALL	+= -D dox-quiet=NO
-DOXALL	+= -D dox-warnings=YES
-DOXALL	+= -D dox-extract-all=NO
-DOXALL	+= -D dox-private=NO
-DOXALL	+= -D dox-source-browser=NO
-DOXALL  += -D dox-javadoc_autobrief=yes
-DOXALL  += -D distribute_group_doc=yes
-DOXALL  += -D optimize_output_for_c=yes
-DOXALL	+= -D dox-tab-size=12
-DOXALL	+= -D dox-destination=$(DOC_DIR)
-DOXALL	+= -D dox-preprocessing=YES
-DOXALL	+= -D dox-macro_expansion=YES
-DOXALL	+= -D dox-sort-member-docs=NO
-DOXALL	+= -D dox-recursive=NO
-DOXALL	+= -D dox-alphabetical-index=NO
-DOXALL	+= -D dox-internal-docs=NO
+## doxygene global configuration
+#
+DOXALL	:= $(PROJECT)
+DOXALL	+= -D QUIET=YES
+DOXALL	+= -D WARNINGS=YES
 
-# DEVELOPER DOCUMENTATION
-###################################################
+DOXALL	+= -D OUTPUT_DIRECTORY='$(DOC_DIR)'
+DOXALL	+= -D FILE_PATTERNS='*.h *.lua'
 
+DOXALL	+= -D EXTRACT_ALL=NO
+DOXALL	+= -D PRIVATE=NO
+DOXALL	+= -D SOURCE_BROWSER=NO
+DOXALL  += -D JAVADOC_AUTOBRIEF=YES
+DOXALL  += -D DISTRIBUTE_GROUP_DOC=YES
+DOXALL  += -D OPTIMIZE_OUTPUT_FOR_C=YES
+DOXALL	+= -D TAB_SIZE=8
+
+DOXALL	+= -D PREPROCESSING=YES
+DOXALL	+= -D MACRO_EXPANSION=YES
+DOXALL	+= -D SORT_MEMBER_DOCS=NO
+DOXALL	+= -D RECURSIVE=NO
+DOXALL	+= -D ALPHABETICAL_INDEX=YES
+DOXALL	+= -D INTERNAL_DOCS=NO
+
+## DEVELOPER documentation
+#
 DOXDEV	:=
-DOXDEV	+= -D dox-input="$(DOCINPUTS)"
-DOXDEV	+= -D dox-predefined="DEBUG"
-DOXDEV	+= -D dox-include_path=..
-DOXDEV	+= -D dox-optimize-output-for-c=YES
-DOXDEV	+= -D dox-enabled-sections=""
-DOXDEV	+= -D dox-generate-html=YES
+DOXDEV	+= -D INPUT='$(DOCINPUTS)'
+DOXDEV	+= -D PREDEFINED="DEBUG"
+DOXDEV	+= -D INCLUDE_PATH="../include ../include/dcplaya"
+DOXDEV	+= -D OPTIMIZE_OUTPUT_FOR_C=YES
+DOXDEV	+= -D ENABLED_SECTIONS=""
+DOXDEV	+= -D GENERATE_HTML=YES
 ifeq "$(strip $(MAKECMDGOALS))" "xml"
-DOXDEV	+= -D dox-generate-xml=YES
+DOXDEV	+= -D GENERATE_XML=YES
 else
-DOXDEV	+= -D dox-generate-xml=NO
+DOXDEV	+= -D GENERATE_XML=NO
 endif
-DOXDEV	+= -D dox-html-header=dcplaya_header.html
-DOXDEV	+= -D dox-html-footer=dcplaya_footer.html
-DOXDEV	+= -D dox-html-stylesheet=dcplaya_doc.css
-DOXDEV	+= -D dox-generate-treeview=NO
-DOXDEV	+= -D dox-generate-man=NO
-DOXDEV	+= -D dox-man-extension=.1
-DOXDEV	+= -D dox-generate-latex=NO
+DOXDEV	+= -D HTML_HEADER=dcplaya_header.html
+DOXDEV	+= -D HTML_FOOTER=dcplaya_footer.html
+DOXDEV	+= -D HTML_STYLESHEET=dcplaya_doc.css
+DOXDEV	+= -D GENERATE_TREEVIEW=NO
+DOXDEV	+= -D GENERATE_MAN=NO
+DOXDEV	+= -D MAN_EXTENSION=.1
+DOXDEV	+= -D GENERATE_LATEX=NO
 
-# MAKE RULES
-###################################################
+## Make rules
+#
 
 
 all: Makefile devdoc
@@ -148,53 +153,69 @@ xml: all
 txt: all txt_only
 
 txt_only:
-	mkdir -p $(DOC_DIR)/text
-	for i in `find $(DOC_DIR)/html -type f -name '*.html'`; do lynx -dump $$i > $(DOC_DIR)/text/`basename $$i .html`.txt ; done
-
+	@mkdir -p $(DOC_DIR)/text
+	@for i in `find $(DOC_DIR)/html -type f -name '*.html'`; do lynx -dump $$i > $(DOC_DIR)/text/`basename $$i .html`.txt ; done
 
 Makefile : Makefile.in
 	(cd ..; ./config.status) 
 
-$(LUADOCDIR)/doc.lua : luadoc.h
-	cp -f $< $@
+# $(LUADOCDIR)/doc.lua : luadoc.h
+# 	cp -f $< $@
 
-$(LUADOCDIR)/%.lua : %.lua Makefile
-	@echo "make [$@] from [$<]"
-	@mkdir -p $(dir $@)
-	@$(LUA2DOX) < $< > $@
-	@[ -s $@ ] || echo "/// @file $(@F)" > $@
+$(LUADOCDIR)/userconf.lua : $(LUASRCDIR)/userconf-release.lua # Makefile
+#	@echo "make [$@] from [$<]"
+#	@mkdir -p $(dir $@)
+	@$(LUA2DOX) > $@
+
+$(LUADOCDIR)/lua/testdoc.lua : $(LUASRCDIR)/lua/testdoc.lua
+#	@mkdir -p $(dir $@)
+#	@echo "make [$@] from [$<]"
+#	sed --silent -f $(LUASRCDIR)/lua/doc.sed $< > $@
+	@$(LUA2DOX) > $@
+
+$(LUADOCDIR)/%.lua : %.lua  # Makefile
+#	@mkdir -p $(dir $@)
+#	@echo "make [$@] from [$<]"
+	@$(LUA2DOX) > $@
 
 luadoc: $(LUADOCFILES)
 
 devdoc: devdoc.dox $(DEVDOCFILES) luadoc $(HTML_EXTRA)
-	$(DOXYGEN) $<
+	@$(DOXYGEN) $<
 
 # Phony since xml could be modified by goal !
 .PHONY: devdoc.dox
-devdoc.dox: generic.doxin Makefile
-	cat $< | grep -E -v '^#.*$$' |\
-	grep -E -v '^ *$$' |\
-	$(SHASUBST) $(DOXALL) $(DOXDEV) > $@
+
+devdoc.dox : devdoc.doxin
+	@echo "make [$@] from [$<]"
+	@$(DOXYGENERIC) $@ $(DOXALL) $(DOXDEV) < $< 
+
+devdoc.doxin:
+	@echo "make [$@]"
+	@$(DOXYGEN) -s -g $@ > /dev/null
 
 %.html : %.htmlin Makefile
-	$(SHASUBST) $(DOXALL) < $< > $@
+	@$(SHASUBST) $(DOXALL) < $< > $@
 
 %.css : %.cssin Makefile
-	$(SHASUBST) $(CSS) < $< > $@
+	@echo "make [$@] from [$<]"
+	@$(SHASUBST) $(CSS) < $< > $@
 
 %.h : %.hin Makefile
-	cat $< > $@
+	@echo "make [$@] from [$<]"
+	@cat $< > $@
 
 clean_local:
-	@rm -f *.dox *.h *~ *.html *.css *.lua
+	@rm -f *.dox* *.h *~ *.html *.css *.lua
+	@find $(LUADOCDIR) -name '*.lua' -type f -exec rm "{}" \;
 
 clean: clean_local
-	@rm -rf $(foreach i, html xml man text latex,$(DOC_DIR)/$(i)) $(LUADOCDIR)
+	@rm -rf $(foreach i, html xml man text latex,$(DOC_DIR)/$(i)) 
 
 distclean: clean
-	@rm -f Makefile *~
+	@rm -rf Makefile *~ $(LUADOCDIR)
 
 dep depend depend-clean:
 
 required:
-	mkdir -p "$(LUADOCDIR)" "$(DOC_DIR)"
+	mkdir -p "$(LUADOCDIR)/lua" "$(DOC_DIR)"
