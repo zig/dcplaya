@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.54 2003-03-19 02:14:06 ben Exp $
+--- $Id: song_browser.lua,v 1.55 2003-03-19 22:48:10 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song-browser
@@ -713,16 +713,23 @@ function song_browser_create(owner, name)
 	 printf("[songbrowser] : unknown action %q", action)
 	 return
       end
-      local entry_path = fl:fullpath()
+      local pos = fl:get_pos()
+      if not pos then return end
+      local entry=fl.dir[pos]
+
+      -- $$$$
+      dump(entry,action)
+
+      local entry_path = fl:fullpath(entry)
       if not entry_path then return end
-      local ftype, major, minor = filetype(entry_path)
+      local ftype, major, minor = filetype(entry_path, entry.size)
 
       -- $$$
       printf("%q on %q [%q,%q]", action, entry_path, major, minor)
 
       local func = fl.actions[action][major] or fl.actions[action].default
       if type(func) == "function" then
-	 return func(fl,sb,action,entry_path)
+	 return func(fl,sb,action,entry_path,entry)
       end
       -- $$$
       printf("No %q action for %q", action, entry_path)
@@ -737,10 +744,12 @@ function song_browser_create(owner, name)
       return songbrowser_any_action(sb, "confirm", fl)
    end
 
-   function sbfl_confirm_dir(fl, sb, action, entry_path)
+   function sbfl_confirm_dir(fl, sb, action, entry_path, entry)
       if not test("-d", entry_path) then return end
-      local idx = fl:get_pos();
-      local entry = fl.dir[idx];
+      if not entry then
+	 local idx = fl:get_pos();
+	 entry = idx and fl.dir[idx];
+      end
       local name = entry and (entry.file or entry.name)
       if not name then return end
 
@@ -757,7 +766,7 @@ function song_browser_create(owner, name)
       song_browser_loaddir(sb, entry_path, locate_me)
    end
 
-   function sbfl_confirm_music(fl, sb, action, entry_path)
+   function sbfl_confirm_music(fl, sb, action, entry_path, entry)
 -- $$$ problem with cdda ... 
 --      if not test("-f",entry_path) then return end
       sb.playlist_idx = nil
@@ -765,7 +774,7 @@ function song_browser_create(owner, name)
       return 1
    end
 
-   function sbfl_confirm_playlist(fl, sb, action, entry_path)
+   function sbfl_confirm_playlist(fl, sb, action, entry_path, entry)
       local dir = playlist_load(entry_path)
       if not dir then return end
       sb.playlist_idx = nil
@@ -773,22 +782,22 @@ function song_browser_create(owner, name)
       return 1
    end
 
-   function sbfl_confirm_image(fl, sb, action, entry_path)
+   function sbfl_confirm_image(fl, sb, action, entry_path, entry)
       song_browser_ask_background_load(sb)
       songbrowser_load_image(sb,entry_path)
    end
 
-   function sbfl_confirm_plugin(fl, sb, action, entry_path)
+   function sbfl_confirm_plugin(fl, sb, action, entry_path, entry)
 --       if not test("-f",entry_path) then return end
 --       return driver_load(entry_path)
    end
 
-   function sbfl_confirm_lua(fl, sb, action, entry_path)
+   function sbfl_confirm_lua(fl, sb, action, entry_path, entry)
 --       if not test("-f",entry_path) then return end
 --       return dofile(entry_path)
    end
 
-   function sbfl_confirm_text(fl, sb, action, entry_path)
+   function sbfl_confirm_text(fl, sb, action, entry_path, entry)
       if not test("-f",entry_path) then return end
       song_browser_view_file(sb,entry_path)
    end
@@ -797,25 +806,28 @@ function song_browser_create(owner, name)
    -- filelist "select" actions
    -- ----------------------------------------------------------------------
 
-   function sbfl_select(fl, sb, action, entry_path)
+   function sbfl_select(fl, sb, action, entry_path, entry)
       songbrowser_any_action(sb,"select",fl)
    end
    
-   function sbfl_select_dir(fl, sb, action, entry_path)
+   function sbfl_select_dir(fl, sb, action, entry_path, entry)
       if not test("-d", entry_path) then return end
       return sbpl_insertdir(sb, entry_path)
    end
    
-   function sbfl_select_music(fl, sb, action, entry_path)
--- $$$ problem with cdda ... 
---       if not test("-f",entry_path) then return end
-      local pos = fl:get_pos()
-      if pos then
-	 return sbpl_insert(sb, fl.dir[pos])
+   function sbfl_select_music(fl, sb, action, entry_path, entry)
+      -- $$$ problem with cdda ... 
+      -- if not test("-f",entry_path) then return end
+      if not entry then
+	 local pos = fl:get_pos()
+	 entry = pos and fl.dir[pos]
+      end
+      if entry then
+	 return sbpl_insert(sb, entry)
       end
    end
    
-   function sbfl_select_playlist(fl, sb, action, entry_path)
+   function sbfl_select_playlist(fl, sb, action, entry_path, entry)
       local path,leaf = get_path_and_leaf(entry_path)
       if not leaf then return end
       
@@ -859,7 +871,7 @@ function song_browser_create(owner, name)
       song_browser_contextmenu(sb,"playlist-menu,",fl,def, entry_path)
    end
 
-   function sbfl_select_image(fl, sb, action, entry_path)
+   function sbfl_select_image(fl, sb, action, entry_path, entry)
       local path,leaf = get_path_and_leaf(entry_path)
       if not leaf then return end
 
@@ -896,7 +908,7 @@ function song_browser_create(owner, name)
       song_browser_contextmenu(sb, "image-menu", fl, def, entry_path)
    end
 
-   function sbfl_select_plugin(fl, sb, action, entry_path)
+   function sbfl_select_plugin(fl, sb, action, entry_path, entry)
       if not test("-f",entry_path) then return end
       local path,leaf = get_path_and_leaf(entry_path)
       if not leaf then return end
@@ -930,7 +942,7 @@ function song_browser_create(owner, name)
       song_browser_contextmenu(sb,"plugin-menu,", fl, def, entry_path)
    end
 
-   function sbfl_select_lua(fl, sb, action, entry_path)
+   function sbfl_select_lua(fl, sb, action, entry_path, entry)
       if not test("-f",entry_path) then return end
       local path,leaf = get_path_and_leaf(entry_path)
       if not leaf then return end
@@ -985,7 +997,7 @@ function song_browser_create(owner, name)
    end
 
 
-   function sbfl_select_text(fl, sb, action, entry_path)
+   function sbfl_select_text(fl, sb, action, entry_path, entry)
       if not test("-f",entry_path) then return end
       local path,leaf = get_path_and_leaf(entry_path)
       if not leaf then return end
@@ -1012,17 +1024,17 @@ function song_browser_create(owner, name)
    -- ----------------------------------------------------------------------
    -- filelist "cancel" actions
    -- ----------------------------------------------------------------------
-   function sbfl_cancel(fl, sb, action, entry_path)
+   function sbfl_cancel(fl, sb, action, entry_path, entry)
       songbrowser_any_action(sb,"cancel",fl)
    end
 
-   function sbfl_cancel_default(fl, sb, action, entry_path)
+   function sbfl_cancel_default(fl, sb, action, entry_path, entry)
       if playa_play() == 1 then
 	 song_browser_stop(sb);
       end
    end
 
-   function sbfl_open_menu(fl, sb, action, entry_path)
+   function sbfl_open_menu(fl, sb, action, entry_path, entry)
       print("TO DO : File list open menu")
    end
 

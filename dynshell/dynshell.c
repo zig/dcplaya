@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.87 2003-03-19 00:32:00 zigziggy Exp $
+ * @version    $Id: dynshell.c,v 1.88 2003-03-19 22:48:10 ben Exp $
  */
 
 #include "dcplaya/config.h"
@@ -1911,7 +1911,7 @@ static int lua_get_driver_lists(lua_State * L)
 static int lua_filetype(lua_State * L)
 {
   const char * major_name, * minor_name;
-  int type;
+  int type, file_size;
   const char * fname;
 
   fname = lua_tostring(L,1);
@@ -1919,7 +1919,17 @@ static int lua_filetype(lua_State * L)
     return 0;
   }
 
-  if (fu_is_dir(fname)) {
+  /* This is optionnal parameter that allow to skip the fu_is_dir() call.
+     It allow to fix a bug with the dcload_fs, which accept to open files
+     as directory :(
+  */
+  if (lua_gettop(L) > 1) {
+    file_size = lua_tonumber(L,2);
+  } else {
+    file_size = -fu_is_dir(fname);
+  }
+
+  if (file_size < 0) {
     type = filetype_directory(fname);
   } else {
     type = filetype_regular(fname);
@@ -3042,7 +3052,11 @@ static luashell_command_description_t commands[] = {
     "filetype",
     0,
     "print([["
-    "filetype(filename) : get type, major-name, minor-name of given file.\n"
+    "filetype(filename[, filesize]) : get type, major-name, minor-name of"
+    " given file.\n"
+    "The filesize parameter is used only to avoid dir/regular file checking."
+    " It is neccessary to fix a bug with regular files on /pc that are"
+    " allowed to be opened as directory (and the contrary)."
     "]])",
     SHELL_COMMAND_C, lua_filetype
   },
