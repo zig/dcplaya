@@ -4,7 +4,7 @@
  * @brief   Image descriptor definition
  * @author  BeN(jamin) Gerard <ben@sashipa.com>
  * @date    2001/07/08
- * @version $Id: SHARimg.h,v 1.1 2002-09-27 16:45:07 benjihan Exp $
+ * @version $Id: SHARimg.h,v 1.2 2002-10-05 09:43:58 benjihan Exp $
  */
 
 #ifndef _SHARIMG_H_
@@ -55,7 +55,7 @@ struct SHARimgDesc
 };
 
 /** Image file descriptor.
- * 
+ *
  *   SHAimgFileDesc structure is as image file descriptor.
  *   That is why all fields of the structures are arrays of chars.
  *   This structure was not design for application internal usages,

@@ -4,7 +4,7 @@
  * @brief     Image translator base class implementation
  * @date      2001/07/19
  * @author    BeN(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAtranslatorImage.cxx,v 1.1 2002-09-27 16:45:07 benjihan Exp $
+ * @version   $Id: SHAtranslatorImage.cxx,v 1.2 2002-10-05 09:43:58 benjihan Exp $
  */
 
 

@@ -4,7 +4,7 @@
  * @brief     Targa (TGA) translator class definition
  * @date      2001/07/11
  * @author    BeN(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAtranslatorTga.h,v 1.1 2002-09-27 16:45:07 benjihan Exp $
+ * @version   $Id: SHAtranslatorTga.h,v 1.2 2002-10-05 09:43:58 benjihan Exp $
  */
 
 #ifndef _SHATRANSLATORTGA_H_
@@ -76,7 +76,7 @@ private:
 
     TGAheader();
     void operator = (const TGAfileHeader & fHd);
-    
+
   };
 
   static int RGBtype(int bpp, int alphaBit);

@@ -4,7 +4,7 @@
  * @brief   sashipa toolkit memory stream class definition
  * @author  BeN(jamin) Gerard <ben@sashipa.com>
  * @date    2001/05/14
- * @version $Id: SHAstreamMem.h,v 1.1 2002-09-27 16:45:07 benjihan Exp $
+ * @version $Id: SHAstreamMem.h,v 1.2 2002-10-05 09:43:58 benjihan Exp $
  */
 
 #ifndef _SHASTREAMMEM_H_

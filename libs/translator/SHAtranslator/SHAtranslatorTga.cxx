@@ -4,7 +4,7 @@
  * @brief     Targa (TGA) translator class implementation
  * @date      2001/07/11
  * @author    BeN(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAtranslatorTga.cxx,v 1.1 2002-09-27 16:45:07 benjihan Exp $
+ * @version   $Id: SHAtranslatorTga.cxx,v 1.2 2002-10-05 09:43:58 benjihan Exp $
  */
 
 #include <string.h>
@@ -73,7 +73,7 @@ static void TGAconvertor_RGB565_ARGB32(void *dst, const void *src, int n,
 }
 
 const char **SHAtranslatorTga::Extension(void) const
-{                          //01234 56789A BCDEF 01234 56789 A 
+{                          //01234 56789A BCDEF 01234 56789 A
   static const char ext[] = ".tga\0.tpic\0.vda\0.icb\0.vst\0\0";
   static const char * exts[] = { ext, ext+5, ext+0xB, ext+0x10, ext+0x15, 0 };
   return exts;
@@ -460,7 +460,7 @@ int SHAtranslatorTga::Load(SHAstream * out,
   // Temporary buffer for image convertion
   char convBuffer[32*4];
 
-  // Output is always ARGB32 
+  // Output is always ARGB32
   result->data.image.type        = SHAPF_ARGB32;
   result->data.image.bitPerPixel = 32;
   result->data.image.lutSize     = 0;

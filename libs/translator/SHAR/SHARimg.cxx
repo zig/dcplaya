@@ -4,7 +4,7 @@
  * @brief   Image descriptor implementation
  * @author  BeN(jamin) Gerard <ben@sashipa.com>
  * @date    2001/07/11
- * @version $Id: SHARimg.cxx,v 1.1 2002-09-27 16:45:07 benjihan Exp $
+ * @version $Id: SHARimg.cxx,v 1.2 2002-10-05 09:43:58 benjihan Exp $
  */
 
 #include "SHAR/SHARimg.h"
@@ -120,7 +120,7 @@ const char * SHARimgDesc::ToString(unsigned int type)
 
 const char * SHARimgFileDesc::ToString(unsigned int type)
 {
-  switch(type) 
+  switch(type)
   {
   case SHAPF_IND1:      return "IND1";
   case SHAPF_IND2:      return "IND2";

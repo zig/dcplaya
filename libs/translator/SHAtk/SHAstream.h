@@ -4,7 +4,7 @@
  * @brief   sashipa toolkit abstract stream class definition.
  * @author  BeN(jamin) Gerard <ben@sashipa.com>
  * @date    2001/05/14
- * @version $Id: SHAstream.h,v 1.1 2002-09-27 16:45:07 benjihan Exp $
+ * @version $Id: SHAstream.h,v 1.2 2002-10-05 09:43:58 benjihan Exp $
  */
 
 #ifndef _SHASTREAM_H_
@@ -114,7 +114,7 @@ public:
    *
    * @param   offset   Number of byte from origin.
    * @param   origin   Initial position.
-   * @return  errorNo   
+   * @return  errorNo
    * @see     SHAstreamSeek_e
    * @see     Tell()
    */
@@ -170,7 +170,7 @@ public:
   virtual int IsEOF(void) = 0;
 
   ///@}
-  
+
 };
 
 #endif /* #define  _SHASTREAM_H_ */
