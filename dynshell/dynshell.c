@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.32 2002-10-04 21:00:39 benjihan Exp $
+ * @version    $Id: dynshell.c,v 1.33 2002-10-06 22:47:29 vincentp Exp $
  */
 
 #include <stdio.h>
@@ -1234,6 +1234,13 @@ static int lua_vmutools(lua_State * L)
 
 	
 
+static int lua_vcolor(lua_State * S)
+{
+  vid_border_color(lua_tonumber(S, 1), lua_tonumber(S, 1), lua_tonumber(S, 1));
+
+  return 0;
+}
+
 
 
 
@@ -1531,6 +1538,14 @@ static luashell_command_description_t commands[] = {
     " -v : verbose\n"
     "]])",
     SHELL_COMMAND_C, lua_copy
+  },
+  {
+    "vcolor",
+    0,
+    "print([["
+    "vcolor(r, g, b, a)\n"
+    "]])",
+    SHELL_COMMAND_C, lua_vcolor
   },
 
   {0},

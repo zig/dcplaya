@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.4 2002-09-30 02:28:56 vincentp Exp $
+-- $Id: evt.lua,v 1.5 2002-10-06 22:47:29 vincentp Exp $
 --
 
 
@@ -94,7 +94,7 @@ end
 
 -- INTERNAL
 function evt_update(app, frametime)
-	
+
 	local i = app.sub
 	while i do
 		local n = i.next
@@ -114,25 +114,33 @@ function evt_peek()
 	
 	-- basic events
 	local key
+	local frametime
 
 	repeat
 		key = evt_origpeekchar()
 
 		if key then
+			vcolor(255, 0, 0)
 			evt = { key = key }
 			evt = evt_send(evt_root_app, evt)
 			if evt then
 				return evt
 			end
+			vcolor(0, 0, 0)
+		else
+			-- do collect garbage once per frame for smoother animation
+			collectgarbage()
+
+			-- calculate frame time
+			evt_curframecounter = evt_origframecounter(1)
+			frametime = evt_curframecounter/60
 		end
 	until not key
 
-	-- calculate frame time
-	evt_curframecounter = evt_origframecounter(1)
-	local frametime = evt_curframecounter/60
-
 	-- call update method of applications
+	vcolor(100, 0, 0)
 	evt_update(evt_root_app, frametime)
+	vcolor(0, 0, 0)
 
 end
 

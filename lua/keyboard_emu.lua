@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: keyboard_emu.lua,v 1.8 2002-09-30 02:28:57 vincentp Exp $
+-- $Id: keyboard_emu.lua,v 1.9 2002-10-06 22:47:29 vincentp Exp $
 --
 
 
@@ -386,6 +386,7 @@ function ke_update(app, frametime)
 	end
 
 	-- do collect garbage once per frame for smoother animation
+	-- (done in evt.lua now)
 --	collectgarbage()
 
 	-- update active array position and color

@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: gui.lua,v 1.4 2002-10-04 20:57:39 benjihan Exp $
+-- $Id: gui.lua,v 1.5 2002-10-06 22:47:29 vincentp Exp $
 --
 
 --
@@ -143,9 +143,9 @@ gui_closestcoef_horizontal = { 1, 5, 1, 5 }
 gui_closestcoef_vertical = { 5, 1, 5, 1 }
 function gui_closest(app, box, coef, cond, condi)
 
---	if not coef then
---		coef = ke_closest_coef
---	end
+	if not coef then
+		coef = gui_closestcoef
+	end
 	box = box * coef
 	local i = app.sub
 	if not i then
@@ -596,15 +596,19 @@ function gui_shutdown()
 end
 
 function gui_init()
-	gui_curz = 1000
-	gui_press_event 		= evt_new_code()
---	gui_keyup_event 		= evt_new_code()
---	gui_keydown_event 		= evt_new_code()
---	gui_keyconfirm_event 	= evt_new_code()
---	gui_keycancel_event 	= evt_new_code()
-	gui_focus_event 		= evt_new_code()
-	gui_unfocus_event 		= evt_new_code()
-	gui_filelist_event		= evt_new_code() -- with {[file] {[name],[size]}}
+	gui_shutdown()
+
+	if not gui_curz then
+		gui_curz = 1000
+		gui_press_event = evt_new_code()
+		gui_focus_event = evt_new_code()
+		gui_unfocus_event = evt_new_code()
+--		gui_keyup_event		= evt_new_code()
+--		gui_keydown_event	= evt_new_code()
+--		gui_keyconfirm_event 	= evt_new_code()
+--		gui_keycancel_event 	= evt_new_code()
+		gui_filelist_event	= evt_new_code() -- with {[file] {[name],[size]}}
+	end
 end
 
 gui_init()

@@ -3,7 +3,7 @@
 -- author : benjamin gerard <ben@sashipa.com>
 -- date   : 2002/10/04
 --
--- $Id: fileselector.lua,v 1.2 2002-10-04 20:57:39 benjihan Exp $
+-- $Id: fileselector.lua,v 1.3 2002-10-06 22:47:29 vincentp Exp $
 --
 
 --- filelist - Display a filelist from a given path 
@@ -420,7 +420,7 @@ function test_gui_filelist()
 					"FILELIST TEST", { x = "left", y = "upout" })
 	
 	if not dial then return end
-	local flist = gui_filelist(dial, "/pc/t")
+	local flist = gui_filelist(dial, "/pc")
 	if not flist then
 		evt_shutdown_app(dial)
 		return
@@ -459,7 +459,7 @@ end
 --
 if nil then
 	local result = nil
-	fl = filelist_create("/pc/t")
+	fl = filelist_create("/pc")
 	if fl then
 		filelist_center(fl, 0, 0, 640, 480, 2000)
 		result = filelist_standalone_run(fl)
@@ -485,7 +485,7 @@ end
 
 ------------------------------------------------------------
 if nil then
-fl = gui_filelist(dial, "/pc/t", nil,
+fl = gui_filelist(dial, "/pc", nil,
 		dial.box[1]+5, dial.box[2]+5, dial.z+.2)
 
 if fl == nil then
