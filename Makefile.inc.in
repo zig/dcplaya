@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile.inc.in,v 1.9 2002-09-10 23:41:53 ben Exp $
+# $Id: Makefile.inc.in,v 1.10 2002-09-11 03:42:53 zig Exp $
 #
 
 TOP_DIR="@TOP_DIR@"
@@ -63,14 +63,16 @@ KOS_LDFLAGS=-ml -m4-single-only -nostartfiles -nostdlib -Wl,-Ttext=0x8c010000
 export KOS_CFLAGS KOS_CPPFLAGS KOS_AFLAGS KOS_LDFLAGS
 
 ifndef OBJS
+S_SRCS = $(wildcard *.s) 
 C_SRCS = $(wildcard *.c) 
 CXX_SRCS = $(wildcard *.cxx) 
 
+S_OBJS = $(S_SRCS:%.s=%.o)
 C_OBJS = $(C_SRCS:%.c=%.o)
 CXX_OBJS = $(CXX_SRCS:%.cxx=%.o)
 
-SRCS = $(C_SRCS) $(CXX_SRCS)
-OBJS = $(C_OBJS) $(CXX_OBJS)
+SRCS = $(S_SRCS) $(C_SRCS) $(CXX_SRCS)
+OBJS = $(S_OBJS) $(C_OBJS) $(CXX_OBJS)
 endif
 
 ifeq '$(LIBRARY)' 'yes'

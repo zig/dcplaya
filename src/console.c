@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.1 2002-09-11 03:23:33 zig Exp $
+ * @version   $Id: console.c,v 1.2 2002-09-11 03:42:53 zig Exp $
  */
 
 
@@ -39,6 +39,8 @@ csl_console_t * csl_console_create(int ncol, int nline, int render_modes)
     SERROR(error);
 
   console->render_modes = render_modes;;
+
+  return console;
 
  error:
   if (console)
@@ -107,24 +109,61 @@ void csl_disable_render_mode(csl_console_t * console, int modes)
 /* Functions to access to a console */
 void csl_putchar(csl_console_t * console, char c )
 {
+  MUterm_inputc(c, console->term);
 }
 void csl_putstring(csl_console_t * console, const char * s )
 {
+  MUterm_input(s, console->term);
 }
 void csl_printf(csl_console_t * console, const char *fmt, ... )
 {
+  va_list args;
+  va_start(args, fmt);
+  csl_vprintf(console, fmt, args);
+  va_end(args);
 }
 void csl_vprintf(csl_console_t * console, const char *fmt, va_list args )
 {
+  MUterm_setactive(console->term);
+  MUterm_vprintf(fmt, args);
 }
 
 
 /* Main console */
+
 csl_console_t * main_console;
+
+static dbgio_printk_func old_printk_func;
+
+
+static void csl_printk_func(const char * s)
+{
+  csl_putstring(main_console, s);
+
+  if (old_printk_func)
+    old_printk_func(s);
+}
+
 void csl_init_main_console()
 {
+
+  if (main_console)
+    return;
+
+  main_console = csl_console_create(30, 20, CSL_RENDER_BASIC);
+
+  old_printk_func = dbgio_set_printk(csl_printk_func);
+  
 }
 void csl_close_main_console()
 {
+  if (!main_console)
+    return;
+
+  csl_console_destroy(main_console);
+  main_console = 0;
+
+  dbgio_set_printk(old_printk_func);
+
 }
 
