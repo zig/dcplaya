@@ -166,7 +166,9 @@ function sprite(name, x, y, w, h, u1, v1, u2, v2, texture, rotate)
       sprite_list[spr.name] = spr
    else
       spr.name = "anonymous"
-      print("sprite : warning unnamed sprite (added to sprite_list).")
+      if __DEBUG then
+	 print("sprite : warning unnamed sprite (not added to sprite_list).")
+      end
    end
 
    return spr

@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.53 2003-03-18 17:31:27 ben Exp $
+--- $Id: song_browser.lua,v 1.54 2003-03-19 02:14:06 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song-browser
@@ -143,6 +143,56 @@ function song_browser_create_dcpsprite(sb)
 
 end
 
+--- Creates some sprites.
+--- @internal
+function song_browser_create_box(sb, box, style)
+   local bstyle = style_get(style)
+   local fcol, tcol, lcol, bcol, rcol
+
+   fcol = bstyle:get_color(0)
+   tcol = bstyle:get_color(1,0)
+   lcol = bstyle:get_color(1,0) * { 1, 0.7, 0.7, 0.7 }
+   bcol = bstyle:get_color(0,1)
+   rcol = bstyle:get_color(0,1) * { 1, 0.7, 0.7, 0.7 }
+
+   local mf, mt, ml, mr, mb
+   mf = { 0.5, 1, 1, 1 }
+   mt = { 1, 1, 1, 1 }
+   ml = { 1, 0.7, 0.7, 0.7 }
+   mb = { 1, 0.5, 0.5, 0.5 }
+   mr = { 1, 0.4, 0.4, 0.4 }
+
+   -- 1  2
+   --  34
+   --  56
+   -- 7  8
+   local borcol = {
+      bstyle:get_color(1,0),     --1 
+      bstyle:get_color(0.5,1),   --2
+      bstyle:get_color(1,0.5),   --3
+      bstyle:get_color(1,1),     --4
+      bstyle:get_color(1,1),     --5
+      bstyle:get_color(1,0),     --6
+      bstyle:get_color(0.5,1),   --7
+      bstyle:get_color(0,1),     --8
+   }
+
+   fcol = {
+      mf * bstyle:get_color(0.5,0.5),
+      mf * bstyle:get_color(0.25,0.25),
+      nil,
+      mf * bstyle:get_color(0)
+   }
+   tcol = { mt * borcol[1], mt * borcol[2], mt * borcol[3], mt * borcol[4] }
+   lcol = { ml * borcol[1], ml * borcol[3], ml * borcol[7], ml * borcol[5] }
+   bcol = { mb * borcol[5], mb * borcol[6], mb * borcol[7], mb * borcol[8] }
+   rcol = { mr * borcol[4], mr * borcol[2], mr * borcol[6], mr * borcol[8] }
+   sb.fl_box = box3d(box, -4, fcol, tcol, lcol, bcol, rcol)
+end
+
+
+
+
 --- Create a song-browser application.
 ---
 --- @param  owner  Owner application (default to  desktop).
@@ -245,12 +295,13 @@ function song_browser_create(owner, name)
 	    end
 	    if i >= dir.n then
 	       sb.recloader = sb.recloader.parent
+	       sb.pl:draw()
 	    end
 	 else
 	    while i < dir.n do
 	       i = i + 1
 	       if dir[i].size > 0 then
-		  sbpl_insert(sb, dir[i])
+		  sbpl_insert(sb, dir[i],nil,1)
 		  sb.recloader.cur = i
 		  return 1
 	       end
@@ -463,67 +514,12 @@ function song_browser_create(owner, name)
       dl_set_active(sb.dl, 1)
    end
 
-   function song_browser_list_draw_background(fl,dl)
-      local v = mat_new(4,8)
-      local x1,y1,x2,y2,x3,y3,x4,y4,z
-      local border = fl.border * 0.75
-      x1 = 0
-      x2 = x1 + border
-      x4 = fl.bo2[1]
-      x3 = x4 - border
-      y1 = 0
-      y2 = y1 + border
-      y4 = fl.bo2[2]
-      y3 = y4 - border
-      z  = 50
-
-      local a1,r1,g1,b1 = 1.0, 1.0, 0.0, 0.0
-      local a2,r2,g2,b2 = 1.0, 1.0, 1.0, 0.0
-
-      local w = {
-	 {x1, y1, z, 1.0,  a1, r1, g1, b1 }, -- 1
-	 {x4, y1, z, 1.0,  a1, r1, g1, b1 }, -- 2
-	 {x1, y4, z, 1.0,  a1, r1, g1, b1 }, -- 3
-	 {x4, y4, z, 1.0,  a1, r1, g1, b1 }, -- 4
-
-	 {x2, y2, z, 1.0,  a2, r2, g2, b2 }, -- 5
-	 {x3, y2, z, 1.0,  a2, r2, g2, b2 }, -- 6
-	 {x2, y3, z, 1.0,  a2, r2, g2, b2 }, -- 7
-	 {x3, y3, z, 1.0,  a2, r2, g2, b2 }, -- 8
-      }
-
-      local def = {
-	 { 1, 5, 3, 7, 0.6 },
-	 { 1, 2, 5, 6, 1.0 },
-	 { 6, 2, 8, 4, 0.4 },
-	 { 7, 8, 3, 4, 0.3 },
-      }
-
-      local i,d
-      for i,d in def do
-	 local m =  { 1,1,1,1, 1, d[5], d[5], d[5] }
-	 set_vertex(v[1], w[d[1]] * m)
-	 set_vertex(v[2], w[d[2]] * m)
-	 set_vertex(v[3], w[d[3]] * m)
-	 set_vertex(v[4], w[d[4]] * m)
-	 dl_draw_strip(dl,v);
-      end
-
-      if fl.title_sprite then
-	 fl.title_sprite:set_color(1,r2,g2,b2)
-	 fl.title_sprite:draw(dl, (x1+x4) * 0.5, y1-fl.title_sprite.h, 75)
-      end
-
-      if fl.icon_sprite then
-	 local w,h = fl.icon_sprite.w, fl.icon_sprite.h
-	 fl.icon_sprite:set_color(0.4,r2,g2,b2)
-	 fl.icon_sprite:draw(dl, x3 - w * 0.5, y3 - h * 0.5, 75)
-      end
-
---      if fl.draw_background_old then
---	 fl:draw_background_old(dl)
---      end
-
+   function song_browser_list_draw_background(fl, dl)
+      local sb = fl.owner
+      if not sb then return end
+      local b3d = sb.fl_box;
+      if not b3d then return end
+      b3d:draw(dl, mat_trans(0, 0, 50))
    end
 
    --- Song-Browser set color.
@@ -617,7 +613,7 @@ function song_browser_create(owner, name)
    local minmax = { box[3], box[4], box[3], box[4] }
 
    x = 42
-   y = 120
+   y = 110
    z = sb.z - 2
 
    --- Stop current music and playlist running.
@@ -1062,8 +1058,8 @@ function song_browser_create(owner, name)
       sb.pl:change_dir(nil)
    end
 
-   function sbpl_insert(sb, entry)
-      sb.pl:insert_entry(entry)
+   function sbpl_insert(sb, entry, pos, no_redraw)
+      sb.pl:insert_entry(entry, pos, no_redraw)
    end
 
    function sbpl_insertdir(sb, path)
@@ -1469,6 +1465,8 @@ function song_browser_create(owner, name)
 
    -- Menu
    sb.mainmenu_def = songbrowser_menucreator
+
+   song_browser_create_box(sb, box, nil)
 
    sb:set_color(0, 1, 1, 1)
    sb:draw()

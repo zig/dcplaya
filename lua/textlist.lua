@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.42 2003-03-18 01:08:48 ben Exp $
+--- $Id: textlist.lua,v 1.43 2003-03-19 02:14:06 ben Exp $
 ---
 
 -- DL hierarchy :
@@ -316,7 +316,10 @@ function textlist_create(flparm, owner)
    --- Draw given textlist entry in given diplay list.
    --
    function textlist_draw_entry(fl, dl, idx, x , y, z)
-      dl = dl or fl.idl
+      if not dl then
+	 dl = fl.idl
+      end
+
       local entry = fl.dir[idx]
       local info = fl.dirinfo[idx]
       local color = fl.dircolor
@@ -325,7 +328,6 @@ function textlist_create(flparm, owner)
       end
       local tt = entry.tt
       if tt then
---	 print("textlist TT:"..idx)
 	 dl_set_trans(tt.dl, mat_trans(x, y, z))
 	 dl_set_color(tt.dl, color)
 	 dl_sublist(dl, tt.dl)
@@ -339,7 +341,7 @@ function textlist_create(flparm, owner)
    end
 
    --- Insert an entry.
-   function textlist_insert_entry(fl, entry, pos)
+   function textlist_insert_entry(fl, entry, pos, no_redraw)
       local y = 0
       if not entry then return end
       if not pos then
@@ -350,7 +352,9 @@ function textlist_create(flparm, owner)
 	 local w,h = fl:measure_text(entry)
 	 tinsert(fl.dir, entry)
 	 tinsert(fl.dirinfo, { y=y, w=w, h=h })
-	 fl:draw()
+	 if not no_redraw then
+	    fl:draw()
+	 end
       else
 	 print("TEXTLIST INSERT NOT IMPLEMENTED")
       end
@@ -464,25 +468,24 @@ function textlist_create(flparm, owner)
    --- Draw textlist.
    --
    function textlist_draw(fl)
-      textlist_draw_main(fl)
-      fl:draw_list(fl.idl)
-      fl:draw_cursor(fl.cdl)
-   end
-
-   --- Draw main list.
-   --
-   function textlist_draw_main(fl)
 
       -- Redraw all
       dl_clear(fl.dl)
       dl_text_prop(fl.dl, 0, 16, 1)
 
-      -- bdl
+      -- Background
+      dl_clear(fl.bdl)
       fl:draw_background(fl.bdl)
       dl_sublist(fl.dl,fl.bdl)
 
       -- ldl
       dl_clear(fl.ldl)
+
+      dl_clear(fl.idl)
+      fl:draw_list(fl.idl)
+
+      dl_clear(fl.cdl)
+      fl:draw_cursor(fl.cdl)
 
       local ww, wh
       ww = fl.bo2[1]-2*fl.border
@@ -496,12 +499,17 @@ function textlist_create(flparm, owner)
       dl_sublist(fl.ldl,fl.idl)
       dl_sublist(fl.dl,fl.ldl)
       dl_sublist(fl.dl,fl.udl)
+
    end
 
    --- Draw background box.
    --
    function textlist_draw_background(fl, dl)
-      dl = dl or fl.bdl
+      if not dl then
+	 dl = fl.bdl
+	 dl_clear(dl)
+      end
+
       if fl.bkgcolor then
 	 dl_draw_box(dl,
 		     0, 0, fl.bo2[1], fl.bo2[2], 25,
@@ -516,7 +524,11 @@ function textlist_create(flparm, owner)
    --- Draw textlist cursor.
    --
    function textlist_draw_cursor(fl, dl)
-      dl = dl or fl.cdl
+      if not dl then
+	 dl = fl.cdl
+	 dl_clear(dl)
+      end
+
       if fl.dir.n < 1 then
 	 dl_set_active(dl,0)
 	 return
@@ -555,9 +567,11 @@ function textlist_create(flparm, owner)
    --- Draw entries.
    --
    function textlist_draw_list(fl, dl)
-      dl = dl or fl.idl
+      if not dl then
+	 dl = fl.idl
+	 dl_clear(dl)
+      end
       local i
-      dl_clear(dl)
       --- $$$ Added by ben for updating TT drawing
       textlist_measure(fl)
       local max = getn(fl.dirinfo)
@@ -579,6 +593,7 @@ function textlist_create(flparm, owner)
 
       if pos ~= fl.pos then
 	 fl.pos = pos
+	 dl_clear(fl.cdl)
 	 fl:draw_cursor(fl.cdl)
 	 return 2
       end
