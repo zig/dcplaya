@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.22 2003-01-25 11:37:44 ben Exp $
+ * $Id: lpo.c,v 1.23 2003-01-28 06:36:58 ben Exp $
  */
 
 #include <stdio.h>
@@ -473,41 +473,76 @@ static int anim(unsigned int ms)
     controler_state_t state;
     int err = controler_read(&state, lpo_controler);
     if (!err) {
+      static float zmov = 0;
+      const float movmax = 0.03, s = 0.99;
+      float movgoal;
+      
+      vtx_t sa;
+
+      float jx = (float)state.joyx * (1.0/45.0);
+      float jy = (float)state.joyy * (1.0/45.0);
+      float jz = (float)(-state.ltrig+state.rtrig) * (0.5/45.0);
+
       vtx_set(&sa,
-	      sec * (float)state.joyy * (1.0/32.0),
-	      sec * (float)state.joyx * (1.0/32.0),
-	      0);
+	      sec * jy * Fabs(jy),
+	      sec * jx * Fabs(jx),
+	      sec * jz * Fabs(jz));
+
+      if (controler_pressed(&state, CONT_B)) {
+	MtxIdentity(mtx);
+	pos.x = pos.y = 0;
+	pos.z = 1.5;
+	pos.w = 1;
+	zmov = 0;
+      }
+
+      if (state.buttons & CONT_DPAD_UP) {
+	movgoal = movmax;
+      } else if (state.buttons & CONT_DPAD_DOWN) {
+	movgoal = -movmax;
+      } else {
+	movgoal = 0;
+	zmov = 0;
+      }
+      zmov = (zmov * s) + (movgoal * (1-s));
+
+      if (FnearZero(zmov-movgoal)) {
+	zmov = movgoal;
+      }
+      pos.z += zmov;
+      mtx[3][0] = mtx[3][1] = mtx[3][2] = 0;
+      MtxRotateZ(mtx, sa.z);
+      MtxRotateX(mtx, sa.x);
+      MtxRotateY(mtx, sa.y);
+      MtxTranslate(mtx, pos.x, pos.y, pos.z);
+
       if (controler_pressed(&state, CONT_A)) {
 	change_object(random_object(curobj));
       }
-      if (controler_pressed(&state, CONT_START|CONT_B)) {
+      if (controler_pressed(&state,CONT_X|CONT_START)) {
 	lpo_set_controler(-1);
       }
     } else {
       lpo_set_controler(-1);
     }
-    pos.z = 2.0;
   }
 
   if (lpo_controler < 0) {
     vtx_scale(&sa, rps_cur);
     pos.z = zoom_max + 1.7 - ozoom;
+    vtx_inc_angle(&angle, &sa);
+
+    /* Build local matrix */
+    MtxIdentity(mtx);
+    MtxRotateX(mtx, angle.x);
+    MtxRotateY(mtx, angle.y);
+    MtxRotateZ(mtx, angle.z);
+    //MtxScale(mtx, ozoom);
+    mtx[3][0] = pos.x;
+    mtx[3][1] = pos.y;
+    // $$$ TEST REMOVE NEXT COMMENT
+    mtx[3][2] = pos.z;
   }
-
-  vtx_inc_angle(&angle, &sa);
-
-  // $$$
-
-  /* Build local matrix */
-  MtxIdentity(mtx);
-  MtxRotateX(mtx, angle.x);
-  MtxRotateY(mtx, angle.y);
-  MtxRotateZ(mtx, angle.z);
-  //MtxScale(mtx, ozoom);
-  mtx[3][0] = pos.x;
-  mtx[3][1] = pos.y;
-  // $$$ TEST REMOVE NEXT COMMENT
-  mtx[3][2] = pos.z;
   
   /* Build render color : blend base and flash color */
   {
@@ -530,7 +565,9 @@ static int start(void)
 
   angle.x = 3.14f;
   angle.y = angle.z = angle.z = 0;
-  pos.x = pos.y = pos.z = pos.w = 0;
+  pos.x = pos.y = 0;
+  pos.z = 2.0f;
+  pos.w = 1;
   rps_cur = 0;
   rps_goal = rps_min;
   rps_sign = 1;
@@ -538,6 +575,7 @@ static int start(void)
   flash = 0;
   ozoom = 0;
   curobj = 0;
+  MtxIdentity(mtx);
   change_object(random_object(0));
   return 0;
 }
@@ -585,6 +623,17 @@ static vtx_t ambient = {
   0,0,0,0
 };
 
+
+const char * cflagsstr(int f)
+{
+  int i;
+  static char t[7], t2[] = "xXyYzZ";
+  for (i=0; i<6; ++i) {
+    t[i] = (f&(1<<i)) ? t2[i] : '.';
+  }
+  return t;
+}
+
 int render(void)
 {
   vtx_t flat_color;
@@ -601,6 +650,22 @@ int render(void)
   if (!lpo_lighted) {
     draw_color_add((draw_color_t *)&flat_color,
 		   (draw_color_t *)&ambient, (draw_color_t *)&color);
+  }
+  //$$$ test
+  if (lpo_controler >= 0) {
+    int flags = 
+      DrawObject(&viewport, mtx, projmtx,
+		 &curobj->obj, &ambient, &color, 0);
+    if (flags & 07700) {
+      printf("OUT:[%s ", cflagsstr(flags>>6));
+      printf("%s]", cflagsstr(flags));
+    } else if (0 && (flags & 00020)) {
+      //      flags &= 02020;
+      printf("IN:[%s ", cflagsstr(flags>>6));
+      printf("%s]", cflagsstr(flags));
+    }
+
+    return 0;
   }
 
   if (lpo_remanens && !lpo_opaque) {

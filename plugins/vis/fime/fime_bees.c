@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/17
  *  @brief   FIME : bees 
- *  $Id: fime_bees.c,v 1.7 2003-01-25 11:37:44 ben Exp $
+ *  $Id: fime_bees.c,v 1.8 2003-01-28 06:36:58 ben Exp $
  */ 
 
 #include <stdlib.h>
@@ -431,7 +431,7 @@ int fime_bees_update(void)
 const char * cflagsstr(int f)
 {
   int i;
-  static char t[7], t2[] = "ZzYyXx";
+  static char t[7], t2[] = "xXyYzZ";
   for (i=0; i<6; ++i) {
     t[i] = (f&(1<<i)) ? t2[i] : '.';
   }
