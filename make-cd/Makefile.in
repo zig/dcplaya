@@ -1,0 +1,261 @@
+#
+# Makefile.in for burning dcplaya master CD.
+#
+# by Ben(jamin) Gerard <ben@sashipa.com>
+#
+# $Id: Makefile.in,v 1.1 2003-07-30 09:37:59 benjihan Exp $
+#
+
+CDRECORD	= @CDRECORD@ dev=$(cdr) $(CDRECORD_FLAGS)
+MAKEIP		= @MAKEIP@
+SCRAMBLE	= @SCRAMBLE@
+DD		= @DD@
+CP		= cp
+MKISOFS		= @MKISOFS@ -r -f
+CAT		= cat
+TOUCH		= touch
+BIN_TARGET	= dcplaya.bin
+ELF_TARGET	= ../dcplaya.elf
+OBJCOPY		= @SH_OBJCOPY@
+DATE		:= $(shell date +%Y/%m/%d)
+VERSION         = @VERSION@
+ALL_MISSING	:= $(foreach missing,cdrecord makeip scramble dd mkisofs,\
+			$(missing)-is-missing)
+@SET_MAKE@
+
+ifeq '$(cdr)' ''
+cdr		:= $(shell test -f .cdrdev && cat .cdrdev)
+endif
+
+CAN_BURN	= no
+ifneq 'x@CDRECORD@' 'xecho'
+CAN_BURN	:= $(if $(cdr),yes,no)
+endif
+
+# ----------------------------------------------------------------------
+# Display help message
+# ----------------------------------------------------------------------
+all help:
+	@echo "Makefile for burning dcplaya Dreamcast bootable CD."
+	@echo
+	@echo "Usage : make [OPTIONS] <TARGET>"
+	@echo
+	@echo "OPTIONS:"
+	@echo
+	@echo " cdr=x,y,z   : Set SCSI CR device number."
+	@echo "               try 'cdrecord -scanbus' to retrieve device-id."
+	@echo "               e.g dev=1,0,0"
+	@echo " extra=dirs  : Add extra directories to CD (separator=':')."
+	@echo "               e.g. extra='\"dir 1\":dir-2:\"file to add\"'"
+	@echo
+	@echo "TARGET:"
+	@echo
+	@echo " all-burn    :"
+	@echo " clean       : Clean"
+	@echo " force_clean : Like clean but don't care about unfinished"
+	@echo "               burning session."
+
+.PHONY: $(ALL_MISSING)
+$(ALL_MISSING):
+	@echo "You need to install $(patsubst %-is-missing,%,$@) for this."
+	@test "1" = "2"
+
+.PHONY: all-burn
+all-burn: 1ST_READ.BIN IP.BIN burn
+	@echo "Well done, you have successfully burned a dcplaya CD !!!"
+
+.PHONY: burn
+burn: prepare-all burn-audio burn-data
+
+# ----------------------------------------------------------------------
+# CD distrib files
+# ----------------------------------------------------------------------
+
+RELEASE.txt: ../VERSION
+	@echo "[$@]"
+	@(\
+	echo -n   "version  : dcplaya ";\
+	cat ../VERSION;\
+	echo -e "\nbuild by : `id -un` @ `uname --nodename`";\
+	echo      "date     : $(DATE)";\
+	) > $@
+
+README.txt: ../README
+	@echo "[$@]"
+	@sed -e "s#/BUILT-DATE/#$(DATE)#" -e "s#/VERSION/#$(VERSION)#" $< > $@
+
+$(ELF_TARGET):
+	@$(MAKE) --quiet -C $(@D) $(@F)
+
+$(BIN_TARGET): $(ELF_TARGET)
+	@echo "[$@]"
+	@$(OBJCOPY) -R .stack -S -O binary $< $@ \
+	|| ( rm -f $@ && test -z 1 )
+
+ifeq 'x$(DD)' 'xecho'
+audio.raw : dd-is-missing
+else
+audio.raw:
+	@echo "[$@]"
+	@$(DD) if=/dev/zero of=audio.raw bs=2352 count=300
+endif
+
+data.raw: tmp.iso IP.BIN
+	@echo "[$@]"
+	@(cat IP.BIN; dd if=tmp.iso bs=2048 skip=16) > $@\
+	 && rm -f $^
+
+.PHONY: burn-data
+
+ifeq 'x@CRECORD@' 'xecho'
+burn-audio burn-data: cdrecord-is-missing
+else
+
+.cdrdev:
+	@(test ! -z "$(cdr)" && echo "$(cdr)" > $@) ||\
+	(echo "CDR device not specified. Use cdr=x,y,z." && test -z 1)
+
+burn-audio: .cdrdev audio.raw
+	@echo "[$@]"
+	($(CDRECORD) -multi -audio audio.raw && \
+	($(CDRECORD) -msinfo > $@ || (rm -f $@; test -z 1))
+
+burn-data: .cdrdev data.raw
+	@echo "[$@]"
+	$(CDRECORD) -xa1 data.raw \
+	&& rm -f burn-audio
+
+endif
+
+IP.txt: IP.m4 ../VERSION
+	@echo "[$@]"
+	@m4 -DVERSION=$(DCPLAYA_VERSION) $< > $@
+
+IP.BIN:
+	@echo "[$@]"
+	@cp IP-dcload.bin $@
+
+ifeq 'x@SCRAMBLE@' 'xecho'
+1ST_READ.BIN: scramble-is-missing
+else
+1ST_READ.BIN: $(BIN_TARGET)
+	@echo "[$@]"
+	$(SCRAMBLE) $< $@
+endif
+
+ifeq 'x@MKISOFS@' 'xecho'
+tmp.iso test.iso: mkisofs-is-missing
+else
+tmp.iso: burn-audio 1ST_READ.BIN iso
+	@echo "[ISO image]"
+	$(MKISOFS) -C `cat burn-audio` -o $@ $^\
+	&& rm -rf $^
+
+test.iso: 1ST_READ.BIN iso
+	@echo "[ISO test-image]"
+	@$(MKISOFS) -o $@ $^\
+	&& rm -rf $^
+endif
+
+.PHONY: test
+test: test.iso
+	@echo [$@]
+	@KOS_LOADER@ @KOS_LOADER_FLAGS@ "$(ELF_TARGET)" -i test.iso
+
+.PHONY: dcplaya-docs
+dcplaya-docs :
+	@echo "[$@]"
+	@$(MAKE) --quiet -C ../doc distrib
+
+extra-data:
+ifneq 'x$(extra)' 'x'
+	@mkdir -p iso
+	@for dir in $(subst :, ,$(extra)); do \
+		echo "[$@] from [$$dir]"; \
+		cp -RLv "$$dir" iso/ || break; \
+	done
+endif
+
+# Copy lua files and resources
+# ----------------------------
+lua-home:
+	@echo "[$@]"
+	@mkdir -p iso/dcplaya
+#	@cp -f ../autorun.lua ../dcplayarc.lua iso/dcplaya \
+	@cp -f ../dcplayarc.lua iso/dcplaya \
+	&& sed -e "s#@BUILT-DATE@#${DATE}#" ../userconf-release.lua \
+		> iso/dcplaya/userconf.lua
+
+lua-libs:
+	@echo "[$@]"
+	@mkdir -p iso/dcplaya/lua
+	@cp -f ../lua/*.lua iso/dcplaya/lua
+
+lua-rsc:
+	@echo "[$@]"
+	@mkdir -p iso/dcplaya/lua/rsc/icons iso/dcplaya/lua/rsc/text
+	@cp -f ../lua/rsc/icons/*.tga ../lua/rsc/icons/*.jpg \
+		iso/dcplaya/lua/rsc/icons \
+	&& cp -f ../lua/rsc/text/*.txt iso/dcplaya/lua/rsc/text
+
+lua: lua-home lua-libs lua-rsc
+	@echo "[$@]"
+
+
+distrib-doc: README.txt RELEASE.txt
+	@mkdir -p iso
+	@cp -f $^ iso
+
+distrib-devdoc: dcplaya-docs
+	@mkdir -p iso/dcplaya
+	@test -d ../doc/doc && cp -a ../doc/doc iso/dcplaya
+
+dynshell:
+	@mkdir -p iso/dcplaya/dynshell
+	@cp -a ../dynshell/dynshell.lez iso/dcplaya/dynshell
+
+plugins: dynshell
+	@(cd ..; find plugins -type f -name '*.lez') \
+	| tar cf - -C .. -T - \
+	| tar xf - -C iso/dcplaya
+
+
+.PHONY: distrib
+distrib:  distrib-doc distrib-devdoc plugins lua
+#distrib: 1ST_READ.BIN plugins lua
+
+
+.PHONY: iso
+iso: clean_iso distrib extra-data
+	@echo "[$@]"
+
+Makefile: Makefile.in
+	(cd ..; ./config.status)
+
+####################################################################
+##
+#
+clean_audio:
+	@echo "[clean audio]"
+	@rm -f zero
+	@if [ -e burn-audio ]; \
+		then echo -e "Existing [burn-audio] file.\nPrevious burn has not been successfully completed.\nRun make force_clean to remove it."; test -z 1; \
+	else rm -f audio.raw; fi
+
+.PHONY : clean_iso
+clean_iso:
+	@echo "[$@]"
+	@rm -rf iso/ *.iso
+
+.PHONY : clean_file
+clean_file:
+	@echo "[clean files]"
+	@rm -f *.iso *.txt $(1ST_READ) IP.BIN data.raw 1ST_READ.BIN
+
+.PHONY : clean
+clean: clean_audio clean_file clean_iso
+
+.PHONY: force_clean
+force_clean: clean_file clean_iso
+	@echo "[force clean]"
+	@rm -f zero audio.raw burn-audio
