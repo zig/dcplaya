@@ -5,7 +5,7 @@
  * @date    2002/09/30
  * @brief   File manipulation utilities.
  *
- * $Id: file_utils.h,v 1.9 2003-03-22 00:35:26 ben Exp $
+ * $Id: file_utils.h,v 1.10 2003-03-23 23:54:54 ben Exp $
  */
 
 #ifndef _FILE_UTILS_H_
@@ -24,10 +24,10 @@ DCPLAYA_EXTERN_C_START
  *
  *  @see      dcplaya_fn_devel
  *  @author  benjamin gerard <ben@sashipa.com>
+ *  @{
  */
 
 /** @name Error handling.
- *  @ingroup dcplaya_fu_devel
  *  @{
  */
 
@@ -64,7 +64,6 @@ typedef struct _fu_dirent_s
 } fu_dirent_t;
 
 /** @name File existence test functions. 
- *  @ingroup dcplaya_fu_devel
  *  @{
  */
 
@@ -120,7 +119,6 @@ int fu_exist(const char *fname);
 /**@}*/
 
 /** @name File functions.
- *  @ingroup dcplaya_fu_devel
  *  @{
  */
 
@@ -176,7 +174,6 @@ int fu_size(const char * fname);
 /**@}*/
 
 /** @name  Directory functions.
- *  @ingroup dcplaya_fu_devel
  *  @{
  */
 
@@ -237,7 +234,6 @@ int fu_read_dir_cb(const char *dirname, fu_addentry_f addentry, void * cookie);
 /**@}*/
 
 /** @name Directory sorting.
- *  @ingroup dcplaya_fu_devel
  *  @{
  */
 
@@ -279,6 +275,8 @@ int fu_sortdir_by_ascending_size(const fu_dirent_t *a, const fu_dirent_t *b);
  * @return fu_error_code_e
  */
 int fu_sort_dir(fu_dirent_t *dir, int entries, fu_sortdir_f sortdir);
+
+/**@}*/
 
 /**@}*/
 

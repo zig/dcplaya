@@ -1,11 +1,24 @@
 /**
+ * @ingroup dcplaya_lef_devel
  * @file    lef.h
- * @author  Benjamin Gerard <ben@sashipa.com>
- * @author  Vincent Penne
- * @author  Dan Potter
- * @brief   ELF library loader - Based on elf.c from KallistiOS 1.1.5 
+ * @author  benjamin gerard
+ * @author  vincent penne
+ * @author  dan potter
+ * @brief   ELF library loader.
  *
- * @version $Id: lef.h,v 1.5 2002-09-20 00:22:14 benjihan Exp $
+ * $Id: lef.h,v 1.6 2003-03-23 23:54:54 ben Exp $
+ */
+
+/*  Based on elf.c from KallistiOS 1.1.5 */
+
+/** @defgroup  dcplaya_lef_devel  Lef Loader
+ *  @ingroup   dcplaya_devel
+ *  @brief     lef loader
+ *
+ *  @author    benjamin gerard
+ *  @author    vincent penne
+ *  @author    dan potter
+ *  @{
  */
 
 #ifndef _LEF_H_
@@ -42,8 +55,8 @@ struct lef_hdr_t {
   uint16		shstrndx;   /**< String table section index    */
 };
 
-/** Section header types.
- * @{
+/** @name Section header types.
+ *  @{
  */
 #define SHT_TYPE        0xFF        /**< Type mask: TO VERIFY */
 #define SHT_NULL	0	    /**< Inactive */
@@ -78,7 +91,7 @@ struct lef_hdr_t {
 				      escape value SHN_XINDEX */
 /**@}*/
 
-/** Section properties.
+/** @name Section properties.
  *  @{
  */
 #define SHF_WRITE     1		/**< Writable data           */
@@ -138,7 +151,7 @@ struct lef_shdr_t {
 
 /* Symbol table entry */
 
-/** Symbol type definition.
+/** @name Symbol type definition.
  *
  *    Different kind of symbol are defined. Symbol type and binding are both 
  *    stored in info field in lef_symbol_t structure. To get/set same use the
@@ -160,9 +173,9 @@ struct lef_shdr_t {
 #define ELF32_ST_TYPE(i)   ((i)&0xf) /**< Get symbol type from info filed.   */
 /** Set symbol type and binding. Returns value for info field. */
 #define ELF32_ST_INFO(b,t) (((b)<<4)+((t)&0xf))
-/*@}*/
+/**@}*/
 
-/** Symbol Bindings.
+/** @name Symbol Bindings.
  *  @{
  */
 #define STB_LOCAL  0   /**< Local (e.g. static)                          */
@@ -170,12 +183,10 @@ struct lef_shdr_t {
 #define STB_WEAK   2   /**< Extern with a lower precedence (unallocated) */
 #define STB_LOPROC 13  /**< Lower borm for processor-specific semantic   */
 #define STB_HIPROC 15  /**< Upper borm for processor-specific semantic   */
-/*@}*/
+/**@}*/
 
-/* Symbol section index.
- *
- *
- * @{
+/** @name Symbol section index.
+ *  @{
  */
 #define SHN_LORESERVE 0xff00 /* Specifies the range of reserved */
 #define SHN_HIRESERVE 0xffff /* index */
@@ -204,6 +215,8 @@ struct lef_shdr_t {
 			     large to fit in the containing field and is to
 			     be found in another location
 			     (specific to the structure where it appears). */
+
+/**@}*/
 
 /** elf symbol structure. */
 struct lef_sym_t {
@@ -253,6 +266,8 @@ lef_prog_t *lef_load(const char * fname);
  * @param  prog  lef program structure returned by lef_load(). 
  */
 void lef_free(lef_prog_t *prog);
+
+/**@}*/
 
 DCPLAYA_EXTERN_C_END
 

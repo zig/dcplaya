@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.32 2003-03-20 06:05:34 ben Exp $
+--- $Id: desktop.lua,v 1.33 2003-03-23 23:54:54 ben Exp $
 ---
 
 if not dolib("evt") then return end
@@ -483,7 +483,7 @@ function dumpZ()
    function testzzz(app,mat,vtx,indent)
       if not app then return end
       indent = indent or 0
-      printf(strrep(">", indent) .. "DUMP %q", app.name)
+      printf(strrep(">", indent) .. "DUMP %q\n", app.name)
       local mtx
       if not app._dl then
 	 print("no _dl !!")

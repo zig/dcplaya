@@ -4,7 +4,7 @@
 --- @author  benjamin gerard <ben@sashipa.com>
 --- @brief   basic things used into other library (evt, keyboard_emu, gui)
 ---
---- $Id: basic.lua,v 1.17 2003-03-22 10:19:16 ben Exp $
+--- $Id: basic.lua,v 1.18 2003-03-23 23:54:54 ben Exp $
 ---
 
 --
@@ -384,9 +384,9 @@ end
 --- @ingroup dcplaya_lua_basics
 --- @param  fmt  Format string
 --- @param  ...  Arguments needed by format string.
---- @warning Unlike C printf this function add a newline.
+---
 function printf(...)
-   print(call(format,arg))
+   rawprint(call(format,arg))
 end
 
 settagmethod(tag( {} ), "add", table_add)

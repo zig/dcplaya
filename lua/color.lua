@@ -1,15 +1,13 @@
---- @file    color.lua
 --- @ingroup dcplaya_lua_basics
---- @author  benjamin gerard <ben@sashipa.com>
+--- @file    color.lua
+--- @author  benjamin gerard
 --- @date    2002/10/14
 --- @brief   color type.
 ---
 ---   A color is table. Color operators use table' ones.
 ---
---- $Id: color.lua,v 1.8 2003-03-19 21:58:03 ben Exp $
+--- $Id: color.lua,v 1.9 2003-03-23 23:54:54 ben Exp $
 ---
-
-color_loaded = nil
 
 -- Loaded required libraries
 --
@@ -26,10 +24,12 @@ if not color_name_to_index then
 end
 
 --- @defgroup dcplaya_lua_colors Color operations
---- @ingroup dcplaya_lua_basics
+--- @ingroup  dcplaya_lua_basics
+--- @brief    color operations
+--- @author  benjamin gerard
+--- @{
 
 --- Color type.
---- @ingroup dcplaya_lua_colors
 ---
 --- struct color {
 ---   static tag color_tag;              ///< tag for color table.
@@ -41,7 +41,6 @@ end
 --- };
 
 --- Create a new color object.
---- @ingroup dcplaya_lua_colors
 ---
 ---   Creates a new color object from either four numbers or a table of four
 ---   numbers or a string. Default value is 1 for all components.
@@ -99,7 +98,6 @@ function color_new(a,r,g,b,noclip)
 end
 
 --- Copy a color.
---- @ingroup dcplaya_lua_colors
 --- 
 --- @param  c        destination color or nil for a new color.
 --- @param  s        source color.
@@ -128,7 +126,6 @@ function color_copy(c,s,noalpha)
 end
 
 --- Clip color components.
---- @ingroup dcplaya_lua_colors
 ---
 --- @param  c    Color to clip
 --- @param  min  Minimum clipping value or nil for no minimum
@@ -146,7 +143,6 @@ function color_clip(c, min, max)
 end
 
 --- Get color luminosity.
---- @ingroup dcplaya_lua_colors
 ---
 --- @param   c  Color.
 --- @return number
@@ -158,7 +154,6 @@ function color_lum(c)
 end
 
 --- Get index of first hightest component.
---- @ingroup dcplaya_lua_colors
 ---
 --- @param   c  Color.
 --- @return index
@@ -170,7 +165,6 @@ function color_max(c)
 end
 
 --- Get index of first lowest component.
---- @ingroup dcplaya_lua_colors
 ---
 --- @param   c  Color.
 --- @return index
@@ -182,7 +176,6 @@ function color_min(color)
 end
 
 --- Scale color to have the highest component equal to 1.
---- @ingroup dcplaya_lua_colors
 ---
 --- @param   c  Color.
 --- @return c
@@ -205,7 +198,6 @@ function color_maximize(c)
 end
 
 --- Transform color to string (#AARRBBGG).
---- @ingroup dcplaya_lua_colors
 ---
 --- @param   c  Color.
 --- @return string
@@ -221,7 +213,6 @@ function color_tostring(c)
 end
 
 --- Transform color to string (#AARRBBGG).
---- @ingroup dcplaya_lua_colors
 ---
 ---  This function works kike color_tostring() except it always return
 ---  a string. The default value is "#00000000".
@@ -234,7 +225,6 @@ function color_tohexa(c)
 end
 
 --- color "concat" tag method.
---- @ingroup dcplaya_lua_colors
 --- 
 --- @param   a  concat left operand
 --- @param   b  concat right operand
@@ -249,7 +239,6 @@ end
 
 
 --- color "index" tag method.
---- @ingroup dcplaya_lua_colors
 ---
 --- @param   c  color
 --- @param   i  an index (valid values are "a","r","g","b")
@@ -264,7 +253,6 @@ function color_index(c,i)
 end
 
 --- color "settable" tag method.
---- @ingroup dcplaya_lua_colors
 ---
 --- @param   c  color
 --- @param   i  index [1..4] or ["a","r","g","b"]
@@ -287,7 +275,6 @@ function tostring(c)
 end
 
 --- color "add" tag method; "+" operator.
---- @ingroup dcplaya_lua_colors
 ---
 --- @param   a  left operand (color or number)
 --- @param   b  right operand (color or number)
@@ -304,7 +291,6 @@ function color_add(a,b)
 end
 
 --- color "sub" tag method; "-" operator.
---- @ingroup dcplaya_lua_colors
 ---
 --- @param   a  left operand (color or number)
 --- @param   b  right operand (color or number)
@@ -321,7 +307,6 @@ function color_sub(a,b)
 end
 
 --- color "mul" tag method; "*" operator.
---- @ingroup dcplaya_lua_colors
 ---
 --- @param   a  left operand (color or number)
 --- @param   b  right operand (color or number)
@@ -338,7 +323,6 @@ function color_mul(a,b)
 end
 
 --- color "div" tag method; "/" operator.
---- @ingroup dcplaya_lua_colors
 ---
 --- @param   a  left operand (color or number)
 --- @param   b  right operand (color or number)
@@ -355,7 +339,6 @@ function color_div(a,b)
 end
 
 --- color "minus" tag method; unary "-" operator.
---- @ingroup dcplaya_lua_colors
 ---
 --- @param   a  left operand (color or number)
 --- @param   b  right operand (color or number)
@@ -372,7 +355,6 @@ function color_minus(a,b)
 end
 
 --- Absolutes color components.
---- @ingroup dcplaya_lua_colors
 ---
 --- @param   c  color
 --- @return c with each component as the absolute value of its former value.
@@ -387,7 +369,6 @@ function color_abs(c)
 end
 
 --- Get a distant color
---- @ingroup dcplaya_lua_colors
 ---
 --- @param   c    color
 --- @param   alt  alternate color. If nil alt is the one's complement color.
@@ -409,7 +390,6 @@ function color_distant(c, alt)
 end
 
 --- Descending sort R,G,B components.
---- @ingroup dcplaya_lua_colors
 --- 
 --- @param   c  color
 --- @return a table with the index of the componant at this raw.
@@ -446,5 +426,8 @@ settagmethod(color_tag, "settable",	color_settable)
 -- Load rgb color table
 dolib("rgb")
 
-color_loaded = 1
-return color_loaded
+return 1
+
+--
+--- @}
+--

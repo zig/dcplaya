@@ -1,10 +1,10 @@
 --- @ingroup  dcplaya_lua_enhanced_shell
 --- @file     shell.lua
---- @author   vincent penne <ziggy@sashipa.com>
---- @author   benjamin gerard <ben@sashipa.com>
+--- @author   vincent penne
+--- @author   benjamin gerard
 --- @brief    LUA enhanced shell
 ---
---- $Id: shell.lua,v 1.15 2003-03-22 10:19:16 ben Exp $
+--- $Id: shell.lua,v 1.16 2003-03-23 23:54:55 ben Exp $
 --
 
 --- @defgroup  dcplaya_lua_enhanced_shell  LUA enhanced shell
@@ -56,8 +56,8 @@
 --- @todo completion.
 --- @todo handling CTRL for terminal control codes.
 ---
---- @author   vincent penne <ziggy@sashipa.com>
---- @author   benjamin gerard <ben@sashipa.com>
+--- @author   vincent penne
+--- @author   benjamin gerard
 --
 
 --- Keywords that could begin a lua sentence.
@@ -86,9 +86,6 @@ shell_lua_key_words = {
 
 --- Current table for shell substitution.
 --- @ingroup dcplaya_lua_enhanced_shell
---- @ingroup dcplaya_lua_files
---- @file shell.lua
---- @file dcplayarc.lua
 ---
 ---   If this variable is set, it must be a table indexed by type name
 ---   which are allowed to be substitued from the shell command line

@@ -1,11 +1,11 @@
 /**
- * @ingroup  dcplaya_draw
- * @file     ta.h
- * @author   ben(jamin) gerard <ben@sashipa.com>
+ * @ingroup  dcplaya_draw_ta
+ * @file     draw/ta.h
+ * @author   benjamin gerard
  * @date     2002/11/22
  * @brief    draw tile accelerator interface.
  *
- * $Id: ta.h,v 1.2 2002-11-28 04:22:44 ben Exp $
+ * $Id: ta.h,v 1.3 2003-03-23 23:54:54 ben Exp $
  */
 
 #ifndef _DRAW_TA_H_
@@ -16,9 +16,17 @@
 
 #include "draw/ta_defines.h"
 
-/** @name  Tile accelerator interface.
+/** @defgroup  dcplaya_draw_ta Tile Accelerator (TA)
+ *  @ingroup   dcplaya_draw
+ *  @brief     tile accelerator (TA) interface
+ *  @author    benjamin gerard
+ *  @{
  */
 
+
+/** @name TA internal command strutures.
+ *  @{
+ */
 typedef struct {
   volatile uint32 word1;
   volatile uint32 word2;
@@ -49,6 +57,12 @@ typedef struct {
   volatile uint32 addcol;
 } ta_hw_tex_vtx_t;
 
+/** @} */
+
+/** @name Tile Accelarator hardware registers.
+ *  @{
+ */
+
 /** Tile accelarator hardware color (no texture) vertex. */
 #define HW_COL_VTX ((ta_hw_col_vtx_t *)(0xe0<<24))
 
@@ -58,29 +72,79 @@ typedef struct {
 /** Tile accelarator hardware polygon. */
 #define HW_POLY    ((ta_hw_poly_t    *)(0xe0<<24))
 
-/** Build a TA poly header. */
-/* void draw_poly_hdr(ta_hw_poly_t * poly, int flags); */
+/** @} */
 
+/** @name Render session function.
+ *
+ *    To process redering the following @b must be do in this order in
+ *    the main loop after the rendering as been initialized properly with
+ *    draw_init_render() function.
+ *      - Opening render in opaque mode with the draw_open_render() function.
+ *      - Process all opaque primitives.
+ *      - Opening render in translucent with the draw_translucent_render()
+ *        function.
+ *      - Process all translucent primitives.
+ *      - Close rendering with the draw_close_render() function.
+ *
+ *  @warming Anyway all these functions should do all proper things if it is
+ *   not done, but this has not been really tested. The really important thing
+ *   to understand is that you can't mix opaque and translucent rendering
+ *   and that you need to process all opaque primitives before any
+ *   translucent.
+ *
+ *  @{
+ */
 
 /** Initialize rendering system. */
 int draw_init_render(void);
 
+/** Open render.
+ *
+ *     Calling the draw_open_render() function begins a new render frame.
+ *     After this call the TA is in opaque rendering mode.
+ *
+ *  @return number of frame elapsed since previous render.
+ */
 unsigned int draw_open_render(void);
 
+/** Open translucent rendering mode.
+ *
+ *     Calling the draw_translucent_render() function begins the translucent
+ *     rendering mode.
+ */
 void draw_translucent_render(void);
 
+/** Close the render session. */
 void draw_close_render(void);
 
+/** @} */
 
 /** Set current drawing mode. */
 void draw_set_flags(int flags);
 
-/** Current drawing flags (mode). */
-extern int draw_current_flags;
+/** Current drawing flags (mode) (read-only).
+ *
+ * @warning Do not write this value ! Use draw_set_flags() or the fast
+ * DRAW_SET_FLAGS instead.
+ */
+
+/* $$$ ben hacks : see ta.c */
+extern
+#ifndef _IN_TA_C_
+const
+#endif
+int draw_current_flags;
 
 /** Current frame counter. */
 extern unsigned int draw_frame_counter;
 
+/** Macro to speed up draw_set_flags() access when the value does not change
+ *  from the current. Since the draw_current_flags to DRAW_INVALID_FLAGS
+ *  by the draw_open_render() this macro should be safe enougth cross
+ *  frames.
+ */
 #define DRAW_SET_FLAGS(F) if (draw_current_flags != (F)) { draw_set_flags(F); } else
+
+/**@}*/
 
 #endif /* #define _DRAW_TA_H_ */

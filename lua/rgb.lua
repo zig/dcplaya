@@ -1,14 +1,17 @@
---- @file    rbg.lua
---- @ingroup dcplaya_lua_basics
---- @author  benjamin gerard <ben@sashipa.com>
+--- @file    rgb.lua
+--- @ingroup dcplaya_lua_colors
+--- @author  benjamin gerard
 --- @date    2003/03/19
 --- @brief   rbg color table name conversion.
 ---
---- $Id: rgb.lua,v 1.1 2003-03-19 21:58:04 ben Exp $
+--- $Id: rgb.lua,v 1.2 2003-03-23 23:54:55 ben Exp $
 ---
 
 if not dolib ("color") then return end
 
+--- color name table.
+--- @ingroup dcplaya_lua_colors
+--: color rgb_color_table[name];
 rgb_color_table = {
    ["alice blue"] = {240, 248, 255},
    ["AliceBlue"] = {240, 248, 255},
@@ -773,5 +776,4 @@ if type (rgb_color_table) and not rgb_color_table.snow[4] then
    end
 end
 
-rgb_loaded = 1
-return rgb_loaded
+return 1

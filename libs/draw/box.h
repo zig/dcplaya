@@ -1,15 +1,22 @@
 /**
- * @ingroup dcplaya_draw
- * @file    box.h
- * @author  ben(jamin) gerard <ben@sashipa.com>
+ * @ingroup dcplaya_draw_box
+ * @file    draw/box.h
+ * @author  benjamin gerard
  * @date    2002/11/22
  * @brief   Draw box primitives.
  *
- * $Id: box.h,v 1.1 2002-11-25 16:42:28 ben Exp $
+ * $Id: box.h,v 1.2 2003-03-23 23:54:54 ben Exp $
  */
 
 #ifndef _DRAW_BOX_H_
 #define _DRAW_BOX_H_
+
+/** @defgroup  dcplaya_draw_box Boxes Primitives
+ *  @ingroup   dcplaya_draw
+ *  @brief     non textured boxes primitives
+ *  @author    benjamin gerard
+ *  @{
+ */
 
 /** Draw uniform box in translucent mode. */
 void draw_box1(float x1, float y1, float x2, float y2, float z,
@@ -36,5 +43,7 @@ void draw_box4(float x1, float y1, float x2, float y2, float z,
 			   float a2, float r2, float g2, float b2,
 			   float a3, float r3, float g3, float b3,
 			   float a4, float r4, float g4, float b4);
+
+/**@}*/
 
 #endif /* #define _DRAW_BOX_H_ */

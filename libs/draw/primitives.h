@@ -1,11 +1,11 @@
 /**
- * @ingroup dcplaya_draw
- * @file    primitives.h
- * @author  benjamin gerard <ben@sashipa.com>
+ * @ingroup dcplaya_draw_primitive
+ * @file    draw/primitives.h
+ * @author  benjamin gerard
  * @date    2002/10/10
  * @brief   2D drawing primitives.
  *
- * $Id: primitives.h,v 1.2 2002-11-27 09:58:09 ben Exp $
+ * $Id: primitives.h,v 1.3 2003-03-23 23:54:54 ben Exp $
  */
 
 #ifndef _DRAW_PRIMITIVES_H_
@@ -13,12 +13,16 @@
 
 #include "draw/vertex.h"
 
-/** @name Draw primitives.
- *  @ingroup dcplaya_draw
+/** @defgroup  dcplaya_draw_texture Draw Primitives
+ *  @ingroup   dcplaya_draw
+ *  @brief     draw primitives
+ *  @author    benjamin gerard
  *  @{
  */
 
-/** Draw line.*/
+/** Draw line. 
+ *  @deprecated Not implemented.
+ */
 void draw_line(float x1, float y1, float z1, float x2, float y2, float z2,
 			   float a1, float r1, float g1, float b1,
 			   float a2, float r2, float g2, float b2,

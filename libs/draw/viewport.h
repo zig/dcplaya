@@ -1,11 +1,11 @@
 /**
- * @ingroup dcplaya_draw_3d
- * @file    viewport.h
- * @author  benjamin gerard <ben@sashipa.com> 
+ * @ingroup dcplaya_draw_viewport
+ * @file    draw/viewport.h
+ * @author  benjamin gerard
  * @date    2002/02/21
  * @brief   viewport definition.
  *
- * $Id: viewport.h,v 1.1 2002-11-25 16:42:28 ben Exp $
+ * $Id: viewport.h,v 1.2 2003-03-23 23:54:54 ben Exp $
  */
 
 #ifndef _VIEWPORT_H_
@@ -15,8 +15,14 @@
 
 DCPLAYA_EXTERN_C_START
 
+/** @defgroup  dcplaya_draw_viewport Viewport
+ *  @ingroup   dcplaya_draw
+ *  @brief     viewport
+ *  @author    benjamin gerard
+ *  @{
+ */
+
 /** 3D viewport.
- *	@ingroup dcplaya_draw_3d
  */
 typedef struct
 {
@@ -30,11 +36,6 @@ typedef struct
   float mx; /**< Multiplier X ( scale * w * 0.5 ) */
   float my; /**< Multiplier Y ( scale * h * 0.5 ) */
 } viewport_t;
-
-/** @name Viewport functions.
- *	@ingroup dcplaya_draw_3d
- *  @{
- */
 
 /** Set viewport.
  *

@@ -4,7 +4,7 @@
 --- @date    2003/03/20
 --- @brief   LUA source colorizer.
 ---
---- $Id: lua_colorize.lua,v 1.3 2003-03-23 08:04:03 ben Exp $
+--- $Id: lua_colorize.lua,v 1.4 2003-03-23 23:54:55 ben Exp $
 --
 
 --- @defgroup  dcplaya_lua_colorize  LUA source colorizer
@@ -61,15 +61,23 @@ lua_color_line_number = "%03d "
 
 --- Maximum number of line.
 --: number lua_color_max_line;
-lua_color_max_line = 1000
+lua_color_max_line = 500
 
 function luacolor_codeflow_change(flow, newmode)
    local code = flow.code
 
    if code.mode ~= newmode then
       if code.text ~= "" then
+	 local isfdf = code.mode == "<fdf>"
+	 if  isfdf then
+	    code.format = code.format .. format("<a name=%q>",code.text)
+	 end
 	 code.format = code.format
 	    .. code.mode .. code.text .. "</pre>"
+	 if  isfdf then
+	    code.format = code.format .. "</a>"
+	 end
+
 	 code.fctdef = (newmode == "<kwd>" and code.kwd_fct) or
 	    (code.fctdef and code.mode == "<kwd>" and newmode=="<cod>")
 
@@ -77,13 +85,14 @@ function luacolor_codeflow_change(flow, newmode)
 	 code.text = ""
       end
       code.mode = newmode
+
    end
 end
 
 function luacolor_dump_codeflow(flow)
-   printf("Flow line %d-%d:",flow.mode_line,flow.line)
-   printf("Current mode: [%s]",code.mode)
-   printf("Current text: [%s]",strsub(code.text,-60))
+   printf("Flow line %d-%d\n",flow.mode_line,flow.line)
+   printf("Current mode: [%s]\n",code.mode)
+   printf("Current text: [%s]\n",strsub(code.text,-60))
    print("Current format:")
    print(strsub(code.format,-512))
 end
@@ -107,7 +116,7 @@ function luacolor_codeflow (flow)
       local a,b,c,d,e,w
 
       if i <= oi then
-	 printf("[luacolor_codeflow] : internal backward stream [%d %d]",
+	 printf("[luacolor_codeflow] : internal backward stream [%d %d]\n",
 		i,oi)
 	 luacolor_dump_codeflow(flow)
 	 return -- Generate an concate error !
@@ -313,10 +322,15 @@ function luacolor_file(fname)
 --      line = gsub(line,"[%]","%%")
 
       flow.line = flow.line + 1
-      if linemax and flow.line > linemax then
-	 printf("[luacolor_file] maximum line number exceeded (%d > %d)",
-		flow.line,linemax)
-	 return
+      if linemax then
+	 if flow.line == linemax+1 then
+	    line = format ("-- Truncated file : too many line (%d > %d)",
+			   flow.line,linemax)
+	 elseif flow.line > linemax then
+	    printf("[luacolor_file] maximum line number exceeded (%d > %d)\n",
+		   flow.line,linemax)
+	    break;
+	 end
       end
 
       line = (lua_color_line_number and
@@ -328,7 +342,7 @@ function luacolor_file(fname)
       while start <= len do
 
 	 if os >= start then
-	    printf("[luacolor_file] : internal error : backward stream %d %d",
+	    printf("[luacolor_file] : internal error : bckwrd stream %d %d\n",
 		   os, start)
 	    return
 	 end
@@ -377,10 +391,17 @@ function luacolor_file(fname)
 	    break
 	 else
 	    local bs,be = strfind(line,brk,start)
+	    while bs and bs > 1 and strsub(line,bs-1,bs-1) == "\\" do
+	       bs,be = strfind(line,brk,bs+1)
+	       -- $$$$
+	       print(".")
+	    end
+
 	    if not bs then
 	       flow.text = flow.text .. strsub(line, start)
 	       break
 	    end
+
 	    flow.text = flow.text .. strsub(line, start, bs-1)
 	    luacolor_mode(flow, 3)
 	    start = be+1
@@ -393,7 +414,7 @@ function luacolor_file(fname)
    luacolor_mode(flow,2)
    luacolor_mode(flow,nil)
 
-   printf("[luacolor_file] [%s] process [%d lines]",fname, flow.line)
+   printf("[luacolor_file] [%s] process [%d lines]\n",fname, flow.line)
    return flow.format
 end
 

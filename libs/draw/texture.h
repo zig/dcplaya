@@ -1,19 +1,29 @@
 /**
- * @file    texture.h
- * @author  benjamin gerard <ben@sashipa.com>
- * @date    2002/10/20
- * @brief   texture manager
+ * @ingroup  dcplaya_draw_texture
+ * @file     draw/texture.h
+ * @author   benjamin gerard
+ * @author   vincent penne
+ * @date     2002/10/20
+ * @brief    texture manager
  *
- * $Id: texture.h,v 1.8 2003-03-18 16:11:10 ben Exp $
+ * $Id: texture.h,v 1.9 2003-03-23 23:54:54 ben Exp $
  */
 
 #ifndef _TEXTURE_H_
 #define _TEXTURE_H_
 
+/** @defgroup  dcplaya_draw_texture Texture Manager
+ *  @ingroup   dcplaya_draw
+ *  @brief     texture manager
+ *  @author    benjamin gerard
+ *  @author    vincent penne
+ *  @{
+ */
+
 #include <arch/types.h>
 #include "exheap.h"
 
-/*** Texture name maximum length. */
+/** Texture name maximum length. */
 #define TEXTURE_NAME_MAX 24
 
 /** Texture idetifier type. */
@@ -21,7 +31,7 @@ typedef int texid_t;
 
 /** Texture definition type. */
 typedef struct {
-  /*** Name of texture. */
+  /** Name of texture. */
   char name[TEXTURE_NAME_MAX];
   int width;     /**< Texture width in pixel         */
   int height;    /**< Texture height in pixel        */
@@ -34,7 +44,7 @@ typedef struct {
   int twiddlable;/**< Should we twiddle it ?         */
 
 #ifdef DEBUG
-  int non_twiddled_debugged;
+  int non_twiddled_debugged; /**< DEBUG only         */
 #endif
 
   eh_block_t ehb;/**< External heap block            */
@@ -66,6 +76,7 @@ typedef struct _texture_create_s {
 
 /** Initialize the texture manager. */
 int texture_init(void);
+
 /** Shutdown the texture manager.
  *
  *    The texture_shutdown() function free all texture without verifying
@@ -73,10 +84,14 @@ int texture_init(void);
  */
 void texture_shutdown(void);
 
-/** Get a texture identifier by name. */
+/** Get a texture identifier by name.
+ *  @param  texture_name  texture name or filename.
+ *  @return texture-id
+ */
 texid_t texture_get(const char * texture_name);
 
 /** Check if a given texture id is valid.
+ *  @param  texid  texture-id to test.
  * @return  texid
  * @retval  -1 on error (texture does nor exist).
  */
@@ -105,13 +120,27 @@ texid_t texture_dup(texid_t texid, const char * name);
  *     information could be put after the required creator data such as FILE or
  *     memory pointer.
  *
+ *  @param  creator  texture creator used to create this texture.
+ *
+ *  @return texture-id
+ *  @retval -1 Error
+ *
  * @see texture_reader_f
  */
 texid_t texture_create(texture_create_t * creator);
 
-/** Create a flat texture. */
+/** Create a flat texture.
+ *
+ *  @param  name       Name of texture.
+ *  @param  width      Width in pixel
+ *  @param  height     Height in pixel
+ *  @param  argb       Texture pixel format
+ *
+ *  @return  texture-id
+ *  @return  -1  Error
+ */
 texid_t texture_create_flat(const char *name, int width, int height,
-							unsigned int argb);
+			    unsigned int argb);
 
 /** Create a new texture from a image file.
  *
@@ -202,5 +231,7 @@ int texture_twiddle(texture_t * t, int wanted);
  *  @return twiddlable stat.
  */
 int texture_twiddlable(texture_t * t);
+
+/**@}*/
 
 #endif /* #define _TEXTURE_H_ */

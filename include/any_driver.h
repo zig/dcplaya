@@ -1,27 +1,27 @@
 /**
  * @ingroup dcplaya_plugin_devel
  * @file    any_driver.h
- * @author  benjamin gerard <ben@sashipa.com>
+ * @author  benjamin gerard
  * @brief   dcplaya plugin structure.
  *
- * $Id: any_driver.h,v 1.9 2003-03-19 05:16:15 ben Exp $ 
+ * $Id: any_driver.h,v 1.10 2003-03-23 23:54:54 ben Exp $ 
  */
  
 #ifndef _ANY_DRIVER_H_
 #define _ANY_DRIVER_H_
 
-/** @defgroup  dcplaya_plugin_devel  Plugin API
- *  @ingroup   dcplaya_devel
- *  @author    benjamin gerard <ben@sashipa.com>
- *  @brief     Programming dcplaya plugins
- */
-
 #include "extern_def.h"
 
 DCPLAYA_EXTERN_C_START
 
-/** Driver types.
- *  @ingroup dcplaya_plugin_devel
+/** @defgroup  dcplaya_plugin_devel  Plugin API
+ *  @ingroup   dcplaya_devel
+ *  @author    benjamin gerard
+ *  @brief     Programming dcplaya plugins
+ *  @{
+ */
+
+/** @name Driver types.
  *  @{
  */
 #define OBJ_DRIVER  'JBO' /**< 3D object         */
@@ -109,6 +109,8 @@ typedef struct _any_driver_s
 # define NEXT_DRIVER &NXT_DRIVER
   extern any_driver_t NXT_DRIVER; 
 #endif
+
+/**@}*/
 
 DCPLAYA_EXTERN_C_END
 

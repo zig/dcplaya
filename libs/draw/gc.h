@@ -1,14 +1,21 @@
 /**
- * @ingroup  dcplaya_draw
- * @file     gc.h
- * @author   ben(jamin) gerard <ben@sashipa.com>
+ * @ingroup  dcplaya_draw_gc
+ * @file     draw/gc.h
+ * @author   benjamin gerard
  * @brief    Graphic context interface
  *
- * $Id: gc.h,v 1.6 2002-12-24 04:07:54 ben Exp $
+ * $Id: gc.h,v 1.7 2003-03-23 23:54:54 ben Exp $
  */
 
 #ifndef _GC_H_
 #define _GC_H_
+
+/** @defgroup  dcplaya_draw_gc Graphic Context
+ *  @ingroup   dcplaya_draw
+ *  @brief     graphic context
+ *  @author    benjamin gerard
+ *  @{
+ */
 
 /* $$$ colors currently not used */
 #define GC_NO_COLOR 1
@@ -18,7 +25,6 @@
 #include "draw/text.h"
 
 /** @name Graphic context restore flags.
- *  @ingroup dcplaya_draw
  *  @{
  */
 #define GC_RESTORE_ALL         -1 /**< Restore all graphic context. */
@@ -40,7 +46,6 @@
 /**@}*/
 
 /** Text graphic context structure.
- *  @ingroup dcplaya_draw
  */
 typedef struct {
   fontid_t fontid;     /**< font identifier.                */
@@ -71,18 +76,12 @@ typedef struct {
 } gc_t;
 
 /** Pointer to current graphic context.
- * @ingroup  dcplaya_draw
  */
 extern gc_t * current_gc;
 
 /** Default graphic context.
- *  @ingroup dcplaya_draw
  */
 extern gc_t default_gc;
-
-/** @name Graphic context functions.
- *  @ingroup dcplaya_draw
- */
 
 /** Initialize graphic context system. */
 int gc_init(void);
@@ -105,20 +104,21 @@ int gc_push(int save_flags);
 /** Pop (restore) current graphic context. */
 int gc_pop(int restore_flags);
 
-/**@}*/
-
 /** @name Color primitives.
- *  @ingroup dcplay_draw
+ *  @{
+ *  @deprecated  The GC colors are currently not used.
  */
 
-/** Set a color in the color lookup table. */
+/** Set a color in the color lookup table.
+ */
 void draw_set_color(int idx, const draw_color_t * color);
 
-/** Set a color in the color lookup table. */
+/** Set a color in the color lookup table.
+ */
 void draw_set_argb(int idx, const draw_argb_t argb);
 
 /**@}*/
 
-
+/**@}*/
 
 #endif /* #define _GC_H_ */

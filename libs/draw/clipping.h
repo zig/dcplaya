@@ -1,11 +1,11 @@
 /**
- *  @ingroup dcplaya_draw
- *  @file    clipping.h
- *  @author  benjamin gerard <ben@sashipa.com>
+ *  @ingroup dcplaya_draw_clipping
+ *  @file    draw/clipping.h
+ *  @author  benjamin gerard
  *  @date    2002/10/15
  *  @brief   draw clipping primitives.
  *
- * $Id: clipping.h,v 1.1 2002-11-25 16:42:28 ben Exp $
+ * $Id: clipping.h,v 1.2 2003-03-23 23:54:54 ben Exp $
  */
 
 #ifndef _DRAW_CLIPPING_H_
@@ -13,8 +13,14 @@
 
 #include "draw/vertex.h"
 
+/** @defgroup  dcplaya_draw_clipping Clipping Primitives
+ *  @ingroup   dcplaya_draw
+ *  @brief     clipping primitives
+ *  @author    benjamin gerard
+ *  @{
+ */
+
 /** Clipping box structure.
- *  @ingroup dcplaya_draw
  */
 typedef struct
 {
@@ -26,15 +32,14 @@ typedef struct
 
 //extern float clipbox[];
 
-/** @name Clipping primitives.
- *  @ingroup dcplaya_draw
+/** @name Clipping box functions
  *  @{
  */
 
 /** Set clipping box.
  */
 void draw_set_clipping4(const float xmin, const float ymin,
-						const float xmax, const float ymax);
+			const float xmax, const float ymax);
 
 /** Set clipping box.
  */
@@ -43,7 +48,7 @@ void draw_set_clipping(const draw_clipbox_t * clipbox);
 /** Get clipping box.
  */
 void draw_get_clipping4(float * xmin, float * ymin,
-						float * xmax, float * ymax);
+			float * xmax, float * ymax);
 
 /** Get clipping box.
  */
@@ -69,8 +74,10 @@ void draw_get_clipping(draw_clipbox_t * clipbox);
  *    because clipping could make Y coordinate change.
  */
 void draw_triangle_clip_any(const draw_vertex_t *v1,
-							const draw_vertex_t *v2,
-							const draw_vertex_t *v3,
-							int flags, const int bit);
+			    const draw_vertex_t *v2,
+			    const draw_vertex_t *v3,
+			    int flags, const int bit);
+
+/**@}*/
 
 #endif /* #define _DRAW_CLIPPING_H_ */

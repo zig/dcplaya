@@ -1,11 +1,11 @@
 /**
  * @ingroup   dcplaya_display_list
  * @file      display_list.h
- * @author    vincent penne <ziggy@sashipa.com>
- * @author    benjamin gerard <ben@sashipa.com>
+ * @author    vincent penne
+ * @author    benjamin gerard
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.h,v 1.13 2003-03-22 00:35:26 ben Exp $
+ * @version   $Id: display_list.h,v 1.14 2003-03-23 23:54:54 ben Exp $
  */
 
 #ifndef _DISPLAY_LIST_H_
@@ -37,8 +37,8 @@
  *  Sub-lists could be executed via the sub-list command from either a
  *  main-list or another sub-list.
  *
- * @author    vincent penne <ziggy@sashipa.com>
- * @author    benjamin gerard <ben@sashipa.com>
+ * @author    vincent penne
+ * @author    benjamin gerard
  *
  */
 

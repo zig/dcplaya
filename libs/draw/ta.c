@@ -5,8 +5,13 @@
  * @date     2002/11/22
  * @brief    draw tile accelarator interface
  *
- * $Id: ta.c,v 1.4 2003-03-18 10:44:25 zigziggy Exp $
+ * $Id: ta.c,v 1.5 2003-03-23 23:54:54 ben Exp $
  */
+
+/* $$$ ben hacks :
+ * Set the draw_current_flags read_only except in the ta.c.
+ */
+#define _IN_TA_C_
 
 #include "draw/ta.h"
 #include "draw/vertex.h"

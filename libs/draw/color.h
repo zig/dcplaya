@@ -1,17 +1,23 @@
 /**
- * @ingroup  dcplaya_draw
- * @file     draw_color.h
- * @author   ben(jamin) gerard <ben@sashipa.com>
+ * @ingroup  dcplaya_draw_color
+ * @file     draw/color.h
+ * @author   benjamin gerard
  * @brief    draw color definitions.
  *
- * $Id: color.h,v 1.4 2003-01-25 11:37:44 ben Exp $
+ * $Id: color.h,v 1.5 2003-03-23 23:54:54 ben Exp $
  */
 
 #ifndef _DRAW_COLOR_H_
 #define _DRAW_COLOR_H_
 
+/** @defgroup  dcplaya_draw_color Color Definition
+ *  @ingroup   dcplaya_draw
+ *  @brief     color definition
+ *  @author    benjamin gerard
+ *  @{
+ */
+
 /** Draw color float structure.
- * @ingroup  dcplaya_draw
  */
 typedef struct {
   float a; /** Alpha componant [0..1] */
@@ -21,12 +27,10 @@ typedef struct {
 } draw_color_t;
 
 /** Draw color ARGB packed type.
- * @ingroup  dcplaya_draw
  */
 typedef unsigned int draw_argb_t;
 
 /** @name Color conversion functions.
- *  @ingroup  dcplaya_draw
  */
  
 /** Create a draw_argb_t from a draw_color_float_t. */
@@ -69,7 +73,6 @@ void draw_color_argb_to_float(draw_color_t * col, const draw_argb_t argb);
 /**@}*/
 
 /** @name Color operations.
- *  @ingroup  dcplaya_draw
  */
 
 /** Clip color components in the range [0..1]. */
@@ -100,7 +103,6 @@ void draw_color_mul_clip(draw_color_t *d,
 			 const draw_color_t *a, const draw_color_t *b);
 
 /** Creates a color by multiplying two colors, without clipping.
- *  
  */
 void draw_color_mul(draw_color_t *d,
 		    const draw_color_t *a, const draw_color_t *b);
@@ -111,6 +113,8 @@ void draw_color_mul(draw_color_t *d,
 void draw_color_scale(draw_color_t *d,
 		      const draw_color_t *a, const float b);
 
+
+/**@}*/
 
 /**@}*/
 

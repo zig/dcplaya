@@ -156,11 +156,11 @@ function menu_create(owner, name, def, box)
       end
 
       if newclose ~= oldclose and newclose == 2 then
-	 printf("menu %q just close : desactive dl", menu.name)
+-- 	 printf("menu %q just close : desactive dl", menu.name)
 	 dl_set_active(menu.dl, nil);
 	 menu.closed = newclose>0 and newclose
 	 if menu.owner then
-	    printf("SEND gui_menu_close_event to %q", menu.owner.name)
+-- 	    printf("SEND gui_menu_close_event to %q", menu.owner.name)
 	    evt_send(menu.owner, { key = gui_menu_close_event })
 	 end
       end

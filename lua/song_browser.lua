@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.62 2003-03-23 08:04:03 ben Exp $
+--- $Id: song_browser.lua,v 1.63 2003-03-23 23:54:55 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song Browser
@@ -176,21 +176,17 @@ function song_browser_update_playlist(sb, frametime)
 	 nxt = sb.pl:get_pos(nxt + 1)
 	    or (sb.playlist_loop_pos and sb.pl:get_pos(sb.playlist_loop_pos))
 	 
-	 print ("PLAYLIST Run next entry : ",sb.playlist_idx,nxt)
-	 
 	 sb.playlist_wait = nil -- Clear wait method
 	 
 	 local path = sb.pl:fullpath(sb.pl.dir[sb.playlist_idx])
 	 print(path)
 	 if path then
-	    printf("path=%s",path)
 	    local ty, major, minor = filetype(path)
-	    print(ty, major, minor)
 	    local f = sb.pl.actions.run[major]
 	    if type(f) == "function" then
 	       f(sb.pl, sb, path, nxt)
 	    else
-	       printf("skipping [%s] : no run action [%s]",path,major)
+	       printf("skipping [%s] : no run action [%s]\n",path,major)
 	    end
 	 end
 	 sb.pl:draw()
@@ -713,7 +709,7 @@ function songbrowser_load_image(sb, filename, mode)
    if not (test("-f", filename) and
 	   background:set_texture(filename,mode or sb.background_mode))
    then
-      printf ("[song_browser] : loading background %q failed", filename)
+      printf ("[song_browser] : loading background %q failed\n", filename)
       return
    end
    return 1
@@ -818,7 +814,7 @@ function songbrowser_any_action(sb, action, fl)
    fl = fl or sb.cl
    if not fl then return end
    if not fl.actions or type(fl.actions[action]) ~= "table" then
-      printf("[songbrowser] : unknown action %q", action)
+      printf("[songbrowser] : unknown action %q\n", action)
       return
    end
    local pos = fl:get_pos()
@@ -833,14 +829,14 @@ function songbrowser_any_action(sb, action, fl)
    local ftype, major, minor = filetype(entry_path, entry.size)
 
    -- $$$
-   printf("%q on %q [%q,%q]", action, entry_path, major, minor)
+   printf("%q on %q [%q,%q]\n", action, entry_path, major, minor)
 
    local func = fl.actions[action][major] or fl.actions[action].default
    if type(func) == "function" then
       return func(fl,sb,action,entry_path,entry)
    end
    -- $$$
-   printf("No %q action for %q", action, entry_path)
+   printf("No %q action for %q\n", action, entry_path)
 end
 
 --    *     - @b nil  if action failed
@@ -1137,11 +1133,9 @@ function sbfl_select_lua(fl, sb, action, entry_path, entry)
 		  color = "#FF0000"
 		  text = '<left>Unable to load lua library'
 	       else
-		  printf("result:%d",result)
 		  label = "success"
 		  color = "#00FF00"
 		  text = '<left>Successfully load lua library'
-
 	       end
 	       text = text ..
 		  '<p><vspace h="4"><center><font color=%q size="12">%s'
@@ -1939,14 +1933,10 @@ function song_browser_create(owner, name)
    song_browser_playlist_actions = {
       run = {
 	 music = function (fl, sb, path, nxt)
-		    -- $$$
-		    printf("song_browser_playlist_actions : music\n, [%s]",path)
 		    if playa_play(path) then
-		       print("-->Success")
 		       sb.playlist_wait = fl.actions.wait.music
 		       return 1
 		    end
-		    print("-->Failed")
 		 end,
 	 image = function (fl, sb, path, nxt)
 
@@ -2073,7 +2063,7 @@ function song_browser_kill(sb)
    end
 end
 
-if not entrylist_tag and plug_el and test("-f",plug_el) then
+if type(entrylist_load) ~= "function" and plug_el then
    driver_load(plug_el)
 end
 

@@ -29,8 +29,9 @@ while [ $# -ne 0 ]; do
     shift
     i=`expr $i + 1`
 done
-echo "output=$file"
-echo "i=$i" 1>&2
-echo "${line[@]}" 1>&2
-sed  "${line[@]}" > "${file}" || rm -f "${file}"
-echo result=$?
+sed  "${line[@]}" > "${file}"
+if [ $? -ne 0 ]; then
+    rm -f "${file}"
+    exit 255
+fi
+

@@ -1,9 +1,10 @@
 --- @ingroup dcplaya_lua_gui
---- @file   textviewer.lua
---- @date   2002/12/06
---- @author benjamin gerard <ben@sashipa.com>
---- @brief  hyper text viwer gui
---- $Id: plugin_info.lua,v 1.1 2003-03-05 17:55:09 ben Exp $
+--- @file    plugin_info.lua
+--- @date    2002/12/06
+--- @author  benjamin gerard
+---
+--- @brief   hyper text viwer gui
+--- $Id: plugin_info.lua,v 1.2 2003-03-23 23:54:55 ben Exp $
 ---
 
 if not dolib("textviewer") then return end
@@ -88,7 +89,7 @@ function plugin_viewer_make_list(plugin_name)
       return
    end
 
-   printf("type:[%s] name:[%s]",ptype,pname)
+   printf("type:[%s] name:[%s]\n",ptype,pname)
 
    plugin_list = {}
 

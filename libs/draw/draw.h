@@ -1,11 +1,11 @@
 /**
  * @ingroup dcplaya_draw
- * @file    draw.h
- * @author  benjamin gerard <ben@sashipa.com> 
+ * @file    draw/draw.h
+ * @author  benjamin gerard
  * @date    2002/11/22
  * @brief   drawing system
  *
- * $Id: draw.h,v 1.4 2003-03-22 00:35:27 ben Exp $
+ * $Id: draw.h,v 1.5 2003-03-23 23:54:54 ben Exp $
  */
 
 #ifndef _DRAW_H_
@@ -29,19 +29,11 @@
  *  - Triangle primitive
  *  - Strip primitive
  *
- *  @author    Ben(jamin) Gerard <ben@sashipa.com>
- */
-
-/** @defgroup  dcplaya_draw_3d  3D system API.
- *  @ingroup   dcplaya_draw
- *  @author    Ben(jamin) Gerard <ben@sashipa.com>
- *
- *  dcplaya 3D system API provides fuctions for calculating and drawing 
- *  3D primitives.
+ *  @author    benjamin gerard
+ *  @{
  */
 
 /** @name  Drawing system globals.
- *  @ingroup   dcplaya_draw
  *  @{
  */
 
@@ -65,12 +57,19 @@ extern float draw_ooznear;
 
 /**@}*/
 
-/** @name Drawing system initialization funnctions.
- *  @ingroup dcplaya_draw
+/** @name Drawing system initialization functions.
  *  @{
  */
 
 /** Initialize the drawing system.
+ *
+ *    The draw_init() function initializes all drawing system components :
+ *      - Set a default viewport on the screen box.
+ *      - Set a default projection matrix with an open angle of 70 degree
+ *        a zFar at 250 and retrieves zNear.
+ *      - Initialize the rendering engine with the draw_init_render() function.
+ *      - Initialize the texture manager with the texture_init() function.
+ *      - Initialize the graphic context with the gc_init() function
  *
  *  @param  screen_width   Screen width in pixel.
  *  @param  screen_height  Screen height in pixel.
@@ -83,6 +82,8 @@ int draw_init(const float screen_width, const float screen_height);
 
 /** Shutdown the drawing system. */
 void draw_shutdown(void);
+
+/**@}*/
 
 /**@}*/
 

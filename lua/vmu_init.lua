@@ -1,7 +1,7 @@
 --- @date 2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  LUA script to initialize dcplaya VMU backup.
---- $Id: vmu_init.lua,v 1.24 2003-03-20 06:05:34 ben Exp $
+--- $Id: vmu_init.lua,v 1.25 2003-03-23 23:54:55 ben Exp $
 ---
 
 -- Unload library
@@ -69,10 +69,10 @@ function vmu_save_file(fname, path)
    local hdl = vmu_file_save(fname,path)
    if hdl then
       local status = vmu_file_stat(hdl)
-      printf("vmu_save_file [%s] : [%s]", fname, status)
+      printf("vmu_save_file [%s] : [%s]\n", fname, status)
       return status == "success"
    else
-      printf("vmu_save_file [%s] : failed", fname)
+      printf("vmu_save_file [%s] : failed\n", fname)
    end
 
 end
@@ -99,10 +99,10 @@ function vmu_load_file(fname,path)
    local hdl = vmu_file_load(fname,path)
    if hdl then
       local status = vmu_file_stat(hdl)
-      printf("vmu_load_file [%s] : [%s]", fname, status)
+      printf("vmu_load_file [%s] : [%s]\n", fname, status)
       result = status == "success"
    else
-      printf("vmu_load_file [%s] : failed", fname)
+      printf("vmu_load_file [%s] : failed\n", fname)
    end
    ramdisk_is_modified() -- clear modified since we don't care here
    return result
@@ -136,7 +136,7 @@ function vmu_find_files(dir, expr)
       
       if type(v) ~= "table" then
 	 print(" ------------------------ ")
-	 printf("v:%s i:%s n:%s", tostring(v), tostring(i), tostring(dir.n))
+	 printf("v:%s i:%s n:%s\n", tostring(v), tostring(i), tostring(dir.n))
 	 dump(dir,"vmu_list")
 	 print(" ------------------------ ")
       else
@@ -318,7 +318,7 @@ function vmu_init(not_load, force_choice)
 	    -- Everything is OK. Bye-Bye !
 	    return 1
 	 end
-	 printf("[vmu_init] : %q not a valid vmu file.",choice)
+	 printf("[vmu_init] : %q not a valid vmu file.\n",choice)
 	 result =
 	    gui_ask('<left>Invalid dcplaya save file. File may be corrupt.<br><center><img name="grimley" src="stock_grimley.tga" w="40">',
 		    { "try another","cancel"},

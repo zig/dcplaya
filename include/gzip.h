@@ -1,11 +1,11 @@
 /**
  * @ingroup  dcplaya_devel
  * @name     gzip.h
- * @author   ben(jamin) gerard <ben@sashipa.com>
+ * @author   benjamin gerard
  * @date     2002/09/20
  * @brief    Simple gzipped file access.
  *
- * $Id: gzip.h,v 1.3 2002-12-09 16:26:49 ben Exp $
+ * $Id: gzip.h,v 1.4 2003-03-23 23:54:54 ben Exp $
  */
 
 #ifndef _GZIP_H_

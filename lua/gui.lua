@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.60 2003-03-18 01:08:48 ben Exp $
+--- $Id: gui.lua,v 1.61 2003-03-23 23:54:54 ben Exp $
 ---
 
 --
@@ -180,7 +180,7 @@ function gui_child_autoplacement(app)
 	 end
 	 n = n + 1
       elseif i._dl then
-	 printf("sub-app %q has no more own dl !",i.name)
+--	 printf("sub-app %q has no more own dl !\n",i.name)
 	 i._dl = nil
       end
       i = i.next
@@ -195,10 +195,10 @@ function gui_child_autoplacement(app)
 	 if not app.dl then
 	    -- If there is no dl, _dl could be destroy safely.
 	    app._dl = nil
-	    printf("app %q has no more dl !",app.name)
+-- 	    printf("app %q has no more dl !\n",app.name)
 	 else
 	    -- Else only attach the dl to the _dl.
-	    printf("app %q has no more child dl !",app.name)
+-- 	    printf("app %q has no more child dl !\n",app.name)
 	    dl_clear(app._dl)
 	    dl_sublist(app._dl, app.dl)
 	 end

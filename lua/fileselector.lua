@@ -1,29 +1,31 @@
 --- @ingroup dcplaya_lua_gui
 --- @file   fileselector.lua
---- @author benjamin gerard <ben@sashipa.com>
+--- @author benjamin gerard
 --- @date   2002/10/04
 --- @brief  fileselector gui
 ---
---- $Id: fileselector.lua,v 1.27 2003-03-13 23:07:04 ben Exp $
+--- $Id: fileselector.lua,v 1.28 2003-03-23 23:54:54 ben Exp $
 --
 -- TODO : select item with space 
 --        completion with tab        
 --
 
--- 
-fileselector_loaded=nil
+--- @defgroup dcplaya_fs_lua File Selector
+--- @ingroup dcplaya_lua_gui
+--- @brief file selector
+---
+--- @author benjamin gerard
+---
+--- @{
+--
 
 -- Load required libraries
 --
 if not dolib("gui") then return end
 if not dolib("filelist") then return end
 
---- @name Fileselector
---- @ingroup dcplaya_lua_gui
---- @{
 
 -- fileselector GUI object.
--- @ingroup dcplaya_lua_gui
 -- struct fileselector {
 -- };
 
@@ -433,7 +435,9 @@ function fileselector(name,path,filename,owner)
    return dial
 end
 
---- };
+--
+--- @};
+--
 
 if nil then
    dial = nil

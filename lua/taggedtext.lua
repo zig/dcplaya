@@ -2,7 +2,9 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  sgml text and gui element formater.
 ---
---- $Id: taggedtext.lua,v 1.29 2003-03-23 08:04:03 ben Exp $
+--- @bug the A tag does not work in lua source ?? !
+---
+--- $Id: taggedtext.lua,v 1.30 2003-03-23 23:54:55 ben Exp $
 ---
 
 if not dolib("dirfunc") then return end
@@ -293,15 +295,18 @@ end
 
 function tt_a_name_draw(block)
    local tt = block.tt
---   print("New anchor", block.name)
+--   print("New anchor ",block.name,tostring(block.x), tostring(block.y))
    tt.anchors[block.name] = {
-      x=block.x,
-      y=block.y,
+      x = tonumber(block.x),
+      y = tonumber(block.y),
    }
 end
 
 function tt_a_cmd(mode, param)
    if param.name then
+
+      print("Create anchor "..param.name)
+
       local block = {
 	 type = "anchor",
 	 w = 0,
@@ -781,7 +786,7 @@ function tt_build(text, mode)
    while start <= len do
 
       if prevstart >= start then
-	 printf("tagged text internal error : rollback [%d %d]",
+	 printf("tagged text internal error : rollback [%d %d]\n",
 		prevstart, start)
 	 return
       end
@@ -993,6 +998,13 @@ function tt_draw(tt)
 	 block:draw()
       end
    end
+
+   if __DEBUG and tag(tt.dl) == dl_tag then
+      dump(dl_info(tt.dl),"tt_draw")
+--       printf("[tt_draw] : display list info : heap[%d/%d]",
+-- 	     dl_heap_used(tt.dl), dl_heap_size(tt.dl))
+   end
+
 end
 
 -- Add filetype for text and zml (Ziggy Markup Language)

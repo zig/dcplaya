@@ -1,15 +1,15 @@
 --- @ingroup  dcplaya_lua_app
 --- @file     keyboard_emu.lua
---- @author   vincent penne <ziggy@sashipa.com>
+--- @author   vincent penne
 --- @date     2002
 --- @brief    keyboard emulator.
 ---
---- $Id: keyboard_emu.lua,v 1.22 2003-03-20 06:05:34 ben Exp $
+--- $Id: keyboard_emu.lua,v 1.23 2003-03-23 23:54:54 ben Exp $
 ---
 
---- @defgroup dcplaya_lua_ke_app Keyboard emulator
---- @ingroup dcplaya_lua_app
---- @brief   keyboard emulator application
+--- @defgroup dcplaya_lua_ke_app  Keyboard Emulator
+--- @ingroup  dcplaya_lua_app
+--- @brief    keyboard emulator
 --- 
 ---
 ---   The keyboard emulator is a special application. It is always the top
@@ -17,6 +17,8 @@
 ---
 ---   There is only one keyboard application running (ke_app).
 ---
+--- @author vincent penne
+--- @{
 
 
 dolib("keydefs")
@@ -26,7 +28,6 @@ dolib("display_init")
 
 --
 --- @name emulator global active mode rule.
---- @ingroup dcplaya_lua_ke_app
 --- @{
 --
 
@@ -143,12 +144,6 @@ ke_translate	= {
    [KBD_CONT1_DPAD_LEFT] = KBD_KEY_LEFT,
    [KBD_CONT1_DPAD_RIGHT] = KBD_KEY_RIGHT
 }
-
---
---- @name keyboard emulator functions.
---- @ingroup dcplaya_lua_ke_app
---- @{
---
 
 function ke_addkeypos(x, y)
    if not ke_addkeycurpos then
@@ -761,5 +756,9 @@ function keyboard_emu()
 end
 
 keyboard_emu()
+
+--
+---@}
+--
 
 keyboard_emu_loaded = 1

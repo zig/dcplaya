@@ -1,18 +1,20 @@
 --- @ingroup dcplaya_lua_gui
---- @file   textviewer.lua
---- @date   2002/12/06
---- @author benjamin gerard <ben@sashipa.com>
---- @brief  hyper text viewer gui.
+--- @file    textviewer.lua
+--- @date    2002/12/06
+--- @author  benjamin gerard
+--- @brief   hyper text viewer gui.
 ---
---- $Id: textviewer.lua,v 1.16 2003-03-23 08:04:03 ben Exp $
+--- $Id: textviewer.lua,v 1.17 2003-03-23 23:54:55 ben Exp $
 ---
 
 if not dolib("taggedtext") then return end
 if not dolib("gui") then return end
 if not dolib("menu") then return end
 
---- @name text viewer
---- @ingroup dcplaya_lua_gui
+--- @defgroup  dcplaya_lua_tv_gui  Text Viewer
+--- @ingroup   dcplaya_lua_gui
+--- @brief     text viewer
+--- @author    benjamin gerard
 --- @{
 --
 
@@ -28,7 +30,7 @@ function text_viever_tt_build(text, mode)
       local buffer
       local file = openfile(text,"rt")
       if file then
-	 printf("loading tagged-text %q",text)
+	 printf("loading tagged-text %q\n",text)
 	 buffer = read(file,"*a")
 	 closefile(file)
       end
@@ -78,7 +80,7 @@ function gui_text_viewer(owner, texts, box, label, mode)
    --
    function gui_text_viewer_set_tt(dial, tt, x, y)
       if type(tt) == "string" then
-	 local mf = "[%w_-%s,./]"
+	 local mf = "[%w%s%_%-%,%/%.]"
 	 local start, stop, tt_name, hash, tt_anchor =
 	    strfind(tt,"("..mf.."*)(#?)("..mf.."*)")
 	 tt = (type(tt_name) == "string" and

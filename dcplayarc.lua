@@ -5,7 +5,7 @@
 --- @date     2002
 --- @brief    Main dcplaya lua script.
 ---
---- $Id: dcplayarc.lua,v 1.38 2003-03-22 10:19:16 ben Exp $
+--- $Id: dcplayarc.lua,v 1.39 2003-03-23 23:54:53 ben Exp $
 ---
 ---   The @b home.."dcplayarc.lua" file is dcplaya main script.
 ---   It is executed after the dynshell has been loaded.
@@ -167,8 +167,10 @@ end
 print ("Reading user config files ...")
 
 if not skip_home_userconf then
-   printf("Running [%suserconf.lua]",home)
-   dofile (home.."userconf.lua")
+   local configfile = home .. (__RELEASE or not __DEBUG)
+      and "userconf-release.lua" or "userconf.lua"
+   printf("Running [%s]",configfile)
+   dofile (configfile)
 end
 
 if not skip_vmu_userconf and test("-f","/ram/dcplaya/userconf.lua") then

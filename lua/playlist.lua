@@ -1,6 +1,6 @@
 --- @ingroup dcplaya_lua_playlist
 --- @file    playlist.lua
---- @author  benjamin gerard <ben@sashipa.com>
+--- @author  benjamin gerard
 --- @date    2002/12/12
 --- @brief   loading and saving playlist file.
 ---
@@ -47,17 +47,12 @@ playlist_loaded = nil
 ---    generic save function nor saver table.
 ---    It should be very easy to add it but it is not very useful !
 ---
-
----- The playlist module handles loading of m3u and pls playlist
----  file and the saving of m3u only. It allow to add new playlist format
----  very easily. Currently only new loaders could be added since dcplaya
----  omly save m3u.
 ---
---- @author  benjamin gerard <ben@sashipa.com>
+--- @author  benjamin gerard
 ---
+--- @{
 
 --- Save a playlist in basic m3u format.
---- @ingroup dcplaya_lua_playlist
 ---
 ---  @param  fname  Playlist filename.
 ---  @param  dir    Table of entry { [file,] name [,path] }.
@@ -95,7 +90,6 @@ function playlist_save(fname, dir)
 end
 
 --- Make a playlist entry.
---- @ingroup dcplaya_lua_playlist
 --- @internal
 ---
 ---  @param  path   Default path (should be the playlist file path)
@@ -134,7 +128,6 @@ function playlist_make_entry(path, entry)
 end
 
 --- Load playlist generic function.
---- @ingroup dcplaya_lua_playlist
 --- @internal
 ---
 ---  @param  path        Playlist file path.
@@ -169,7 +162,6 @@ function playlist_load_generic(path, file, read_entry)
 end
 
 --- Load a mu3 playlist entry.
---- @ingroup dcplaya_lua_playlist
 --- @internal
 ---
 ---  @param  file  Playlist file handle open in read mode
@@ -200,7 +192,6 @@ function playlist_load_m3u_entry(file)
 end
 
 --- Load a pls playlist entry.
---- @ingroup dcplaya_lua_playlist
 --- @internal
 ---
 ---  @param  file  Playlist file handle open in read mode
@@ -245,7 +236,6 @@ function playlist_load_pls_entry(file)
 end
 
 --- Load a playlist.
---- @ingroup dcplaya_lua_playlist
 ---
 ---  @param  fname  Playlist filename.
 ---
@@ -286,7 +276,6 @@ function playlist_load(fname)
 end
 
 --- Reference a new playlist loader.
---- @ingroup dcplaya_lua_playlist
 ---
 ---   The playlist_add_loader() functions add an entry to the playlist_loaders
 ---   table indexed by minor with the loader function. playlist_loaders will
@@ -313,7 +302,6 @@ function playlist_add_loader(minor, loader)
 end
 
 --- Referenced playlist loader table.
---- @ingroup dcplaya_lua_playlist
 ---
 ---   The playlist_loader table references all playlist type that
 ---   could be load. The table is indexed by minor filetype and contains

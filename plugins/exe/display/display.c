@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.32 2003-03-19 05:16:16 ben Exp $
+ * $Id: display.c,v 1.33 2003-03-23 23:54:55 ben Exp $
  */
 
 #include <stdlib.h>
@@ -172,7 +172,7 @@ DL_FUNCTION_END()
 
 DL_FUNCTION_START(destroy_list)
 {
-  printf("destroying list %p : Obsolete !! \n", dl);
+  printf("destroying list [%p,%s] : Obsolete !! \n", dl, dl->name);
 
 /*   lua_settop(L, 0); */
 
@@ -196,7 +196,6 @@ DL_FUNCTION_START(heap_size)
 }
 DL_FUNCTION_END()
 
-
 DL_FUNCTION_START(heap_used)
 {
   lua_settop(L, 0);
@@ -204,6 +203,49 @@ DL_FUNCTION_START(heap_used)
   return 1;
 }
 DL_FUNCTION_END()
+
+DL_FUNCTION_START(info)
+{
+  lua_settop(L, 0);
+  {
+    const char * name = dl->name;
+    const int flags = *((int*)&dl->flags);
+    int refcount = dl->refcount;
+    int n_commands = dl->n_commands;
+    int heap_size = dl->heap_size;
+    int heap_pos = dl-> heap_pos;
+
+    lua_newtable(L);
+
+    lua_pushstring(L,"name");
+    lua_pushstring(L,name);
+    lua_settable(L,1);
+
+    lua_pushstring(L,"flags");
+    lua_pushnumber(L,flags);
+    lua_settable(L,1);
+
+    lua_pushstring(L,"refcount");
+    lua_pushnumber(L,refcount);
+    lua_settable(L,1);
+
+    lua_pushstring(L,"n");
+    lua_pushnumber(L,n_commands);
+    lua_settable(L,1);
+
+    lua_pushstring(L,"size");
+    lua_pushnumber(L,heap_size);
+    lua_settable(L,1);
+
+    lua_pushstring(L,"used");
+    lua_pushnumber(L,heap_pos);
+    lua_settable(L,1);
+  }
+
+  return 1;
+}
+DL_FUNCTION_END()
+
 
 DL_FUNCTION_START(get_active)
 {
@@ -379,6 +421,15 @@ static luashell_command_description_t display_commands[] = {
     "]]",                               /* usage */
     SHELL_COMMAND_C, lua_heap_used      /* function */
   },
+  {
+    "dl_info", 0,               /* long and short names */
+    "print [["
+	"dl_info(list) : "
+	"Get display info table."
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_info           /* function */
+  },
+
 
   /* Properties commands */
 
