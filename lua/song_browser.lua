@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.17 2002-12-27 04:11:49 zigziggy Exp $
+--- $Id: song_browser.lua,v 1.18 2003-01-03 11:01:29 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -539,6 +539,35 @@ function song_browser_create(owner, name)
    song_browser_create_sprite(sb)
    entrylist_load(sb.fl.dir,"/")
    sb.fl:change_dir(sb.fl.dir)
+
+   function songbrowser_menucreator(target)
+      local sb = target;
+      local def = menu_create_defs
+      (
+       {
+	  root=":song-browser:hide{hide},show",
+	  cb = {
+	     hide = function(menu)
+		       local fl=menu.fl
+		       print "HIDE"
+		       if menu.target then
+			  print("Target "..
+				tostring(menu.target.name))
+		       end
+		       fl.dir[fl.pos+1].name = "toto"
+		       menu:draw()
+		    end,
+	     show = function(menu)
+		       print "SHOW"
+		    end,
+	  },
+       }, target)
+      return def
+   end
+
+   -- Menu
+   sb.mainmenu_def = songbrowser_menucreator
+
    sb:set_color(0, 1, 1, 1)
    sb:draw()
    sb:open()

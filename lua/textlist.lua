@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.24 2002-12-27 04:11:49 zigziggy Exp $
+--- $Id: textlist.lua,v 1.25 2003-01-03 11:01:29 ben Exp $
 ---
 
 -- Unload the library
@@ -90,38 +90,38 @@ function textlist_create(flparm)
    --- @param  owner Owner application
    ---
    function textlist_set_box(fl,x,y,w,h,z)
-	  if not fl.box then fl.box = {} end
-	  if not fl.bo2 then fl.bo2 = {} end
+      if not fl.box then fl.box = {} end
+      if not fl.bo2 then fl.bo2 = {} end
 
-	  -- [1]:x1 [2]:y1 [3]:x2 [4]:y2 [5]:w [6]:h [7]:z
-	  x = x or fl.box[1]
-	  y = y or fl.box[2]
-	  w = w or fl.bo2[1]
-	  h = h or fl.bo2[2]
-	  z = z or fl.bo2[3]
+      -- [1]:x1 [2]:y1 [3]:x2 [4]:y2 [5]:w [6]:h [7]:z
+      x = x or fl.box[1]
+      y = y or fl.box[2]
+      w = w or fl.bo2[1]
+      h = h or fl.bo2[2]
+      z = z or fl.bo2[3]
 
-	  if fl.minmax then
-		 if 		w < fl.minmax[1] then w = fl.minmax[1]
-		 elseif	w > fl.minmax[3] then w = fl.minmax[3] end
-		 if		h < fl.minmax[2] then h = fl.minmax[2]
-		 elseif	h > fl.minmax[4] then h = fl.minmax[4] end
-	  end
-	  fl.bo2[1] = w
-	  fl.bo2[2] = h
-	  fl.bo2[3] = z
-	  fl.box[1] = x
-	  fl.box[2] = y
-	  fl.box[3] = x + w
-	  fl.box[4] = y + h
+      if fl.minmax then
+	 if 	w < fl.minmax[1] then w = fl.minmax[1]
+	 elseif	w > fl.minmax[3] then w = fl.minmax[3] end
+	 if	h < fl.minmax[2] then h = fl.minmax[2]
+	 elseif	h > fl.minmax[4] then h = fl.minmax[4] end
+      end
+      fl.bo2[1] = w
+      fl.bo2[2] = h
+      fl.bo2[3] = z
+      fl.box[1] = x
+      fl.box[2] = y
+      fl.box[3] = x + w
+      fl.box[4] = y + h
 
-	  if fl.dl then
-		 dl_set_trans(fl.dl, mat_trans(x,y,z))
-	  end
+      if fl.dl then
+	 dl_set_trans(fl.dl, mat_trans(x,y,z))
+      end
 
---	  dump(fl.box,"set_box")
+      --	  dump(fl.box,"set_box")
 
---	  fl.lines  = floor( (fl.bo2[2]-2*fl.border) / (fl.font_h+2*fl.span))
---	  fl.lines = clip_value(fl.lines,0,fl.maxlines)
+      --	  fl.lines  = floor( (fl.bo2[2]-2*fl.border) / (fl.font_h+2*fl.span))
+      --	  fl.lines = clip_value(fl.lines,0,fl.maxlines)
    end
 
    --- Change textlist position.
@@ -135,7 +135,7 @@ function textlist_create(flparm)
    --- @see textlist_set_box
    ---
    function textlist_set_pos(fl,x,y,z)
-	  fl:set_box(x,y,nil,nil,z)
+      fl:set_box(x,y,nil,nil,z)
    end
 
    --- Set textlist color.
@@ -148,24 +148,24 @@ function textlist_create(flparm)
    --- @param  b   New blue component or nil
    ---
    function textlist_set_color(fl,a,r,g,b)
-	  dl_set_color(fl.dl, a, r, g, b)
+      dl_set_color(fl.dl, a, r, g, b)
    end
 
    --- Open textlist (fade in).
    --
    function textlist_open(fl)
--- 	  print ("open",fl)
-	  fl.closed = nil
-	  fl.fade = fl.fade_spd or 2
-	  dl_set_active(fl.dl, 1)
+      -- 	  print ("open",fl)
+      fl.closed = nil
+      fl.fade = fl.fade_spd or 2
+      dl_set_active(fl.dl, 1)
    end
 
    --- Close textlist (fade out).
    --
    function textlist_close(fl)
--- 	  print ("close",fl)
-	  fl.closed = 1
-	  fl.fade = -(fl.fade_spd or 2)
+      -- 	  print ("close",fl)
+      fl.closed = 1
+      fl.fade = -(fl.fade_spd or 2)
    end
 
    --- Center a textlist in a box.
@@ -181,60 +181,61 @@ function textlist_create(flparm)
    --- @see textlist_set_pos
    ---
    function textlist_center(fl, x, y, w, h, z)
-	  if x and w then
-		 x = x + (w-fl.bo2[1]) * 0.5
-	  end
-	  if y and h then
-		 y = y + (h-fl.bo2[1]) * 0.5
-	  end
-	  fl:set_pos(x,y,z)
+      if x and w then
+	 x = x + (w-fl.bo2[1]) * 0.5
+      end
+      if y and h then
+	 y = y + (h-fl.bo2[1]) * 0.5
+      end
+      fl:set_pos(x,y,z)
    end
 
    --- Default confirm callback function.
    --
    function textlist_confirm(fl)
-	  if not fl or fl.dir.n < 1 then return end
-	  return 1
+      if not fl or fl.dir.n < 1 then return end
+      return 1
    end
 
    --- Textlist shutdown.
    ---
    function textlist_shutdown(fl)
-	  fl.dl = nil
-	  fl.cdl = nil
-	  fl.ldl = nil
-	  fl.idl = nil
+      fl.dl = nil
+      fl.cdl = nil
+      fl.ldl = nil
+      fl.idl = nil
    end
 
    --- Measure dimension of the whole textlist and set dirinfo.
    --
    function textlist_measure(fl)
-	  if fl.dir.n < 1 then return 0,0 end
+      if fl.dir.n < 1 then return 0,0 end
 
-	  -- Measure text --
-	  local i, w, h, y
-	  y,w,h = 0,0,0;
-	  for i=1, fl.dir.n, 1 do
-		 local w2,h2
-		 w2,h2 = fl:measure_text(fl.dir[i])
-		 if w2 > w then w = w2 end
-		 h = h + h2
-		 fl.dirinfo[i] = {}
-		 fl.dirinfo[i].y = y
-		 fl.dirinfo[i].w = w2
-		 fl.dirinfo[i].h = h2
+      -- Measure text --
+      local i, w, h, y
+      y,w,h = 0,0,0;
+      for i=1, fl.dir.n, 1 do
+	 local w2,h2
+	 w2,h2 = fl:measure_text(fl.dir[i])
+	 if w2 > w then w = w2 end
+	 h = h + h2
+	 fl.dirinfo[i] = {}
+	 fl.dirinfo[i].y = y
+	 fl.dirinfo[i].w = w2
+	 fl.dirinfo[i].h = h2
 
---		 dump(fl.dir[i])
---		 dump(fl.dirinfo[i])
-		 y = y + h2
-	  end
-	  return w, h
+	 --		 dump(fl.dir[i])
+	 --		 dump(fl.dirinfo[i])
+	 y = y + h2
+      end
+      return w, h
    end
 
    --- Measure an entry.
    function textlist_measure_text(fl, entry)
       if not fl.not_use_tt then
-	 local tt = tt_build(entry.name, { border = {0,0}, x = "left", y = "up" })
+	 local tt = tt_build(entry.name,
+			     { border = {0,0}, x = "left", y = "up" })
 	 entry.tt = tt
 	 --tt.box = { x, y, x+info.w, y+info.h }
 	 --	  tt.dl = dl
@@ -257,95 +258,97 @@ function textlist_create(flparm)
       end
       local tt = entry.tt
       if tt then
+--	 print("textlist TT:"..idx)
 	 dl_set_trans(tt.dl, mat_trans(x, y, z))
 	 dl_set_color(tt.dl, color)
 	 dl_sublist(dl, tt.dl)
       else
+--	 print("textlist:"..idx..":"..entry.name)
 	 return dl_draw_text(dl,
 			     x, y, z,
 			     color[1],color[2],color[3],color[4],
 			     entry.name)
       end
-    end
+   end
 
    --- Insert an entry.
    function textlist_insert_entry(fl, entry, pos)
-	  local y = 0
-	  if not entry then return end
-	  if not pos then
-		 local n = fl.dir.n
-		 if n > 0 then
-			y = fl.dirinfo[n].y + fl.dirinfo[n].h
-		 end
-		 local w,h = fl:measure_text(entry)
-		 tinsert(fl.dir, entry)
-		 tinsert(fl.dirinfo, { y=y, w=w, h=h })
-		 fl:draw()
-	  else
-		 printf("TEXTLIST INSERT NOT IMPLEMENTED")
-	  end
+      local y = 0
+      if not entry then return end
+      if not pos then
+	 local n = fl.dir.n
+	 if n > 0 then
+	    y = fl.dirinfo[n].y + fl.dirinfo[n].h
+	 end
+	 local w,h = fl:measure_text(entry)
+	 tinsert(fl.dir, entry)
+	 tinsert(fl.dirinfo, { y=y, w=w, h=h })
+	 fl:draw()
+      else
+	 print("TEXTLIST INSERT NOT IMPLEMENTED")
+      end
    end
 
    --- Reset textlist.
    --
    function textlist_reset(fl)
-	  local w,h
+      local w,h
 
-	  -- Control
-	  fl.pos		= 0
--- 	  fl.top		= 0
+      -- Control
+      fl.pos		= 0
+      -- 	  fl.top		= 0
 
-	  -- Display lists :
+      -- Display lists :
 
-	  -- Main-list
-	  fl.dl = fl.dl or dl_new_list(128);
-	  dl_set_active(fl.dl,0)
-	  dl_clear(fl.dl)
+      -- Main-list
+      fl.dl = fl.dl or dl_new_list(128);
+      dl_set_active(fl.dl,0)
+      dl_clear(fl.dl)
 
-	  -- added by Vincent
-	  if fl.owner and fl.owner.dl then
-	     dl_sublist(fl.owner.dl, fl.dl)
-	  end
+      -- added by Vincent
+      if fl.owner and fl.owner.dl then
+	 dl_sublist(fl.owner.dl, fl.dl)
+      end
 
-	  -- List-List
-	  fl.ldl = fl.ldl or dl_new_list(512,1,1)
-	  dl_clear(fl.ldl)
+      -- List-List
+      fl.ldl = fl.ldl or dl_new_list(512,1,1)
+      dl_clear(fl.ldl)
 
-	  -- Cursor sub-list
-	  fl.cdl = fl.cdl or dl_new_list(512,1,1)
-	  dl_set_active(fl.cdl,0)
-	  dl_clear(fl.cdl)
-	  dl_set_trans(fl.cdl, mat_trans(0,0,0.1))
+      -- Cursor sub-list
+      fl.cdl = fl.cdl or dl_new_list(512,1,1)
+      dl_set_active(fl.cdl,0)
+      dl_clear(fl.cdl)
+      dl_set_trans(fl.cdl, mat_trans(0,0,0.1))
 
-	  -- Item sub-list
-	  fl.idl = fl.idl or dl_new_list(1024,1,1)
-	  dl_clear(fl.idl)
+      -- Item sub-list
+      fl.idl = fl.idl or dl_new_list(1024,1,1)
+      dl_clear(fl.idl)
 
-	  fl:set_color(0,1,1,1)
-	  fl:change_dir(fl.dir)
-	  fl:open()
+      fl:set_color(0,1,1,1)
+      fl:change_dir(fl.dir)
+      fl:open()
    end
 
    --- Change the textlist content.
    --
    function textlist_change_dir(fl,dir)
-	  if not dir then dir = {} end
-	  if not dir.n then dir.n = getn(fl.dir) end
-	  if not dir.n then dir.n = 0 end
-	  fl.dir = dir
-	  fl.dirinfo = {}
+      if not dir then dir = {} end
+      if not dir.n then dir.n = getn(fl.dir) end
+      if not dir.n then dir.n = 0 end
+      fl.dir = dir
+      fl.dirinfo = {}
 
-	  -- Measure new list.
-	  local w,h = textlist_measure(fl)
-	  fl:set_box(nil,nil,
-				 2*fl.border + w,
-				 2*fl.border + h, nil)
-	  fl.pos = 0
--- 	  fl:close()
-	  fl:draw()
--- 	  fl:open()
+      -- Measure new list.
+      local w,h = textlist_measure(fl)
+      fl:set_box(nil,nil,
+		 2*fl.border + w,
+		 2*fl.border + h, nil)
+      fl.pos = 0
+      -- 	  fl:close()
+      fl:draw()
+      -- 	  fl:open()
 
-	  return 1
+      return 1
    end
 
 
@@ -356,80 +359,82 @@ function textlist_create(flparm)
    --- Draw textlist.
    --
    function textlist_draw(fl)
-	  textlist_draw_main(fl)
-	  fl:draw_list(fl.idl)
-	  fl:draw_cursor(fl.cdl)
+      textlist_draw_main(fl)
+      fl:draw_list(fl.idl)
+      fl:draw_cursor(fl.cdl)
    end
 
    --- Draw main list.
    --
    function textlist_draw_main(fl)
 
-	  -- Redraw all
-	  dl_clear(fl.dl)
-	  dl_text_prop(fl.dl, 0, 16, 1)
-	  fl:draw_background(fl.dl)
+      -- Redraw all
+      dl_clear(fl.dl)
+      dl_text_prop(fl.dl, 0, 16, 1)
+      fl:draw_background(fl.dl)
 
-	  dl_clear(fl.ldl)
-	  dl_set_trans(fl.ldl, mat_trans(fl.border, fl.border, 0.1))
-	  local ww, wh
-	  ww = fl.bo2[1]-2*fl.border
-	  wh = fl.bo2[2]-2*fl.border
-	  if (ww <= 0) then ww = 1 end
-	  if (wh <= 0) then wh = 1 end
+      dl_clear(fl.ldl)
+      dl_set_trans(fl.ldl, mat_trans(fl.border, fl.border, 0.1))
+      local ww, wh
+      ww = fl.bo2[1]-2*fl.border
+      wh = fl.bo2[2]-2*fl.border
+      if (ww <= 0) then ww = 1 end
+      if (wh <= 0) then wh = 1 end
 
-	  dl_set_clipping(fl.ldl,0,0,0,wh)
-	  dl_sublist(fl.ldl,fl.cdl)
-	  dl_set_clipping(fl.ldl,0,0,ww,wh)
-	  dl_sublist(fl.ldl,fl.idl)
-	  dl_sublist(fl.dl,fl.ldl)
+      dl_set_clipping(fl.ldl,0,0,0,wh)
+      dl_sublist(fl.ldl,fl.cdl)
+      dl_set_clipping(fl.ldl,0,0,ww,wh)
+      dl_sublist(fl.ldl,fl.idl)
+      dl_sublist(fl.dl,fl.ldl)
    end
 
    --- Draw background box.
    --
    function textlist_draw_background(fl, dl)
-	  if fl.bkgcolor then
-		 dl_draw_box(dl,
-					 0, 0, fl.bo2[1], fl.bo2[2], 0,
-					 fl.bkgcolor[1],fl.bkgcolor[2],
-					 fl.bkgcolor[3],fl.bkgcolor[4],
-					 fl.bkgcolor[5],fl.bkgcolor[6],
-					 fl.bkgcolor[7],fl.bkgcolor[8],
-					 fl.bkgtype)
-	  end
+      if fl.bkgcolor then
+	 dl_draw_box(dl,
+		     0, 0, fl.bo2[1], fl.bo2[2], 0,
+		     fl.bkgcolor[1],fl.bkgcolor[2],
+		     fl.bkgcolor[3],fl.bkgcolor[4],
+		     fl.bkgcolor[5],fl.bkgcolor[6],
+		     fl.bkgcolor[7],fl.bkgcolor[8],
+		     fl.bkgtype)
+      end
    end
 
    --- Draw textlist cursor.
    --
    function textlist_draw_cursor(fl, dl)
-	  if fl.dir.n < 1 then
-		 dl_set_active(dl,0)
-		 return
-	  end
-	  dl_clear(dl)
-	  local i = fl.pos+1
-	  local y,w,h = fl.dirinfo[i].y, fl.dirinfo[i].w, fl.dirinfo[i].h
-	  local ww = fl.bo2[1] - 2 * fl.border
-	  if ww > w then w = ww end
-	  
-	  dl_draw_box(dl,
-				  0, y, w, y+h, 0,
-				  fl.curcolor[1],fl.curcolor[2],fl.curcolor[3],fl.curcolor[4],
-				  fl.curcolor[5],fl.curcolor[6],fl.curcolor[7],fl.curcolor[8])
-	  fl:draw_entry(dl, i, 0, y+fl.span, 0.1)
-	  dl_set_active(dl,1)
+      if fl.dir.n < 1 then
+	 dl_set_active(dl,0)
+	 return
+      end
+      dl_clear(dl)
+      local i = fl.pos+1
+      local y,w,h = fl.dirinfo[i].y, fl.dirinfo[i].w, fl.dirinfo[i].h
+      local ww = fl.bo2[1] - 2 * fl.border
+      if ww > w then w = ww end
+      
+      dl_draw_box(dl,
+		  0, y, w, y+h, 0,
+		  fl.curcolor[1],fl.curcolor[2],fl.curcolor[3],fl.curcolor[4],
+		  fl.curcolor[5],fl.curcolor[6],fl.curcolor[7],fl.curcolor[8])
+      fl:draw_entry(dl, i, 0, y+fl.span, 0.1)
+      dl_set_active(dl,1)
    end
 
    --- Draw entries.
    --
    function textlist_draw_list(fl, dl)
-	  local dl = fl.idl
-	  local i
-	  local max = getn(fl.dirinfo)
-	  dl_clear(dl)
-	  for i=1, max, 1 do
-		 fl:draw_entry(dl, i, 0, fl.dirinfo[i].y+fl.span, 0)
-	  end
+      local dl = fl.idl
+      local i
+      local max = getn(fl.dirinfo)
+      dl_clear(dl)
+      --- $$$ Added by ben for updating TT drawing
+      textlist_measure(fl)
+      for i=1, max, 1 do
+	 fl:draw_entry(dl, i, 0, fl.dirinfo[i].y+fl.span, 0)
+      end
    end
 
    --- @}
@@ -437,97 +442,97 @@ function textlist_create(flparm)
    --- Move textlist cursor.
    --
    function textlist_move_cursor(fl,mov)
-	  local pos
+      local pos
 
-	  pos = fl.pos + mov
-	  if pos >= fl.dir.n then pos = fl.dir.n-1 end
-	  if pos < 0 then pos = 0 end
+      pos = fl.pos + mov
+      if pos >= fl.dir.n then pos = fl.dir.n-1 end
+      if pos < 0 then pos = 0 end
 
-	  if pos ~= fl.pos then
-		 fl.pos = pos
-		 fl:draw_cursor(fl.cdl)
-		 return 2
-	  end
-	  
-	  return nil
+      if pos ~= fl.pos then
+	 fl.pos = pos
+	 fl:draw_cursor(fl.cdl)
+	 return 2
+      end
+      
+      return nil
    end
 
    --- Get a copy of the current entry.
    --
    function textlist_get_entry(fl)
-	  if fl.dir.n < 1 then return end
-	  local eentry = fl.dir[fl.pos+1]
-	  local xentry = fl.dirinfo[fl.pos+1]
-	  local i,v,e
-	  e = {}
-	  for i,v in xentry do e[i] = v end
-	  for i,v in eentry do e[i] = v end
-	  return e
+      if fl.dir.n < 1 then return end
+      local eentry = fl.dir[fl.pos+1]
+      local xentry = fl.dirinfo[fl.pos+1]
+      local i,v,e
+      e = {}
+      for i,v in xentry do e[i] = v end
+      for i,v in eentry do e[i] = v end
+      return e
    end
 
    --- Locate an entry which name matches a regular expression.
    --
    function textlist_locate_entry_expr(fl,regexpr)
-	  if fl.dir.n < 1 or not regexpr then return end
-	  local i
-	  for i=1, fl.dir.n, 1 do
-		 if strfind(fl.dir[i].name,regexpr) then
-			return fl:move_cursor(i-1-fl.pos)
-		 end
-	  end
+      if fl.dir.n < 1 or not regexpr then return end
+      local i
+      for i=1, fl.dir.n, 1 do
+	 if strfind(fl.dir[i].name,regexpr) then
+	    return fl:move_cursor(i-1-fl.pos)
+	 end
+      end
    end
 
    --- Locate an entry from its name.
    --
    function textlist_locate_entry(fl,name)
-	  if fl.dir.n < 1 or not name then return end
-	  local i
-	  for i=1, fl.dir.n, 1 do
-		 if fl.dir[i].name == name then
-			return fl:move_cursor(i-1-fl.pos)
-		 end
-	  end
+      if fl.dir.n < 1 or not name then return end
+      local i
+      for i=1, fl.dir.n, 1 do
+	 if fl.dir[i].name == name then
+	    return fl:move_cursor(i-1-fl.pos)
+	 end
+      end
    end
 
    local fl
 
    fl = {
-	  -- Control
-	  dir = {},
-	  dirinfo = {},
+      -- Control
+      dir = {},
+      dirinfo = {},
 
-	  -- Border size
-	  border	= 3,
-	  span	    = 1,
--- 	  font_h	= 0,
+      -- Border size
+      border	= 3,
+      span	    = 1,
+      -- 	  font_h	= 0,
 
-	  -- Colors
-	  filecolor = { 0.7, 1, 1, 1 },
-	  dircolor  = { 1.0, 1, 1, 1 },
-	  curcolor  = { 0.5, 1, 1, 0, 0.5, 0.5, 0.5, 0 },
+      -- Colors
+      filecolor = { 0.7, 1, 1, 1 },
+      dircolor  = { 1.0, 1, 1, 1 },
+      curcolor  = { 0.5, 1, 1, 0, 0.5, 0.5, 0.5, 0 },
 
-	  -- Methods
-	  confirm			= textlist_confirm,
-	  move_cursor		= textlist_move_cursor,
-	  get_entry		    = textlist_get_entry,
-	  locate_entry_expr	= textlist_locate_entry_expr,
-	  locate_entry		= textlist_locate_entry,
-	  insert_entry      = textlist_insert_entry,
-	  measure_text		= textlist_measure_text,
-	  set_box			= textlist_set_box,
-	  set_pos			= textlist_set_pos,
-	  shutdown			= textlist_shutdown,
-	  draw_list         = textlist_draw_list,
-	  draw_background   = textlist_draw_background,
-	  draw_cursor       = textlist_draw_cursor,
-	  draw_entry		= textlist_draw_entry,
-	  draw              = textlist_draw,
-	  change_dir		= textlist_change_dir,
-	  set_color			= textlist_set_color,
-	  open              = textlist_open,
-	  close             = textlist_close,
-	  update            = textlist_update,
-	  not_use_tt        = flparm.not_use_tt
+      -- Methods
+      confirm		= textlist_confirm,
+      move_cursor	= textlist_move_cursor,
+      get_entry		= textlist_get_entry,
+      locate_entry_expr	= textlist_locate_entry_expr,
+      locate_entry	= textlist_locate_entry,
+      insert_entry      = textlist_insert_entry,
+      measure_text	= textlist_measure_text,
+      set_box		= textlist_set_box,
+      set_pos		= textlist_set_pos,
+      shutdown		= textlist_shutdown,
+      draw_list         = textlist_draw_list,
+      draw_background   = textlist_draw_background,
+      draw_cursor       = textlist_draw_cursor,
+      draw_entry	= textlist_draw_entry,
+      draw              = textlist_draw,
+      change_dir	= textlist_change_dir,
+      set_color		= textlist_set_color,
+      open              = textlist_open,
+      close             = textlist_close,
+      update            = textlist_update,
+      not_use_tt        = flparm.not_use_tt
    }
 
    -- Set display box to min.
@@ -535,23 +540,23 @@ function textlist_create(flparm)
 
    -- Overrides default by user's ones supply parms
    if flparm then
-	  if flparm.dir then fl.dir = flparm.dir end
+      if flparm.dir then fl.dir = flparm.dir end
 
-	  fl.flags = flparm.flags;
-	  if flparm.pos then
-		 fl:set_pos(flparm.pos[1], flparm.pos[2], flparm.pos[3])
-	  end
-	  
-	  if flparm.lines     then fl.maxlines	= flparm.lines		end
-	  if flparm.box		  then fl.minmax	= flparm.box		end
-	  if flparm.confirm   then fl.confirm	= flparm.confirm 	end
-	  if flparm.border    then fl.border	= flparm.border		end
-	  if flparm.span 	  then fl.span		= flparm.span		end
-	  if flparm.filecolor then fl.filecolor	= flparm.filecolor	end
-	  if flparm.dircolor  then fl.dircolor	= flparm.dircolor	end
-	  if flparm.bkgcolor  then fl.bkgcolor	= flparm.bkgcolor	end
-	  if flparm.curcolor  then fl.curcolor	= flparm.curcolor	end
-	  fl.owner = flparm.owner
+      fl.flags = flparm.flags;
+      if flparm.pos then
+	 fl:set_pos(flparm.pos[1], flparm.pos[2], flparm.pos[3])
+      end
+      
+      if flparm.lines     then fl.maxlines	= flparm.lines		end
+      if flparm.box	  then fl.minmax	= flparm.box		end
+      if flparm.confirm   then fl.confirm	= flparm.confirm 	end
+      if flparm.border    then fl.border	= flparm.border		end
+      if flparm.span 	  then fl.span		= flparm.span		end
+      if flparm.filecolor then fl.filecolor	= flparm.filecolor	end
+      if flparm.dircolor  then fl.dircolor	= flparm.dircolor	end
+      if flparm.bkgcolor  then fl.bkgcolor	= flparm.bkgcolor	end
+      if flparm.curcolor  then fl.curcolor	= flparm.curcolor	end
+      fl.owner = flparm.owner
    end
 
    textlist_reset(fl)
@@ -562,54 +567,54 @@ end
 --
 function textlist_update(fl, frametime)
    if fl.fade then
-	  local fade = fl.fade * frametime
-	  local a,r,g,b = dl_get_color(fl.dl)
-	  local fademin = fl.fade_min or 0
-	  local fademax = fl.fade_max or 1
-	  a = a + fade
-	  if a < fademin then
-		 a = fademin
-		 fl.fade = nil
--- 		 dl_set_active(fl.dl, 0)
-	  elseif a > fademax then
-		 a = fademax
-		 fl.fade = nil
-	  end
-	  fl:set_color(a,r,g,b)
+      local fade = fl.fade * frametime
+      local a,r,g,b = dl_get_color(fl.dl)
+      local fademin = fl.fade_min or 0
+      local fademax = fl.fade_max or 1
+      a = a + fade
+      if a < fademin then
+	 a = fademin
+	 fl.fade = nil
+	 -- 		 dl_set_active(fl.dl, 0)
+      elseif a > fademax then
+	 a = fademax
+	 fl.fade = nil
+      end
+      fl:set_color(a,r,g,b)
    end
 
---    if fl.fade then
--- 	  if fl.fade > 0 then
--- 		 fl:set_color(1,1,1,1)
--- 	  else  
--- 		 fl:set_color(fl.fade_min or 0 ,1,1,1)
--- 	  end
--- 	  fl.fade = nil
---    end
+   --    if fl.fade then
+   -- 	  if fl.fade > 0 then
+   -- 		 fl:set_color(1,1,1,1)
+   -- 	  else  
+   -- 		 fl:set_color(fl.fade_min or 0 ,1,1,1)
+   -- 	  end
+   -- 	  fl.fade = nil
+   --    end
 
    local i
    i = fl.pos+1
    if type(fl.dirinfo) == "table" and fl.dirinfo[i] then
-	  local y,h = fl.dirinfo[i].y, fl.dirinfo[i].h
-	  local wh = fl.bo2[2] - 2 * fl.border
-	  local mat = dl_get_trans(fl.cdl) 
-	  local ytop = -mat[4][2]
-	  local ytop2 = ytop
+      local y,h = fl.dirinfo[i].y, fl.dirinfo[i].h
+      local wh = fl.bo2[2] - 2 * fl.border
+      local mat = dl_get_trans(fl.cdl) 
+      local ytop = -mat[4][2]
+      local ytop2 = ytop
 
-	  if wh < 0 then wh = 0 end
-	  if y < ytop then
-		 ytop = y
-	  elseif y+h > ytop+wh then
-		 ytop = y+h-wh
-	  end
-	  if abs(ytop-ytop2) > 0.01 then
-		 ytop = ytop * 0.1 + ytop2 * 0.9
-	  end
-	  mat[4][2] = -ytop
-	  mat[4][3] = 0
-	  dl_set_trans(fl.idl, mat)
-	  mat[4][3] = 0.1
-	  dl_set_trans(fl.cdl, mat)
+      if wh < 0 then wh = 0 end
+      if y < ytop then
+	 ytop = y
+      elseif y+h > ytop+wh then
+	 ytop = y+h-wh
+      end
+      if abs(ytop-ytop2) > 0.01 then
+	 ytop = ytop * 0.1 + ytop2 * 0.9
+      end
+      mat[4][2] = -ytop
+      mat[4][3] = 0
+      dl_set_trans(fl.idl, mat)
+      mat[4][3] = 0.1
+      dl_set_trans(fl.cdl, mat)
    end
 
 end
@@ -629,19 +634,19 @@ function textlist_create_app(fl,owner)
    --- @internal
    --
    function textlist_app_update(app, frametime)
-	  app.fl:update(frametime)
+      app.fl:update(frametime)
    end
 
    --- Default textlist application event handler.
    --- @internal
    --
    function textlist_app_handle(app,evt)
-	  local fl = app.fl
-	  if key == evt_shutdown_event then
-		 fl:shutdown()
-		 app.done = 1
-	  end
-	  return evt
+      local fl = app.fl
+      if key == evt_shutdown_event then
+	 fl:shutdown()
+	 app.done = 1
+      end
+      return evt
    end
 
    app = {
@@ -673,58 +678,60 @@ function textlist_create_gui(fl, owner)
    --- @internal
    --
    function textlist_gui_handle(app,evt)
-	  local key = evt.key
-	  local fl = app.fl
-	  local dir = fl.dir
+      local key = evt.key
+      local fl = app.fl
+      local dir = fl.dir
 
-	  if key == evt_shutdown_event then
-		 fl:shutdown()
-		 app.done = 1
-		 return evt
-	  end
+      if key == evt_shutdown_event then
+	 fl:shutdown()
+	 app.done = 1
+	 return evt
+      end
 
-	  if dir.n < 1 or not gui_is_focus(app) then
-		 -- No dir loaded or no focus, ignore event --
---  		 print("NOFOCUUUUS:", dir.n)
-		 return evt;
-	  elseif gui_keyup[key] then
-		 local code = fl:move_cursor(-1)
-		 if code and code > 0 then
-			evt_send(app.owner, { key = gui_item_change_event, app = fl, pos = fl.pos })
-		 end
-		 return
-	  elseif gui_keydown[key] then
-		 local code = fl:move_cursor(1)
-		 if code and code > 0 then
-			evt_send(app.owner, { key = gui_item_change_event, app = fl, pos = fl.pos })
-		 end
-		 return
-	  elseif gui_keycancel[key] then
-		 evt_send(app.owner, { key = gui_item_cancel_event })
-		 return
-	  elseif gui_keyconfirm[key] then
-		 local action = fl:confirm()
-		 if not action then return end
-		 if action == 1 then
-			evt_send(app.owner, { key = gui_item_confirm_event })
-		 elseif action == 2 then
-			evt_send(app.owner, { key = gui_item_change_event })
-		 else
-			evt_send(app.owner, { key = gui_item_change_event })
-			evt_send(app.owner, { key = gui_item_confirm_event })
-		 end
-		 return -- ??? - $$$ just add this, was it forgotten ?
-	  end
-	  return evt
+      if dir.n < 1 or not gui_is_focus(app) then
+	 -- No dir loaded or no focus, ignore event --
+	 --  		 print("NOFOCUUUUS:", dir.n)
+	 return evt;
+      elseif gui_keyup[key] then
+	 local code = fl:move_cursor(-1)
+	 if code and code > 0 then
+	    evt_send(app.owner,
+		     { key = gui_item_change_event, app = fl, pos = fl.pos })
+	 end
+	 return
+      elseif gui_keydown[key] then
+	 local code = fl:move_cursor(1)
+	 if code and code > 0 then
+	    evt_send(app.owner,
+		     { key = gui_item_change_event, app = fl, pos = fl.pos })
+	 end
+	 return
+      elseif gui_keycancel[key] then
+	 evt_send(app.owner, { key = gui_item_cancel_event })
+	 return
+      elseif gui_keyconfirm[key] then
+	 local action = fl:confirm()
+	 if not action then return end
+	 if action == 1 then
+	    evt_send(app.owner, { key = gui_item_confirm_event })
+	 elseif action == 2 then
+	    evt_send(app.owner, { key = gui_item_change_event })
+	 else
+	    evt_send(app.owner, { key = gui_item_change_event })
+	    evt_send(app.owner, { key = gui_item_confirm_event })
+	 end
+	 return -- ??? - $$$ just add this, was it forgotten ?
+      end
+      return evt
    end
 
-   app.z			= gui_guess_z(owner, nil)
+   app.z		= gui_guess_z(owner, nil)
    fl:set_pos(nil, nil, gui_guess_z(app))
-   app.fl			= fl
+   app.fl		= fl
    app.name	    	= "gui "..app.name
-   app.box			= app.fl.box
-   app.handle		= textlist_gui_handle
-   app.event_table  = {}
+   app.box		= app.fl.box
+   app.handle           = textlist_gui_handle
+   app.event_table      = {}
    app.flags		= {}
 
    return app
@@ -743,8 +750,8 @@ end
 if nil then
    fl = gui_textlist(evt_desktop_app, { dir=dirlist("/") })
    if fl then 
-	  getchar()
-	  evt_shutdown_app(fl)
+      getchar()
+      evt_shutdown_app(fl)
    end
 end
 

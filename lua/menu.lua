@@ -11,6 +11,10 @@ if not menu_tag then
    menu_tag = newtag()
 end
 
+if not menudef_tag then
+   menudef_tag = newtag()
+end
+
 --- @defgroup dcplaya_lua_menu_gui Menu GUI
 --- @ingroup  dcplaya_lua_gui
 --- 
@@ -37,10 +41,10 @@ end
 ---
 --- struct menu : application {
 ---   open();	           ///< Show/active menu
----	  close();             ///< Hide/desactive menu
----	  set_color();         ///< Set global color
----	  draw();              ///< Build display lists
----	  confirm();           ///< Menu confirm callback
+---   close();             ///< Hide/desactive menu
+---   set_color();         ///< Set global color
+---   draw();              ///< Build display lists
+---   confirm();           ///< Menu confirm callback
 ---   shutdown();          ///< Shutdown menu
 ---   create();            ///< Create a new menu
 ---
@@ -65,7 +69,7 @@ function menu_create(owner, name, def, box, x1, y1)
    local menu
    local x2,y2,z
 
-   if not owner or not def then return end
+   if not owner or tag(def) ~= menudef_tag then return end
    if not name then name = def.title end
 
    x1 = x1 or 0
@@ -86,12 +90,12 @@ function menu_create(owner, name, def, box, x1, y1)
    -- ------------------
    local style = {
       bkg_color		= { 1, 0.7, 0.7, 0.7,  1, 0.3, 0.3, 0.3 },
-      title_color		= { 1,1,1,1 },
+      title_color	= { 1,1,1,1 },
       titlebar_color	= { 1, 0, 0, 0.2,  1, 0, 0, 0.7, 2},
       titlebar_type	= 2,
-      border			= 5,
-      span            = 1,
-      file_color		= { 1, 0, 0, 0 },
+      border		= 5,
+      span              = 1,
+      file_color	= { 1, 0, 0, 0 },
       dir_color		= { 1, 0, 0, .4 },
       cur_color		= { 1, 1, 1, 1,  1, 0.1, 0.4, 0.5 },
    }
@@ -186,6 +190,13 @@ function menu_create(owner, name, def, box, x1, y1)
    -- ---------
    function menu_draw(menu)
       local fl  = menu.fl
+
+      local dl  = fl.dl
+      dl_clear(dl)
+
+      -- Draw textlist $$$ ben : Add this here but it does not seem to work !
+      fl:draw()
+
       local dl  = fl.dl
       local def = menu.def
       local style = menu.style
@@ -194,11 +205,20 @@ function menu_create(owner, name, def, box, x1, y1)
 --      dl_clear(dl)
       w = fl.bo2[1]
 
+      -- Default box is the same than textlist one. It will change if 
+      -- there is a title, since the box will grow.
+      menu.box = fl.box
+
       -- Draw title bar
       h = 0
       if def.title then
-	 local w2,h2,yt
+	 local w2,h2,yt,w3
 	 w2,h2 = dl_measure_text(dl, def.title)
+	 w3 = w2 + 2*fl.border
+	 if w3 > w then
+	    fl:set_box(nil,nil,w3,nil,nil)
+	    w = fl.bo2[1]
+	 end
 	 h = h2 + style.span+style.border
 	 def.title_h = h
 	 yt = -h+style.border
@@ -214,7 +234,10 @@ function menu_create(owner, name, def, box, x1, y1)
 	    dl_draw_text(dl, (w-w2)*0.5, yt+(h-h2)*0.5 , 0.1,
 			 col[1],col[2],col[3],col[4], def.title)
 	 end
+	 -- Create a new box to include title box.
+	 menu.box = fl.box + {0, -h, 0, 0 }
       end
+
 
       -- Draw menu background
       col = style.bkg_color
@@ -232,6 +255,8 @@ function menu_create(owner, name, def, box, x1, y1)
 			bkgtype)
 	 end
       end
+
+
 --      dl_set_clipping(dl,0,0,w,0)
 --      dl_set_trans(dl, fl.mtx)
       dl_set_active(dl,active)
@@ -288,7 +313,7 @@ function menu_create(owner, name, def, box, x1, y1)
       end
       menu.fl:shutdown()
       --dl_destroy_list(menu.dl)
-      dl_set_active(menu.dl)
+       dl_set_active(menu.dl)
       menu.dl = nil
    end
 
@@ -310,7 +335,7 @@ function menu_create(owner, name, def, box, x1, y1)
 
       -- Members
       style = style,
-      dl = dl_new_list(64 * def.n + 1024),
+      dl = dl_new_list(64 * (def.n or 0) + 1024),
       z = gui_guess_z(owner,z),
       def	= def,
       sub_menu = {},
@@ -335,7 +360,8 @@ function menu_create(owner, name, def, box, x1, y1)
       textlist_center(menu.fl, 0, 0, 640, 480)
    end
 
-   menu.box = { menu.fl.box[1], menu.fl.box[2], menu.fl.box[3], menu.fl.box[4] }
+-- $$$ ben : draw will create menu box...
+-- menu.box = { menu.fl.box[1], menu.fl.box[2], menu.fl.box[3], menu.fl.box[4] }
 
    menu:set_color(0, 1, 1, 1)
    menu:draw()
@@ -364,6 +390,72 @@ function gui_menu(owner, name, def, box)
    return menu_create(owner, name, def, box)
 end
 
+
+function menu_merge_def(def1,def2)
+   local def
+   if tag(def1) ~= menudef_tag then
+      print("menu_merge_def : 1st parameter is not a menudef.")
+      return
+   end
+   if not def2 then return def1 end
+   if tag(def2) ~= menudef_tag then
+      print("menu_merge_def : 2nd parm is not a menudef ["..type(def2).."]")
+      return
+   end
+
+   def = { n=0 }
+   local i,v
+
+   -- Copy first def.
+   for i,v in def1 do
+      if type(i) == "number" then
+	 print("Insert "..tostring(v))
+	 tinsert(def,v)
+      else
+	 print("Copy "..i.." : "..tostring(v))
+	 def[i] = v
+      end
+   end
+
+   -- Merge second def.
+   for i,v in def2 do
+      if type(i) == "number" then
+	 print("merging #"..i)
+	 tinsert(def,v);
+      elseif type(i) == "string" then
+	 if i == "title" then
+	    def.title = def.title or v
+	 elseif i == "cb" or i == "sub" then
+	    print("merging ["..i.."]")
+	    if not def[i] then def[i] = {} end
+	    
+	    local j,w
+	    for j,w in v do
+	       if not def[i][j] then
+		  def[i][j] = w
+	       else
+		  print("menu_merge_def : conflicting ["..i.."."..j.."]")
+		  return
+	       end
+	    end
+	 else
+	    if def[i] and def[i] ~= v then
+	       print("menu_merge_def : lost ["..i.." := "..tostring(v).."]")
+	    else
+	       def[i] = v
+	    end
+	 end
+      else
+	 print("menu_merge_def : dunno what to do with ["..type(i).."]")
+      end
+   end
+
+   print("N="..def.n)
+     
+   settag(def,menudef_tag)
+   return def
+end
+
 --- Create a menudef from a string.
 --- @ingroup dcplaya_lua_menu_gui
 ---
@@ -382,13 +474,15 @@ function menu_create_def(menustr)
    local start, stop, menu, title
    local len
 
-   if type(menustr) == "table" then
+   if tag(menustr) == menudef_tag then
+      -- $$$
+      print("menu_create_def : already a menudef")
       return menustr
    elseif type(menustr) ~= "string" then
       return
    end
 
-   menu = {}
+   menu = { }
    len = strlen(menustr)
 
    -- Get title if any.
@@ -436,24 +530,56 @@ function menu_create_def(menustr)
 	 stop = len+1
       end
    end
+   settag(menu, menudef_tag)
    return menu
 end
 
-function menu_create_defs(def)
-   if type(def) == "string" then
-      return menu_create_def(def)
-   end
-   if type(def) ~= "table" or not def.root then return end
+function menu_create_defs(def,target)
+   local menu
 
-   local menu = menu_create_def(def.root)
-   menu.cb = def.cb
-   if def.sub then
-      local i,v
-      menu.sub = {}
-      for i,v in def.sub do
-	 menu.sub[i] = menu_create_defs(v)
+   print("menu_create_defs : "..type(def))
+
+   if not def then
+      return -- Cause no error message
+   elseif type(def) == "string" then
+      menu = menu_create_def(def)
+   elseif type(def) == "function" then
+      menu = def(target)
+   elseif type(def) == "table" then
+      if type(def.creator) == "function" then
+	 menu = def.creator(def, target)
+      elseif def.root then
+	 menu = menu_create_def(def.root)
       end
    end
+
+   print("menu_create_defs (intermediat) := "..tostring(menu))
+
+   if tag(menu) ~= menudef_tag then
+      print("menu_create_defs : not a menudef")
+      return
+   end
+
+   if type(def) == "table" then
+      menu.cb = menu.cb or def.cb
+      if type(def.sub) == "table" then
+	 local i,v
+	 menu.sub = {}
+	 for i,v in def.sub do
+	    menu.sub[i] = menu_create_defs(v, target)
+	    if not menu.sub[i] then return end
+	 end
+      end
+   end
+
+   print("menu_create_defs := "..tostring(menu))
+
+   -- $$$
+   if tag(menu) ~= menudef_tag then
+      print("menu_create_defs : !!! tag missing "..tag(menu))
+   end
+
+
    return menu
 end
 

@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.11 2003-01-03 06:47:19 zigziggy Exp $
+--- $Id: desktop.lua,v 1.12 2003-01-03 11:01:29 ben Exp $
 ---
 
 if not dolib("evt") then return end
@@ -183,19 +183,34 @@ if nil then
 	 if dir then
 	    local pos = dial.vs.fl.pos+1
 	    local target = dir[pos].app
-	    local def = target.mainmenu_def or {
-	       root=":app:kill{kill}",
-	       cb = {
-		  kill = function(menu) 
-			    evt_shutdown_app(%dial)
-			    evt_shutdown_app(%target)
-			    evt_shutdown_app(menu)
-			 end
-	       },
-	    }
+	    local name = target.name or "app"
+	    local def
+	    local user_def = menu_create_defs(target.mainmenu_def, target)
+	    local default_def = menu_create_defs
+	    ({
+		root=":"..name..":kill{kill}",
+		cb = {
+		   kill = function(menu) 
+			     evt_shutdown_app(%dial)
+			     evt_shutdown_app(%target)
+			     evt_shutdown_app(menu)
+			  end
+		},
+	     }, target)
+
+	    if not user_def then
+	       def = default_def
+	    else
+	       def = menu_merge_def(user_def, default_def)
+	    end
+
 	    local info = dirinfo[pos]
 	    local x, y = dial.vs.box[1] + info.w, dial.vs.fl.box[2] + info.y
-	    dial.menu = gui_menu(dial, "app", menu_create_defs(def), {x, y, 100, 100})
+
+	    dial.menu = gui_menu(dial, name.."-menu",def, {x, y, 100, 100})
+	    if tag(dial.menu) == menu_tag then
+	       dial.menu.target = target
+	    end
 	 end
 	 return
       elseif key == gui_item_change_event then
