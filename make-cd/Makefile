@@ -3,7 +3,7 @@
 #
 # by Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.11 2003-03-23 23:59:08 ben Exp $
+# $Id: Makefile,v 1.12 2003-03-25 09:28:42 ben Exp $
 #
 
 CDRECORD	= cdrecord dev=0,0,0 speed=4
@@ -17,6 +17,7 @@ TOUCH		= touch
 1ST_READ	= dcplaya.bin
 ELF_TARGET	= ../dreammp3.elf
 OBJCOPY		= /opt/sh-elf/bin/sh-elf-objcopy
+DATE		:= $(shell date +%Y/%m/%d)
 
 all: success
 
@@ -101,18 +102,20 @@ burn-data: burn-audio data.raw
 	$(CDRECORD) -xa1 data.raw \
 	&& rm -f audio.raw data.raw burn-audio tmp.iso
 
-.PHONY: dclpaya_docs
+.PHONY: dcplaya-docs
+dcplaya-docs :
 	$(MAKE) -C ../doc txt
 
 .PHONY: dcplaya-data
-dcplaya-data: id.txt RELEASE.txt README.txt 1ST_READ.BIN dclpaya_docs
+dcplaya-data: id.txt RELEASE.txt README.txt 1ST_READ.BIN dcplaya-docs
 	@echo "[$@]"
 	@rm -rf dcplaya iso
 	@mkdir -p iso dcplaya/dynshell
 	@cp -a ../autorun.lua ../dcplayarc.lua dcplaya
-	@cp -a ../userconf-release.lua dcplaya/userconf.lua
+	@sed -e "s#@BUILT-DATE@#${DATE}#" ../userconf-release.lua > dcplaya/userconf.lua
 	@cp -a ../dynshell/dynshell.lez dcplaya/dynshell
 	@cp -a ../lua dcplaya
+	@find dcplaya -type d -name '.xvpics' -print0 | xargs -0 -e rm -rv
 	@cp -a ../doc/doc dcplaya
 	@(cd ..; find plugins -type f -name '*.lez') \
 	| tar cf - -C .. -T - \
