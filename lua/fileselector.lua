@@ -4,7 +4,7 @@
 --- @date   2002/10/04
 --- @brief  fileselector gui
 ---
---- $Id: fileselector.lua,v 1.25 2003-03-11 15:07:58 zigziggy Exp $
+--- $Id: fileselector.lua,v 1.26 2003-03-12 15:06:54 ben Exp $
 --
 -- TODO : select item with space 
 --        completion with tab        
@@ -124,13 +124,16 @@ function fileselector(name,path,filename,owner)
       local path,leaf,fl
       if not dial then return end
       fl = dial.flist.fl
+      local flpath = fl:get_path()
+      text = type(text) == "string" and canonical_path(text)
+      if not text then return end
       path,leaf = get_path_and_leaf(text)
       if path then
-	 if path ~= fl.pwd then
+	 if path ~= flpath then
 	    -- Not same path, try to load new one
-	    fileselector_status(dial,"Loading "..path)
-	    if not fl:set_path(path) then
-	       fileselector_status(dial,"Error loading "..path)
+	    fileselector_status(dial,format("Loading %q",path))
+	    if not fl:set_path(path,3) then -- $$$ Skip . and .. ?
+	       fileselector_status(dial,format("Error loading %q",path))
 	       return
 	    end
 	    fileselector_status(dial,path.." loaded")
@@ -145,9 +148,9 @@ function fileselector(name,path,filename,owner)
 	 res = gsub(res,"?",".")
 	 res = "^"..res.."$"
 	 if fl:locate_entry_expr(res) then
-	    fileselector_status(dial,fl.pwd..leaf.." found")
+	    fileselector_status(dial,text.." found")
 	 else
-	    fileselector_status(dial,fl.pwd..leaf.." not found")
+	    fileselector_status(dial,text.." not found")
 	 end
       end
    end
@@ -301,8 +304,8 @@ function fileselector(name,path,filename,owner)
 	       end
 	       local path,leaf
 	       path,leaf = get_path_and_leaf(input.input)
-	       if not path then path = fl.pwd end
-	       if leaf then path=path..leaf end
+	       if not path then path = fl:get_path() end
+	       if leaf then path = canonical_path(path.."/"..leaf) end
 	       gui_input_insert(command,format(f,path))
 	    end
 	    return
@@ -310,11 +313,11 @@ function fileselector(name,path,filename,owner)
 	    if com then
 	       local result,fl
 	       fileselector_status(dial,
-				   format("Execute '%s'",dial.command.input))
+				   format("Execute %q",dial.command.input))
 	       result = dostring(dial.command.input)
 	       fl = dial.flist.fl
-	       fileselector_status(dial,format("Loading '%s'",fl.pwd))
-	       dial.flist.fl:set_path()
+	       fileselector_status(dial,format("Loading %q",fl:get_path()))
+	       fl:set_path(nil,fl:get_text())
 	       if result then
 		  fileselector_status(dial, com.." success")
 	       else
@@ -388,12 +391,18 @@ function fileselector(name,path,filename,owner)
    -- --- --- -
    
    function fileselector_confirm(fl)
-      if fl.dir.n < 1 then return end
-      local entry = fl.dir[fl.pos+1]
+      local pos = fl:get_pos()
+      if not pos then return end
+      local entry = fl.dir[pos]
       if not entry then return end
       if entry.size and entry.size==-1 then
 	 local action
-	 action = fl:set_path(entry.name)
+	 if entry.name == '..' then
+	    local path, leaf = get_path_and_leaf(fl:get_path())
+	    action = fl:set_path(entry.name, leaf)
+	 else
+	    action = fl:set_path(entry.name, 3)
+	 end
 	 if not action then
 	    return
 	 end
@@ -406,23 +415,10 @@ function fileselector(name,path,filename,owner)
    dial.flist = gui_filelist(dial,
 			     {
 				pos={x1,y1},
-				pwd=path,
+				path=path,
 				confirm=fileselector_confirm,
 				box={x5-x1, y5-y1, x5-x1, y5-y1}
 			     })
-
-   -- VP : added these two statements to add ".." as first file in the list
---   dial.flist.fl.change_dir = function(fl, dir, pos)
---			      dir = dir or { }
---			      local first = dir[1]
---			      if fl.pwd ~= "/" and
---				   (not first or first.name ~= "..") then
---				 tinsert(dir, 1, { name = "..", size = -1 })
---			      end
---			      return textlist_change_dir(fl, dir, pos)
---			   end
---   dial.flist.fl:set_path()
-
    return dial
 end
 

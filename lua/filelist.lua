@@ -3,14 +3,14 @@
 --- @date   2002/10/04
 --- @brief  Manage and display a list of file.
 ---
---- $Id: filelist.lua,v 1.12 2003-03-11 15:07:58 zigziggy Exp $
+--- $Id: filelist.lua,v 1.13 2003-03-12 15:06:54 ben Exp $
 ---
 
 --- filelist object - Extends textlist
 --
 -- components :
 -- "filter"  dirlist filter function
--- "pwd"     Current path
+-- "path"     Current path
 
 -- Unload the library
 filelist_loaded = nil
@@ -36,18 +36,18 @@ function filelist_create(flparm)
    function filelist_get_entry(fl)
       if fl.dir.n < 1 then return end
       local e = textlist_get_entry(fl)
-      e.full = fl.pwd..e.name
+      e.full = fl.path..e.name
       return e
    end
 
    -- Filelist change current path: 
    --
-   function filelist_set_path(fl,path)
+   function filelist_set_path(fl,path,locate)
       if not path then
-	 path = fl.pwd
+	 path = fl.path
       else
 	 if strsub(path,1,1) ~= "/" then
-	    path = fl.pwd.."/"..path
+	    path = fl.path.."/"..path
 	 end
 	 path = fullpath(path)
       end
@@ -63,8 +63,22 @@ function filelist_create(flparm)
 	 return
       end
 
-      fl.pwd = path
-      return fl:change_dir(dir)
+      if type(locate) == "string" then
+	 -- Trying to locate old path in new one
+	 local n,i = getn(dir)
+	 for i=1,n do
+	    if dir[i].name == locate then
+	       locate = i
+	       break
+	    end
+	 end
+      end
+      if type(locate) ~= "number" then
+	 locate = nil
+      end
+
+      fl.path = path
+      return fl:change_dir(dir, locate)
    end
 
    if not flparm then flparm = {} end
@@ -72,10 +86,10 @@ function filelist_create(flparm)
    flparm.not_use_tt = 1
    fl = textlist_create(flparm)
    if not fl then return end
-   if not flparm.pwd then
-      fl.pwd = PWD
+   if not flparm.path then
+      fl.path = PWD
    else
-      fl.pwd = fullpath(flparm.pwd)
+      fl.path = fullpath(flparm.path)
    end
 
    fl.get_entry = filelist_get_entry
@@ -98,7 +112,7 @@ if nil then
    c = getchar()
    if c == 121 then
       print ("Create file list")
-      fl = gui_filelist(evt_desktop_app, { pwd="/pc/t" } )
+      fl = gui_filelist(evt_desktop_app, { path="/pc/t" } )
       getchar()
       evt_shutdown_app(fl)
    end

@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.37 2003-03-12 13:20:49 ben Exp $
+--- $Id: textlist.lua,v 1.38 2003-03-12 15:06:54 ben Exp $
 ---
 
 -- Unload the library
@@ -540,13 +540,22 @@ function textlist_create(flparm)
       pos = fl:get_pos(pos)
       if pos then
 	 local entry = fl.dir[pos]
-	 local tt = entry.tt
-	 if tt and tt.mode and tt.mode.text_nude then
-	    return tt.mode.text_nude
-	 else
+-- 	 local tt = entry.tt
+-- 	 if tt and tt.mode and tt.mode.text_nude then
+-- 	    return tt.mode.text_nude
+-- 	 else
 	    return entry.name or entry.file
-	 end
+-- 	 end
       end
+   end
+
+   function textlist_get_path(fl, entry)
+      if not entry then 
+	 entry = fl and fl.dir and fl.dir[(fl.pos or 0)+1]
+	 if not entry then return end
+      end
+      local path = entry.path or (fl and fl.path) or "/"
+      return type(path) == "string" and  canonical_path(path)
    end
 
    --- Get entry fullpath
@@ -557,7 +566,7 @@ function textlist_create(flparm)
 	 if not entry then return end
       end
       local leaf = entry.file or entry.name
-      local path = entry.path or (fl and fl.path) or "/"
+      local path = fl:get_path(entry)
       if type(leaf) == "string" and type(path) == "string" then
 	 return canonical_path(path.."/"..leaf)
       end
@@ -611,6 +620,7 @@ function textlist_create(flparm)
       get_pos           = textlist_get_pos,
       get_text          = textlist_get_text,
       fullpath          = textlist_fullpath,
+      get_path          = textlist_get_path,
       locate_entry_expr	= textlist_locate_entry_expr,
       locate_entry	= textlist_locate_entry,
       insert_entry      = textlist_insert_entry,
