@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.4 2003-03-03 08:35:24 ben Exp $
+--- $Id: control_center.lua,v 1.5 2003-03-03 11:32:32 ben Exp $
 ---
 
 control_center_loaded = nil
@@ -26,7 +26,45 @@ function control_center_create(owner, name)
    function control_center_about(menu)
       local cc = menu.target
 
-      print("cc-about");
+      local macro =
+	 '<macro macro-name="tfont" macro-cmd="font" color="#FFE080" size="20"><macro macro-name="url" macro-cmd="font" color="#80E0FF" size="14" font_id="1"><macro macro-name="normal" macro-cmd="font" color="#e0e080" size="16"><macro macro-name="author" macro-cmd="font" color="#ff8080" size="18"><macro macro-name="pspace" macro-cmd="vspace" h="12">'
+
+      local text = macro .. '<center><tfont><img name="dcplaya64" src="dcplaya.tga" h="64"><br>dcplaya'
+      if __DEBUG then
+	 text = text .. ' (debug)'
+      end
+      if __VERSION then
+	 text = text .. ' version ' .. __VERSION
+      end
+
+      text = text .. '<p vspace="2"><pspace><normal>(c)2002-2003<br><author>Benjamin<img src="le_ben.jpg" name="ben_mini" h="48">Gerard<br><normal>and<br><author>Vincent<img src="le_zig.jpg" name="zig_mini" h="48">Penne'
+
+      if __URL then
+	 text = text
+	    .. '<p><pspace><normal>Visite dcplaya official website<br><url>' .. __URL
+      end
+
+--       local di = driver_info()
+--       if type(di) == "table" then
+-- 	 local k,v
+-- 	 local convert = {
+-- 	    inp="input",
+-- 	    vis="visual",
+-- 	    img="image",
+-- 	    exe="executable",
+-- 	    obj="3D object" }
+-- 	 for k,v in di do
+-- 	    if type(v) == "table" and getn(v) > 0 then
+-- 	       local type = convert[k] or k;
+-- 	       text = text . '<p><center><dfont>' .. type .. 'plugins'
+-- 	       local pname, p
+-- 	       for pname,p in v do
+-- 		  text = text .. '<p><left>'
+-- 	       end
+
+      gui_ask(text,
+	      {'<center><img name="stock_button_cancel" src="stock_button_cancel.tga ">close'},
+	      400,'About dcplaya')
    end
 
 
@@ -80,7 +118,7 @@ function control_center_create(owner, name)
    function control_center_create_sprites(cc)
       control_center_create_sprite(cc, "cc_dcp", "dcplaya.tga", 32)
       control_center_create_sprite(cc, "cc_vmu", "vmu32.tga",32)
-      control_center_create_sprite(cc, "cc_vol", "volumectrl.tga", 32)
+      control_center_create_sprite(cc, "cc_vol", "volume.tga", 32)
 --				   24, 24) --, 0 , 0, 8/64, 48/64)
    end
 
@@ -123,6 +161,8 @@ function control_center_create(owner, name)
       version = 1.0,
       handle = nil,
       update = nil,
+
+      icon_name = "control-center",
       
       -- Members
       z = gui_guess_z(owner,z),

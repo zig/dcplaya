@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.16 2003-03-03 08:35:24 ben Exp $
+--- $Id: desktop.lua,v 1.17 2003-03-03 11:32:32 ben Exp $
 ---
 
 if not dolib("evt") then return end
@@ -71,12 +71,12 @@ end
 function dskt_switcher_create(owner, name, dir, x, y, z)
 
    -- Create sprite
-   local texid = tex_get("dcpsprites") or tex_new("/rd/dcpsprites.tga")
-   local vmusprite = sprite("vmu",	
-			    0, 62/2,
-			    104, 62,
-			    108/512, 65/128, 212/512, 127/128,
-			    texid,1)
+--    local texid = tex_get("dcpsprites") or tex_new("/rd/dcpsprites.tga")
+--    local vmusprite = sprite("vmu",	
+-- 			    0, 62/2,
+-- 			    104, 62,
+-- 			    108/512, 65/128, 212/512, 127/128,
+-- 			    texid,1)
 
 
    local text = '<dialog guiref="dialog" label="Desktop" name="desktop dialog">'
@@ -86,8 +86,17 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
       ' switch to) :<br><vspace h="8"><hspace w="16"><linedown>'
    local i
    for i=1,dir.n, 1 do
+      local app = dir[i].app
+      local icon_name, icon_file
+
+      icon_name = app.icon_name or app.name or "dcplaya"
+      icon_file = app.icon_file or (icon_name .. ".tga")
+      
       text = text..'<button total_w="64" guiref="r'..format("%d", i)..'">'
-      text = text..'<img name="vmu" w="32"><br><center>'..dir[i].app.name
+      text = text
+	 .. '<img name="' .. icon_name
+	 .. '" src="' .. icon_file
+	 .. '" w="48"><br><center>' .. app.name
       text = text..'</button><hspace w="16">'
    end
 

@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.43 2003-02-27 10:05:26 ben Exp $
+--- $Id: gui.lua,v 1.44 2003-03-03 11:32:32 ben Exp $
 ---
 
 --
@@ -928,7 +928,7 @@ function gui_ask(question, answers, width, label)
    local tt = tt_build(text, {
 			  x = "center",
 			  y = "center",
-			  box = { 0, 0, 640, 400 },
+			  box = { 0, 20, 640, 460 },
 		       }
 		    )
    

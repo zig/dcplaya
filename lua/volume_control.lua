@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    volume  application.
 ---
---- $Id: volume_control.lua,v 1.1 2003-03-03 01:59:31 ben Exp $
+--- $Id: volume_control.lua,v 1.2 2003-03-03 11:32:32 ben Exp $
 ---
 
 volume_control_loaded = nil
@@ -98,6 +98,7 @@ function volume_control_create(owner, name)
       name = name,
       version = 1.0,
       handle = volume_control_handle,
+      icon_name = "volume",
 
       -- methods
       draw = volume_control_draw,
@@ -126,9 +127,7 @@ function volume_control_create(owner, name)
    dl_clear(vc.dl)
    local tw = 48
    dl_text_prop(vc.dl,0,tw)
-   local w,h = dl_measure_text(vc.dl,"volume")
-   w = (w or 0) * tw / 16
-   h = (h or 0) * tw / 16
+   local w,h = dl_measure_text(vc.dl,"volume", 0, tw)
 
    dl_draw_text(vc.dl, (640-w)*0.5,-h,0, 1,1,1,1, "volume");
    dl_sublist(vc.dl, vc.dl_vol)
