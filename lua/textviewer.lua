@@ -3,7 +3,7 @@
 --- @date   2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  hyper text viwer gui
---- $Id: textviewer.lua,v 1.9 2003-03-05 17:48:29 ben Exp $
+--- $Id: textviewer.lua,v 1.10 2003-03-07 15:36:28 ben Exp $
 ---
 
 if not dolib("taggedtext") then return end
@@ -200,7 +200,7 @@ function gui_text_viewer(owner, texts, box, label, mode)
    local bbox = {( box[1] + box[3] - butw) * 0.5, (box[4]-buth-border) }
    bbox[3] = bbox[1] + butw
    bbox[4] = bbox[2] + buth
-   dial.button = gui_new_button(dial, bbox, buttext , mode)
+   dial.button = gui_new_button(dial, bbox, buttext , mode, nil, "close")
    if not dial.button then return end
    dial.button.event_table[gui_press_event] =
       function(app, evt)
@@ -435,7 +435,7 @@ function gui_text_viewer(owner, texts, box, label, mode)
       header = header .. ' hint_w="500"'
       header = header .. '>'
 
-      footer = '<p><center><button guiref="close">close</button></dialog>'
+      footer = '<p><center><button guiref="close" name="close">close</button></dialog>'
 
       text = '<dialog guiref="text" x="center" name="gui_viewer_text">' ..
 	 text .. '</dialog>'

@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.47 2003-03-07 10:11:15 ben Exp $
+--- $Id: gui.lua,v 1.48 2003-03-07 15:36:28 ben Exp $
 ---
 
 --
@@ -996,7 +996,8 @@ function gui_ask(question, answers, width, label)
    if type(answers) == "table" then
       for i=1, getn(answers), 1 do
 	 text = text..'<hspace w="16">'
-	 text = text..format('<button guiref="%d">', i)..answers[i]..'</button>'
+	 text = text.. format('<button guiref="%d" name="%s">%s</button>',
+			      i, tostring(answers[i]), tostring(answers[i]))
       end
    end
    text = text..'<hspace w="16">'
@@ -1075,96 +1076,5 @@ end
 gui_init()
 
 gui_loaded = 1
-
--- --------------------------------------------------------------------
--- --------------------------------------------------------------------
--- SAMPLE TEST CODE
-
-function dialog_test(parent)
-   if not parent then
-      parent = evt_desktop_app
-   end
-
-   -- create a dialog box with a label outside of the box
-   local box = { 100, 100, 400, 400 }
-   if parent.box then
-      box[1] = box[1] + parent.box[1] + 100
-      box[2] = box[2] + parent.box[2]
-      box[3] = box[3] + parent.box[1] + 100
-      box[4] = box[4] + parent.box[2]
-   end
-   dial = gui_new_dialog(parent, box, nil, nil,
-			 "My dialog box", { x = "left", y = "upout" }, "dialog-test" )
-   
-   -- add some text inside the dialog box
-   gui_label(dial, 
-	     [[ <font size="14">
-Hello World ! 
-Ceci est un tres long texte on purpose !!!!
-	     ]], { y="up" } )
-
-   local x = box[1] - 100
-   local y = box[2] - 100
-   
-   -- create a few buttons with labels
-   but = gui_new_button(dial, { x + 150, y + 200, x + 240, y + 230 }, 'OK <img name="apply" src="stock_button_apply.tga" scale="1.5">')
-   
-   -- add a gui_press_event response
-   but.event_table[gui_press_event] =
-      function(but, evt)
-	 print [[OK !!]]
-	 evt_shutdown_app(but.owner)
-	 return nil -- block the event
-      end
-   
-   but = gui_new_button(dial, { x + 250, y + 200, x + 360, y + 230 }, 'CANCEL <img name="cancel" src="stock_button_cancel.tga" scale="1.5">')
-   but.event_table[gui_press_event] =
-      function(but, evt)
-	 print [[CANCEL !!]]
-	 evt_shutdown_app(but.owner)
-	 return nil -- block the event
-      end
-   
-   but = gui_new_button(dial, { x + 150, y + 250, x + 240, y + 290 }, 'VMU <img name="vmu" scale="0.25">')
-   but.event_table[gui_press_event] =
-      function(but, evt)
-	 print [[TITI !!]]
-	 return nil -- block the event
-      end
-   
-   but = gui_new_button(dial, { x + 250, y + 250, x + 390, y + 290 }, 'DCPlaya <img name="dcplaya" src="dcplaya.tga" scale="1.25">')
-   but.event_table[gui_press_event] =
-      function(but, evt)
-	 print [[TOTO !!]]
-	 return nil -- block the event
-      end
-   
-   -- create an input item
-   input = gui_new_input(dial, { x + 120, y + 160, x + 380, y + 190 }, "Login :",
-			 { x = "left", y="upout" }, "ziggy")
-
-
-   -- create subdialog
-   for i=1, 4, 1 do
-      local subdial = gui_new_dialog(dial, { x + 120, y + 330, x + 190, y + 380 }, nil, nil, "Sub dialog", { x = "left", y="upout" })
-      but = gui_new_button(subdial, { x + 130, y + 340, x + 180, y + 370 }, "TOTO")
---      but.event_table[gui_press_event] =
---	 function(but, evt)
---	    print [[TOTO !!]]
---	    return nil -- block the event
---	 end
-      
-      x = x + 20
-      y = y + 5
-   end
-
-   return dial
-end
-
-if nil then
-   dial = dialog_test()
-   dialog_test(dial)
-end
-
 
 return 1

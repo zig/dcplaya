@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  sgml text and gui element formater.
 ---
---- $Id: taggedtext.lua,v 1.22 2003-03-07 10:11:16 ben Exp $
+--- $Id: taggedtext.lua,v 1.23 2003-03-07 15:36:28 ben Exp $
 ---
 
 if not dolib("dirfunc") then return end
@@ -197,7 +197,7 @@ function tt_button_draw(block)
    local box = { block.x, block.y, block.x + block.w, block.y + block.h }
    mode.box = box + { 4, 4, -4, -4 }
    dl_set_trans(mode.dl, mat_trans(0, 0, block.z))
-   local name = mode.name or (app.name and (app.name .. "-button"))
+   local name = mode.name or (papp.name and (papp.name .. "-button"))
    local app = gui_new_button(papp, box, nil, nil, nil, name)
    app.guis = mode.guis
    mode.app = app
