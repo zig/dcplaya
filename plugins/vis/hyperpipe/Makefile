@@ -3,7 +3,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.4 2003-01-14 10:54:02 ben Exp $
+# $Id: Makefile,v 1.1 2003-01-14 10:54:02 ben Exp $
 #
 
 LEZ=yes

@@ -3,9 +3,9 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sasahipa.com>
 #
-# $Id: Makefile,v 1.5 2003-01-05 18:08:39 zigziggy Exp $
+# $Id: Makefile,v 1.6 2003-01-14 10:54:02 ben Exp $
 #
 
-SUBDIRS = fftvlr lpo
+SUBDIRS = fftvlr lpo hyperpipe
 
 include ../../Makefile.inc

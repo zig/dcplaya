@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.15 2003-01-02 18:32:54 ben Exp $
+ * $Id: lpo.c,v 1.16 2003-01-14 10:54:02 ben Exp $
  */
 
 #include <stdio.h>
@@ -44,9 +44,10 @@ static fftbands_t * bands;
 
 #define RANDOM_MODE 1
 #define FLASH_MODE 2
+#define RND_BORDER_MODE 4
 
 /* Automatic object changes */
-static int change_mode = RANDOM_MODE|FLASH_MODE;
+static int change_mode = RANDOM_MODE|FLASH_MODE|RND_BORDER_MODE;
 static int change_cnt;
 static int change_time = 5*1000;
 
@@ -78,30 +79,16 @@ static int same_sign(float a, float b)
 
 static obj_driver_t * find_object(const char *name)
 {
-  any_driver_t * d;
-
   if (!name) {
     return 0;
   }
-  //  SDDEBUG("find '%s'\n",name);
-
-  for (d=obj_drivers.drivers; d; d=d->nxt) {
-    //    SDDEBUG("-- '%s'\n",d->name);
-    
-    if (!strcmp(name, d->name)) {
-      //      SDDEBUG("OK\n");
-      return (obj_driver_t *)d;
-    }
-  }
-  SDERROR("%s(%s) : failed\n", __FUNCTION__, name);
-  return 0;
+  return (obj_driver_t *)driver_list_search(&obj_drivers, name);
 }
 
 static obj_driver_t * num_object(int n)
 {
   any_driver_t * d;
   int i;
-
   for (i=0, d=obj_drivers.drivers; d; d=d->nxt, ++i) {
     if (i == n) {
       return (obj_driver_t *)d;
@@ -113,29 +100,36 @@ static obj_driver_t * num_object(int n)
 static obj_driver_t * random_object(obj_driver_t * not_this_one)
 {
   obj_driver_t * o;
+
+  driver_list_lock(&obj_drivers);
   if (obj_drivers.n == 0) {
+    driver_list_unlock(&obj_drivers);
     return 0;
   }
-  if (obj_drivers.n == 1) {
-    o = (obj_driver_t *)obj_drivers.drivers;
-  } else {
-    o = num_object(rand() % obj_drivers.n);
-    if (o == not_this_one) {
-      if (o->common.nxt) {
-	o = (obj_driver_t *)o->common.nxt;
-      } else {
-	o = (obj_driver_t *)obj_drivers.drivers;
-      }
+  o = num_object(rand() % (unsigned int)obj_drivers.n);
+  if (o == not_this_one) {
+    if (o->common.nxt) {
+      o = (obj_driver_t *)o->common.nxt;
+    } else {
+      o = (obj_driver_t *)obj_drivers.drivers;
     }
   }
-
-  return (o == not_this_one) ? 0 : o;
+  if (o == not_this_one) {
+    o = 0;
+  } else if (o) {
+    driver_reference(&o->common);
+  }
+  driver_list_unlock(&obj_drivers);
+  return o;
 }
 
 static int change_object(obj_driver_t *o)
 {
   if (!o) {
     return -1;
+  }
+  if (curobj) {
+    driver_dereference(&curobj->common);
   }
   curobj = o;
   return 0;
@@ -277,6 +271,7 @@ static int anim(unsigned int ms)
 {
   static float swing_latch;
   static float flash_latch;
+  static float border_latch;
 
   const float sec = 0.001f * (float)ms;
 
@@ -289,6 +284,8 @@ static int anim(unsigned int ms)
 /*   const int zoom1_analyser = 3 * 2 + 1; */
 /*   const int zoom2_analyser = 3 * 1 + 1; */
   const int zoom1_analyser = 3 * 3 + 1;
+
+  const int border_analyser = 3 * 0 + 1;
 
   const int flash_analyser = 3 * 2 + 1;
   const int swing_analyser = 3 * 2 + 2;
@@ -318,6 +315,24 @@ static int anim(unsigned int ms)
       flash_latch = 0.3;
     }
   }
+
+  /* Border change */
+  border_latch -= sec;
+  if (border_latch < 0) {
+    border_latch = 0;
+  }
+  if (border_latch == 0) {
+    a = analysers.analyser + border_analyser;
+    if (!a->state.max && a->ostate.max) {
+      if (change_mode & RND_BORDER_MODE) {
+	border_def_t borderdef;
+	border_get_def(borderdef,(unsigned short)rand());
+	border_customize(lpo_texid, borderdef);
+      }
+      border_latch = 0.3;
+    }
+  }
+
 	
   /* Calculate zoom factor */
   { 
@@ -405,8 +420,6 @@ static int anim(unsigned int ms)
 
 static int start(void)
 {
-  obj_driver_t *o;
-
   init_analysers(&analysers);
 
   change_cnt = 0;
@@ -420,41 +433,17 @@ static int start(void)
 
   flash = 0;
   ozoom = 0;
-
   curobj = 0;
-
-  /* $$$ */
-#if DEBUG
-  {
-    any_driver_t *d;
-    for (d=obj_drivers.drivers; d; d=d->nxt) {
-      SDDEBUG("OBJECT: %s\n", d->name);
-    }
-  }
-#endif
-
-
-  /* Select mine_3 as 1st object */
-  o = find_object("bebop");
-  if (!o) {
-    /* If it does not exist, try another */
-    o = random_object(curobj);
-  }
-  /* No object : failed */
-  if (!o) {
-    return -1;
-  }
-  /* Start this object */
-  if (change_object(o)) {
-    return -1;
-  }
-
+  change_object(random_object(0));
   return 0;
 }
 
 static int stop(void)
 {
-  curobj = 0;
+  if (curobj) {
+    driver_dereference(&curobj->common);
+    curobj = 0;
+  }
   return 0;
 }
 
@@ -477,11 +466,11 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
   if ((change_mode&RANDOM_MODE) && (change_cnt += elapsed_ms) >= change_time) {
     change_cnt -= change_time;
     change_object(random_object(curobj));
+    if (!curobj) {
+      return -1;
+    }
   }
-
   anim(elapsed_ms);
-
-
   if (lpo_remanens) {
     remanens_push(&curobj->obj, mtx, ++lpo_iframe);
   }
@@ -563,7 +552,6 @@ static int init(any_driver_t *d)
   }
   border_get_def(borderdef, 1);
   border_customize(lpo_texid, borderdef);
-
   bands = fft_create_bands(3,limits);
 
   return -(lpo_texid < 0 || !bands);;
@@ -660,8 +648,11 @@ static int lua_setchange(lua_State * L)
 {
   int mode = change_mode;
   float time = (float)change_time/1000.0f, new_time;
+  int n = lua_gettop(L);
   
-  change_mode = lua_tonumber(L,1);
+  if (n>=1 && lua_type(L,1) != LUA_TNIL) {
+    change_mode = lua_tonumber(L,1);
+  }
   new_time = lua_tonumber(L,2) * 1000.0f;
   if (new_time > 0) {
     change_time = new_time;
@@ -738,7 +729,7 @@ static luashell_command_description_t commands[] = {
     "lpo_setchange", 0,            /* long and short names */
     "print [["
     "lpo_setchange(type [, time]) : Set object change properties. "
-    "type [0,nil:no-change 1:random 2:flash 3 random and flash."
+    "type bit0:random-object bit1:active-flash bit2:auto-border."
     "Return old values."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_setchange    /* function */
