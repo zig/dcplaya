@@ -1,34 +1,39 @@
 --
 -- This is main DCplaya lua script
 --
--- $Id: dcplayarc.lua,v 1.18 2002-09-30 02:28:56 vincentp Exp $
+-- $Id: dcplayarc.lua,v 1.19 2002-10-16 23:59:49 benjihan Exp $
 --
 
 showconsole()
 
 print ("Welcome to DCplaya !\n")
-
-print ("Home is set to '", home, "'\n")
-
+print (format("Home is set to '%s'", home))
 
 -- standard stuffs
-dofile (home.."lua/basic.lua")
-dofile (home.."lua/evt.lua")
-dofile (home.."lua/dirfunc.lua")
-dofile (home.."lua/shell.lua")
-dofile (home.."lua/zed.lua")
-dofile (home.."lua/keyboard_emu.lua")
-dofile (home.."lua/gui.lua")
+dolib ("basic")
+dolib ("evt")
+dolib ("dirfunc")
+dolib ("shell")
+dolib ("zed")
+dolib ("keyboard_emu")
+dolib ("gui")
 
+--dofile (home.."lua/basic.lua")
+--dofile (home.."lua/evt.lua")
+--dofile (home.."lua/dirfunc.lua")
+--dofile (home.."lua/shell.lua")
+--dofile (home.."lua/zed.lua")
+--dofile (home.."lua/keyboard_emu.lua")
+--dofile (home.."lua/gui.lua")
 
 -- reading directory on PC is slow through serial port, 
 -- so we precalculate available plugins instead of doing a dir_load command
-plug_spc	= home.."plugins/inp/spc/spc.lez"
-plug_xing	= home.."plugins/inp/xing/xing.lez"
+plug_spc		= home.."plugins/inp/spc/spc.lez"
+plug_xing		= home.."plugins/inp/xing/xing.lez"
 plug_sidplay	= home.."plugins/inp/sidplay/sidplay.lez"
-plug_sc68	= home.."plugins/inp/sc68/sc68.lez"
-plug_mikmod	= home.."plugins/inp/mikmod/mikmod.lez"
-plug_ogg	= home.."plugins/inp/ogg/ogg.lez"
+plug_sc68		= home.."plugins/inp/sc68/sc68.lez"
+plug_mikmod		= home.."plugins/inp/mikmod/mikmod.lez"
+plug_ogg		= home.."plugins/inp/ogg/ogg.lez"
 
 plug_obj	= home.."plugins/obj/obj.lez"
 plug_lpo	= home.."plugins/vis/lpo/lpo.lef"

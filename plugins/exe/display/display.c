@@ -5,282 +5,52 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.6 2002-10-14 23:32:11 benjihan Exp $
+ * $Id: display.c,v 1.7 2002-10-16 23:59:50 benjihan Exp $
  */
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
+#include "luashell.h"
 #include "lef.h"
-#include "lua.h"
-#include "any_driver.h"
 #include "driver_list.h"
 #include "obj3d.h"
 #include "gp.h"
 #include "draw_object.h"
-#include "display_list.h"
 
-extern any_driver_t display_driver;
+#include "display_driver.h"
 
-#define DRIVER_NAME "display"
+/* display_matrix.c */
+DL_FUNCTION_DECLARE(init_matrix_type);
+DL_FUNCTION_DECLARE(shutdown_matrix_type);
+DL_FUNCTION_DECLARE(set_trans);
+DL_FUNCTION_DECLARE(get_trans);
+DL_FUNCTION_DECLARE(mat_new);
+DL_FUNCTION_DECLARE(mat_mult);
+DL_FUNCTION_DECLARE(mat_rotx);
+DL_FUNCTION_DECLARE(mat_roty);
+DL_FUNCTION_DECLARE(mat_rotz);
+DL_FUNCTION_DECLARE(mat_scale);
+DL_FUNCTION_DECLARE(mat_trans);
+DL_FUNCTION_DECLARE(mat_li);
+DL_FUNCTION_DECLARE(mat_co);
+DL_FUNCTION_DECLARE(mat_el);
 
+/* display_text.c */
+DL_FUNCTION_DECLARE(draw_text);
+DL_FUNCTION_DECLARE(measure_text);
 
-/* matrix LUA interface */
+/* display_box.c */
+DL_FUNCTION_DECLARE(draw_box1);
+DL_FUNCTION_DECLARE(draw_box2);
+DL_FUNCTION_DECLARE(draw_box4);
 
-static int matrix_tag;
+/* display_clipping.c */
+DL_FUNCTION_DECLARE(set_clipping);
+DL_FUNCTION_DECLARE(get_clipping);
 
-#define CHECK_MATRIX(i) \
-  if (lua_tag(L, i) != matrix_tag) { \
-    printf("%s : argument #%d is not a matrix\n", __FUNCTION__, i); \
-    return 0; \
-  } else
-
-static float * NEW_MATRIX()
-{
-  driver_reference(&display_driver);
-  return malloc(sizeof(matrix_t));
-}
-
-
-static int lua_mat_gc(lua_State * L)
-{
-  free(lua_touserdata(L, 1));
-  driver_dereference(&display_driver);
-  return 0;
-}
-
-static int lua_mat_mult(lua_State * L)
-{
-  float * r;
-
-  CHECK_MATRIX(1);
-  CHECK_MATRIX(2);
-
-  r = NEW_MATRIX();
-  memcpy(r, lua_touserdata(L, 1), sizeof(matrix_t));
-  MtxMult(* (matrix_t *) r, * (matrix_t *) (float *) lua_touserdata(L, 2));
-
-  lua_settop(L, 0);
-  lua_pushusertag(L, r, matrix_tag);
-  return 1;
-}
-
-static void lua_init_matrix_type(lua_State * L)
-{
-  matrix_tag = lua_newtag(L);
-
-  lua_pushcfunction(L, lua_mat_gc);
-  lua_settagmethod(L, matrix_tag, "gc");
-  
-  lua_pushcfunction(L, lua_mat_mult);
-  lua_settagmethod(L, matrix_tag, "mul");
-  
-}
-
-static void lua_shutdown_matrix_type(lua_State * L)
-{
-}
-
-static int lua_mat_new(lua_State * L)
-{
-  float * r;
-
-  r = NEW_MATRIX();
-
-  MtxIdentity(* (matrix_t *) r);
-
-  lua_settop(L, 0);
-  lua_pushusertag(L, r, matrix_tag);
-  return 1;
-}
-
-#define Cos fcos
-#define Sin fsin
-#define Inv(a) (1.0f/(a))
-
-static void myMtxRotateX(matrix_t m2, const float a)
-{
-  const float ca = Cos(a);
-  const float sa = Sin(a);
-  MtxIdentity(m2);
-  m2[1][1] = m2[2][2] = ca;
-  m2[1][2] = sa;
-  m2[2][1] = -sa;
-}
-
-static void myMtxRotateY(matrix_t m2, const float a)
-{
-  const float ca = Cos(a);
-  const float sa = Sin(a);
-  MtxIdentity(m2);
-  m2[0][0] = m2[2][2] = ca;
-  m2[2][0] = sa;
-  m2[0][2] = -sa;
-}
-
-static void myMtxRotateZ(matrix_t m2, const float a)
-{
-  const float ca = Cos(a);
-  const float sa = Sin(a);
-  MtxIdentity(m2);
-  m2[0][0] = m2[1][1] = ca;
-  m2[0][1] = sa;
-  m2[1][0] = -sa;
-}
-
-static int lua_mat_rotx(lua_State * L)
-{
-  float * r;
-
-  r = NEW_MATRIX();
-
-  myMtxRotateX(* (matrix_t *) r, lua_tonumber(L, 1));
-
-  lua_pushusertag(L, r, matrix_tag);
-  return 1;
-}
-
-static int lua_mat_roty(lua_State * L)
-{
-  float * r;
-
-  r = NEW_MATRIX();
-
-  myMtxRotateY(* (matrix_t *) r, lua_tonumber(L, 1));
-
-  lua_pushusertag(L, r, matrix_tag);
-  return 1;
-}
-
-static int lua_mat_rotz(lua_State * L)
-{
-  float * r;
-
-  r = NEW_MATRIX();
-
-  myMtxRotateZ(* (matrix_t *) r, lua_tonumber(L, 1));
-
-  lua_pushusertag(L, r, matrix_tag);
-  return 1;
-}
-
-static int lua_mat_scale(lua_State * L)
-{
-  float * r;
-
-  r = NEW_MATRIX();
-
-  memset(r, 0, sizeof(matrix_t));
-  r[0] = lua_tonumber(L, 1);
-  r[5] = lua_tonumber(L, 2);
-  r[10] = lua_tonumber(L, 3);
-  r[15] = 1.0f;
-
-  lua_pushusertag(L, r, matrix_tag);
-  return 1;
-}
-
-static int lua_mat_trans(lua_State * L)
-{
-  float * r;
-
-  r = NEW_MATRIX();
-
-  MtxIdentity(* (matrix_t *) r);
-  r[12] = lua_tonumber(L, 1);
-  r[13] = lua_tonumber(L, 2);
-  r[14] = lua_tonumber(L, 3);
-  r[15] = 1.0f/* + lua_tonumber(L, 4)*/;
-
-  lua_pushusertag(L, r, matrix_tag);
-  return 1;
-}
-
-static int lua_mat_li(lua_State * L)
-{
-  int n = lua_gettop(L), l;
-  matrix_t *m;
-  
-  CHECK_MATRIX(1);
-  m = (matrix_t *) (float *) lua_touserdata(L, 1);
-
-  if (n != 2) {
-	printf("mat_li : bad arguments\n");
-	return 0;
-  }
-
-  l = lua_tonumber(L,2);
-  if (l<0 || l>3) {
-	printf("mat_li : invalid index %d\n", l);
-	return 0;
-  }
-
-  lua_settop(L,0);
-  lua_newtable(L);
-  for (n=0; n<4; ++n) {
-	lua_pushnumber(L, n+1);
-	lua_pushnumber(L, (*m)[l][n]);
-	lua_rawset(L, 1);
-  }
-  return 1;
-}
-
-static int lua_mat_co(lua_State * L)
-{
-  int n = lua_gettop(L), l;
-  matrix_t *m;
-  
-  CHECK_MATRIX(1);
-  m = (matrix_t *) (float *) lua_touserdata(L, 1);
-
-  if (n != 2) {
-	printf("mat_co : bad arguments\n");
-	return 0;
-  }
-
-  l = lua_tonumber(L,2);
-  if (l<0 || l>3) {
-	printf("mat_co : invalid index %d\n", l);
-	return 0;
-  }
-
-  lua_settop(L,0);
-  lua_newtable(L);
-  for (n=0; n<4; ++n) {
-	lua_pushnumber(L, n+1);
-	lua_pushnumber(L, (*m)[n][l]);
-	lua_rawset(L, 1);
-  }
-  return 1;
-}
-
-static int lua_mat_el(lua_State * L)
-{
-  int n = lua_gettop(L), l;
-  matrix_t *m;
-  
-  CHECK_MATRIX(1);
-  m = (matrix_t *) (float *) lua_touserdata(L, 1);
-
-  if (n != 3) {
-	printf("mat_el : bad arguments\n");
-	return 0;
-  }
-
-  l = lua_tonumber(L,2);
-  n = lua_tonumber(L,3);
-  if (l<0 || l>3 || n<0 || n>3) {
-	printf("mat_el : invalid index %d,%d\n", l, n);
-	return 0;
-  }
-
-  lua_settop(L,0);
-  lua_pushnumber(L, (*m)[l][n]);
-  return 1;
-}
 
 /* display list LUA interface */
-static int dl_list_tag;
+int dl_list_tag;
 
 static void lua_init_dl_type(lua_State * L)
 {
@@ -346,18 +116,6 @@ static int lua_new_list(lua_State * L)
 
   return 0;
 }
-
-#define DL_FUNCTION_START(name) \
-  static int lua_##name(lua_State * L) \
-  { \
-    dl_list_t * dl; \
-    if (lua_tag(L, 1) != dl_list_tag) { \
-      printf("dl_" #name " : first parameter is not a list\n"); \
-      return 0; \
-    } \
-    dl = lua_touserdata(L, 1);
-
-#define DL_FUNCTION_END() }
 
 
 DL_FUNCTION_START(destroy_list)
@@ -436,334 +194,6 @@ DL_FUNCTION_START(clear)
 }
 DL_FUNCTION_END()
 
-struct dl_clipping_command {
-  dl_command_t uc;
-
-  float x1, y1, x2, y2;
-};
-
-void dl_render_clipping(void * pcom)
-{
-  struct dl_clipping_command * c = pcom;
-  draw_set_clipping(dl_trans[0][0] * c->x1 + dl_trans[3][0], 
-					dl_trans[1][1] * c->y1 + dl_trans[3][1], 
-					dl_trans[0][0] * c->x2 + dl_trans[3][0], 
-					dl_trans[1][1] * c->y2 + dl_trans[3][1]);
-
-/*   printf("set clipping [%f %f %f %f]\n", */
-/* 		 dl_trans[0][0] * c->x1 + dl_trans[3][0],  */
-/* 		 dl_trans[1][1] * c->y1 + dl_trans[3][1],  */
-/* 		 dl_trans[0][0] * c->x2 + dl_trans[3][0],  */
-/* 		 dl_trans[1][1] * c->y2 + dl_trans[3][1]); */
-
-}
-
-void dl_set_clipping(dl_list_t * dl,
-					 float x1, float y1, float x2, float y2)
-{
-  struct dl_clipping_command * c = dl_alloc(dl, sizeof(*c));
-
-  if (c) {
-    c->x1 = x1; c->y1 = y1; c->x2 = x2; c->y2 = y2;
-    dl_insert(dl, c, 0, dl_render_clipping);
-  }
-}
-
-struct dl_draw_box1_command {
-  dl_command_t uc;
-
-  float x1, y1, x2, y2, z;
-  float a, r, g, b;
-};
-
-struct dl_draw_box2_command {
-  dl_command_t uc;
-
-  int type; /* Gradiant type : 0:diagonal 1:horizontal 2:vertical */
-  float x1, y1, x2, y2, z;
-  float a1, r1, g1, b1;
-  float a2, r2, g2, b2;
-};
-
-struct dl_draw_box4_command {
-  dl_command_t uc;
-
-  float x1, y1, x2, y2, z;
-  float a1, r1, g1, b1;
-  float a2, r2, g2, b2;
-  float a3, r3, g3, b3;
-  float a4, r4, g4, b4;
-};
-
-
-void dl_draw_box1_render_transparent(void * pcom)
-{
-  struct dl_draw_box1_command * c = pcom;
-
-  draw_box1(dl_trans[0][0] * c->x1 + dl_trans[3][0], 
-			dl_trans[1][1] * c->y1 + dl_trans[3][1], 
-			dl_trans[0][0] * c->x2 + dl_trans[3][0], 
-			dl_trans[1][1] * c->y2 + dl_trans[3][1], 
-			dl_trans[2][2] * c->z  + dl_trans[3][2], 
-			dl_color[0] * c->a, dl_color[1] * c->r, 
-			dl_color[2] * c->g, dl_color[3] * c->b);
-}
-
-void dl_draw_box2_render_transparent(void * pcom)
-{
-  struct dl_draw_box2_command * c = pcom;  
-  void (*f)(float, float, float, float, float, float, float, float, float,
-			float, float, float, float) = draw_box2d;
-
-  switch(c->type) {
-  case 1:
-	f = draw_box2h;
-	break;
-  case 2:
-	f = draw_box2v;
-	break;
-  }
-  f(dl_trans[0][0] * c->x1 + dl_trans[3][0], 
-	dl_trans[1][1] * c->y1 + dl_trans[3][1], 
-	dl_trans[0][0] * c->x2 + dl_trans[3][0], 
-	dl_trans[1][1] * c->y2 + dl_trans[3][1], 
-	dl_trans[2][2] * c->z + dl_trans[3][2], 
-	dl_color[0] * c->a1, dl_color[1] * c->r1, 
-	dl_color[2] * c->g1, dl_color[3] * c->b1, 
-	dl_color[0] * c->a2, dl_color[1] * c->r2, 
-	dl_color[2] * c->g2, dl_color[3] * c->b2);
-}
-
-void dl_draw_box4_render_transparent(void * pcom)
-{
-  struct dl_draw_box4_command * c = pcom;
-
-  draw_box4(dl_trans[0][0] * c->x1 + dl_trans[3][0], 
-			dl_trans[1][1] * c->y1 + dl_trans[3][1], 
-			dl_trans[0][0] * c->x2 + dl_trans[3][0], 
-			dl_trans[1][1] * c->y2 + dl_trans[3][1], 
-			dl_trans[2][2] * c->z  + dl_trans[3][2], 
-			dl_color[0] * c->a1, dl_color[1] * c->r1, 
-			dl_color[2] * c->g1, dl_color[3] * c->b1, 
-			dl_color[0] * c->a2, dl_color[1] * c->r2, 
-			dl_color[2] * c->g2, dl_color[3] * c->b2,
-			dl_color[0] * c->a3, dl_color[1] * c->r3, 
-			dl_color[2] * c->g3, dl_color[3] * c->b3, 
-			dl_color[0] * c->a4, dl_color[1] * c->r4, 
-			dl_color[2] * c->g4, dl_color[3] * c->b4);
-}
-
-
-void dl_draw_box1(dl_list_t * dl,
-				  float x1, float y1, float x2, float y2, float z,
-				  float a, float r, float g, float b)
-{
-  struct dl_draw_box1_command * c = dl_alloc(dl, sizeof(*c));
-
-  if (c) {
-    c->x1 = x1; c->y1 = y1; c->x2 = x2; c->y2 = y2; c->z = z;
-    c->a = a;   c->r = r;   c->g = g;   c->b = b;
-    c->a = a;   c->r = r;   c->g = g;   c->b = b;
-    dl_insert(dl, c, 0, dl_draw_box1_render_transparent);
-  }
-}
-
-void dl_draw_box2(dl_list_t * dl, int type,
-				  float x1, float y1, float x2, float y2, float z,
-				  float a1, float r1, float g1, float b1,
-				  float a2, float r2, float g2, float b2)
-{
-  struct dl_draw_box2_command * c = dl_alloc(dl, sizeof(*c));
-
-  if (c) {
-	c->type = type;
-    c->x1 = x1;    c->y1 = y1;    c->x2 = x2;    c->y2 = y2;    c->z = z;
-    c->a1 = a1;    c->r1 = r1;    c->g1 = g1;    c->b1 = b1;
-    c->a2 = a2;    c->r2 = r2;    c->g2 = g2;    c->b2 = b2;
-    dl_insert(dl, c, 0, dl_draw_box2_render_transparent);
-  }
-}
-
-void dl_draw_box4(dl_list_t * dl,
-				  float x1, float y1, float x2, float y2, float z,
-				  float a1, float r1, float g1, float b1,
-				  float a2, float r2, float g2, float b2,
-				  float a3, float r3, float g3, float b3,
-				  float a4, float r4, float g4, float b4)
-{
-  struct dl_draw_box4_command * c = dl_alloc(dl, sizeof(*c));
-
-  if (c) {
-    c->x1 = x1;    c->y1 = y1;    c->x2 = x2;    c->y2 = y2;    c->z = z;
-    c->a1 = a1;    c->r1 = r1;    c->g1 = g1;    c->b1 = b1;
-    c->a2 = a2;    c->r2 = r2;    c->g2 = g2;    c->b2 = b2;
-    c->a3 = a3;    c->r3 = r3;    c->g3 = g3;    c->b3 = b3;
-    c->a4 = a4;    c->r4 = r4;    c->g4 = g4;    c->b4 = b4;
-    dl_insert(dl, c, 0, dl_draw_box4_render_transparent);
-  }
-}
-
-DL_FUNCTION_START(draw_box1)
-{
-  dl_draw_box1(dl, 
-			   lua_tonumber(L, 2), /* X1 */
-			   lua_tonumber(L, 3), /* Y1 */
-			   lua_tonumber(L, 4), /* X2 */
-			   lua_tonumber(L, 5), /* Y2 */
-			   lua_tonumber(L, 6), /* Z  */
-			   lua_tonumber(L, 7), /* A  */
-			   lua_tonumber(L, 8), /* R  */
-			   lua_tonumber(L, 9), /* G  */
-			   lua_tonumber(L, 10) /* B  */
-			   );
-  return 0;
-}
-DL_FUNCTION_END()
-
-DL_FUNCTION_START(draw_box2)
-{
-  dl_draw_box2(dl, 
-			   lua_tonumber(L, 15), /* TYPE */
-			   lua_tonumber(L, 2),  /* X1 */
-			   lua_tonumber(L, 3),  /* Y1 */
-			   lua_tonumber(L, 4),  /* X2 */
-			   lua_tonumber(L, 5),  /* Y2 */
-			   lua_tonumber(L, 6),  /* Z  */
-			   lua_tonumber(L, 7),  /* A1 */
-			   lua_tonumber(L, 8),  /* R1 */
-			   lua_tonumber(L, 9),  /* G1 */
-			   lua_tonumber(L, 10), /* B1 */
-			   lua_tonumber(L, 11), /* A2 */
-			   lua_tonumber(L, 12), /* R2 */
-			   lua_tonumber(L, 13), /* G2 */
-			   lua_tonumber(L, 14)  /* B2 */
-			   );
-  return 0;
-}
-DL_FUNCTION_END()
-
-DL_FUNCTION_START(draw_box4)
-{
-  dl_draw_box4(dl, 
-			   lua_tonumber(L, 2),  /* X1 */
-			   lua_tonumber(L, 3),  /* Y1 */
-			   lua_tonumber(L, 4),  /* X2 */
-			   lua_tonumber(L, 5),  /* Y2 */
-			   lua_tonumber(L, 6),  /* Z  */
-			   lua_tonumber(L, 7),  /* A1 */
-			   lua_tonumber(L, 8),  /* R1 */
-			   lua_tonumber(L, 9),  /* G1 */
-			   lua_tonumber(L, 10), /* B1 */
-			   lua_tonumber(L, 11), /* A2 */
-			   lua_tonumber(L, 12), /* R2 */
-			   lua_tonumber(L, 13), /* G2 */
-			   lua_tonumber(L, 14), /* B2 */
-			   lua_tonumber(L, 15), /* A3 */
-			   lua_tonumber(L, 16), /* R3 */
-			   lua_tonumber(L, 17), /* G3 */
-			   lua_tonumber(L, 18), /* B3 */
-			   lua_tonumber(L, 19), /* A4 */
-			   lua_tonumber(L, 20), /* R4 */
-			   lua_tonumber(L, 21), /* G4 */
-			   lua_tonumber(L, 22)  /* B4 */
-			   );
-  return 0;
-}
-DL_FUNCTION_END()
-
-DL_FUNCTION_START(set_clipping)
-{
-  dl_set_clipping(dl, 
-				  lua_tonumber(L, 2),  /* X1 */
-				  lua_tonumber(L, 3),  /* Y1 */
-				  lua_tonumber(L, 4),  /* X2 */
-				  lua_tonumber(L, 5)   /* Y2 */
-				  );
-  return 0;
-}
-DL_FUNCTION_END()
-
-
-struct dl_draw_text_command {
-  dl_command_t uc;
-  
-  char * text;
-  float x, y, z, a, r, g, b;
-};
-
-void dl_draw_text_render_transparent(void * pcom)
-{
-  struct dl_draw_text_command * c = pcom;  
-
-  text_set_color(c->a * dl_color[0], c->r * dl_color[1],
-				 c->g * dl_color[2], c->b * dl_color[3]);
-  text_draw_str(dl_trans[0][0] * c->x + dl_trans[3][0],
-				dl_trans[1][1] * c->y + dl_trans[3][1],
-				dl_trans[2][2] * c->z + dl_trans[3][2],
-				c->text);
-}
-
-void dl_draw_text(dl_list_t * dl, 
-		  float x, float y, float z,
-		  float a, float r, float g, float b,
-		  const char * text)
-{
-  struct dl_draw_text_command * c = dl_alloc(dl, sizeof(*c));
-
-  if (c) {
-    c->x = x;    c->y = y;    c->z = z;
-    c->a = a;    c->r = r;    c->g = g;    c->b = b;
-    c->text = dl_alloc(dl, strlen(text)+1);
-    if (c->text) {
-      strcpy(c->text, text);
-      dl_insert(dl, c, 0, dl_draw_text_render_transparent);
-    }
-  }
-}
-
-DL_FUNCTION_START(draw_text)
-{
-  dl_draw_text(dl, 
-	      lua_tonumber(L, 2),
-	      lua_tonumber(L, 3),
-	      lua_tonumber(L, 4),
-	      lua_tonumber(L, 5),
-	      lua_tonumber(L, 6),
-	      lua_tonumber(L, 7),
-	      lua_tonumber(L, 8),
-	      lua_tostring(L, 9)
-	      );
-  return 0;
-}
-DL_FUNCTION_END()
-
-
-DL_FUNCTION_START(measure_text)
-{
-  lua_pushnumber(L, text_measure_str(lua_tostring(L, 2)));
-  lua_pushnumber(L, 16); // this is constant for now !!!
-  return 2;
-}
-DL_FUNCTION_END()
-
-DL_FUNCTION_START(set_trans)
-{
-  CHECK_MATRIX(2);
-  dl_set_trans(dl, lua_touserdata(L, 2));
-  return 0;
-}
-DL_FUNCTION_END()
-
-DL_FUNCTION_START(get_trans)
-{
-  float * mat = NEW_MATRIX();
-  memcpy(mat, dl_get_trans(dl), sizeof(matrix_t));
-  lua_settop(L, 0);
-  lua_pushusertag(L, mat, matrix_tag);
-  return 1;
-}
-DL_FUNCTION_END()
-
 DL_FUNCTION_START(set_color)
 {
   dl_color_t col = { 
@@ -793,13 +223,11 @@ DL_FUNCTION_END()
 
 static int display_init(any_driver_t *d)
 {
-
   return 0;
 }
 
 static int display_shutdown(any_driver_t * d)
 {
-
   return 0;
 }
 
@@ -810,7 +238,6 @@ static driver_option_t * display_options(any_driver_t * d, int idx,
   return o;
 }
 
-#include "luashell.h"
 
 static int init;
 
@@ -837,7 +264,6 @@ static int lua_init(lua_State * L)
 
 static int lua_shutdown(lua_State * L)
 {
-
   if (!init) {
     printf("display_driver_shutdown called more than once !\n");
 
@@ -848,33 +274,37 @@ static int lua_shutdown(lua_State * L)
 
   printf("display_driver_shutdown called\n");
 
-
   lua_shutdown_dl_type(L);
   lua_shutdown_matrix_type(L);
-  
 
   return 0;
 }
 
 static luashell_command_description_t display_commands[] = {
+
+  /* general commands */
+
   {
     DRIVER_NAME"_driver_init", 0,            /* long and short names */
     "print [["
-      DRIVER_NAME"_driver_init : INTERNAL ; initialize lua side display driver "
+	DRIVER_NAME"_driver_init : "
+	"INTERNAL ; initialize lua side display driver "
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_init            /* function */
   },
   {
     DRIVER_NAME"_driver_shutdown", 0,        /* long and short names */
     "print [["
-      DRIVER_NAME"_driver_shutdown : INTERNAL ; shut down lua side display driver "
+	DRIVER_NAME"_driver_shutdown : "
+	"INTERNAL ; shut down lua side display driver "
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_shutdown        /* function */
   },
   {
     "dl_new_list", 0,                    /* long and short names */
     "print [["
-      "dl_new_list(heapsize, active) : create a new display list, return handle on display list"
+	"dl_new_list(heapsize, active) : "
+	"create a new display list, return handle on display list"
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_new_list        /* function */
   },
@@ -924,19 +354,29 @@ static luashell_command_description_t display_commands[] = {
     SHELL_COMMAND_C, lua_get_active      /* function */
   },
   {
+    "dl_set_color", 0,                   /* long and short names */
+    "print [["
+      "dl_set_color(list, color) : set the global color"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_set_color       /* function */
+  },
+  {
+    "dl_get_color", 0,                   /* long and short names */
+    "print [["
+      "dl_get_color(list) : get the color"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_get_color       /* function */
+  },
+  {
     "dl_clear", 0,                       /* long and short names */
     "print [["
       "dl_clear(list) : get clear"
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_clear           /* function */
   },
-  {
-    "dl_set_clipping", 0,                /* long and short names */
-    "print [["
-	"dl_set_clipping(list, x1, y1, x2, y2) : set clipping box"
-    "]]",                                /* usage */
-    SHELL_COMMAND_C, lua_set_clipping    /* function */
-  },
+
+  /* box interface */
+
   {
     "dl_draw_box1", 0,                    /* long and short names */
     "print [["
@@ -965,6 +405,8 @@ static luashell_command_description_t display_commands[] = {
     SHELL_COMMAND_C, lua_draw_box4       /* function */
   },
 
+  /* text interface */
+
   {
     "dl_draw_text", 0,                   /* long and short names */
     "print [["
@@ -979,6 +421,9 @@ static luashell_command_description_t display_commands[] = {
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_measure_text    /* function */
   },
+
+  /* matrix interface */
+
   {
     "dl_set_trans", 0,                   /* long and short names */
     "print [["
@@ -992,20 +437,6 @@ static luashell_command_description_t display_commands[] = {
       "dl_get_trans(list) : get the transformation, return a matrix"
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_get_trans       /* function */
-  },
-  {
-    "dl_set_color", 0,                   /* long and short names */
-    "print [["
-      "dl_set_color(list, color) : set the global color"
-    "]]",                                /* usage */
-    SHELL_COMMAND_C, lua_set_color       /* function */
-  },
-  {
-    "dl_get_color", 0,                   /* long and short names */
-    "print [["
-      "dl_get_color(list) : get the color"
-    "]]",                                /* usage */
-    SHELL_COMMAND_C, lua_get_color       /* function */
   },
   {
     "mat_new", 0,                        /* long and short names */
@@ -1076,6 +507,24 @@ static luashell_command_description_t display_commands[] = {
       "mat_el(mat, l, c) : get matrix element"
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_mat_el          /* function */
+  },
+
+  /* clipping interface */
+
+  {
+	"dl_set_clipping", 0,                /* long and short names */
+	"print [["
+	"dl_set_clipping(list, x1, y1, x2, y2) : set clipping box"
+	"]]",                                /* usage */
+	SHELL_COMMAND_C, lua_set_clipping    /* function */
+  },
+  
+  {
+	"dl_get_clipping", 0,                /* long and short names */
+	"print [["
+	"dl_get_clipping(list) : get clipping box {x1,y1,x2,y2}"
+	"]]",                                /* usage */
+	SHELL_COMMAND_C, lua_get_clipping    /* function */
   },
 
   {0},                                   /* end of the command list */

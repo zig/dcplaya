@@ -3,6 +3,8 @@
  *  @author benjamin gerard <ben@sashipa.com>
  *  @date   2002/10/02
  *  @brief  Make a SEGA VMS file header, including icon data
+ *
+ *  $Id: mkvmuheader.cxx,v 1.2 2002-10-16 23:59:50 benjihan Exp $
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,6 +32,9 @@ class uint16
     v0 = w&255;
     v1 = w>>8;
   }
+  operator int(void) const {
+    return v0 + (v1<<8);
+  }
     
 };
 
@@ -45,6 +50,10 @@ class uint32
   uint32(int w) :
     v0(w), v1(w>>16) {
   }
+  operator int(void) const {
+    return v0 + (v1<<16);
+  }
+
 };
 
 struct pix32_t
@@ -62,7 +71,7 @@ struct pix32_t
       Sq(r - p->r) +
       Sq(g - p->g) +
       Sq(b - p->b) +
-      2 * Sq(a - p->a);
+      0 * Sq(a - p->a); // Alpha does not seem to be handle by DC, forget it !
   }
 
   void blend(pix32_t * p) {
@@ -78,6 +87,10 @@ struct pix32_t
     cnt += p->cnt;
     p->cnt = 0;
     p->rel = rel;
+  }
+
+  operator int(void) const {
+    return (a<<24) | (r<<16) | (g<<8) | b;
   }
 
 };
@@ -208,6 +221,7 @@ struct vmu_fileheader {
     memcpy(tmp, appli, sizeof(appli));
     tmp[sizeof(appli)] = 0;
     printf("appli     [%s]\n", tmp);
+    printf("speed     [%d]\n", (int)anim_speed);
   }
 };
 
@@ -471,15 +485,8 @@ static int cmp_color(const void *a, const void *b)
 {
   int v,w;
 
-  v  = (0xf0 & ((const pix32_t *)a)->a)>>4;
-  v |= (0xf0 & ((const pix32_t *)a)->r);
-  v |= (0xf0 & ((const pix32_t *)a)->g)<<4;
-  v |= (0xf0 & ((const pix32_t *)a)->b)<<8;
-
-  w  = (0xf0 & ((const pix32_t *)b)->a)>>4;
-  w |= (0xf0 & ((const pix32_t *)b)->r);
-  w |= (0xf0 & ((const pix32_t *)b)->g)<<4;
-  w |= (0xf0 & ((const pix32_t *)b)->b)<<8;
+  v = ((*(const pix32_t *)a) & 0xf0f0f0f0) >> 4;
+  w = ((*(const pix32_t *)b) & 0xf0f0f0f0) >> 4;
 
   return v-w;
 }
@@ -629,9 +636,9 @@ static int palette(img_t *img, pix32_t * pal, int n)
 //     }
 //   }
 
-//   for (i=0; i<n; ++i) {
-//     printf("pal[%3d] : ",i); dump_pix(pal + i);
-//   }
+  for (i=0; i<n; ++i) {
+    printf("pal[%3d] : ",i); dump_pix(pal + i);
+  }
 
   sort_by_index(img->pix, npix);
 
@@ -648,22 +655,48 @@ static const char * basename(const char *name)
 static int usage(const char *name)
 {
   printf("\n"
-	 "%s : Make vmu file header.\n"
+	 "%s : Make SEGA(tm) Dreamcast(tm) VMU file header.\n"
 	 "(c) 2002 Benjamin Gerard <ben@sashipa.com>\n"
 	 "\n"
-	 "Usage : %s <vms-desc> <long-desc> <appli> <icons.tga> <output>\n"
+	 "Usage : %s <name> <desc> <appli> <icons.tga> <speed> <output>\n"
 	 "\n"
-	 "  vms-desc  :\n"
-	 "  long-desc :\n"
-	 "  appli     :\n"
-	 "  icons.tga :\n"
-	 "  output    :\n"
+	 "  name      : VMS file name (max 16 char).\n"
+	 "  desc      : File description (max 32 char).\n"
+	 "  appli     : Application name (max 16 char).\n"
+	 "  icons.tga : Icons source (TGA no RLE width:32 Height:32,64,96)\n"
+	 "              Only tested with 32bit pixel format,\n"
+	 "              but should support 15,16 and 24.\n"
+	 "  speed     : Animation speed (in frame).\n"
+	 "  output    : Output file.\n"
 	 "\n",
 	 name, name);
   return 1;
 }
 
 static uint8 data[32*3][16];
+
+// static int get_option(const char *opt, const char *name, const char **res)
+// {
+//   const char * s = strstr(opt,name);
+//   if (s == opt) {
+//     *res = opt+strlen(name);
+//     return 1;
+//   }
+//   return 0;
+// }
+
+// static int get_option(const char *opt, const char *name, int  **res)
+// {
+//   const char * s = strstr(opt,name);
+//   if (s == opt) {
+//     s += strlen(name);
+//     if (isdigit(*s)) {
+//       **res = atoi(s);
+//       return 1;
+//     }
+//   }
+//   return 0;
+// }
 
 int main(int na, char **a)
 {
@@ -673,8 +706,9 @@ int main(int na, char **a)
   pix32_t pal[16];
 
   const char * vms_desc, * long_desc, * appli, * tga_file, * output;
+  int speed = 4;
 
-  if (na != 6) {
+  if (na != 7) {
     return usage(bname);
   }
 
@@ -682,11 +716,13 @@ int main(int na, char **a)
   long_desc = a[2];
   appli     = a[3];
   tga_file  = a[4];
-  output    = a[5];
-
+  speed     = atoi(a[5]);
+  output    = a[6];
+    
   hd.set_vms_desc(vms_desc);
   hd.set_long_desc(long_desc);
   hd.set_appli(appli);
+  hd.anim_speed = speed;
   hd.dump();
 
   img = load_tga(tga_file);
@@ -709,7 +745,6 @@ int main(int na, char **a)
     return -3;
   }
   hd.set_lut(pal);
-  hd.anim_speed = 4;
   hd.icons = img->h >> 5;
 
   pix32_t * p = img->pix;

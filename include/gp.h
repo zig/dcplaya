@@ -51,17 +51,6 @@ void draw_line(float x1, float y1, float z1, float x2, float y2, float z2,
 			   float w);
 /**@}*/
 
-/** @name Clipping fucntions.
- *  @{
- */
-/** Set clipping box. */
-void draw_set_clipping(const float xmin, const float ymin,
-					   const float xmax, const float ymax);
-/** Gt clipping box. */
-void draw_get_clipping(float * xmin, float * ymin,
-					   float * xmax, float * ymax);
-/**@}*/
-
 /* songmenu.c */
 void song_menu_render();
 

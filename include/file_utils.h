@@ -4,7 +4,7 @@
  * @date    2002/09/30
  * @brief   File manipulation utilities.
  *
- * $Id: file_utils.h,v 1.2 2002-10-03 02:37:26 benjihan Exp $
+ * $Id: file_utils.h,v 1.3 2002-10-16 23:59:50 benjihan Exp $
  */
 
 #ifndef _FILE_UTILS_H_
@@ -41,15 +41,15 @@ enum fu_error_code_e {
  *  return  String corresponding to given error-code.
  */
 const char * fu_strerr(int err);
-
 /**@}*/
 
-
 /** Directory entry. */
-typedef struct
+typedef struct _fu_dirent_s 
 {
-  char name[32]; /**< filename. */
-  int  size;     /**< file size (-1 for directory) */
+/*   struct _fu_dirent_s * next;   /\**< Next entry in directory. *\/ */
+/*   struct _fu_dirent_s * subdir; /\**< Subdirectory *\/ */
+  char name[32];                /**< Filename. */
+  int  size;                    /**< File size (-1 for directory). */
 } fu_dirent_t;
 
 /** @name File existence test functions. 

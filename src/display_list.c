@@ -3,12 +3,10 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.c,v 1.5 2002-10-16 03:02:29 benjihan Exp $
+ * @version   $Id: display_list.c,v 1.6 2002-10-16 23:59:50 benjihan Exp $
  */
 
-
 #include <malloc.h>
-
 #include "display_list.h"
 
 /** this is the list of displayed list */
@@ -54,9 +52,10 @@ dl_list_t * dl_new_list(int heapsize, int active)
   l->color[2] = 1.0f;
   l->color[3] = 1.0f;
 
-/*   l->clipbox[0] = l->clipbox[1] = 0; */
-/*   l->clipbox[1] = 640; */
-/*   l->clipbox[3] = 480; */
+  l->clip_box[0] = 0;
+  l->clip_box[1] = 0;
+  l->clip_box[2] = 640;
+  l->clip_box[3] = 480;
 
   MtxIdentity(l->trans);
 
@@ -180,18 +179,24 @@ void draw_set_clipping(const float,const float,const float,const float);
 static void dl_render(int opaque)
 {
   dl_list_t * l;
+  float save_clip_box[4];
 
   locklists();
+
+  draw_get_clipping(&save_clip_box[0], &save_clip_box[1],
+					&save_clip_box[2], &save_clip_box[3]);
 
   LIST_FOREACH(l, &dl_active_lists, g_list) {
     dl_command_t * c;
 
     lock(l);
-
-	draw_get_clipping(l->save_clip_box+0, l->save_clip_box+1,
-					  l->save_clip_box+2, l->save_clip_box+3);
     memcpy(dl_trans, l->trans, sizeof(dl_trans));
     memcpy(dl_color, l->color, sizeof(dl_color));
+	draw_set_clipping(dl_trans[0][0] * l->clip_box[0] + dl_trans[3][0],
+					  dl_trans[1][1] * l->clip_box[1] + dl_trans[3][1],
+					  dl_trans[0][0] * l->clip_box[2] + dl_trans[3][0],
+					  dl_trans[1][1] * l->clip_box[3] + dl_trans[3][1]);
+
     c = l->command_list;
     while (c) {
       if (opaque) {
@@ -203,12 +208,11 @@ static void dl_render(int opaque)
       }
       c = c->next;
     }
- 	draw_set_clipping(l->save_clip_box[0], l->save_clip_box[1],
- 					  l->save_clip_box[2], l->save_clip_box[3]);
 
     unlock(l);
   }
-
+  draw_set_clipping(save_clip_box[0], save_clip_box[1],
+					save_clip_box[2], save_clip_box[3]);
   unlocklists();
 }
 
@@ -253,7 +257,7 @@ int dl_shutdown()
 }
 
 
-void dl_set_trans(dl_list_t * dl, matrix_t mat)
+void dl_set_trans(dl_list_t * dl, const matrix_t mat)
 {
   memcpy(dl->trans, mat, sizeof(dl->trans));
 }
@@ -263,7 +267,7 @@ float * dl_get_trans(dl_list_t * dl)
   return dl->trans[0];
 }
 
-void dl_set_color(dl_list_t * dl, dl_color_t col)
+void dl_set_color(dl_list_t * dl, const dl_color_t col)
 {
   memcpy(dl->color, col, sizeof(dl->color));
 }
@@ -273,3 +277,12 @@ float * dl_get_color(dl_list_t * dl)
   return dl->color;
 }
 
+void dl_set_clipping(dl_list_t * dl, const dl_clipbox_t box)
+{
+  memcpy(dl->clip_box, box, sizeof(dl->clip_box));
+}
+
+float * dl_get_clipping(dl_list_t * dl)
+{
+  return dl->clip_box;
+}
