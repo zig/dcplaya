@@ -1,45 +1,22 @@
 /**
+ * @ingroup    dcplaya
+ * @file       sysdebug.c
+ * @author     benjamin gerard <ben@sashipa.com>
+ * @date       2002/09/04
+ * @brief      Debug fonctions.
  *
- *
+ * @version    $Id: sysdebug.c,v 1.2 2002-09-10 12:55:54 ben Exp $
  */
+
+#ifdef DEBUG /* Only compile this if DEBUG is activated */
 
 #include <stdarg.h>
 #include <stdio.h>
 
-/** debug level enum */
-typedef enum {
-  sysdbg_critical = 0,
-  sysdbg_error,
-  sysdbg_warning,
-  sysdbg_notice,
-  sysdbg_info,
-  sysdbg_debug,
-  sysdbg_user  = 16,
-  sysdbg_user0 = sysdbg_user,
-  sysdbg_user1,
-  sysdbg_user2,
-  sysdbg_user3,
-  sysdbg_user4,
-  sysdbg_user5,
-  sysdbg_user6,
-  sysdbg_user7,
-  sysdbg_user8,
-  sysdbg_user9,
-  sysdbg_userA,
-  sysdbg_userB,
-  sysdbg_userC,
-  sysdbg_userD,
-  sysdbg_userE,
-  sysdbg_userF,
-} sysdgb_level_e;
+extern void dbglogv(int level, const char *fmt, va_list args);
 
-/** debug level definition. */
-typedef struct {
-  int bit;               /**< Level mask */
-  char twocc[4];         /**< Level two char code [0 terminated] */
-  const char * name;     /**< Level name */
-  int reserved;          /**< Reserved must be set to 0 */
-} sysdbg_debug_level_t;
+#include "sysdebug.h"
+
 
 static const char unused[] = "unused";
 
@@ -64,59 +41,106 @@ static sysdbg_debug_level_t sd_levels[32] =
     {0x00008000, ".. ", unused},
 
     /* user defined level */
-    {0x00010000, "@0", "critical"},
-    {0x00020000, "@1", "error"},
-    {0x00040000, "@2", "warning"},
-    {0x00080000, "@3", "notice"},
-    {0x00100000, "@4", "info"},
-    {0x00200000, "@5", "debug"},
-    {0x00400000, "@6", unused},
-    {0x00800000, "@7", unused},
-    {0x01000000, "@8", unused},
-    {0x02000000, "@9", unused},
-    {0x04000000, "@A", unused},
-    {0x08000000, "@B", unused},
-    {0x10000000, "@C", unused},
-    {0x20000000, "@D", unused},
-    {0x40000000, "@E", unused},
-    {0x80000000, "@F", unused},
+    {0x00010000, "@0 ", "critical"},
+    {0x00020000, "@1 ", "error"},
+    {0x00040000, "@2 ", "warning"},
+    {0x00080000, "@3 ", "notice"},
+    {0x00100000, "@4 ", "info"},
+    {0x00200000, "@5 ", "debug"},
+    {0x00400000, "@6 ", unused},
+    {0x00800000, "@7 ", unused},
+    {0x01000000, "@8 ", unused},
+    {0x02000000, "@9 ", unused},
+    {0x04000000, "@A ", unused},
+    {0x08000000, "@B ", unused},
+    {0x10000000, "@C ", unused},
+    {0x20000000, "@D ", unused},
+    {0x40000000, "@E ", unused},
+    {0x80000000, "@F ", unused},
   };
 
 static int sd_level  = sysdbg_critical;  /**< Accepted debug message */
 
 /* Indentation system */
 #define SYSDBG_MAX_INDENT (sizeof(tabs)-1);
-static int sd_indent = 0;                /**< Current indentation */
 static const char tabs[16] = "               ";
 static const int max_indent = SYSDBG_MAX_INDENT;
+static int sd_indent = 0; /**< Current indentation */
+static int sd_col = 0;    /**< Curent column */
 
-int sysdbg_vprintf(const char * file, int line,
-		   int level,  const char * fmt, va_list list)
+/* Default vprintf like function. */
+static void sysdbg_default_vprintf(void * cookie,
+				   const char * fmt, va_list list)
 {
-  int col = 0; /* $$$ */
+  dbglogv((int)cookie, fmt, list);
+}
 
+static sysdbg_f sd_current = sysdbg_default_vprintf;
+static void * sd_cookie = 0;
+
+static void sd_print_location(const char *fmt, const char *file, int line, ...)
+{
+  va_list list;
+
+  va_start(list, fmt);
+  sd_current(sd_cookie, fmt, list);
+  va_end(list);
+}
+
+void sysdbg_vprintf(const char * file, int line, int level,
+		    const char * fmt, va_list list)
+{
+  int len, nl_cnt;
+
+  /* Wrong or masked level are simply ignored */
   if ( (unsigned int)level > 31 || ! (sd_level & (1<<level)) ) {
-    return 0;
+    return;
   }
 
-  if (col == 0) {
+  /* Count, skip and print '\n' at start of format string. */
+  for (nl_cnt = 0; *fmt == '\n'; ++nl_cnt, ++fmt) {
+    sd_current(sd_cookie, "\n", list);
+    sd_col = 0;
+  }
+
+  if (sd_col == 0) {
+    /* Printing on first column : add extra info */
     int indent = sd_indent;
     
-    indent &= ~ (indent >> (sizeof(int)-1));
-    if (indent > max_indent) {
+    /* Prevent under/overflow in indent string */
+    if (indent < 0) {
+      indent = 0;
+    } else if (indent > max_indent) {
       indent = max_indent;
     }
 
-    dbglog(DBG_DEBUG, sd_levels[level].twocc);
-    dbglog(DBG_DEBUG, &tabs[max_indent-indent]);
-    col = 3 + indent;
-  }
-  
+    /* Print Two-Char code */
+    sd_current(sd_cookie, sd_levels[level].twocc, list);
 
-  return 1;
+    if (!indent) {
+      /* Print "file:line" if no indentation requested */
+      sd_print_location("%s:%d ",file, line);
+    } else {
+      /* Or print indentation string */
+      sd_current(sd_cookie, &tabs[max_indent-indent], list);
+    }
+
+    sd_col = 1;
+  }
+
+  /* Write *REAL* debug message a*/
+  sd_current(sd_cookie, fmt, list);
+
+  /* Reset column if last char is '\n' */
+  for (len=0; fmt[len]; ++len)
+    ;
+  if (len > 0 && fmt[len-1]) {
+    sd_col = 0;
+  }
+
 }
 
-int sysdbg_printf(const char * file, int line,
+void sysdbg_printf(const char * file, int line,
 		  int level, const char * fmt, ...)
 {
   va_list list;
@@ -124,34 +148,32 @@ int sysdbg_printf(const char * file, int line,
   va_start(list, fmt);
   sysdbg_vprintf(file, line, level, fmt, list);
   va_end(list);
-
-  return 0;
 }
 
 /** Set debug level mask. */
-int sysdbg_level(int level)
+void sysdbg_level(int level, int * prev)
 {
-  int old = sd_level;
-  
+  if (prev) {
+    *prev = sd_level;
+  }
   sd_level = level;
-  return old;
 }
 
 /** Change indent level. */
-int sysdbg_indent(int indent)
+void sysdbg_indent(int indent, int * prev)
 {
-  int old = sd_indent;
-
+  if (prev) {
+    *prev = sd_indent;
+  }
   sd_indent += indent;
-  return old;
 }
 
-
-int sysdbg_register_level(sysdgb_level_e level,
-			  const char *name, const char *twocc)
+/** Register a new debug level. */
+void sysdbg_register_level(sysdgb_level_e level,
+			   const char *name, const char *twocc)
 {
   if ( (unsigned int)level > 31 ) {
-    return -1;
+    return;
   }
 
   sd_levels[level].name = name;
@@ -159,5 +181,6 @@ int sysdbg_register_level(sysdgb_level_e level,
   sd_levels[level].twocc[1] = twocc[1];
   sd_levels[level].twocc[2] = ' ';
   sd_levels[level].twocc[3] = 0;
-  return 0;
 }
+
+#endif /* #ifdef DEBUG */
