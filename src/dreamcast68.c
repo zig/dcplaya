@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.52 2003-03-10 22:55:34 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.53 2003-03-11 13:35:50 ben Exp $
  */
 
 //#define RELEASE
@@ -897,13 +897,43 @@ void main_thread(void *cookie)
 
 extern uint8 romdisk[];
 
+static int vmu_filter_unit(const fu_dirent_t * e)
+{
+  int ret;
+  if (!e) {
+    return -1;
+  }
+  /* reject any none none dir or '.' or name length not equal 2 */
+  ret = e->size != -1
+    || e->name[0] == '.'
+    || strlen(e->name) != 2;
+  if (ret) {
+    SDDEBUG("[vmu_filter_unit] filter [%s,%d]\n",e->name, e->size);
+  }
+  return ret;
+}
+
+static int vmu_filter_file(const fu_dirent_t * e)
+{
+  int ret;
+  if (!e) {
+    return -1;
+  }
+  ret = e->size <= vmu_file_header_size()
+    || strnicmp(e->name,"dcplaya",7);
+  if (ret) {
+    SDDEBUG("[vmu_filter_file] filter [%s,%d]\n", e->name, e->size);
+  }
+  return ret;
+}
+
 /* Load first vmu file. */
 /* 012345678        */
 /* /vmu/a1/dcplaya* */
 
 static int vmu_load(void)
 {
-  int ret = -1, best;
+  int ret = -1;
   int err, vmu, n_vmu;
   fu_dirent_t * dir = 0, * dir2 = 0;
   char tmp[64];
@@ -928,7 +958,7 @@ static int vmu_load(void)
   /* Read vmu dir : get plugged vmu */
   strcpy(tmp,"/vmu");
   SDDEBUG("[vmu_load] : opening [%s].\n", tmp);
-  err = fu_read_dir(tmp, &dir, 0);
+  err = fu_read_dir(tmp, &dir, vmu_filter_unit);
   if (err < 0) {
     SDERROR("[vmu_load] : [%s] : [%s].\n", tmp, fu_strerr(err));
     goto finish;
@@ -946,54 +976,33 @@ static int vmu_load(void)
 
     SDDEBUG("[vmu_load] : opening %d/%d [%s].\n", vmu+1, n_vmu, tmp);
 
-    err = fu_read_dir(tmp, &dir2, 0);
+    err = fu_read_dir(tmp, &dir2, vmu_filter_file);
     if (err < 0) {
       SDERROR("[vmu_load] : [%s] : [%s].\n", tmp, fu_strerr(err));
       continue;
     }
+    fu_sort_dir(dir2, err, 0);
 
     /* For each file in this unit */
     nfile = err;
-    best = -1;
-    do {
-      for (file = 0; file < nfile; ++file) {
-	if (dir2[file].size > 0) {
-	  SDDEBUG("[vmu_load] : scanning %d/%d [%s].\n",
-		  file+1, nfile, dir2[file].name);
-	  if (!strnicmp(dir2[file].name,"dcplaya",7)) {
-	    SDDEBUG("[vmu_load] : candidat [%s].\n", dir2[file].name);
-	    if (best < 0 || strcmp(dir2[file].name, dir2[best].name) < 0) {
-	      SDDEBUG("[vmu_load] : new one [%s].\n", dir2[file].name);
-	      best = file;
-	    }
-	  }
-	}
-      }
-      if (best >= 0) {
-	vmu_trans_hdl_t hdl;
-	vmu_trans_status_e status;
+    for (file = 0; file < nfile; ++file) {
+      vmu_trans_hdl_t hdl;
+      vmu_trans_status_e status;
+      tmp[7] = '/';
+      strcpy(tmp+8,dir2[file].name);
 
-	tmp[7] = '/';
-	strcpy(tmp+8,dir2[best].name);
-
-	SDDEBUG("[vmu_load] : try our candidat [%s].\n", tmp);
-	hdl = vmu_file_load(tmp,path);
-	status = vmu_file_status(hdl);
-	if (status == VMU_TRANSFERT_SUCCESS) {
-	  ret = 0;
-	  /* Found : go to outter loop */
-	  break;
-	} else {
-	  SDERROR("[vmu_load] : load best [%s] failure : [%s]\n",
-		  tmp,vmu_file_statusstr(status));
-	  dir2[best].size = -1; /* desacive this errneous file ! */
-	  best = -1;
-	}
-      } else {
-	/* No file : go to outter loop */
+      SDDEBUG("[vmu_load] : try our candidat [%s].\n", tmp);
+      hdl = vmu_file_load(tmp,path);
+      status = vmu_file_status(hdl);
+      if (status == VMU_TRANSFERT_SUCCESS) {
+	ret = 0;
+	/* Found : go to outter loop */
 	break;
+      } else {
+	SDERROR("[vmu_load] : [%s] failure : [%s]\n",
+		tmp, vmu_file_statusstr(status));
       }
-    } while (1);
+    }
     free(dir2);
     dir2 = 0;
   }
@@ -1048,14 +1057,14 @@ int dreammp3_main(int argc, char **argv)
   /* $$$ Becoz of a bug sometine cdron is not detected, force detextio here */
   cdrom_reinit();
 
-  /* Initialize the vmu file module as sson as possible... */
-  vmu_file_init();
-
   /* ramdisk init : needed by vmu_load() */
   fs_ramdisk_init(0);
 
-  /* load default (1st) dcplaya vmu file */
-  vmu_load();
+  /* Initialize the vmu file module as soon as possible... */
+  if (!vmu_file_init()) {
+    /* load default (1st) dcplaya vmu file */
+    vmu_load();
+  }
 
   /* Initialize shell and LUA */
   SDDEBUG("SHELL init\n");
