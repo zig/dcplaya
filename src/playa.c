@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.7 2002-09-25 03:21:22 benjihan Exp $
+ * $Id: playa.c,v 1.8 2002-09-27 03:20:20 benjihan Exp $
  */
 
 #include <kos.h>
@@ -486,7 +486,7 @@ int playa_start(const char *fn, int track, int immediat) {
   driver = d;
   e = driver->start(fn, track, &info);
   if (e) {
-    SDERROR("Driver [%s] error := [%d]\n", e);
+    SDERROR("Driver [%s] error := [%d]\n", driver->common.name, e);
     goto error;
   }
 

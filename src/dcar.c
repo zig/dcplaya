@@ -4,7 +4,7 @@
  * @date      2002/09/21
  * @brief     dcplaya archive.
  *
- * $Id: dcar.c,v 1.2 2002-09-25 22:43:18 benjihan Exp $
+ * $Id: dcar.c,v 1.3 2002-09-27 03:20:20 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -229,66 +229,76 @@ static unsigned int CRC(unsigned int crc, char *b, int n)
 }
 */
 
+/* Copy `opt->internal.path' into gzfile. Increments opt->out.bytes
+ *
+ * @retval >=0    Number of bytes copied (including pading)
+ * @retval -1     Open error
+ * @retval -2     Read error
+ * @retval -3     Write error
+ * @retval other  Internal unexecpected errors
+ */
 static int gzcopy(gzFile zf, dcar_option_t * opt)
 {
-  int fd, n, r, w, len;
-
-  //  unsigned int crc = 0;
+  int fd, n, r, w, len, z;
 
   fd = fs_open(opt->internal.path, O_RDONLY);
   if (!fd) {
-    return -1;
+    n = -1;
+    goto error;
   }
   len = fs_total(fd);
   if (len < 0) {
-    return -1;
+    len = -1;
+    SDWARNING("[%s] : Could not get total, trying to copy anyway\n",
+	      opt->internal.path);
   }
 
   r = w = 0;
   do {
     n = fs_read(fd, opt->internal.tmp, opt->internal.max);
-    if (n <= 0) {
-      break;
-    }
-    r += n;
-
-    n = gzwrite(zf, opt->internal.tmp, n);
-    if (n <= 0) {
-      n = -1;
-      break;
-    }
-    w += n;
-
-    //    crc = CRC(crc,  opt->internal.tmp, n);
-
-    opt->out.bytes += n;
-
-  } while (1);
-
-  if (n != 0 || r != w || r != len) {
-    n = -1;
-  } else {
-    int z;
-
-    n = r;
-    len = (len + dcar_align - 1) & ~(dcar_align - 1);
-    z = len - n;
-
-    // Zero pad for alignment requirement.
-    if (z >= dcar_align) {
-      return -1;
-    }
-    if (z) {
-      memset(opt->internal.tmp, 0, z);
-      if (gzwrite(zf, opt->internal.tmp, z) != z) {
-	return -1;
+    if (n < 0) {
+      n = -2;
+      goto error;
+    } else if (n > 0) {
+      r += n;
+      if (gzwrite(zf, opt->internal.tmp, n) != n) {
+	n = -3;
+	goto error;
       }
+      w += n;
+      opt->out.bytes += n;
     }
+  } while (n>0);
+
+  /* Check ... */
+  if (r != w || (len != -1 && r != len)) {
+    n = -4;
+    goto error;
   }
 
-  //  printf("crc: %08x\n",crc);
+  n = r;
+  len = (len + dcar_align - 1) & ~(dcar_align - 1);
+  z = len - n;
 
-  fs_close(fd);
+  // Zero pad for alignment requirement.
+  if (z >= dcar_align) {
+    n = -5;
+    goto error;
+  }
+
+  if (z) {
+    memset(opt->internal.tmp, 0, z);
+    if (gzwrite(zf, opt->internal.tmp, z) != z) {
+      n = -3;
+      goto error;
+    }
+    n += z;
+  }
+
+ error:
+  if (fd) {
+    fs_close(fd);
+  }
   
   return n;
 }
@@ -317,9 +327,21 @@ static int r_gzwrite_data(gzFile zf, aentry_t * aentry, dcar_option_t * opt)
       strcpy(pathend, e->te.name);
       n = gzcopy(zf, opt);
       *pathend = 0;
-      if (n <= 0) {
-	SDERROR("Writing file data [%s]\n", e->te.name);
-	return -1;
+      if (n < 0) {
+	switch(n) {
+	case -1:
+	  SDERROR("[%s] : open error.\n", e->te.name);
+	  return -1;
+	case -2:
+	  SDERROR("[%s] : read error.\n", e->te.name);
+	  return -1;
+	case -3:
+	  SDERROR("Write error. Current out bytes [%d]\n", opt->out.bytes);
+	  return -1;
+	default:
+	  SDERROR("[%s] : unexpected  error.\n", e->te.name);
+	  return -1;
+	}
       }
     }
   }
@@ -547,9 +569,11 @@ int dcar_archive(const char *name, const char *path, dcar_option_t *opt)
   make_dir_index(root.son, 0);
   
   /* Write archive */
+  // $$$ ben : Could unlink empty-dir !!!
   fs_unlink(name);
   zf = gzopen(name, mode);
   if (!zf) {
+    count = -1;
     goto error;
   }
   memcpy(&dt.magic, "DCAR",4);
@@ -557,19 +581,19 @@ int dcar_archive(const char *name, const char *path, dcar_option_t *opt)
 
   /* Write archive headers */
   if (gzwrite(zf, &dt, 8) <= 0) {
-    SDERROR("Writing archive header.\n");
+    count = -1;
     goto error;
   }
 
   /* Write directory */
   if (r_gzwrite_aentries(zf, root.son) < 0) {
-    SDERROR("Writing archive directory entries.\n");
+    count = -1;
     goto error;
   }
 
   /* Write file data */
   if (r_gzwrite_data(zf, root.son, opt) < 0) {
-    SDERROR("Writing archive file data.\n");
+    count = -1;
     goto error;
   }
   opt->out.ubytes  = gztell(zf);
@@ -973,7 +997,6 @@ int dcar_extract(const char *name, const char *path, dcar_option_t *opt)
   }
   */
 
-  SDDEBUG("Extract\n");
   n = extract_dtree(zf, dt, opt);
   opt->out.ubytes = gztell(zf);
 

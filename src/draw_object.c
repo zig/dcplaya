@@ -1,5 +1,5 @@
 /**
- * $Id: draw_object.c,v 1.4 2002-09-23 03:25:01 benjihan Exp $
+ * $Id: draw_object.c,v 1.5 2002-09-27 03:20:20 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -499,10 +499,25 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
       colb = *(int *)&o->nvx[l->b].w;
       colc = *(int *)&o->nvx[l->c].w;
 
-      col  = (col  >> 1) & 0x7f7f7f7f;
-      cola = (cola >> 2) & 0x3f3f3f3f;  
-      colb = (colb >> 2) & 0x3f3f3f3f;  
-      colc = (colc >> 2) & 0x3f3f3f3f;  
+      // $$$ ben : hack to remove invible face glitch! There is lotsa optimize to do here.
+      {
+	const int m2 = 0x7f7f7f7f;
+	int tmp, m;
+	col  = (col  >> 1) & 0x7f7f7f7f;
+	tmp = col/* >> 1*/;
+
+	m = -t[l->a].flags;
+	m = -1;
+	cola = (((cola >> 1) & ~m) | (tmp & m)) & m2;  
+
+	m = -t[l->b].flags;
+	m = -1;
+	colb = (((colb >> 1) & ~m) | (tmp & m)) & m2;  
+
+	m = -t[l->c].flags;
+	m = -1;
+	colc = (((colc >> 1) & ~m) | (tmp & m)) & m2;  
+      }
 
       lflags  = t[l->a].flags << 0;
       lflags |= t[l->b].flags << 1;
@@ -512,7 +527,7 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
 	
       uvl = uvlinks[lflags];
 
-      hw->col = col + cola + colc;
+      hw->col = /*col + */cola + colc;
       hw->flags = TA_VERTEX_NORMAL;
       hw->x = transform[f->a].x;
       hw->y = transform[f->a].y;
@@ -522,7 +537,7 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
       ta_commit32_nocopy();
 
       //	hw->flags = TA_VERTEX;
-      hw->col = col + colb + cola;
+      hw->col = /*col + */colb + cola;
       hw->x = transform[f->b].x;
       hw->y = transform[f->b].y;
       hw->z = transform[f->b].z;
@@ -530,7 +545,7 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
       hw->v = uvl[1].v;
       ta_commit32_nocopy();
 
-      hw->col = col + colc + colb;
+      hw->col = /*col + */colc + colb;
       hw->flags = TA_VERTEX_EOL;
       hw->x = transform[f->c].x;
       hw->y = transform[f->c].y;

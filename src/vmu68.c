@@ -1,5 +1,5 @@
 /**
- * $Id: vmu68.c,v 1.3 2002-09-25 03:21:22 benjihan Exp $
+ * $Id: vmu68.c,v 1.4 2002-09-27 03:20:20 benjihan Exp $
  */
 #include "config.h"
 
@@ -420,8 +420,11 @@ static int draw_bar(char *buf, int lvl, int h)
 
 static void draw_lcd(void *a)
 {
-  int mlcd = maple_first_lcd();
-  if (a && mlcd) vmu_draw_lcd(mlcd, a);
+  uint8 mlcd = maple_first_lcd();
+
+  if (a && mlcd) {
+    vmu_draw_lcd(mlcd, a);
+  }
 }
 
 void vmu_lcd_title()

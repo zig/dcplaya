@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.23 2002-09-27 02:01:36 vincentp Exp $
+ * @version    $Id: dynshell.c,v 1.24 2002-09-27 03:20:20 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -672,6 +672,9 @@ static int lua_dcar(lua_State * L)
   case 'c':
     if (archive && path) {
       count = dcar_archive(archive, path, &opt);
+      if (count < 0) {
+	error = "create failure";
+      }
     }
     break;
 
@@ -681,15 +684,16 @@ static int lua_dcar(lua_State * L)
   case 's':
     if (path=archive, path) {
       count = dcar_simulate(path, &opt);
+      if (count < 0) {
+	error = "simulate failure";
+      }
     }
     break;
 
   case 'x':
     if (path && archive) {
       count = dcar_extract(archive, path, &opt);
-      if (count >= 0) {
-	error = 0;
-      } else {
+      if (count < 0) {
 	error = "extract failure";
       }
     }
