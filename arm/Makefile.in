@@ -1,5 +1,23 @@
+# $Id: Makefile.in,v 1.1 2002-09-03 02:49:39 ben Exp $
+
 SRCS := crt0.s main.c aica.c
 OBJS := crt0.o main.o aica.o
+
+# ARM-7 compile tools
+DC_ARM7CC=@ARM_CC@
+DC_ARM7CCPLUS=@ARM_CXX@
+DC_ARM7AS=@ARM_AS@
+DC_ARM7LD=@ARM_LD@
+
+# ARM-7 bin utils
+DC_ARM7AR=@ARM_AR@
+DC_ARM7RANLIB=@ARM_RANLIB@
+DC_ARM7OBJCOPY=@ARM_OBJCOPY@
+DC_ARM7NM=@ARM_NM@
+
+# ARM-7 compile flags
+DC_ARM7CFLAGS=@ARM_CFLAGS@
+DC_ARM7AFLAGS=@ARM_AFLAGS@
 
 all: stream.drv
 
