@@ -3,14 +3,23 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: sc68_driver.c,v 1.4 2002-12-06 14:41:35 ben Exp $
+ * @version   $Id: sc68_driver.c,v 1.5 2003-03-07 20:50:33 ben Exp $
  */
+
+#define USE_RZ 1
 
 /* generated config include */
 #include "config.h"
+/* $$$ hack becoz sc68 has its own config.h */
+#include "../include/config.h"
 
 #include <kos/fs.h>
-#include <kos/fs_romdisk.h>
+
+#ifndef USE_RZ
+# include <kos/fs_romdisk.h>
+#else
+# include "fs_rz.h"
+#endif
 
 //#include <dc/fmath.h>
 #include <stdio.h>
@@ -55,6 +64,14 @@
 #define UPDATE_BROWSE_INFO 0
 
 SC68app_t app; /**< sc68 application context. */
+
+
+extern uint8 romdisk[];
+#ifndef USE_RZ
+extern uint8 sc68disk[];
+#else
+extern uint8 sc68newdisk[];
+#endif
 
 static int disk_info(playa_info_t *info, disk68_t *d);
 
@@ -110,6 +127,11 @@ static int init(any_driver_t *d)
 
 /*   SDDEBUG("sc68 : Init [%s]\n", d->name); */
 
+#ifdef USE_RZ
+  SDDEBUG("[sc68] : create sc68 romdisk\n");
+  fs_rz_init(sc68newdisk);
+#endif
+
   /* check whether EMU68 is compiled without debug option */
   if (EMU68_sizeof_reg68() != sizeof(reg68_t)) {
     SC68error_add
@@ -158,10 +180,13 @@ static int stop(void)
 static int shutdown(any_driver_t *d)
 {
   stop();
+#ifdef USE_RZ
+  SDDEBUG("[sc68] : removing sc68 romdisk\n");
+  fs_rz_shutdown();
+#endif
+
   return 0;
 }
-
-extern uint8 sc68disk[], romdisk[];
 
 static int start(const char *fn, int track, playa_info_t *info)
 {
@@ -170,8 +195,10 @@ static int start(const char *fn, int track, playa_info_t *info)
 
 /*   SDDEBUG("%s(%s)\n", __FUNCTION__, fn); */
   /* $$$ Hack romdisk */
+#ifndef USE_RZ
   fs_romdisk_shutdown();
   fs_romdisk_init(sc68disk);
+#endif
   
   disk = SC68app_load_diskfile((char *)fn, 0);
   if (!disk) {
@@ -219,8 +246,10 @@ static int start(const char *fn, int track, playa_info_t *info)
   }
   disk_info(info, app.cur_disk);
   spool_error_message();
+#ifndef USE_RZ
   fs_romdisk_shutdown();
   fs_romdisk_init(romdisk);
+#endif
   
   return err;
 }
