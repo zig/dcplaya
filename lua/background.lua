@@ -19,6 +19,7 @@ background_tag = background_tag or newtag()
 --- @param  texture  Image file or texture-id
 --- @param  type     One of [ "scale", "center", "tile" ] default : "scale"
 function background_set_texture(bkg, texture, type)
+   local vtx
    if tag(bkg) ~= background_tag then return end
    local i,v
    if not texture then
@@ -27,10 +28,10 @@ function background_set_texture(bkg, texture, type)
       set_vertex(bkg.vtx[2],{ 1, 0, 0, 1 })
       set_vertex(bkg.vtx[3],{ 0, 1, 0, 1 })
       set_vertex(bkg.vtx[4],{ 1, 1, 0, 1 })
+      vtx = 1
    else
       local vtx = load_background(texture, type)
       if vtx then
-	 -- 		 dump(vtx)
 	 for i,v in vtx do
 	    set_vertex(bkg.vtx[i],
 		       { v[1], v[2], 0, 1,
@@ -41,6 +42,7 @@ function background_set_texture(bkg, texture, type)
       bkg.tex = tex_get("background")
    end
    bkg:draw()
+   return vtx ~= nil
 end
 
 --- Set background colors.

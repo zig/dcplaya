@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.41 2003-01-13 04:09:52 ben Exp $
+--- $Id: gui.lua,v 1.42 2003-01-29 13:49:00 ben Exp $
 ---
 
 --
@@ -886,6 +886,13 @@ end
 --- dialog box label
 function gui_ask(question, answers, width, label)
 
+   if type(answers) == "string" then
+      answers = { answers }
+   elseif type(answers) ~= "table" then
+      print("[gui_ask] : bad answer type.")
+      return
+   end
+
    width = width or 300
 
    local text = '<dialog guiref="dialog" x="center" name="gui_ask"'
@@ -927,14 +934,16 @@ function gui_ask(question, answers, width, label)
    
    tt_draw(tt)
 
-   tt.guis.dialog.event_table[evt_shutdown_event] = function(app) app.answer = 1 end
+   tt.guis.dialog.event_table[evt_shutdown_event] =
+      function(app) app.answer = 1 end
 
    for i=1, getn(answers), 1 do
-      tt.guis.dialog.guis[format("%d", i)].event_table[gui_press_event] = function(app, evt)
-								 evt_shutdown_app(app.owner)
-								 app.owner.answer = %i
-								 return evt
-							      end
+      tt.guis.dialog.guis[format("%d", i)].event_table[gui_press_event] =
+	 function(app, evt)
+	    evt_shutdown_app(app.owner)
+	    app.owner.answer = %i
+	    return evt
+	 end
    end
 
    while not tt.guis.dialog.answer do

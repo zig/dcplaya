@@ -458,6 +458,8 @@ function menu_create(owner, name, def, box, x1, y1)
 	 dl_set_active(menu.dl)
 	 menu.dl = nil
       end
+      -- $$$ test : not sure I have right to do that here
+      -- menu.owner = nil
    end
 
    menu = {

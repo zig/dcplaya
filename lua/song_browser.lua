@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.29 2003-01-28 22:58:18 ben Exp $
+--- $Id: song_browser.lua,v 1.30 2003-01-29 13:49:00 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -254,10 +254,11 @@ function song_browser_create(owner, name)
 	 return evt
       end
 
-      local action
+      local action, key_char 
+      key_char = (key >= 32 and key<128 and strchar(key)) or ""
 
-      if key >= 32 and key < 128 and key ~= 96 then
-	 sb.search_str = (sb.search_str or "^") .. strchar(key)
+      if not strfind("`'\"^$()%.[]*+-?`",key_char,1,1) then
+	 sb.search_str = (sb.search_str or "^") .. key_char
 	 action = sb.cl:locate_entry_expr(sb.search_str .. ".*")
 	 sb.key_time = 0
       elseif key == gui_focus_event then
@@ -292,6 +293,9 @@ function song_browser_create(owner, name)
       if action and action >= 2 then
 	 local entry = sb.cl:get_entry()
 	 vmu_set_text(entry and entry.name)
+-- 	 if tag(sb.cl.menu) == menu_tag then
+-- 	    sb.cl:open_menu(sb)
+-- 	 end
       end
       sb:open()
    end
@@ -506,24 +510,79 @@ function song_browser_create(owner, name)
    y = 120
    z = sb.z - 2
 
+   --- Stop current music and playlist running.
+   function song_browser_stop(sb)
+      sb.stopping = 1
+      sb.playlist_idx = nil
+      sb:draw()
+      playa_fade(-1)
+   end
+
+   --- Start a new music
+   function song_browser_play(sb, filename, track, immediat)
+      sb.stopping = nil
+      playa_play(filename, track, immediat)
+      sb:draw()
+      playa_fade(2)
+   end
+
+   function song_browser_ask_background_load(sb)
+      if tag(background) == background_tag then
+	 return
+      end
+      local r = gui_yesno("The background library has not been properly loaded. Do you want to try to load it ?" , 256, "Missing background", "load background library", "cancel")
+      if r == 1 then
+	 dolib("background",1)
+      end
+   end
+
+   function songbrowser_load_image(sb, filename, mode)
+      if not background_tag or tag(background) ~= background_tag then
+	 gui_ask('The background library is not available, you will not be able to display background images.<br><img name="grimley" src="stock_grimley.tga" scale="1.5">',"close",256,"background error")
+	 return
+      end
+      if not (test("-f", filename) and
+	      background:set_texture(filename,mode or sb.background_mode))
+      then
+	 printf ("[song_browser] : loading background %q failed", filename)
+      end
+   end
+
+   -- ----------------------------------------------------------------------
+   -- filelist "confirm" actions
+   -- ----------------------------------------------------------------------
+
+   function songbrowser_any_action(sb, action, fl)
+      if type(action) ~= "string" then return end
+      fl = fl or sb.cl
+      if not fl then return end
+      if not fl.actions or type(fl.actions[action]) ~= "table" then
+	 printf("[songbrowser] : unknown action %q", action)
+	 return
+      end
+      local entry_path = fl:fullpath()
+      if not entry_path then return end
+      local ftype, major, minor = filetype(entry_path)
+
+      -- $$$
+      printf("%q on %q [%q,%q]", action, entry_path, major, minor)
+
+      local func = fl.actions[action][major] or fl.actions[action].default
+      if type(func) == "function" then
+	 return func(fl,sb,action,entry_path)
+      end
+      -- $$$
+      printf("No %q action for %q", action, entry_path)
+   end
+
    --    *     - @b nil  if action failed
    --    *     - @b 0    ok but no change
    --    *     - @b 1    if entry is "confirmed"
    --    *     - @b 2    if entry is "not confirmed" but change occurs
    --    *     - @b 3    if entry is "confirmed" and change occurs
    function sbfl_confirm(fl, sb)
-      print ("sbfl_confirm")
-      if not sb.actions or not sb.actions.confirm then return end
-
-      local entry_path = fl:fullpath()
-      if not entry_path then return end
-      local ftype, major, minor = filetype(entry_path)
-      print(format("confirm %q [%q,%q]", entry_path, major, minor))
-      local action = sb.actions.confirm[major] or sb.actions.confirm.default
-      if type(action) == "function" then
-	 return action(fl,sb,"confirm",entry_path)
-      end
-      print ("no action!")
+      print("sbfl_confirm")
+      return songbrowser_any_action(sb, "confirm", fl)
    end
 
    function sbfl_confirm_dir(fl, sb, action, entry_path)
@@ -561,99 +620,80 @@ function song_browser_create(owner, name)
    end
 
    function sbfl_confirm_image(fl, sb, action, entry_path)
-      if not background_tag or tag(background) ~= background_tag then
-	 print ("no background !!")
-	 return
-      end
-      if test("-f", entry_path) then
-	 background:set_texture(entry_path,sb.background_mode)
-      else 
-	 print ("no file")
-      end
+      song_browser_ask_background_load(sb)
+      songbrowser_load_image(sb,entry_path)
    end
 
-   function song_browser_stop(sb)
-      sb.stopping = 1
-      sb.playlist_idx = nil
-      sb:draw()
-      playa_fade(-1)
+   function sbfl_confirm_plugin(fl, sb, action, entry_path)
+      if not test("-f",entry_path) then return end
+      return driver_load(entry_path)
    end
 
-   function song_browser_play(sb, filename, track, immediat)
-      sb.stopping = nil
-      playa_play(filename, track, immediat)
-      sb:draw()
-      playa_fade(2)
+   function sbfl_confirm_lua(fl, sb, action, entry_path)
+      if not test("-f",entry_path) then return end
+      return dofile(entry_path)
    end
 
---    function song_browser_exec(sb, path, option)
---       local t,major,minor = filetype(path)
---       if not major then return end
---       if major == "music" then
--- 	 if type(option) == "string" and option == "immediat"
-	 
---       elseif major == "playlist" then
---       elseif major == "plugin" then
---       elseif major == "image" then
--- 	 return song_browser_exec_image(sb,path)
---       elseif major == "dir" then
---       end
---    end
+   -- ----------------------------------------------------------------------
+   -- filelist "select" actions
+   -- ----------------------------------------------------------------------
 
-   function song_browser_loadbackground(sb, fpath, mode)
-      if not background_tag or tag(background) ~= background_tag then
-	 return
-      end
-      if test("-f", fpath) then
-	 background:set_texture(fpath, mode)
+   function sbfl_select(fl, sb)
+      songbrowser_any_action(sb,"select",fl)
+   end
+   
+   function sbfl_select_dir(fl, sb, action, entry_path)
+      if not test("-d", entry_path) then return end
+      return sbpl_insertdir(sb, entry_path)
+   end
+   
+   function sbfl_select_music(fl, sb, action, entry_path)
+      if not test("-f",entry_path) then return end
+      local pos = fl:get_pos()
+      if pos then
+	 return sbpl_insert(sb, fl.dir[pos])
       end
    end
-
-   function song_browser_image_action(sb, fpath, action)
-      if not background_tag or tag(background) ~= background_tag then
-	 return
-      end
-
-      if action == "confirm" then
-	 background:set_texture(fpath, "scale")
-      elseif action == "select" then
-	 local menudef = menu_create_defs()
-      end
+   
+   function sbfl_select_playlist(fl, sb, action, entry_path)
+      local dir = playlist_load(entry_path)
+      if not dir then return end
+      sb.pl:change_dir(dir)
+      return 1
    end
 
-
-
-   function song_browser_entry_confirm(sb, entry, action)
-      if not entry then return end
-      local fname = entry.file or entry.name
-      if type(fname) ~= "string" then return end
-      local ftype,fmajor,fminor = filetype(fname)
-      if not ftype then return end
-      print(Format("Ftype:%d,%s,%s"),ftype,fmajor,fminor)
-      local act = sb.type_actions[fmajor] and sb.type_actions[fmajor][action]
-      if type(act) == "function" then
-	 return act(sb, entry, action)
-      end
+   function sbfl_select_image(fl, sb, action, entry_path)
+      song_browser_ask_background_load(sb)
+      songbrowser_load_image(sb, entry_path)
    end
 
+   function sbfl_select_plugin(fl, sb, action, entry_path)
+      if not test("-f",entry_path) then return end
+      return driver_load(entry_path)
+   end
+
+   function sbfl_select_lua(fl, sb, action, entry_path)
+      if not test("-f",entry_path) then return end
+      return dofile(entry_path)
+   end
+
+   -- ----------------------------------------------------------------------
+   -- filelist "cancel" actions
+   -- ----------------------------------------------------------------------
    function sbfl_cancel(fl, sb)
+      songbrowser_any_action(sb,"cancel",fl)
+   end
+
+   function sbfl_cancel_default(fl, sb, action, entry_path)
       if playa_play() == 1 then
 	 song_browser_stop(sb);
       end
    end
 
-
-   function sbfl_select(fl, sb)
-      local path = fl:fullpath()
-      if not path then return end
-      local entry = fl:get_entry()
-      if not entry then return end
-      if entry.size < 0 then
-	 return sbpl_insertdir(sb, fl:fullpath(entry))
-      else
-	 return sbpl_insert(sb, entry)
-      end
+   function sbfl_open_menu(fl,sb)
+      print("TO DO : File list open menu")
    end
+
 
    sb.fl = textlist_create(
 			   {
@@ -673,6 +713,7 @@ function song_browser_create(owner, name)
 			   })
    sb.fl.cancel = sbfl_cancel
    sb.fl.select = sbfl_select
+   sb.fl.open_menu = sbfl_open_menu
 
    sb.fl.fade_min = 0.3
    sb.fl.draw_background_old = sb.fl.draw_background
@@ -680,15 +721,6 @@ function song_browser_create(owner, name)
 
    sb.fl.curplay_color = {1,1,0,0}
 
-   sb.type_action = {
-      dir      = { accept = 1 },
-      file     = { accept = 0 },
-      music    = { accept = 1 },
-      image    = { accept = 1 },
-      lua      = { accept = 1 },
-      plugin   = { accept = 1 },
-      playlist = { },
-   }
 
    function sbpl_clear(sb)
       sb.pl:change_dir(nil)
@@ -788,10 +820,10 @@ function song_browser_create(owner, name)
       if pos then dir[pos].__sortpos = 1 end
       
       if type(cmp) == "function" then
-	 print("sorting with function")
+-- 	 print("sorting with function")
 	 xsort(dir,cmp,sb)
       elseif type(cmp) == "table" then
-	 printf("sorting with table of functions (%d)", getn(cmp))
+-- 	 printf("sorting with table of functions (%d)", getn(cmp))
 -- 	 local i,v
 -- 	 for i,v in cmp do
 -- 	    printf("%q=%q",i,tostring(v))
@@ -901,7 +933,8 @@ function song_browser_create(owner, name)
       sbpl_remove(sb)
    end
 
-   function sbpl_select(pl, sb)
+
+   function sbpl_open_menu(pl, sb)
       if tag(pl.menu) == menu_tag then
 	 pl.menu:close()
       end
@@ -1011,21 +1044,31 @@ function song_browser_create(owner, name)
       end
    end
 
-   song_browser_default_actions = {
+   function sbpl_select(pl, sb)
+      pl:open_menu(sb)
+   end
+
+   song_browser_filelist_actions = {
       confirm = {
 	 dir = sbfl_confirm_dir,
 	 music = sbfl_confirm_music,
 	 image = sbfl_confirm_image,
 	 playlist = sbfl_confirm_playlist,
-	 default = sbfl_confirm_default
+	 default = sbfl_confirm_default,
       },
       select = {
+	 dir = sbfl_select_dir,
+	 music = sbfl_select_music,
+	 image = sbfl_select_image,
+	 playlist = sbfl_select_playlist,
+	 default = sbfl_select_default,
       },
       cancel = {
+	 default = sbfl_cancel_default,
       },
    }
-   sb.actions = song_browser_default_actions
 
+   sb.fl.actions = song_browser_filelist_actions
 
    x = 341
    sb.pl = textlist_create(
@@ -1047,6 +1090,7 @@ function song_browser_create(owner, name)
    sb.pl.confirm = sbpl_confirm
    sb.pl.cancel = sbpl_cancel
    sb.pl.select = sbpl_select
+   sb.pl.open_menu = sbpl_open_menu
    sb.pl.curplay_color = sb.fl.curplay_color
    sb.pl.draw_entry = function (fl, dl, idx, x , y, z)
 			 local sb = fl.cookie
