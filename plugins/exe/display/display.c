@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.17 2002-11-28 04:22:44 ben Exp $
+ * $Id: display.c,v 1.18 2002-11-28 20:20:24 ben Exp $
  */
 
 #include <stdlib.h>
@@ -66,6 +66,13 @@ DL_FUNCTION_DECLARE(tex_new);
 DL_FUNCTION_DECLARE(tex_destroy);
 DL_FUNCTION_DECLARE(tex_get);
 DL_FUNCTION_DECLARE(tex_info);
+
+/* display_commands.c */
+DL_FUNCTION_DECLARE(nop);
+DL_FUNCTION_DECLARE(sublist);
+
+/* display_color.c */
+DL_FUNCTION_DECLARE(draw_colors);
 
 /* display list LUA interface */
 int dl_list_tag;
@@ -386,11 +393,36 @@ static luashell_command_description_t display_commands[] = {
     SHELL_COMMAND_C, lua_get_color       /* function */
   },
   {
+    "dl_set_trans", 0,                   /* long and short names */
+    "print [["
+      "dl_set_trans(list, matrix) : set the transformation"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_set_trans       /* function */
+  },
+  {
+    "dl_get_trans", 0,                   /* long and short names */
+    "print [["
+      "dl_get_trans(list) : get the transformation, return a matrix"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_get_trans       /* function */
+  },
+  {
     "dl_clear", 0,                       /* long and short names */
     "print [["
       "dl_clear(list) : get clear"
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_clear           /* function */
+  },
+
+  /* color interface */
+
+  {
+    "dl_draw_colors", 0,                    /* long and short names */
+    "print [["
+	"dl_draw_box(list, a, r, g, b [,a, r, g, b ...]) : set up to 4 "
+	"draw colors."
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_draw_colors     /* function */
   },
 
   /* box interface */
@@ -468,6 +500,48 @@ static luashell_command_description_t display_commands[] = {
     SHELL_COMMAND_C, lua_draw_strip   /* function */
   },
 
+  /* built-in command interface */
+
+  {
+	"dl_nop", 0,                /* long and short names */
+	"print [["
+	"dl_nop() : No operation."
+	"]]",                       /* usage */
+	SHELL_COMMAND_C, lua_nop    /* function */
+  },
+  {
+	"dl_sublist", 0,            /* long and short names */
+	"print [["
+	"dl_sublist(list, sublist [, color-op [, trans-op [, restore] ] ]) "
+	" : draw a sub-list.\n"
+	" <color-op> and <trans-op> are strings that respectively set the color"
+	" and transformation heritage.\n"
+    " default := MODULATE\n"
+	" values := { PARENT, LOCAL, ADD, MODULATE }\n"
+	"\n"
+	" <restore> is a string containing characters that define which graphic"
+	" context properties will be restored at the end of the sub-list"
+	" execution. The string is parsed from left to right.\n"
+	" Control characters may be uppercase to activate and lowercase"
+	" to desactivate a graphic property restore stat.\n"
+    " default := A (All)\n"
+	" General-Properties\n"
+	" - <A/a> : set/clear all properties.\n"
+	" - <~>   : invert all\n"
+	" Text-Properties\n"
+	" - <T/t> : activate/desactivate all text properties\n"
+	" - <S/s> : activate/desactivate text size\n"
+	" - <F/s> : activate/desactivate text font face\n"
+	" - <K/k> : activate/desactivate text color\n"
+	" Color-Properties\n"
+	" - <C/c> : activate/desactivate color table properties\n"
+    " - <0/1/2/3> : toggle color #\n"  
+	" Clipping-Property\n"
+	" -<B/b>  : activate/desactivate clipping box restoration.\n"
+	"]]",                           /* usage */
+	SHELL_COMMAND_C, lua_sublist    /* function */
+  },
+
   /* clipping interface */
 
   {
@@ -525,21 +599,6 @@ static luashell_command_description_t display_commands[] = {
   },
 
   /* matrix interface */
-
-  {
-    "dl_set_trans", 0,                   /* long and short names */
-    "print [["
-      "dl_set_trans(list, matrix) : set the transformation"
-    "]]",                                /* usage */
-    SHELL_COMMAND_C, lua_set_trans       /* function */
-  },
-  {
-    "dl_get_trans", 0,                   /* long and short names */
-    "print [["
-      "dl_get_trans(list) : get the transformation, return a matrix"
-    "]]",                                /* usage */
-    SHELL_COMMAND_C, lua_get_trans       /* function */
-  },
   {
     "mat_new", 0,                        /* long and short names */
     "print [["

@@ -4,7 +4,7 @@
  *  @date    2002/10/15
  *  @brief   draw primitive vertex definition.
  *
- * $Id: clipping.c,v 1.1 2002-11-25 16:42:28 ben Exp $
+ * $Id: clipping.c,v 1.2 2002-11-28 20:20:24 ben Exp $
  */
 
 #include "draw/gc.h"
@@ -19,6 +19,11 @@ void draw_set_clipping4(const float xmin, const float ymin,
   current_gc->clipbox.y2 = ymax;
 }
 
+void draw_set_clipping(const draw_clipbox_t * clipbox)
+{
+  current_gc->clipbox = *clipbox;
+}
+
 void draw_get_clipping4(float * xmin, float  * ymin,
 						float * xmax, float  * ymax)
 {
@@ -26,6 +31,11 @@ void draw_get_clipping4(float * xmin, float  * ymin,
   if (ymin) *ymin = current_gc->clipbox.y1;
   if (xmax) *xmax = current_gc->clipbox.x2;
   if (ymax) *ymax = current_gc->clipbox.y2;
+}
+
+void draw_get_clipping(draw_clipbox_t * clipbox)
+{
+  *clipbox = current_gc->clipbox;
 }
 
 static void vertex_clip(draw_vertex_t *v,

@@ -5,10 +5,10 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, box functions
  * 
- * $Id: display_color.c,v 1.1 2002-11-27 09:58:09 ben Exp $
+ * $Id: display_color.c,v 1.2 2002-11-28 20:20:24 ben Exp $
  */
 
-#include "draw/color.h"
+#include "draw/gc.h"
 #include "display_driver.h"
 
 struct color1_com {
@@ -126,7 +126,7 @@ static int getcolor(draw_color_t * c, lua_State * L, int i)
   return 0;
 }
 
-DL_FUNCTION_START(setcolor)
+DL_FUNCTION_START(draw_colors)
 {
   int i = 0;
   int j = 2;
