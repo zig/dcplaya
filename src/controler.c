@@ -19,6 +19,9 @@ typedef struct {
   int port;
   int unit;
   uint32 last_frame;
+
+  controler_state_t state;
+
 } controler_t;
 
 static controler_t controlers[MAX_CONTROLER];
@@ -86,6 +89,29 @@ static void controler_get(void)
   }
 }
 
+static int rescale(int v, const int dead, const int shift)
+{
+  v -= dead;
+  if (v < 0) {
+	v = 0;
+  } else {
+	v = (v << shift) / ((1<<shift) - dead);
+  }
+  return v;
+}
+
+static int rescale2(int v, const int dead, const int shift)
+{
+  const int max = 1 << shift;
+
+  if (v > max-dead && v < max+dead) {
+	v = 0;
+  } else {
+	v = ((max-v) << shift) / ((1<<shift) - dead);
+  }
+  return v;
+}
+
 static void fill_controler_state(controler_state_t * state, controler_t * cont,
 								 uint32 elapsed)
 {
@@ -96,18 +122,15 @@ static void fill_controler_state(controler_state_t * state, controler_t * cont,
   state->buttons = ~cond->buttons;
   state->buttons_change = cond->buttons ^ oldcond->buttons;
   
-  state->rtrig = (cond->rtrig < CONTROLER_TRIG_DEAD) ? 0 : cond->rtrig;
-  state->ltrig = (cond->ltrig < CONTROLER_TRIG_DEAD) ? 0 : cond->ltrig;
-  
-  state->joyx = (cond->joyx > 128-CONTROLER_JOY_DEAD &&
-		 cond->joyx < 128+CONTROLER_JOY_DEAD) ? 0 : (int)cond->joyx-128;
-  state->joyy = (cond->joyy > 128-CONTROLER_JOY_DEAD &&
-		 cond->joyy < 128+CONTROLER_JOY_DEAD) ? 0 : (int)cond->joyy-128;
+/*   state->rtrig = (cond->rtrig < CONTROLER_TRIG_DEAD) ? 0 : cond->rtrig; */
+/*   state->ltrig = (cond->ltrig < CONTROLER_TRIG_DEAD) ? 0 : cond->ltrig; */
+  state->rtrig = rescale(cond->rtrig,CONTROLER_TRIG_DEAD,8);
+  state->ltrig = rescale(cond->ltrig,CONTROLER_TRIG_DEAD,8);
 
-  state->joy2x = (cond->joy2x > 128-CONTROLER_JOY_DEAD &&
-		  cond->joy2x < 128+CONTROLER_JOY_DEAD) ? 0 : (int)cond->joy2x-128;
-  state->joy2y = (cond->joy2y > 128-CONTROLER_JOY_DEAD &&
-		  cond->joy2y < 128+CONTROLER_JOY_DEAD) ? 0 : (int)cond->joy2y-128;
+  state->joyx  = rescale2(cond->joyx,CONTROLER_JOY_DEAD,7);
+  state->joyy  = rescale2(cond->joyy,CONTROLER_JOY_DEAD,7);
+  state->joy2x = rescale2(cond->joy2x,CONTROLER_JOY_DEAD,7);
+  state->joy2y = rescale2(cond->joy2y,CONTROLER_JOY_DEAD,7);
 
   *oldcond = *cond;
   cont->last_frame += elapsed;
@@ -136,7 +159,9 @@ static void controler_thread(void * dummy)
     uint32 frame = ta_state.frame_counter;
     uint32 elapsed_frame = last_frame;
     int keyboard_addr;
-
+	controler_t * cont;
+	uint32 factor = 65536;
+	
     elapsed_frame = frame - elapsed_frame;
 
     if (elapsed_frame) {
@@ -160,24 +185,27 @@ static void controler_thread(void * dummy)
 		report = 0;
 	  }
 	  
-      /* pad */
+      /* Get controler cond, scan for current number of controler ... */
       controler_get();
 	  
       if (elapsed_frame < CONTROLER_NO_SMOOTH_FRAMES) {
-		controler_t * cont;
 		int i;
-		uint32 factor = 65536 - CONTROLER_SMOOTH_FACTOR;
-		
+		factor = 65536 - CONTROLER_SMOOTH_FACTOR;
+		/* $$$ ben : this this a crap method to perform a power ! */
 		for (i=1; i<elapsed_frame; ++i) {
 		  factor = (factor * factor) >> 16;
 		}
 		factor = 65536 - factor;
-		for (cont=controlers; cont<controlers+MAX_CONTROLER; ++cont) {
-		  if (cont->connected) {
-			controler_smooth(factor, &cont->cond, &cont->oldcond);
-		  }
+	  }
+
+	  /* Fill controler state */
+	  for (cont=controlers; cont<controlers+MAX_CONTROLER; ++cont) {
+		if (!cont->connected) continue;
+		if (factor < 65536) {
+		  controler_smooth(factor, &cont->cond, &cont->oldcond);
 		}
-      }
+		fill_controler_state(&cont->state, cont, elapsed_frame);
+	  }
 	  
       /* keyboard */
       keyboard_addr = maple_first_kb();
@@ -185,8 +213,8 @@ static void controler_thread(void * dummy)
 		kbd_poll_repeat(keyboard_addr, ta_state.frame_counter - last_frame);
 	  }
 	  
-      spinlock_unlock(&controler_mutex);
       last_frame = frame;
+      spinlock_unlock(&controler_mutex);
     }
 	
     thd_pass();
@@ -238,7 +266,8 @@ int controler_read(controler_state_t * state, unsigned int idx)
 {
   controler_t * cont;
   uint32 elapsed_frame;
-
+  int connected;
+  
   if (idx >= MAX_CONTROLER) {
 	return -1;
   }
@@ -246,9 +275,10 @@ int controler_read(controler_state_t * state, unsigned int idx)
   cont = controlers + idx;
   spinlock_lock(&controler_mutex);
   elapsed_frame = ta_state.frame_counter - cont->last_frame;
-  fill_controler_state(state, cont, elapsed_frame);
+  *state = cont->state;
+  connected = cont->connected;
   spinlock_unlock(&controler_mutex);
-  return 0;
+  return !connected;
 }
 
 int controler_pressed(const controler_state_t * state, uint32 mask)

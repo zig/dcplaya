@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.52 2002-12-19 02:25:12 ben Exp $
+ * @version    $Id: dynshell.c,v 1.53 2002-12-20 21:17:24 ben Exp $
  */
 
 #include <stdio.h>
@@ -49,6 +49,9 @@ static int song_tag;
 static const char * home = "/pc"  DREAMMP3_HOME;
 static const char * initfile = "/pc"  DREAMMP3_HOME "/lua/init.lua";
 
+static float frame_to_second(unsigned int frames) {
+  return frames * (1.0f/60.0f);
+}
 
 #define lua_assert(L, test) if (!(test)) lua_assert_func(L, #test); else
 static void lua_assert_func(lua_State * L, const char * msg)
@@ -1829,6 +1832,102 @@ static int lua_load_background(lua_State * L)
   return 1;
 }
 
+
+static int lua_frame_to_second(lua_State * L)
+{
+  lua_pushnumber(L, frame_to_second(lua_tonumber(L,1)));
+  return 1;
+}
+
+
+static void controler_button_to_table(lua_State * L, int buttons)
+{
+  int m,i,table;
+  static const char * button_name[16] = {
+	"c", "b", "a", "start",
+	"up", "down", "left", "right",
+	"z", "y", "x", "d",
+	"up2", "down2", "left2", "right2"
+  };
+
+  lua_newtable(L);
+  table = lua_gettop(L);
+  for (i=0, m=1; i<16; ++i, m <<= 1) {
+	if (buttons & m) {
+	  lua_pushstring(L,button_name[i]);
+	  lua_pushnumber(L,1);
+	  lua_rawset(L,table);
+	}
+  }
+}
+
+static void controler_state_to_table(lua_State * L,
+									 const controler_state_t * state)
+{
+  int table;
+
+  lua_newtable(L);
+  table = lua_gettop(L);
+
+  lua_pushstring(L,"buttons");
+  controler_button_to_table(L, state->buttons);
+  lua_rawset(L,table);
+
+  lua_pushstring(L,"buttons_change");
+  controler_button_to_table(L, state->buttons_change);
+  lua_rawset(L,table);
+
+  lua_pushstring(L,"elapsed_time");
+  lua_pushnumber(L, frame_to_second(state->elapsed_frames));
+  lua_rawset(L,table);
+
+  lua_pushstring(L,"rtrig");
+  lua_pushnumber(L, (float)state->rtrig * (1/255.0f));
+  lua_rawset(L,table);
+  lua_pushstring(L,"ltrig");
+  lua_pushnumber(L, (float)state->ltrig * (1/255.0f));
+  lua_rawset(L,table);
+  lua_pushstring(L,"joyx");
+  lua_pushnumber(L, (float)state->joyx  * (1/128.0f));
+  lua_rawset(L,table);
+  lua_pushstring(L,"joyy");
+  lua_pushnumber(L, (float)state->joyy  * (1/128.0f));
+  lua_rawset(L,table);
+  lua_pushstring(L,"joy2x");
+  lua_pushnumber(L, (float)state->joy2x  * (1/128.0f));
+  lua_rawset(L,table);
+  lua_pushstring(L,"joy2y");
+  lua_pushnumber(L, (float)state->joy2y  * (1/128.0f));
+  lua_rawset(L,table);
+}
+
+static int lua_read_controler(lua_State * L)
+{
+  controler_state_t state;
+
+  if (lua_gettop(L) > 0) {
+	int num = lua_tonumber(L,1);
+	lua_settop(L,0);
+	if (!controler_read(&state, num-1)) {
+	  controler_state_to_table(L, &state);
+	}
+  } else {
+	int i;
+	lua_settop(L,0);
+	lua_newtable(L);
+	for (i=0; ; ++i) {
+	  int err = controler_read(&state, i);
+	  if (err < 0) {
+		break;
+	  } else if (!err) {
+		controler_state_to_table(L, &state);
+		lua_rawseti(L, 1, i+1);
+	  }
+	}
+  }
+  return lua_gettop(L);
+}
+
 #if 0
 static char shell_basic_lua_init[] = 
 "\n shell_help_array = {}"
@@ -2258,6 +2357,28 @@ static luashell_command_description_t commands[] = {
     "]])",
     SHELL_COMMAND_C, lua_load_background
   },
+
+  {
+	"frame_to_second",
+	0,
+	"print([["
+    "frame_to_second(frames) : "
+	" Convert a number of frame (vertical refresh) into seconds.\n"
+    "]])",
+    SHELL_COMMAND_C, lua_frame_to_second
+  },
+
+  {
+	"controler_read",
+	0,
+	"print([["
+    "controler_read([num]) :"
+	" Read either all or a given controler.\n"
+	" Returns respectively a table of controler table or a controler table.\n"
+    "]])",
+    SHELL_COMMAND_C, lua_read_controler
+  },
+
 
   {0},
 };
