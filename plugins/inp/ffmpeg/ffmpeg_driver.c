@@ -1,5 +1,5 @@
 /*
- * $Id: ffmpeg_driver.c,v 1.5 2004-07-13 09:24:19 vincentp Exp $
+ * $Id: ffmpeg_driver.c,v 1.6 2004-07-14 08:07:46 vincentp Exp $
  */
 
 /* Define this for benchmark mode (not to a watch video !) */
@@ -115,6 +115,8 @@ static semaphore_t * dma_done;
 /* VP : For some reason, it is not stable when launching the dma for more than
    DMA_BSZ bytes */
 #define DMA_BSZ (64*64*2) /* size of a dma block */
+
+#define DMA_ONESHOT
 
 typedef struct dma_pict {
   uint8_t * buf;
@@ -1037,6 +1039,7 @@ static yuvinit(float lo, float lm, float c1o, float c1m, float c2o, float c2m)
 
 extern uint32 render_counter;
 extern uint32 render_counter2;
+extern int ta_block_render;
 extern void (* ta_render_done_cb) ();
 
 void totocb()
@@ -1091,12 +1094,23 @@ static void dma_cb(void * p)
     dma_sendn -= dma_sendinc;
     dma_sendoff += dma_sendinc;
     vid_border_color(dma_sendn/64, dma_sendoff/128, 128);
+
+    ta_block_render = 1;
   } else {
     dma_sendn = 0;
+
+    ta_block_render = 0;
+
     sem_signal(dma_done);
     thd_schedule(1, 0);
     vid_border_color(0, 0, 0);
   }
+}
+
+void renderdone_cb()
+{
+  dma_cb(0);
+  ta_render_done_cb = NULL;
 }
 #endif
 
@@ -1301,9 +1315,14 @@ static void yuv420pto422(int w, int h)
   dma_sendn = btexture2->width * h * 2;
   dma_sendoff = 0;
   //dma_sendinc = (dma_sendn + 31) & (~31);
+#ifdef DMA_ONESHOT
+  dma_sendinc = (dma_sendn + 63)&(~63);
+#else
   dma_sendinc = DMA_BSZ; 
+#endif
   dma_tex = btexture2->ta_tex;
-  dma_cb(0);
+  ta_render_done_cb = renderdone_cb;
+  //dma_cb(0);
 
   return;
 #endif
