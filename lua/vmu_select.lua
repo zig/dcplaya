@@ -152,6 +152,5 @@ end
 
 vmu_select_create_sprite()
 
-if nil then
 vmu_select_loaded = 1
 return vmu_select_loaded

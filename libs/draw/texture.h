@@ -4,7 +4,7 @@
  * @date    2002/10/20
  * @brief   texture manager
  *
- * $Id: texture.h,v 1.5 2003-03-06 16:59:43 zigziggy Exp $
+ * $Id: texture.h,v 1.6 2003-03-18 10:44:26 zigziggy Exp $
  */
 
 #ifndef _TEXTURE_H_
@@ -30,6 +30,12 @@ typedef struct {
   int format;    /**< see list in ta.h               */
   int ref;       /**< Reference counter              */
   int lock;      /**< Lock counter                   */
+  int twiddled;  /**< Twiddled state                 */
+  int twiddlable;/**< Should we twiddle it ?         */
+
+#ifdef DEBUG
+  int non_twiddled_debugged;
+#endif
 
   eh_block_t ehb;/**< External heap block            */
 
@@ -126,8 +132,12 @@ int texture_destroy(texid_t texid, int force);
 /** Add, remove or get texture reference counter. */
 int texture_reference(texid_t texid, int count);
 
-/** Get a pointer on a texture definition. */
+/** Get a pointer on a texture definition and make sure pixels
+    are not twiddled. */
 texture_t * texture_lock(texid_t texid);
+
+/** Get a pointer on a texture definition without de-twiddling. */
+texture_t * texture_fastlock(texid_t texid);
 
 /** Release a previously locked texture. */
 void texture_release(texture_t * t);
@@ -162,5 +172,7 @@ int texture_strtoformat(const char * formatstr);
 /** Display statistics about the video memory */
 void texture_memstats();
 
+/** Twiddle or de-twiddle a texture as required */
+void texture_twiddle(texture_t * t, int wanted);
 
 #endif /* #define _TEXTURE_H_ */

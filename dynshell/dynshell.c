@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.82 2003-03-18 01:10:10 ben Exp $
+ * @version    $Id: dynshell.c,v 1.83 2003-03-18 10:44:25 zigziggy Exp $
  */
 
 #include "dcplaya/config.h"
@@ -2151,15 +2151,6 @@ static int lua_load_background(lua_State * L)
     return 0;
   }
 
-  btexture = texture_lock(texid);
-  if (!btexture) {
-    /* Safety net ... */
-    return 0;
-  }
-
-  /* Little dangerous things ... But avoid to lock rendering */
-  texture_release(btexture);
-
   switch(lua_type(L,1)) {
   case LUA_TNUMBER:
     stexture = texture_lock(lua_tonumber(L,1));
@@ -2213,10 +2204,24 @@ static int lua_load_background(lua_State * L)
 
   if (dw > 1024) dw = 1024;
   if (dh > 512) dh = 512;
-  btexture->width  = dw;
-  btexture->height = dh;
-  btexture->wlog2  = greaterlog2(btexture->width);
-  btexture->hlog2  = greaterlog2(btexture->height);
+
+  btexture = texture_lock(texid);
+  if (!btexture) {
+    /* Safety net ... */
+    return 0;
+  }
+
+  if (type == 2) {
+    btexture->width  = dw;
+    btexture->height = dh;
+    btexture->wlog2  = greaterlog2(btexture->width);
+    btexture->hlog2  = greaterlog2(btexture->height);
+  } else {
+    btexture->width  = 1024;
+    btexture->height = 512;
+    btexture->wlog2  = greaterlog2(btexture->width);
+    btexture->hlog2  = greaterlog2(btexture->height);
+  }
   btexture->format = stexture->format;
   finalRatio = dh / dw;
 
@@ -2234,10 +2239,16 @@ static int lua_load_background(lua_State * L)
   }
   /* $$$ Currently all texture are 16bit. Since blitz don't care about exact
      pixel format blitz is done with ARGB565 format. */
-  Blitz(btexture->addr, btexture->width, btexture->height,
-	SHAPF_RGB565, ((1<<btexture->wlog2) - btexture->width) * 2,
+  Blitz(btexture->addr, dw, dh,
+	SHAPF_RGB565, ((1<<btexture->wlog2) - dw) * 2,
 	stexture->addr, stexture->width, stexture->height,
 	SHAPF_RGB565, smodulo * 2);
+
+
+  /* Finally unlock the background texture */
+  texture_release(btexture);
+
+
   if (img) {
     free(img);
   }
@@ -2249,8 +2260,8 @@ static int lua_load_background(lua_State * L)
   v1 = 1.0f / (float) (1<<btexture->hlog2);
   
   if (type != 2) {
-    vdef[1].u = (float)btexture->width * u1;
-    vdef[1].v = (float)btexture->height * v1;
+    vdef[1].u = (float)dw * u1;
+    vdef[1].v = (float)dh * v1;
 
     if (!type) {
       w = 1;

@@ -5,7 +5,7 @@
  * @date     2002/11/22
  * @brief    draw tile accelarator interface
  *
- * $Id: ta.c,v 1.3 2003-03-17 22:24:17 zigziggy Exp $
+ * $Id: ta.c,v 1.4 2003-03-18 10:44:25 zigziggy Exp $
  */
 
 #include "draw/ta.h"
@@ -54,7 +54,7 @@ static void make_poly_hdr(ta_hw_poly_t * poly, int flags)
   t = 0;
   texid = DRAW_TEXTURE(flags);
   if (texid != DRAW_NO_TEXTURE) {
-	t = texture_lock(texid);
+    t = texture_fastlock(texid);
   }
 
   idx = 0
@@ -67,14 +67,35 @@ static void make_poly_hdr(ta_hw_poly_t * poly, int flags)
   word3 = p->word3;
   word4 = 0;
   if (t) {
-	/* $$$ does not match documentation !!!  */
-	word3 |= ((DRAW_FILTER(flags)^DRAW_FILTER_MASK)) << (13-DRAW_FILTER_BIT);
-	word3 |= (t->wlog2-3) << 3;
-	word3 |= (t->hlog2-3);
-	/* $$$ does not match documentation !! */
-	word4 = (t->format<<26) | (t->ta_tex >> 3);
+    int tformat = t->format;
 
-	texture_release(t);
+    /* re-twiddle the texture if necessary */
+    if (t->twiddled != t->twiddlable)
+      texture_twiddle(t, t->twiddlable);
+
+    if (t->twiddled)
+      tformat &= ~1;
+#ifdef DEBUG
+    else {
+      if (!t->non_twiddled_debugged) {
+	/* VP : Display once any non twiddled texture, we should avoid
+	   non twiddled texture if possible, they are slow to render ! */
+	SDWARNING("Texture NOT TWIDDLED ! [%s]\n", t->name);
+	t->non_twiddled_debugged = 1;
+      }
+    }
+#endif
+    
+    /* $$$ does not match documentation !!!  */
+    word3 |= ((DRAW_FILTER(flags)^DRAW_FILTER_MASK)) << (13-DRAW_FILTER_BIT);
+    word3 |= (t->wlog2-3) << 3;
+    word3 |= (t->hlog2-3);
+    /* $$$ does not match documentation !! */
+    word4 = (tformat<<26) | (t->ta_tex >> 3);
+
+    texture_release(t);
+
+
   }
   poly->word3 = word3;
   poly->word4 = word4;
