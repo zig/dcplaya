@@ -1,6 +1,6 @@
 -- This is main DCplaya lua script
 --
--- $Id: dcplayarc.lua,v 1.6 2002-09-17 23:38:21 ben Exp $
+-- $Id: dcplayarc.lua,v 1.7 2002-09-18 12:19:30 zig Exp $
 --
 
 print ("Welcome to DCplaya !\n")
@@ -9,9 +9,9 @@ print ("Home is set to '", home, "'\n")
 
 
 -- standard stuffs
-dofile (home.."shell.lua")
-dofile (home.."dirfunc.lua")
-dofile (home.."zed.lua")
+dofile (home.."lua/dirfunc.lua")
+dofile (home.."lua/shell.lua")
+dofile (home.."lua/zed.lua")
 
 
 -- reading directory on PC is slow through serial port, 

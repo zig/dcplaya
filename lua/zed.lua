@@ -3,13 +3,13 @@
 --
 -- (C) 2002 Vincent Penne (aka Ziggy Stardust)
 --
--- $Id: zed.lua,v 1.4 2002-09-17 19:47:08 zig Exp $
+-- $Id: zed.lua,v 1.5 2002-09-18 12:19:30 zig Exp $
 --
 
 rp ("Initializing ZED ... ")
 
-dofile (home.."mu_term.lua")
-dofile (home.."keydefs.lua")
+dofile (home.."lua/mu_term.lua")
+dofile (home.."lua/keydefs.lua")
 
 zed_w, zed_h	=	consolesize()
 

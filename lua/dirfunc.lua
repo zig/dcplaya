@@ -54,7 +54,7 @@ function ls(path)
 	print("Files in "..path)
 
 	local i, j, n, w, h
- n=getn(list)
+	n=getn(list)
 	w,h = consolesize()
 	h = h-2
 	for i=0,n/h, 1 do
