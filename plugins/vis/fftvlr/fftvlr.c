@@ -8,7 +8,7 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.19 2002-12-18 06:30:30 ben Exp $
+ * $Id: fftvlr.c,v 1.20 2002-12-18 12:41:52 ben Exp $
  */
 
 #include <stdlib.h>
@@ -439,7 +439,6 @@ static int lua_setdb(lua_State * L)
   lua_pushnumber(L,old);
   return 1;
 }
-
 
 static int lua_setbordertex(lua_State * L)
 {
