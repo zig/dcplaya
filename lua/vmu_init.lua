@@ -1,7 +1,7 @@
 --- @date 2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  LUA script to initialize dcplaya VMU backup.
---- $Id: vmu_init.lua,v 1.12 2003-03-05 20:02:18 ben Exp $
+--- $Id: vmu_init.lua,v 1.13 2003-03-06 10:39:05 ben Exp $
 ---
 
 -- Unload library
@@ -228,5 +228,5 @@ function vmu_init()
 end
 
 vmu_init()
-printf("VMU path [" .. tostring(vmu_path .. "]")
+print("VMU path [" .. tostring(vmu_path) .. "]")
 
