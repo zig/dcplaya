@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.45 2003-03-12 22:02:00 ben Exp $
+--- $Id: song_browser.lua,v 1.46 2003-03-12 22:41:46 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song browser application
@@ -123,13 +123,13 @@ function song_browser_create(owner, name)
    -- Song-Browser default style
    -- --------------------------
    local style = {
-      bkg_color		= { 0.8, 0.4, 0.0, 0.0,  0.8, 0.3, 0.3, 0.3 },
-      border			= 5,
-      span            = 1,
-      file_color		= { 1, 1, 0.8, 0 },
-      dir_color		= { 1, 1, 1, 0 },
-      cur_color		= { 1, 0.5, 0, 0,  0.5, 1, 0.7, 0 },
-      text            = {font=0, size=16, aspect=1}
+      bkg_color         = { 0.8, 0.4, 0.0, 0.0,  0.8, 0.3, 0.3, 0.3 },
+      border            = 5,
+      span              = 1,
+      file_color        = { 1, 1, 0.8, 0 },
+      dir_color         = { 1, 1, 1, 0 },
+      cur_color         = { 1, 0.5, 0, 0,  0.5, 1, 0.7, 0 },
+      text              = {font=0, size=16, aspect=1}
    }
 
    --- Update CDROM status.
@@ -142,11 +142,9 @@ function song_browser_create(owner, name)
 	 local path = (sb.fl.dir and sb.fl.dir.path) or "/"
 	 local incd = strsub(path,1,3) == "/cd"
 	 if id == 0 and incd and st == "nodisk" then
---	    print("Drive empty")
 	    song_browser_loaddir(sb,"/")
 	 elseif id ~= sb.cdrom_id then
 	    if id ~= 0 then
---	       print(format("New CD detected #%X", id))
 	       if incd then song_browser_loaddir(sb,"/cd") end
 	    else
 --	       print("No more CD in drive")
@@ -225,7 +223,6 @@ function song_browser_create(owner, name)
    --- Song-Browser update (handles fade in / fade out).
    --  ------------------------------------------------
    function song_browser_update(sb, frametime)
---      song_browser_update_cdrom(sb, frametime)
       song_browser_update_loaddir(sb, frametime)
       song_browser_update_recloader(sb, frametime)
 
@@ -414,8 +411,12 @@ function song_browser_create(owner, name)
    --- Song-Browser draw.
    --  -----------------
    function song_browser_draw(sb)
+      dl_clear(sb.dl)
       sb.fl:draw()
       sb.pl:draw()
+      dl_sublist(sb.dl,sb.fl.dl)
+      dl_sublist(sb.dl,sb.pl.dl)
+      dl_set_active(sb.dl, 1)
    end
 
    function song_browser_list_draw_background(fl,dl)
@@ -430,7 +431,7 @@ function song_browser_create(owner, name)
       y2 = y1 + border
       y4 = fl.bo2[2]
       y3 = y4 - border
-      z  = 10
+      z  = 50
 
       local a1,r1,g1,b1 = 1.0, 1.0, 0.0, 0.0
       local a2,r2,g2,b2 = 1.0, 1.0, 1.0, 0.0
@@ -466,18 +467,19 @@ function song_browser_create(owner, name)
 
       if fl.title_sprite then
 	 fl.title_sprite:set_color(1,r2,g2,b2)
-	 fl.title_sprite:draw(dl, (x1+x4) * 0.5, y1-fl.title_sprite.h, 50)
+	 fl.title_sprite:draw(dl, (x1+x4) * 0.5, y1-fl.title_sprite.h, 75)
       end
 
       if fl.icon_sprite then
 	 local w,h = fl.icon_sprite.w, fl.icon_sprite.h
 	 fl.icon_sprite:set_color(0.4,r2,g2,b2)
-	 fl.icon_sprite:draw(dl, x3 - w * 0.5, y3 - h * 0.5, 50)
+	 fl.icon_sprite:draw(dl, x3 - w * 0.5, y3 - h * 0.5, 75)
       end
 
-      if fl.draw_background_old then
-	 fl:draw_background_old(dl)
-      end
+--      if fl.draw_background_old then
+--	 fl:draw_background_old(dl)
+--      end
+
    end
 
    --- Song-Browser set color.
@@ -544,7 +546,7 @@ function song_browser_create(owner, name)
       style = style,
       z = gui_guess_z(owner,z),
       fade = 0,
-      dl = dl_new_list(1024, 1)
+      dl = dl_new_list(128, 0, 0)
    }
 
    local x,y,z
