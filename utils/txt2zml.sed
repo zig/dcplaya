@@ -8,7 +8,7 @@
 #
 # Crappy, isn't it ?
 #
-# $Id: txt2zml.sed,v 1.1 2003-03-26 23:00:04 ben Exp $
+# $Id: txt2zml.sed,v 1.2 2003-03-31 16:49:12 ben Exp $
 #
 
 # some regexpr
@@ -35,7 +35,7 @@ b filter
 
 # Complete function loop
 : funcloop
-s|^[[:blank:]]\{1,\}\([[:alpha:]_][[:alnum:]_]*\)[[:blank:]]*(\(.*\)|<fct2><fct2-color> \1 (\2|
+s|^[[:blank:]]\{1,\}\([[:alpha:]_][[:alnum:]_]*\)[[:blank:]]*(\(.*\)|<fct><fct-color> \1 (\2|
 : funcloop2
 p
 n
@@ -47,7 +47,7 @@ b funcreturn
 
 # Complete list loop
 : liloop
-s|^[[:blank:]]\{1,\}\*[[:blank:]]\{1,\}\(.*\)|<li>\1|
+s|^[[:blank:]]\{1,\}\*[[:blank:]]\{1,\}\(.*\)|<br><li>\1|
 p
 n
 /^$/b liend
@@ -57,7 +57,7 @@ b liloop
 
 : liend
 i\
-</li>
+</li><p>
 
 : skipblank
 i\
@@ -69,8 +69,8 @@ s|\[[[:digit:]]\{1,\}\]||g
 # uncomplete function
 /\([[:alpha:]_]\{1,\}\)[[:blank:]]*(.*/b filter
 
-s|^[[:alpha:]]\{1,\}.*|<chap><chap-color>\0</chap>|
-s|^[[:blank:]]\{1,\}\([[:alpha:]]\{1,\}.*\)|<sect><sect-color>\1</sect>|
+s|^[[:alpha:]]\{1,\}.*|<chap><chap-color>\0</chap><p>|
+s|^[[:blank:]]\{1,\}\([[:alpha:]]\{1,\}.*\)|<sect><sect-color>\1</sect><p>|
 
 : filter
 # complete function line
