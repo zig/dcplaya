@@ -6,7 +6,7 @@
 ---
 ---   A color is table. Color operators use table' ones.
 ---
---- $Id: color.lua,v 1.5 2002-12-10 15:20:42 ben Exp $
+--- $Id: color.lua,v 1.6 2003-01-10 13:00:15 ben Exp $
 ---
 
 color_loaded = nil
@@ -44,9 +44,19 @@ end
 --- @ingroup dcplaya_lua_colors
 ---
 ---   Creates a new color object from either four numbers or a table of four
----   numbers. Default value is 1 for alpha component and 0 for others.
+---   numbers or a string. Default value is 1 for all components.
 ---
---- @param   a        alpha component or a table (noclip is 2nd parameter).
+---   @b table can be any table. rawget() function is used to retrieve color
+---   components with index 1,2,3,4 for respectively a,r,g,b components.
+---
+---   @b string := "[#][AA]RRGGBB". This is an hexacimal description of the
+---   color. It may start by an optional '#' char. Alpha componant is
+---   optionnal and its default value is 1.
+---
+---   @warning With table or string creation methods the noclip parameter
+---            is the 2nd one.
+---
+--- @param   a        alpha component or a table or a string.
 --- @param   r        red component
 --- @param   g        green component
 --- @param   b        blue component
@@ -55,17 +65,31 @@ end
 --- @return a new color table.
 --- 
 function color_new(a,r,g,b,noclip)
-	if type(a) == "table" then
-		b = rawget(a,4)
-		g = rawget(a,3)
-		r = rawget(a,2)
-		a = rawget(a,1)
-		noclip = r
-	end
-	local c = { a or 1, r or 1, g or 1, b or 1 }
-	settag(c,color_tag)
-	if not noclip then color_clip(c) end
-	return c
+   if type(a) == "string" then
+      noclip = r
+      local s = (strsub(a,1,1) == "#" and strsub(a,2)) or a
+      local len = strlen(s)
+      a = 1
+      if len > 6 then
+	 a = floor(mod(tonumber(strsub(s,1,len-6), 16) or 255,256)) / 255
+	 s = strsub(s,len-6+1)
+      end
+      local n = tonumber(s,16) or 16777215
+      b = floor(mod(n,256)) / 255
+      g = floor(mod(n/256,256)) / 255
+      r = floor(mod(n/65536,256)) / 255
+   elseif type(a) == "table" then
+      b = rawget(a,4)
+      g = rawget(a,3)
+      r = rawget(a,2)
+      a = rawget(a,1)
+      noclip = r
+   end
+
+   local c = { a or 1, r or 1, g or 1, b or 1 }
+   settag(c,color_tag)
+   if not noclip then color_clip(c) end
+   return c
 end
 
 --- Copy a color.

@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.39 2003-01-03 06:47:19 zigziggy Exp $
+--- $Id: gui.lua,v 1.40 2003-01-10 13:00:15 ben Exp $
 ---
 
 --
@@ -889,14 +889,16 @@ function gui_ask(question, answers, width, label)
 
    text = text..'<vspace h="16">'
 
-   text = text..question
+   text = text..(question or "")
 
    text = text..'<vspace h="16">'
 
    local i
-   for i=1, getn(answers), 1 do
-      text = text..'<hspace w="16">'
-      text = text..format('<button guiref="%d">', i)..answers[i]..'</button>'
+   if type(answers) == "table" then
+      for i=1, getn(answers), 1 do
+	 text = text..'<hspace w="16">'
+	 text = text..format('<button guiref="%d">', i)..answers[i]..'</button>'
+      end
    end
    text = text..'<hspace w="16">'
 

@@ -2,10 +2,11 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  sgml text and gui element formater
 ---
---- $Id: taggedtext.lua,v 1.10 2003-01-03 06:47:19 zigziggy Exp $
+--- $Id: taggedtext.lua,v 1.11 2003-01-10 13:00:15 ben Exp $
 ---
 
 if not dolib("sprite") then return end
+if not dolib("color") then return end
 
 function tt_text_draw(block)
 --   print(block.dl, block.x, block.y, block.z, block.color, block.text)
@@ -86,45 +87,9 @@ end
 
 
 -- UGLY !!!
+---  $$$ ben : not anymore :)
 function tt_tocolor(s)
-   if strsub(s, 1, 1) == "#" then
-      local v = 0
-      local i
-      local l = strlen(s)
-      local n = 0
-      local j = 2
-      local col = { 1, 1, 1, 1 }
-      
-      for i=2, l, 1 do
-	 local c
-	 c = strbyte(s, i)
-	 if c >= 97 then
-	    c = c - 97 + 10
-	 elseif c >= 65 then
-	    c = c - 65 + 10
-	 else
-	    c = c - 48
-	 end
-	 v = v * 16 + c
-
-	 n = n+1
-	 if n == 2 then
-	    col[j] = v/255
-	    v = 0
-	    j = j+1
-	    n = 0
-	    if j == 5 then
-	       j=1
-	    end
-	 end
-      end
-
-      return col
-   else
-      -- hahaha :)
-      local a = tonumber(s) / 255
-      return { 1, a, a, a }
-   end
+   return color_new(s)
 end
 
 
@@ -351,6 +316,7 @@ tt_commands = {
 
    ["button"] = tt_button_cmd,
    ["/button"] = tt_end_button_cmd
+
 }
 
 

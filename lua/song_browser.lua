@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.23 2003-01-08 17:10:00 ben Exp $
+--- $Id: song_browser.lua,v 1.24 2003-01-10 13:00:15 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -100,10 +100,7 @@ function song_browser_create(owner, name)
       text            = {font=0, size=16, aspect=1}
    }
 
-   --- Song-Browser update (handles fade in / fade out).
-   --  ------------------------------------------------
-   function song_browser_update(sb, frametime)
-
+   function song_browser_update_cdrom(sb, frametime)
       local timeout = sb.cdrom_check_timeout - frametime
       if timeout <= 0 then
 	 timeout = 0.5
@@ -129,8 +126,9 @@ function song_browser_create(owner, name)
 --	 print("CD:"..sb.cdrom_stat..","..sb.cdrom_type..","..sb.cdrom_id)
       end
       sb.cdrom_check_timeout = timeout
+   end
 
-
+   function song_browser_update_loaddir(sb, frametime)
       if sb.loaddir then
 	 local loading = (tag(sb.loaddir) == entrylist_tag and
 			  sb.loaddir.loading) or 2
@@ -147,6 +145,58 @@ function song_browser_create(owner, name)
 	    sb.loaddir = nil
 	 end
       end
+   end
+
+   function song_browser_update_recloader(sb, frametime)
+      if sb.recloader then
+	 local dir,i = sb.recloader.dir, sb.recloader.cur
+
+	 if not dir.loading and i >= dir.n then
+	    i = sb.recloader.cur2
+	    while i < dir.n do
+	       i = i + 1
+	       local entry = dir[i]
+	       if entry and entry.size < 0 and
+		  entry.file ~= "." and entry.file ~= ".."
+	       then
+		  local subel = entrylist_new()
+		  if subel then
+		     entrylist_load(subel,
+				    canonical(dir.path.."/"..entry.file))
+		     sb.recloader.cur2 = i
+		     sb.recloader = {
+			parent = sb.recloader,
+			dir = subel,
+			cur = 0,
+			cur2 = 0
+		     }
+		     return 1
+		  end
+	       end
+	    end
+	    if i >= dir.n then
+	       sb.recloader = sb.recloader.parent
+	    end
+	 else
+	    while i < dir.n do
+	       i = i + 1
+	       if dir[i].size > 0 then
+		  sbpl_insert(sb, dir[i])
+		  sb.recloader.cur = i
+		  return 1
+	       end
+	    end
+	    sb.recloader.cur = i
+	 end
+      end
+   end
+
+   --- Song-Browser update (handles fade in / fade out).
+   --  ------------------------------------------------
+   function song_browser_update(sb, frametime)
+      song_browser_update_cdrom(sb, frametime)
+      song_browser_update_loaddir(sb, frametime)
+      song_browser_update_recloader(sb, frametime)
 
       if not sb.sleeping then
 	 sb.idle_time = sb.idle_time or 0
@@ -177,12 +227,10 @@ function song_browser_create(owner, name)
 	       sb.playlist_idx = sb.playlist_idx + 1
 	       local path = sb.pl:fullpath(sb.pl.dir[sb.playlist_idx])
 	       if path then
-		  print("PLAY-LIST ADVANCE: #"..sb.playlist_idx.." "..path)
 		  song_browser_play(sb, path, 0, 0)
 	       end
 	    end
 	    if playa_play() == 0 then
-	       print("END OF PLAY-LIST")
 	       song_browser_stop(sb)
 	    end
 	 end
@@ -561,8 +609,13 @@ function song_browser_create(owner, name)
    function sbfl_select(fl, sb)
       local path = fl:fullpath()
       if not path then return end
-      print("sbfl_select("..path..")")
-      return sbpl_insert(sb, fl:get_entry())
+      local entry = fl:get_entry()
+      if not entry then return end
+      if entry.size < 0 then
+	 return sbpl_insertdir(sb, fl:fullpath(entry))
+      else
+	 return sbpl_insert(sb, entry)
+      end
    end
 
    sb.fl = textlist_create(
@@ -579,7 +632,7 @@ function song_browser_create(owner, name)
 			      span      = sb.style.span,
 			      confirm   = sbfl_confirm,
 			      owner     = sb,
-			      not_use_tt= 1
+			      not_use_tt = 1
 			   })
    sb.fl.cancel = sbfl_cancel
    sb.fl.select = sbfl_select
@@ -606,6 +659,19 @@ function song_browser_create(owner, name)
 
    function sbpl_insert(sb, entry)
       sb.pl:insert_entry(entry)
+   end
+
+   function sbpl_insertdir(sb, path)
+      if sb.recloader then return end
+      local dir = entrylist_new()
+      if dir then
+	 sb.recloader = {
+	    dir = dir,
+	    cur = 0,
+	    cur2 = 0,
+	 }
+	 entrylist_load(dir,path)
+      end
    end
 
    function sbpl_stop(sb)
@@ -713,7 +779,8 @@ function song_browser_create(owner, name)
 			      curcolor  = sb.style.cur_color,
 			      border    = sb.style.border,
 			      span      = sb.style.span,
-			      owner     = sb
+			      owner     = sb,
+			      not_use_tt = 1
 			   } )
    sb.pl.cookie = sb -- $$$ This should be owner !!!
    sb.pl.confirm = sbpl_confirm
@@ -721,7 +788,7 @@ function song_browser_create(owner, name)
    sb.pl.select = sbpl_select
    sb.pl.curplay_color = sb.fl.curplay_color
    sb.pl.draw_entry = function (fl, dl, idx, x , y, z)
-			 local sb = fl.cookie			  
+			 local sb = fl.cookie
 			 local entry = fl.dir[idx]
 			 local color = fl.dircolor
 			 if sb.playlist_idx and idx == sb.playlist_idx then
@@ -795,11 +862,16 @@ if not entrylist_tag then
    driver_load(plug_el)
 end
 
-sb = song_browser_create()
-
-function k()
-   if sb then evt_shutdown_app(sb) end
-   sb = nil
+if song_browser then
+   evt_shutdown_app(song_browser)
 end
 
+song_browser = song_browser_create()
 
+function song_browser_kill(sb)
+   sb = sb or song_browser
+   if sb then
+      evt_shutdown_app(sb)
+      if sb == song_browser then song_browser = nil end
+   end
+end
