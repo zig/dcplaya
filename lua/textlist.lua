@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.27 2003-01-07 19:40:40 ben Exp $
+--- $Id: textlist.lua,v 1.28 2003-01-11 14:44:03 ben Exp $
 ---
 
 -- Unload the library
@@ -488,15 +488,26 @@ function textlist_create(flparm)
    --- Get a copy of the current entry.
    --
    function textlist_get_entry(fl)
-      if fl.dir.n < 1 then return end
+      if not fl.dir or (fl.dir.n or 0) < 1 then return end
       local eentry = fl.dir[fl.pos+1]
-      local xentry = fl.dirinfo[fl.pos+1]
+      local xentry = fl.dirinfo and fl.dirinfo[fl.pos+1]
       local i,v,e
       e = {}
-      for i,v in xentry do e[i] = v end
-      for i,v in eentry do e[i] = v end
-      return e
+      if type(xentry) == "table" then
+	 for i,v in xentry do e[i] = v end
+      end
+      if type(eentry) == "table" then
+	 for i,v in eentry do e[i] = v end
+	 return e
+      end
    end
+
+   function textlist_get_pos(fl,pos)
+      if not fl.dir then return end
+      pos = pos or ((fl.pos or -1) + 1)
+      return pos > 0 and pos <= (fl.dir.n or 0) and pos
+   end
+
 
    --- Get entry fullpath
    --
@@ -557,6 +568,7 @@ function textlist_create(flparm)
       confirm		= textlist_confirm,
       move_cursor	= textlist_move_cursor,
       get_entry		= textlist_get_entry,
+      get_pos           = textlist_get_pos,
       fullpath          = textlist_fullpath,
       locate_entry_expr	= textlist_locate_entry_expr,
       locate_entry	= textlist_locate_entry,

@@ -214,7 +214,11 @@ function menu_create(owner, name, def, box, x1, y1)
 	 return
       elseif gui_keyright[key] then
 	 local fl = menu.fl
-	 if fl.dir[fl.pos+1].size < 0 then
+	 if not fl then return end
+	 local pos = fl:get_pos()
+	 if not pos then return end
+	 local entry = fl.dir[pos]
+	 if entry and entry.size < 0 then
 	    return menu:confirm()
 	 end
 	 return
@@ -334,28 +338,27 @@ function menu_create(owner, name, def, box, x1, y1)
    -- ------------
    function menu_confirm(menu)
       local fl = menu.fl
+      if not fl then return end
+      local entry = fl:get_entry()
+--fl.dir[idx]
+--      local info = fl.dirinfo[idx]
+
+      if not entry then return end
       local idx = fl.pos+1
-      local entry = fl.dir[idx]
-      local info = fl.dirinfo[idx]
+
       if entry.size and entry.size==-1 then
 	 local subname = menu.def[idx].subname
 	 local m = dl_get_trans(fl.dl)
 	 local submenu = menu.sub_menu[subname]
 	 
 	 if tag(submenu) == menu_tag then
-	    --				print(format("menu %q is a sub of %q",subname,menu.name))
 	    submenu:open()
 	    evt_app_insert_first(menu, submenu)
 	 else
-	    --				print(format("menu %q is NOT a sub of %q",subname,menu.name))
-	    --				dump(menu.sub_menu, format("%s BEFORE", menu.name))
-
-	    local y = info.y
+	    local y = entry.y
 	    submenu = menu:create(subname, menu.def.sub[subname],
-				  { m[4][1]+fl.bo2[1], m[4][2]+y-menu.style.border})
-
-	    --				dump(menu.sub_menu, format("%s AFTER", menu.name))
-
+				  { m[4][1]+fl.bo2[1],
+				     m[4][2]+y-menu.style.border})
 	 end
       else
 	 local cbname = menu.def[idx].cbname
