@@ -4,7 +4,7 @@
  * @date     2003/01/19
  * @brief    External heap management.
  * 
- * $Id: exheap.h,v 1.1 2003-01-19 16:45:14 zigziggy Exp $
+ * $Id: exheap.h,v 1.2 2003-01-19 21:39:34 zigziggy Exp $
  */
 
 #ifndef EXHEAP_H
@@ -76,6 +76,8 @@ struct eh_heap {
 
   /** Total heap size, may be increased if an sbrk function is provided. */
   size_t total_sz;
+
+  eh_block_t * last_free; /**< used by the default block_free to actually cache freeing, same block may be reused by next alloc */
 };
 
 

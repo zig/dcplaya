@@ -4,7 +4,7 @@
  * @date     2003/01/19
  * @brief    External heap management.
  * 
- * $Id: exheap.c,v 1.2 2003-01-19 20:05:30 zigziggy Exp $
+ * $Id: exheap.c,v 1.3 2003-01-19 21:39:34 zigziggy Exp $
  */
 
 
@@ -31,12 +31,19 @@ searching, and may allow to choose free blocks that suit better.
 
 eh_block_t * default_block_alloc(eh_heap_t * heap)
 {
-  return (eh_block_t *) malloc(sizeof(eh_block_t));
+  if (heap->last_free) {
+    eh_block_t * tmp = heap->last_free;
+    heap->last_free = NULL;
+    return tmp;
+  } else
+    return (eh_block_t *) malloc(sizeof(eh_block_t));
 }
 
 void default_block_free(eh_heap_t * heap, eh_block_t * block)
 {
-  free(block);
+  if (heap->last_free)
+    free(heap->last_free);
+  heap->last_free = block;
 }
 
 size_t default_sbrk(eh_heap_t * heap, size_t size)
@@ -86,7 +93,7 @@ static void dump_freeblock(eh_heap_t * heap)
 
   printf("Dumping video memory free texture areas :\n");
 
-  /* browser all free blocks */
+  /* browse all free blocks */
   CIRCLEQ_FOREACH(b, &heap->freelist, g_freelist) {
     eh_block_t * next;
     next = CIRCLEQ_NEXT(b, g_list);
@@ -173,13 +180,11 @@ static eh_block_t * do_alloc(eh_heap_t * heap, eh_block_t * b, size_t bsz, size_
     printf("2\n");
     /* used block totally replace free block */
     CIRCLEQ_INSERT_BEFORE(&heap->list, b, a, g_list);
-    a->offset = b->offset;
 
     free_freeblock(heap, b);
   } else
     if (size < heap->small_threshold) {
       printf("3\n");
-      a->offset = b->offset + bsz - size;
       CIRCLEQ_INSERT_AFTER(&heap->list, b, a, g_list);
     } else {
       eh_block_t * nb;
@@ -187,15 +192,14 @@ static eh_block_t * do_alloc(eh_heap_t * heap, eh_block_t * b, size_t bsz, size_
 
       printf("4\n");
 
-      nb = new_freeblock(heap, b->offset + size);
-      a->offset = b->offset;
-	
       CIRCLEQ_INSERT_BEFORE(&heap->list, b, a, g_list);
       prev = CIRCLEQ_PREV(b, g_freelist);
       free_freeblock(heap, b);
+
+      nb = new_freeblock(heap, b->offset + size);
       if (nb == NULL) {
 	/* PROBLEM HERE !! in this case, what's happening is exactly the same
-	   as if we allocated the entere free block ... */
+	   as if we allocated the entire free block ... */
       } else {
 
 	if (prev == (void *)&heap->freelist)
@@ -224,7 +228,7 @@ eh_block_t * eh_alloc(eh_heap_t * heap, size_t size)
   if (size < MIN_FREEBLOCK_SZ) /* TODO : remove this limitation, free should take care about that instead */
     size = sizeof(eh_block_t);
 
-  /* browser all free blocks */
+  /* browse all free blocks */
   CIRCLEQ_FOREACH(b, &heap->freelist, g_freelist) {
     eh_block_t * next;
     next = CIRCLEQ_NEXT(b, g_list);
