@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.c,v 1.3 2002-10-11 12:09:28 benjihan Exp $
+ * @version   $Id: display_list.c,v 1.4 2002-10-12 20:28:53 vincentp Exp $
  */
 
 
@@ -88,11 +88,11 @@ int dl_set_active(dl_list_t * l, int active)
 {
   int old;
 
-  locklists();
-
   old = l->active;
   if (old == active)
-    goto done;
+    return old;
+
+  locklists();
 
   LIST_REMOVE(l, g_list);
   if (!active)

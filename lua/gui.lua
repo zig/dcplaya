@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: gui.lua,v 1.12 2002-10-12 09:40:12 benjihan Exp $
+-- $Id: gui.lua,v 1.13 2002-10-12 20:28:53 vincentp Exp $
 --
 
 --
@@ -50,6 +50,8 @@ gui_text_color = { 0.9, 1.0, 1.0, 0.7 }
 gui_text_shiftbox = { 5, 5, -5, -5 }
 gui_input_cursor_color1 = { 1, 1, 0.5, 0 }
 gui_input_cursor_color2 = { 1, 0.5, 1.0, 0 }
+gui_focus_border_width = 2
+gui_focus_border_height = 2
 
 gui_keyup = { 
 	[KBD_KEY_UP] = 1, 
@@ -137,6 +139,12 @@ function gui_more(b1, b2, i)
 	return b1[i] > b2[i]
 end
 
+function gui_boxdist(b1, b2)
+	local x = b2[1] - b1[1]
+	local y = b2[2] - b1[2]
+	return x*x + y*y
+end
+
 -- find closest item to given box, satisfying given condition
 gui_closestcoef = { 1, 1, 1, 1 }
 gui_closestcoef_horizontal = { 1, 5, 1, 5 }
@@ -156,7 +164,7 @@ function gui_closest(app, box, coef, cond, condi)
 	repeat
 		local b = i.box * coef
 		if not cond or cond(b, box, condi) then
-			local d = b ^ box
+			local d = gui_boxdist(b, box)
 			if d < min then
 				imin = i
 				min = d
@@ -193,7 +201,10 @@ function gui_dialog_shutdown(app)
 		evt_send(app.sub, { key = gui_unfocus_event })
 	end
 	dl_destroy_list(app.dl)
-	dl_destroy_list(app.focus_dl)
+	dl_destroy_list(app.focusup_dl)
+	dl_destroy_list(app.focusdown_dl)
+	dl_destroy_list(app.focusright_dl)
+	dl_destroy_list(app.focusleft_dl)
 	evt_app_remove(app)
 	cond_connect(1)
 end
@@ -261,21 +272,37 @@ function gui_dialog_update(app, frametime)
 	local focused = app.sub
 	if focused then
 		-- handle focus cursor
-		dl_set_active(app.focus_dl, 1)
 
 		-- converge to focused item box
 		app.focus_box = app.focus_box + 
 			20 * frametime * (focused.box - app.focus_box)
 
 		-- set focus cursor position and color
-		dl_set_trans(app.focus_dl, 
+		dl_set_trans(app.focusup_dl, 
 			mat_scale(app.focus_box[3] - app.focus_box[1], 
-				  app.focus_box[4] - app.focus_box[2], 1) *
-			mat_trans(app.focus_box[1], app.focus_box[2], 0))
+				  gui_focus_border_height, 1) *
+			mat_trans(app.focus_box[1], app.focus_box[2]-gui_focus_border_height, 0))
+		dl_set_trans(app.focusdown_dl, 
+			mat_scale(app.focus_box[3] - app.focus_box[1], 
+				  gui_focus_border_height, 1) *
+			mat_trans(app.focus_box[1], app.focus_box[4], 0))
+		dl_set_trans(app.focusleft_dl, 
+			mat_scale(gui_focus_border_width, 
+				  2*gui_focus_border_height + app.focus_box[4] - app.focus_box[2], 1) *
+			mat_trans(app.focus_box[1]-gui_focus_border_width, app.focus_box[2]-gui_focus_border_height, 0))
+		dl_set_trans(app.focusright_dl, 
+			mat_scale(gui_focus_border_width, 
+				  2*gui_focus_border_height + app.focus_box[4] - app.focus_box[2], 1) *
+			mat_trans(app.focus_box[3], app.focus_box[2]-gui_focus_border_height, 0))
 
 		app.focus_time = app.focus_time + frametime
 		local ci = 0.5+0.5*cos(360*app.focus_time*2)
-		dl_set_color(app.focus_dl, ci, 1, ci, ci)
+		
+		local focus_dl
+		for _, focus_dl in { app.focusup_dl, app.focusdown_dl, app.focusleft_dl, app.focusright_dl } do
+			dl_set_color(focus_dl, ci, 1, ci, ci)
+			dl_set_active(focus_dl, 1)
+		end
 
 	else
 		-- no focus cursor
@@ -287,9 +314,9 @@ end
 function gui_new_dialog(owner, box, z, dlsize, text, mode)
 	local dial
 
---- $$$ ben : default owner is desktop end
+--- $$$ ben : default owner is desktop
 	if not owner then owner = evt_desktop_app end
-	if not owner then return nil end
+	if not owner then print("gui_new_dialog : no desktop") return nil end
 
 	z = gui_orphanguess_z(z)
 
@@ -308,7 +335,10 @@ function gui_new_dialog(owner, box, z, dlsize, text, mode)
 		box = box,
 		z = z,
 
-		focus_dl = dl_new_list(1024, 0),
+		focusup_dl = dl_new_list(256, 0),
+		focusdown_dl = dl_new_list(256, 0),
+		focusleft_dl = dl_new_list(256, 0),
+		focusright_dl = dl_new_list(256, 0),
 		focus_box = box,
 		focus_time = 0,  -- blinking time
 
@@ -321,10 +351,11 @@ function gui_new_dialog(owner, box, z, dlsize, text, mode)
 	dl_draw_box(dial.dl, box, z, gui_box_color1, gui_box_color2)
 
 	-- draw the focus cursor
-	dl_draw_box(dial.focus_dl, { -0.1, -0.1, 1.1, 0 }, z+0.5, { 1, 1, 1, 1 }, { 1, 1, 1, 1 })
-	dl_draw_box(dial.focus_dl, { -0.1, 1, 1.1,  1.1 }, z+0.5, { 1, 1, 1, 1 }, { 1, 1, 1, 1 })
-	dl_draw_box(dial.focus_dl, { -0.1, 0, 0, 1 }, z+0.5, { 1, 1, 1, 1 }, { 1, 1, 1, 1 })
-	dl_draw_box(dial.focus_dl, { 1, 0,  1.1, 1 }, z+0.5, { 1, 1, 1, 1 }, { 1, 1, 1, 1 })
+	local focus_dl
+	for _, focus_dl in { dial.focusup_dl, dial.focusdown_dl, dial.focusleft_dl, dial.focusright_dl } do
+		dl_draw_box(focus_dl, { 0, 0,  1, 1 }, 
+			z+0.5, { 1, 1, 1, 1 }, { 1, 1, 1, 1 })
+	end
 
 	if text then
 		gui_label(dial, text, mode)
@@ -694,15 +725,15 @@ function gui_shutdown()
 end
 
 function gui_init()
+	gui_shutdown()
 	gui_curz = 1000
-	gui_press_event 		= evt_new_code()
-	gui_focus_event 		= evt_new_code()
-	gui_unfocus_event 		= evt_new_code()
+	gui_press_event		= evt_new_code()
+	gui_focus_event		= evt_new_code()
+	gui_unfocus_event	= evt_new_code()
 	gui_input_confirm_event	= evt_new_code()
 	gui_item_confirm_event	= evt_new_code()
 	gui_item_cancel_event	= evt_new_code()
 	gui_item_change_event	= evt_new_code()
-	gui_shutdown()
 end
 
 gui_init()
