@@ -1,6 +1,6 @@
 # Makefile - dcplaya - data
 #
-# $Id: Makefile,v 1.12 2003-05-04 12:35:31 benjihan Exp $
+# $Id: Makefile,v 1.13 2003-07-30 00:41:31 benjihan Exp $
 #
 
 TARGETS=
@@ -35,11 +35,6 @@ romdisk/%.tga : img/%.tga
 romdisk/%.jpg : img/%.jpg
 	@echo "[$@] from [$^]"
 	@cp $< $@
-
-../include/%.h : img/%.ppm
-	@echo "Creating VMU pixmap '$@'"
-	@ppmtoxpm -name $(<:img/%.ppm=%) $<  2> /dev/null |\
-	 egrep -v '^"[0-9].*$$|^". c #.*$$'  > $@
 
 # ----------------------------------------------------------------------
 # ROMDISK
@@ -94,5 +89,21 @@ req_local:
 	mkdir -p tmp romdisk romdisk_data
 
 # ----------------------------------------------------------------------
-
 include ../Makefile.inc
+# ----------------------------------------------------------------------
+
+# Must be done after include of Makefile.inc because of conditionnal..
+
+ifeq 'x$(PPMTOXPM)' 'xecho'
+
+../include/%.h : xpm/%.h
+	@echo "Copying default VMU pixmap [$(@F)]"
+	@cp -f $< $@
+else
+
+../include/%.h : img/%.ppm
+	@echo "Creating VMU pixmap '$@' with $(PPMTOXPM)"
+	@$(PPMTOXPM) -name $(<:img/%.ppm=%) $<  2> /dev/null |\
+	 egrep -v '^"[0-9].*$$|^". c #.*$$'  > $@
+endif
+
