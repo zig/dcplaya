@@ -3,7 +3,7 @@
 --- @date   2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  hyper text viwer gui
---- $Id: textviewer.lua,v 1.3 2003-01-14 10:54:50 ben Exp $
+--- $Id: textviewer.lua,v 1.4 2003-02-04 18:03:03 ben Exp $
 ---
 
 if not dolib("taggedtext") then return end
@@ -14,6 +14,32 @@ if not dolib("menu") then return end
 --- @ingroup dcplaya_lua_gui
 --- @{
 --
+
+--- Create a taggeg text from a string that may be either a file or a text.
+--- @internal
+function text_viever_tt_build(text, mode)
+   mode = mode or {}
+   if type(text) ~= "string" then
+      mode.dl = dl_new_list(256,0,1)
+      return tt_build(format("Invalid tagged text %q.<br>",type(text)), mode)
+   elseif strsub(text,1,1) == "/" then
+      local buffer
+      local file = openfile(text,"rt")
+      if file then
+	 printf("loading tagged-text %q",text)
+	 buffer = read(file,"*a")
+	 closefile(file)
+      end
+      if type(buffer) ~= "string" then
+	 buffer = format("file %q read error.<br>", text)
+      end
+      mode.dl = dl_new_list(strlen(buffer),0,1)
+      return tt_build(buffer,mode)
+   else
+      mode.dl = dl_new_list(strlen(text),0,1)
+      return tt_build(text,mode)
+   end
+end
 
 --- Create a text view gui application.
 --
@@ -108,7 +134,7 @@ function gui_text_viewer(owner, texts, box, label, mode)
 
    local border = 8
    local dial
-   local buttext = "close"
+   local buttext = "close \017"
 
    -- Button size
    local butw,buth = dl_measure_text(nil,buttext)
@@ -145,16 +171,12 @@ function gui_text_viewer(owner, texts, box, label, mode)
    local ttbox0 = { 0,0,tw,th}
    
    if type(texts) == "string" then
-      tts[1] = tt_build(texts, { dl = dl_new_list(strlen(texts),0,1) } )
+      tts[1] = text_viever_tt_build(texts, { box = ttbox0 })
    elseif type(texts) == "table" then
       local i,v
       for i,v in texts do
 	 if type(v) == "string" then
-	    tts[i] = tt_build(v,
-			      {
-				 box = ttbox0,
-				 dl = dl_new_list(strlen(v),0,1)
-			      } )
+	    tts[i] = text_viever_tt_build(v, { box = ttbox0 })
 	 elseif tag(v) == tt_tag then
 	    tts[i] = v
 	 end
@@ -448,6 +470,8 @@ function gui_text_viewer(owner, texts, box, label, mode)
       return tt.guis.dialog.answer
       
    end
+
+   return dial
 end
 
 --- Create a text-viewer application from a file.
@@ -467,189 +491,5 @@ end
 --
 --- @}
 --
-
--- <left> <img name="dcplaya" src="dcplaya.tga">
--- <center> <font size="18" color="#FFFF90"> Welcome to dcplaya<br>
--- <br>
-
-local newbie_text = 
-[[
-<font size="14">
-<center><font color="#9090FF">Bienvenue
-<vspace h="4"><p><left><font color="#909090">
-<hspace w="8">
-
-If is this the first time you launch dcplaya, you should read this lines.
-It contains a <button guiref="toto">TOTO</button>titi<br>Button
-]]
-
--- Introduction
-local introduction_text = 
-[[
-dcplaya est un programme pour ecouter de la musique avec votre DreamCast.
-dcplaya permet de jouer la plupard des formats de musique populaire.
-Chacun de ces formats fait l'objet d'un plugin, c'est a dire un programme
-exterieur qui peut etre charger a tout moment. Cela permet d'ajouter de
-nouveau format sans avoir a changer de version de dcplaya.
-]]
-
--- Plugins
-local plugins_text = 
-[[
-<macro macro-name="title-font" macro-cmd="font" color="#FFe00a" size="18">
-<macro macro-name="chapter-font" macro-cmd="font" color="#a0e0FF" size="16">
-<macro macro-name="body-font" macro-cmd="font" color="#A0A080" size="14">
-<macro macro-name="avant" macro-cmd="vspace" h="10">
-<macro macro-name="apres" macro-cmd="vspace" h="6">
-
-<p vspace="2">
-<center>
-<title-font>
-plugins
-<avant>
-
-<left><body-font>
-Les plugins sont des programmes exterieur qui permettent d'ajouter des
-fonctionnalites a dcplaya sans changer de version. Ils sont disponibles
-sous forme de fichier qui portent generalement l'extension ".lef" ou ".lez".
-Les fichiers ".lez" sont des fichiers ".lef" compresses en format gzip (.gz).
-<apres>
-Les plugins sont classes par categorie.
-<apres><center>
-<a href="#input">input</a> - 
-<a href="#visual">visual</a> - 
-<a href="#object">object</a> - 
-<a href="#image">image</a> - 
-<a href="#executable">executable</a>
-
-<avant><center><chapter-font>
-<a name="input">input</a>
-<apres>
-
-<left><body-font>
-Les plugins input permettent d'ajouter de nouveau format de musiques
-dans dcplaya. Un plugin cree un nouveau type de fichier musique, et
-fournit et a la charge de charger et de decoder ces fichiers ainsi
-que de fournir un certain nombre d'information sur la musique comme
-par exemple l'artiste, le titre ou la duree.
-
-<avant><center><chapter-font>
-<a name="visual">visual</a>
-<apres>
-
-<left><body-font>
-Les plugins visual permettent d'ajouter des effets visuels a dcplaya.
-
-
-<avant><center><chapter-font>
-<a name="image">image</a>
-<apres>
-
-<left><body-font>
-Les plugins image sont utilises par dcplaya pour charger des images. Ces
-images pourront ensuite etre utiliser de maniere transparente par dcplaya
-pour charger des images en fond d'ecran ou pour comme texture pour les
-fonctions graphiques. Les plugins images creent un nouveau type de fichier
-image associe a des extensions (per exemple .jpg) et fournissent les
-methodes pour charger une image ainsi qu'une methode pour recuperer des
-infomations sur une image comme sa resolution ou le nombre de couleur.
-
-
-<avant><center><chapter-font>
-<a name="object">object</a>
-<apres>
-
-<left><body-font>
-les plugins object permettent d'ajouter des objets 3D qui pourront
-etre utiliser par la suite par d'autre plugin (notament les visual)
-
-
-<avant><center><chapter-font>
-<a name="executable">executable</a>
-<apres>
-
-<left><body-font>
-Les plugins executables ont pour principale utilite d'ajouter des
-fonctinnalites a l'interpreteur LUA de dcplaya. Mais ils peuvent servir
-en fait a un peu pres n'importe quoi dans la mesure ou il s'agit d'un
-programme. Ils peuvent par exemple etre utiliser pour patcher dcplaya.
-]]
-
--- Historic
-
-
-local welcome_text =
-[[
-<font size="14">
-<center><font color="#90FF00">Greetings
-<vspace h="4"><p><left><font color="#909090">
-<hspace w="4">The dcplaya team wants to greet people that make this project
-possible.
-<vspace h="6"><p><center>
-GNU [http://www.gnu.org]<br>
-The Free Software Foundation<br>
-KOS developpers. Particulary Dan Potter & Jordan DeLong of Cryptic Allusion<br>
-andrewk for its dcload program.<br>
-<left>
-]]
-
-local warning_text = 
-[[
-<font size="14">
-<center><font color="#FF9000">Warning
-<vspace h="4"><p><left><font color="#909090">
-<hspace w="8">
-This program is NOT official SEGA production. It is distributed in the
-hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
-implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.<br>
-<vspace h="4"><p>
-<a name="clear">
-<hspace w="8">
-In other words, dcplaya developpers have worked hard to make it possible.
-They have make the best to do a nice program and test it for you during hours.
-This is a lot of work and they made it for FREE. They do not want to be implied
-with any purchasse for anything that happen to you or to anything while using
-this program. Problems may be submit to them but this is without any
-warranty !
-</a>
-]]
-
--- [[
-
--- <left> <img name="dcplaya" src="dcplaya.tga">
--- <center> <font size="18" color="#FFFF90"> Welcome to dcplaya<br>
--- <br>
--- <font size="14">
-
--- <vspace h="8"><p>
--- <center><font color="#9090FF">Newbie
--- <vspace h="4"><p><left><font color="#909090">
--- If is this the first time you launch dcplaya, you should read this lines.
--- It contains a 
-
--- <vspace h="8"><p>
--- <center><font color="#9090FF">Presentation
--- <vspace h="4"><p><left><font color="#909090">
--- dcplaya is a music player for the dreamcast.<br> toto
-
--- <vspace h="8"><p>
--- <center><font color="#90FF00">Greetings
--- <vspace h="4"><p><left><font color="#909090">
--- The dcplaya team wants to greet people that make this project possible.<br>
--- o - GNU <http://www.gnu.org><br>
--- o - The Free Software Foundation<br>
--- o - KallistiOS (KOS) developpers. Particulary Dan Potter & Jordan DeLong of Cryptic Allusion<br>
--- o - andrewk for its dcload program.
-
--- <p><center>
--- ]]
-
-tv = gui_text_viewer(nil,
-		     {
-			newbie  = newbie_text,
-			welcome = welcome_text,
-			warning = warning_text,
-			plugins = plugins_text,
-		     } , nil, "Welcome", nil)
 
 return 1

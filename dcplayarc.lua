@@ -1,7 +1,7 @@
 --
 -- This is main DCplaya lua script
 --
--- $Id: dcplayarc.lua,v 1.24 2003-01-18 14:23:48 ben Exp $
+-- $Id: dcplayarc.lua,v 1.25 2003-02-04 18:03:03 ben Exp $
 --
 
 showconsole()
@@ -17,6 +17,9 @@ dolib ("shell")
 dolib ("zed")
 dolib ("keyboard_emu")
 dolib ("gui")
+hideconsole()
+dolib ("vmu_init")
+showconsole()
 
 --dofile (home.."lua/basic.lua")
 --dofile (home.."lua/evt.lua")
@@ -61,8 +64,6 @@ dofile (home.."userconf.lua")
 --    list=dir_load()
 --    call(driver_load, list)
 --
-
-
 
 -- FINAL STEPS :
 -- print available commands
