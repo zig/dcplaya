@@ -1,9 +1,14 @@
 /**
- * dreammp3 visual plugin - fftvlr
- *
- *
- * 2002/08/17
+ * @ingroup  visual_plugin
+ * @file     fftvlr.c
+ * @author   Vincent Penne
+ * @author   benjamin gerard <ben@sashipa.com>
+ * @date     2002/08/17
+ * @brief    dreammp3 visual plugin - fftvlr.
+ * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
+ *
+ * $Id: fftvlr.c,v 1.5 2002-09-10 17:36:06 ben Exp $
  */
 
 #include <stdlib.h>
