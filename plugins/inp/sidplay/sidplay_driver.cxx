@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/09/03
  * @brief     sidplay input plugin for dcplaya
- * @version   $Id: sidplay_driver.cxx,v 1.7 2002-09-25 03:21:22 benjihan Exp $
+ * @version   $Id: sidplay_driver.cxx,v 1.8 2002-09-27 08:17:52 benjihan Exp $
  */
 
 /* generated config include */
@@ -41,22 +41,6 @@ int time()
 }
 
 static int disk_info(playa_info_t *info, sidTune * sidtune);
-
-void * operator new (unsigned int bytes) {
-  return malloc(bytes);
-}
-
-void operator delete (void *addr) {
-  free (addr);
-}
-
-void * operator new[] (unsigned int bytes) {
-  return malloc(bytes);
-}
-
-void operator delete[] (void *addr) {
-  free (addr);
-}
 
 static void DisplayConfig(emuConfig * c)
 {
