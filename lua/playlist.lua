@@ -98,12 +98,19 @@ function playlist_load_generic(path, file, read_entry)
    local entry = read_entry(file)
    while entry do
       entry = playlist_make_entry(path, entry)
+--      print("playlist_load_generic:"..getn(dir))
+
       if entry then
+--	 print("entry:"..entry.name)
 	 --		 dump(entry)
 	 tinsert(dir, entry)
       end
+--      print("playlist_load_generic readentry IN")
       entry = read_entry(file)
+--      print("playlist_load_generic readentry OUT : "..tostring(entry))
    end
+--   print("playlist_load_generic out :"..getn(dir))
+
    return dir
 end
 
@@ -117,6 +124,7 @@ end
 ---
 function playlist_load_m3u_entry(file)
    local start,stop,time,name
+   local cnt=0
 
    local line = read(file)
    while line do
@@ -128,6 +136,11 @@ function playlist_load_m3u_entry(file)
 	 end
       end
       line = read(file)
+      cnt = cnt+1
+      if cnt > 1024 then
+	 print("playlist_load_m3u_entry : too many lines !!")
+	 return
+      end
    end
 end
 
@@ -197,6 +210,7 @@ function playlist_load(fname)
       print("playlist path:"..tostring(path))
       dir = playlist_load_generic(path, file, loader)
    end
+
    closefile(file)
 
    if dir then

@@ -1,7 +1,7 @@
 --- @date 2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  LUA script to initialize dcplaya VMU backup.
---- $Id: vmu_init.lua,v 1.13 2003-03-06 10:39:05 ben Exp $
+--- $Id: vmu_init.lua,v 1.14 2003-03-06 12:38:30 ben Exp $
 ---
 
 -- Unload library
@@ -156,7 +156,7 @@ function vmu_init()
 	    while not ok do
 	       local result = gui_ask('<left>No dcplaya save has been file found.<p vspace="2">It may be the first time you launch dcplaya. If it is the case, you should read dcplaya information.<p><vspace h="20"><center><font size="20" color="#FFFF00">First aid<p vspace="4"><vspace h="10"><font size="16" color="#FFFFFF">\016 confirm<br>\017 cancel<br><font size="8">\004\006<font size="16"> move focus cursor<br><br>',
 				      {'read info', 'create save', 'cancel'},
-				      400,
+				      440,
 				      "No dcplaya save file"
 				)
 	       result = result or 0
