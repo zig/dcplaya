@@ -1,0 +1,20 @@
+
+$Id: TODO,v 1.1 2002-09-19 00:52:14 vincentp Exp $
+
+** TODO :
+
+- playlist load/save
+
+- improve API to get information about currently played sound
+
+- controllers (joystick and keyboard) in separate thread
+
+- VMU console
+
+- recall and line editor for shell
+
+- lua binding to get driver informations
+
+- lua binding to get song informations and play new songs
+
+
