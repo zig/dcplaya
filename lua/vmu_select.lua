@@ -12,8 +12,17 @@ if not dolib("sprite") then return end
 
 --- Creates vmu sprites.
 --- @internal
-function vmu_select_create_sprites(vs)
-   vs.sprites = {}
+function vmu_select_create_sprite()
+   local spr = sprite_get("vs_vmu")
+   if spr then return spr end
+
+   local texid = tex_exist("dcpsprites") or tex_new("/rd/dcpsprites.tga")
+   local x1,y1,w,h = 109,65,104,63
+   return sprite("vs_vmu",
+		 w/2, h/2,
+		 w, h,
+		 x1/512, y1/128, (x1+w)/512, (y1+h)/128,
+		 texid,1)
 end
 
 --- Create a vmu select application.
@@ -57,12 +66,8 @@ function vmu_select_create(owner, name, dir, x, y, z)
    end
 
    -- Create sprite
-   local texid = tex_exist("dcpsprites") or tex_new("/rd/dcpsprites.tga")
-   local vmusprite = sprite("vmu",	
-			    0, 62/2,
-			    104, 62,
-			    108/512, 65/128, 212/512, 127/128,
-			    texid,1)
+   local vmusprite = vmu_select_create_sprite()
+   if not vmusprite then return end
 
    local border = 8
    local w = vmusprite.w * 2 + 2 * (border + style.border)
@@ -145,15 +150,8 @@ function vmu_select_create(owner, name, dir, x, y, z)
    return dial
 end
 
-if nil then
-   vs = vmu_select_create()
-   function k()
-      if vs then evt_shutdown_app(vs) end
-      vs = nil
-   end
-   -- getchar()
-   -- k()
-end
+vmu_select_create_sprite()
 
+if nil then
 vmu_select_loaded = 1
 return vmu_select_loaded

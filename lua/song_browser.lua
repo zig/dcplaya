@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.51 2003-03-18 01:08:48 ben Exp $
+--- $Id: song_browser.lua,v 1.52 2003-03-18 02:44:46 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song-browser
@@ -32,9 +32,49 @@ if not dolib("sprite") then return end
 if not dolib("fileselector") then return end
 if not dolib("playlist") then return end
 
+
+--
+--- Create an icon sprite.
+--- @internal
+--
+function song_browser_create_sprite(sb, name, src, w, h, u1, v1, u2, v2,
+				    rotate)
+   local spr = sprite_get(name)
+   if spr and (not w or w == spr.w) and (not h or h == spr.h) then
+      return spr
+   end
+   local tex = tex_exist(src)
+      or tex_new(home.."lua/rsc/icons/"..src)
+   if not tex then return end
+   spr = sprite(name, 0, 0, w, h,
+		u1, v1, u2, v2, tex, rotate)
+   return spr
+end
+
+--
+--- Create all icon sprites. 
+--- @internal
+--
+function song_browser_create_sprites(sb)
+   if sb then
+      song_browser_create_dcpsprite(sb)
+   end
+
+   -- filetypes
+   song_browser_create_sprite(sb, "sb_ft_dir", "folder.tga",32)
+   song_browser_create_sprite(sb, "sb_ft_file", "type_file.tga",32)
+   song_browser_create_sprite(sb, "sb_ft_cdda", "type_cdda.tga",32)
+
+   song_browser_create_sprite(sb, "sb_floppy", "floppy2.tga", 32)
+   song_browser_create_sprite(sb, "sb_info", "info.tga", 32)
+   song_browser_create_sprite(sb, "sb_textview", "textviewer.tga", 32)
+   song_browser_create_sprite(sb, "sb_yes", "stock_button_apply.tga", 20)
+   song_browser_create_sprite(sb, "sb_no", "stock_button_cancel.tga", 20)
+end
+
 --- Creates some sprites.
 --- @internal
-function song_browser_create_sprite(sb)
+function song_browser_create_dcpsprite(sb)
    sb.sprites = {}
    sb.sprites.texid = tex_exist("dcpsprites") or tex_new("/rd/dcpsprites.tga")
 
@@ -89,12 +129,12 @@ function song_browser_create_sprite(sb)
 			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
 			    sb.sprites.texid)
 
-   x1,y1,w,h = 109,65,104,63
-   sb.sprites.vmu = sprite(nil,
-			   w/2, h/2,
-			   w, h,
-			   x1/512, y1/128, (x1+w)/512, (y1+h)/128,
-			   sb.sprites.texid)
+--    x1,y1,w,h = 109,65,104,63
+--    sb.sprites.vmu = sprite(nil,
+-- 			   w/2, h/2,
+-- 			   w, h,
+-- 			   x1/512, y1/128, (x1+w)/512, (y1+h)/128,
+-- 			   sb.sprites.texid,1)
 
    sb.fl.title_sprite = sb.sprites.file
    sb.fl.icon_sprite = sb.sprites.jess
@@ -285,7 +325,7 @@ function song_browser_create(owner, name)
 	 song_browser_update_cdrom(sb, evt)
 	 return
       elseif key == gui_menu_close_event then
-	 printf("%q gui_menu_close_event",sb.name)
+--	 printf("%q gui_menu_close_event",sb.name)
 	 song_browser_contextmenu(sb) -- shutdown menu
 	 return
       end
@@ -529,7 +569,7 @@ function song_browser_create(owner, name)
    --- Songbrowser contextual menu create.
    function song_browser_contextmenu(sb, name, fl, def, entry_path)
       if sb.menu then
-	 printf("Kill old menu : %q",sb.menu.name)
+--	 printf("Kill old menu : %q",sb.menu.name)
 	 evt_shutdown_app(sb.menu)
       end
       local menudef = menu_create_defs(def, sb)
@@ -637,6 +677,34 @@ function song_browser_create(owner, name)
       gui_ask(text, "<center>close", 300, format("info on %s",leaf or ""))
    end
 
+   function song_browser_view_file(sb, entry_path)
+      if type(entry_path) ~= "string" then return end
+      local path,leaf = get_path_and_leaf(entry_path)
+      local type,major,minor = filetype(entry_path)
+      if not minor then return end
+      if minor ~= "zml" then
+	 -- try to guess if zml
+	 local fh = openfile(entry_path,"rt")
+	 if not fh then return end
+	 local line = read(fh)
+	 closefile(fh)
+	 if not line then return end
+	 if strfind(line,"%s*<zml>.*") then
+	    minor = "zml"
+	 end
+      end
+      
+      if minor == "zml" then
+	 gui_file_viewer(nil, entry_path, nil, leaf)
+      else
+      end
+   end
+
+   function song_browser_edit_file(sb, entry_path)
+      if type(entry_path) ~= "string" then return end
+      doshellcommand(format("zed(%q)",entry_path))
+   end
+
    -- ----------------------------------------------------------------------
    -- filelist "confirm" actions
    -- ----------------------------------------------------------------------
@@ -724,6 +792,11 @@ function song_browser_create(owner, name)
 --       return dofile(entry_path)
    end
 
+   function sbfl_confirm_text(fl, sb, action, entry_path)
+      if not test("-f",entry_path) then return end
+      song_browser_view_file(sb,entry_path)
+   end
+
    -- ----------------------------------------------------------------------
    -- filelist "select" actions
    -- ----------------------------------------------------------------------
@@ -793,9 +866,12 @@ function song_browser_create(owner, name)
    function sbfl_select_image(fl, sb, action, entry_path)
       local path,leaf = get_path_and_leaf(entry_path)
       if not leaf then return end
-      
+
+      sprite("sb_bkg", nil, nil, 32, nil,
+	     nil, nil, nil, nil, tex_get("background"))
+
       local def = {
-	 root = ":"..leaf..":info{info},background>",
+	 root = ":"..leaf..":{sb_info}info{info},{sb_bkg}background>",
 	 cb = {
 	    info = function (menu, idx)
 		      local root_menu = menu.root_menu
@@ -858,7 +934,7 @@ function song_browser_create(owner, name)
       local path,leaf = get_path_and_leaf(entry_path)
       if not leaf then return end
       local def = {
-	 root = ":"..leaf..":execute{exe},load library{loadlib},edit{edit}",
+	 root = ":"..leaf..":execute{exe},load library{loadlib},{sb_textedit}edit{edit}",
 	 cb = {
 	    exe =
 	       function (menu, idx)
@@ -899,14 +975,37 @@ function song_browser_create(owner, name)
 	    edit =
 	       function (menu, idx)
 		  local root_menu = menu.root_menu
-		  local sb = root_menu.target
-		  local entry_path = root_menu.__entry_path
-		  if not entry_path then return end
-		  doshellcommand(format("zed(%q)",entry_path))
+		  song_browser_edit_file(root_menu.target,
+					 root_menu.__entry_path)
 	       end,
 	 },
       }
       song_browser_contextmenu(sb,"lua-menu,", fl, def, entry_path)
+   end
+
+
+   function sbfl_select_text(fl, sb, action, entry_path)
+      if not test("-f",entry_path) then return end
+      local path,leaf = get_path_and_leaf(entry_path)
+      if not leaf then return end
+      local def = {
+	 root = ":"..leaf..":{sb_textview}view{view},{sb_textedit}edit{edit}",
+	 cb = {
+	    view =
+	       function (menu, idx)
+		  local root_menu = menu.root_menu
+		  song_browser_view_file(root_menu.target,
+					 root_menu.__entry_path)
+	       end,
+	    edit =
+	       function (menu, idx)
+		  local root_menu = menu.root_menu
+		  song_browser_edit_file(root_menu.target,
+					 root_menu.__entry_path)
+	       end,
+	 },
+      }
+      song_browser_contextmenu(sb,"text-menu,", fl, def, entry_path)
    end
 
    -- ----------------------------------------------------------------------
@@ -1320,7 +1419,7 @@ function song_browser_create(owner, name)
 
    sb.cl = sb.fl
 
-   song_browser_create_sprite(sb)
+   song_browser_create_sprites(sb)
    song_browser_loaddir(sb,"/","cd")
 --    sb.fl:change_dir(sb.fl.dir)
 
