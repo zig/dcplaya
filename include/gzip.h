@@ -4,7 +4,7 @@
  * @date     2002/09/20
  * @brief    Simple gzipped file access.
  *
- * $Id: gzip.h,v 1.1 2002-09-20 00:22:14 benjihan Exp $
+ * $Id: gzip.h,v 1.2 2002-09-30 06:44:05 benjihan Exp $
  */
 
 #ifndef _GZIP_H_
@@ -27,6 +27,21 @@ DCPLAYA_EXTERN_C_START
  * @retval 0 Error
  */
 void *gzip_load(const char *fname, int *ulen);
+
+/** Save binary buffer as a gzip file.
+ *
+ *    The gzip_save() function simply creates a gzip file from a given 
+ *    memory buffer.
+ *
+ * @param  fname  Name of file to save.
+ * @param  buffer Pointer to data to compress and save.
+ * @param  len    Number of uncompressed bytes in buffer.
+ *
+ * @return Size of compressed file.
+ * @retval -1  Failure.
+ * @retval >=0 Success.
+ */
+int gzip_save(const char *fname, const void * buffer, int len);
 
 DCPLAYA_EXTERN_C_END
 

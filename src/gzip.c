@@ -4,7 +4,7 @@
  * @date     2002/09/20
  * @brief    Simple gzipped file access.
  *
- * $Id: gzip.c,v 1.1 2002-09-20 00:22:14 benjihan Exp $
+ * $Id: gzip.c,v 1.2 2002-09-30 06:44:05 benjihan Exp $
  */
 
 #include <kos/fs.h>
@@ -115,4 +115,49 @@ void *gzip_load(const char *fname, int *ptr_ulen)
   }
   SDUNINDENT;
   return uncompr;
+}
+
+
+int gzip_save(const char *fname, const void * buffer, int len)
+{
+  gzFile f = 0;
+  int clen = -1;
+  int fd = 0, fd2, err;
+
+  SDDEBUG("[%s] : [%s] [%p] [%d]\n", __FUNCTION__, fname, buffer, len);
+  SDINDENT;
+
+  if (!fname || !buffer || len < 0) {
+    goto error;
+  }
+
+  fd = fs_open(fname, O_WRONLY);
+  if (!fd) {
+    SDERROR("[%s] : open error [%s]\n", __FUNCTION__, fname);
+    goto error;
+  }
+
+  f = gzdopen(fd, "wb");
+  if (!f) {
+    SDERROR("[%s] : gzopen error [%s]\n", __FUNCTION__, gzerror(f, &err));
+    goto error;
+  }
+  fd2 = fd;
+  fd = 0;
+
+  if (gzwrite(f, (void*)buffer, len) != len) {
+    SDERROR("[%s] : gzwrite error [%s]\n", __FUNCTION__, gzerror(f, &err));
+    goto error;
+  }
+  clen = fs_total(fd2);
+  
+ error:
+  if (fd) {
+    fs_close(fd);
+  } else if (f) {
+    gzclose(f);
+  }
+
+  SDUNINDENT;
+  return clen;
 }
