@@ -3,11 +3,11 @@
 #
 # (C) COPYRIGHT 2002 benjamin gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.24 2003-04-05 16:33:30 ben Exp $ 
+# $Id: Makefile,v 1.25 2003-05-04 12:53:58 benjihan Exp $ 
 #
 TARGETS=dreammp3.elf
 
-SUBDIRS = arm plugins src data libs dynshell
+SUBDIRS = arm data plugins src libs dynshell
 
 BUILTIN_DRIVERS=./plugins/img/tga/tga.lef
 WHOLE_LIBS=-lz,-ltranslator,-ldraw,-ldreammp3,-llua,-ldcutils,-lkallisti

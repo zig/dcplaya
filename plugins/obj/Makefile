@@ -3,11 +3,12 @@
 #
 # (C) COPYRIGHT Ben(jamin) Gerard <ben@sasahipa.com>
 #
-# $Id: Makefile,v 1.3 2002-09-20 01:24:36 vincentp Exp $
+# $Id: Makefile,v 1.4 2003-05-04 12:53:58 benjihan Exp $
 #
 
 UTILS=../../utils
 ASE2C=$(UTILS)/ase2c.sh
+SHACLEAN=$(UTILS)/shaclean.sed
 
 LIBRARY=yes
 
@@ -49,7 +50,7 @@ special: $(SRC)
 .SECONDARY: $(SRC)
 src/%.c : ase/%.ase $(ASE2C) $(UTILS)/mkobjlinks.c
 	@mkdir -p src
-	@CC=gcc CFLAGS="-I. -I../../include" $(ASE2C) $< >$@
+	CC=gcc CFLAGS="-I. -I../../include" SHACLEAN=$(SHACLEAN) $(ASE2C) $< >$@
 
 include ../../Makefile.inc
 # DO NOT DELETE

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1 2002-09-03 02:49:39 ben Exp $
+# $Id: Makefile.in,v 1.2 2003-05-04 12:53:58 benjihan Exp $
 
 SRCS := crt0.s main.c aica.c
 OBJS := crt0.o main.o aica.o
@@ -42,7 +42,7 @@ stream.elf: $(OBJS)
 %.o: %.s
 	$(DC_ARM7AS) $< -o $@
 
-clean:
+distclean clean:
 	-rm -f *.o *.srec *.elf 1ST_READ.BIN prog.bin *.bck stream.drv aica_fw.h
 
 depend-clean:
