@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.17 2003-03-12 13:20:48 ben Exp $
+--- $Id: control_center.lua,v 1.18 2003-03-12 22:02:00 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_cc_app Control center application
@@ -85,48 +85,18 @@ end
 --- Create an icon sprite.
 --- @internal
 --
-function control_center_create_sprite(cc, name, src, w, h, u1, v2, u2, v2,
+function control_center_create_sprite(cc, name, src, w, h, u1, v1, u2, v2,
 				      rotate)
    local spr = sprite_get(name)
-   if spr then
-      printf("spr %q %q exist",name,src)
+
+   if spr and (not w or w == spr.w) and (not h or h == spr.h) then
       return spr
    end
-   printf("spr %q %q not exist",name,src)
-   
    local tex = tex_exist(src)
       or tex_new(home.."lua/rsc/icons/"..src)
-
-   if not tex then
-      printf("spr %q %q can not create texture",name,src)
-      return
-   end
-
-   local info = tex_info(tex)
-   local info_w, info_h = info.w, info.h
-   local orig_w, orig_h = info.orig_w, info.orig_h
-
-   u1 = u1 or 0
-   v1 = v1 or 0
-   u2 = u2 or orig_w/info_w
-   v2 = v2 or orig_h/info_h
-
-   if w then
-      if not h then
-	 h = orig_h * w / orig_w
-      end
-   elseif h then
-      if not w then
-	 w = orig_w * h / orig_h
-      end
-   else
-      w = orig_w
-      h = orig_h
-   end
-
+   if not tex then return end
    spr = sprite(name, 0, 0, w, h,
 		u1, v1, u2, v2, tex, rotate)
-
    return spr
 end
 
@@ -138,6 +108,8 @@ function control_center_create_sprites(cc)
    control_center_create_sprite(cc, "cc_dcp", "dcplaya.tga", 32)
    control_center_create_sprite(cc, "cc_vmu", "vmu32.tga",32)
    control_center_create_sprite(cc, "cc_vol", "volume2.tga", 32)
+   control_center_create_sprite(cc, "cc_yes", "stock_button_apply.tga", 20)
+   control_center_create_sprite(cc, "cc_no", "stock_button_cancel.tga", 20)
    --				   24, 24) --, 0 , 0, 8/64, 48/64)
 end
 
@@ -173,7 +145,7 @@ function vmu_save_as(vmu)
    local choice
    local fs = fileselector("Choose save file", path, leaf)
    choice = fs and evt_run_standalone(fs)
-   printf("SAVE AS %q", tostring(choice))
+--   printf("SAVE AS %q", tostring(choice))
    if choice then
       return vmu_save_confirm(choice)
    end
@@ -250,7 +222,9 @@ function control_center_menucreator(target)
 			local cc = menu.root_menu.target
 			cc.vmu_auto_save = not cc.vmu_auto_save
 			menu.fl.dir[idx].name =
-			   (cc.vmu_auto_save and "no autosave") or "autosave"
+			    '<img name="cc_'
+			   .. ((cc.vmu_auto_save and 'yes') or 'no')
+			   .. '">autosave'
 			menu:draw()
 		    end,
    }
@@ -317,9 +291,9 @@ function control_center_menucreator(target)
       cb = cb,
       sub = {
 	 vmu = {
-	    root = ":vmu:visual >vmu_visual,"
-	       .. ((cc.vmu_auto_save and "no autosave") or "autosave")
-	       .. "{vmu_autosave},load{vmu_load},merge{vmu_merge},save{vmu_save},save as{vmu_saveas}",
+	    root = ':vmu:visual >vmu_visual,'
+	       .. '{cc_' .. ((cc.vmu_auto_save and 'yes') or 'no')
+	       .. '}autosave{vmu_autosave},load{vmu_load},merge{vmu_merge},save{vmu_save},save as{vmu_saveas}',
 	    sub = {
 	       vmu_visual = ":visual:none{setvmuvis},scope{setvmuvis},fft{setvmuvis},band{setvmuvis}"
 	    }
@@ -389,6 +363,7 @@ function control_center_create(owner, name)
 
       vmu_auto_save = vmu_auto_save,
    }
+   control_center_create_sprites(cc)
 
    evt_app_insert_last(owner, cc)
    return cc
@@ -416,8 +391,10 @@ function control_center_kill(cc)
    end
 end
 
+
 control_center_kill()
 control_center = control_center_create()
+
 if control_center then
    print("control-center running")
 end

@@ -4,8 +4,48 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.38 2003-03-12 15:06:54 ben Exp $
+--- $Id: textlist.lua,v 1.39 2003-03-12 22:02:00 ben Exp $
 ---
+
+-- DL hierarchy :
+-- dl (main display list)
+--  +-- textprop
+--  +-- bdl (background sublist)
+--  +-- ldl (sublist for item ans cursor)
+--        +-- clipping Y only (allow cursor text outside texlist box!)
+--        +-- cdl (cursor display list)
+--              +-- cursor-box
+--              +-- text or tag-text
+--        +-- clipping XY (item will be clipped in box)
+--        +-- idl (item sublist)
+--              +-- lotsa text  ot tagged-text
+--              +-- ... etc ...
+--        +-- udl (user sublist)
+--
+-- space organization :
+-- dl global textlist Z := [0..100]
+-- Z : [00..25] reserved for background
+-- Z : [25..75] reserved for items and cursor
+-- Z : [75..100] reserved for user overlay
+--
+-- Each sub-list as a transformation setted properly. This mean than each
+-- sub-list (bdl,cdl,idl,udl) as a useable Z space range [0..100]
+--
+
+--
+-- bdl background dl. Z:[00..25]
+-- mat(bdl) = mat_scale(1,1,0.25) * mat(dl)
+--
+-- ldl item and cursor Z[25..75]
+-- mat(ldl) = mat_scale(1,1,0.5) * mat_trans(0,0,25) * mat(dl)
+--
+-- idl item sublist Z:[25..50]
+-- mat(idl) = mat_scale(1,1,0.5) * mat(ldl)
+--
+-- cdl item sublist Z:[50..75]
+-- mat(idl) = mat_scale(1,1,0.5) * mat_trans(0,0,25) * mat(ldl)
+--
+
 
 -- Unload the library
 textlist_loaded = nil
@@ -83,6 +123,7 @@ if not dolib("taggedtext") then return end
 --- @retval nil error
 ---
 function textlist_create(flparm)
+   if not flparm then flparm = {} end
 
    --- Change textlist position and size.
    --- @ingroup dcplaya_lua_textlist
@@ -224,10 +265,14 @@ function textlist_create(flparm)
    --- Textlist shutdown.
    ---
    function textlist_shutdown(fl)
-      fl.dl = nil
-      fl.cdl = nil
-      fl.ldl = nil
-      fl.idl = nil
+      local i,v
+      for i,v in { "dl","bdl","ldl","idl","cdl","udl" } do
+	 if tag(fl[v]) == dl_tag then
+	    dl_set_active(fl[v],0)
+	    dl_clear(fl[v])
+	    fl[v] = nil
+	 end
+      end
    end
 
    --- Measure dimension of the whole textlist and set dirinfo.
@@ -271,6 +316,7 @@ function textlist_create(flparm)
    --- Draw given textlist entry in given diplay list.
    --
    function textlist_draw_entry(fl, dl, idx, x , y, z)
+      dl = dl or fl.idl
       local entry = fl.dir[idx]
       local info = fl.dirinfo[idx]
       local color = fl.dircolor
@@ -351,19 +397,35 @@ function textlist_create(flparm)
 	 dl_sublist(fl.owner.dl, fl.dl)
       end
 
-      -- List-List
-      fl.ldl = fl.ldl or dl_new_list(512,1,1)
+
+      -- background sub-list
+      fl.bdl = fl.bdl or dl_new_list(256,1,1)
+      dl_clear(fl.bdl)
+      dl_set_trans(fl.bdl, mat_scale(1,1,0.25))
+
+      -- cursor and item sub-list
+      fl.ldl = fl.ldl or dl_new_list(64,1,1)
       dl_clear(fl.ldl)
+      dl_set_trans(fl.ldl, mat_scale(1,1,0.5) *
+		   mat_trans(fl.border,fl.border,25))
+
+      -- Item sub-list
+      fl.idl = fl.idl or dl_new_list(1024,1,1)
+      dl_clear(fl.idl)
+      dl_set_trans(fl.idl, mat_scale(1,1,0.5))
 
       -- Cursor sub-list
       fl.cdl = fl.cdl or dl_new_list(512,1,1)
       dl_set_active(fl.cdl,0)
       dl_clear(fl.cdl)
-      dl_set_trans(fl.cdl, mat_trans(0,0,0.1))
+      dl_set_trans(fl.cdl,
+		   mat_scale(1,1,0.5) * mat_trans(0,0,50))
 
-      -- Item sub-list
-      fl.idl = fl.idl or dl_new_list(1024,1,1)
-      dl_clear(fl.idl)
+      -- User layer sub-list
+      fl.udl = fl.udl or dl_new_list(64,1,0)
+      dl_set_active(fl.udl,0)
+      dl_clear(fl.udl)
+      dl_set_trans(fl.udl, mat_scale(1,1,0.25) * mat_trans(0,0,75))
 
       fl:set_color(0,1,1,1)
       fl:change_dir(fl.dir)
@@ -410,10 +472,10 @@ function textlist_create(flparm)
       -- Redraw all
       dl_clear(fl.dl)
       dl_text_prop(fl.dl, 0, 16, 1)
-      fl:draw_background(fl.dl)
-
+      fl:draw_background(fl.bdl)
+      dl_sublist(fl.dl,fl.bdl)
       dl_clear(fl.ldl)
-      dl_set_trans(fl.ldl, mat_trans(fl.border, fl.border, 0.1))
+
       local ww, wh
       ww = fl.bo2[1]-2*fl.border
       wh = fl.bo2[2]-2*fl.border
@@ -425,14 +487,16 @@ function textlist_create(flparm)
       dl_set_clipping(fl.ldl,0,0,ww,wh)
       dl_sublist(fl.ldl,fl.idl)
       dl_sublist(fl.dl,fl.ldl)
+      dl_sublist(fl.dl,fl.udl)
    end
 
    --- Draw background box.
    --
    function textlist_draw_background(fl, dl)
+      dl = dl or fl.bdl
       if fl.bkgcolor then
 	 dl_draw_box(dl,
-		     0, 0, fl.bo2[1], fl.bo2[2], 0,
+		     0, 0, fl.bo2[1], fl.bo2[2], 25,
 		     fl.bkgcolor[1],fl.bkgcolor[2],
 		     fl.bkgcolor[3],fl.bkgcolor[4],
 		     fl.bkgcolor[5],fl.bkgcolor[6],
@@ -444,6 +508,7 @@ function textlist_create(flparm)
    --- Draw textlist cursor.
    --
    function textlist_draw_cursor(fl, dl)
+      dl = dl or fl.cdl
       if fl.dir.n < 1 then
 	 dl_set_active(dl,0)
 	 return
@@ -470,10 +535,10 @@ function textlist_create(flparm)
       if ww > w then w = ww end
       
       dl_draw_box(dl,
-		  0, y, w, y+h, 0,
+		  0, y, w, y+h, 33,
 		  fl.curcolor[1],fl.curcolor[2],fl.curcolor[3],fl.curcolor[4],
 		  fl.curcolor[5],fl.curcolor[6],fl.curcolor[7],fl.curcolor[8])
-      fl:draw_entry(dl, i, 0, y+fl.span, textlist_entry_z + textlist_cursor_z)
+      fl:draw_entry(dl, i, 0, y+fl.span, 66)
       -- display to vmu
       vmu_set_text(fl:get_text(i))
       dl_set_active(dl,1)
@@ -482,14 +547,14 @@ function textlist_create(flparm)
    --- Draw entries.
    --
    function textlist_draw_list(fl, dl)
-      local dl = fl.idl
+      dl = dl or fl.idl
       local i
       dl_clear(dl)
       --- $$$ Added by ben for updating TT drawing
       textlist_measure(fl)
       local max = getn(fl.dirinfo)
       for i=1, max, 1 do
-	 fl:draw_entry(dl, i, 0, fl.dirinfo[i].y+fl.span, textlist_entry_z)
+	 fl:draw_entry(dl, i, 0, fl.dirinfo[i].y+fl.span, 50)
       end
    end
 
@@ -605,7 +670,7 @@ function textlist_create(flparm)
 
       -- Border size
       border	= 3,
-      span	    = 1,
+      span      = 1,
       -- 	  font_h	= 0,
 
       -- Colors
@@ -644,7 +709,7 @@ function textlist_create(flparm)
    }
 
    -- Set display box to min.
-   fl:set_box(100,100,0,0,200)
+   fl:set_box(100,100,0,0,0)
 
    -- Overrides default by user's ones supply parms
    if flparm then
@@ -706,9 +771,9 @@ function textlist_update(fl, frametime)
       local y,h = fl.dirinfo[i].y, fl.dirinfo[i].h
       local wh = fl.bo2[2] - 2 * fl.border
       local mat = dl_get_trans(fl.cdl) 
+
       local ytop = -mat[4][2]
       local ytop2 = ytop
-
       if wh < 0 then wh = 0 end
       if y < ytop then
 	 ytop = y
@@ -719,10 +784,10 @@ function textlist_update(fl, frametime)
 	 ytop = ytop * 0.1 + ytop2 * 0.9
       end
       mat[4][2] = -ytop
-      mat[4][3] = 0
-      dl_set_trans(fl.idl, mat)
-      mat[4][3] = 0.1
       dl_set_trans(fl.cdl, mat)
+      mat = dl_get_trans(fl.idl) 
+      mat[4][2] = -ytop
+      dl_set_trans(fl.idl, mat)
    end
 
 end

@@ -1,3 +1,4 @@
+<zml>
 dcplaya is a free music player for the dreamcast.
 <p>
 It can play most popular music file formats such as mp3, ogg-vorbis, most

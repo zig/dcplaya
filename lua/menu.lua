@@ -69,22 +69,11 @@ gui_menu_close_event = gui_menu_close_event or evt_new_code()
 --- @return menu aplication
 --- @retval nil Error.
 ---
-function menu_create(owner, name, def, box, x1, y1)
+function menu_create(owner, name, def, box)
    local menu
-   local x2,y2,z
 
    if not owner or tag(def) ~= menudef_tag then return end
    if not name then name = def.title end
-
-   x1 = x1 or 0
-   y1 = y1 or 0
-   if box then
-      x1 = box[1]
-      y1 = box[2]
-      x2 = box[3]
-      y2 = box[4]
-      z  = box[5]
-   end
 
    -- ----------------
    -- MENU APPLICATION
@@ -190,8 +179,7 @@ function menu_create(owner, name, def, box, x1, y1)
       end
 
       if key == gui_focus_event then
---	 print("MENU handle [gui_focus_event (1)] : " .. tostring(menu.name))
-	 menu:open()
+	 menu:focus()
       end
 
       if menu.closed then
@@ -243,7 +231,7 @@ function menu_create(owner, name, def, box, x1, y1)
 -- 	 print("MENU handle [gui_menu_close_event] : " .. tostring(menu.name))
 	 -- force open will set menu in screen !
 	 -- $$$ verify validity of this trick 
-	 menu:open()
+	 menu:focus()
 	 return
       end
       return evt
@@ -270,15 +258,6 @@ function menu_create(owner, name, def, box, x1, y1)
       local box = menu.fl.box
       if not box then return end
 
---      printf("move menu %q x:%s y:%s z:%s sub:%s owner:%s",
---	     tostring(menu.def.title),
---	     tostring(movx),
---	     tostring(movy),
---	     tostring(movz),
---	     move_sub and "OK" or "NO",
---	     move_owner and "OK" or "NO"
---	  )
-
       -- Get current menu position
       local x,y,z = box[1], box[2], menu.fl.bo2 and menu.fl.bo2[3]
 
@@ -295,31 +274,19 @@ function menu_create(owner, name, def, box, x1, y1)
       movy = ny ~= y and ny-y
       movz = z and nz and nz ~= z and nz - z
 
-      printf("Efective move: %s %s %s",
-	     tostring(movx),
-	     tostring(movy),
-	     tostring(movz))
-
       -- Move owner
---       print("type of owner:"..type(menu.owner))
-
       if move_owner and tag(menu.owner) == menu_tag then
---	 print("move owner:"..menu.owner.def.title)
 	 menu.owner:move(movx,movy,movz,nil,1)
       end
       
       if move_sub then
 	 menu_movesub(menu,movx,movy,movz)
       end
-
    end
 
    -- Menu open
    -- ---------
    function menu_open(menu)
-
---      print("MENU open:" .. tostring(menu.name))
-
       menu.closed = nil
       local fl = menu.fl
       if fl then
@@ -327,18 +294,6 @@ function menu_create(owner, name, def, box, x1, y1)
 	 fl:open()
       end
       dl_set_active(menu.dl,1)
-      gui_new_focus(menu)
-      local box = menu.fl and menu.fl.box
-      local movx,movy
-      if box then
-	 movx = (box[1] < 0 and -box[1])
-	    or (box[3] > 640 and 640-box[3])
-	 movy = (box[2] < 0 and -box[2])
-	    or (box[4] > 480 and 480-box[4])
-	 if (movx or movy) then --and tag(menu.root_menu) == menu_tag then
-	    menu:move(movx,movy,nil,1,1)
-	 end
-      end
    end
 
    -- Menu close
@@ -363,6 +318,24 @@ function menu_create(owner, name, def, box, x1, y1)
       if menu.owner then
 	 evt_app_insert_last(menu.owner, menu)
       end
+   end
+
+   function menu_focus(menu)
+      menu:open()
+      local box = menu.fl and menu.fl.box
+      local minx,miny,maxx,maxy = 40,40,600,440
+      local movx,movy
+      if box then
+	 movx = (box[1] < minx and minx-box[1])
+	    or (box[3] > maxx and maxx-box[3])
+	 movy = (box[2] < miny and maxy-box[2])
+	    or (box[4] > maxy and maxy-box[4])
+	 if (movx or movy) then --and tag(menu.root_menu) == menu_tag then
+	    menu:move(movx,movy,nil,1,1)
+	 end
+      end
+      menu:set_box()
+      menu.fl:draw_cursor() -- $$$ try for vmu display only
    end
 
    -- Menu set color
@@ -390,26 +363,25 @@ function menu_create(owner, name, def, box, x1, y1)
       b3d:draw(dl)
    end
 
-
    function menu_draw_titlebar(menu,dl)
       local def = menu.def
+      local fl = menu.fl
+
       if not def.title then return end
 
-      local fl = menu.fl
       local style = menu.style
       local w,w2,h2,yt,w3
 
       w = fl.bo2[1]
       w2,h2 = dl_measure_text(dl, def.title)
-      w3 = w2 + 2*fl.border
+      w3 = w2 + 2 * fl.border
+      h = h2 + style.span+style.border
+      menu.title_w, menu.title_h = w3,h
       if w3 > w then
 	 fl:set_box(nil,nil,w3,nil,nil)
 	 w = fl.bo2[1]
       end
-
-      h = h2 + style.span+style.border
-      yt = -h --+style.border
-
+      yt = -h
       local b3d = box3d({0 , yt, w, yt+h}, 2,
 			style.titlebar_bkgcolor,
 			style.titlebar_topcolor,
@@ -421,19 +393,12 @@ function menu_create(owner, name, def, box, x1, y1)
       -- Draw title 
       col = style.titlebar_textcolor
       if col then
-	 dl_draw_text(dl, (w-w2)*0.5, yt+(h-h2)*0.5 , 25,
+	 dl_draw_text(dl, (w-w2)*0.5, yt+(h-h2)*0.5 , 50,
 		      col[1],col[2],col[3],col[4], def.title)
       end
-
-      -- Create a new box to include title box.
-      menu.box[2] = menu.box[2] - h
-      --menu.box = fl.box + {0, -h, 0, 0 }
    end
 
    function menu_draw_background(menu, dl)
-      -- Default box is the same than textlist one. It will change if 
-      -- there is a title, since the box will grow.
-      menu.box = menu.fl.box
       menu_draw_titlebar(menu,dl)
       menu_draw_border(menu, dl)
    end
@@ -442,14 +407,27 @@ function menu_create(owner, name, def, box, x1, y1)
       menu_draw_background(fl.owner, dl)
    end
 
+   function menufl_set_box(fl,x,y,w,h,z)
+      local menu = fl.owner
+      -- call original set_box
+      textlist_set_box(fl,x,y,w,h,z)
+      menu.box[1] = fl.box[1]
+      menu.box[2] = fl.box[2] - (menu.title_h or 0)
+      menu.box[3] = fl.box[3]
+      menu.box[4] = fl.box[4]
+   end
+
+   function menu_set_box(menu,x,y,w,h,z)
+      menu.fl:set_box(x,y,w,h,z)
+   end
 
    function menu_draw(menu)
       dl_clear(menu.dl)
       if menu.fl then
 	 menu.fl:draw()
 	 dl_sublist(menu.dl,menu.fl.dl)
--- 	 dl_set_active(menu.dl,1)
--- 	 dl_set_active(menu.fl.dl,1)
+--  	 dl_set_active(menu.dl,1)
+--  	 dl_set_active(menu.fl.dl,1)
       end
    end
 
@@ -489,14 +467,14 @@ function menu_create(owner, name, def, box, x1, y1)
 	 local submenu = menu.sub_menu and menu.sub_menu[subname]
 	 
 	 if tag(submenu) == menu_tag then
-	    submenu:open()
+	    submenu:focus()
 	    evt_app_insert_first(menu, submenu)
 	    gui_child_autoplacement(menu);
 	 else
 	    local y = (xentry and xentry.y) or 0
 	    if not menu.def.sub then return end
 	    submenu = menu:create(subname, menu.def.sub[subname],
-				  { m[4][1]+fl.bo2[1], m[4][2]+y})
+				  {m[4][1]+fl.bo2[1], m[4][2]+y})
 	    gui_child_autoplacement(menu);
 	    if (submenu) then
 	       -- $$$
@@ -548,13 +526,15 @@ function menu_create(owner, name, def, box, x1, y1)
       set_color = menu_set_color,
       draw = menu_draw,
       move = menu_move,
+      set_box = menu_set_box,
+      focus = menu_focus,
       confirm = menu_confirm,
       shutdown = menu_shutdown,
       create = menu_create,
 
       -- Members
       style = style,
-      dl = dl_new_list(),
+      dl = dl_new_list(64,0,0),
       z = 0, --gui_guess_z(owner,z),
       def	= def,
       sub_menu = {},
@@ -573,11 +553,15 @@ function menu_create(owner, name, def, box, x1, y1)
 				curcolor  = menu.style.body_curcolor,
 				border    = menu.style.border,
 				span      = menu.style.span,
-				keepin    = 1,
+				allow_out = 3, -- allow out at creation time
 			     } )
+   if not menu.fl then
+      return
+   end
 
    menu.fl.fade_spd = 4
    menu.fl.draw_background = menufl_draw_background
+   menu.fl.set_box = menufl_set_box
 
 --       draw_list         = textlist_draw_list,
 --       draw_background   = textlist_draw_background,
@@ -585,30 +569,36 @@ function menu_create(owner, name, def, box, x1, y1)
 --       draw_entry	= textlist_draw_entry,
 --       draw              = textlist_draw,
 
-
-   if not box then
-      textlist_center(menu.fl, 0, 0, 640, 480)
-   end
-
--- $$$ ben : draw will create menu box...
--- menu.box = { menu.fl.box[1], menu.fl.box[2], menu.fl.box[3], menu.fl.box[4] }
---   menu:set_color(1, 1, 1, 1)
-   menu:draw()
-
    if tag(owner) == menu_tag then
       --		print(format("owner=%q root=%q me=%q",
       --			owner.name, owner.root_menu.name,menu.name))
       menu.root_menu = owner.root_menu
       owner.sub_menu[menu.name] = menu
+      menu.box = owner.box
    else
       --		print(format("owner is not a menu : %q becoming root", menu.name))
       menu.root_menu = menu
+      menu.box = dup(menu.fl.box)
    end
+
+   if not box then
+      textlist_center(menu.fl, 0, 0, 640, 480)
+   end
+
+   -- Force call to menufl_set_box, noe the menu box must be set so it could be
+   -- drawed.
+   menu:set_box()
+
+   menu:draw()
 
    evt_app_insert_first(owner, menu)
 
-   -- After insetion because we need owner here
-   menu:open()
+   -- Disable the allow-out flags. After the first draw the next focus call
+   -- will move the menu inside screen and we could determine the move to send
+   -- it to the parent/children menus.
+   menu.fl.allow_out = nil
+   -- After insetion because we need owner here.
+   menu:focus()
 
    return menu
 end
@@ -854,40 +844,6 @@ function menu_create_defs(def,target,parent)
 
    return menu
 end
-
---menu = create_menulist(":un autre menu:entry 1>,entry 2,-,entry 3>zob,entry 4,")
---dump(menu,menu.title)
-
-if nil then
-   dial = nil
-   print("Run test (y/n) ?")
-   c = getchar()
-   if c == 121 then
-      local def = 
-	 {
-	 root=":test:info{info},kill >kill,hide,more >more",
-	 cb = {
-	    info = function(menu) print ("INFO") end
-	 },
-	 sub = {
-	    kill = ":kill:destroy,obliteration",
-	    more = {
-	       root = ":more:more 1,more 2,more 3 >toto, more 4{more}",
-	       cb = {
-		  more = function(menu) print("MORE") end
-	       },
-	       sub  = {
-		  toto=":toto:toto 1,toto 2,toto 3"
-	       }
-	    }
-	 }
-      }
-      dial = gui_menu(nil,"menu1", menu_create_defs(def))
-   end
-   function k() if dial then dial:shutdown() end end
-   --	k()
-end
-
 
 menu_loaded=1
 return menu_loaded

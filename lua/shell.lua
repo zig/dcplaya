@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: shell.lua,v 1.12 2003-03-12 11:29:13 ben Exp $
+-- $Id: shell.lua,v 1.13 2003-03-12 22:02:00 ben Exp $
 --
 
 -- Added by ben :
@@ -28,7 +28,7 @@ shell_default_substitut = {
 }
 
 -- Current table for shell substitution
-shell_substitut = shell_default_substitut
+shell_substitut = nil --shell_default_substitut
 
 -- We reimplement the doshellcommand function to extend the shell syntax.
 -- The new syntax is backward compatible with lua normal syntax (? I hope !)
@@ -113,7 +113,7 @@ function doshellcommand(string)
 	 return
       end
       if type(f) ~= "function" then
-	 print(format("Not a function %q : %d", fct, type(f)))
+	 print(format("Not a function %q : %q", fct, type(f)))
 	 return
       end
 
@@ -137,7 +137,6 @@ function doshellcommand(string)
       tremove(list, 1)
       return call (f, list)
    end
-
 end
 
 function check_zed()

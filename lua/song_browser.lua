@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.44 2003-03-11 15:07:58 zigziggy Exp $
+--- $Id: song_browser.lua,v 1.45 2003-03-12 22:02:00 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song browser application
@@ -420,7 +420,7 @@ function song_browser_create(owner, name)
 
    function song_browser_list_draw_background(fl,dl)
       local v = mat_new(4,8)
-      local x1,y1,x2,y2,x3,y3,x4,y4
+      local x1,y1,x2,y2,x3,y3,x4,y4,z
       local border = fl.border * 0.75
       x1 = 0
       x2 = x1 + border
@@ -430,20 +430,21 @@ function song_browser_create(owner, name)
       y2 = y1 + border
       y4 = fl.bo2[2]
       y3 = y4 - border
+      z  = 10
 
       local a1,r1,g1,b1 = 1.0, 1.0, 0.0, 0.0
       local a2,r2,g2,b2 = 1.0, 1.0, 1.0, 0.0
 
       local w = {
-	 {x1, y1, 0.1, 1.0,  a1, r1, g1, b1 }, -- 1
-	 {x4, y1, 0.1, 1.0,  a1, r1, g1, b1 }, -- 2
-	 {x1, y4, 0.1, 1.0,  a1, r1, g1, b1 }, -- 3
-	 {x4, y4, 0.1, 1.0,  a1, r1, g1, b1 }, -- 4
+	 {x1, y1, z, 1.0,  a1, r1, g1, b1 }, -- 1
+	 {x4, y1, z, 1.0,  a1, r1, g1, b1 }, -- 2
+	 {x1, y4, z, 1.0,  a1, r1, g1, b1 }, -- 3
+	 {x4, y4, z, 1.0,  a1, r1, g1, b1 }, -- 4
 
-	 {x2, y2, 0.1, 1.0,  a2, r2, g2, b2 }, -- 5
-	 {x3, y2, 0.1, 1.0,  a2, r2, g2, b2 }, -- 6
-	 {x2, y3, 0.1, 1.0,  a2, r2, g2, b2 }, -- 7
-	 {x3, y3, 0.1, 1.0,  a2, r2, g2, b2 }, -- 8
+	 {x2, y2, z, 1.0,  a2, r2, g2, b2 }, -- 5
+	 {x3, y2, z, 1.0,  a2, r2, g2, b2 }, -- 6
+	 {x2, y3, z, 1.0,  a2, r2, g2, b2 }, -- 7
+	 {x3, y3, z, 1.0,  a2, r2, g2, b2 }, -- 8
       }
 
       local def = {
@@ -465,13 +466,13 @@ function song_browser_create(owner, name)
 
       if fl.title_sprite then
 	 fl.title_sprite:set_color(1,r2,g2,b2)
-	 fl.title_sprite:draw(dl, (x1+x4) * 0.5, y1-fl.title_sprite.h, 0)
+	 fl.title_sprite:draw(dl, (x1+x4) * 0.5, y1-fl.title_sprite.h, 50)
       end
 
       if fl.icon_sprite then
 	 local w,h = fl.icon_sprite.w, fl.icon_sprite.h
 	 fl.icon_sprite:set_color(0.4,r2,g2,b2)
-	 fl.icon_sprite:draw(dl, x3 - w * 0.5, y3 - h * 0.5, 0.05)
+	 fl.icon_sprite:draw(dl, x3 - w * 0.5, y3 - h * 0.5, 50)
       end
 
       if fl.draw_background_old then
@@ -1216,7 +1217,7 @@ function song_browser_create(owner, name)
 			    color = fl.curplay_color or color
 			 end
 			 dl_draw_text(dl,
-				      x, y, z+0.1,
+				      x, y, z,
 				      color[1],color[2],color[3],color[4],
 				      entry.name)
 		      end
@@ -1265,7 +1266,7 @@ function song_browser_create(owner, name)
    sb.cdrom_stat, sb.cdrom_type, sb.cdrom_id = cdrom_status(1)
 --   sb.cdrom_check_timeout = 0
 
-   -- filer
+   -- filters
    sb.el_filter = "DXIMPT"
 
    -- Menu

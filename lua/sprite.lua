@@ -24,7 +24,7 @@ if not sprite_tag then sprite_tag = newtag() end
 ---   matrix  vtx;  ///< Sprite vertex definition
 ---   matrix  tra;  ///< Sprite vertex transform buffer
 ---
----   draw();		///< Draw sprite into display list
+---   draw();       ///< Draw sprite into display list
 ---   set_color();  ///< Set sprite color
 ---   
 --- };
@@ -46,14 +46,14 @@ end
 --- @ingroup   dcplaya_lua_graphics
 ---
 --- @param  name  sprite name.
---- @param  x     X coordinate of sprite origine.
---- @param  y     Y coordinate of sprite origine.
---- @param  w     Sprite width
---- @param  h     Sprite height
---- @param  u1    texture left coodinate
---- @param  v1    texture top coodinate
---- @param  u2    texture right coodinate
---- @param  v2    texture bottom coodinate
+--- @param  x     X coordinate of sprite origine (default 0).
+--- @param  y     Y coordinate of sprite origine (default 0).
+--- @param  w     Sprite width (optionnal guessed from texture)
+--- @param  h     Sprite height (optionnal guessed from texture)
+--- @param  u1    texture left coodinate (optionnal guessed from texture)
+--- @param  v1    texture top coodinate (optionnal guessed from texture)
+--- @param  u2    texture right coodinate (optionnal guessed from texture)
+--- @param  v2    texture bottom coodinate (optionnal guessed from texture)
 --- @param  texture  texture-id, texture-name, or texture-file
 --- @param  rotate   non nil to perform a -90 degree rotation.
 ---
@@ -87,13 +87,26 @@ function sprite(name, x, y, w, h, u1, v1, u2, v2, texture, rotate)
       if not info then
 	 print("[sprite] : Unexpected error ! no texture info")
       else
+	 local orig_w, orig_h = info.orig_w, info.orig_h
 	 local hpx,hpy = 0.5/info.w, 0.5/info.h -- half pixel size
-	 w = w or info.orig_w -- guess sprite dimension
-	 h = h or info.orig_h
+
+	 -- Keep aspect ratio if only one of w and h is specified
+	 if w then
+	    if not h then
+	       h = orig_h * w / orig_w
+	    end
+	 elseif h then
+	    w = orig_w * h / orig_h
+	 else
+	    w = orig_w
+	    h = orig_h
+	 end
+
 	 u1 = (u1 or 0) + hpx
 	 v1 = (v1 or 0) + hpy
-	 u2 = (u2 or info.orig_w/info.w) - hpx
-	 v2 = (v2 or info.orig_h/info.h) - hpy
+	 u2 = (u2 or orig_w/info.w) - hpx
+	 v2 = (v2 or orig_h/info.h) - hpy
+
       end
    end
    
@@ -211,7 +224,6 @@ function sprite_set_color(spr, a, r, g, b)
       end
    end
 end
-
 
 sprite_loaded = 1
 return sprite_loaded
