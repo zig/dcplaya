@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: gui.lua,v 1.13 2002-10-12 20:28:53 vincentp Exp $
+-- $Id: gui.lua,v 1.14 2002-10-13 07:55:45 benjihan Exp $
 --
 
 --
@@ -264,7 +264,7 @@ function gui_dialog_handle(app, evt)
 		print("modal !!")
 		return nil
 	end
-	print("dialog unhandle:"..key)
+--	print("dialog unhandle:"..key)
 	return evt
 end
 
@@ -734,6 +734,8 @@ function gui_init()
 	gui_item_confirm_event	= evt_new_code()
 	gui_item_cancel_event	= evt_new_code()
 	gui_item_change_event	= evt_new_code()
+	gui_color_change_event	= evt_new_code() -- arg:color
+	gui_shutdown()
 end
 
 gui_init()

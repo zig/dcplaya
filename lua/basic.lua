@@ -2,7 +2,7 @@
 --
 -- author : vincent penne <ziggy@sashipa.com>
 --
--- $Id: basic.lua,v 1.3 2002-10-09 00:51:17 benjihan Exp $
+-- $Id: basic.lua,v 1.4 2002-10-13 07:55:45 benjihan Exp $
 ---
 
 
@@ -120,9 +120,34 @@ function table_mul(a, t)
 	return r
 end
 
+function table_div(a, t)
+	local r = {}
+	local i, v
+	if type(a) == "table" then
+		if type(t) == "table" then
+			-- two tables case
+			for i, v in a do
+				r[i] = v / t[i]
+			end
+		else 
+		-- tables / number
+			for i, v in a do
+				r[i] = v / t
+			end
+		end
+	else
+		-- number / table case
+		for i, v in t do
+			r[i] = a / v
+		end
+	end
+	return r
+end
+
 settagmethod(tag( {} ), "add", table_add)
 settagmethod(tag( {} ), "sub", table_sub)
 settagmethod(tag( {} ), "mul", table_mul)
+settagmethod(tag( {} ), "div", table_div)
 settagmethod(tag( {} ), "pow", table_sqrdist)
 
 basic_loaded=1
