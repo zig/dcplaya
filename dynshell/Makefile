@@ -2,9 +2,9 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile,v 1.2 2002-09-13 00:05:47 zig Exp $
+# $Id: Makefile,v 1.1 2002-09-13 16:03:10 zig Exp $
 
-LEF=yes
+LEFS=dynshell.lef
 OPTIMIZE = $(OPTIMIZE_FOR_SPEED)
 
 TOPDIR:=$(dir $(shell pwd))
