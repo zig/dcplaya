@@ -6,7 +6,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, matrix interface
  * 
- * $Id: display_matrix.c,v 1.3 2002-10-21 14:57:00 benjihan Exp $
+ * $Id: display_matrix.c,v 1.4 2002-10-22 10:35:47 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -21,8 +21,8 @@ int matrix_tag;
 static allocator_t * matrixref_allocator;
 static allocator_t * matrixdef_allocator;
 
-#define NEW_MATRIX(M,REF,lines,log2) \
-  if ((M) = create_matrix(lines,log2), !(M)) { \
+#define NEW_MATRIX(M,REF,lines,cols) \
+  if ((M) = create_matrix(lines,cols), !(M)) { \
     printf("%s : malloc error\n", __FUNCTION__); \
     return 0; \
   } \
@@ -35,30 +35,29 @@ static allocator_t * matrixdef_allocator;
     printf("%s : malloc error\n", __FUNCTION__); \
     return 0; \
   } \
-  (M)->li = lines; /*!(lines) ? 0 : &(REF)->v[((lines)-1)<<(REF)->log2];*/ \
+  (M)->li = lines; \
   (M)->md = (REF); \
   (REF)->refcount++
 
-static lua_matrix_t * create_matrix(int lig, int log2)
+static lua_matrix_t * create_matrix(int lig, int col)
 {
   lua_matrix_def_t * md = 0;
   lua_matrix_t *m = 0;
   int size;
 
-  if (lig <= 0 || log2 < 2) {
+  if (lig <= 0 || col <= 0) {
 	return 0;
   }
 
   size = sizeof(lua_matrix_def_t)
-	+ sizeof(float)*(lig<<log2)
+	+ sizeof(float)*(lig*col)
 	- sizeof(md->v);
 
   md = allocator_alloc(matrixdef_allocator, size);
   if (md) {
 	md->refcount = 1;
 	md->l = lig;
-	md->c = 1<<log2;
-	md->log2 = log2;
+	md->c = col;
   }
   m = allocator_alloc(matrixref_allocator, sizeof(*m));
   if (!m) {
@@ -86,7 +85,7 @@ DL_FUNCTION_START(get_trans)
   lua_matrix_t * m;
   lua_matrix_def_t * md;
 
-  NEW_MATRIX(m, md, 4, 2);
+  NEW_MATRIX(m, md, 4, 4);
   memcpy(md->v, dl_get_trans(dl), sizeof(matrix_t));
   lua_settop(L, 0);
   lua_pushusertag(L, m, matrix_tag);
@@ -100,7 +99,7 @@ DL_FUNCTION_DECLARE(mat_gc)
   lua_matrix_def_t * md;
 #ifdef DEBUG
   int refcount;
-  int log2;
+  int c;
 #endif
 
 
@@ -109,7 +108,7 @@ DL_FUNCTION_DECLARE(mat_gc)
 
 #ifdef DEBUG
   refcount = md->refcount;
-  log2     = md->log2;
+  c        = md->c;
 #endif
 
 
@@ -125,12 +124,40 @@ DL_FUNCTION_DECLARE(mat_gc)
 #if defined DEBUG && 0
   if (mat->li) {
 	printf("%s : [m:%p c:%d li:%d]\n", __FUNCTION__,
-		   mat, refcount, ((mat->li - md->v)>>log2)+1);
+		   mat, refcount, ((mat->li - md->v) * c)+1);
   }
 #endif
 
   allocator_free(matrixref_allocator, mat);
   return 0;
+}
+
+static int char2col(const lua_matrix_def_t *md, const char *s)
+{
+  /* x y z w a r g b u v */
+  /* 0 1 2 3 4 5 6 7 8 9 */
+  /* x y z w u v */
+  /* 0 1 2 3 4 5 */
+
+  int k;
+  if (!s) return -1;
+  k = *s;
+  if ( k >= 'w' && k <= 'z' ) {
+	return ((k-'w') - 1) & 3;
+  }
+  switch (k) {
+  case 'a':
+	return 4;
+  case 'r':
+	return 5;
+  case 'g':
+	return 6;
+  case 'b':
+	return 7;
+  case 'u': case 'v':
+	return k-'u' + 4 + ((md->c > 8)<<2);
+  }
+  return -1;
 }
 
 DL_FUNCTION_DECLARE(mat_gettable)
@@ -147,13 +174,10 @@ DL_FUNCTION_DECLARE(mat_gettable)
 	if (type == LUA_TNUMBER) {
 	  c = lua_tonumber(L,2) - 1;
 	} else if (type == LUA_TSTRING) {
-	  const char * s = lua_tostring(L,2);
-	  if (s) {
-		c = ((*s) - 'x') & ((1<<md->log2)-1);
-	  }
+	  c = char2col(md,lua_tostring(L,2));
 	}
-/* 	printf("%s(%d,%d) : m:%p d:%p c:%d\n", __FUNCTION__,  */
-/* 		   ((li - md->v)>>md->log2)+1, c+1, m, md, md->refcount); */
+/*  	printf("%s(%d,%d) : m:%p d:%p c:%d\n", __FUNCTION__, */
+/*  		   ((li - md->v)*md->c)+1, c+1, m, md, md->refcount); */
 	if (c >= md->c) {
 	  printf("%s : column index %d out of range\n", __FUNCTION__, c+1);
 	  return 0;
@@ -165,12 +189,12 @@ DL_FUNCTION_DECLARE(mat_gettable)
 	lua_matrix_t * r;
 
 	l = lua_tonumber(L,2) - 1;
-/* 	printf("%s(%d) : m:%p d:%p c:%d\n", __FUNCTION__, l+1, m,md,md->refcount);  */
+/*printf("%s(%d) : m:%p d:%p c:%d\n", __FUNCTION__, l+1, m,md,md->refcount); */
 	if (l >= md->l) {
 	  printf("%s : line index %d out of range\n", __FUNCTION__, l+1);
 	  return 0;
 	}
-	REF_MATRIX(r, md, &md->v[l<<md->log2]);
+	REF_MATRIX(r, md, &md->v[l * md->c]);
 	lua_settop(L, 0);
 	lua_pushusertag(L, r, matrix_tag);
 /* 	m->li = &md->v[l<<md->log2]; */
@@ -193,17 +217,14 @@ DL_FUNCTION_DECLARE(mat_settable)
 	int type;
 	/* Matrix reference vector */
 	if (lua_type(L,3) != LUA_TNUMBER) {
-	  printf("%s : bad argument #3 type", __FUNCTION__);
+	  printf("%s : bad type argument #3.\n", __FUNCTION__);
 	  return 0;
 	}
 	type = lua_type(L,2);
 	if (type == LUA_TNUMBER) {
 	  c = lua_tonumber(L,2) - 1;
 	} else if (type == LUA_TSTRING) {
-	  const char * s = lua_tostring(L,2);
-	  if (s) {
-		c = ((*s) - 'x') & ((1<<md->log2)-1);
-	  }
+	  c = char2col(md,lua_tostring(L,2));
 	}
 /* 	printf("%s(%d,%d) : m:%p d:%p c:%d := %.3f\n", __FUNCTION__, */
 /* 		   ((li - md->v)>>md->log2)+1, c+1, */
@@ -226,8 +247,7 @@ DL_FUNCTION_DECLARE(mat_settable)
 	  printf("%s : line index %d out of range\n", __FUNCTION__, l+1);
 	  return 0;
 	}
-
-	memcpy(&md->v[l<<md->log2], r->li, 1<<(md->log2+2));
+	memcpy(&md->v[l * md->c], r->li, md->c<<2);
   }
   return 0;
 }
@@ -300,11 +320,11 @@ static void mat_mult(lua_matrix_def_t * rd,
 					lua_matrix_def_t * leftd,
 					lua_matrix_def_t * rightd)
 {
-  int bytes = 1<<(rd->log2+2);
+  int bytes = rd->c << 2;
 
   MtxVectorsMult(rd->v, leftd->v, *(matrix_t*)rightd->v, rd->l, bytes, bytes);
   /* Copy left matrix remaining data into destination. */
-  if (rd != leftd && rd->log2 > 2) {
+  if (rd != leftd && rd->c > 4) {
 	MtxCopyFlexible(rd->v+4, leftd->v+4, rd->l, rd->c-4, bytes, bytes);
   }
 }
@@ -319,7 +339,7 @@ DL_FUNCTION_DECLARE(mat_mult)
 
   GET_MATRIX(right,rightd,2,4,4);
   GET_MATRIX(left,leftd,1,0,0);
-  NEW_MATRIX(r,rd,leftd->l, leftd->log2);
+  NEW_MATRIX(r,rd,leftd->l, leftd->c);
 
   mat_mult(rd,leftd,rightd);
   lua_settop(L, 0);
@@ -402,8 +422,8 @@ DL_FUNCTION_DECLARE(mat_new)
 	lua_matrix_t * m;
 	lua_matrix_def_t * md;
 	GET_MATRIX(m,md,1,0,0);
-	NEW_MATRIX(r, rd, md->l, md->log2);
-	memcpy(rd->v, md->v, rd->l<<(rd->log2+2));
+	NEW_MATRIX(r, rd, md->l, md->c);
+	memcpy(rd->v, md->v, rd->l * rd->c << 2);
   } else {
 	int l = 0, c = 0;
 	int n = lua_gettop(L);
@@ -418,27 +438,15 @@ DL_FUNCTION_DECLARE(mat_new)
 	if (!l) {
 	  l = 4;
 	}
-	if (!c) {
-	  c = 2;
-	} else {
-	  int i;
-	  for (i=2; i<10 && c!=(1<<i); ++i)
-		;
-	  if (c!=(1<<i)) {
-		printf("%s : Invalid number of column %d (mstu be a power of 2 >= 2)\n",
-			   __FUNCTION__, c);
-		return 0;
-	  }
-	  c = i;
+	if (c<=0) {
+	  c = 4;
 	}
-	/*   printf("%s : create a (%d,%d) matrix\n",__FUNCTION__,l,1<<c); */
-
 	NEW_MATRIX(r, rd, l, c);
 
-	if (l == 4 && c == 2) {
+	if (l == 4 && c == 4) {
 	  MtxIdentity(* (matrix_t *) rd->v);
 	} else {
-	  memset(rd->v, 0, sizeof(float)*l<<rd->log2);
+	  memset(rd->v, 0, l * c << 2);
 	}
   }
   lua_settop(L, 0);
@@ -484,7 +492,7 @@ DL_FUNCTION_DECLARE(mat_rotx)
 {
   lua_matrix_t * r;
   lua_matrix_def_t * rd;
-  NEW_MATRIX(r,rd,4,2);
+  NEW_MATRIX(r,rd,4,4);
   myMtxRotateX(* (matrix_t *) rd->v, lua_tonumber(L, 1));
   lua_settop(L, 0);
   lua_pushusertag(L, r, matrix_tag);
@@ -496,7 +504,7 @@ DL_FUNCTION_DECLARE(mat_roty)
   lua_matrix_t * r;
   lua_matrix_def_t * rd;
 
-  NEW_MATRIX(r,rd,4,2);
+  NEW_MATRIX(r,rd,4,4);
   myMtxRotateY(* (matrix_t *) rd->v, lua_tonumber(L, 1));
   lua_settop(L, 0);
   lua_pushusertag(L, r, matrix_tag);
@@ -508,7 +516,7 @@ DL_FUNCTION_DECLARE(mat_rotz)
   lua_matrix_t * r;
   lua_matrix_def_t * rd;
 
-  NEW_MATRIX(r,rd,4,2);
+  NEW_MATRIX(r,rd,4,4);
   myMtxRotateZ(* (matrix_t *) rd->v, lua_tonumber(L, 1));
   lua_pushusertag(L, r, matrix_tag);
   return 1;
@@ -519,7 +527,7 @@ DL_FUNCTION_DECLARE(mat_scale)
   lua_matrix_t * r;
   lua_matrix_def_t * rd;
 
-  NEW_MATRIX(r,rd,4,2);
+  NEW_MATRIX(r,rd,4,4);
   memset(rd->v, 0, sizeof(matrix_t));
   rd->v[ 0] = lua_tonumber(L, 1);
   rd->v[ 5] = lua_tonumber(L, 2);
@@ -535,7 +543,7 @@ DL_FUNCTION_DECLARE(mat_trans)
   lua_matrix_t * r;
   lua_matrix_def_t * rd;
 
-  NEW_MATRIX(r,rd,4,2);
+  NEW_MATRIX(r,rd,4,4);
   MtxIdentity(* (matrix_t *) rd->v);
   rd->v[12] = lua_tonumber(L, 1);
   rd->v[13] = lua_tonumber(L, 2);
@@ -570,7 +578,7 @@ DL_FUNCTION_DECLARE(mat_li)
   lua_settop(L,0);
   lua_newtable(L);
   {
-	float *v = &md->v[l<<md->log2];
+	float *v = &md->v[l * md->c];
 	for (n=0; n<md->c; ++n) {
 	  lua_pushnumber(L, n+1);
 	  lua_pushnumber(L, *v++);
@@ -637,7 +645,7 @@ DL_FUNCTION_DECLARE(mat_el)
   }
 
   lua_settop(L,0);
-  lua_pushnumber(L, md->v[ (l<<md->log2) + c]);
+  lua_pushnumber(L, md->v[l * md->c + c]);
   return 1;
 }
 
@@ -674,7 +682,7 @@ static void dump_matrix_def(const lua_matrix_def_t *def, int idx, int level,
 	  int k;
 	  printf("%s  [ ", indent);
 	  for (k=0; k<def->c; ++k) {
-		printf("%-5.2f ", def->v[k + (j<<def->log2)]);
+		printf("%-5.2f ", def->v[k + j * def->c]);
 	  }
 	  printf("]\n");
 	}
@@ -688,7 +696,7 @@ static void dump_matrix_ref(const lua_matrix_t *m, int idx, int level,
   if (level > 0) {
 	 printf("%s#%4d  %p",indent, idx, m->md);
 	 if (m->li) {
-	   printf("[%d]", ((m->li - m->md->v)>>m->md->log2) + 1);
+	   printf("[%d]", ((m->li - m->md->v) / m->md->c) + 1);
 	 }
 	 printf("\n");
   }

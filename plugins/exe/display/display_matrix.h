@@ -6,7 +6,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, matrix interface
  * 
- * $Id: display_matrix.h,v 1.1 2002-10-18 11:42:07 benjihan Exp $
+ * $Id: display_matrix.h,v 1.2 2002-10-22 10:35:47 benjihan Exp $
  */
 
 #include "display_driver.h"
@@ -28,7 +28,7 @@ typedef struct
   int refcount;       /**< Matrix reference counter'.               */
   unsigned int l;     /**< Matrix number of line (vectors).         */
   unsigned int c;     /**< Matrix number of column.                 */
-  unsigned int log2;  /**< log2 of number of column.                */
+  unsigned int align; /**< 16 bit alignment.                        */
   float v[16];        /**< Matrix elements.                         */
 } lua_matrix_def_t;
 

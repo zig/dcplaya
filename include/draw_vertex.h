@@ -4,7 +4,7 @@
  *  @date    2002/10/15
  *  @brief   draw primitive vertex definition.
  *
- * $Id: draw_vertex.h,v 1.3 2002-10-21 14:56:59 benjihan Exp $
+ * $Id: draw_vertex.h,v 1.4 2002-10-22 10:35:47 benjihan Exp $
  */
 
 #ifndef _DRAW_VERTEX_H_
@@ -13,8 +13,8 @@
 /** @name Draw flags bits.
  *  @{
  */
-#define DRAW_OPACITY_BIT  12 /**< 1st bit of opacity type. */
-/* #define DRAW_SHADING_BIT  13 /\**< 1st bit of shading type. *\/ */
+#define DRAW_FILTER_BIT   13 /**< 1st bit of filter type.  */
+#define DRAW_OPACITY_BIT  14 /**< 1st bit of opacity type. */
 #define DRAW_DEBUGIN_BIT  15 /**< User debug bit.          */
 #define DRAW_TEXTURE_BIT  16 /**< 1st bit of texture.      */
 /**@}*/
@@ -42,21 +42,20 @@
 /** Opacity value for opaque drawing. */
 #define DRAW_OPAQUE         (1<<DRAW_OPACITY_BIT)
 /** Opacity value for translucent drawing. */
-#define DRAW_TRANSLUCENT  (0<<DRAW_OPACITY_BIT)
+#define DRAW_TRANSLUCENT    (0<<DRAW_OPACITY_BIT)
 /**@}*/
 
-/** @name Draw flags shading access.
+/** @name Draw flags texture filtering.
  *  @{
  */
-
-/** Shading mask. */
-/* #define DRAW_SHADING_MASK  (1<<DRAW_SHADING_BIT) */
-/** Get shading. */
-/* #define DRAW_SHADING(F)    ((F)&DRAW_SHADING_MASK) */
-/** Value for flat shading. */
-/* #define DRAW_FLAT          (1<<DRAW_SHADING_BIT) */
-/** Value for gouraud shading. */
-/* #define DRAW_GOURAUD       (0<<DRAW_SHADING_BIT) */
+/** Texture filter mask. */
+#define DRAW_FILTER_MASK  (1<<DRAW_FILTER_BIT)
+/** Get texture filter. */
+#define DRAW_FILTER(F)    ((F)&DRAW_FILTER_MASK)
+/** Value for no texture filter. */
+#define DRAW_NO_FILTER    (1<<DRAW_FILTER_BIT)
+/** Value for bilinear texture filter. */
+#define DRAW_BILINEAR     (0<<DRAW_FILTER_BIT)
 /**@}*/
 
 /** Draw primitive vertex. */

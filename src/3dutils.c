@@ -4,12 +4,13 @@
  * @date    2002/10/10
  * @brief   2D drawing primitives.
  *
- * $Id: 3dutils.c,v 1.6 2002-10-21 14:57:00 benjihan Exp $
+ * $Id: 3dutils.c,v 1.7 2002-10-22 10:35:47 benjihan Exp $
  */
 
 #include <stdarg.h>
 #include <stdio.h>
 #include "gp.h"
+#include "texture.h"
 #include "sysdebug.h"
 
 #include "draw_clipping.h"
@@ -135,15 +136,23 @@
 /**@}*/
 
 typedef struct {
-  int word0;
-  int word1;
-  int word2;
-  int word3;
+  volatile uint32 word1;
+  volatile uint32 word2;
+  volatile uint32 word3;
+  volatile uint32 word4;
+  volatile uint32 words[4];
 } ta_hw_poly_t;
+
+typedef struct {
+  uint32 word1;
+  uint32 word2;
+  uint32 word3;
+  uint32 word4;
+} ta_poly_t;
 
 /* $$$ shading mode not handled, since I don't know how it works with
    the TA. */
-static const ta_hw_poly_t poly_table[4] = {
+static const ta_poly_t poly_table[4] = {
   /* TO   texture     opacity                        */
   /* ----------------------------------------------- */
   /* 00   no         transparent                     */
@@ -151,40 +160,70 @@ static const ta_hw_poly_t poly_table[4] = {
   /* 01   no         opaque                          */
   { 0x80840012, 0x90800000, 0x20800440, 0x00000000 },
   /* 10   yes        transparent                     */
-  { 0x8284001a, 0x92800000, 0x949004c0, 0x00000000 },
+  { 0x8284000a, 0x92800000, 0x949004c0, 0x00000000 },
   /* 11   yes        opaque                          */
-  { 0x8084001a, 0x90800000, 0x20800440, 0x00000000 },
+  { 0x8084000a, 0x90800000, 0x20800440, 0x00000000 },
 };
+
+static ta_hw_poly_t cur_poly;
+static const ta_hw_poly_t * hw_poly = (void*)(0xe0<<24);
 
 static const int draw_zwrite  = TA_ZWRITE_ENABLE;
 static const int draw_ztest   = TA_DEPTH_GREATER;
 static const int draw_culling = TA_CULLING_CCW;
 
-static void make_poly_hdr(int flags)
+static void make_poly_hdr(ta_hw_poly_t * poly, int flags)
 {
-/*   volatile ta_hw_poly_t * hw = (volatile ta_hw_poly_t *)(0xe0<<24); */
-  const ta_hw_poly_t * p;
-  int texture = DRAW_TEXTURE(flags);
+  const ta_poly_t * p;
+  texture_t * t;
+  texid_t texid;
   int idx;
-  static int oldidx = -1;
+  uint32 word3, word4;
+
+/*   static int toto = 0; */
+
+  t = 0;
+  texid = DRAW_TEXTURE(flags);
+  if (texid != DRAW_NO_TEXTURE) {
+	t = texture_lock(texid);
+  }
 
   idx = 0
-	| ((texture != DRAW_NO_TEXTURE) << 1)
+	| ((t != 0) << 1)
 	| ((flags >> DRAW_OPACITY_BIT) & 0x1);
 
-  if (idx != oldidx) {
-	printf("Changing poly header type %d\n", oldidx=idx);
-  }
-  
   p = poly_table + idx;
+  poly->word1 = p->word1;
+  poly->word2 = p->word2;
+  word3 = p->word3;
+  word4 = 0;
+  if (t) {
+	/* $$$ does not match documentation !!!  */
+	word3 |= ((DRAW_FILTER(flags)^DRAW_FILTER_MASK)) << (13-DRAW_FILTER_BIT);
+	word3 |= (t->wlog2-3) << 3;
+	word3 |= (t->hlog2-3);
+	/* $$$ does not match documentation !! */
+	word4 = (t->format<<26) | (t->ta_tex >> 3);
 
-  if (texture != DRAW_NO_TEXTURE) {
-	/* Set texture info */
-
+	texture_release(t);
   }
+  poly->word3 = word3;
+  poly->word4 = word4;
 
-  /* Now we cant commit */
-  ta_commit32_inline(p);
+/*   if (toto < 16) { */
+/* 	toto++; */
+/* 	printf("idx=%d\n",idx); */
+/* 	if (!t) { */
+/* 	  printf("texture NULL pointer\n"); */
+/* 	} else { */
+/* 	  printf("texture %s : %dx%dx%s, %dx%d, %p,%x\n", */
+/* 			 t->name, t->width, t->height, texture_formatstr(t->format), */
+/* 			 t->wlog2, t->hlog2, t->addr, t->ta_tex); */
+/* 	} */
+/* 	printf("poly words: %08x %08x %08x %08x\n", */
+/* 			 poly->word1,poly->word2,poly->word3,poly->word4); */
+/*   } */
+
 }
 
 static int sature(const float a)
@@ -212,7 +251,8 @@ void draw_triangle_no_clip(const draw_vertex_t *v1,
 						   const draw_vertex_t *v3,
 						   int flags)
 {
-  make_poly_hdr(flags);
+  make_poly_hdr(&cur_poly, flags);
+  ta_commit32_inline(&cur_poly);
 
   if (DRAW_TEXTURE(flags) == DRAW_NO_TEXTURE) {
 	/* No texture */
@@ -241,26 +281,38 @@ void draw_triangle_no_clip(const draw_vertex_t *v1,
 
   } else {
 	volatile struct vtargb_s {
-	  int flags;
+	  uint32 flags;
 	  float x,y,z,u,v;
-	  unsigned int col, addcol;
+	  uint32 col, addcol;
 	}  * v= (void *)(0xe0<<24);
+
+/* 	static int toto; */
+/* 	if (toto < 5) { */
+/* 	  toto++; */
+/* 	  printf("u1: %f, v1:%f\n", v1->u, v1->v); */
+/* 	  printf("u2: %f, v2:%f\n", v2->u, v2->v); */
+/* 	  printf("u3: %f, v3:%f\n", v3->u, v3->v); */
+/* 	} */
+
 
 	/* Vertex 1 */
 	v->flags = TA_VERTEX_NORMAL;
 	v->x = v1->x; v->y = v1->y; v->z = v1->z;
+	v->u = v1->u; v->v = v1->v;
 	v->col = argb255(v1);
 	v->addcol = 0;
 	ta_commit32_nocopy();
 
 	/* Vertex 2 */
 	v->x = v2->x; v->y = v2->y; v->z = v2->z;
+	v->u = v2->u; v->v = v2->v;
 	v->col = argb255(v2);
 	ta_commit32_nocopy();
 	
 	/* Vertex 3 */
 	v->flags = TA_VERTEX_EOL;
 	v->x = v3->x; v->y = v3->y; v->z = v3->z;
+	v->u = v3->u; v->v = v3->v;
 	v->col = argb255(v3);
 	ta_commit32_nocopy();
   }

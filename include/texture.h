@@ -4,7 +4,7 @@
  * @date    2002/10/20
  * @brief   texture manager
  *
- * $Id: texture.h,v 1.1 2002-10-21 14:56:59 benjihan Exp $
+ * $Id: texture.h,v 1.2 2002-10-22 10:35:47 benjihan Exp $
  */
 
 #ifndef _TEXTURE_H_
@@ -26,8 +26,8 @@ typedef struct {
   int ref;       /**< Reference counter  */
   int lock;      /**< Lock counter       */
 
-  void * addr;   /**< VRAM address       */
-  uint32 ta_tex; /**< Texture location ? */
+  void * addr;   /**< Mapped VRAM address       */
+  uint32 ta_tex; /**< Texture address for TA */
 } texture_t;
 
 struct _texture_create_s;
@@ -75,6 +75,9 @@ texid_t texture_get(const char * texture_name);
  * @see texture_reader_f
  */
 texid_t texture_create(texture_create_t * creator);
+
+/** Create a flat texture. */
+texid_t texture_create_flat(const char *name, unsigned int argb);
 
 /** Create a new texture from a image file.
  *

@@ -5,7 +5,7 @@
  * @date     2002/10/17
  * @brief    graphics lua extension plugin, triangle interface
  * 
- * $Id: display_triangle.c,v 1.2 2002-10-21 14:57:00 benjihan Exp $
+ * $Id: display_triangle.c,v 1.3 2002-10-22 10:35:47 benjihan Exp $
  */
 
 #include "gp.h"
@@ -135,7 +135,7 @@ DL_FUNCTION_START(draw_triangle)
 	  
 	  li = m1->li;
 	  if (li) {
-		l = (li - md1->v) >> md1->log2;
+		l = (li - md1->v) / md1->c;
 	  } else {
 		li = md1->v;
 		l  = 0;
@@ -165,6 +165,25 @@ DL_FUNCTION_START(draw_triangle)
 	  /* Got a opacity mode */
 	  flags |= ((unsigned int)lua_tonumber(L, i+1) << DRAW_OPACITY_BIT)
 		& DRAW_OPACITY_MASK;
+
+	  if (n >= i+2) {
+		/* Got a filter mode */
+		flags |= ((unsigned int)lua_tonumber(L, i+2) << DRAW_FILTER_BIT)
+		  & DRAW_FILTER_MASK;
+	  }
+	}
+	{
+	  static int toto =0;
+	  if (toto < 256) {
+		printf("flags=%08x\n", flags);
+		printf("textured:%s\n",
+			   DRAW_TEXTURE(flags) == DRAW_NO_TEXTURE ? "no":"yes");
+		printf("opacity:%s\n",
+			   DRAW_OPACITY(flags) == DRAW_OPAQUE ? "opaque" : "translucent");
+		printf("filter:%s\n",
+			   DRAW_FILTER(flags) == DRAW_NO_FILTER ? "none" : "bilinear");
+		toto++;
+	  }
 	}
   }
 

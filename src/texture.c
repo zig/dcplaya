@@ -4,7 +4,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.1 2002-10-21 14:57:00 benjihan Exp $
+ * $Id: texture.c,v 1.2 2002-10-22 10:35:47 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -74,6 +74,7 @@ int texture_init(void)
 	return -1;
   }
   ta_txr_release_all();
+  texture_create_flat("default", 0xFFFFFF);
   return 0;
 }
 
@@ -174,6 +175,8 @@ texid_t texture_create(texture_create_t * creator)
   t->ta_tex = ta_txr_allocate(size<<1);
   /* $$$ TODO check alloc error */ 
   addr = ta_txr_map(t->ta_tex);
+  /** $$$ Don't know if it is a good things to do ... */
+  t->ta_tex += ta_state.texture_base;
   if (creator->width == 1<<wlog2) {
 	int n;
 	size = creator->reader(addr, n = size, creator);
@@ -238,6 +241,43 @@ static int memreader(uint8 *buffer, int n, texture_create_t * tc)
   tcm->convertor(buffer, tcm->cur, n);
   tcm->cur += n << tcm->bpplog2;
   return n;
+}
+
+texid_t texture_create_flat(const char *name, unsigned int argb)
+{
+  int i,alpha,dst_format;
+  uint32 texture[8*8];
+  texture_create_memory_t memcreator;
+
+  /* Setup texture bitmap */
+  for (i=0;i <64; ++i) {
+	texture[i] = argb;
+  }
+
+  /* Setup memory creator */
+  memset(&memcreator, 0, sizeof(memcreator));
+  strncpy(memcreator.creator.name, name, sizeof(memcreator.creator.name)-1);
+
+  /* Determine destination format depending on alpha value */
+  alpha = argb & 0xFF000000;
+  if (alpha && alpha != 0xFF000000) { 
+	dst_format = TA_ARGB4444;
+	memcreator.convertor = ARGB32toARGB4444;
+  } else {
+	dst_format = TA_RGB565;
+	memcreator.convertor = ARGB32toRGB565;
+  }
+
+  memcreator.bpplog2 = 2;
+  memcreator.creator.width     = 8;
+  memcreator.creator.height    = 8;
+  memcreator.creator.formatstr = texture_formatstr(dst_format);
+  memcreator.creator.reader    = memreader;
+  memcreator.org =
+  memcreator.cur = (uint8 *)texture;
+  memcreator.end = memcreator.org + (8*8*4);
+
+  return texture_create(&memcreator.creator);
 }
 
 texid_t texture_create_file(const char *fname, const char * formatstr)
