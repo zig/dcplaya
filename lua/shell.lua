@@ -3,9 +3,32 @@
 --
 -- author : Vincent Penne
 --
--- $Id: shell.lua,v 1.11 2003-03-06 16:59:43 zigziggy Exp $
+-- $Id: shell.lua,v 1.12 2003-03-12 11:29:13 ben Exp $
 --
 
+-- Added by ben :
+
+-- Keywords that could begin a lua sentence.
+shell_lua_key_words = {
+   ["function"] = 1,
+   ["if"] = 1,
+   ["while"] = 1,
+   ["do"] = 1,
+   ["for"] = 1,
+   ["repeat"] = 1,
+   ["return"] = 1,
+   ["local"] = 1,
+   ["break"] = 1,
+}
+
+-- Default table of variable type that the shell is allowed to substitut.
+shell_default_substitut = {
+   ["string"] = 1,
+   ["number"] = 1,
+}
+
+-- Current table for shell substitution
+shell_substitut = shell_default_substitut
 
 -- We reimplement the doshellcommand function to extend the shell syntax.
 -- The new syntax is backward compatible with lua normal syntax (? I hope !)
@@ -15,6 +38,7 @@
 -- so lua scripts should use normal syntax ...
 function doshellcommand(string)
    list = {}
+   force_string = {}
    local i,j
    j=0
    repeat
@@ -33,6 +57,7 @@ function doshellcommand(string)
 	    i, j = strfind(string, [[%b]]..beg..e, i)
 	    if i then
 	       tinsert(list, strsub(string, i+n, j-n))
+	       force_string[getn(list)] = 1
 	    else
 	       print ("unbalanced quotes")
 	    end
@@ -44,23 +69,73 @@ function doshellcommand(string)
    until not i
 
    if list[1] then
-
       local sec
       if list[2] then sec=strsub(list[2], 1, 1) end
-      if list[1] == "function" or sec == [[(]] or sec == [[=]] or strfind(list[1], "[(=]") then
+
+      if shell_lua_key_words[list[1]] then
+	 -- lua keyword detected : do it as is
          -- plain LUA command
 	 return dostring(string)
-      else
-	 -- shellized command
-	 local f = getglobal(list[1])
-	 if type(f) ~= "function" then
-	    print("No such command '", list[1], "'")
-	    return
-	 end
-	 tremove(list, 1)
-	 return call (f, list)
+      end
+      local st,sp,fct
+
+      if sec == '=' or strfind(list[1], "=") then
+	 -- affectation : do it as is too !
+	 return dostring(string)
       end
 
+      -- Check for function call and get its name.
+      st,sp,fct = strfind(list[1], "[%s]*([%w_]+)[%s]*[(]")
+      if not fct and sec == '(' then
+	 fct = list[1]
+      end
+
+      if fct then
+	 -- function call , check if it exist and if it is a function.
+	 local f = getglobal(fct)
+	 if not f then
+	    print(format("Undefined command %q", fct))
+	    return
+	 end
+	 if type(f) ~= "function" then
+	    print(format("Not a function %q : %d", fct, type(f)))
+	    return
+	 end
+	 -- function call : do it as is too !
+	 return dostring(string)
+      end
+
+      -- shellized command
+      fct = list[1]
+      local f = getglobal(fct)
+      if not f then
+	 print(format("Undefined command %q", fct))
+	 return
+      end
+      if type(f) ~= "function" then
+	 print(format("Not a function %q : %d", fct, type(f)))
+	 return
+      end
+
+      if type(shell_substitut) == "table" then
+	 -- shell has a substitution table, just perform them.
+	 local i
+	 for i=2, getn(list) do
+	    -- 	 print(format("arg[%d] = %q %s",
+	    -- 		      i,list[i],
+	    -- 		      (force_string[i] and "force-string") or "variable"))
+	    if not force_string[i] then
+	       local val = getglobal(list[i])
+	       if val and shell_substitut[type(val)] then
+		  -- 	       print(format("substitut %q to %s type=%s",
+		  -- 			    list[i], tostring(val), type(val)))
+		  list[i] = val
+	       end
+	    end
+	 end
+      end
+      tremove(list, 1)
+      return call (f, list)
    end
 
 end
