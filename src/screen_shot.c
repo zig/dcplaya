@@ -4,7 +4,7 @@
  * @date    2002/09/14
  * @brief   Takes TGA screen shot.
  * 
- * $Id: screen_shot.c,v 1.3 2002-09-25 03:21:22 benjihan Exp $
+ * $Id: screen_shot.c,v 1.4 2003-02-12 12:31:57 ben Exp $
  */
 
 //#include <kos/fs.h>
@@ -135,7 +135,7 @@ int screen_shot(const char *basename)
   sysdbg_indent(1,0);
 
   ++shot;
-  sprintf(tmp, "/pc" DREAMMP3_HOME "%s%03d.tga.gz", basename, shot);
+  sprintf(tmp, DCPLAYA_HOME "/%s%03d.tga.gz", basename, shot);
 
   SDDEBUG("Opening [%s] for writing\n", tmp);
   fd = gzopen(tmp,"wb");//fs_open(tmp, O_WRONLY);

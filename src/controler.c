@@ -265,7 +265,7 @@ int controler_init(void)
   }
   
   SDUNINDENT;
-  SDDEBUG("[%f] := [%d]\n", __FUNCTION__, err);
+  SDDEBUG("[%s] := [%d]\n", __FUNCTION__, err);
 
   return err;
 }

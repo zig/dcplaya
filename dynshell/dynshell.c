@@ -6,8 +6,10 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.66 2003-01-31 14:48:30 ben Exp $
+ * @version    $Id: dynshell.c,v 1.67 2003-02-12 12:31:55 ben Exp $
  */
+
+#include "config.h"
 
 #include <stdio.h>
 #include <kos.h>
@@ -47,8 +49,8 @@ static shell_command_func_t old_command_func;
 
 static int song_tag;
 
-static const char * home = "/pc"  DREAMMP3_HOME;
-static const char * initfile = "/pc"  DREAMMP3_HOME "/lua/init.lua";
+static const char * home = DCPLAYA_HOME "/";
+static const char * initfile = DCPLAYA_HOME "/lua/init.lua";
 
 static float frame_to_second(unsigned int frames) {
   return frames * (1.0f/60.0f);
@@ -619,7 +621,7 @@ static int lua_path_load(lua_State * L)
     strcpy(rpath, lua_tostring(L, 1)/*, sizeof(rpath)*/);
   else {
     strcpy(rpath, home);
-    strcat(rpath, "/plugins");
+    strcat(rpath, "plugins");
   }
 
   // default parameters
@@ -2758,6 +2760,8 @@ static void shell_register_lua_commands()
 	       "\n   dostring(string)"
 	       "\n end");
 
+  printf("setting [home] to [%s]\n",home);
+
   dynshell_command("home = [[%s]]", home);
 
   //lua_dobuffer(L, shell_basic_lua_init, sizeof(shell_basic_lua_init) - 1, "init");
@@ -2773,6 +2777,7 @@ static void shell_register_lua_commands()
   }
 
   /* luanch the init script */
+  printf("running init file [%s]\n",initfile);
   lua_dofile(L, initfile);
 
   /* register helps */

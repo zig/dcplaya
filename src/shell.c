@@ -3,9 +3,10 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     shell support for dcplaya
- * @version   $Id: shell.c,v 1.12 2002-12-12 18:35:24 zigziggy Exp $
+ * @version   $Id: shell.c,v 1.13 2003-02-12 12:31:57 ben Exp $
  */
 
+#include "config.h"
 #include <kos.h>
 
 #include <ctype.h>
@@ -14,6 +15,7 @@
 #include "console.h"
 
 #include "lef.h"
+#include "sysdebug.h"
 
 static char input[256];
 static int input_pos;
@@ -26,7 +28,8 @@ static float console_y = CONSOLE_OUT_Y;
 lef_prog_t * shell_lef;
 shell_shutdown_func_t shell_lef_shutdown_func;
 
-char * shell_lef_fname = "/pc" DREAMMP3_HOME "dynshell/dynshell.lef";
+
+char * shell_lef_fname = DCPLAYA_HOME "/dynshell/dynshell.lez";
 
 static shell_command_func_t shell_command_func;
 
@@ -130,16 +133,17 @@ void shell_load(const char * fname)
     shell_lef = 0;
   }
 
-
   /* Load and launch new shell */
   shell_lef = lef_load(fname);
 
   if (shell_lef) {
     shell_lef_shutdown_func = (shell_shutdown_func_t) shell_lef->main(0, 0);
+    SDDEBUG("[shell_load] : [%s] := [OK]\n", fname);
+  } else {
+    SDERROR("[shell_load] : [%s] := [FAILED]\n", fname);
   }
 
   unlockshell();
-
 }
 
 
@@ -181,11 +185,15 @@ int shell_init()
   uint32 old = thd_default_stack_size;
   thd_default_stack_size = 1024*1024;
 
+  SDDEBUG("[shell_init] : dynshell [%s]\n",shell_lef_fname);
+
   thd_create(shell_thread, 0);
 
   thd_default_stack_size = old;
 
   shell_load(shell_lef_fname);
+
+  SDDEBUG("[shell_init] := [0]\n");
   
   return 0;
 }

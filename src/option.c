@@ -339,9 +339,10 @@ void option_render(unsigned int elapsed_frame)
   case OPTION_LCD_VISUAL:
     {
       static const char * str[] =
-	{ "LCD OFF", "LCD Scope", "LCD FFT", "LCD FFT (x2)" };
+	{ "LCD OFF", "LCD Scope", "LCD FFT", "LCD BAND" };
       lcd_visual = (lcd_visual + hmove) & 3;
       strcpy(option_str,  str[lcd_visual]);
+      vmu_set_visual(lcd_visual);
       text_draw_str_inside(x1, y1, x2, y2, z, option_str);
     } break;
   }

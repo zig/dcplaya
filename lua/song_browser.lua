@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.32 2003-02-01 20:07:05 ben Exp $
+--- $Id: song_browser.lua,v 1.33 2003-02-12 12:31:56 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -625,7 +625,8 @@ function song_browser_create(owner, name)
    end
 
    function sbfl_confirm_music(fl, sb, action, entry_path)
-      if not test("-f",entry_path) then return end
+-- $$$ problem with cdda ... 
+--      if not test("-f",entry_path) then return end
       sb.playlist_idx = nil
       song_browser_play(sb, entry_path, 0, 1)
       return 1
@@ -667,7 +668,8 @@ function song_browser_create(owner, name)
    end
    
    function sbfl_select_music(fl, sb, action, entry_path)
-      if not test("-f",entry_path) then return end
+-- $$$ problem with cdda ... 
+--       if not test("-f",entry_path) then return end
       local pos = fl:get_pos()
       if pos then
 	 return sbpl_insert(sb, fl.dir[pos])

@@ -1,7 +1,7 @@
 --
 -- This is main DCplaya lua script
 --
--- $Id: dcplayarc.lua,v 1.25 2003-02-04 18:03:03 ben Exp $
+-- $Id: dcplayarc.lua,v 1.26 2003-02-12 12:31:55 ben Exp $
 --
 
 showconsole()
@@ -21,14 +21,6 @@ hideconsole()
 dolib ("vmu_init")
 showconsole()
 
---dofile (home.."lua/basic.lua")
---dofile (home.."lua/evt.lua")
---dofile (home.."lua/dirfunc.lua")
---dofile (home.."lua/shell.lua")
---dofile (home.."lua/zed.lua")
---dofile (home.."lua/keyboard_emu.lua")
---dofile (home.."lua/gui.lua")
-
 -- reading directory on PC is slow through serial port, 
 -- so we precalculate available plugins instead of doing a dir_load command
 plug_spc	= home.."plugins/inp/spc/spc.lez"
@@ -40,15 +32,13 @@ plug_sc68	= home.."plugins/inp/sc68/sc68.lez"
 plug_mikmod	= home.."plugins/inp/mikmod/mikmod.lez"
 plug_ogg	= home.."plugins/inp/ogg/ogg.lez"
 plug_cdda	= home.."plugins/inp/cdda/cdda.lez"
-
 plug_obj	= home.."plugins/obj/obj.lez"
 plug_lpo	= home.."plugins/vis/lpo/lpo.lez"
 plug_fftvlr	= home.."plugins/vis/fftvlr/fftvlr.lez"
 plug_hyperpipe	= home.."plugins/vis/hyperpipe/hyperpipe.lez"
 plug_fime	= home.."plugins/vis/fime/fime.lez"
-
-plug_el=home.."plugins/exe/entrylist/entrylist.lez"
-plug_jpeg  = home.."plugins/img/jpeg/jpeg.lez"
+plug_el         = home.."plugins/exe/entrylist/entrylist.lez"
+plug_jpeg       = home.."plugins/img/jpeg/jpeg.lez"
 
 -- reading user config
 print ("Reading user config file 'userconf.lua'")
@@ -70,4 +60,3 @@ dofile (home.."userconf.lua")
 help()
 -- launch the enhanced shell
 shell()
-

@@ -4,7 +4,7 @@
  * @date    2002/09/14
  * @brief   Takes TGA screen shot.
  * 
- * $Id: screen_shot.h,v 1.1 2002-09-14 15:17:01 ben Exp $
+ * $Id: screen_shot.h,v 1.2 2003-02-12 12:31:56 ben Exp $
  */
 
 #ifndef _SCREEN_SHOT_H_
@@ -17,7 +17,7 @@ DCPLAYA_EXTERN_C_START
 /** Takes a TGA screen shot.
  *
  *     The screen_shot() function saves current frame buffer into a TGA
- *     file in the DREAMMP3_HOME directory. Filenames will be auto
+ *     file in the DCPLAYA_HOME directory. Filenames will be auto
  *     incremented.
  *
  *  @param  basename  Screen-shot file name without extension.

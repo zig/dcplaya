@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/01 
  *
- *  $Id: cdda_driver.c,v 1.3 2003-01-06 14:54:34 ben Exp $
+ *  $Id: cdda_driver.c,v 1.4 2003-02-12 12:31:57 ben Exp $
  */
 
 #include <stdlib.h>
@@ -271,7 +271,7 @@ static inp_driver_t cdda_driver =
   /* Input driver specific */
   
   0,                      /* User Id */
-  ".cdda\0.cda\0",        /* Extension list */
+  ".cda\0.cdda\0",        /* Extension list */
   start,
   stop,
   decoder,

@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.45 2003-01-31 14:48:30 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.46 2003-02-12 12:31:57 ben Exp $
  */
 
 //#define RELEASE
@@ -315,7 +315,7 @@ static int render_simple_anim_object(uint32 elapsed_frames, anim_f anim,
 
     matrix_t tmp;
 
-/*    MtxCopy(tmp, m);*/
+    /*    MtxCopy(tmp, m);*/
     MtxIdentity(tmp);
     MtxRotateZ(tmp, 3.14159);
     MtxRotateY(tmp, -0.33468713*data->ay);
@@ -416,7 +416,7 @@ extern img_driver_t tga_driver;
 static int load_builtin_driver(void)
 {
   any_driver_t **d, *list[] = {
-     &tga_driver.common,
+    &tga_driver.common,
     0
   };
   for (d=list; *d; ++d) {
@@ -436,8 +436,8 @@ static int driver_init(void)
   /* Init plugin filetype. */
   type = filetype_major_add("plugin");
   if (type >= 0) {
-	filetype_elf = filetype_add(type, 0, ".elf\0");
-	filetype_lef = filetype_add(type, 0, ".lef\0.lez\0");
+    filetype_elf = filetype_add(type, 0, ".elf\0");
+    filetype_lef = filetype_add(type, 0, ".lef\0.lez\0");
   }
   /* Init "music" and "image" major type. */
   type = filetype_major_add("music");
@@ -458,15 +458,15 @@ static int driver_init(void)
 #if 0
   {
     const char **p, *paths[] = {
-      "/pc" DREAMMP3_HOME "plugins/img",
-/*       "/pc" DREAMMP3_HOME "plugins/vis/lpo", */
-/*       "/pc" DREAMMP3_HOME "plugins/vis/fftvlr", */
-/*       "/pc" DREAMMP3_HOME "plugins/inp/xing", */
-/*      "/pc" DREAMMP3_HOME "plugins/inp/ogg",
-      "/pc" DREAMMP3_HOME "plugins/inp/sc68",
-*/
-//      "/pc" DREAMMP3_HOME "plugins/inp/sidplay",
-//     "/pc" DREAMMP3_HOME "plugins/inp/spc",
+      DCPLAYA_HOME "/plugins/img",
+      /*       "/pc" DREAMMP3_HOME "plugins/vis/lpo", */
+      /*       "/pc" DREAMMP3_HOME "plugins/vis/fftvlr", */
+      /*       "/pc" DREAMMP3_HOME "plugins/inp/xing", */
+      /*      "/pc" DREAMMP3_HOME "plugins/inp/ogg",
+	      "/pc" DREAMMP3_HOME "plugins/inp/sc68",
+      */
+      //      "/pc" DREAMMP3_HOME "plugins/inp/sidplay",
+      //     "/pc" DREAMMP3_HOME "plugins/inp/spc",
       0
     };
 
@@ -556,10 +556,10 @@ static int no_mt_init(void)
 #endif
   
   /* Init info */
-/*   if (info_setup() < 0) { */
-/*     err = __LINE__; */
-/*     goto error; */
-/*   } */
+  /*   if (info_setup() < 0) { */
+  /*     err = __LINE__; */
+  /*     goto error; */
+  /*   } */
   
   /* Init option (must be done after visual plugin load)  */
   if (option_setup() < 0) {
@@ -583,9 +583,9 @@ static int no_mt_init(void)
   dl_init();
 
   /* Call "dcplayarc.lua" */
+  SDDEBUG("Run init file\n");
   shell_command("dofile (home..[[dcplayarc.lua]])");
   //shell_wait();
-
 
  error:
   SDDEBUG("<< %s : error line [%d]\n",__FUNCTION__, err);
@@ -605,13 +605,13 @@ static void update_fft(void)
 {
   fft_queue();
 
-/*   int *buf, nb, cnt, frq; */
-/*   static int scnt = -1; */
+  /*   int *buf, nb, cnt, frq; */
+  /*   static int scnt = -1; */
 
-/*   playa_get_buffer(&buf, &nb, &cnt, &frq); */
-/*   if (cnt == scnt) return; */
-/*   scnt = cnt; */
-/*   fft(buf, nb, cnt, frq); */
+  /*   playa_get_buffer(&buf, &nb, &cnt, &frq); */
+  /*   if (cnt == scnt) return; */
+  /*   scnt = cnt; */
+  /*   fft(buf, nb, cnt, frq); */
 }
 
 int dcplaya_set_visual(const char * name)
@@ -710,7 +710,7 @@ void main_thread(void *cookie)
       err = __LINE__;
       goto error;
       }*/
-  playa_start("/rd/01 Intro.spc", -1, 1);
+  //  playa_start("/rd/01 Intro.spc", -1, 1);
   thd_pass(); // $$$ Don't ask me why !!! It removes a bug in intro sound !!!
 
   fade68    = 0.0f;
@@ -721,46 +721,46 @@ void main_thread(void *cookie)
     {
       int end = 0;
       while (!end) {
-		uint32 elapsed_frames;
+	uint32 elapsed_frames;
 
-		/* Open render */
-		elapsed_frames = draw_open_render();
-		frame_counter68 += elapsed_frames;
+	/* Open render */
+	elapsed_frames = draw_open_render();
+	frame_counter68 += elapsed_frames;
 
-		/* Update FFT */
-		update_fft();
+	/* Update FFT */
+	update_fft();
 
-		/* Update the VMU LCD */
-		update_lcd();
+	/* Update the VMU LCD */
+	update_lcd();
 
-		fade(elapsed_frames);
-		controler_read(&controler68, 0);
+	fade(elapsed_frames);
+	controler_read(&controler68, 0);
 
-		/* Update shell */
-		shell_update(elapsed_frames * 1.0f/60.0f);
+	/* Update shell */
+	shell_update(elapsed_frames * 1.0f/60.0f);
 
-		/* Display opaque render list */
-		dl_render_opaque();
+	/* Display opaque render list */
+	dl_render_opaque();
 
-		/* Translucent render */
-		draw_translucent_render();
+	/* Translucent render */
+	draw_translucent_render();
 
-		end = render_intro(elapsed_frames);
+	end = render_intro(elapsed_frames);
 
-		/* Display transparent render list */
-		dl_render_transparent();
+	/* Display transparent render list */
+	dl_render_transparent();
       
-		/* Finish the frame *******************************/
-		/*	extern kthread_t * playa_thread;
-			if (playa_thread)
-			thd_set_prio(playa_thread, PRIO_DEFAULT);
-			ta_finish_frame();
-			if (playa_thread)
-			thd_set_prio(playa_thread, PRIO_DEFAULT-1);*/
+	/* Finish the frame *******************************/
+	/*	extern kthread_t * playa_thread;
+		if (playa_thread)
+		thd_set_prio(playa_thread, PRIO_DEFAULT);
+		ta_finish_frame();
+		if (playa_thread)
+		thd_set_prio(playa_thread, PRIO_DEFAULT-1);*/
 
-		draw_close_render();
+	draw_close_render();
 
-		// playa_decoderupdate();
+	// playa_decoderupdate();
 
       }
     }
@@ -769,26 +769,26 @@ void main_thread(void *cookie)
   fade_step = 0.005f;  
   while ( (controler68.buttons & exit_buttons) != exit_buttons) {
     uint32 elapsed_frames;
-	//    int is_playing = playa_isplaying();
+    //    int is_playing = playa_isplaying();
 
-	//    SDDEBUG("%x \n",controler68.buttons & shot_buttons);
+    //    SDDEBUG("%x \n",controler68.buttons & shot_buttons);
     if ((controler68.buttons & shot_buttons) == shot_buttons) {
       controler68.buttons &= ~shot_buttons;
       screen_shot("shot/shot");
     }
 
-/*     { */
-/*       static unsigned int acu = 0, cnt = 0; */
-/*       int buffer[4096]; */
-/*       int n = fifo_readbak(buffer,4096); */
-/*       acu += n; */
-/*       cnt ++; */
-/*       if (cnt == 256) { */
-/* 	printf("RB:%.02f\n",(float)acu / cnt); */
-/* 	acu = 0; */
-/* 	cnt = 0; */
-/*       } */
-/*     } */
+    /*     { */
+    /*       static unsigned int acu = 0, cnt = 0; */
+    /*       int buffer[4096]; */
+    /*       int n = fifo_readbak(buffer,4096); */
+    /*       acu += n; */
+    /*       cnt ++; */
+    /*       if (cnt == 256) { */
+    /* 	printf("RB:%.02f\n",(float)acu / cnt); */
+    /* 	acu = 0; */
+    /* 	cnt = 0; */
+    /*       } */
+    /*     } */
 
     //    my_vid_border_color(0,0,0);
     
@@ -816,7 +816,7 @@ void main_thread(void *cookie)
 
     /* Opaque list *************************************/
     //my_vid_border_color(255,0,0);
-	/*     bkg_render(fade68, info_is_help() || !is_playing); */
+    /*     bkg_render(fade68, info_is_help() || !is_playing); */
 
     /* Visual opaque list */
     render_visual_opaque();
@@ -847,12 +847,12 @@ void main_thread(void *cookie)
 
     /* Finish the frame *******************************/
 
-	/*    extern kthread_t * playa_thread;
-		  if (playa_thread)
-		  thd_set_prio(playa_thread, PRIO_DEFAULT);
-		  ta_finish_frame();
-		  if (playa_thread)
-		  thd_set_prio(playa_thread, PRIO_DEFAULT-1);*/
+    /*    extern kthread_t * playa_thread;
+	  if (playa_thread)
+	  thd_set_prio(playa_thread, PRIO_DEFAULT);
+	  ta_finish_frame();
+	  if (playa_thread)
+	  thd_set_prio(playa_thread, PRIO_DEFAULT-1);*/
     
     draw_close_render();
     
@@ -915,14 +915,13 @@ int dreammp3_main(int argc, char **argv)
   fade_step = 0.01f;
   memset(&animdata,0,sizeof(animdata));
 
-#ifdef RELEASE
+#ifndef DEBUG_LOG
   dbglog_set_level(0);
 #elif DEBUG_LEVEL > 1
   dbglog_set_level(DBG_KDEBUG);
 #else
   dbglog_set_level(DBG_DEBUG);
 #endif
-
 
   /* Do basic setup */
 
@@ -934,17 +933,23 @@ int dreammp3_main(int argc, char **argv)
 
   /* Initialize shell and LUA */
   SDDEBUG("SHELL init\n");
+  cdrom_reinit();
+
+  /* From this point the number of jiffies must be some what different...
+     I hope */
+  srandom(jiffies);
   if (shell_init()) {
     STHROW_ERROR(error);
   }
+  SDDEBUG("SHELL done\n");
 
   /* Initialize the console debugging log facility */
   SDDEBUG("CONSOLE init\n");
   csl_init_main_console();
-  csl_printf(csl_main_console, "TOTO !\n");
+  csl_printf(csl_main_console, "test des micros !\n");
 
-/*  ta_set_buffer_config(TA_LIST_OPAQUE_POLYS | TA_LIST_TRANS_POLYS, TA_POLYBUF_32, 1024*1024);
-  ta_hw_init();*/
+  /*  ta_set_buffer_config(TA_LIST_OPAQUE_POLYS | TA_LIST_TRANS_POLYS, TA_POLYBUF_32, 1024*1024);
+      ta_hw_init();*/
 
   frame_counter68 = 0; //ta_state.frame_counter;
 
@@ -973,8 +978,8 @@ int dreammp3_main(int argc, char **argv)
   /* Close the console debugging log facility */
   csl_close_main_console();
 
-error:
-  dbglog_set_level(DBG_DEBUG);
+ error:
+  dbglog_set_level(DBG_KDEBUG);
   if (err) {
     SDERROR("Error line [%d]\n", err);
   } else {
@@ -1026,9 +1031,9 @@ static int warning_splash(void)
 
     if (fade68 == 1.0f) {
       if (!end_frame) {
-		end_frame = frame_counter68 + 60 * 30;
+	end_frame = frame_counter68 + 60 * 30;
       } else if (frame_counter68 > end_frame) {
-		fade_step = -0.01f;
+	fade_step = -0.01f;
       }
     }
 
