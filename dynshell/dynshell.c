@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.43 2002-12-09 16:26:49 ben Exp $
+ * @version    $Id: dynshell.c,v 1.44 2002-12-10 17:24:06 ben Exp $
  */
 
 #include <stdio.h>
@@ -1542,6 +1542,22 @@ static int lua_test(lua_State * L)
   return lua_gettop(L);
 }
 
+extern void vmu_set_text(const char *s); /* vmu68.c */
+extern int vmu_set_visual(int visual);
+
+static int lua_vmu_set_text(lua_State * L)
+{
+  vmu_set_text(lua_tostring(L,1));
+  return 0;
+}
+
+static int lua_vmu_set_visual(lua_State * L)
+{
+  int v = (lua_type(L,1) == LUA_TNIL) ? -1 : lua_tonumber(L,1);
+  lua_pushnumber(L, vmu_set_visual(v));
+  return 1;
+}
+
 #if 0
 static char shell_basic_lua_init[] = 
 "\n shell_help_array = {}"
@@ -1927,6 +1943,23 @@ static luashell_command_description_t commands[] = {
 	" -l : file is an playlist file\n"
     "]])",
     SHELL_COMMAND_C, lua_test
+  },
+
+  { 
+	"vmu_set_text",
+	0,
+    "print([["
+    "vmu_set_text(text) : set text to display on VMS lcd.\n"
+    "]])",
+    SHELL_COMMAND_C, lua_vmu_set_text
+  },
+  { 
+	"lua_vmu_set_visual",
+	0,
+    "print([["
+    "lua_vmu_set_visual(<effects-number>) : set/get vmu display effects.\n"
+    "]])",
+    SHELL_COMMAND_C, lua_vmu_set_visual
   },
 
   {0},

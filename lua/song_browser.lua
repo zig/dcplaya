@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.7 2002-12-10 15:20:42 ben Exp $
+--- $Id: song_browser.lua,v 1.8 2002-12-10 17:24:06 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -150,9 +150,12 @@ function song_browser_create(owner, name)
 			return evt
 		end
 
-		local action = 0
+		local action
 
-		if gui_keyconfirm[key] then
+--		print("key="..strchar(key))
+		if key >= 32 and key < 128 then
+		   action = sb.cl:locate_entry_expr("^" .. strchar(key) .. ".*")
+		elseif gui_keyconfirm[key] then
 		   action = sb:confirm()
 		elseif gui_keycancel[key] then
 		   action = sb:cancel()
@@ -180,7 +183,7 @@ function song_browser_create(owner, name)
 		   return evt
 		end
 
-		if action >= 2 then
+		if action and action >= 2 then
 		   local entry = sb.cl:get_entry()
 		   vmu_set_text(entry and entry.name)
 		end

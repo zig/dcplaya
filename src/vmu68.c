@@ -1,5 +1,5 @@
 /**
- * $Id: vmu68.c,v 1.6 2002-11-25 16:46:48 ben Exp $
+ * $Id: vmu68.c,v 1.7 2002-12-10 17:24:06 ben Exp $
  */
 #include "config.h"
 
@@ -19,6 +19,8 @@
 #include "vupeek.h"
 #include "option.h"
 #include "playa.h"
+
+static char vmu_text_str[256];
 
 static const char vmu_scrolltext[] =
 "            "
@@ -57,15 +59,15 @@ DCPLAYA_URL
 "sashipa members...";
 
 static int scroll = 0, invert = 0;
-
 static int last_valid = 0;
-
 static int fontInit = 0;
 static uint8 font[40][64 / 8];
 
 static int titleInit = 0;
 static uint8 title[32][48 / 8];
 static uint8 vmutmp[32][48 / 8];
+static int vmu_visual = OPTION_LCD_VISUAL_FFT_FULL;
+
 
 /* From dreamcast68.c */
 extern int dreamcast68_isplaying(void);
@@ -123,11 +125,11 @@ static void putchar(uint8 * dst, int x, int y, int c)
   if ((dstoff ^ srcoff) & 1) {
     if (srcoff & 1) {
       for (i = 0; i < 4; ++i, dst -= 6, src -= 8) {
-	*dst = (*dst & msk) | (*src << 4);
+		*dst = (*dst & msk) | (*src << 4);
       }
     } else {
       for (i = 0; i < 4; ++i, dst -= 6, src -= 8) {
-	*dst = (*dst & msk) | (*src >> 4);
+		*dst = (*dst & msk) | (*src >> 4);
       }
     }
   } else {
@@ -151,7 +153,7 @@ static void putstr(uint8 * dest, int x, int y, const char *s)
       x = 0;
       y += 5;
       if (y >= 6 * 5) {
-	break;
+		break;
       }
     }
     putchar(dest, x, y, c);
@@ -173,7 +175,7 @@ static void vmu_create_bitmap(uint8 * dest, char *src[], int w, int h)
       int xb = 0x80 >> (x & 7);
 
       if (src[h - y - 1][w - x - 1] != '.') {
-	dest[xi] |= xb;
+		dest[xi] |= xb;
       }
     }
   }
@@ -193,7 +195,7 @@ static void vmu_create_bitmap_2(uint8 * dest, char *src, int w, int h)
       int xb = 0x80 >> (x & 7);
 
       if (src[(h - y - 1) * w + w - x - 1] != '.') {
-	dest[xi] |= xb;
+		dest[xi] |= xb;
       }
     }
   }
@@ -212,8 +214,34 @@ int vmu68_init(void)
     vmu_create_bitmap(title[0], vmu_sc68, 48, 32);
     titleInit = 1;
   }
+  memset(vmu_text_str,0,sizeof(vmu_text_str));
+  vmu_visual = OPTION_LCD_VISUAL_FFT_FULL;
 
   return 0;
+}
+
+void vmu_set_text(const char *s)
+{
+  vmu_text_str[0] = 0;
+  if (s) {
+	const int max = sizeof(vmu_text_str) - 1;
+	int i;
+	for (i=0; i<max; ++i) {
+	  int c = s[i];
+	  if (!c) break;
+	  vmu_text_str[i+1] = 0;
+	  vmu_text_str[i] = c;
+	}
+  }  
+}
+
+int vmu_set_visual(int visual)
+{
+  int old = vmu_visual;
+  if (visual >= 0) {
+	vmu_visual = visual;
+  }
+  return old;
 }
 
 static int find_sign_change(int *spl, int n)
@@ -459,14 +487,14 @@ void vmu_lcd_update(/*int *spl, int nbSpl, int splFrame*/)
       put_byte_char(tmp, c, col, 4);
       x = 4 - col;
       while ((48 - x) >= 4 && (c = info_str[idx++])) {
-	put_byte_char(tmp + x, c, 0, 4);
-	x += 4;
+		put_byte_char(tmp + x, c, 0, 4);
+		x += 4;
       }
 
       rem = 48 - x;
       if (c && rem && (c = info_str[idx++])) {
-	put_byte_char(tmp + x, c, 0, rem);
-	x += rem;
+		put_byte_char(tmp + x, c, 0, rem);
+		x += rem;
       }
 
       ++scroll;
@@ -476,7 +504,7 @@ void vmu_lcd_update(/*int *spl, int nbSpl, int splFrame*/)
 
     while (x < 48) {
       tmp[x + 0 * 48] = tmp[x + 1 * 48] =
-	tmp[x + 2 * 48] = tmp[x + 3 * 48] = tmp[x + 4 * 48] = '.';
+		tmp[x + 2 * 48] = tmp[x + 3 * 48] = tmp[x + 4 * 48] = '.';
       ++x;
     }
     vmu_create_bitmap_2(vmutmp[31 - 3], tmp, 48, 4);
@@ -495,16 +523,12 @@ void vmu_lcd_update(/*int *spl, int nbSpl, int splFrame*/)
   }
 
   /* Display either OPTION or SONG-MENU-ENTRY */
-  if (1) {
-    char *s;
-    s = option_str[0] ? option_str : songmenu_selected;
-    putstr(vmutmp[0], 0, 2 * 5 + 1, s);
+  if (vmu_text_str[0]) {
+    putstr(vmutmp[0], 0, 2 * 5 + 1, vmu_text_str);
   }
 	
   if (1) {
-    int option = option_lcd_visual();
-	
-	switch (option) {
+	switch (vmu_visual) {
 	case OPTION_LCD_VISUAL_SCOPE:
 	  draw_samples(vmutmp[0]);
 	  break;
