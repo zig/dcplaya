@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.50 2003-03-04 15:26:51 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.51 2003-03-06 16:59:43 zigziggy Exp $
  */
 
 //#define RELEASE
@@ -918,7 +918,7 @@ int dreammp3_main(int argc, char **argv)
   memset(&animdata,0,sizeof(animdata));
 
 #ifndef DEBUG_LOG
-  dbglog_set_level(0);
+  dbglog_set_level(DBG_NOTICE); /* VP : changed 0 to something a bit more talkative */
 #elif DEBUG_LEVEL > 1
   dbglog_set_level(DBG_KDEBUG);
 #else

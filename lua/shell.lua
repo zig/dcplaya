@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: shell.lua,v 1.10 2002-12-16 13:21:54 zigziggy Exp $
+-- $Id: shell.lua,v 1.11 2003-03-06 16:59:43 zigziggy Exp $
 --
 
 
@@ -184,8 +184,9 @@ function shell_error(err)
 end
 
 
--- call a new shell with enhanced line editing
--- type "exit" to quit
+-- Call a new shell with enhanced line editing.
+-- Type "exit" to quit.
+-- Also, since it uses getchar, it will dispatch events to other applications.
 function shell()
 
    local command=""

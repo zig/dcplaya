@@ -4,7 +4,7 @@
  * @date    2002/10/20
  * @brief   texture manager
  *
- * $Id: texture.h,v 1.4 2003-03-03 08:35:24 ben Exp $
+ * $Id: texture.h,v 1.5 2003-03-06 16:59:43 zigziggy Exp $
  */
 
 #ifndef _TEXTURE_H_
@@ -157,5 +157,10 @@ const char * texture_formatstr(int format);
  * @see texture_formatstr()
  */
 int texture_strtoformat(const char * formatstr);
+
+
+/** Display statistics about the video memory */
+void texture_memstats();
+
 
 #endif /* #define _TEXTURE_H_ */

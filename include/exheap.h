@@ -4,7 +4,7 @@
  * @date     2003/01/19
  * @brief    External heap management.
  * 
- * $Id: exheap.h,v 1.3 2003-01-20 12:03:16 zigziggy Exp $
+ * $Id: exheap.h,v 1.4 2003-03-06 16:59:42 zigziggy Exp $
  */
 
 #ifndef EXHEAP_H
@@ -91,5 +91,8 @@ eh_block_t * eh_realloc(eh_heap_t * heap, eh_block_t * block, size_t newsize);
 
 /** Free a block. */
 void eh_free(eh_heap_t * heap, eh_block_t * block);
+
+/** Display statistics on a heap */
+void eh_dump_freeblock(eh_heap_t * heap);
 
 #endif /* ifndef EXHEAP_H */

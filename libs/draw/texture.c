@@ -4,7 +4,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.13 2003-03-03 08:35:24 ben Exp $
+ * $Id: texture.c,v 1.14 2003-03-06 16:59:43 zigziggy Exp $
  */
 
 #include <stdlib.h>
@@ -234,6 +234,14 @@ void vid_free(texture_t * t)
 {
   if (t->ta_tex != ~0) {
     eh_free(vid_heap, &t->ehb);
+  }
+}
+
+void texture_memstats()
+{
+  if (vid_heap) {
+    printf("Video memory usage statistics :\n");
+    eh_dump_freeblock(vid_heap);
   }
 }
 

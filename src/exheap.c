@@ -4,7 +4,7 @@
  * @date     2003/01/19
  * @brief    External heap management.
  * 
- * $Id: exheap.c,v 1.6 2003-02-01 23:45:30 zigziggy Exp $
+ * $Id: exheap.c,v 1.7 2003-03-06 16:59:43 zigziggy Exp $
  */
 
 
@@ -90,9 +90,8 @@ void eh_destroy_heap(eh_heap_t * heap)
 
 
 
-static void dump_freeblock(eh_heap_t * heap)
+void eh_dump_freeblock(eh_heap_t * heap)
 {
-#ifdef EH_DEBUG
   eh_block_t * b;
   size_t sz, total = 0;
 
@@ -114,6 +113,12 @@ static void dump_freeblock(eh_heap_t * heap)
   }
 
   printf("total %gKb\n", total/1024.0f);
+}
+
+static void dump_freeblock(eh_heap_t * heap)
+{
+#ifdef EH_DEBUG
+  eh_dump_freeblock(heap);
 #endif
 }
 

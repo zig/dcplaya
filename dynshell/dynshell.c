@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.73 2003-03-05 17:48:29 ben Exp $
+ * @version    $Id: dynshell.c,v 1.74 2003-03-06 16:59:42 zigziggy Exp $
  */
 
 #include "config.h"
@@ -355,6 +355,7 @@ static void register_driver_type(lua_State * L)
 static int lua_malloc_stats(lua_State * L)
 {
   malloc_stats();
+  texture_memstats();
   return 0; // 0 return values
 }
 
@@ -2450,7 +2451,7 @@ static luashell_command_description_t commands[] = {
     "ms",
 
     "print([["
-    "mallocs_stats : display memory usage\n"
+    "mallocs_stats : display memory usage (system memory and video memory)\n"
     "]])",
 
     SHELL_COMMAND_C, lua_malloc_stats
