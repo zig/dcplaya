@@ -1,16 +1,16 @@
 /**
- * $Id: lpo.c,v 1.13 2003-01-02 11:53:01 ben Exp $
+ * $Id: lpo.c,v 1.14 2003-01-02 14:40:03 ben Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "matrix.h"
 #include "driver_list.h"
 #include "vis_driver.h"
 #include "obj_driver.h"
-/* #include "vupeek.h" */
 #include "fft.h"
 #include "draw_object.h"
 #include "remanens.h"
@@ -55,18 +55,18 @@ static float rps_min = 0.1f;   /**< Minimum rotation per second */
 static float rps_max = 4.0f;   /**< Maximum rotation per second */
 static float rps_cur;          /**< Current rotation speed factor */
 static float rps_goal;         /**< Rotation to reach */
-static float rps_up = 0.25f;   /**< Smooth factor when rpsd_goal > rps_cur */
-static float rps_dw = 0.10f;   /**< Smooth factor when rpsd_goal < rps_cur */
+
+static float rps_ch = 0.3f;    /**< Smooth factor when rotation sign change */
+static float rps_up = 0.3f;    /**< Smooth factor when rpsd_goal > rps_cur */
+static float rps_dw = 0.95f;   /**< Smooth factor when rpsd_goal < rps_cur */
+
+//static float rps_up = 0.25f;   /**< Smooth factor when rpsd_goal > rps_cur */
+//static float rps_dw = 0.10f;   /**< Smooth factor when rpsd_goal < rps_cur */
+
 static float rps_sign;         /**< Rotation sens */
 
 static float zoom_min = 0.0f;
 static float zoom_max = 7.0f;
-
-/* Previous analysis parms */
-static float opeek_diff;
-static float opeek;
-static float peek_max;
-static float peek_diff_max;
 
 static int lpo_remanens = 1;
 static unsigned int lpo_iframe = 0;
@@ -144,56 +144,140 @@ static int change_object(obj_driver_t *o)
 extern short int_decibel[];
 
 typedef struct {
-  int maxflag;
-  float max;
+  unsigned int max:1;
+  unsigned int min:1;
+} analyser_state_t;
+
+typedef struct {
   float val;
-  float old;
+  float oval;
+  float sec_factor;   /* reduct factor per second. */
+  float frame_factor; /* reduct factor per frame. */
+  float sec_len;      /* len of analyser in second */
+  float min;    /* current min value. */
+  float max;    /* current max value. */
+  float avg;    /* current average value */
+  analyser_state_t state;
+  analyser_state_t ostate;
+} analyser_t;
 
-  int difmaxflag;
-  float difmax;
-  float difval;
-  float difold;
-  float difacu;
+typedef struct {
+  analyser_t analyser[4*3];
+} analysers_t;
 
-  float difchg;
+static analysers_t analysers;
 
-} peek_info_t;
-
-static void update_peek_info(peek_info_t * info, int v)
+static void init_analyser(analyser_t *a, float sec_len, float reduction)
 {
-  float r = 0.2f;
-  info->old = info->val;
-  info->val = (float)v / 32767.0f;
-  info->val = info->val * r + info->old * (1.0f-r);
+  memset(a,0,sizeof(*a));
+  a->sec_factor = reduction;
+  a->frame_factor = pow(reduction, 1.0f/60.0f); 
+  a->sec_len = sec_len;
+  a->max = 0.1;
+  a->avg = (a->max+a->min) * 0.5;
+}
 
-  info->maxflag = (info->maxflag << 1) | (info->val > info->max);
-  if (info->maxflag&1) {
-    info->max = info->val;
-  } else {
-    info->max *= 0.99f;
+static void init_analysers(analysers_t *a)
+{
+  int i,j,k;
+  static float times[] = { 8, 1, 0.2 };
+
+  for (i=k=0; i<4; ++i) {
+    for (j=0; j<3; ++j, ++k) {
+      init_analyser(a->analyser+k, times[j], 0.5);
+    }
   }
-  if (info->max < 0.001) info->max = 0.001;
 
-  info->difold = info->difval;
-  info->difval = info->val - info->old;
-  if (same_sign(info->difval,info->difacu)) {
-    info->difacu += info->difval;
-    info->difmaxflag = info->difmaxflag << 1;
+}
+
+static float reduc(const float va, const float vb, const float f)
+{
+  float v;
+  v = va * f + vb * (1.0f-f);
+  return v;
+}
+
+static void update_analyser(analyser_t *a, float v, float elapsed_sec)
+{
+  const float f = a->frame_factor;
+  float sec, min,max;
+
+  a->ostate = a->state;
+
+  /* Update value. */
+  v = reduc(v, a->oval, 0.5);
+  a->oval = a->val;
+  a->val = v;
+
+  /* Average */
+  sec = a->sec_len - elapsed_sec;
+  if (sec < 0) {
+    a->avg = v;
   } else {
-    info->difchg = info->difacu;
-    info->difacu = info->difval;
-    info->difmaxflag = (info->difmaxflag << 1) | (info->difchg > info->difmax);
-    if (info->difmaxflag&1) {
-      info->difmax = info->difchg;
+    const float f = sec / a->sec_len;
+    a->avg = reduc(a->avg, v, f);
+  }
+
+  /* Min / Max */
+  max = reduc(a->max, a->avg, f);
+  min = reduc(a->min, a->avg, f);
+  if (max < a->avg) max = a->avg;
+  if (min > a->avg) min = a->avg;
+  a->max = max;
+  a->min = min;
+
+  a->state.min = v < min;
+  if (a->state.min) {
+    a->min = v;
+  }
+
+  a->state.max = v > max;
+  if (a->state.max) {
+    a->max = v;
+  }
+
+}
+
+static void update_analysers(analysers_t * a, fftbands_t * bands,
+			     float elapsed_sec)
+{
+  int i,j,k;
+  float v;
+  static int cnt;
+
+  cnt = (cnt + 1) & 15;
+
+  for (i=k=0; i<4; ++i) {
+    int vi;
+    if (i<3) {
+      vi = bands->band[i].v;
     } else {
-      info->difmax *= 0.99f;
-      if (info->difmax < 1E-4) info->difmax = 0;
+      vi = bands->loudness;
+    }
+    if (vi < 0) {
+      vi = 0;
+    } else if (vi > 32767) {
+      vi = 32767;
+    }
+    vi = int_decibel[vi];
+    v = vi / 32767.0f;
+
+    for (j=0; j<3; ++j, ++k) {
+      analyser_t * b = a->analyser+k; 
+      update_analyser(b, v, elapsed_sec);
+/*       if (!cnt) { */
+/* 	printf("#%02d %.02f %.02f %.02f %.02f\n", */
+/* 	       k, b->val,b->min,b->avg,b->max); */
+/*       } */
     }
   }
 }
 
 static int anim(unsigned int ms)
 {
+  static float swing_latch;
+  static float flash_latch;
+
   const float sec = 0.001f * (float)ms;
 
   float sax = 1.0f * sec;
@@ -202,82 +286,77 @@ static int anim(unsigned int ms)
 
   float zoom;
 
-  static struct {
-    peek_info_t lin;
-    peek_info_t db;
-  } info[3];
-
-  peek_info_t * pi;
+  const int zoom_analyser = 3 * 3 + 0;
+  const int flash_analyser = 3 * 0 + 0;
+  const int swing_analyser = 3 * 2 + 2;
+  const int rotate_analyser = 3 * 1 + 1;
+  analyser_t * a;
   float r;
-
-  int i;
 
   if (!bands) {
     return -1;
   }
   fft_fill_bands(bands);
+  update_analysers(&analysers, bands , sec);
 
-  for (i=0; i<3; ++i) {
-    int v = bands->band[i].v;
-    if (v > 0x7FFF) v = 0x7FFF;
-    update_peek_info(&info[i].lin, v);
-    update_peek_info(&info[i].db, int_decibel[v]);
+  flash_latch -= sec;
+  if (flash_latch < 0) {
+    flash_latch = 0;
   }
-
-  pi = &info[2].lin;
-  //  if ((pi->difmaxflag&3) == 2) {
-  if ((pi->maxflag&3) == 2) {
-    flash = (pi->difchg * 2.60f) + 1.0f;
-    if (change_mode & FLASH_MODE) {
-      change_object(random_object(curobj));
-      change_cnt = 0;
+  if (flash_latch == 0) {
+    a = analysers.analyser + flash_analyser;
+    if (!a->state.max && a->ostate.max) {
+      flash = 2.0f;
+      if (change_mode & FLASH_MODE) {
+	change_object(random_object(curobj));
+	change_cnt = 0;
+      }
+      flash_latch = 0.3;
     }
   }
 	
   /* Calculate zoom factor */
-  {
-    float max = 0, val = 0;
-    for (i=0;i<3;++i) {
-      pi = &info[(i>>1)<<1].lin;
-      val += pi->val;
-      max += pi->max;
-    }
-    zoom = zoom_min;
-    if (max > 1E-4) {
-      zoom += (zoom_max - zoom_min) * val / max;
-    }
+  a = analysers.analyser + zoom_analyser;
+  zoom = zoom_min;
+  if (a->max - a->min > 1E-5) {
+    r = (a->val - a->min) / (a->max - a->min);
+    zoom += (zoom_max - zoom_min) * r;
   }
   r = (zoom > ozoom) ? 0.75f : 0.90f;
   ozoom = ozoom * r + zoom * (1.0f-r);
 
-  /* Calculate rotation speed */
-
-  pi = &info[1].lin;
-  if ((pi->maxflag&3) == 2) {
-    static int toggle = 0;
-    toggle == (toggle+1) & 3;
-    if (!toggle)
-      rps_sign = - rps_sign;
+  /* Swing ! */
+  swing_latch -= sec;
+  if (swing_latch < 0) {
+    swing_latch = 0;
   }
 
-  pi = &info[1].lin;
+  if (swing_latch == 0) {
+    a = analysers.analyser + swing_analyser;
+    if (!a->state.max && a->ostate.max) {
+      rps_sign = - rps_sign;
+      swing_latch = 0.3;
+    }
+  }
 
-  if ((pi->maxflag&3) == 2) {
+  /* Calculate rotation speed */
+  a = analysers.analyser + rotate_analyser;
+  if (!a->state.max && a->ostate.max) {
     rps_goal = rps_min;
-    if (pi->max > 1E-4) {
-      rps_goal += (rps_max - rps_min) * pi->val / pi->max;
+    if (a->max - a->min > 1E-5) {
+      r = (a->val - a->min) / (a->max - a->min);
+      rps_goal += (rps_max - rps_min) * r;
     }
     rps_goal *= rps_sign;
-  } else {
-    r = 0.99f;
-    rps_goal = rps_goal * r + rps_min * (1.0-r);
   }
-  r = (!same_sign(rps_cur,rps_goal) || fabs(rps_goal) > fabs(rps_cur))
-    ? rps_up
-    : rps_dw;
+  if (!same_sign(rps_cur,rps_goal)) {
+    r = rps_ch;
+  } else {
+    r = fabs(rps_goal) > fabs(rps_cur) ? rps_up : rps_dw;
+  }
   rps_cur = rps_cur * r + rps_goal * (1.0f - r);
 
-  flash *= 0.9f;
+  flash *= 0.95f;
   
   /* Move angle */
   angle.x += sax * rps_cur;
@@ -298,10 +377,13 @@ static int anim(unsigned int ms)
   mtx[3][2] = pos.z - ozoom;
   
   /* Build render color : blend base and flash color */
-  color.x = base_color.x * (1.0f-flash) + flash_color.x * flash;
-  color.y = base_color.y * (1.0f-flash) + flash_color.y * flash;
-  color.z = base_color.z * (1.0f-flash) + flash_color.z * flash;
-  color.w = base_color.w * (1.0f-flash) + flash_color.w * flash;
+  {
+    const float f = flash > 1.0f ? 1.0f : flash;
+    color.x = base_color.x * (1.0f-f) + flash_color.x * f;
+    color.y = base_color.y * (1.0f-f) + flash_color.y * f;
+    color.z = base_color.z * (1.0f-f) + flash_color.z * f;
+    color.w = base_color.w * (1.0f-f) + flash_color.w * f;
+  }
 
   return 0;
 }
@@ -310,6 +392,8 @@ static int anim(unsigned int ms)
 static int start(void)
 {
   obj_driver_t *o;
+
+  init_analysers(&analysers);
 
   change_cnt = 0;
 
@@ -320,10 +404,6 @@ static int start(void)
   rps_goal = rps_min;
   rps_sign = 1;
 
-  opeek_diff = 0;
-  opeek = 0;
-  peek_max = 0;
-  peek_diff_max = 0;
   flash = 0;
   ozoom = 0;
 
