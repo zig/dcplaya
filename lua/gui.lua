@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: gui.lua,v 1.3 2002-09-30 02:51:15 vincentp Exp $
+-- $Id: gui.lua,v 1.4 2002-10-04 20:57:39 benjihan Exp $
 --
 
 --
@@ -123,6 +123,11 @@ function gui_new_focus(app, f)
 	end
 end
 
+-- test focus item. Can test if no focus if f is nil.
+function gui_is_focus(app, f)
+	if not app or f ~= app.sub then return end
+	return 1
+end
 
 function gui_less(b1, b2, i)
 	return b1[i] < b2[i]
@@ -194,7 +199,6 @@ function gui_dialog_handle(app, evt)
 
 	local focused = app.sub
 	if focused then
---		print (key, gui_keyright[key])
 		if gui_keyconfirm[key] then
 			evt_send(focused, { key = gui_press_event })
 			return
@@ -266,6 +270,10 @@ end
 
 function gui_new_dialog(owner, box, z, dlsize, text, mode)
 	local dial
+
+--- $$$ ben : default owner is desktop end
+	if not owner then owner = evt_desktop_app end
+	if not owner then return nil end
 
 	z = gui_orphanguess_z(z)
 
@@ -400,6 +408,8 @@ function gui_input_handle(app, evt)
 	if f then
 		return f(app, evt)
 	end
+
+	
 
 	if not app.prev and ((key >= 32 and key < 128) or gui_input_edline_set[key]) then
 		app.input, app.input_col = zed_edline(app.input, app.input_col, key)
@@ -587,63 +597,73 @@ end
 
 function gui_init()
 	gui_curz = 1000
-	gui_press_event = evt_new_code()
-	gui_focus_event = evt_new_code()
-	gui_unfocus_event = evt_new_code()
+	gui_press_event 		= evt_new_code()
+--	gui_keyup_event 		= evt_new_code()
+--	gui_keydown_event 		= evt_new_code()
+--	gui_keyconfirm_event 	= evt_new_code()
+--	gui_keycancel_event 	= evt_new_code()
+	gui_focus_event 		= evt_new_code()
+	gui_unfocus_event 		= evt_new_code()
+	gui_filelist_event		= evt_new_code() -- with {[file] {[name],[size]}}
 end
-
-
 
 gui_init()
 
+----------------------------------------------------------------------
+----------------------------------------------------------------------
+-- SAMPLE TEST CODE
 
+function dialog_test()
+	-- create a dialog box with a label outside of the box
+	dial = gui_new_dialog(evt_desktop_app, { 100, 100, 400, 300 }, 2000, nil,
+			"My dialog box", { x = "left", y = "upout" } )
 
--- little test
-if 1 then
+	-- add some text inside the dialog box
+	gui_label(dial, 
+	[[
+		Hello World ! 
+		Ceci est un tres long texte on purpose !!!!
+	]], { y="up" } )
 
--- create a dialog box with a label outside of the box
-dial = gui_new_dialog(evt_desktop_app, { 100, 100, 400, 300 }, 2000, nil, "My dialog box", { x = "left", y = "upout" } )
+	-- create a few buttons with labels
+	but = gui_new_button(dial, { 150, 200, 200, 220 }, "OK")
 
--- add some text inside the dialog box
-gui_label(dial, 
-[[
-Hello World ! 
-Ceci est un tres long texte on purpose !!!!
-]]
-, { y="up" } )
+	-- add a gui_press_event response
+	but.event_table[gui_press_event] =
+		function(but, evt)
+			print [[OK !!]]
+			evt_shutdown_app(but.owner)
+			return nil -- block the event
+		end
 
+	but = gui_new_button(dial, { 250, 200, 340, 220 }, "CANCEL")
+	but.event_table[gui_press_event] =
+		function(but, evt)
+			print [[CANCEL !!]]
+			evt_shutdown_app(but.owner)
+			return nil -- block the event
+		end
 
--- create a few buttons with labels
-but = gui_new_button(dial, { 150, 200, 200, 220 }, "OK")
+	but = gui_new_button(dial, { 150, 250, 200, 270 }, "TITI")
+	but.event_table[gui_press_event] =
+		function(but, evt)
+			print [[TITI !!]]
+			return nil -- block the event
+		end
 
--- add a gui_press_event response
-but.event_table[gui_press_event] = function(but, evt)
-	print [[OK !!]]
-	evt_shutdown_app(but.owner)
-	return nil -- block the event
+	but = gui_new_button(dial, { 250, 250, 300, 270 }, "TOTO")
+	but.event_table[gui_press_event] =
+		function(but, evt)
+			print [[TOTO !!]]
+			return nil -- block the event
+		end
+
+	-- create an input item
+	input = gui_new_input(dial, { 120, 160, 380, 190 }, "Login :",
+				{ x = "left", y="upout" }, "ziggy")
+	return dial
 end
 
-but = gui_new_button(dial, { 250, 200, 340, 220 }, "CANCEL")
-but.event_table[gui_press_event] = function(but, evt)
-	print [[CANCEL !!]]
-	evt_shutdown_app(but.owner)
-	return nil -- block the event
-end
-
-but = gui_new_button(dial, { 150, 250, 200, 270 }, "TITI")
-but.event_table[gui_press_event] = function(but, evt)
-	print [[TITI !!]]
-	return nil -- block the event
-end
-
-but = gui_new_button(dial, { 250, 250, 300, 270 }, "TOTO")
-but.event_table[gui_press_event] = function(but, evt)
-	print [[TOTO !!]]
-	return nil -- block the event
-end
-
--- create an input item
-input = gui_new_input(dial, { 120, 160, 380, 190 }, "Login :", { x = "left", y="upout" }, "ziggy")
-
-
+if nil then
+	dial = dialog_test()
 end
