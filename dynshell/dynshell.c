@@ -5,11 +5,13 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.28 2002-09-30 06:42:49 benjihan Exp $
+ * @version    $Id: dynshell.c,v 1.29 2002-09-30 20:05:36 benjihan Exp $
  */
 
 #include <stdio.h>
 #include <kos.h>
+
+#include "sysdebug.h"
 
 #include "filetype.h"
 
@@ -21,6 +23,8 @@
 #include "shell.h"
 #include "luashell.h"
 
+#include "file_utils.h"
+#include "filename.h"
 #include "plugin.h"
 #include "dcar.h"
 #include "gzip.h"
@@ -587,78 +591,204 @@ static int lua_hideconsole(lua_State * L)
   return 1;
 }
 
-static int copyfile(const char *fn1, const char *fn2)
-     /* $$$ Give it a try */
+static int copyfile(const char *dst, const char *src,
+		    int force, int unlink, int verbose)
 {
-  file_t fd, fd2;
+  int err;
+  char *fct;
 
-  //SDDEBUG("%s [%s] <- [%s]\n", __FUNCTION__, fn1, fn2);
-  //SDINDENT;
+  SDDEBUG("[%s] : [%s] [%s] %c%c%c\n", __FUNCTION__,  dst, src,
+	  'f' ^ (force<<5), 'u' ^ (unlink<<5), 'v' ^ (verbose<<5));
 
-  fd  = fs_open(fn1, O_WRONLY);
-  fd2 = fs_open(fn2, O_RDONLY);
-
-  if (fd && fd2) {
-    char buf[256];
-    int n;
-
-    do {
-      n = fs_read(fd2, buf, 256);
-      if (n > 0) {
-	fs_write(fd,buf,n);
-      }
-    } while (n > 0);
+  if (unlink) {
+    fct = "move";
+    err = fu_move(dst, src, force);
+  } else {
+    fct = "copy";
+    err = fu_copy(dst, src, force);
   }
 
-  if (fd) fs_close(fd);
-  if (fd2) fs_close(fd2);
-
-  //SDUNINDENT;
-  return 0;
-}
-
-static int createdir(const char *fn)
-{
-  file_t fd;
-
-  //SDDEBUG("%s [%s]\n", __FUNCTION__, fn);
-  //SDINDENT;
-
-  fd  = fs_open(fn, O_WRONLY|O_DIR);
-  if (fd) {
-    fs_close(fd);
-  } else {
+  if (err < 0) {
+    printf("%s : [%s] [%s]\n", fct, dst, fu_strerr(err));
     return -1;
   }
-  //SDUNINDENT;
-  return 0;
+
+  if (err >= 0 && verbose) {
+    printf("%s : [%s] -> [%s] (%d bytes)\n", unlink ? "move" : "copy",
+	   src, dst, err);
+  }
+
+  return err;
+}
+
+static int get_option(lua_State * L, const char *fct,
+		      int * verbose, int * force)
+{
+  int i, nparam = lua_gettop(L), err = 0;
+
+  for (i=1; i<nparam; ++i) {
+    const char * fname = lua_tostring(L, i);
+    if (fname[0] == '-') {
+      int j;
+      for (j=1; fname[j]; ++j) {
+	switch(fname[j]) {
+	case 'v':
+	  if (verbose) {
+	    *verbose = 1;
+	  } else {
+	    ++err;
+	  }
+	  break;
+	case 'f':
+	  if (force) {
+	    *force = 1;
+	  } else {
+	    ++err;
+	  }
+	  break;
+	}
+      }
+    }
+  }
+  if (err) {
+    printf("%s : [invalid option]\n", fct);
+  }
+  return err ? -1 : 0;
 }
 
 static int lua_mkdir(lua_State * L)
 {
   int nparam = lua_gettop(L);
-  int i;
+  int i, err;
+  int verbose = 0;
 
+  err = get_option(L, "mkdir", &verbose, 0);
+  if (err) {
+    return -1;
+  }
   for (i=1; i<= nparam; i++) {
-    if (createdir(lua_tostring(L, i)))
-      printf("mkdir : failed creating directory '%s'\n", lua_tostring(L, i));
+    int e;
+    const char * fname = lua_tostring(L, i);
+    if (fname[0] == '-') continue;
+    
+    e = fu_create_dir(fname);
+    if (e < 0) {
+      printf("mkdir : [%s] [%s]\n", fname, fu_strerr(e));
+      ++err;
+    } else if (verbose) {
+      printf("mkdir : [%s] created\n", fname);
+    }
   }
 
-  return 0;
+  return err ? -1 : 0;
 }
 
 static int lua_unlink(lua_State * L)
 {
   int nparam = lua_gettop(L);
-  int i;
+  int i, err;
+  int verbose = 0, force = 0;
 
-  for (i=1; i<= nparam; i++) {
-    if (fs_unlink(lua_tostring(L, i)))
-      printf("unlink : failed deleting '%s'\n", lua_tostring(L, i));
+  err = get_option(L, "unlink", &verbose, &force);
+  if (err) {
+    return -1;
+  }
+    
+  for (i=1; i <= nparam; i++) {
+    int e;
+    const char *fname = lua_tostring(L, i);
+    if (fname[0] == '-') continue;
+
+    e = fu_remove(fname);
+    if (e < 0) {
+      if (!force) {
+	printf("unlink : [%s] [%s].\n", fname, fu_strerr(e));
+	++err;
+      }
+    } else if (verbose) {
+      printf("unlink : [%s] removed.\n", fname);
+    }
+  }
+  return err ? -1 : 0;
+}
+
+static int lua_copy(lua_State * L)
+{
+  char fulldest[1024] , *enddest;
+  const int max = sizeof(fulldest);
+  int nparam = lua_gettop(L);
+  const char *dst = 0, *src = 0;;
+  int i, err, cnt, slashed;
+  int verbose = 0, force = 0;
+
+  err = get_option(L, "copy", &verbose, &force);
+  if (err) {
+    return -1;
   }
 
-  return 0;
+  /* Count file parameters , get [first] and [last] file in [src] and [dst] */
+  for (i=1, cnt=0; i <= nparam; i++) {
+    const char *fname = lua_tostring(L, i);
+    if (fname[0] == '-') continue;
+    if (!src) {
+      src = fname;
+    } else {
+      dst = fname;
+    }
+    ++cnt;
+  }
+
+  if (cnt < 2) {
+    printf("copy : [missing parameter]\n");
+    return -1;
+  }
+		     
+  /* Remove trialing '/' */
+  enddest = fn_get_path(fulldest, dst, max, &slashed);
+  if (!enddest) {
+    printf("copy : [missing destination].\n");
+    return -1;
+  }
+
+  if (cnt == 2) {
+    if (fu_is_dir(fulldest)) {
+      if (!fn_add_path(fulldest, enddest, fn_basename(src), max)) {
+	printf("copy : [filename too long].\n");
+	return -1;
+      }
+    } else if (slashed) {
+      printf("copy : [%s] [not a directory].\n", dst);
+      return -1;
+    }
+    return copyfile(fulldest, src, force, 0, verbose);
+  } else  {
+    /* More than 2 files, destination must be a directory */
+    if (!fu_is_dir(fulldest)) {
+      printf("copy : [%s] [not a directory].\n", dst);
+      return -1;
+    }
+
+    err = 0;
+    for (i=1; i<=nparam; ++i) {
+      const char *fname = lua_tostring(L, i);
+      if (fname == dst) {
+	break;
+      }
+      if (fname[i] == '-') {
+	continue;
+      }
+      if (!fn_add_path(fulldest, enddest, fn_basename(fname), max)) {
+	printf("copy : [filename too long].\n");
+	err = -1;
+      } else {
+	err |= copyfile(fulldest, fname, force, 0, verbose);
+      }
+    }
+    return err;
+  }
 }
+
+
 
 static int lua_dcar(lua_State * L)
 {
@@ -921,6 +1051,10 @@ static int lua_vmutools(lua_State * L)
   return err ? -1 : 0;
 }
 
+	
+
+
+
 
 #if 0
 static char shell_basic_lua_init[] = 
@@ -1173,6 +1307,20 @@ static luashell_command_description_t commands[] = {
     "vmu_tools r vmupath file : Restore file into VMU.\n"
     "]])",
     SHELL_COMMAND_C, lua_vmutools
+  },
+  {
+    "copy",
+    "cp",
+    "print([["
+    "copy [options] <source-file> <target-file>\n"
+    "copy [options] <file1> [<file2> ...] <target-dir>\n"
+    "\n"
+    "options:\n"
+    "\n"
+    " -f : force, overwrite existing file\n"
+    " -v : verbose\n"
+    "]])",
+    SHELL_COMMAND_C, lua_copy
   },
 
   {0},
