@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist_loader.c,v 1.7 2003-01-12 22:01:32 ben Exp $
+ * $Id: entrylist_loader.c,v 1.8 2003-03-09 08:59:46 ben Exp $
  */
 
 #include <stdio.h>
@@ -20,6 +20,12 @@
 #include "filetype.h"
 
 #include "sysdebug.h"
+
+#ifdef RELEASE
+# define PRINTF(...)
+#else
+# define PRINTF(...) printf(__VA_ARGS__)
+#endif
 
 typedef enum {
   LOADER_INIT = 0,
@@ -143,16 +149,17 @@ static int loader_addentry(const fu_dirent_t * dir, void * cookie)
   return i;
 }
 
+
 static void loader_thread(void *cookie)
 {
   static loader_status_e old_status = -1;
   semaphore_t * sem = (semaphore_t *)cookie;
 
-  printf("loader_thread starting\n");
+  PRINTF("loader_thread starting\n");
 
   while (loader_status != LOADER_QUIT) {
     if (loader_status != old_status) {
-      printf("loader_thread status %d -> %d\n", old_status, loader_status);
+      PRINTF("loader_thread status %d -> %d\n", old_status, loader_status);
       old_status =loader_status;
     }
 
@@ -163,20 +170,20 @@ static void loader_thread(void *cookie)
       return;
 
     case LOADER_INIT:
-      printf("entrylist_loader_thread INIT\n");
+      PRINTF("entrylist_loader_thread INIT\n");
       loader_status = LOADER_READY;
       break;
 
     case LOADER_READY:
-      printf("entrylist_loader_thread READY\n");
-      printf("entrylist_loader_thread : waiting on semaphore.\n");
+      PRINTF("entrylist_loader_thread READY\n");
+      PRINTF("entrylist_loader_thread : waiting on semaphore.\n");
       sem_wait(sem);
-      printf("entrylist_loader_thread : released from semaphore.\n");
+      PRINTF("entrylist_loader_thread : released from semaphore.\n");
       break;
 
     case LOADER_LOADING: {
       el_path_t * path = loader.el->path;
-      printf("entrylist_loader_thread LOADING\n");
+      PRINTF("entrylist_loader_thread LOADING\n");
 
       if (!fu_is_dir(path->path)) {
 	printf("entrylist_loader_thread : not a directory '%s'\n", path->path);
@@ -220,17 +227,17 @@ static void loader_thread(void *cookie)
 	}
 	entrylist_unlock(loader.el);
 	
-	printf("ENTERING CB [%s]\n",path->path);
+	PRINTF("ENTERING CB [%s]\n",path->path);
 	{
 	  int err = 
 	    fu_read_dir_cb(path->path, loader_addentry, &loader);
 	  if (err < 0) {
 	    printf("Error loading [%s] : %s\n", path->path, fu_strerr(err));
 	  } else {
-	    printf("-> %d entries added\n", err);
+	    PRINTF("-> %d entries added\n", err);
 	  }
 	}
-	printf("EXITING CB\n");
+	PRINTF("EXITING CB\n");
       }
       /* Finish loading. */
       loader.el->loading = 2; /* $$$ Atomik op */
@@ -241,11 +248,11 @@ static void loader_thread(void *cookie)
     } break;
 
     case LOADER_STARTING:
-      printf("entrylist_loader_thread STARTING\n");
-      printf("entrylist_loader_thread : loading (%p,%s)\n",
+      PRINTF("entrylist_loader_thread STARTING\n");
+      PRINTF("entrylist_loader_thread : loading (%p,%s)\n",
 	     loader.el, loader.path);
 
-      printf("entrylist_loader_thread : lock entry\n");
+      PRINTF("entrylist_loader_thread : lock entry\n");
       entrylist_lock(loader.el);
 
       loader.el->loading = 1;
@@ -262,49 +269,49 @@ static void loader_thread(void *cookie)
 	loader.el = 0;
 	loader_status = LOADER_READY;
       } else {
-	printf("entrylist_loader_thread : entry locked\n");
-	printf("entrylist_loader_thread : unlock entry\n");
+	PRINTF("entrylist_loader_thread : entry locked\n");
+	PRINTF("entrylist_loader_thread : unlock entry\n");
 	entrylist_unlock(loader.el);
-	printf("entrylist_loader_thread : entry unlocked\n");
+	PRINTF("entrylist_loader_thread : entry unlocked\n");
 	loader_status = LOADER_LOADING;
       }
     }
   }
-  printf("loader_thread QUIT recieved...\n");
+  PRINTF("loader_thread QUIT recieved...\n");
   loader_status = LOADER_DEAD;
 }
 
 
 int el_loader_loaddir(el_list_t * el, const char * path, int filter)
 {
-  printf("entrylist_loader_loaddir (%p,%s,%x)\n",el,path,filter);
+  PRINTF("entrylist_loader_loaddir (%p,%s,%x)\n",el,path,filter);
 
   if (!loader_thd) {
     printf("entrylist_loader_loaddir : no loader thread\n");
     return -1;
   }
 	
-  printf("entrylist_loader_loaddir : status = %d\n", loader_status);
-  printf("entrylist_loader_loaddir : waiting on loader\n");
+  PRINTF("entrylist_loader_loaddir : status = %d\n", loader_status);
+  PRINTF("entrylist_loader_loaddir : waiting on loader\n");
   spinlock_lock(&loader_mutex);
-  printf("entrylist_loader_loaddir : get loader !!\n");
+  PRINTF("entrylist_loader_loaddir : get loader !!\n");
 
-  printf("entrylist_loader_loaddir : waiting loader ready\n");
+  PRINTF("entrylist_loader_loaddir : waiting loader ready\n");
   if(!loader_waitstatus(LOADER_READY, 1000)) {
     spinlock_unlock(&loader_mutex);
     printf("entrylist_loader_loaddir : timeout waiting on loader\n");
     return -1;
   }
 
-  printf("entrylist_loader_loaddir : loader ready\n");
-  printf("entrylist_loader_loaddir : lock entrylist\n");
+  PRINTF("entrylist_loader_loaddir : loader ready\n");
+  PRINTF("entrylist_loader_loaddir : lock entrylist\n");
   entrylist_lock(el);
-  printf("entrylist_loader_loaddir : locked\n");
+  PRINTF("entrylist_loader_loaddir : locked\n");
   loader.el = el;
   loader.path = path;
   loader.filter = filter;
   loader_status = LOADER_STARTING;
-  printf("entrylist_loader_loaddir : ask a loaddir\n");
+  PRINTF("entrylist_loader_loaddir : ask a loaddir\n");
   sem_signal(loader_sem);
 
   /*   { */
@@ -317,11 +324,11 @@ int el_loader_loaddir(el_list_t * el, const char * path, int filter)
   /*   } */
   entrylist_unlock(el);
 
-  printf("entrylist_loader_loaddir : waiting on loader to really start \n");
+  PRINTF("entrylist_loader_loaddir : waiting on loader to really start \n");
   loader_waitnotstatus(LOADER_STARTING, 0);
-  printf("entrylist_loader_loaddir : started status = %d\n", loader_status);
+  PRINTF("entrylist_loader_loaddir : started status = %d\n", loader_status);
 
-  printf("entrylist_loader_loaddir : release loader\n");
+  PRINTF("entrylist_loader_loaddir : release loader\n");
   spinlock_unlock(&loader_mutex);
   
   return 0;
@@ -329,23 +336,23 @@ int el_loader_loaddir(el_list_t * el, const char * path, int filter)
 
 int el_loader_init(void)
 {
-  printf("entrylist_load_init...\n");
+  PRINTF("entrylist_load_init...\n");
 
   spinlock_init(&loader_mutex);
   memset(&loader, 0, sizeof(loader));
   loader_status = LOADER_INIT;
   loader_thd = 0;
-  printf("entrylist_load_init : create semaphore.\n");
+  PRINTF("entrylist_load_init : create semaphore.\n");
   loader_sem = sem_create(1);
-  printf("entrylist_load_init : semaphore [%p].\n",loader_sem);
+  PRINTF("entrylist_load_init : semaphore [%p].\n",loader_sem);
   if (!loader_sem) {
     printf("entrylist_load_init : can not create semaphore.\n");
     return -1;
   }
-  printf("entrylist_load_init : first wait semaphore.\n");
+  PRINTF("entrylist_load_init : first wait semaphore.\n");
   sem_wait(loader_sem);
 
-  printf("entrylist_load_init : create thread.\n");
+  PRINTF("entrylist_load_init : create thread.\n");
   loader_thd = thd_create(loader_thread, loader_sem);
   if (!loader_thd) {
     printf("entrylist_load_init : thread failed.\n");
@@ -355,20 +362,20 @@ int el_loader_init(void)
     printf("entrylist_load_init : can not create loader thread.\n");
     return -1;
   }
-  printf("entrylist_load_init : thread created, rename it.\n");
+  PRINTF("entrylist_load_init : thread created, rename it.\n");
   thd_set_label((kthread_t *)loader_thd, "Loader-thd");
-  printf("entrylist_load_init : complete (thd=%p).\n", loader_thd);
+  PRINTF("entrylist_load_init : complete (thd=%p).\n", loader_thd);
   return 0;
 }
 
 void el_loader_shutdown(void)
 {
   if (!loader_thd) {
-    printf("entrylist_loader_shutdown : mo loader_thread!!\n");
+    printf("entrylist_loader_shutdown : no loader_thread!!\n");
     return;
   }
   //  sem_signal(playa_haltsem);
-  printf("entrylist_loader_shutdown : waiting for loader thread death.\n");
+  PRINTF("entrylist_loader_shutdown : waiting for loader thread death.\n");
 
   loader_status = LOADER_QUIT;
   sem_signal(loader_sem);
@@ -379,6 +386,6 @@ void el_loader_shutdown(void)
   sem_destroy(loader_sem);
   loader_sem = 0;
   loader_thd = 0;
-  printf("entrylist_loader_shutdown : complete.\n");
+  PRINTF("entrylist_loader_shutdown : complete.\n");
   return;
 }
