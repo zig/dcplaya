@@ -1,5 +1,5 @@
 /*
-** $Id: lmathlib.c,v 1.1 2002-09-13 16:02:36 zig Exp $
+** $Id: lmathlib.c,v 1.2 2002-09-14 00:47:13 zig Exp $
 ** Standard mathematical library
 ** See Copyright Notice in lua.h
 */
@@ -169,10 +169,11 @@ static int math_random (lua_State *L) {
   /* the '%' avoids the (rare) case of r==1, and is needed also because on
      some systems (SunOS!) "rand()" may return a value larger than RAND_MAX */
 
-#if 0
+#if 1
+# warning "TODO !!"
+# define RAND_MAX 65535
   double r = (double)(rand()%RAND_MAX) / (double)RAND_MAX;
 #else
-# warning "TODO !!"
   double r = 0;
 #endif
 

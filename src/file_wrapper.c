@@ -42,6 +42,22 @@ int fread(void *ptr,int size, int nmemb, FILE *stream)
   return memb;
 }
 
+int fwrite(const void *ptr,int size, int nmemb, FILE *stream)
+{
+  file_t fd = (file_t)stream;
+  int write = 0, memb = 0, total = 0;
+  
+  total =  size*nmemb;
+  if (verbose) dbglog(DBG_DEBUG, ">> " __FUNCTION__ "(fd=%p,%d)\n", fd, total);
+  
+  if (total) {
+    write = fs_write(fd, ptr, total);
+    memb = write / size;
+  }
+  if (verbose) dbglog(DBG_DEBUG, "<< " __FUNCTION__ "(write=%d/%d, rem=%d)\n", write, total, memb);
+  return memb;
+}
+
 int fgetc(FILE *f)
 {
   char c;
@@ -99,4 +115,52 @@ int fsetpos(FILE *stream, fpos_t *pos)
 
 void clearerr( FILE *stream)
 {
+}
+
+
+int feof(FILE *stream)
+{
+  int fd = (int) stream;
+  return fs_tell(fd) == fs_total(fd);
+}
+
+
+char *fgets(char *s, int size, FILE *stream)
+{
+  int c = -1;
+  int i;
+
+  for (i=0; i<size-1; i++) {
+    if (c == '\n')
+      break;
+    c = fgetc(stream);
+    if (c == EOF)
+      break;
+    s[i] = c;
+  }
+
+  s[i] = 0;
+
+  return s;
+}
+
+int fflush(FILE *stream)
+{
+  return 0;
+}
+
+
+// VP : added this stupid thing
+void exit(int code)
+{
+  printf("Calling exit(%d)\n", code);
+
+  * (int *) 1 = 0xdeadbeef;
+}
+
+// VP : warning, this won't work if c is different from actually 
+//      previously read character !
+int ungetc(int c, FILE *stream)
+{
+  fseek(stream, -1, SEEK_CUR);
 }

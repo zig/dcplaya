@@ -1,18 +1,25 @@
 /*
-** $Id: liolib.c,v 1.1 2002-09-13 16:02:36 zig Exp $
+** $Id: liolib.c,v 1.2 2002-09-14 00:47:13 zig Exp $
 ** Standard I/O (and system) library
 ** See Copyright Notice in lua.h
 */
 
 
-// VP : todo ...
-#if 0
+#if 1
+
+#define LIMITED
+
+#ifdef LIMITED
+# include <kos.h>
+#endif
 
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+#ifndef LIMITED
+# include <time.h>
+#endif
 
 #include "lua.h"
 
@@ -20,6 +27,8 @@
 #include "luadebug.h"
 #include "lualib.h"
 
+#include "file_wrapper.h"
+#include "tmp_ctype.h"
 
 /* #ifndef OLD_ANSI
 #include <errno.h>
@@ -143,9 +152,12 @@ static int setreturn (lua_State *L, IOCtrl *ctrl, FILE *f, int inout) {
 
 
 static int closefile (lua_State *L, IOCtrl *ctrl, FILE *f) {
+#ifndef LIMITED
   if (f == stdin || f == stdout || f == stderr)
     return 1;
-  else {
+  else 
+#endif
+  {
     lua_pushusertag(L, f, ctrl->iotag);
     lua_settag(L, ctrl->closedtag);
     return (CLOSEFILE(L, f) == 0);
@@ -163,7 +175,9 @@ static int io_close (lua_State *L) {
 static int file_collect (lua_State *L) {
   IOCtrl *ctrl = (IOCtrl *)lua_touserdata(L, -1);
   FILE *f = getnonullfile(L, ctrl, 1);
+#ifndef LIMITED
   if (f != stdin && f != stdout && f != stderr)
+#endif
     CLOSEFILE(L, f);
   return 0;
 }
@@ -190,7 +204,12 @@ static int io_fromto (lua_State *L, int inout, const char *mode) {
   lua_pop(L, 1);  /* remove upvalue */
   if (lua_isnull(L, 1)) {
     closefile(L, ctrl, getfilebyref(L, ctrl, inout));
+#ifdef LIMITED
+    printf("io_fromto : WARNING : no stdin nor stdout\n");
+    current = (FILE *) -1;
+#else
     current = (inout == 0) ? stdin : stdout;    
+#endif
   }
   else if (lua_tag(L, 1) == ctrl->iotag)  /* deprecated option */
     current = (FILE *)lua_touserdata(L, 1);
@@ -312,14 +331,17 @@ static int read_number (lua_State *L, FILE *f) {
 
 static int read_word (lua_State *L, FILE *f) {
   int c;
+  int eof;
   luaL_Buffer b;
   luaL_buffinit(L, &b);
-  do { c = fgetc(f); } while (isspace(c));  /* skip spaces */
-  while (c != EOF && !isspace(c)) {
+  do { eof = feof(f); c = fgetc(f); } while (!eof && isspace(c));  /* skip spaces */
+  while (!eof && !isspace(c)) {
+    eof = feof(f);
     luaL_putchar(&b, c);
     c = fgetc(f);
   }
-  ungetc(c, f);
+/*  ungetc(c, f); */
+  fseek(f, -1, SEEK_CUR);
   luaL_pushresult(&b);  /* close buffer */
   return (lua_strlen(L, -1) > 0);
 }
@@ -452,19 +474,23 @@ static int io_write (lua_State *L) {
   for (; arg <=  lastarg; arg++) {
     if (lua_type(L, arg) == LUA_TNUMBER) {  /* LUA_NUMBER */
       /* optimization: could be done exactly as for strings */
+#ifndef LIMITED
       if (f == stdout) {
         char buf[256];
         sprintf(buf, "%.16g", lua_tonumber(L, arg));
       	luaB_fputs(buf);
       } else 
+#endif
         status = status && fprintf(f, "%.16g", lua_tonumber(L, arg)) > 0;
     }
     else {
       size_t l;
       const char *s = luaL_check_lstr(L, arg, &l);
+#ifndef LIMITED
       if (f == stdout)
         luaB_fputs(s);
       else 
+#endif
         status = status && (fwrite(s, sizeof(char), l, f) == l);
     }
   }
@@ -542,13 +568,22 @@ static int io_tmpname (lua_State *L) {
 
 
 static int io_getenv (lua_State *L) {
+#ifdef LIMITED
+  lua_pushstring(L, "");  /* if NULL push nil */
+  return 1;
+#else
   lua_pushstring(L, getenv(luaL_check_string(L, 1)));  /* if NULL push nil */
   return 1;
+#endif
 }
 
 
 static int io_clock (lua_State *L) {
+#ifdef LIMITED
+  lua_pushnumber(L, ((double)ta_state.frame_counter)/60.0f);
+#else
   lua_pushnumber(L, ((double)clock())/CLOCKS_PER_SEC);
+#endif
   return 1;
 }
 
@@ -580,6 +615,9 @@ static int setloc (lua_State *L) {
 }
 
 
+#ifndef EXIT_SUCCESS
+# define EXIT_SUCCESS 0
+#endif
 static int io_exit (lua_State *L) {
   exit(luaL_opt_int(L, 1, EXIT_SUCCESS));
   return 0;  /* to avoid warnings */
@@ -593,7 +631,10 @@ static int io_debug (lua_State *L) {
   for (;;) {
     char buffer[250];
     fprintf(stderr, "lua_debug> ");
-    if (fgets(buffer, sizeof(buffer), stdin) == 0 ||
+    if (
+#ifndef LIMITED
+	fgets(buffer, sizeof(buffer), stdin) == 0 ||
+#endif
         strcmp(buffer, "cont\n") == 0)
       return 0;
     lua_dostring(L, buffer);
@@ -720,11 +761,13 @@ static void openwithcontrol (lua_State *L) {
   lua_pushstring(L, filenames[OUTFILE]);
   ctrl->ref[OUTFILE] = lua_ref(L, 1);
   /* predefined file handles */
+#ifndef LIMITED
   setfile(L, ctrl, stdin, INFILE);
   setfile(L, ctrl, stdout, OUTFILE);
   setfilebyname(L, ctrl, stdin, "_STDIN");
   setfilebyname(L, ctrl, stdout, "_STDOUT");
   setfilebyname(L, ctrl, stderr, "_STDERR");
+#endif
   /* close files when collected */
   lua_pushcclosure(L, file_collect, 1);  /* pops `ctrl' from stack */
   lua_settagmethod(L, ctrl->iotag, "gc");

@@ -1,5 +1,5 @@
 /*
-** $Id: ldo.c,v 1.1 2002-09-13 16:02:36 zig Exp $
+** $Id: ldo.c,v 1.2 2002-09-14 00:47:13 zig Exp $
 ** Stack and Call structure of Lua
 ** See Copyright Notice in lua.h
 */
@@ -12,6 +12,8 @@
 #include <kos.h>
 #endif
 
+
+#include "file_wrapper.h"
 
 #include "sysdebug.h"
 
@@ -268,21 +270,28 @@ static int protectedparser (lua_State *L, ZIO *z, int bin) {
 }
 
 
-#ifndef LIMITED
 static int parse_file (lua_State *L, const char *filename) {
   ZIO z;
   int status;
   int bin;  /* flag for file mode */
   int c;    /* look ahead char */
-  FILE *f = (filename == NULL) ? stdin : fopen(filename, "r");
+  FILE *f = 
+#ifndef LIMITED
+    (filename == NULL) ? stdin : 
+#endif
+    fopen(filename, "r");
   if (f == NULL) return LUA_ERRFILE;  /* unable to open file */
   c = fgetc(f);
   ungetc(c, f);
   bin = (c == ID_CHUNK);
-  if (bin && f != stdin) {
+#ifndef LIMITED
+  if (bin
+      && f != stdin
+      ) {
     f = freopen(filename, "rb", f);  /* set binary mode */
     if (f == NULL) return LUA_ERRFILE;  /* unable to reopen file */
   }
+#endif
   lua_pushstring(L, "@");
   lua_pushstring(L, (filename == NULL) ? "(stdin)" : filename);
   lua_concat(L, 2);
@@ -290,22 +299,19 @@ static int parse_file (lua_State *L, const char *filename) {
   lua_pop(L, 1);  /* OK: there is no GC during parser */
   luaZ_Fopen(&z, f, filename);
   status = protectedparser(L, &z, bin);
+#ifndef LIMITED
   if (f != stdin)
+#endif
     fclose(f);
   return status;
 }
-#endif
 
 
 LUA_API int lua_dofile (lua_State *L, const char *filename) {
-#ifdef LIMITED
-  return -1;
-#else
   int status = parse_file(L, filename);
   if (status == 0)  /* parse OK? */
     status = lua_call(L, 0, LUA_MULTRET);  /* call main */
   return status;
-#endif
 }
 
 

@@ -19,7 +19,7 @@ static jmp_buf guard_jmp;
 // for reference
 //typedef void (*irq_handler)(irq_t source, irq_context_t *context);
 
-static int saved_irq;
+//static int saved_irq;
 
 /*
  * Working with KOS 1.1.5, may change with other versions !!
@@ -54,6 +54,7 @@ static void guard_irq_handler(irq_t source, irq_context_t *context)
 
   return;
 
+#if 0
   clear_irq_inside_int();
   //irq_restore(saved_irq);
 
@@ -70,6 +71,7 @@ static void guard_irq_handler(irq_t source, irq_context_t *context)
 
   // if an exception occure, then try to recover it ...
   longjmp(guard_jmp, -1);
+#endif
 }
 
 
@@ -127,7 +129,7 @@ static int dynshell_command(const char * fmt, ...)
 
   if (!setjmp(guard_jmp)) {
 
-    saved_irq = irq_get_sr();
+    //saved_irq = irq_get_sr();
 
     for (i=0; exceptions_code[i]; i++)
       irq_set_handler(exceptions_code[i], guard_irq_handler);

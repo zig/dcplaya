@@ -1,5 +1,5 @@
 /*
-** $Id: lzio.h,v 1.1 2002-09-13 16:02:36 zig Exp $
+** $Id: lzio.h,v 1.2 2002-09-14 00:47:13 zig Exp $
 ** Buffered streams
 ** See Copyright Notice in lua.h
 */
@@ -15,7 +15,8 @@
 
 #ifdef LIMITED
 // VP : added this missing type
-typedef void * FILE;
+//typedef void * FILE;
+#include "file_wrapper.h"
 #endif
 
 

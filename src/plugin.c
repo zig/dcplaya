@@ -3,7 +3,7 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: plugin.c,v 1.3 2002-09-12 17:57:31 ben Exp $
+ * $Id: plugin.c,v 1.4 2002-09-14 00:47:13 zig Exp $
  */
 #include <stdio.h>
 #include <string.h>
@@ -13,6 +13,68 @@
 #include "driver_list.h"
 #include "lef.h"
 #include "filetype.h"
+
+
+
+any_driver_t * plugin_load_and_register(const char *fname)
+{
+  any_driver_t *d, *driver, *nxt, *old;
+    
+  driver = plugin_load(fname);
+  if (!driver) {
+    return 0;
+  }
+
+  for (d=driver; d; d = nxt) {
+    driver_list_t *dl = 0;
+      
+    /* Save nxt here, It will be crashed by driver_list */
+    nxt = d->nxt;
+    switch (d->type) {
+    case OBJ_DRIVER:
+      dl = &obj_drivers;
+      break;
+    case VIS_DRIVER:
+      dl = &vis_drivers;
+      break;
+    case INP_DRIVER:
+      dl = &inp_drivers;
+      break;
+    case EXE_DRIVER:
+      dl = &exe_drivers;
+      break;
+    default:
+      dbglog(DBG_ERROR, "!! " __FUNCTION__
+	     " : Unexecpected plugin type !\n");
+    }
+
+    if (!dl) {
+      /* Error !! Let's run away !! */
+      break;
+    }
+
+    old = driver_list_search(dl, driver->name);
+    if (old) {
+      lef_prog_t * lef = (lef_prog_t *) old->dll;
+      if (lef->ref_count == 1) {
+	driver_list_unregister(dl, old);
+	lef_free(lef);
+      }
+    }
+
+    if (d->init(d) < 0 || driver_list_register(dl, d) < 0) {
+
+      dbglog(DBG_DEBUG, "++ [%s] INIT OR REGISTRATION FAILED\n", d->name);
+      /* If the registration failed, let's free the dll. */
+      lef_free((lef_prog_t *)d->dll);
+      return 0;
+    } else {
+      dbglog(DBG_DEBUG, "++ [%s] added to [%s]\n", d->name, dl->name);
+      return driver;
+    }
+  }
+}
+
 
 any_driver_t * plugin_load(const char *fname)
 {
@@ -83,6 +145,7 @@ error:
   return d;
 }
 
+
 static int r_plugin_path_load(char *path, unsigned int level)
 {
   dirent_t *de;
@@ -129,49 +192,11 @@ static int r_plugin_path_load(char *path, unsigned int level)
     }
 
     strcpy(path_end+1, de->name);
-    driver = plugin_load(path);
-    if (!driver) {
-      continue;
+    driver = plugin_load_and_register(path);
+    if (driver) {
+      ++count;
     }
 
-    for (d=driver; d; d = nxt) {
-      driver_list_t *dl = 0;
-      
-      /* Save nxt here, It will be crashed by driver_list */
-      nxt = d->nxt;
-      switch (d->type) {
-      case OBJ_DRIVER:
-	dl = &obj_drivers;
-	break;
-      case VIS_DRIVER:
-	dl = &vis_drivers;
-	break;
-      case INP_DRIVER:
-	dl = &inp_drivers;
-	break;
-      case EXE_DRIVER:
-	dl = &exe_drivers;
-	break;
-      default:
-	dbglog(DBG_ERROR, "!! " __FUNCTION__
-	       " : Unexecpected plugin type !\n");
-      }
-
-      if (!dl) {
-	/* Error !! Let's run away !! */
-	break;
-      }
-
-      if (d->init(d) < 0 || driver_list_register(dl, d) < 0) {
-
-	dbglog(DBG_DEBUG, "++ [%s] INIT OR REGISTRATION FAILED\n", d->name);
-	/* If the registration failed, let's free the dll. */
-	lef_free((lef_prog_t *)d->dll);
-      } else {
-	dbglog(DBG_DEBUG, "++ [%s] added to [%s]\n", d->name, dl->name);
-	++count;
-      }
-    }
   }
 
  error:
