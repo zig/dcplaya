@@ -4,7 +4,7 @@
 --- @author   benjamin gerard <ben@sashipa.com>
 --- @brief    Fundamental lua stuff.
 ---
---- $Id: init.lua,v 1.12 2002-12-06 12:05:42 zigziggy Exp $
+--- $Id: init.lua,v 1.13 2002-12-16 13:21:54 zigziggy Exp $
 ---
 
 -- do this file only once !
@@ -250,7 +250,7 @@ function dolib(name,force,libpath)
 --			print(format("searching in %q", tostring(p)))
 			if type(p) == "string" then
 				p = p.."lua/"..%name..".lua"
-				if dofile(p) and dostring(%test) then
+			        if dofile(p) and dostring(%test) then
 					return p
 				end
 			end

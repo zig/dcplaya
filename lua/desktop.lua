@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.3 2002-12-15 23:24:19 zigziggy Exp $
+--- $Id: desktop.lua,v 1.4 2002-12-16 13:21:54 zigziggy Exp $
 ---
 
 if not dolib("evt") then return end
@@ -205,6 +205,10 @@ function dskt_handle(app, evt)
       return
    end
 
+   if key < KBD_USER and key ~= shell_toggleconsolekey then
+      -- prevent event falling back from one top application to the other
+      return
+   end
    return evt
 end
 

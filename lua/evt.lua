@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.15 2002-12-15 22:43:08 zigziggy Exp $
+-- $Id: evt.lua,v 1.16 2002-12-16 13:21:54 zigziggy Exp $
 --
 
 
@@ -54,6 +54,7 @@
 
 dolib("keydefs")
 dolib("display_init")
+dolib("shell")
 
 -- create a new event code
 function evt_new_code()
@@ -144,6 +145,13 @@ function evt_peek()
 	 evt = { key = key }
 	 evt = evt_send(evt_root_app, evt)
 	 if evt then
+	    if evt.key == console_key_event then
+	       -- translate back the console key
+	       evt.key = evt.consolekey
+	       evt.consolekey = nil
+	       --print(console_key_event, evt.key)
+	    end
+
 	    return evt
 	 end
 	 vcolor(0, 0, 0)
@@ -261,6 +269,69 @@ function evt_shutdown_app(app)
 end
 
 
+
+-- create the console application
+function evt_create_console_app()
+   if console_app then
+      evt_shutdown_app(console_app)
+      console_app = nil
+   end
+
+   
+   local app = {
+      name = "console",
+      version = "0.9",
+
+      handle = function(app, evt)
+		  local focused = app == app.owner.sub
+
+		  if focused then
+		     if evt.key == shell_toggleconsolekey or evt.consolekey == shell_toggleconsolekey then
+			evt_app_insert_last(app.owner, app)
+			return
+		     end
+
+		     if evt.key < KBD_CONT1_C then
+			-- translate the console key
+			evt.consolekey = evt.key
+			evt.key = console_key_event
+			return evt
+		     end
+		  else
+		     if evt.key == shell_toggleconsolekey or evt.consolekey == shell_toggleconsolekey then
+			evt_app_insert_first(app.owner, app)
+			return
+		     end
+		  end
+
+		  if evt.key == gui_focus_event and evt.app == app then
+		     if ke_set_active then
+			ke_set_active(1)
+		     end
+		     showconsole()
+		     return
+		  end
+		  if evt.key == gui_unfocus_event and evt.app == app then
+		     if ke_set_active then
+			ke_set_active(nil)
+		     end
+		     hideconsole()
+		     return
+		  end
+
+		  return evt
+
+	       end
+
+   }
+
+   console_app = app
+   console_key_event = evt_new_code()
+
+   evt_app_insert_first(evt_desktop_app, app)
+end
+
+
 -- shutdown event system
 function evt_shutdown()
 
@@ -331,16 +402,22 @@ function evt_init()
    peekchar = evt_peekchar
    framecounter = evt_framecounter
 
+   evt_create_console_app()
+
    print [[EVT SYSTEM INITIALIZED]]
 
    return 1
 
 end
 
-evt_init()
-
 evt_included = 1
 evt_loaded = 1
+
+evt_init()
+
+-- enhance the desktop application with the application switcher
+dolib("desktop", 1)
+
 
 if nil then
 
