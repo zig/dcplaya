@@ -1,0 +1,35 @@
+/**
+ * @page    bug_page  Bug report and tracking
+ * @author	ben
+ * @date	2002/09/18
+ *
+ *	This is the bug section. Run for your life.
+ *
+ * @par		Filetype corruption at driver load/remove.
+ * @date	2002/09/18
+ * @author	ben
+ *
+ *  Loading/removing input driver makes filetype error. Removed driver does
+ *  not free its id which is used as filetype. songmenu.c can not find the
+ *  driver back.
+ *	Need to alloc/free filetype correctly in driver_list.c.
+ *
+ *
+ * @par		FFT-VLR
+ * @date	2002/09/18
+ * @author	ben
+ *
+ *	 Face's colors are NOT initialized at start(). Wrong smoothing for
+ *	 border faces because the "invisible" face has no color.
+ *
+ *
+ * @par     Protection fault.
+ * @date	2002/09/18 author ben
+ * @author  ben
+ *
+ *	 Crash when playing a mp3 with FFTVLR running. No idea of a cause for
+ *	 this bug.
+ *
+ *
+ *
+ **/

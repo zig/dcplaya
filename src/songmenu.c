@@ -1,4 +1,11 @@
-/* */
+/**
+ * @file    songmenu.c
+ * @author  ben(jamin) gerard <ben@sashipa.com>
+ * @date    2002/02/10
+ * @brief   file and playlist browser
+ * 
+ * $Id: songmenu.c,v 1.3 2002-09-20 13:42:41 benjihan Exp $
+ */
 
 #include <stdio.h>
 #include <string.h>
@@ -12,6 +19,8 @@
 #include "m3u.h"
 #include "driver_list.h"
 #include "filetype.h"
+
+#include "sysdebug.h"
 
 #define FILE_BROWSER_LINES    13
 #define LOAD_RECURSIVE_DIR    0x80000000
@@ -197,7 +206,7 @@ static int filter_entry(const char *name)
   int type = file_type_inp(name);
  
   if (option_filter() && type == FILETYPE_UNKNOWN) {
-    dbglog(DBG_DEBUG," ** " __FUNCTION__ "(%s) : FILTER OUT\n", name);
+    SDDEBUG("%s(%s) : FILTER OUT\n", __FUNCTION__, name);
     return FILETYPE_ERROR;
   }
   return type;
@@ -251,24 +260,22 @@ static void locate_file(int selected, const char *verify)
   if (verify && verify[0]) {
     entry *e;
     
-    dbglog(DBG_DEBUG,"** " __FUNCTION__ " : verify '%s'\n", verify);
+    SDDEBUG("Verify '%s'\n", verify);
     e = entrylist_addrof(&direntry, selected);
     if (!e || strcmp(e->fn, verify)) {
       entry findme;
       
-      dbglog(DBG_DEBUG,"** " __FUNCTION__ " : '%s' not at #%d\n",
-	     verify, selected);
+      SDDEBUG("'%s' not at #%d\n", verify, selected);
       strncpy(findme.fn, verify, sizeof(findme.fn));
       selected = entrylist_find(&direntry,
 				&findme,
 				(int (*)(const void *, const void *))
 				cmp_entry_fn);
       if (selected<0) {
-        dbglog(DBG_DEBUG,"** " __FUNCTION__ " : '%s' not found.\n", verify);
+        SDDEBUG("'%s' not found.\n", verify);
         selected = 0;
       } else {
-        dbglog(DBG_DEBUG,"** " __FUNCTION__ " : '%s' found at #%d.\n",
-	       verify, selected);
+        SDDEBUG("'%s' found at #%d.\n", verify, selected);
       }
     }
   }
@@ -294,7 +301,7 @@ static int r_load_song_dir(char *dirname)
   file_t d;
   dirent_t *de;
 
-  dbglog(DBG_DEBUG, ">> " __FUNCTION__ "(%s)\n", dirname);
+  SDDEBUG(">> %s(%s)\n", __FUNCTION__ , dirname);
 	
   /* Abort if loader thread has been asked to exit */
   if (!running) {
@@ -302,7 +309,7 @@ static int r_load_song_dir(char *dirname)
   }
 	
   if (entrylist_isfull(&playlist)) {
-    dbglog(DBG_DEBUG, "<< " __FUNCTION__ "(%s) : list full\n", dirname);
+    SDDEBUG("<< %s(%s) : list full\n", __FUNCTION__ , dirname);
     return 0;
   }
 
@@ -318,13 +325,13 @@ static int r_load_song_dir(char *dirname)
     
     if (de->size < 0) {
       /* Skip directory in first pass */
-/*        dbglog(DBG_DEBUG, "** " __FUNCTION__  */
+/*        SDDEBUG(, "** " __FUNCTION__  */
 /*  	     "(%s) : Skip dir [%s] in 1st pass\n", dirname, de->name); */
       continue;
     }
 
     type = direntry_filetype(de);
-/*      dbglog(DBG_DEBUG, "*** " __FUNCTION__  */
+/*      SDDEBUG(, "*** " __FUNCTION__  */
 /*  	   "(%s) : [s:%d] ['%s'] [t:%x]\n", */
 /*  	   dirname, de->size, de->name, type); */
 
@@ -355,7 +362,7 @@ static int r_load_song_dir(char *dirname)
     
     if (de->size >= 0) {
       /* Skip file in 2nd pass */
-/*        dbglog(DBG_DEBUG, "** " __FUNCTION__  */
+/*        SDDEBUG(, "** " __FUNCTION__  */
 /*  	     "(%s) : Skip file [%s] in 2nd pass\n", dirname, de->name); */
       continue;
     }
@@ -369,7 +376,7 @@ static int r_load_song_dir(char *dirname)
   if (d) {
     fs_close(d);
   }
-  dbglog(DBG_DEBUG, ">> " __FUNCTION__ " : [%d]\n", cnt);
+  SDDEBUG(">> %s() : [%d]\n", __FUNCTION__, cnt);
   
   return cnt;
 }
@@ -378,7 +385,7 @@ static void load_song_dir()
 {
   int cnt;
   
-  dbglog(DBG_DEBUG,">> " __FUNCTION__ "\n");
+  SDDEBUG(">> %s()\n", __FUNCTION__);
   entrylist_sync(&direntry, 1);
 
   if (!loaddir[0]) {
@@ -387,7 +394,7 @@ static void load_song_dir()
 	
   cnt = r_load_song_dir(loaddir);
   entrylist_sync(&direntry, 0);
-  dbglog(DBG_DEBUG,"<< " __FUNCTION__ " [%d]\n", cnt);
+  SDDEBUG("<< %s() : [%d]\n", __FUNCTION__ , cnt);
 }
 
 static void load_song_list(int selected)
@@ -399,7 +406,7 @@ static void load_song_list(int selected)
   dirent_t *de;
   int clear_cache;
 	
-  dbglog(DBG_DEBUG,">> " __FUNCTION__ "\n");
+  SDDEBUG(">> %s(%d)\n", __FUNCTION__, selected);
 
   /* Abort if loader thread has been asked to exit */
   if (!running) {
@@ -422,16 +429,14 @@ static void load_song_list(int selected)
   } 
   for (d=0; !d && clear_cache < 3; ) {
     if (clear_cache) {
-      dbglog( DBG_DEBUG, "!! " __FUNCTION__ " : Clear iso9660 cache [%d]\n",
-	      clear_cache);
+      SDDEBUG("Clear iso9660 cache [%d]\n", clear_cache);
       iso_ioctl(0,0,0);  /* clear CD cache ! */
     }
 	
     d = fs_open(loaddir, O_RDONLY | O_DIR);
     if (!d) {
       if (clear_cache) {
-	dbglog(DBG_DEBUG,"** " __FUNCTION__ " : Can't open %s. Try with /\n",
-	       loaddir);
+	SDDEBUG("Can't open %s. Try with /\n", loaddir);
 	strcpy(loaddir, "/");
       }
       ++clear_cache;
@@ -442,7 +447,7 @@ static void load_song_list(int selected)
     strcpy(curdir,loaddir);
     entrylist_sync(&direntry, 0);
     find_entry.fn[0] = 0;
-    dbglog(DBG_DEBUG,"<< " __FUNCTION__ " : FAILED\n");
+    SDDEBUG("<< %s() : FAILED.", __FUNCTION__);
     return;
   }
 	
@@ -474,8 +479,8 @@ static void load_song_list(int selected)
 
     type = direntry_filetype(de);
 	  
-    if (pc) {
-      dbglog(DBG_DEBUG,"READ entry '%s' [%d]\n", de->name, de->size);
+    if (0 && pc) {
+      SDDEBUG("READ entry '%s' [%d]\n", de->name, de->size);
     }
 		
     /* $$$ */
@@ -505,14 +510,14 @@ static void load_song_list(int selected)
   entrylist_sync(&direntry, 0);
 	
   fs_close(d);
-  dbglog(DBG_DEBUG,"<< " __FUNCTION__ "\n");
+  SDDEBUG("<< %s()\n", __FUNCTION__);
 }
 
 static volatile int load_list = 0;
 
 static void loader_thread(void *dummy)
 {
-  dbglog(DBG_DEBUG,">> " __FUNCTION__ "\n");
+  SDDEBUG(">> %s()\n", __FUNCTION__);
   
   while (running) {
     if (load_list == LOAD_RECURSIVE_DIR) {
@@ -521,8 +526,7 @@ static void loader_thread(void *dummy)
     } else if (load_list) {
       int new_selected = ~load_list;
       load_list = 0;
-      dbglog(DBG_DEBUG,"** " __FUNCTION__
-	     " : Asked to load a new list (cursor at %d)\n", new_selected);
+      SDDEBUG("Asked to load a new list (cursor at %d)\n", new_selected);
       load_song_list(new_selected);
     } else {
       /* wait in ms */
@@ -530,9 +534,9 @@ static void loader_thread(void *dummy)
     }
   }
   
-  dbglog(DBG_DEBUG,"** " __FUNCTION__ " : Asked to exit\n");
+  SDNOTICE("Asked to exit\n");
   loader_thd = 0;
-  dbglog(DBG_DEBUG,"<< " __FUNCTION__ "\n");
+  SDDEBUG("<< %s()\n", __FUNCTION__);
 }
 
 
@@ -574,7 +578,7 @@ static int draw_any_listing(entry_window_t * win)
   int i, esel;
   int top, selected, num_entries;
 
-  //  dbglog(DBG_DEBUG," [%.3f %.3f]", global_alpha, halftint);
+  //  SDDEBUG(," [%.3f %.3f]", global_alpha, halftint);
 	
   if (halftint < 1E-3) {
     return 0;
@@ -647,9 +651,9 @@ static int draw_any_listing(entry_window_t * win)
 	  strcat(tmp, " ");
 	  strcat(tmp, s);
 	  s = tmp;
-	  //dbglog(DBG_DEBUG, "!! driver found for %s\n", s);
+	  //SDDEBUG(, "!! driver found for %s\n", s);
 	} else {
-	  dbglog(DBG_DEBUG, "!! driver not found for %s\n", s);
+	  SDERROR("Driver not found for [%s]\n", s);
 	}
       } else if (e->type == FILETYPE_UNKNOWN) {
 	color_idx = (color_idx & 1) + 4;
@@ -658,10 +662,10 @@ static int draw_any_listing(entry_window_t * win)
       }
 
       if (color_idx >= sizeof(colors) / sizeof(*colors)) {
+	SDCRITICAL("Bad color idx:%d\n", color_idx);
 	color_idx = 0;
-	dbglog(DBG_ERROR,"!! " __FUNCTION__ " : bad color idx\n");
       }
-  	
+
       ystep = draw_poly_text(xs, y, 100.0f,
 			     colors[color_idx].a * halftint,
 			     colors[color_idx].r, colors[color_idx].g,
@@ -703,8 +707,7 @@ static void check_playlist(void)
   
   /* Start playlist */
   if (imm = playwin->play < 0, imm) {
-    dbglog(DBG_DEBUG, "** " __FUNCTION__
-	   " : Start playlist at #%d\n", playlist_start_idx);
+    SDDEBUG("Start playlist at #%d\n", playlist_start_idx);
     playwin->play = playlist_start_idx - 1;
     if (option_shuffle()) {
       entrylist_shuffle(&playlist, playlist_start_idx);
@@ -714,15 +717,13 @@ static void check_playlist(void)
   /* Find next valid idx */
   while (++playwin->play < playlist.nb) {
     le = entrylist_addrof(&playlist, playwin->play);
-    dbglog(DBG_DEBUG, "** " __FUNCTION__
-	   " : Playlist load #%d '%s'\n", playwin->play, le->fn);
+    SDDEBUG("Playlist load #%d '%s'\n", playwin->play, le->fn);
     if (!playa_loaddisk(le->fn, imm)) {
       return;
     }
-    dbglog(DBG_DEBUG, "** " __FUNCTION__
-	   " : Failed loading #%d '%s'\n", playwin->play, le->fn);
+    SDERROR("Failed loading #%d '%s'\n", playwin->play, le->fn);
   }
-  dbglog(DBG_DEBUG, "** " __FUNCTION__ " : End of list reached\n");
+  SDDEBUG("End of list reached\n");
   
   /* End of list */
   playlist_start_idx = playwin->play = -1;
@@ -733,11 +734,11 @@ static int add_entry_to_playlist(lst_entry * le, int insert)
   int idx;
 
   idx = insert ? playwin->selected + 1 : -1;
-/*    dbglog(DBG_DEBUG, "** " __FUNCTION__ " : #%d %s ['%s' %d]\n", idx, */
+/*    SDDEBUG(, "** " __FUNCTION__ " : #%d %s ['%s' %d]\n", idx, */
 /*  	 insert ? "INSERT" : "ENQUEUE", le->fn, le->size); */
   idx = entrylist_add(&playlist, le, idx);
   if (idx >= 0) {
-/*      dbglog(DBG_DEBUG, "** " __FUNCTION__ " : ADDED #%03d ['%s' %d]\n", idx, */
+/*      SDDEBUG(, "** " __FUNCTION__ " : ADDED #%03d ['%s' %d]\n", idx, */
 /*  	   le->fn, le->size); */
     
     if (playwin->play >= 0 && idx <= playwin->play) {
@@ -748,10 +749,82 @@ static int add_entry_to_playlist(lst_entry * le, int insert)
       ++playwin->selected;
     }
   } else {
-    dbglog(DBG_DEBUG, "!! " __FUNCTION__ " : FAILED #%03d ['%s' %d]\n",
-	   playwin->selected, le->fn, le->size);
+    SDERROR("FAILED #%03d ['%s' %d]\n",
+	    playwin->selected, le->fn, le->size);
   }
   return idx;
+}
+
+static int m3u_make_filepath(char *path, int maxpath, const char *fname)
+{
+  return -1;
+}
+
+static int m3u_make_listentry(lst_entry *le, const char *m3upath,
+			  const M3Uentry_t * e)
+{
+  return -1;
+}
+
+static int add_m3u_to_playlist(const char *m3ufile, int insert)
+{
+  int fd = 0;
+  M3Ulist_t * m3u = 0; 
+  int err = -1;
+  char m3upath[1024];
+  int i;
+    
+  SDDEBUG(">> %s(%s,%s)\n", m3ufile, insert ? "INSERT" : "ENQUEUE");
+  SDINDENT;
+
+  fd = fs_open(m3ufile, O_RDONLY);
+  if (!fd) {
+    SDERROR("open error\n");
+    goto error;
+  }
+  driver.cookie = (void *)fd;
+  
+  m3u = M3Uprocess();
+  if (m3u) {
+    SDERROR("load error\n");
+    goto error;
+  }
+
+  SDDEBUG("m3u list loaded : %d entries\n", m3u->n);
+
+  err = m3u_make_filepath(m3upath, sizeof(m3upath), m3ufile);
+  if (err) {
+    SDERROR("m3u path failed.\n");
+    goto error;
+  }
+
+  err = 0;
+  for (i=0; i<m3u->n; ++i) {
+    M3Uentry_t *e = m3u->entry + i;
+    lst_entry le;
+    int err2;
+
+    SDDEBUG("#%02d [%s] [%s] [%d]\n", i+1, e->path, e->name, e->time);
+    err2 = m3u_make_listentry(&le, m3upath, e);
+    err -= err2<0;
+    if (err2) {
+      continue;
+    }
+    SDDEBUG("-> [%s]\n", le.fn);
+    err2 = add_entry_to_playlist(&le, insert);
+    err -= err2<0;
+  }
+  err = 0; /* $$$ Discard error */
+
+ error:
+  if (fd) {
+    fs_close(fd);
+  }
+  if (m3u) {
+    M3Ukill(m3u);
+  }
+  driver.cookie = 0;
+  return err;
 }
 
 static int add_to_playlist(int selected, int insert)
@@ -784,21 +857,18 @@ static int add_to_playlist(int selected, int insert)
       le.pos = selected;
       return add_entry_to_playlist(&le, insert);
     } else {
-      dbglog(DBG_DEBUG,"** " __FUNCTION__
-	     " : Skipped (filename too long) '%s/%s'\n",curdir,e->fn);
+      SDWARNING("Skipped (filename too long) '%s/%s'\n", curdir, e->fn);
       return -1;
     }
   }
 
-  /* Playlist file : $$$ TODO*/
+  /* Playlist file : $$$ TODO */
   if (e->type >= FILETYPE_PLAYLIST) {
-    dbglog(DBG_DEBUG, "** " __FUNCTION__
-	   " : %s playlist [%s]\n", insert?"Insert":"Enqueue", e->fn); 
-    return -1;
+    SDDEBUG("%s playlist [%s]\n", insert?"Insert":"Enqueue", e->fn); 
+    return add_m3u_to_playlist(e->fn, insert);
   }
 
-  dbglog(DBG_DEBUG, "** " __FUNCTION__
-	 " : Nothing to do with %s\n", e->fn); 
+  SDWARNING("Nothing to do with %s\n", e->fn); 
   return -1;
 
 }
@@ -809,7 +879,7 @@ static int del_from_playlist(int idx)
   
   if (!err) {
     if (idx == playwin->play) {
-	    dbglog(DBG_DEBUG,"** " __FUNCTION__ " : delete current play : stop play list\n");
+      SDDEBUG("Delete current play : stop play list\n");
       playlist_start_idx = playwin->play = -1;
       //playa_loaddisk(0,0);
     }
@@ -823,11 +893,11 @@ static int del_from_playlist(int idx)
       --playlist_start_idx;
     } 
     playwin->selected = idx;
-	  dbglog(DBG_DEBUG,"** " __FUNCTION__ " : Item #%d deleted\n", idx);
-	  return 0;
+    SDDEBUG("Item #%d deleted\n", idx);
+    return 0;
   } else {
-	  dbglog(DBG_DEBUG,"** " __FUNCTION__ " : Item not in playlist\n");
-	  return -1;
+    SDERROR("Item not in playlist\n");
+    return -1;
   }
 }
 
@@ -1035,10 +1105,7 @@ static void check_controller(entry_window_t * win)
 	add_to_playlist(selected, playwin->play < 0);
       } else if (e->type <= FILETYPE_DIR) {
 	/* Directory */
-
-	dbglog(DBG_DEBUG, "** " __FUNCTION__ " : (A) Entering dir '%s'\n",
-	       e->fn);
-
+	SDDEBUG("(A) Entering dir '%s'\n", e->fn);
 	if (e->type == FILETYPE_ROOT) {
 	  loaddir[0] = '/';
 	  loaddir[1] = 0;
@@ -1069,13 +1136,11 @@ static void check_controller(entry_window_t * win)
 	    selected = 0;
 	  }
 	}
-	dbglog(DBG_DEBUG, "** " __FUNCTION__
-	       "  : cd '%s'\n", loaddir);
+	SDDEBUG("cd '%s'\n", loaddir);
 	loadlist = ~0; //~(selected <= 3 ? selected : 3);
       } else {
 	/* Other (should be FILETYPE_UNKNOWN) */
-	dbglog(DBG_DEBUG, "** " __FUNCTION__
-	       " : (A) nothing to do with [%s]\n", e->fn);
+	SDDEBUG("(A) nothing to do with [%s]\n", e->fn);
       }
     } else {
       /* A pressed in playlist : start/restart at index */
@@ -1113,9 +1178,8 @@ static void check_controller(entry_window_t * win)
   }
 
   if (loadlist) {
-    dbglog(DBG_DEBUG,
-	   "** " __FUNCTION__ " : Post load list, find '%s' at #%d\n",
-	   find_entry.fn, ~loadlist);
+    SDDEBUG("Post load list, find '%s' at #%d\n",
+	    find_entry.fn, ~loadlist);
     load_list = loadlist;
   }
   entrylist_sync(win->list, 0);
@@ -1164,32 +1228,34 @@ void songmenu_render(int elapsed_frames)
 
 int songmenu_start(void)
 {
-  dbglog(DBG_DEBUG,">> " __FUNCTION__ "\n");
-  
+  SDDEBUG(">> %s()\n", __FUNCTION__);
+  SDINDENT;
+
   running = 1;
   load_list = ~0;
   
   /* Entry loader thread */
-  dbglog(DBG_DEBUG,"** " __FUNCTION__ " : Starting loader thread\n");
+  SDDEBUG("Starting loader thread\n");
   
   loader_thd = thd_create(loader_thread, 0);
   if (loader_thd) {
-    dbglog(DBG_DEBUG,"** " __FUNCTION__
-	   " : OK loader thread [%p]:\n", loader_thd);
+    SDDEBUG("OK loader thread [%p]:\n", loader_thd);
     //    thd_set_prio(loader_thd, PRIO_DEFAULT / 2);
     thd_set_label((kthread_t *)loader_thd, "Loader-thd");
   } else {
-    dbglog(DBG_DEBUG,"** " __FUNCTION__ " : FAILED entry loader thread\n");
+    SDERROR("FAILED entry loader thread\n");
   }
   
-  dbglog(DBG_DEBUG,"<< " __FUNCTION__ "\n");
+  SDUNINDENT;
+  SDDEBUG("<< %s()\n", __FUNCTION__);
   return 0;
 }
 
 int songmenu_init(void)
 {
   int i;
-  dbglog(DBG_DEBUG,">> " __FUNCTION__ "\n");
+  SDDEBUG(">> %s()\n", __FUNCTION__);
+  SDINDENT;
   
   framecnt = 0;
   running = 0;
@@ -1203,34 +1269,19 @@ int songmenu_init(void)
   /* Set M3U driver */
   M3Udriver(&driver);
 
-#if 0
-  /* Get driver list */
-  {
-    inp_driver_t *d;
-
-    /* Set up drivers id */
-    dbglog(DBG_DEBUG,"** " __FUNCTION__ " : Setup driver ID\n");
-    for (d=(inp_driver_t *)inp_drivers.drivers, i=FILETYPE_PLAYABLE;
-	 d;
-	 d=(inp_driver_t *)d->common.nxt) {
-      d->id = i++;
-    }
-  }
-#endif
-
   /* Browser entries */
-  dbglog(DBG_DEBUG,"** " __FUNCTION__ " : Init browser entries\n");
-  if (entrylist_create(&direntry, 200, sizeof(entry)) < 0) {
+  SDDEBUG("Init browser entries\n");
+  if (entrylist_create(&direntry, 1024, sizeof(entry)) < 0) {
+    SDERROR("browser entry failed\n");
     return -1;
   }
-  dbglog(DBG_DEBUG,"** " __FUNCTION__ " : OK browser entries\n");
 
   /* Playlist entry */
-  dbglog(DBG_DEBUG,"** " __FUNCTION__ " : Init playlist entries\n");
+  SDDEBUG("Init playlist entries\n");
   if (entrylist_create(&playlist, 1500, sizeof(lst_entry)) < 0) {
+    SDERROR("playlist entry failed\n");
     return -1;
   }
-  dbglog(DBG_DEBUG,"** " __FUNCTION__ " : OK playlist entries\n");
   
   /* Attach window */
   for (i=0; i<2; ++i) {
@@ -1254,7 +1305,8 @@ int songmenu_init(void)
   playlist_start_idx = -1;
   songmenu_selected[0] = 0;
   
-  dbglog(DBG_DEBUG,"<< " __FUNCTION__ "\n");
+  SDUNINDENT; 
+  SDDEBUG("<< %s()\n", __FUNCTION__);
   return 0;
 }
 
@@ -1262,22 +1314,22 @@ int songmenu_init(void)
  */
 int songmenu_kill(void)
 {
-  dbglog(DBG_DEBUG,">> " __FUNCTION__ "\n");
+  SDDEBUG(">> %s()\n");
+  SDINDENT;
   
   if (loader_thd) {
     int cnt = 50000;
     
-    dbglog(DBG_DEBUG, "** " __FUNCTION__ " : ask loader thread to end.\n");
+    SDDEBUG("Ask loader thread to end.\n");
     running = 0;
     for (running=0; loader_thd && cnt; running=0, --cnt) {
       thd_pass();
     }
-    dbglog(DBG_DEBUG,"** " __FUNCTION__ " : Count down : %d\n", cnt);
+    SDDEBUG("Count down : %d\n", cnt);
   }
   
   if (loader_thd) {
-    dbglog(DBG_DEBUG,"** " __FUNCTION__
-	   " : Explicit kill of loader thread.\n");
+    SDWARNING("Explicit kill of loader thread.\n");
     thd_destroy((kthread_t *)loader_thd);
     loader_thd = 0;
   }
@@ -1285,8 +1337,9 @@ int songmenu_kill(void)
   running = 0;
   entrylist_kill(&direntry);
   entrylist_kill(&playlist);
-  dbglog(DBG_DEBUG,"<< " __FUNCTION__ "\n");
 
+  SDUNINDENT; 
+  SDDEBUG("<< %s()\n", __FUNCTION__);
   return 0;
 }
 
