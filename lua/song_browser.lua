@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.26 2003-01-25 11:37:44 ben Exp $
+--- $Id: song_browser.lua,v 1.27 2003-01-25 17:26:03 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -723,8 +723,8 @@ function song_browser_create(owner, name)
    end
 
    function sbpl_remove(sb,pos)
-      pos = pos or (sb.pl.pos + 1)
-      if pos > 0 and pos <= sb.pl.dir.n then
+      pos = sb.pl:get_pos(pos)
+      if pos then
 	 if sb.playlist_idx and pos <= sb.playlist_idx then
 	    sb.playlist_idx = sb.playlist_idx - 1
 	 end
@@ -750,7 +750,46 @@ function song_browser_create(owner, name)
       return result
    end
 
-
+   function sbpl_shuffle(sb)
+      local dir = sb.pl.dir
+      if not dir or (dir.n or 0) < 1 then return end
+      local n = dir.n
+      local pos = sb.pl:get_pos() or 0
+      local i,j,idx
+      local locate = nil
+      
+      local order = {}
+      for i=1,n do
+	 local idx = n-i+1 -- random() here
+	 while order[idx] do
+	    for j=idx+1,n do
+	       if not order[j] then
+		  idx = j
+		  j = n
+	       end
+	    end
+	    if order[idx] then idx = 0 end
+	 end
+	 order[idx] = dir[i]
+	 locate = locate or (i == pos and idx)
+      end
+      
+      if getn(order) ~= n then
+	 print("[shuffle] : bad number of entry : "..getn(order).."~="..n)
+	 return
+      end
+      
+      for i=1,n do
+	 if not order[i] then
+	    print("[shuffle] : missing idx "..i)
+	    return
+	 end
+      end
+      
+      sb.pl:change_dir(order, locate)
+   end
+   
+   
    function sbpl_confirm(pl, sb)
       sbpl_run(sb)
    end
@@ -783,6 +822,10 @@ function song_browser_create(owner, name)
 		   local sb = menu.root_menu.target
 		   sbpl_save(sb,menu)
 		end,
+	 shuffle = function (menu)
+		      local sb = menu.root_menu.target
+		      sbpl_shuffle(sb)
+		   end,
       }
 	 
       local def = {

@@ -1,5 +1,5 @@
 /**
- * $Id: vmu68.c,v 1.11 2003-01-03 07:06:32 ben Exp $
+ * $Id: vmu68.c,v 1.12 2003-01-25 17:26:03 ben Exp $
  */
 #include "config.h"
 
@@ -67,6 +67,7 @@ static int last_valid = 0;
 static int fontInit = 0;
 static uint8 font[40][64 / 8];
 
+static unsigned int scroll_len;
 static int titleInit = 0;
 static uint8 title[32][48 / 8];
 static uint8 vmutmp[32][48 / 8];
@@ -571,42 +572,42 @@ void vmu_lcd_update(/*int *spl, int nbSpl, int splFrame*/)
   }
 
   if (info->valid != last_valid) {
+    scroll_len = strlen(info_str);
     last_valid = info->valid;
-    scroll = 0;
     invert = 0;
   }
 
   memset(vmutmp, 0, sizeof(vmutmp));
 
   if (1) {
-    const int spd = 64;
+    const unsigned int spd = 64;
     char tmp[48 * 5];
     int col, idx, x, c, rem, scr;
 
     scr = (scroll * spd) >> 8;
-
     col = scr & 3;
     idx = scr >> 2;
+    if (idx >= scroll_len) {
+      idx = 0;
+      scroll = 0;
+    }
 
     x = 0;
-    if ((c = info_str[idx++])) {
+    if (c = info_str[idx++], c) {
       put_byte_char(tmp, c, col, 4);
       x = 4 - col;
-      while ((48 - x) >= 4 && (c = info_str[idx++])) {
+      while ((48 - x) >= 4 && (c = info_str[idx++], c)) {
 	put_byte_char(tmp + x, c, 0, 4);
 	x += 4;
       }
 
       rem = 48 - x;
-      if (c && rem && (c = info_str[idx++])) {
+      if (c && rem && (c = info_str[idx++], c)) {
 	put_byte_char(tmp + x, c, 0, rem);
 	x += rem;
       }
-
-      ++scroll;
-    } else {
-      scroll = 0;
     }
+    ++scroll;
 
     while (x < 48) {
       tmp[x + 0 * 48] = tmp[x + 1 * 48] =

@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.18 2003-01-17 13:23:28 ben Exp $
+ * $Id: playa.c,v 1.19 2003-01-25 17:26:03 ben Exp $
  */
 
 #include <kos.h>
@@ -119,7 +119,7 @@ static void fade(int *d, int n)
   }
   fade_v = v;
   if (!fade_step) {
-    SDDEBUG("Fade %d stop\n", fade_ms);
+/*     SDDEBUG("Fade %d stop\n", fade_ms); */
     fade_ms = 0;
   }
 }
@@ -171,12 +171,12 @@ static void * sndstream_callback(int size)
         /* We reach the new music in the fifo.
 	   We had to change stream_parameters */
         if (next_frq != current_frq) {
-          SDDEBUG("[%s] :  On the fly sampling change : %d->%d\n",
-		  __FUNCTION__, current_frq, next_frq);
+/*           SDDEBUG("[%s] :  On the fly sampling change : %d->%d\n", */
+/* 		  __FUNCTION__, current_frq, next_frq); */
           stream_frq(current_frq = next_frq);
         }
         play_samples = -pbs-n;
-	SDDEBUG("New sample count:%u\n", play_samples+n);
+/* 	SDDEBUG("New sample count:%u\n", play_samples+n); */
         pbs = 0;
       }
       play_samples_start = pbs;
@@ -289,7 +289,7 @@ static void real_playa_update(void)
       }
 
       if (status & INP_DECODE_INFO) {
-	/* 		SDDEBUG("Driver change INFO\n"); */
+/* 	SDDEBUG("Driver change INFO : %x\n", info.update_mask); */
 	playa_info_update(&info);
       }
 

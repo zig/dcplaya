@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.63 2003-01-20 20:44:09 ben Exp $
+ * @version    $Id: dynshell.c,v 1.64 2003-01-25 17:26:03 ben Exp $
  */
 
 #include <stdio.h>
@@ -1351,7 +1351,7 @@ static int convert_info(lua_State * L, playa_info_t * info, int update)
   return 1;
 }
 
-/* [file, [track]] */ 
+/* update | [file, [track]] */ 
 static int lua_music_info(lua_State * L)
 {
   int err;

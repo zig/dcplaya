@@ -4,7 +4,7 @@
  * @date      2002/09/20
  * @brief     mikmod input plugin for dcplaya
  *
- * $Id: mikmod_driver.c,v 1.4 2002-11-14 23:40:27 benjihan Exp $
+ * $Id: mikmod_driver.c,v 1.5 2003-01-25 17:26:03 ben Exp $
  */
 
 #include <stdio.h>
@@ -336,10 +336,14 @@ static int disk_info(playa_info_t *info, MODULE * mod)
   //  SDDEBUG("%s(%p,%p)\n", __FUNCTION__, info, mod);
 
   if (!mod) {
+/*     SDDEBUG("[%s] : update track only\n", __FUNCTION__); */
     return update_info(info, Player_GetModule(), tmp);
   }
 
+/*   SDDEBUG("[%s] : update all\n", __FUNCTION__); */
+
   if (update_info(info, mod, tmp)) {
+/*     SDDEBUG("[%s] : failed all\n", __FUNCTION__); */
     return -1;
   }
 
@@ -368,8 +372,11 @@ static int file_info(playa_info_t *info, const char *fname)
   int err;
   MODULE * mod;
 
-  err = disk_info(info,  mod = dc_load_mod(fname));
-  if (mod) {
+  mod = dc_load_mod(fname);
+  if (!mod) {
+    err = -1;
+  } else {
+    err = disk_info(info,  mod);
     free(mod);
   }
 
@@ -382,7 +389,7 @@ static int info(playa_info_t *info, const char *fname)
   if (fname) {
     return file_info(info, fname);
   } else {
-    return disk_info(info, 0);
+    return disk_info(info, Player_GetModule());
   }
 }
 

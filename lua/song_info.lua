@@ -4,7 +4,7 @@
 --- @date    2002/11/29
 --- @brief   Song info application.
 ---
---- $Id: song_info.lua,v 1.15 2003-01-03 13:39:57 ben Exp $
+--- $Id: song_info.lua,v 1.16 2003-01-25 17:26:03 ben Exp $
 
 song_info_loaded = nil
 
@@ -87,6 +87,49 @@ function song_info_create(owner, name, style)
    --- Default song-info update.
    --- @internal
    --
+   function song_info_update_info(si, update)
+      si.info = playa_info(update)
+      if si.info and si.info.valid then
+	 local i,v
+	 for i,v in si.info do
+	    if (si.info_fields[i]) then
+	       if type(v) ~= type(si.info_fields[i].value) or
+		  v ~= si.info_fields[i].value then
+		  si.info_fields[i].value = v
+		  song_info_draw_field(si,si.info_fields[i])
+	       end
+	    end
+	 end
+
+	 if si.info.comments then
+	    si.sinfo_default_comments = nil
+	 elseif not si.sinfo_default_comments then
+	       si.sinfo_default_comments = "***  < Welcome to DCPLAYA >           ***       <The ultimate music player for Dreamcast>         ***        < (C)2002 Benjamin Gerard >           ***             < Main programming : Benjamin Gerard and Vincent Penne >"
+	       si.info.comments = si.sinfo_default_comments
+	 end
+	 
+	 if si.info.comments then
+	    local x
+	    local w,h = dl_measure_text(si.info_comments.dl,
+					si.info.comments)
+	    si.info_comments.text_w = w
+	    si.info_comments.scroll = -32
+	    local mat = dl_get_trans(si.info_comments.dl)
+	    mat[4][1] = si.info_comments.w
+	    dl_set_trans(si.info_comments.dl,mat)
+	    dl_clear(si.info_comments.dl)
+	    local c = si.label_color
+	    dl_draw_text(si.info_comments.dl, 0,0,0,
+			 c[1],c[2],c[3],c[4],
+			 si.info.comments)
+	 end
+      end
+   end
+
+
+   --- Default song-info update.
+   --- @internal
+   --
    function song_info_update(si, frametime)
 
       -- 	  if dl_get_active(si.icon_dl) == 1 then 
@@ -163,38 +206,8 @@ function song_info_create(owner, name, style)
 	 else
 	    dl_set_active2(si.info_dl,si.help_dl,1)
 	    if not si.info or playa_info_id() ~= si.info.valid then
-	       si.info = playa_info()
-	       if si.info and si.info.valid then
-		  local i,v
-		  for i,v in si.info_fields do
-		     print("update "..i..":" .. tostring(si.info[i]))
-		     v.value = si.info[i]
-		     song_info_draw_field(si,v)
-		  end
-		  
-		  if not si.info.comments then
-		     si.info.comments =
-			"***  < Welcome to DCPLAYA >           ***       <The ultimate music player for Dreamcast>         ***        < (C)2002 Benjamin Gerard >           ***             < Main programming : Benjamin Gerard and Vincent Penne >"
-		  end
-		  
-		  if si.info.comments then
-		     local x
-		     local w,h = dl_measure_text(si.info_comments.dl,
-						 si.info.comments)
-		     si.info_comments.text_w = w
-		     si.info_comments.scroll = -32
-		     local mat = dl_get_trans(si.info_comments.dl)
-		     mat[4][1] = si.info_comments.w
-		     dl_set_trans(si.info_comments.dl,mat)
-		     dl_clear(si.info_comments.dl)
-		     local c = si.label_color
-		     dl_draw_text(si.info_comments.dl, 0,0,0,
-				  c[1],c[2],c[3],c[4],
-				  si.info.comments)
-		  end
-		  
-	       else
-	       end
+	       song_info_update_info(si,1)
+	    else
 	    end
 	 end
 
@@ -338,7 +351,7 @@ function song_info_create(owner, name, style)
        }, target)
       return def
    end
-
+   
    si = {
       -- Application
       name = name,
@@ -599,6 +612,7 @@ function song_info_create(owner, name, style)
    dl_set_clipping(si.info_dl, 0, 0, si.info_comments.w , 0)
    dl_sublist(si.info_dl, si.info_comments.dl)
 
+   song_info_update_info(si,1)
    si:set_color(0, 1, 1, 1)
    si:draw()
    si:open()
