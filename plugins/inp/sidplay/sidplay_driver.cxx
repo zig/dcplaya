@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/09/03
  * @brief     sidplay input plugin for dcplaya
- * @version   $Id: sidplay_driver.cxx,v 1.4 2002-09-21 05:15:47 benjihan Exp $
+ * @version   $Id: sidplay_driver.cxx,v 1.5 2002-09-21 09:55:35 benjihan Exp $
  */
 
 /* generated config include */
@@ -29,6 +29,7 @@ extern "C" {
 #include "inp_driver.h"
 #include "fifo.h"
 #include "playa.h"
+#include "gzip.h"
 };
 
 extern "C" {
@@ -151,39 +152,19 @@ static int shutdown(any_driver_t *d)
 
 static int load_sid(const char *fn)
 {
-  int fd = 0;
-
   if (sidbuffer) {
     delete sidbuffer;
     sidbuffer = 0;
   }
 
-  fd = fs_open(fn, O_RDONLY);
-  if (!fd) {
-    goto error;
-  }
-
-  sidbuffer_len = fs_total(fd);
-  if (sidbuffer_len < 128) {
-    goto error;
-  }
-
-  sidbuffer = new ubyte [sidbuffer_len];
+  sidbuffer = (ubyte *)gzip_load(fn, &sidbuffer_len);
   if (!sidbuffer) {
     goto error;
   }
 
-  if (fs_read(fd, sidbuffer, sidbuffer_len) != (unsigned int)sidbuffer_len) {
-    goto error;
-  }
-
-  fs_close(fd);
   return 0;
 
  error:
-  if (fd) {
-    fs_close(fd);
-  }
   if (sidbuffer) {
     delete sidbuffer;
     sidbuffer = 0;
@@ -381,7 +362,12 @@ inp_driver_t sidplay_driver =
   /* Input driver specific */
   
   0,                      /**< User Id */
-  ".sid\0.psid\0.c64\0",  /**< EXtension list */
+  ".sid\0"                /**< Extension list */
+  ".sid.gz\0"
+  ".psid\0"
+  ".psid.gz\0"
+  ".c64\0"
+  "c64.gz\0",
 
   start,
   stop,
