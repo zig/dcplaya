@@ -1,5 +1,5 @@
 
-$Id: TODO,v 1.20 2002-10-04 20:59:16 benjihan Exp $
+$Id: TODO,v 1.21 2002-10-08 08:25:16 benjihan Exp $
 
 ** TODO :
 
@@ -155,3 +155,6 @@ $Id: TODO,v 1.20 2002-10-04 20:59:16 benjihan Exp $
 
 - [2002-10-04 11:01:13 PM, ben]
   Add page up page down event
+
+- [2002-10-08 06:30:04 AM, ben]
+  Gui inactive mode does not seem to work.
