@@ -2,9 +2,11 @@
 
 #include <kos.h>
 #include <dc/maple.h>
+#include <dc/cdrom.h>
 
 #include "controler.h"
 #include "sysdebug.h"
+
 
 #define CONTROLER_NO_SMOOTH_FRAMES  50      /* > 2 */
 #define CONTROLER_SMOOTH_FACTOR     0x6000  /* [0..65536] */
@@ -50,7 +52,7 @@ static void clear_all_cond(void)
 {
   controler_t * cont;
   for (cont=controlers; cont<controlers+MAX_CONTROLER; ++cont) {
-	clear_cond(&cont->cond);
+    clear_cond(&cont->cond);
   }
 }
 
@@ -64,27 +66,27 @@ static void controler_get(void)
   /* Scanning mapple bus until max controler found. */
   for (controler_connected =cur_cont = port = 0; port < 4; ++port) {
     for (unit=0; unit<6 && cur_cont < MAX_CONTROLER; ++unit) {
-	  int func = maple_device_func(port, unit);
+      int func = maple_device_func(port, unit);
       if ((func & (MAPLE_FUNC_CONTROLLER|MAPLE_FUNC_KEYBOARD)) ==
-		  MAPLE_FUNC_CONTROLLER) {
-		int adr = maple_create_addr(port, unit);
-		cont_get_cond(adr, &controlers[cur_cont].cond);
-		controlers[cur_cont].connected = 1;
-		controlers[cur_cont].port = port;
-		controlers[cur_cont].unit = unit;
-		controler_connected |= 1<<cur_cont;
-		if (++cur_cont >= MAX_CONTROLER) {
-		  goto out;
-		}
-	  }
+	  MAPLE_FUNC_CONTROLLER) {
+	int adr = maple_create_addr(port, unit);
+	cont_get_cond(adr, &controlers[cur_cont].cond);
+	controlers[cur_cont].connected = 1;
+	controlers[cur_cont].port = port;
+	controlers[cur_cont].unit = unit;
+	controler_connected |= 1<<cur_cont;
+	if (++cur_cont >= MAX_CONTROLER) {
+	  goto out;
 	}
+      }
+    }
   }
  out:  
   /* Disconect others controlers. */
   while (cur_cont < MAX_CONTROLER) {
-	controlers[cur_cont].connected = 0;
-	clear_cond(&controlers[cur_cont].cond);
-	++cur_cont;
+    controlers[cur_cont].connected = 0;
+    clear_cond(&controlers[cur_cont].cond);
+    ++cur_cont;
   }
 }
 
@@ -92,9 +94,9 @@ static int rescale(int v, const int dead, const int shift)
 {
   v -= dead;
   if (v < 0) {
-	v = 0;
+    v = 0;
   } else {
-	v = (v << shift) / ((1<<shift) - dead);
+    v = (v << shift) / ((1<<shift) - dead);
   }
   return v;
 }
@@ -104,15 +106,15 @@ static int rescale2(int v, const int dead, const int shift)
   const int max = 1 << shift;
 
   if (v > max-dead && v < max+dead) {
-	v = 0;
+    v = 0;
   } else {
-	v = ((max-v) << shift) / ((1<<shift) - dead);
+    v = ((max-v) << shift) / ((1<<shift) - dead);
   }
   return v;
 }
 
 static void fill_controler_state(controler_state_t * state, controler_t * cont,
-								 uint32 elapsed)
+				 uint32 elapsed)
 {
   const cont_cond_t * cond = &cont->cond;
   cont_cond_t * oldcond = &cont->oldcond;
@@ -121,8 +123,8 @@ static void fill_controler_state(controler_state_t * state, controler_t * cont,
   state->buttons = ~cond->buttons;
   state->buttons_change = cond->buttons ^ oldcond->buttons;
   
-/*   state->rtrig = (cond->rtrig < CONTROLER_TRIG_DEAD) ? 0 : cond->rtrig; */
-/*   state->ltrig = (cond->ltrig < CONTROLER_TRIG_DEAD) ? 0 : cond->ltrig; */
+  /*   state->rtrig = (cond->rtrig < CONTROLER_TRIG_DEAD) ? 0 : cond->rtrig; */
+  /*   state->ltrig = (cond->ltrig < CONTROLER_TRIG_DEAD) ? 0 : cond->ltrig; */
   state->rtrig = rescale(cond->rtrig,CONTROLER_TRIG_DEAD,8);
   state->ltrig = rescale(cond->ltrig,CONTROLER_TRIG_DEAD,8);
 
@@ -136,8 +138,8 @@ static void fill_controler_state(controler_state_t * state, controler_t * cont,
 }
 
 static void controler_smooth(uint32 factor,
-							 cont_cond_t * cond,
-							 const cont_cond_t * oldcond)
+			     cont_cond_t * cond,
+			     const cont_cond_t * oldcond)
 {
   uint32 oofactor = 65536 - factor;
   cond->rtrig = (cond->rtrig * factor + oldcond->rtrig * oofactor) >> 16;
@@ -153,19 +155,27 @@ extern int kbd_poll_repeat(uint8 addr, int elapsed_frame);
 
 static void controler_thread(void * dummy)
 {
+  static int check_cdrom = 0;
   while (status != QUIT) {
 
     uint32 frame = ta_state.frame_counter;
     uint32 elapsed_frame = last_frame;
     int keyboard_addr;
-	controler_t * cont;
-	uint32 factor = 65536;
+    controler_t * cont;
+    uint32 factor = 65536;
 	
     elapsed_frame = frame - elapsed_frame;
 
     if (elapsed_frame) {
       static int report = 0;
       int oldfunc;
+
+      /* $$$ ben : add this here because I am too lazy for creating another
+	 thread. */
+      if ((check_cdrom+=elapsed_frame) > 10) {
+	check_cdrom = 0;
+	cdrom_check();
+      }
 
       spinlock_lock(&controler_mutex);
 
@@ -174,43 +184,43 @@ static void controler_thread(void * dummy)
       /* first unit of given port */
       maple_rescan_unit(0, report, 0);
       if (maple_device_func(report, 0) != oldfunc) {
-		int unit;
-		/* rescan also other units of same port if some change happened */
-		for (unit=1; unit<6; unit++)
-		  maple_rescan_unit(0, report, unit);
+	int unit;
+	/* rescan also other units of same port if some change happened */
+	for (unit=1; unit<6; unit++)
+	  maple_rescan_unit(0, report, unit);
       }
 
       if (++report >= 4) {
-		report = 0;
-	  }
+	report = 0;
+      }
 	  
       /* Get controler cond, scan for current number of controler ... */
       controler_get();
 	  
       if (elapsed_frame < CONTROLER_NO_SMOOTH_FRAMES) {
-		int i;
-		factor = 65536 - CONTROLER_SMOOTH_FACTOR;
-		/* $$$ ben : this this a crap method to perform a power ! */
-		for (i=1; i<elapsed_frame; ++i) {
-		  factor = (factor * factor) >> 16;
-		}
-		factor = 65536 - factor;
-	  }
+	int i;
+	factor = 65536 - CONTROLER_SMOOTH_FACTOR;
+	/* $$$ ben : this this a crap method to perform a power ! */
+	for (i=1; i<elapsed_frame; ++i) {
+	  factor = (factor * factor) >> 16;
+	}
+	factor = 65536 - factor;
+      }
 
-	  /* Fill controler state */
-	  for (cont=controlers; cont<controlers+MAX_CONTROLER; ++cont) {
-		if (!cont->connected) continue;
-		if (factor < 65536) {
-		  controler_smooth(factor, &cont->cond, &cont->oldcond);
-		}
-		fill_controler_state(&cont->state, cont, elapsed_frame);
-	  }
+      /* Fill controler state */
+      for (cont=controlers; cont<controlers+MAX_CONTROLER; ++cont) {
+	if (!cont->connected) continue;
+	if (factor < 65536) {
+	  controler_smooth(factor, &cont->cond, &cont->oldcond);
+	}
+	fill_controler_state(&cont->state, cont, elapsed_frame);
+      }
 	  
       /* keyboard */
       keyboard_addr = maple_first_kb();
       if (keyboard_addr) {
-		kbd_poll_repeat(keyboard_addr, ta_state.frame_counter - last_frame);
-	  }
+	kbd_poll_repeat(keyboard_addr, ta_state.frame_counter - last_frame);
+      }
 	  
       last_frame = frame;
       spinlock_unlock(&controler_mutex);
@@ -232,20 +242,20 @@ int controler_init(void)
   SDINDENT;
 
   spinlock_init(&controler_mutex);
-/*   SDDEBUG("GetControler, frame=%u\n", frame); */
+  /*   SDDEBUG("GetControler, frame=%u\n", frame); */
 
   cond_connected_mask = -1;
   last_frame = ta_state.frame_counter;
   controler_get();
   for (cont=controlers; cont<controlers+MAX_CONTROLER; ++cont) {
-	cont->last_frame = last_frame;
-	cont->oldcond = cont->cond;
+    cont->last_frame = last_frame;
+    cont->oldcond = cont->cond;
   }
 
   status = RUNNING;
   controler_thd = thd_create(controler_thread, 0);
   if (controler_thd) {
-	thd_set_label(controler_thd, "Controler-thd");
+    thd_set_label(controler_thd, "Controler-thd");
   }
   
   SDUNINDENT;
@@ -268,7 +278,7 @@ int controler_read(controler_state_t * state, unsigned int idx)
   int connected;
   
   if (idx >= MAX_CONTROLER) {
-	return -1;
+    return -1;
   }
 
   cont = controlers + idx;

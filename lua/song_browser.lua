@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.20 2003-01-03 19:05:39 ben Exp $
+--- $Id: song_browser.lua,v 1.21 2003-01-06 19:41:13 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -417,11 +417,9 @@ function song_browser_create(owner, name)
       
       if entry.size and entry.size==-1 then
 	 print(fl.dir[idx].file,entry_path)
-	 if entry_path == "/cd" or 
-	    (strfind(entry_path,"^/cd.*") and fl.dir[idx].file == ".")  then
+	 if strfind(entry_path,"^/cd.*") and fl.dir[idx].file == "."  then
 	    clear_cd_cache()
 	 end
-
 	 entrylist_load(fl.dir,entry_path)
 	 fl:change_dir(fl.dir)
       else
