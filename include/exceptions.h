@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Exceptions and guardians handling
  *
- * @version    $Id: exceptions.h,v 1.5 2003-03-26 23:02:47 ben Exp $
+ * @version    $Id: exceptions.h,v 1.6 2003-04-20 02:23:20 vincentp Exp $
  */
 
 
@@ -68,7 +68,9 @@ extern void irq_dump_regs(int , int);
  * @{ 
  */
 
-/** Start a protected section. */
+/** Start a protected section.
+  * @warning : it is FORBIDEN to do "return" inside a guarded section,
+    use EXPT_GUARD_RETURN instead. */
 #define EXPT_GUARD_BEGIN                                  \
   if (1) {                                                \
     thd_current->expt_guard_stack_pos++;                               \
@@ -88,6 +90,13 @@ extern void irq_dump_regs(int , int);
     }                                                     \
     thd_current->expt_guard_stack_pos--;                  \
   } else
+
+/** Return in middle of a guarded section. 
+    @warning : to be used exclusively inbetween EXPT_GUARD_BEGIN and
+    EXPT_GUARD_END. Never use normal "return" in this case. */
+#define EXPT_GUARD_RETURN                                 \
+  thd_current->expt_guard_stack_pos--;                    \
+  return
 
 /**@}*/
 

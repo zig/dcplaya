@@ -5,7 +5,7 @@
  * @author  Dan Potter
  * @brief   ELF library loader - Based on elf.c from KallistiOS 1.1.5 
  *
- * @version $Id: lef.c,v 1.15 2003-03-10 22:55:35 ben Exp $
+ * @version $Id: lef.c,v 1.16 2003-04-20 02:23:20 vincentp Exp $
  */
 
 #include <malloc.h>
@@ -536,7 +536,8 @@ info = section header index of section to which reloc applies
 	/* Undefined symbol must be searched in the main symbol table */
 	main_addr = find_main_sym(name);
 	if (!main_addr) {
-	  SDERROR("Undefined symbol [%s]\n", name);
+	  /*SDERROR("Undefined symbol [%s]\n", name);*/
+	  printf("Undefined symbol [%s]\n", name);
 	  display_symb(symtab + sym, 0, 0);
 	  ++errors;
 	  continue;	  

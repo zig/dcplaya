@@ -1,5 +1,5 @@
 /*
- * $Id: spc_driver.c,v 1.8 2003-04-19 23:53:48 vincentp Exp $
+ * $Id: spc_driver.c,v 1.9 2003-04-20 02:22:57 vincentp Exp $
  */
 
 #include "dcplaya/config.h"
@@ -24,8 +24,8 @@ volatile static int ready; /**< Ready flag : 1 when music is playing */
 
 /** SPC config */
 static SPC_Config spc_config = {
-  26800,
-  //  16000,
+  //26800,
+  16000,
   //  44100,
   16,
   2,
@@ -125,7 +125,7 @@ static int start(const char *fn, int track, playa_info_t *info)
   buf_cnt = buf_size;
   ready = 1;
 
-  return 0;
+  EXPT_GUARD_RETURN 0;
 
  error:
   stop();
@@ -143,7 +143,7 @@ static int decoder(playa_info_t *info)
   EXPT_GUARD_BEGIN;
 
   if (!ready) {
-    return INP_DECODE_ERROR;
+    EXPT_GUARD_RETURN INP_DECODE_ERROR;
   }
         
   if (buf_cnt >= buf_size) {
@@ -155,7 +155,7 @@ static int decoder(playa_info_t *info)
   if (n > 0) {
     buf_cnt += n;
   } else if (n < 0) {
-    return INP_DECODE_ERROR;
+    EXPT_GUARD_RETURN INP_DECODE_ERROR;
   }
 
 
@@ -200,7 +200,7 @@ static int id_info(playa_info_t *info, SPC_ID666 * idinfo)
     idinfo = &spcinfo;
   }
   if (! idinfo->valid) {
-    return -1;
+    EXPT_GUARD_RETURN -1;
   }
 
   info->valid   = 0;
@@ -239,9 +239,9 @@ static int info(playa_info_t *info, const char *fname)
     SPC_ID666 id666;
 
     SPC_get_id666(fname, &id666);
-    return id_info(info, &id666);
+    EXPT_GUARD_RETURN id_info(info, &id666);
   } else {
-    return id_info(info, 0);
+    EXPT_GUARD_RETURN id_info(info, 0);
   }
 
   EXPT_GUARD_CATCH;

@@ -128,7 +128,7 @@ int SPC_set_state(SPC_Config *cfg)
     return so.buffer_size;
 }
 
-#include <kos.h>
+//#include <kos.h>
 
 /* get samples
    ---------------------------------------------------------------- */
@@ -137,7 +137,7 @@ void SPC_update(unsigned char *buf)
   // APU_LOOP
   int c, ic;
 
-  vid_border_color(255, 0, 0);
+  //vid_border_color(255, 0, 0);
 #if 1
   for (c = 0; c < 2048000 / 32 / RATE; c ++) {
     if (IAPU.Slowdown > 0) {
@@ -163,9 +163,9 @@ void SPC_update(unsigned char *buf)
   }
 #endif
 
-  vid_border_color(255, 255, 0);
+  //vid_border_color(255, 255, 0);
   S9xMixSamples ((unsigned char *)buf, samples_per_mix);
-  vid_border_color(0, 0, 0);
+  //vid_border_color(0, 0, 0);
 
 }
 
