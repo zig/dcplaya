@@ -4,7 +4,7 @@
  *  @date     2003/01/21
  *  @brief    floating point macros and defines
  *
- * $Id: math_float.h,v 1.5 2003-01-28 06:38:18 ben Exp $
+ * $Id: math_float.h,v 1.6 2003-02-03 19:38:23 ben Exp $
  */
 
 #ifndef _MATH_FLOAT_H_
@@ -50,7 +50,7 @@
 #define Fblend(A,B,F) __mf_blend((A),(B),(F))
 #define FnearZero(A) __mf_near_zero((A))
 #define Fsign(A) ((A)<0)
-
+#define Fmod(A,B) fmod((A),(B))
 
 inline static float __mf_sq(const float a) {
   return a * a;

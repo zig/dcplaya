@@ -4,11 +4,11 @@
  * @author   Vincent Penne
  * @author   benjamin gerard <ben@sashipa.com>
  * @date     2002/08/17
- * @brief    dreammp3 visual plugin - fftvlr.
+ * @brief    dcplaya visual plugin - fftvlr.
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.25 2003-01-25 11:37:44 ben Exp $
+ * $Id: fftvlr.c,v 1.26 2003-02-03 19:38:23 ben Exp $
  */
 
 #include <stdlib.h>
@@ -232,9 +232,10 @@ static int fftvlr_start(void)
     return -1;
   }
 
+  /* Setup invisible face */
   tri[k].a = tri[k].b = tri[k].c = 0;
-  tri[k].flags = 1; /* Setup invisible face */
-  tlk[k].a = tlk[k].b = tlk[k].c = i;
+  tri[k].flags = 1;
+  tlk[k].a = tlk[k].b = tlk[k].c = k;
   tlk[k].flags = 0;
 
   /* More verify */
@@ -370,7 +371,7 @@ static void vlr_update(void)
       *(int*)&n->w = argb4(aa + coef * la, ar + coef * lr,
 			   ag + coef * lg, ab + coef * lb);
     }
-    *(int*)&nrm[i].w = -1;
+/*     *(int*)&nrm[i].w = -1; */
   }
 }
 

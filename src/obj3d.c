@@ -4,7 +4,7 @@
  * @date    2002/02/12
  * @brief   Very simple 3D API.
  *
- * @version $Id: obj3d.c,v 1.9 2003-01-24 10:48:40 ben Exp $
+ * @version $Id: obj3d.c,v 1.10 2003-02-03 19:38:23 ben Exp $
  */
 
 #include <stdio.h>
@@ -37,6 +37,25 @@ void FaceNormal(float *d, const vtx_t * v, const tri_t *t)
   vtx_sub3(&B,a,c);
   vtx_cross_product3(D,&A,&B);
   vtx_normalize(D);
+}
+
+
+static void ReverseFaces(obj_t *o)
+{
+  if (o) {
+    int i;
+    for (i=0; i<o->nbf; ++i) {
+      if (o->tri) {
+	swap (&o->tri[i].a, &o->tri[i].b);
+      }
+      if (o->tlk) {
+	swap (&o->tlk[i].b, &o->tlk[i].c);
+	o->tlk[i].flags = ((o->tlk[i].flags&1))
+	  | ((o->tlk[i].flags&2)<<1)
+	  | ((o->tlk[i].flags&4)>>1);
+      }
+    }
+  }
 }
 
 static void ResizeAndCenter(obj_t *o, const float w)
@@ -102,25 +121,32 @@ static void ResizeAndCenter(obj_t *o, const float w)
   }
 
   // Transform all
-  for (i=0; i<o->nbv; ++i) {
-    float tmp;
-    for (j=0; j<3; ++j) {
-      (&o->vtx[i].x)[j] = ((&o->vtx[i].x)[j] - c[j]) * s;
-    }
-    tmp = o->vtx[i].z;
-    o->vtx[i].z = o->vtx[i].y;
-    o->vtx[i].y = tmp;
+  {
+    matrix_t mtx,mtx2;
+    MtxIdentity(mtx);
+    MtxTranslate(mtx, -c[0], -c[1], -c[2]);
+    MtxScale3(mtx, s,s,s);
+    MtxIdentity(mtx2);
+    mtx2[1][1] = mtx2[2][2] = 0;
+    mtx2[2][1] = mtx2[1][2] = -1;
+    MtxMult(mtx,mtx2);
+    
+    MtxVectorsMult(&o->vtx->x, &o->vtx->x, mtx, o->nbv,
+      sizeof(*o->vtx),sizeof(*o->vtx));
   }
+/*   for (i=0; i<o->nbv; ++i) { */
+/*     float tmp; */
+/*     for (j=0; j<3; ++j) { */
+/*       (&o->vtx[i].x)[j] = ((&o->vtx[i].x)[j] - c[j]) * s; */
+/*     } */
+/*     tmp = o->vtx[i].z; */
+/*     o->vtx[i].z = o->vtx[i].y; */
+/*     o->vtx[i].y = tmp; */
+/*   } */
 
   // Inverse face def
   if (0) {
-    for (i=0; i<o->nbf; ++i) {
-      swap (&o->tri[i].a, &o->tri[i].b);
-      swap (&o->tlk[i].b, &o->tlk[i].c);
-      o->tlk[i].flags = ((o->tlk[i].flags&1))
-	| ((o->tlk[i].flags&2)<<1)
-	| ((o->tlk[i].flags&4)>>1);
-    }
+    ReverseFaces(o);
   }
 }
 
@@ -325,6 +351,15 @@ static int verify_normals(obj_t * o)
   }
   SDDEBUG("- normal [PASSED]\n");
   
+  return 0;
+}
+
+int obj3d_reverse_faces(obj_t *o)
+{
+  if (!o) {
+    return -1;
+  }
+  ReverseFaces(o);
   return 0;
 }
 
