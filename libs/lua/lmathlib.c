@@ -1,5 +1,5 @@
 /*
-** $Id: lmathlib.c,v 1.2 2002-09-14 00:47:13 zig Exp $
+** $Id: lmathlib.c,v 1.3 2002-12-26 07:14:41 ben Exp $
 ** Standard mathematical library
 ** See Copyright Notice in lua.h
 */
@@ -171,7 +171,7 @@ static int math_random (lua_State *L) {
 
 #if 1
 # warning "TODO !!"
-# define RAND_MAX 65535
+# define RAND_MAX 0xFFFFFFu
   double r = (double)(rand()%RAND_MAX) / (double)RAND_MAX;
 #else
   double r = 0;
