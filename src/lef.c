@@ -1,17 +1,17 @@
-/* KallistiOS 1.1.5
-
-elf.c
-(c)2000-2001 Dan Potter
-*/
-
-static char id[] = "KOS $Id: lef.c,v 1.1 2002-08-26 14:15:03 ben Exp $";
+/**
+ * @file    lef.c
+ * @brief   ELF loader - Based on elf.c from KallistiOS 1.1.5 
+ * @author  Benjamin Gerard <ben@sashipa.com>
+ * @author  Vincent Penne
+ * @author  Dan Potter
+ *
+ * $Id: lef.c,v 1.2 2002-09-04 02:39:37 ben Exp $
+ */
 
 #include <malloc.h>
 #include <string.h>
 #include <stdio.h>
 #include <kos/fs.h>
-/*#include <os/elf.h>
-  #include <os/process.h>*/
 
 #include "lef.h"
 
@@ -180,7 +180,8 @@ static int find_sym(char *name, struct lef_sym_t* table, int tablelen) {
    will be set to the entry point. */
 /* There's a lot of shit in here that's not documented or very poorly
    documented by Intel.. I hope that this works for future compilers. */
-lef_prog_t *lef_load(uint32 fd) {
+lef_prog_t *lef_load(uint32 fd)
+{
   lef_prog_t		*out = 0;
   char			*img = 0, *imgout = 0;
   int			sz, i, j, sect; 
@@ -493,8 +494,9 @@ info = section header index of section to which reloc applies
       name = (char *)symtab[sym].name;
       main_addr = 0;
 
-      switch(symtab[sym].info & 15) {
-      case STT_NOTYPE:
+      /* Check for undefined symbol */ 
+      if (symtab[sym].shndx == SHN_UNDEF) {
+	/* Undefined symbol must be searched in the main symbol table */
 	main_addr = find_main_sym(name);
 	if (!main_addr) {
 	  dbglog(DBG_ERROR, "!! " __FUNCTION__ 
@@ -503,7 +505,10 @@ info = section header index of section to which reloc applies
 	  ++errors;
 	  continue;	  
 	}
-	break;
+      }
+
+      switch(symtab[sym].info & 15) {
+      case STT_NOTYPE:
       case STT_FUNC:
       case STT_SECTION:
       case STT_OBJECT:

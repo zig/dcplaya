@@ -4,7 +4,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.2 2002-09-02 19:13:29 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.3 2002-09-04 02:39:37 ben Exp $
  */
 
 //#define RELEASE
@@ -41,7 +41,6 @@
 #include "inp_driver.h"
 #include "playa.h"
 #include "plugin.h"
-#include "plug_vlr.h"
 #include "lef.h"
 #include "fft.h"
 #include "viewport.h"
@@ -61,7 +60,8 @@ static int warning_splash(void);
 extern void warning_render();
 
 static viewport_t viewport; 
-
+static matrix_t projection;
+static vis_driver_t * curvis;
 
 static vtx_t light_normal = { 
   0.8,
@@ -175,6 +175,7 @@ static void sature(float *a, const float min, const float max)
 
 static void render_fx(int age_per_trace, int trace_age)
 {
+#if 0
   const float amax = 0.5f, amin = 0.1f;
   const unsigned int this_frame = frame_counter68;
   
@@ -209,11 +210,13 @@ static void render_fx(int age_per_trace, int trace_age)
       DrawObject(r->o, r->mtx, proj, z, a * fade68, 0);
     }
   }
+#endif
 }
 
 
 static int render_anim_object(uint32 elapsed_frames, anim_f anim, anim_t *data)
 {
+#if 0
   /* Trace constants */
   const int age_per_trace = 5;
   const int max_trace = 5;
@@ -261,11 +264,13 @@ static int render_anim_object(uint32 elapsed_frames, anim_f anim, anim_t *data)
     render_fx(age_per_trace, trace_age);
   }
   return err;
+#endif
 }
 
 static int render_simple_anim_object(uint32 elapsed_frames, anim_f anim,
 				     anim_t *data)
 {
+#if 0
   int err;
   matrix_t m;
 
@@ -331,9 +336,8 @@ static int render_simple_anim_object(uint32 elapsed_frames, anim_f anim,
     vlr_update();
     vlr_render(m);
   }
-
-
   return err;
+#endif
 }
 
 
@@ -404,171 +408,12 @@ static int same_sign(float a, float b) {
   return (a>=0 && b>=0) || (a<0 && b<0);
 }
 
-static int anim_logo(anim_t *a, unsigned int iframes)
-{
-  const float fframes = (const float)iframes;
-  
-  const float rspd_max = 2.7f;
-  const float rspd_min = 0.2f;  
- 
-  static float rspd   = 0.0f;
-  //  static float oflash = 0.0f;
-  /*  static float rspd2  = 0.0f; */
-  
-  float sax = 0.0321f * fframes;
-  float say = 0.0212f * fframes;
-  float saz = 0.0313f * fframes;
- 
-  float peek;
-  float zoom;
-  
-  /*    peek = (float)peek1.dyn / 65536.0f; */
-  /*    zoom = 0.3f + peek*2.2f; */
-  
-  /*    if (peek > opeek) { */
-  /*      float f = (peek-opeek) * 0.95f; */
-  /*      rspd = f * rspd_max + (1.0f-f) * rspd; */
-  /*    } else if (peek < opeek) { */
-  /*      float f = opeek-peek; */
-  /*      rspd = f * rspd_min + (1.0f-f) * rspd; */
-  /*    } else { */
-  /*      rspd = 0.05f * rspd_min + .95f * rspd; */
-  /*    } */
-  /*    opeek = peek; */
-  
-  /*    a->x = a->y = 0.0f; */
-  /*    a->z = 80.0f; */
-  
-  
-  /*    { */
-  /*      float r; */
-  /*      r = (zoom > a->zoom) ? 0.70f : 0.90f; */
-  /*      a->zoom = a->zoom * r + zoom * (1.0f-r); */
-  /*    } */
-  /*    a->ax += sax * rspd * 2.0f; */
-  /*    a->ay += say * rspd * 2.0f; */
-  /*    a->az += saz * rspd * 2.0f; */
-
-  /* analysis parms */
-  float
-    peek_fact,    /* full range scale factor */
-    peek_diff,    /* peek/oldpeek delta */
-    peek_avgdiff, /* peek/avgpeek delta */
-    peek_norm;    /* peek normalized to full range */
-
-  static float
-    opeek_diff    = 0.0f,
-    opeek         = 0.0f,
-    peek_max      = 0.0f,
-    peek_diff_max = 0.0f;
-
-  int
-    max=0,
-    diff_max=0; /* True when respectively peek/peek_diff becomes max */
-   
-
-  zoom = 0.3f;
-
-  /* scale factor */
-
-  if (peek3.dyn) {
-    peek_fact = 1.0f / (float)peek3.dyn;
-  } else {
-    peek_fact = 1.0f;
-  }
-  peek_norm = (float)peek1.dyn * peek_fact;
-
-  peek = (float)peek1.dyn / 65536.0f;
-  peek_diff = peek - opeek;
-  max = peek > peek_max;
-  if (max) {
-    peek_max = peek;
-    //    dbglog(DBG_DEBUG,"+%.2f+ ", peek);
-  } else {
-    peek_max *= 0.9999999f;
-  }
-
-  peek_avgdiff = ((float)peek1.dyn - (float)peek3.dyn) / 65536.0f;
-
-  if (same_sign(peek_diff,opeek_diff)) {
-    peek_diff += opeek_diff;
-  } else {
-
-    diff_max = opeek_diff > peek_diff_max;
-    if (diff_max) {
-      peek_diff_max = opeek_diff;
-    } 
-    //if (opeek_diff > 0)
-    //      dbglog(DBG_DEBUG,"[%.2f %.2f] ", opeek_diff, peek_diff_max);
-
-    if (diff_max) {
-      a->flash = opeek_diff * 2.60f;
-      //      dbglog(DBG_DEBUG," *");
-    
-
-      if (opeek_diff >= 0.30f) {
-	zoom += 0.3f;
-	//a->flash = -a->flash;
-	//dbglog(DBG_DEBUG,"$");
-      }
-    }
-  }
-  peek_diff_max *= 0.995f;
-
-  a->flash *= 0.9f;
-  if (a->flash < 0 && a->flash > -1E-3) {
-    a->flash = 0;
-  }
-   
-  zoom += peek_norm * 0.5f + peek * 1.1f;
-  //  if (zoom > 100.0f) zoom = 100.0f;
-  
-  if (peek > opeek) {
-    float f = (peek-opeek) * 0.95f;
-    rspd = f * rspd_max + (1.0f-f) * rspd;
-  } else if (peek < opeek) {
-    float f = opeek-peek;
-    rspd = f * rspd_min + (1.0f-f) * rspd;
-  } else {
-    rspd = 0.05f * rspd_min + .95f * rspd;
-  }
-
-  opeek = peek;
-  opeek_diff = peek_diff;  
-
-  a->x = a->y = 0.0f;
-  a->z = 80.0f;
-  
-  
-  {
-    float r;
-    r = (zoom > a->zoom) ? 0.75f : 0.90f;
-    a->zoom = a->zoom * r + zoom * (1.0f-r);
-  }
-  a->ax += sax * rspd * 2.0f;
-  a->ay += say * rspd * 2.0f;
-  a->az += saz * rspd * 2.0f;
-  
-  a->o = curlogo;
-  
-  return ANIM_CONT;
-}
-
-static int render_logo(uint32 elapsed_frames)
-{
-  int code;
-  
-  code = render_simple_anim_object(elapsed_frames, anim_logo, &animdata);
-  
-  return code == ANIM_END;
-}
-
 
 static int load_builtin_driver(void)
 {
-  const any_driver_t **d, *list[] = {
+  any_driver_t **d, *list[] = {
     0
-  }
+  };
   for (d=list; *d; ++d) {
     /* Init driver and register it. */
     if (!(*d)->init(*d)) {
@@ -597,7 +442,7 @@ static int driver_init(void)
       "/pc" DREAMMP3_HOME "plugins/inp/ogg",
       "/pc" DREAMMP3_HOME "plugins/inp/xing",
       0
-    }
+    };
 
     for (p=paths; *p; ++p) {
       dbglog(DBG_DEBUG,"** " __FUNCTION__
@@ -620,7 +465,7 @@ static int no_mt_init(void)
   dbglog(DBG_DEBUG, ">> " __FUNCTION__ "\n");
 
   /* Viewport init */
-  viewport_set(&viewport, 0,0,SCREEN_W,SCREEM_H,1.0f)
+  viewport_set(&viewport, 0, 0, SCREEN_W, SCREEN_H, 1.0f);
 
   /* Driver list */
   if (driver_init() < 0) {
@@ -715,6 +560,31 @@ static void update_fft(void)
 
 }
 
+
+static void process_visual(unsigned int elapsed_frames)
+{
+  const float ms = elapsed_frames * (1000.0f / 60.0f);
+
+  curvis = option_visual();
+  if (curvis) {
+    curvis->process(&viewport, projection, ms);
+  }
+}
+
+static void render_visual_opaque(void)
+{
+  if (curvis) {
+    curvis->opaque_render();
+  }
+}
+
+static void render_visual_translucent(void)
+{
+  if (curvis) {
+    curvis->translucent_render();
+  }
+}
+
 void main_thread(void *cookie)
 {
   const int exit_buttons = CONT_START|CONT_A|CONT_Y;
@@ -734,7 +604,7 @@ void main_thread(void *cookie)
       err = __LINE__;
       goto error;
       }*/
-  dreamcast68_loaddisk("/rd/test.mp3", 1);
+  playa_loaddisk("/rd/test.mp3", 1);
   thd_pass(); // $$$ Don't ask me why !!! It removes a bug in intro sound !!!
 
   fade68    = 0.0f;
@@ -790,7 +660,7 @@ void main_thread(void *cookie)
 
     my_vid_border_color(0,0,0);
     ta_begin_render();
-    //my_vid_border_color(255,255,255);
+
     pipo_poly(0);
     
     elapsed_frames = frame_counter68;
@@ -805,33 +675,36 @@ void main_thread(void *cookie)
     /* Update the VMU LCD */
     update_lcd();
 
+    /* Make visual FX calculation */
+    process_visual(elapsed_frames);
+
     /* Opaque list *************************************/
     //my_vid_border_color(255,0,0);
     bkg_render(fade68, info_is_help() || !is_playing);
+
+    /* Visual opaque list */
+    render_visual_opaque();
     
     /* End of opaque list */
     ta_commit_eol();
-    my_vid_border_color(0,255,0);
 
-    if (option_visual()) {
-      float save = fade68;
-      fade68 = 1.0f;
-      render_logo(elapsed_frames);
-      fade68 = save;
-    }
-    my_vid_border_color(0,0,255);    
     /* Translucent list ********************************/
+
+    pipo_poly(0);
+
+    /* Visual translucent list */
+    render_visual_translucent();
+
     info_render(elapsed_frames, is_playing);
-    my_vid_border_color(255,255,255);
     songmenu_render(elapsed_frames);
     option_render(elapsed_frames);
-    my_vid_border_color(255,0,255);    
+    my_vid_border_color(255,0,255);
     /* End of translucent list */
     ta_commit_eol();
 
-    //my_vid_border_color(255,0,0);
 
     /* Finish the frame *******************************/
+
 /*    extern kthread_t * playa_thread;
     if (playa_thread)
       thd_set_prio(playa_thread, PRIO_DEFAULT);
@@ -847,7 +720,7 @@ void main_thread(void *cookie)
   dbglog(DBG_DEBUG, "** "  __FUNCTION__ " : Start exit procedure\n");
 
   /* Stop sc68 from playing */
-  dreamcast68_loaddisk(0,0);
+  dcplaya_loaddisk(0,0);
   vmu_lcd_title();
 
   /* */
@@ -905,7 +778,6 @@ int dreammp3_main(int argc, char **argv)
   
 
   frame_counter68 = ta_state.frame_counter;
-  spinlock_init(&app68mutex);
 
   /* Run no multi-thread setup (malloc/free rules !) */
   if (no_mt_init() < 0) {

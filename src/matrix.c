@@ -7,7 +7,7 @@
 #define Sin fsin
 #define Inv(a) (1.0f/(a))
 
-void MtxCopy(matrix_t m, constmatrix_t m2)
+void MtxCopy(matrix_t m, matrix_t m2)
 {
   int i;
   for (i=0; i<4; ++i) {
@@ -24,7 +24,7 @@ void MtxIdentity(matrix_t m)
   for (i=0; i<4; ++i) for (j=0; j<4; ++j) m[i][j] = (float)(i==j);
 }
 
-void MtxMult(matrix_t m, constmatrix_t m2)
+void MtxMult(matrix_t m, matrix_t m2)
 {
   int i,k;
   for (i=0; i<4; ++i) {
@@ -38,7 +38,7 @@ void MtxMult(matrix_t m, constmatrix_t m2)
   }
 }
 
-void MtxVectMult(float *v, const float *u, constmatrix_t m)
+void MtxVectMult(float *v, const float *u, matrix_t m)
 {
   const float x=u[0],y=u[1],z=u[2],w=u[3];
   v[0] = x * m[0][0] + y * m[1][0] + z * m[2][0] + w * m[3][0];
