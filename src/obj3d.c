@@ -1,18 +1,27 @@
-/* 2002/02/12*/
+/**
+ * @file    obj3d.c
+ * @author  benjamin gerard <ben@sashipa.com>
+ * @date    2002/02/12
+ * @brief   Very simple 3D API.
+ *
+ * @version $Id: obj3d.c,v 1.2 2002-09-13 14:48:25 ben Exp $
+ */
 
 #include <stdio.h>
 #include <math.h>
 #include <malloc.h>
+#include "sysdebug.h"
 #include "obj_driver.h"
 #include "obj3d.h"
 #include "matrix.h"
+
+extern int bordertex2;
 
 static void swap (int *a, int *b) {
   int tmp = *a;
   *a = *b;
   *b = tmp;
 }
-
 
 static float FaceCosAngle(obj_t *o, int ia, int ib)
 {
@@ -51,24 +60,20 @@ static void ResizeAndCenter(obj_t *o, const float w)
   float s;
   int i,j;
 
-/*    dbglog( DBG_DEBUG, ">> " __FUNCTION__ "\n"); */
-
   if (o->nbv != o->static_nbv || o->nbf+1 != o->static_nbf) {
     // !!! Problem in genenerated object file
-    //BREAKPOINT68;
-    *(int*)1 = 0x12345678;
+    BREAKPOINT(0xDEAD9872);
   }
 
-  if (o->flags&1) {
+  if (o->flags) {
     return;
   }
-  o->flags |= 1;
+  o->flags = bordertex2;
 
   // Set W
   for (i=0; i<o->nbv; ++i) {
     o->vtx[i].w = 1.0f;
   }
-
 
   // Set first min-max
   for (j=0; j<3; ++j) {
@@ -126,7 +131,6 @@ static void BuildNormals(obj_t *o)
 {
   int i;
 
-/*    dbglog( DBG_DEBUG, ">> " __FUNCTION__ "\n"); */
   if (!o->nvx) {
     o ->nvx = (vtx_t *)malloc(sizeof(vtx_t) * o->nbf);
   }
@@ -134,22 +138,15 @@ static void BuildNormals(obj_t *o)
     return;
   }
   for (i=0; i<o->nbf; ++i) {
-    
     FaceNormal((float *)(o->nvx+i),o->vtx,o->tri+i);
-/*    o->nvx.x = - o->nvx.x;
-    o->nvx.y = - o->nvx.y;
-    o->nvx.z = - o->nvx.z;*/
   }
-/*    dbglog( DBG_DEBUG, "<< " __FUNCTION__ "\n"); */
 }
 
 static void BuildLinks(obj_t *o)
 {
   int i;
   
-/*    dbglog( DBG_DEBUG, ">> " __FUNCTION__ "\n"); */
   if (!o->tlk) {
-    dbglog( DBG_DEBUG, "<< " __FUNCTION__ " : No links\n");
     return;
   }
   
@@ -180,20 +177,16 @@ static void BuildLinks(obj_t *o)
       o->tlk[i].flags |= (res << j);
     }
   }
-/*    dbglog( DBG_DEBUG, "<< " __FUNCTION__ "\n"); */
-  
 }
 
 static void PrepareObject(obj_t *o)
 {
-  dbglog( DBG_DEBUG, ">> " __FUNCTION__ " : %s vtx:%d/%d tri:%d/%d\n",
+  SDDEBUG("%s vtx:%d/%d tri:%d/%d\n",
     o->name, o->nbv, o->static_nbv, o->nbf, o->static_nbf);
   
   ResizeAndCenter(o, 1.0f);
   BuildNormals(o);
   BuildLinks(o);
-  
-  dbglog( DBG_DEBUG, "<< " __FUNCTION__ " : %s\n", o->name);
 }
 
 int obj3d_shutdown(any_driver_t * driver)

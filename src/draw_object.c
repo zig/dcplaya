@@ -1,5 +1,5 @@
 /**
- * $Id: draw_object.c,v 1.1 2002-09-02 19:13:29 ben Exp $
+ * $Id: draw_object.c,v 1.2 2002-09-13 14:48:25 ben Exp $
  */
 
 #include <stdio.h>
@@ -7,9 +7,10 @@
 #include <dc/fmath.h>
 #include <dc/ta.h>
 
+#include "sysdebug.h"
 #include "draw_object.h"
 
-extern int bordertex;
+extern int bordertex, bordertex2;
 
 typedef struct {
   float u;
@@ -159,6 +160,11 @@ int DrawObjectPostProcess(viewport_t * vp, matrix_t local, matrix_t proj,
     return -1;
   }
 
+ if (!o->flags) {
+   SDWARNING("3D-object [%s] has no texture-id, set default\n", o->name);
+   o->flags = bordertex2;
+ }
+
  if (init_transform(o->nbv) < 0) {
     return -1;
   }
@@ -190,7 +196,7 @@ int DrawObjectSingleColor(viewport_t * vp, matrix_t local, matrix_t proj,
     vtx_t * nrm = o->nvx;
     int     n = o->nbf;
     
-    ta_poly_hdr_txr(&poly, TA_TRANSLUCENT, TA_ARGB4444, 64, 64, bordertex,
+    ta_poly_hdr_txr(&poly, TA_TRANSLUCENT, TA_ARGB4444, 64, 64, o->flags,
 		    TA_NO_FILTER);
 
     poly.flags1 &= ~(3<<4);
@@ -283,7 +289,7 @@ int DrawObjectLighted(viewport_t * vp, matrix_t local, matrix_t proj,
     vtx_t * nrm = o->nvx;
     int     n = o->nbf;
     
-    ta_poly_hdr_txr(&poly, TA_TRANSLUCENT, TA_ARGB4444, 64, 64, bordertex,
+    ta_poly_hdr_txr(&poly, TA_TRANSLUCENT, TA_ARGB4444, 64, 64, o->flags,
 		  TA_NO_FILTER);
 
     poly.flags1 &= ~(3<<4);
@@ -351,6 +357,106 @@ int DrawObjectLighted(viewport_t * vp, matrix_t local, matrix_t proj,
   return 0;
 }
 
+int DrawObjectFrontLighted(viewport_t * vp, matrix_t local, matrix_t proj,
+		      obj_t *o,
+		      vtx_t *ambient, vtx_t *diffuse)
+{
+  poly_hdr_t poly;
+
+  float aa, ar, ag, ab;
+  float la, lr, lg, lb;
+
+  const float m02 = local[0][2];
+  const float m12 = local[1][2];
+  const float m22 = local[2][2];
+
+  if (DrawObjectPostProcess(vp, local, proj, o) < 0) {
+    return -1;
+  }
+
+  ar = 255.0f * ambient->x;
+  ag = 255.0f * ambient->y;
+  ab = 255.0f * ambient->z;
+  aa = 255.0f * ambient->w;
+
+  lr = 255.0f * diffuse->x;
+  lg = 255.0f * diffuse->y;
+  lb = 255.0f * diffuse->z;
+  la = 255.0f * diffuse->w;
+
+  if (o->nbf) {
+    const tri_t * t = o->tri;
+    tri_t * f = o->tri;
+    tlk_t * l = o->tlk;
+    vtx_t * nrm = o->nvx;
+    int     n = o->nbf;
+    
+    ta_poly_hdr_txr(&poly, TA_TRANSLUCENT, TA_ARGB4444, 64, 64, o->flags,
+		  TA_NO_FILTER);
+
+    poly.flags1 &= ~(3<<4);
+    ta_commit_poly_hdr(&poly);
+
+    hw->addcol = 0;
+ 
+    if (!l) {
+      // $$$ !
+      return -1;
+    }
+    for(n=o->nbf ;n--; ++f, ++l, ++nrm)  {
+      int lflags = 0;
+      uv_t * uvl;
+      float coef;
+
+      if (f->flags) {
+	continue;
+      }
+
+      coef = m02 * nrm->x + m12 * nrm->y + m22 * nrm->z;
+      if (coef < 0) {
+	coef = 0;
+      }
+      hw->col = argb4(aa + coef * la, ar + coef * lr,
+		      ag + coef * lg, ab + coef * lb);
+	
+      lflags  = t[l->a].flags << 0;
+      lflags |= t[l->b].flags << 1;
+      lflags |= t[l->c].flags << 2;
+      // Strong link :
+      //lflags |= l->flags & 7;
+	
+      uvl = uvlinks[lflags];
+
+      hw->flags = TA_VERTEX_NORMAL;
+      hw->x = transform[f->a].x;
+      hw->y = transform[f->a].y;
+      hw->z = transform[f->a].z;
+      hw->u = uvl[0].u;
+      hw->v = uvl[0].v;
+      ta_commit32_nocopy();
+
+      //	hw->flags = TA_VERTEX;
+      hw->x = transform[f->b].x;
+      hw->y = transform[f->b].y;
+      hw->z = transform[f->b].z;
+      hw->u = uvl[1].u;
+      hw->v = uvl[1].v;
+      ta_commit32_nocopy();
+
+      hw->flags = TA_VERTEX_EOL;
+      hw->x = transform[f->c].x;
+      hw->y = transform[f->c].y;
+      hw->z = transform[f->c].z;
+      hw->u = uvl[2].u;
+      hw->v = uvl[2].v;
+      ta_commit32_nocopy();
+      
+    }
+  }
+  return 0;
+}
+
+
 int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
 			 obj_t *o)
 {
@@ -367,7 +473,7 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
     vtx_t * nrm = o->nvx;
     int     n = o->nbf;
     
-    ta_poly_hdr_txr(&poly, TA_TRANSLUCENT, TA_ARGB4444, 64, 64, bordertex,
+    ta_poly_hdr_txr(&poly, TA_TRANSLUCENT, TA_ARGB4444, 64, 64, o->flags,
 		  TA_NO_FILTER);
 
     poly.flags1 &= ~(3<<4);

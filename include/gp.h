@@ -28,6 +28,7 @@ void draw_poly_strf(float x1, float y1, float z1, float a, float r, float g, flo
 void draw_poly_box(float x1, float y1, float x2, float y2, float z,
 		float a1, float r1, float g1, float b1,
 		float a2, float r2, float g2, float b2);
+float measure_poly_char(int c);
 
 /* songmenu.c */
 void song_menu_render();
@@ -57,7 +58,7 @@ typedef struct {
 
 int border_setup();
 extern borderuv_t borderuv[];
-extern uint32 bordertex;
+extern uint32 bordertex, bordertex2;
 
 DCPLAYA_EXTERN_C_END
 

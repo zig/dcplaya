@@ -4,7 +4,7 @@
  * @author    Ben(jamin) Gerard <ben@sashipa.com>
  * @date      20/10/2001
  * @brief     Simple 3D objects defintions for 3D-object plugins
- * @version   $Id: obj3d.h,v 1.2 2002-09-06 23:16:09 ben Exp $
+ * @version   $Id: obj3d.h,v 1.3 2002-09-13 14:48:25 ben Exp $
  */
 
 /* Copyright (C) 1998-2001 Ben(jamin) Gerard */
@@ -46,7 +46,7 @@ typedef struct {
 typedef struct {
   const char *name; /**< Object name */
 
-  int flags;        /**< Flags */
+  int flags;        /**< Flags @warning Used for texture-id  */
   int	nbv;        /**< Number of vertex */
   int	nbf;        /**< Number of faces */
 
