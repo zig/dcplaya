@@ -4,7 +4,7 @@
 --- @date    2002/11/29
 --- @brief   Song info application.
 ---
---- $Id: song_info.lua,v 1.7 2002-12-12 00:08:04 ben Exp $
+--- $Id: song_info.lua,v 1.8 2002-12-12 15:30:22 ben Exp $
 
 song_info_loaded = nil
 
@@ -110,6 +110,26 @@ function song_info_create(owner, name)
 		 si:set_color(a)
 	  end
 
+	  --- Scroll-text
+	  if si.info_comments.scroll then
+		 local mat = dl_get_trans(si.info_comments.dl)
+		 local x = mat[4][1]
+		 local scroll = si.info_comments.scroll * frametime
+		 x = x + scroll
+		 local x2 = x + si.info_comments.text_w
+		 if scroll < 0 then
+			if x2 < 0 then
+			   x = -x2 - si.info_comments.text_w
+			   si.info_comments.scroll = -si.info_comments.scroll
+			end
+		 elseif x > si.info_comments.w then
+			x = si.info_comments.w - x + si.info_comments.w
+			si.info_comments.scroll = -si.info_comments.scroll
+		 end
+		 mat[4][1] = x
+		 dl_set_trans(si.info_comments.dl,mat)
+	  end
+
 	  -- Process refresh
 	  si.time_elapsed = si.time_elapsed + frametime
 	  if si.time_elapsed > si.time_refresh then
@@ -148,6 +168,26 @@ function song_info_create(owner, name)
 					 v.value = si.info[i]
 					 song_info_draw_field(v)
 				  end
+
+				  if not si.info.comments then
+					 si.info.comments =
+						"***  < Welcome to DCPLAYA >           ***       <The ultimate music player for Dreamcast>         ***        < (C)2002 Benjamin Gerard >           ***             < Main programming : Benjamin Gerard and Vincent Penne >"
+				  end
+
+				  if si.info.comments then
+					 local x
+					 local w,h = dl_measure_text(si.info_comments.dl,
+												 si.info.comments)
+					 si.info_comments.text_w = w
+					 si.info_comments.scroll = -32
+					 local mat = dl_get_trans(si.info_comments.dl)
+					 mat[4][1] = si.info_comments.w
+					 dl_set_trans(si.info_comments.dl,mat)
+					 dl_clear(si.info_comments.dl)
+					 dl_draw_text(si.info_comments.dl, 0,0,0, 1,1,1,1,
+								  si.info.comments)
+				  end
+
 			   else
 			   end
 			end
@@ -226,6 +266,7 @@ function song_info_create(owner, name)
 	  si.info_dl = nil
 	  si.help_dl = nil
 	  si.info_fields = nil
+	  si.info_comments = nil
    end
 
    si = {
@@ -330,21 +371,26 @@ function song_info_create(owner, name)
 		 dl_draw_text(field.dl, 0,y,10, 1,1,1,0.6, field.label)
 	  elseif tag(field.label) == sprite_tag then
 		 field.label:draw(field.dl, 0,0,10)
-	  else
-		 x = 0
 	  end
 
 	  if field.value then
+		 if not field.label then
+			local w,h = dl_measure_text(field.dl, field.value)
+			x = (field.w - w) * 0.5
+		 end
 		 dl_draw_text(field.dl, x,y,10, 1,1,1,1, field.value)
 	  end
    end
 
    function song_info_field(label, box, x, y)
 	  local field = {}
+	  local obox = box3d_outer_box(box)
 	  field.label = label
 	  field.box = box
+	  field.w = obox[3]-obox[1]
+	  field.h = obox[4]-obox[2]
 	  field.dl = dl_new_list(0,1,1)
-	  dl_set_trans(field.dl, mat_trans(x,y,0))
+	  dl_set_trans(field.dl, mat_trans(x,y,1))
 	  return field
    end
 
@@ -369,12 +415,17 @@ function song_info_create(owner, name)
    local h = (ob[4] - ob[2]) + 3
    si.info_fields.format = song_info_field("Format", mbox,0,h*0)
    si.info_fields.genre  = song_info_field(nil, sbox, mw+10, h*0)
-
    si.info_fields.artist = song_info_field("Artist", lbox,0,h*1)
    si.info_fields.album  = song_info_field("Album",  mbox,0,h*2)
    si.info_fields.year   = song_info_field(nil, sbox, mw+10, h*2)
-
    si.info_fields.title   = song_info_field("Title",  lbox,0,h*3)
+
+   si.info_comments = {}
+   si.info_comments.dl = dl_new_list(0,1,1)
+   si.info_comments.w = ob[3] - ob[1]
+   si.info_comments.h = inner[4] - h*4
+   dl_set_trans(si.info_comments.dl, mat_trans(0, h*4-1, 1))
+
    dl_set_active(si.help_dl,0)
 
    dl_set_trans(si.info_dl,
@@ -385,6 +436,8 @@ function song_info_create(owner, name)
 	  song_info_draw_field(v)
 	  dl_sublist(si.info_dl, v.dl)
    end
+   dl_set_clipping(si.info_dl, 0, 0, si.info_comments.w , 0)
+   dl_sublist(si.info_dl, si.info_comments.dl)
 
    si:set_color(0, 1, 1, 1)
    si:draw()
