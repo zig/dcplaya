@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     shell support for dcplaya
- * @version   $Id: shell.c,v 1.8 2002-09-19 08:18:12 vincentp Exp $
+ * @version   $Id: shell.c,v 1.9 2002-09-20 00:22:15 benjihan Exp $
  */
 
 #include <kos.h>
@@ -112,12 +112,8 @@ void unlockshell(void)
   spinlock_unlock(&shellmutex);
 }
 
-
-
 void shell_load(const char * fname)
 {
-  int fd;
-
   /* better to make sure all previous commands are finished */
   shell_wait();
 
@@ -135,13 +131,7 @@ void shell_load(const char * fname)
 
 
   /* Load and launch new shell */
-  fd = fs_open(fname, O_RDONLY);
-  if (fd) {
-    
-    /* $$$ After this call, fd is closed by lef_load !!! */
-    shell_lef = lef_load(fd);
-    fd = 0;
-  }
+  shell_lef = lef_load(fname);
 
   if (shell_lef) {
     shell_lef_shutdown_func = (shell_shutdown_func_t) shell_lef->main(0, 0);

@@ -5,7 +5,7 @@
  * Compile this file with -DNO_DEFLATE to avoid the compression code.
  */
 
-/* @(#) $Id: gzio.c,v 1.1 2002-09-19 15:54:37 benjihan Exp $ */
+/* @(#) $Id: gzio.c,v 1.2 2002-09-20 00:22:14 benjihan Exp $ */
 
 #include <stdio.h>
 
@@ -153,7 +153,9 @@ local gzFile gz_open (path, mode, fd)
     s->stream.avail_out = Z_BUFSIZE;
 
     errno = 0;
-    s->file = fd < 0 ? F_OPEN(path, fmode) : (FILE*)fdopen(fd, fmode);
+    // $$$ ben: Does not suit parameters rule: fd == -1 !!
+    //    s->file = fd < 0 ? F_OPEN(path, fmode) : (FILE*)fdopen(fd, fmode);
+    s->file = (fd == -1) ? F_OPEN(path, fmode) : (FILE*)fdopen(fd, fmode);
 
     if (s->file == NULL) {
         return destroy(s), (gzFile)Z_NULL;
@@ -197,7 +199,9 @@ gzFile ZEXPORT gzdopen (fd, mode)
 {
     char name[20];
 
-    if (fd < 0) return (gzFile)Z_NULL;
+    // $$$ ben : fd == -1 !!!
+    //    if (fd < 0) return (gzFile)Z_NULL;
+    if (fd == -1) return (gzFile)Z_NULL;
     sprintf(name, "<fd:%d>", fd); /* for debugging */
 
     return gz_open (name, mode, fd);

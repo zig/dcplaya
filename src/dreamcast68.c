@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.23 2002-09-19 08:18:12 vincentp Exp $
+ * @version   $Id: dreamcast68.c,v 1.24 2002-09-20 00:22:14 benjihan Exp $
  */
 
 //#define RELEASE
@@ -436,10 +436,11 @@ static int driver_init(void)
 {
   int err=0;
 
-  dbglog(DBG_DEBUG, ">> " __FUNCTION__ "\n");
+  SDDEBUG(">> %s()\n", __FUNCTION__);
+  SDINDENT;
 
   /* Init driver list */
-  dbglog(DBG_DEBUG,"** " __FUNCTION__ " : Init decoder driver list\n");
+  SDDEBUG("Init decoder driver list\n");
   err = driver_list_init_all();
   if (err < 0) {
     goto error;
@@ -474,14 +475,15 @@ static int driver_init(void)
   err = load_builtin_driver();
 
  error:
-  dbglog(DBG_DEBUG,"<< " __FUNCTION__ " := %d\n", err);
+  SDUNINDENT;
+  SDDEBUG("<< %s := %d\n", __FUNCTION__, err);
   return err;
 }
 
 static int no_mt_init(void)
 {
   int err = 0;
-  dbglog(DBG_DEBUG, ">> " __FUNCTION__ "\n");
+  SDDEBUG(">> %s\n", __FUNCTION__);
 
   /* ramdisk init */
   if (fs_ramdisk_init(0) < 0) {

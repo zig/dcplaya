@@ -5,7 +5,7 @@
  * @author  Dan Potter
  * @brief   ELF library loader - Based on elf.c from KallistiOS 1.1.5 
  *
- * @version $Id: lef.c,v 1.10 2002-09-17 23:28:41 ben Exp $
+ * @version $Id: lef.c,v 1.11 2002-09-20 00:22:15 benjihan Exp $
  */
 
 #include <malloc.h>
@@ -15,6 +15,7 @@
 
 #include "lef.h"
 #include "sysdebug.h"
+#include "gzip.h"
 
 // VP : define this to have full debug logging informations
 #define FULL_DEBUG
@@ -219,17 +220,16 @@ static int loadfile(int fd, char * img, int sz)
   SDDEBUG("\nLoad completed\n");
   return 0;
 }
-
 /* Pass in a file descriptor from the virtual file system, and the
    result will be NULL if the file cannot be loaded, or a pointer to
    the loaded and relocated executable otherwise. The second variable
    will be set to the entry point. */
 /* There's a lot of shit in here that's not documented or very poorly
    documented by Intel.. I hope that this works for future compilers. */
-lef_prog_t *lef_load(uint32 fd)
+lef_prog_t *lef_load(const char * fname)
 {
   lef_prog_t		*out = 0;
-  char			*img = 0, *imgout = 0;
+  char			*img = 0, *imgout = 0, *buf = 0; //, * mmap = 0;
   int			sz, i, j, sect; 
   struct lef_hdr_t	*hdr = 0;
   struct lef_shdr_t	*shdrs = 0, *symtabhdr = 0;
@@ -242,27 +242,19 @@ lef_prog_t *lef_load(uint32 fd)
   char                  *sectionname = 0;
   int                   errors = 0;
   int                   warnings = 0;
+  //  int                   flen = 0;
+  //  int                   inflate_len = 0;
+  int                   lef_size;
 
   const int align_lef=256;
 
-  SDDEBUG(">>\n");
-  sysdbg_indent(1, 0);
+  SDDEBUG(">>%s(%s)\n", __FUNCTION__, fname);
+  SDINDENT;
 
-  /* Load the file: needs to change to just load headers */
-  sz = fs_total(fd);
-  SDINFO("Loading ELF file of size %d\n", sz);
-  img = calloc(1,sz);
-
+  img = gzip_load(fname, &sz);
   if (!img) {
-    SDERROR("Can't allocate %d bytes for ELF load\n", sz);
     goto error;
   }
-
-  if (loadfile(fd, img, sz)) {
-    goto error;
-  }
-  fs_close(fd);
-  fd = 0;
 
   /* Header is at the front */
   hdr = (struct lef_hdr_t *)(img+0);
@@ -383,19 +375,17 @@ lef_prog_t *lef_load(uint32 fd)
   }
 
   /* Alloc final memory image */
-  out = calloc(1,sizeof(lef_prog_t));
+  lef_size = sizeof(lef_prog_t) + sz + align_lef - 1;
+  SDDEBUG("lef image size : %d\n", lef_size);
+  out = calloc(1, lef_size);
   if (!out) {
-    SDERROR("Can't alloc %d bytes for prg structure\n", sizeof(lef_prog_t));
+    SDERROR("Out image alloc error\n");
     goto error;
   }
   out->ref_count = 0;
-  out->data = calloc(1, sz + align_lef - 1);
-  if (!out->data) {
-    SDERROR("Can't allocate %d bytes for prg image\n", sz);
-    goto error;
-  }
+  out->data = (void *)(((unsigned int)&out[1] + align_lef - 1) & -align_lef);
   out->size = sz;
-  imgout = (char *)(( (uint32)out->data + align_lef - 1) & ~(align_lef-1));
+  imgout = out->data;
 
   /* Set section real addres, and copy */
   SDDEBUG( "------------------------------------------------\n");
@@ -650,9 +640,6 @@ info = section header index of section to which reloc applies
     goto error;
   }
 
-  free(img);
-  img = 0;
-
   if (warnings) {
     SDWARNING(" Warnings:%d\n", warnings);
   }
@@ -662,24 +649,24 @@ info = section header index of section to which reloc applies
   goto end;
 
  error:
-  if (fd) {    
-    fs_close(fd);
-  }
   if (out) {
-    if (out->data) {
-      free(out->data);
-    }
     free(out);
-  }
-  if (img) {
-    free(img);
+    out = 0;
   }
   SDINFO(" Errors:%d Warnings:%d\n", errors, warnings);
   SDINFO(" : Failed\n");
 
-  out = 0;
  end:
-  sysdbg_indent(-1, 0);
+/*   if (fd) {     */
+/*     fs_close(fd); */
+/*   } */
+  if (img) {
+    free(img);
+  }
+  if (buf && buf != img) {
+    free(buf);
+  }
+  SDUNINDENT;
   return out;
 }
 
@@ -688,13 +675,10 @@ void lef_free(lef_prog_t *prog) {
   SDDEBUG("%s(%p)\n", __FUNCTION__, prog);
   SDINDENT;
   if (!prog) {
-    SDERROR("%s : Invalid parameter\n");
+    SDERROR("Invalid parameter\n");
   } else if (--prog->ref_count<=0) {
     if (prog->ref_count < 0) {
       SDWARNING("minus refcount :%d\n", prog->ref_count);
-    }
-    if (prog->data) {
-      free(prog->data);
     }
     free(prog);
     SDDEBUG("lef removed\n");

@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.6 2002-09-17 23:38:21 ben Exp $
+ * $Id: lpo.c,v 1.7 2002-09-20 00:22:14 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -157,7 +157,7 @@ static int anim(unsigned int ms)
   MtxRotateX(mtx, angle.x);
   MtxRotateY(mtx, angle.y);
   MtxRotateZ(mtx, angle.z);
-  //  MtxScale(mtx, ozoom);
+  //MtxScale(mtx, ozoom);
   mtx[3][0] = pos.x;
   mtx[3][1] = pos.y;
   mtx[3][2] = pos.z - ozoom;
@@ -239,7 +239,8 @@ static int start(void)
 
   change_cnt = 0;
 
-  angle.x = angle.y = angle.z = angle.z = 0;
+  angle.x = 3.14f;
+  angle.y = angle.z = angle.z = 0;
   pos.x = pos.y = pos.z = pos.w = 0;
   rps_cur = 0;
   rps_goal = rps_min;
@@ -338,6 +339,10 @@ static int transparent_render(void)
 
   if (lpo_remanens) {
     int age, f, maxf = 2000; /* Max number of face */
+
+    if (curobj->obj.nbf >= maxf) {
+      color.w *= 1.5f; 
+    }
 
     for (age=f=0; f<=maxf && color.w > 0.05f; age += 3) {
       remanens_t *r = remanens_get(age);

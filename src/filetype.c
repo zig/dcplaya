@@ -36,6 +36,7 @@ int filetype_regular(const char * fname)
       { ".pls", FILETYPE_PLS },
       { ".elf", FILETYPE_ELF },
       { ".lef", FILETYPE_LEF },
+      { ".lez", FILETYPE_LEF },
       {      0, FILETYPE_UNKNOWN }
     };
   const char * e;

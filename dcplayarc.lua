@@ -1,6 +1,6 @@
 -- This is main DCplaya lua script
 --
--- $Id: dcplayarc.lua,v 1.9 2002-09-19 15:53:06 vincentp Exp $
+-- $Id: dcplayarc.lua,v 1.10 2002-09-20 00:22:11 benjihan Exp $
 --
 
 showconsole()
@@ -21,6 +21,7 @@ dofile (home.."lua/zed.lua")
 plug_spc	= home.."plugins/inp/spc/spc.lef"
 plug_xing	= home.."plugins/inp/xing/xing.lef"
 plug_sidplay	= home.."plugins/inp/sidplay/sidplay.lef"
+plug_sc68   = home.."plugins/inp/sc68/sc68.lef"
 plug_obj	= home.."plugins/obj/obj.lef"
 plug_lpo	= home.."plugins/vis/lpo/lpo.lef"
 plug_fftvlr	= home.."plugins/vis/fftvlr/fftvlr.lef"

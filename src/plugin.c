@@ -3,7 +3,7 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: plugin.c,v 1.6 2002-09-17 23:28:41 ben Exp $
+ * $Id: plugin.c,v 1.7 2002-09-20 00:22:15 benjihan Exp $
  */
 #include <stdio.h>
 #include <string.h>
@@ -19,23 +19,14 @@
 
 any_driver_t * plugin_load(const char *fname)
 {
-  int fd;
   lef_prog_t * prog = 0;
   any_driver_t *d = 0, *d2 = 0, *pd = 0, *d1 = 0;
 
   SDDEBUG(">> %s(%s)\n", __FUNCTION__, fname);
   SDINDENT;
 
-  fd = fs_open(fname, O_RDONLY);
-  if (!fd) {
-    SDERROR("Plugin file not found [%s]\n", fname);
-    goto error;
-  }
-
   d = 0;
-  /* $$$ After this call, fd is closed by lef_load !!! */
-  prog = lef_load(fd);
-  fd = 0;
+  prog = lef_load(fname);
 
   if (!prog) {
     SDERROR("Plugin [%s] load error\n", fname);

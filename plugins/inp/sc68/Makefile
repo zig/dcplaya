@@ -4,7 +4,7 @@
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sasahipa.com>
 #
 #
-# $Id: Makefile,v 1.2 2002-09-12 17:57:31 ben Exp $
+# $Id: Makefile,v 1.3 2002-09-20 00:22:14 benjihan Exp $
 #
 
 SC68HOME=/home/ben/sc68-from-cvs/sc68
@@ -17,7 +17,7 @@ SUBDIRS=
 
 CLEAN_LOCAL=sc68disk.img
 
-LEFS=yes
+LEF=yes
 LEF_EXTRA := $(foreach dir,$(SUBDIRS),$(dir)/lib$(dir).a)\
  -L$(SC68PREFIX)/lib $(foreach dir,$(SC68LIB),-l$(dir))
 

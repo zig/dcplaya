@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile.inc.in,v 1.13 2002-09-13 14:54:27 ben Exp $
+# $Id: Makefile.inc.in,v 1.15 2002-09-20 00:22:11 benjihan Exp $
 #
 
 TOP_DIR="@TOP_DIR@"
@@ -85,6 +85,19 @@ LIBNAME := lib$(shell basename `pwd`).a
 endif
 endif
 
+ifeq '$(LEZ)' 'yes'
+ifndef LEFS
+LEFS := $(shell basename `pwd`).lez
+.PRECIOUS: $(LEFS:%.lez=%.lef)
+endif
+endif
+
+ifeq '$(LEF)' 'yes'
+ifndef LEFS
+LEFS := $(shell basename `pwd`).lef
+endif
+endif
+
 # ----------------------------------------------------------------------
 OPT_FLOAT   = -ffast-math
 OPT_GENERAL = -fomit-frame-pointer -fno-builtin -fno-strict-aliasing
@@ -134,6 +147,9 @@ $(LIBNAME) : $(OBJS)
 	@echo "Build [$@] from [$^]"
 	$(KOS_LD) -b elf32-shl -EL -r -x -O -S $^ $(ELF_EXTRA) -o $@
 
+%.lez : %.lef
+	@echo "Build [$@] from [$^]"
+	@gzip --best -n -c $< >$@
 %.lef : $(OBJS) $(filter %.a %.o %.elf %.lef, $(LEF_EXTRA))
 	@echo "Build [$@] from [$^]"
 	@$(KOS_LD) -b elf32-shl -d -O 3 -EL -r --cref -M -Map $*.map -x -O -S $^ $(LEF_EXTRA) -o $@

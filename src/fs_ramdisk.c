@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   RAM disk for KOS file system
  * 
- * $Id: fs_ramdisk.c,v 1.3 2002-09-19 04:54:57 benjihan Exp $
+ * $Id: fs_ramdisk.c,v 1.4 2002-09-20 00:22:14 benjihan Exp $
  */
 
 #include <arch/types.h>
@@ -134,12 +134,20 @@ static void attach_node(node_t * father, node_t * node)
 
 static void detach_node(node_t * node)
 {
+  int i;
+
   SDDEBUG("%s [%s]\n",__FUNCTION__, node ? node->entry.name : "<null>");
   if (!node) {
     return;
   }
+  /* Remove this node from directory reading. */
+  for (i=0; i<MAX_RD_FILES; ++i) {
+    if (fh[i].readdir == node) {
+      fh[i].readdir = node->little_bros;
+    }
+  }
   if (node->father && node->father->son == node) {
-    node->father->son = node->little_bros;
+      node->father->son = node->little_bros;
   }
   if (node->big_bros) {
     node->big_bros->little_bros = node->little_bros;
