@@ -4,13 +4,14 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.2 2003-03-01 15:15:15 zigziggy Exp $
+--- $Id: control_center.lua,v 1.3 2003-03-03 01:59:30 ben Exp $
 ---
 
 control_center_loaded = nil
 
 if not dolib("gui") then return end
 if not dolib("menu") then return end
+if not dolib("volume_control") then return end
 
 function control_center_create(owner, name)
    owner = owner or evt_desktop_app
@@ -18,17 +19,19 @@ function control_center_create(owner, name)
 
    function control_center_volume(menu)
       local cc = menu.target
-      print("cc-volume");
+      print("cc-volume II");
+      volume_control_create(); -- $$$ do not works with cc has owner
    end
 
    function control_center_about(menu)
       local cc = menu.target
+
       print("cc-about");
    end
 
    function control_center_menucreator(target)
       local root = ":" .. target.name .. ":" .. 
-	 "about{about},volume{volume},vmu >vmu,plugins >plugins"
+	 '{dcplaya.tga}about{about},volume{volume},vmu >vmu,plugins >plugins'
 
       local cb = {
 	 about = control_center_about,

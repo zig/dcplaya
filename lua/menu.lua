@@ -240,6 +240,14 @@ function menu_create(owner, name, def, box, x1, y1)
       elseif gui_keyleft[key] then
 	 menu:close()
 	 return
+      elseif key == gui_focus_event then
+	 print("menu focused")
+	 vmu_set_text(fl:get_text())
+	 return
+      elseif key == gui_unfocus_event then
+	 print("menu unfocused")
+	 vmu_set_text(nil)
+	 return
       end
       return evt
    end
@@ -657,16 +665,25 @@ function menu_create_def(menustr)
 	    if not menu.separator then menu.separator = {} end
 	    tinsert(menu.separator, getn(menu))
 	 else
-	    local size, sub, cb, main, substart,subend
+	    local size, sub, cb, main, icon, substart,subend
 	    substart,subend,main,sub =
-	       strfind(name,"([%w%s_{}]*)(>?[%w_]*)")
+	       strfind(name,"([%w%s_.{}]*)(>?[%w_]*)")
 	    if not substart or not main then
 	       print("menu-def creation : invalid string ["..name.."]")
 	       return
 	    end
 -- 	    printf("menu parse all:%q",tostring(name))
--- 	    printf("menu parse main:%q sub:%q", tostring(main), tostring(sub))
-	    substart,subend,name,cb = strfind(main,"([%w%s_]+)(%b{})",1)
+ 	    printf("menu parse main:%q sub:%q", tostring(main), tostring(sub))
+
+	    substart,subend,icon =
+	       strfind(name,"^{([%w%s._]+)}")
+	    if icon then
+	       main=strsub(main,strlen(icon)+3)
+	    end
+
+	    substart,subend,name,cb =
+	       strfind(main,"([%w%s_]+)(%b{})",1)
+
 	    if not substart then
 	       name = strlen(main)>0 and main
 	       cb = nil
@@ -695,7 +712,19 @@ function menu_create_def(menustr)
 -- 	    printf("final menu parse name:%q cb:%q sub:%q %s",
 -- 		   tostring(name), tostring(cb), tostring(sub),
 -- 		   (size < 0 and "SUB") or "ENTRY")
-	    tinsert(menu, {name=name, size=size, subname=sub, cbname=cb})
+
+	    if type(icon) == "string" then
+	       name = '<img src="'..icon..'" w="20">'..name
+	    end
+
+	    tinsert(menu,
+		    {
+		       name=name,
+		       size=size,
+		       icon=icon,
+		       subname=sub,
+		       cbname=cb,
+		    })
 	 end
       else
 	 stop = len+1
