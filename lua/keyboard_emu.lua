@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: keyboard_emu.lua,v 1.3 2002-09-27 15:51:32 vincentp Exp $
+-- $Id: keyboard_emu.lua,v 1.4 2002-09-27 17:20:49 vincentp Exp $
 --
 
 
@@ -58,7 +58,7 @@ ke_keyconfirm	= { [KBD_CONT1_A]=1 }
 ke_keycancel	= { [KBD_CONT1_B]=1 }
 ke_keynext	= { [KBD_CONT1_C]=1 }
 ke_keyprev	= { [KBD_CONT1_D]=1 }
-ke_keyactivate	= { [KBD_CONT1_START]=1 }
+ke_keyactivate	= { [KBD_CONT1_START]=1, [KBD_CONT2_START]=1, [KBD_CONT3_START]=1, [KBD_CONT4_START]=1 }
 
 ke_translate	= { 
 	[KBD_CONT1_DPAD_UP] = KBD_KEY_UP,
@@ -260,7 +260,14 @@ function ke_framecounter()
 	return ke_curframecounter
 end
 
-function ke_handle(frametime, key)
+function ke_handle(frametime, k)
+
+	-- first : automatically remap joypad > 1 to first one !
+	local key = k
+	while key >=  KBD_CONT2_C do
+		key = key - 16*256
+	end
+
 	if ke_keynext[key] then
 		local n = ke_arraynum+1
 		if n > ke_arrays.n then
@@ -337,7 +344,7 @@ function ke_handle(frametime, key)
 		return trans
 	end
 
-	return key
+	return k
 end
 
 function ke_set_active(s)

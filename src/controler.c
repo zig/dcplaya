@@ -109,12 +109,30 @@ int controler_thread(void * dummy)
 
     uint32 frame = ta_state.frame_counter;
     uint32 elapsed_frame = last_frame;
+    int keyboard_addr;
 
     elapsed_frame = frame - elapsed_frame;
 
     if (elapsed_frame) {
+      static report = 0;
+      int oldfunc;
+
       spinlock_lock(&controler_mutex);
 
+      /* rescan one unit per frame */
+      oldfunc = maple_device_func(report, 0);
+      /* first unit of given port */
+      maple_rescan_unit(0, report, 0);
+      if (maple_device_func(report, 0) != oldfunc) {
+	int unit;
+	/* rescan also other units of same porte is some change happened */
+	for (unit=1; unit<6; unit++)
+	  maple_rescan_unit(0, report, unit);
+      }
+
+      report++;
+      if (report >= 4)
+	report = 0;
 
       /* pad */
       controler_get();
@@ -132,7 +150,9 @@ int controler_thread(void * dummy)
 
 
       /* keyboard */
-      kbd_poll_repeat(maple_first_kb(), ta_state.frame_counter - last_frame);
+      keyboard_addr = maple_first_kb();
+      if (keyboard_addr)
+	kbd_poll_repeat(keyboard_addr, ta_state.frame_counter - last_frame);
 
 
       spinlock_unlock(&controler_mutex);
