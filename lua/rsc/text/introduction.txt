@@ -1,5 +1,16 @@
-dcplaya est un programme pour ecouter de la musique avec votre DreamCast.
-dcplaya permet de jouer la plupard des formats de musique populaire.
-Chacun de ces formats fait l'objet d'un plugin, c'est a dire un programme
-exterieur qui peut etre charger a tout moment. Cela permet d'ajouter de
-nouveau format sans avoir a changer de version de dcplaya.
+dcplaya is a free music player for the dreamcast.
+<p>
+It can play most popular music file formats such as mp3, ogg-vorbis, most
+tracker file formats (xm,mod,s3m...) and some old school soundchip formats
+like sc68 and sid.
+<p>
+Other formats can be easily added by third party developper without changing
+dcplaya version.  
+<p>
+dcplaya has many other features such as image file handling,
+visual effects ...<b>
+Read the <a href="">features</a> for more info.
+
+<b>
+Cheers,<br>
+Benjamin Gerard.

@@ -1,0 +1,35 @@
+<macro macro-name="title-font" macro-cmd="font" color="#FFE080" size="20">
+<macro macro-name="title-spam" macro-cmd="vspace" h="4">
+
+<macro macro-name="chap-font" macro-cmd="font" color="#90FFA0" size="32">
+<macro macro-name="chap-spam" macro-cmd="vspace" h="8">
+
+<macro macro-name="def-spam" macro-cmd="vspace" h="8">
+<macro macro-name="def-font" macro-cmd="font" color="#d0d0f0" size="14">
+<macro macro-name="val-font" macro-cmd="font" color="#e0e0c0" size="16">
+
+<a name="top">
+<center><title-font><title-spam>
+Horror Picture Show
+
+<p vspace="2"><vspace h="12"><left><font color="#e0e0a0" size="14">
+You are going to see dcplaya developer team faces. If you think you can not stand seeing it you shall switch back to another page.
+
+<p><left><chap-font><chap-spam><lineup><a name="ben">
+<img name="ben" src="le_ben.jpg" w="128">Ben
+<center>
+<p><def-spam><def-font>Nickname<br><val-font>Ben
+<p><def-spam><def-font>AKA<br><val-font>Ben from the Overlanders
+<p><def-spam><def-font>IRL<br><val-font>Benjamin Gerard
+<p><def-spam><def-font>Country<br><val-font>France
+<p><def-spam><def-font>Class<br><val-font>Coder
+
+
+<p><left><chap-font><chap-spam><lineup><a name="ziggy">
+<img name="ziggy" src="le_zig.jpg" w="128">Ziggy
+<center>
+<p><def-spam><def-font>Nickname<br><val-font>Ziggy
+<p><def-spam><def-font>AKA<br><val-font>Ziggy Stardust from the Overlanders
+<p><def-spam><def-font>IRL<br><val-font>Vincent Penne
+<p><def-spam><def-font>Country<br><val-font>France
+<p><def-spam><def-font>Class<br><val-font>Coder
