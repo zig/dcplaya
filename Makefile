@@ -3,7 +3,7 @@
 #
 # (C) COPYRIGHT 2002 benjamin gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.28 2003-08-01 11:11:54 benjihan Exp $ 
+# $Id: Makefile,v 1.29 2003-08-03 15:31:28 benjihan Exp $ 
 #
 TARGETS=dcplaya.elf
 
@@ -61,13 +61,16 @@ $(TARGETS): force_$(TARGETS) $(OBJS)
 	@cp -fv $@ full-symb-$@
 	@$(KOS_STRIP) $@
 
-send:
+send: make-data userconf.lua
 	$(KOS_LOADER) $(KOS_LOADER_FLAGS) $(TARGETS) | tee debug.log
 
 make-data:
 	$(MAKEDATA)
 
-r: make-data send
+userconf.lua:
+	@cp -v userconf-developer.lua $@
+
+r: send
 
 run: my_all send
 
