@@ -5,16 +5,16 @@
  * @author    benjamin gerard <ben@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.c,v 1.19 2003-03-10 22:55:34 ben Exp $
+ * @version   $Id: display_list.c,v 1.20 2003-03-11 13:38:04 ben Exp $
  */
 
 #include <malloc.h>
+#include "dcplaya/config.h"
 #include "sysdebug.h"
 #include "display_list.h"
 #include "draw/draw.h"
 #include "draw/gc.h"
 #include "draw/text.h"
-#include "sysdebug.h"
 
 #define DLCOM(HEAP,OFFSET) ((dl_command_t *)((char*)(HEAP)+(OFFSET)))
 #define DLID(HEAP,COM)     ((dl_comid_t)((char*)(COM)-(char*)(HEAP)))
