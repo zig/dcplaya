@@ -5,7 +5,7 @@
  * @author  Vincent Penne
  * @author  Dan Potter
  *
- * $Id: lef.c,v 1.3 2002-09-04 18:54:11 ben Exp $
+ * $Id: lef.c,v 1.4 2002-09-06 01:15:01 zig Exp $
  */
 
 #include <malloc.h>
@@ -14,6 +14,9 @@
 #include <kos/fs.h>
 
 #include "lef.h"
+
+// VP : define this to have full debug logging informations
+//#define FULL_DEBUG
 
 extern symbol_t main_symtab[];
 extern int main_symtab_size;
@@ -103,6 +106,7 @@ static void display_symb(struct lef_sym_t *symb, char *strtab, int tag)
   section[4] = bind_chr(ELF32_ST_BIND(symb->info));
   section[5] = 0;
 
+#ifdef FULL_DEBUG
   dbglog(DBG_DEBUG, "%s[%s] val:[%08x] sz:[%06x] %s [%s]\n",
 	 tag ? "SYM: " : "",
 	 type_str[ELF32_ST_TYPE(symb->info)],
@@ -110,20 +114,24 @@ static void display_symb(struct lef_sym_t *symb, char *strtab, int tag)
 	 symb->size,
 	 section,
 	 symb->name + strtab);
+#endif
 }
 
 static display_section(int i, struct lef_shdr_t *shdrs, int tag)
 {
+#ifdef FULL_DEBUG
     dbglog(DBG_DEBUG, "%s#%02X @%08x o:%06x s:%06x a:%02x f:%08x [%s] [%s]\n",
 	   tag ? "SEC: " : "",
 	   i, shdrs->addr,shdrs->offset, shdrs->size,shdrs->addralign,
 	   shdrs->flags, section_str(shdrs->type), shdrs->name);
+#endif
 }
 
 static void display_sections(struct lef_hdr_t *hdr, struct lef_shdr_t *shdrs,
 			     int tag)
 {
   int i;
+#ifdef FULL_DEBUG
   dbglog(DBG_DEBUG,"--------------------------------------------------\n");
   dbglog(DBG_DEBUG,"SECTIONS [%d]\n", hdr->shnum);
   dbglog(DBG_DEBUG,"--------------------------------------------------\n");
@@ -131,6 +139,7 @@ static void display_sections(struct lef_hdr_t *hdr, struct lef_shdr_t *shdrs,
     display_section(i, shdrs+i, tag);
   }
   dbglog(DBG_DEBUG,"--------------------------------------------------\n");
+#endif
 }
 
 static void display_symbtable(struct lef_sym_t * stab,
@@ -139,6 +148,7 @@ static void display_symbtable(struct lef_sym_t * stab,
 {
   int stabsz, j;
 
+#ifdef FULL_DEBUG
   stabsz = shdrs->size / sizeof(struct lef_sym_t);
   dbglog(DBG_DEBUG, "--------------------------------------------------\n");
   dbglog(DBG_DEBUG, "SYMBOL-TABLE [%s] [%s] (%d)\n",
@@ -148,6 +158,7 @@ static void display_symbtable(struct lef_sym_t * stab,
     display_symb(stab + j, stringtab, tag);
   }
   dbglog(DBG_DEBUG, "--------------------------------------------------\n");
+#endif
 }
 
 /* Finds a given symbol in a relocated ELF symbol table */

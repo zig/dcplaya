@@ -4,7 +4,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.4 2002-09-04 18:54:11 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.5 2002-09-06 01:15:01 zig Exp $
  */
 
 //#define RELEASE
@@ -302,7 +302,7 @@ static int render_simple_anim_object(uint32 elapsed_frames, anim_f anim,
     static int init = 0;
 
     if (!init) {
-      vlr_init();
+      //vlr_init();
       init = 1;
     }
     MtxIdentity(m);
@@ -333,8 +333,8 @@ static int render_simple_anim_object(uint32 elapsed_frames, anim_f anim,
 		  1000);
     MtxMult(m, tmp);
 
-    vlr_update();
-    vlr_render(m);
+    //vlr_update();
+    //vlr_render(m);
   }
   return err;
 #endif
@@ -442,6 +442,7 @@ static int driver_init(void)
       //      "/pc" DREAMMP3_HOME "plugins/inp/ogg",
       "/pc" DREAMMP3_HOME "plugins/obj",
       "/pc" DREAMMP3_HOME "plugins/vis/lpo",
+      "/pc" DREAMMP3_HOME "plugins/vis/fftvlr",
       "/pc" DREAMMP3_HOME "plugins/inp/xing",
       "/pc" DREAMMP3_HOME "plugins/inp/sc68",
       0

@@ -34,7 +34,7 @@ fi
 
 # Find nm	
 if [ -z "$NM" ]; then
-    NM="`which sh-elf-nm`"
+    NM="`which ${KOS_NM}`"
 fi
 
 if [ ! -x "$NM" ]; then

@@ -7,13 +7,11 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include "fft.h"
 #include "vis_driver.h"
 #include "obj3d.h"
-
-/* From dreamcast68.c */
-extern void DrawObject(obj_t * o, matrix_t local, matrix_t proj,
-		       const float z, const float a, const float light);
+#include "draw_object.h"
 
 /* From obj3d.c */
 void FaceNormal(float *d, const vtx_t * v, const tri_t *t);
@@ -36,8 +34,18 @@ static int idx;
 
 volatile int ready;
 
+static viewport_t viewport;   /**< Current viewport */
 static matrix_t fftvlr_proj; /* Projection matrix */
 static matrix_t fftvlr_mtx;  /* Local matrix */
+
+static float angle;
+static vtx_t tlight_normal;
+static vtx_t light_normal = { 
+  0.8,
+  0.4,
+  0.5
+};
+
 
 /* The 3D-object */
 static obj_t fftvlr_obj =
@@ -167,7 +175,7 @@ static void vlr_update(void)
 
   /* Scroll FFT towards Y axis */
   for (j=0, vy=v; j<VLR_H-1; ++j) {
-    for (i=0; i<VLR_W; ++i, ++v) {
+    for (i=0; i<VLR_W; ++i, ++vy) {
       vy->y = vy[VLR_W].y;
     }
   }
@@ -216,11 +224,37 @@ static int fftvlr_shutdown(any_driver_t * d)
   return 0;
 }
 
-static int fftvlr_process(matrix_t projection, int elapsed_ms)
+static int fftvlr_process(viewport_t * vp, matrix_t projection, int elapsed_ms)
 {
   if (ready) {
-    MtxCopy(fftvlr_mtx, projection);
+    matrix_t tmp, m;
+
+    angle += elapsed_ms;
+
+    /* Copy viewport and projection matrix for further use (render) */
+    viewport = *vp;
+    MtxCopy(fftvlr_proj, projection);
+
+    MtxIdentity(m);
+    MtxRotateZ(m, 3.14159);
+    MtxRotateY(m, 0.1*angle);
+    MtxRotateX(m, 0.4);
+    MtxRotateY(tmp, -0.33468713*angle);
+    MtxRotateX(tmp, 0.4);
+    MtxTranspose(tmp);
+    MtxVectMult(&tlight_normal, &light_normal, tmp);
+    
+    //    MtxScale(m,32*4/10);
+    MtxScale(m,1.0f/5.0f);
+    m[3][0] = 0;
+    m[3][1] = 0;
+    m[3][2] = 0;
+      
+    MtxCopy(fftvlr_mtx, m);
+      
+
     vlr_update();
+
     return 0;
   }
   return -1;
@@ -234,7 +268,13 @@ static int fftvlr_opaque(void)
 static int fftvlr_transparent(void)
 {
   if (ready) {
-    DrawObject(&fftvlr_obj , fftvlr_mtx, 0, 80.0f, 0.90f, 0.0f);
+    static vtx_t color =     /**< Original color */
+      {
+	0.8f, 0.9f, 0.0f, 0.7f
+      };
+    DrawObjectSingleColor(&viewport, fftvlr_mtx, fftvlr_proj,
+			  &fftvlr_obj, &color);
+    //    DrawObject(&fftvlr_obj , fftvlr_mtx, 0, 80.0f, 0.90f, 0.0f);
     return 0;
   } else {
     return -1;
