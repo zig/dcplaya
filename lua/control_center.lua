@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.7 2003-03-04 15:26:51 ben Exp $
+--- $Id: control_center.lua,v 1.8 2003-03-04 19:44:53 ben Exp $
 ---
 
 control_center_loaded = nil
@@ -16,6 +16,7 @@ if not dolib("volume_control") then return end
 function control_center_create(owner, name)
    owner = owner or evt_desktop_app
    name = name or "control center"
+   local z
 
    function control_center_volume(menu)
       local cc = menu.target
@@ -136,7 +137,21 @@ function control_center_create(owner, name)
 			local pos = menu.fl:get_pos()
 			if pos then pos = pos - 1 end
 			vmu_set_visual(pos)
-		     end
+		     end,
+	 plug_help = function (menu) 
+			local cc = menu.root_menu.target
+			local fname = home .. "lua/rsc/text/plugins.txt"
+			gui_file_viewer(nil, fname, nil, "plugins")
+		     end,
+	 set_visual = function (menu) 
+			 local name=menu.fl:get_text()
+			 if name then
+			    name = (name ~= "none") and name
+			    print(name)
+			    set_visual(name)
+			 end
+		     end,
+
       }
 
       -- Read available driver type
@@ -148,15 +163,20 @@ function control_center_create(owner, name)
 	 sub  = {}
       }
       local plug_info
-      local cur_inp = set_visual() or "none"
+      local cur_vis = set_visual() or "none"
 
-      -- Inp driver type exist ? (should be always the case)
-
-      print(drlist.inp)
-
-      if drlist.inp then
+      -- vis driver type exist ? (should be always the case)
+      if drlist.vis then
 	 plugins.root = plugins.root .. "set visual >set_visual"
 	 plugins.sub.set_visual = ":visual:none{set_visual}"
+	 local i = drlist.vis.n
+	 for i=1, drlist.vis.n do
+	    local vis = drlist.vis[i]
+	    if vis and type(vis.name) == "string" then
+	       plugins.sub.set_visual = plugins.sub.set_visual
+		  .. "," .. vis.name .. "{set_visual}"
+	    end
+	 end
       end
 
       -- Fill the info submenu with all available driver types.

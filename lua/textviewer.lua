@@ -3,7 +3,7 @@
 --- @date   2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  hyper text viwer gui
---- $Id: textviewer.lua,v 1.7 2003-03-04 17:27:55 zigziggy Exp $
+--- $Id: textviewer.lua,v 1.8 2003-03-04 19:44:53 ben Exp $
 ---
 
 if not dolib("taggedtext") then return end
@@ -509,12 +509,15 @@ end
 --- @see gui_text_viewer
 ---
 function gui_file_viewer(owner, fname, box, label, mode)
+   fname = canonical_path(fname)
    if test("-f",fname) then
       local file = openfile(fname,"rt")
+      local name = get_nude_name(fname) or "text"
       if not file then return end
-      local buffer = read(file,"*a")
+      local tmp = {}
+      tmp[name] = read(file,"*a")
       closefile(file)
-      return gui_text_viewer(owner,buffer,box,label,mode)
+      return gui_text_viewer(owner,tmp,box,label,mode)
    end
 end
 
