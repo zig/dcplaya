@@ -1,10 +1,12 @@
 /**
- * $Id: lpo.c,v 1.20 2003-01-24 04:28:13 ben Exp $
+ * $Id: lpo.c,v 1.21 2003-01-24 10:37:18 ben Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <dc/controller.h>
 #include "math_float.h"
 
 #include "matrix.h"
@@ -17,6 +19,7 @@
 #include "sysdebug.h"
 #include "draw/vertex.h"
 #include "border.h"
+#include "controler.h"
 
 /* $$$ Defined in libdcutils */
 extern int rand();
@@ -48,6 +51,7 @@ static fftbands_t * bands;
 
 /* Automatic object changes */
 static int change_mode = RANDOM_MODE|FLASH_MODE|RND_BORDER_MODE;
+//static int change_mode = 0;
 static int change_cnt;
 static int change_time = 5*1000;
 
@@ -69,9 +73,46 @@ static float rps_sign;         /**< Rotation sens */
 static float zoom_min = 0.0f;
 static float zoom_max = 7.0f;
 
+static int lpo_controler = -1;
+static int lpo_controler_binding = -1;
+
+static int lpo_opaque = 0;
 static int lpo_lighted = 1;
 static int lpo_remanens = 1;
 static unsigned int lpo_iframe = 0;
+
+static void lpo_set_controler(int cont)
+{
+  cont = cont - 1;
+  if (cont >= 0) {
+    cont &= 31;
+  } else {
+    cont = -1;
+  }
+
+  printf("[lpo_set_controler] old:%d new:%d\n",lpo_controler,cont);
+
+  if (cont != lpo_controler) {
+    int clear = 0, set = 0;
+    if (lpo_controler >=0) {
+      /* Reset current lpo controller binding. */
+      int m = 1 << lpo_controler;
+      clear = m;
+      set   = lpo_controler_binding & m;
+    }
+
+    if (cont >= 0) {
+      int m = 1 << cont;
+      clear |= m;
+    }
+
+    printf("[lpo_set_controler] clear:%08x set:%08x\n",clear,set);
+    lpo_controler_binding = controler_binding(clear, set);
+    lpo_controler = cont;
+    printf("[lpo_set_controler] : binding old:%08x new:%08x\n",
+	   lpo_controler_binding, controler_binding(0,0));
+  }
+}
 
 static int same_sign(float a, float b)
 {
@@ -135,7 +176,7 @@ static int change_object(obj_driver_t *o)
   curobj = o;
 
   // $$$
-  if (o && o->obj.nvx) {
+  if (0 && o && o->obj.nvx) {
     int i, err=0;
 /*     SDDEBUG("Build normals\n"); */
     for (i=0; i<o->obj.nbf; ++i) {
@@ -151,6 +192,21 @@ static int change_object(obj_driver_t *o)
 /*       o->obj.nvx[i].w = 1; */
 //      FaceNormal(&o->obj.nvx[i].x, o->obj.vtx, o->obj.tri+i);
     
+  }
+
+  if (0 && o && o->obj.tri) {
+    int i;
+    SDDEBUG("Inverting face def\n");
+    for (i=0; i<o->obj.nbf; ++i) {
+      int a = o->obj.tri[i].a;
+      int b = o->obj.tri[i].b;
+      int c = o->obj.tri[i].c;
+
+      o->obj.tri[i].a = b;
+      o->obj.tri[i].b = a;
+      o->obj.tri[i].c = c;
+    }
+    obj3d_build_normals(&o->obj);
   }
 
   return 0;
@@ -412,11 +468,35 @@ static int anim(unsigned int ms)
   
   /* Move angle */
 
-  vtx_scale(&sa, rps_cur);
+
+  if (lpo_controler >= 0) {
+    controler_state_t state;
+    int err = controler_read(&state, lpo_controler);
+    if (!err) {
+      vtx_set(&sa,
+	      sec * (float)state.joyy * (1.0/32.0),
+	      sec * (float)state.joyx * (1.0/32.0),
+	      0);
+      if (controler_pressed(&state, CONT_A)) {
+	change_object(random_object(curobj));
+      }
+      if (controler_pressed(&state, CONT_START|CONT_B)) {
+	lpo_set_controler(-1);
+      }
+    } else {
+      lpo_set_controler(-1);
+    }
+    pos.z = 2.0;
+  }
+
+  if (lpo_controler < 0) {
+    vtx_scale(&sa, rps_cur);
+    pos.z = zoom_max + 1.7 - ozoom;
+  }
+
   vtx_inc_angle(&angle, &sa);
 
   // $$$
-  pos.z = zoom_max + 1.7;
 
   /* Build local matrix */
   MtxIdentity(mtx);
@@ -426,7 +506,8 @@ static int anim(unsigned int ms)
   //MtxScale(mtx, ozoom);
   mtx[3][0] = pos.x;
   mtx[3][1] = pos.y;
-  mtx[3][2] = pos.z - ozoom;
+  // $$$ TEST REMOVE NEXT COMMENT
+  mtx[3][2] = pos.z;
   
   /* Build render color : blend base and flash color */
   {
@@ -476,11 +557,6 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
     return -1;
   }
 
-  curobj->obj.flags = 0
-    | DRAW_NO_FILTER
-    | DRAW_TRANSLUCENT
-    | (lpo_texid << DRAW_TEXTURE_BIT);
-
   /* Copy viewport and projection matrix for further use (render) */
   viewport = *vp;
   MtxCopy(projmtx, projection);
@@ -496,16 +572,10 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
     }
   }
   anim(elapsed_ms);
-  if (lpo_remanens) {
+  if (lpo_remanens && !lpo_opaque) {
     remanens_push(&curobj->obj, mtx, ++lpo_iframe);
   }
 
-  return 0;
-}
-
-
-static int opaque_render(void)
-{
   return 0;
 }
 
@@ -514,19 +584,25 @@ static vtx_t ambient = {
   0,0,0,0
 };
 
-static int transparent_render(void)
+int render(void)
 {
   vtx_t flat_color;
-  if (!curobj) {
+
+  if (!curobj || lpo_texid <= 0) {
     return -1;
   }
+
+  curobj->obj.flags = 0
+    | DRAW_NO_FILTER
+    | (lpo_opaque ? DRAW_OPAQUE : DRAW_TRANSLUCENT)
+    | (lpo_texid << DRAW_TEXTURE_BIT);
 
   if (!lpo_lighted) {
     draw_color_add((draw_color_t *)&flat_color,
 		   (draw_color_t *)&ambient, (draw_color_t *)&color);
   }
 
-  if (lpo_remanens) {
+  if (lpo_remanens && !lpo_opaque) {
     int age, f, maxf = 2000; /* Max number of face */
 
     if (curobj->obj.nbf >= maxf) {
@@ -570,6 +646,23 @@ static int transparent_render(void)
   return 0;
 }
 
+static int opaque_render(void)
+{
+  if (!lpo_opaque) {
+    return 0;
+  }
+  return render();
+}
+
+
+static int transparent_render(void)
+{
+  if (lpo_opaque) {
+    return 0;
+  }
+  return render();
+}
+
 static int init(any_driver_t *d)
 {
   const char * tname = "lpo_bordertile";
@@ -589,6 +682,9 @@ static int init(any_driver_t *d)
   border_customize(lpo_texid, borderdef);
   bands = fft_create_bands(3,limits);
 
+  lpo_controler_binding = controler_binding(0, 0);
+  lpo_controler = -1;
+
   return -(lpo_texid < 0 || !bands);;
 }
 
@@ -599,6 +695,7 @@ static int shutdown(any_driver_t *d)
     free(bands);
     bands = 0;
   }
+  lpo_set_controler(-1);
   return 0;
 }
 
@@ -681,14 +778,39 @@ static int lua_setboolean(lua_State * L, int * v)
   return lua_gettop(L);
 }
 
+static int lua_setinteger(lua_State * L, int * v)
+{
+  int old = *v;
+
+  if (lua_gettop(L) >= 1) {
+    *v = lua_tonumber(L,1);
+  }
+  lua_settop(L,0);
+  lua_pushnumber(L,old);
+  return lua_gettop(L);
+}
+
 static int lua_setremanens(lua_State * L)
 {
   return lua_setboolean(L, &lpo_remanens);
 }
 
-static int lpo_setlighting(lua_State * L)
+static int lua_setlighting(lua_State * L)
 {
   return lua_setboolean(L, &lpo_lighted);
+}
+
+static int lua_setopaque(lua_State * L)
+{
+  return lua_setboolean(L, &lpo_opaque);
+}
+
+static int lua_setcontroller(lua_State * L)
+{
+  int c = lpo_controler;
+  int r = lua_setinteger(L, &c);
+  lpo_set_controler(c);
+  return r;
 }
 
 static int lua_setchange(lua_State * L)
@@ -773,6 +895,23 @@ static luashell_command_description_t commands[] = {
     SHELL_COMMAND_C, lua_setremanens    /* function */
   },
   {
+    "lpo_setopacity", 0,            /* long and short names */
+    "print [["
+    "lpo_setopacity([boolean]) : get/set opacity mode. "
+    "Return old state."
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_setopaque    /* function */
+  },
+  {
+    "lpo_setcontroller", 0,            /* long and short names */
+    "print [["
+    "lpo_setcontroller([cont_id]) : set/get controller control."
+    "Return old state."
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_setcontroller    /* function */
+  },
+
+  {
     "lpo_setchange", 0,            /* long and short names */
     "print [["
     "lpo_setchange(type [, time]) : Set object change properties. "
@@ -794,7 +933,7 @@ static luashell_command_description_t commands[] = {
     "lpo_setlighting([boolean]) : Set/Get lighting process."
     "Return old values."
     "]]",                                /* usage */
-    SHELL_COMMAND_C, lpo_setlighting    /* function */
+    SHELL_COMMAND_C, lua_setlighting    /* function */
   },
 
 
