@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.c,v 1.4 2002-10-12 20:28:53 vincentp Exp $
+ * @version   $Id: display_list.c,v 1.5 2002-10-16 03:02:29 benjihan Exp $
  */
 
 
@@ -31,7 +31,7 @@ static void locklists(void)
   spinlock_lock(&listmutex);
 }
 
-void unlocklists(void)
+static void unlocklists(void)
 {
   spinlock_unlock(&listmutex);
 }
@@ -102,12 +102,42 @@ int dl_set_active(dl_list_t * l, int active)
 
   l->active = active;
 
- done:
+  unlocklists();
+
+  return old;
+}
+
+int dl_set_active2(dl_list_t * l1, dl_list_t * l2, int active)
+{
+  int old;
+
+  old = l1->active + (l2->active<<1);
+
+  if (!active) {
+	if (!old)  return 0;
+	active = old;
+  }
+  active ^= old;
+
+  LIST_REMOVE(l1, g_list);
+  if (!(active&1))
+    LIST_INSERT_HEAD(&dl_sleeping_lists, l1, g_list);
+  else
+    LIST_INSERT_HEAD(&dl_active_lists, l1, g_list);
+  l1->active = active & 1;
+
+  LIST_REMOVE(l2, g_list);
+  if (!(active&2))
+    LIST_INSERT_HEAD(&dl_sleeping_lists, l2, g_list);
+  else
+    LIST_INSERT_HEAD(&dl_active_lists, l2, g_list);
+  l2->active = (active>>1)&1;
 
   unlocklists();
 
   return old;
 }
+
 
 int dl_get_active(dl_list_t * l)
 {
