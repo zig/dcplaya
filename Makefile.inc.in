@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile.inc.in,v 1.10 2002-09-11 03:42:53 zig Exp $
+# $Id: Makefile.inc.in,v 1.11 2002-09-11 03:55:57 ben Exp $
 #
 
 TOP_DIR="@TOP_DIR@"
@@ -165,7 +165,7 @@ distclean: depend-clean clean
 	@find . -name '*~' -exec rm -f {} \;
 
 maintainer-clean: distclean 
-	@rm -f config.cache config.log config.status configure
+	@rm -rf config.cache config.log config.status configure autom4te.cache
 
 # ----------------------------------------------------------------------
 # Dependencies
