@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.40 2003-01-10 13:00:15 ben Exp $
+--- $Id: gui.lua,v 1.41 2003-01-13 04:09:52 ben Exp $
 ---
 
 --
@@ -344,6 +344,17 @@ function gui_dialog_handle(app, evt)
 	 evt_send(focused, { key = gui_press_event })
 	 return
       end
+
+      if gui_keycancel[key] then
+	 evt_send(focused, { key = gui_cancel_event })
+	 return
+      end
+
+      if gui_keyselect[key] then
+	 evt_send(focused, { key = gui_select_event })
+	 return
+      end
+
 
 --      if gui_keymenu[key] then
 --	 evt_send(focused, { key = gui_menu_event })
@@ -959,9 +970,11 @@ function gui_init()
    gui_shutdown()
    gui_curz = 1000
    gui_press_event		= evt_new_code()
+   gui_cancel_event		= evt_new_code()
+   gui_select_event		= evt_new_code()
    gui_menu_event		= evt_new_code()
    gui_focus_event		= evt_new_code()
-   gui_unfocus_event	= evt_new_code()
+   gui_unfocus_event	        = evt_new_code()
    gui_input_confirm_event	= evt_new_code()
    gui_item_confirm_event	= evt_new_code()
    gui_item_cancel_event	= evt_new_code()

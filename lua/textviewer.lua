@@ -1,17 +1,22 @@
---- @ingroup dcplaya_gui
+--- @ingroup dcplaya_lua_gui
 --- @file   textviewer.lua
 --- @date   2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  hyper text viwer gui
---- $Id: textviewer.lua,v 1.1 2003-01-12 23:59:06 ben Exp $
+--- $Id: textviewer.lua,v 1.2 2003-01-13 04:09:52 ben Exp $
 ---
 
 if not dolib("taggedtext") then return end
 if not dolib("gui") then return end
 if not dolib("menu") then return end
 
+--- @name text viewer
+--- @ingroup dcplaya_lua_gui
+--- @{
+--
+
 --- Create a text view gui application.
---- @ingroup dcplaya_gui
+--
 --- @param  owner  owner applciation (default is desktop)
 --- @param  texts  string or table of string.
 --- @param  application box
@@ -21,6 +26,8 @@ if not dolib("menu") then return end
 ---
 function gui_text_viewer(owner, texts, box, label, mode)
 
+   --- Desactive a tagged text.
+   --- @internal
    function gui_text_viewer_desactive_tt(tt)
       if tag(tt) ~= tt_tag then return end
       local a,r,g,b = dl_get_color(tt.dl)
@@ -28,6 +35,14 @@ function gui_text_viewer(owner, texts, box, label, mode)
       dl_set_active(tt.dl,0)
    end
 
+   --- Set current displayed tagged text.
+   --- @param dial textviewer dialog
+   --- @param tt   tagged-text or anchor string. Anchor string format is
+   ---             [text-name][#anchor-name]. If an anchor is specified, it
+   ---             override x and y parameters.
+   --- @param x    x scrolling position
+   --- @param y    y scrolling position
+   --
    function gui_text_viewer_set_tt(dial, tt, x, y)
       if type(tt) == "string" then
 	 local start, stop, tt_name, hash, tt_anchor =
@@ -54,6 +69,12 @@ function gui_text_viewer(owner, texts, box, label, mode)
       dial.tt_a = 1
    end
 
+   --- Set current tagged text-scrolling position.
+   --- This function ensure that scrolling position is inside taged-text box.
+   --- @param dial text-viewer dialog
+   --- @param x    x scrolling position
+   --- @param y    y scrolling position
+   --
    function gui_text_viewer_set_scroll(dial, x, y)
       local mat
       local tt = dial.cur_tt
@@ -104,7 +125,7 @@ function gui_text_viewer(owner, texts, box, label, mode)
    tbox = box + { border, border,-border, -(2*border+buth) }
 
    local minx,miny = 32,32
-   local tx,ty, tw, th = tbox[1], tbox[2], tbox[3]-tbox[1], tbox[4]-tbox[2]
+   local tx,ty,tw,th = tbox[1], tbox[2], tbox[3]-tbox[1], tbox[4]-tbox[2]
    local x,y
    x = (tw < minx and (minx-tw)/2) or 0
    y = (th < miny and (miny-th)/2) or 0
@@ -113,16 +134,18 @@ function gui_text_viewer(owner, texts, box, label, mode)
    tbox = tbox + { -x, -y, x, y }
 
    -- Get final text box dim
-   tw = tbox[3]-tbox[1]
-   th = tbox[4]-tbox[2]
+   tw = tbox[3]-tbox[1]-12
+   th = tbox[4]-tbox[2]-16
+   tx = tx + 6 
+   ty = ty + 8 
 
    -- Creates tagged texts
    local tts = {}
 
-   local ttbox0 = { 0,0,tw,th }
-
+   local ttbox0 = { 0,0,tw,th}
+   
    if type(texts) == "string" then
-      tts[1] = tt_build(texts, { dl = dl_new_list(1024,1,1) } )
+      tts[1] = tt_build(texts, { dl = dl_new_list(strlen(texts),0,1) } )
    elseif type(texts) == "table" then
       local i,v
       for i,v in texts do
@@ -130,7 +153,7 @@ function gui_text_viewer(owner, texts, box, label, mode)
 	    tts[i] = tt_build(v,
 			      {
 				 box = ttbox0,
-				 dl = dl_new_list(strlen(v),1,1)
+				 dl = dl_new_list(strlen(v),0,1)
 			      } )
 	 elseif tag(v) == tt_tag then
 	    tts[i] = v
@@ -138,9 +161,14 @@ function gui_text_viewer(owner, texts, box, label, mode)
       end
    end
 
-   -- Create dialog
+   -- Create main-dialog
    dial = gui_new_dialog(owner, box, nil, nil, label, mode, "gui_viewer")
    if not dial then return end
+
+   -- Create view-dialog
+   dial.viewer = gui_new_dialog(dial, tbox, nil, nil, nil, nil,
+				  "viewer_area")
+   if not dial.viewer then return end
 
    dial.tbox = ttbox0
 
@@ -151,16 +179,20 @@ function gui_text_viewer(owner, texts, box, label, mode)
    dial.button = gui_new_button(dial, bbox, buttext , mode)
    if not dial.button then return end
    dial.button.event_table[gui_press_event] =
-	 function(app, evt)
-	    evt_shutdown_app(app.owner)
-	    app.owner.answer = "close"
-	 end
-
+      function(app, evt)
+	 evt_shutdown_app(app.owner)
+	 app.owner.answer = "close"
+      end
+   dial.button.event_table[gui_cancel_event] =
+      function(app, evt)
+	 gui_new_focus(app.owner, app.owner.viewer)
+      end
+   
    -- Display tagged-texts
-   local tt_dl = dl_new_list(256,1,1)
+   local tt_dl = dl_new_list(256,1,1) -- For clipping
    dl_set_clipping(tt_dl, 0, 0, tw, th)
    dl_set_trans(tt_dl, mat_trans(tx,ty,90))
-   local tt_dl2 = dl_new_list(256,1,1)
+   local tt_dl2 = dl_new_list(256,1,1) -- For scrolling
    dl_sublist(tt_dl, tt_dl2)
    for i,v in tts do
       if tag(v) == tt_tag then
@@ -172,10 +204,12 @@ function gui_text_viewer(owner, texts, box, label, mode)
 	 tt_draw(v)
       end
    end
-   dl_sublist(dial.dl,tt_dl)
+   dl_sublist(dial.viewer.dl,tt_dl)
    dial.tt_dl = tt_dl2
    dial.tts = tts
 
+   --- Process tagged text fading.
+   --- @internal
    function gui_text_viewer_fadeto(tt, alpha, spd)
       if not alpha or not tt or not spd then return end
       local a,r,g,b = dl_get_color(tt.dl)
@@ -197,6 +231,8 @@ function gui_text_viewer(owner, texts, box, label, mode)
       return alpha
    end
 
+   --- Process tagged text scrolling.
+   --- @internal
    function gui_text_viewer_scrollto(x, xgoal)
       if xgoal and x then
 	 local scrollmax = 64
@@ -213,6 +249,8 @@ function gui_text_viewer(owner, texts, box, label, mode)
       return x, xgoal
    end
 
+   --- Text viewer gui application update. 
+   --- @internal
    function gui_text_viewer_update(dial, frametime)
       local fadespd = 1 * frametime
 
@@ -240,20 +278,48 @@ function gui_text_viewer(owner, texts, box, label, mode)
       end
    end
 
-   -- Patch dialog event
-   function gui_text_viewer_up(dial, evt)
+   -- Patch dialog up/down/left/right events
+
+   function gui_text_viewer_move_handle(dial, x, y)
       local mat = dl_get_trans(dial.tt_dl)
       if mat then
-	 gui_text_viewer_set_scroll(dial, mat[4][1], mat[4][2] + 12)
+	 gui_text_viewer_set_scroll(dial, mat[4][1]+x, mat[4][2] + y)
       end
+
+   end
+
+   function gui_text_viewer_up(dial, evt)
+      gui_text_viewer_move_handle(dial, 0, 16)
    end
 
    function gui_text_viewer_dw(dial, evt)
-      local mat = dl_get_trans(dial.tt_dl)
-      if mat then
-	 gui_text_viewer_set_scroll(dial, mat[4][1], mat[4][2] - 12)
+      gui_text_viewer_move_handle(dial, 0, -16)
+   end
+
+   function gui_text_viewer_lt(dial, evt)
+      gui_text_viewer_move_handle(dial, 16, 0)
+   end
+
+   function gui_text_viewer_rt(dial, evt)
+      gui_text_viewer_move_handle(dial, -16, 0)
+   end
+
+   local j,w 
+   for j,w in {
+      { gui_text_viewer_up, gui_keyup },
+      { gui_text_viewer_dw, gui_keydown },
+      { gui_text_viewer_lt, gui_keyleft },
+      { gui_text_viewer_rt, gui_keyright } } do
+
+      for i,v in w[2] do
+	 dial.event_table[i] = w[1]
       end
    end
+
+   dial.viewer.event_table[gui_cancel_event] = 
+      function(app, evt)
+	 gui_new_focus(app.owner, app.owner.button)
+      end
 
    function gui_text_viewer_menucreator(target)
       local dial = target;
@@ -301,14 +367,6 @@ function gui_text_viewer(owner, texts, box, label, mode)
       return menu_create_defs(def , target)
    end
 
-
-   for i,v in gui_keyup do
-      dial.event_table[i] = gui_text_viewer_up
-   end
-
-   for i,v in gui_keydown do
-      dial.event_table[i] = gui_text_viewer_dw
-   end
 
    -- Install new update 
    dial.tv_old_update = dial.update
@@ -393,7 +451,6 @@ function gui_text_viewer(owner, texts, box, label, mode)
 end
 
 --- Create a text-viewer application from a file.
---- @ingroup dcplaya_gui
 --- @param  fname  Filename to view
 --- @see gui_text_viewer
 ---
@@ -407,6 +464,10 @@ function gui_file_viewer(owner, fname, box, label, mode)
    end
 end
 
+--
+--- @}
+--
+
 -- <left> <img name="dcplaya" src="dcplaya.tga">
 -- <center> <font size="18" color="#FFFF90"> Welcome to dcplaya<br>
 -- <br>
@@ -419,7 +480,7 @@ local newbie_text =
 <hspace w="8">
 
 If is this the first time you launch dcplaya, you should read this lines.
-It contains a 
+It contains a <button guiref="toto">TOTO</button>titi<br>Button
 ]]
 
 -- Introduction
