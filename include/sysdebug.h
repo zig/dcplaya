@@ -1,11 +1,15 @@
 /**
- * @ingroup    dcplaya
+ * @ingroup    dcplaya_devel
  * @file       sysdebug.h
  * @author     benjamin gerard <ben@sashipa.com>
  * @date       2002/09/04
  * @brief      Debug fonctions.
  *
- * @version    $Id: sysdebug.h,v 1.5 2003-03-10 22:55:32 ben Exp $
+ * @version    $Id: sysdebug.h,v 1.6 2003-03-11 13:33:17 ben Exp $
+ */
+
+/** @defgroup dcplaya_debug_devel Debug facilities
+ *  @ingroup  dcplaya_devel
  */
 
 #ifndef _SYSDEBUG_H_
@@ -26,7 +30,9 @@ DCPLAYA_EXTERN_C_START
 
 # include <stdarg.h>
 
-/** debug level enum. */
+/** debug level enum.
+ *  @ingroup  dcplaya_debug_devel
+ */
 typedef enum {
 
   sysdbg_critical = 0,          /**< Critical message    */
@@ -56,7 +62,9 @@ typedef enum {
   sysdbg_userF,
 } sysdgb_level_e;
 
-/** Debug level definition. */
+/** Debug level definition.
+ *  @ingroup  dcplaya_debug_devel
+ */
 typedef struct {
   int bit;               /**< Level mask                         */
   char twocc[4];         /**< Level two char code [0 terminated] */
@@ -64,9 +72,16 @@ typedef struct {
   int reserved;          /**< Reserved must be set to 0          */
 } sysdbg_debug_level_t;
 
-/** Debug function type definition */
+/** Debug function type definition.
+ *  @ingroup  dcplaya_debug_devel
+ */
 typedef void (*sysdbg_f)(void * cookie,
 			const char *fmt, va_list list);
+
+/** @name Debug functions
+ *  @ingroup  dcplaya_debug_devel
+ * @{
+ */
 
 /** Print a debug message (variable argument version). */
 void sysdbg_vprintf(const char * file, int line, int level,
@@ -112,8 +127,10 @@ void sysdbg_indent(int indent, int * prev);
 void sysdbg_register_level(sysdgb_level_e level,
 			   const char *name, const char *twocc);
 
+/**@}*/
 
-/** Predefined macros for logging messages.
+/** @name Predefined macros for logging messages.
+ *  @ingroup  dcplaya_debug_devel
  *
  *  This macros are only actif if DBG_LOG is defined. To log debug message in
  *  non-debug compilation, use directly the sysdbg_printf() function.

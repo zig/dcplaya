@@ -1,11 +1,11 @@
 /**
- * @ingroup    dcplaya
+ * @ingroup    dcplaya_devel
  * @file       sysdebug.c
  * @author     benjamin gerard <ben@sashipa.com>
  * @date       2002/09/04
  * @brief      Debug fonctions.
  *
- * @version    $Id: sysdebug.c,v 1.9 2003-03-10 22:55:35 ben Exp $
+ * @version    $Id: sysdebug.c,v 1.10 2003-03-11 13:33:17 ben Exp $
  */
 
 #include <stdarg.h>
@@ -16,7 +16,11 @@
 #include "sysdebug.h"
 
 /* From modified kos 1.1.5 */
-extern void dbglogv(int level, const char *fmt, va_list args);
+/* extern void dbglogv(int level, const char *fmt, va_list args); */
+
+/* ben : use printf since we don't want to be dependant from 
+ * KOS debugg level. */
+extern int dbgio_vprintf(const char *fmt, va_list args);
 
 static spinlock_t mutex;
 
@@ -37,7 +41,7 @@ static sysdbg_debug_level_t sd_levels[32] =
     /* System defined level */
     {0x00000001, "!! ", "critical"},
     {0x00000002, "$$ ", "error"},
-    {0x00000004, "%% ", "warning"},
+    {0x00000004, "?? ", "warning"},
     {0x00000008, "## ", "notice"},
     {0x00000010, "ii ", "info"},
     {0x00000020, ":: ", "debug"},
@@ -74,7 +78,7 @@ static sysdbg_debug_level_t sd_levels[32] =
 
 /** User defined accepted debug message levels. */
 static int sd_level  = SD_DEFAULT_LEVEL;
-/** Compilation defined accepted debug message levels. */  
+/** Compilation defined accepted debug message levels. */
 static const int sd_global_level = SD_GLOBAL_LEVEL;
 
 /* Indentation system */
@@ -88,7 +92,8 @@ static int sd_col = 0;    /**< Curent column */
 static void sd_default_vprintf(void * cookie,
 				   const char * fmt, va_list list)
 {
-  dbglogv((int)cookie, fmt, list);
+  dbgio_vprintf(fmt,list);
+  //  dbglogv((int)cookie, fmt, list);
 }
 
 static sysdbg_f sd_current = sd_default_vprintf;
