@@ -3,12 +3,12 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/12
  * @brief     shell support for dcplaya
- * @version   $Id: shell.h,v 1.2 2002-09-13 00:05:47 zig Exp $
+ * @version   $Id: shell.h,v 1.1 2002-09-13 16:37:06 zig Exp $
  */
 
 
 typedef void (* shell_shutdown_func_t)();
-typedef int (* shell_command_func_t)(const char * command, ...);
+typedef int (* shell_command_func_t)(const char * command);
 
 int shell_init();
 

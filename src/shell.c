@@ -101,7 +101,7 @@ void shell_load(const char * fname)
   }
 
   if (shell_lef) {
-    shell_lef_shutdown_func = (shell_shutdown_func_t) shell_lef->main(0, 0);
+    shell_lef_shutdown_func = (shell_shutdown_func_t) shell_lef->ko_main(0, 0);
   }
 }
 
