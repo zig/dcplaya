@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.18 2003-03-03 17:32:51 zigziggy Exp $
+--- $Id: desktop.lua,v 1.19 2003-03-03 18:11:45 ben Exp $
 ---
 
 if not dolib("evt") then return end
@@ -40,10 +40,11 @@ function dskt_killmenu(dial)
 end
 
 function dskt_openmenu(dial, target, x, y)
+   local spr_name = "menu_close"
    dskt_killmenu(dial)
 
-   if tag(sprite_get("stock_button_cancel")) ~= sprite_tag then
-      sprite_simple(nil, "stock_button_cancel.tga")
+   if tag(sprite_get(spr_name)) ~= sprite_tag then
+      sprite(spr_name, 0, 0, 22, 22, 0, 0, 1, 1, tex_get("close"))
    end
 
    local name = target.name or "app"
@@ -51,7 +52,8 @@ function dskt_openmenu(dial, target, x, y)
    local user_def = menu_create_defs(target.mainmenu_def, target)
    local default_def = menu_create_defs
    ({
-       root=":"..name..":switch to{switch},{stock_button_cancel}kill{kill}",
+--       root=":"..name..":{".. spr_name .."}kill{kill}",
+       root=":"..name..":switch to{switch},{".. spr_name .."}kill{kill}",
        cb = {
 	  kill = function(menu) 
 		    evt_shutdown_app(%dial)
@@ -449,6 +451,12 @@ function dskt_create()
    app.z = 0
 
    return app
+end
+
+-- Load application icons
+for k,v in { "close", "console" } do
+   local tex = tex_get(v) or
+		    tex_new(home .. "lua/rsc/icons/" .. v .. ".tga")
 end
 
 return dskt_create() ~= nil

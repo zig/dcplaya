@@ -61,7 +61,7 @@ end
 --- @return  sprite object
 --- @retval  nil  Error.
 ---
-function sprite(name, x, y, w, h, u1, v1, u2, v2, texture, rotate)   
+function sprite(name, x, y, w, h, u1, v1, u2, v2, texture, rotate)
    local spr = {}
 
    spr.name = name

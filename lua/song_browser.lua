@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.34 2003-02-27 10:05:26 ben Exp $
+--- $Id: song_browser.lua,v 1.35 2003-03-03 18:11:45 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -75,7 +75,7 @@ end
 --- Create a song-browser application.
 ---
 --- @param  owner  Owner application (nil for desktop).
---- @param  name   Name of application (nil for "song-browser").
+--- @param  name   Name of application (nil for "song browser").
 ---
 --- @return song-browswer application
 --- @retval nil Error
@@ -87,7 +87,7 @@ function song_browser_create(owner, name)
    if not owner then
       owner = evt_desktop_app
    end
-   if not name then name = "song-browser" end
+   if not name then name = "song browser" end
 
    -- Song-Browser default style
    -- --------------------------
@@ -477,6 +477,7 @@ function song_browser_create(owner, name)
       version = 1.0,
       handle = song_browser_handle,
       update = song_browser_update,
+      icon_name = "song-browser",
       
       -- Methods
       open = song_browser_open,
@@ -1241,8 +1242,6 @@ function song_browser_create(owner, name)
    sb:draw()
    sb:open()
 
-
-
    evt_app_insert_first(owner, sb)
 
    return sb
@@ -1251,6 +1250,10 @@ end
 if not entrylist_tag then
    driver_load(plug_el)
 end
+
+-- Load texture for application icon
+local tex = tex_get("song-browser")
+   or tex_new(home .. "lua/rsc/icons/song-browser.tga")
 
 if song_browser then
    evt_shutdown_app(song_browser)

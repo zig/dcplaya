@@ -4,7 +4,7 @@
 --- @date    2002/11/29
 --- @brief   Song info application.
 ---
---- $Id: song_info.lua,v 1.17 2003-03-01 15:15:15 zigziggy Exp $
+--- $Id: song_info.lua,v 1.18 2003-03-03 18:11:45 ben Exp $
 
 song_info_loaded = nil
 
@@ -73,7 +73,7 @@ end
 --- Create a song-info application.
 ---
 --- @param  owner  Owner application (nil for desktop).
---- @param  name   Application name (nil for "song-info").
+--- @param  name   Application name (nil for "song info").
 ---
 --- @return  song-info application
 --- @retval  nil  error
@@ -82,7 +82,7 @@ function song_info_create(owner, name, style)
    local si
 
    if not owner then owner = evt_desktop_app end
-   if not name then name = "song-info" end
+   if not name then name = "song info" end
 
    --- Default song-info update.
    --- @internal
@@ -359,6 +359,7 @@ function song_info_create(owner, name, style)
       handle = song_info_handle,
       update = song_info_update,
       mainmenu_def = song_info_menucreator,
+      icon_name = "song-info",
 
       -- methods
       shutdown = song_info_shutdown,
@@ -624,12 +625,22 @@ end
 
 --- @}
 
+-- Load texture for application icon
+local tex = tex_get("song-info")
+   or tex_new(home .. "lua/rsc/icons/song-info.tga")
 
-si = song_info_create()
+if song_info then
+   evt_shutdown_app(song_info)
+end
 
-function ksi()
-   if si then evt_shutdown_app(si) end
-   si = nil
+song_info = song_info_create()
+
+function song_info_kill(si)
+   si = si or song_info
+   if si then
+      evt_shutdown_app(si)
+      if si == song_info then song_info = nil end
+   end
 end
 
 song_info_loaded = 1

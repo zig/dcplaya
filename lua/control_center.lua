@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.5 2003-03-03 11:32:32 ben Exp $
+--- $Id: control_center.lua,v 1.6 2003-03-03 18:11:45 ben Exp $
 ---
 
 control_center_loaded = nil
@@ -27,7 +27,7 @@ function control_center_create(owner, name)
       local cc = menu.target
 
       local macro =
-	 '<macro macro-name="tfont" macro-cmd="font" color="#FFE080" size="20"><macro macro-name="url" macro-cmd="font" color="#80E0FF" size="14" font_id="1"><macro macro-name="normal" macro-cmd="font" color="#e0e080" size="16"><macro macro-name="author" macro-cmd="font" color="#ff8080" size="18"><macro macro-name="pspace" macro-cmd="vspace" h="12">'
+	 '<macro macro-name="tfont" macro-cmd="font" color="#FFE080" size="20"><macro macro-name="url" macro-cmd="font" color="#80E0FF" size="13"><macro macro-name="normal" macro-cmd="font" color="#e0e080" size="16"><macro macro-name="author" macro-cmd="font" color="#ff8080" size="18"><macro macro-name="pspace" macro-cmd="vspace" h="12">'
 
       local text = macro .. '<center><tfont><img name="dcplaya64" src="dcplaya.tga" h="64"><br>dcplaya'
       if __DEBUG then
@@ -187,6 +187,12 @@ function control_center_kill(cc)
       evt_shutdown_app(cc)
       if cc == control_center then control_center = nil end
    end
+end
+
+-- Load application icon
+for k,v in { "dcplaya", "vmu32", "volume", "control-center" } do
+   local tex = tex_get(v) or
+		    tex_new(home .. "lua/rsc/icons/" .. v .. ".tga")
 end
 
 control_center_loaded = 1

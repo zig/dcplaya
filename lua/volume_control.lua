@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    volume  application.
 ---
---- $Id: volume_control.lua,v 1.2 2003-03-03 11:32:32 ben Exp $
+--- $Id: volume_control.lua,v 1.3 2003-03-03 18:11:45 ben Exp $
 ---
 
 volume_control_loaded = nil
@@ -140,6 +140,10 @@ function volume_control_create(owner, name)
 
    return vc
 end
+
+-- Load application icon
+local tex = tex_get("volume") or
+		    tex_new(home .. "lua/rsc/icons/volume.tga")
 
 volume_control_loaded = 1
 return volume_control_loaded
