@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.88 2003-03-19 22:48:10 ben Exp $
+ * @version    $Id: dynshell.c,v 1.89 2003-03-21 03:33:20 ben Exp $
  */
 
 #include "dcplaya/config.h"
@@ -2206,14 +2206,32 @@ static int lua_load_background(lua_State * L)
   h = dh = stexture->height;
   orgRatio = dh / dw;
 
-  if (type == 2) {
+  /* $$$ Now we need power of two in all case (twiddle) */
+  if (1 || type == 2) {
     /* Tile needs power of 2 dimension */
     dw = (float)(1 << stexture->wlog2);
     dh = (float)(1 << stexture->hlog2);
   }
 
+  /* $$$ Another rule is that texture width must not be less than height */
+  if (dw < dh) {
+    dw = dh;
+  }
+
+  /* $$$ No coordinate must be larger than 1024 */
   if (dw > 1024) dw = 1024;
-  if (dh > 512) dh = 512;
+  if (dh > 1024) dh = 1024;
+  
+  /* $$$ At last we must not be larger than the buffer */
+  if (dh * dw > 1024 * 512) {
+    if (dw == dh || dh/dw > orgRatio) {
+      /* dw == dh == 1024, restrict dh
+	 or New ratio is greater than older, better loose precision on H */
+      dh /= 2;
+    } else {
+      dw /= 2;
+    }
+  }
 
   /* Don't need de-twiddle since we are going to commando that texture */
   btexture = texture_fastlock(texid);
@@ -2222,7 +2240,8 @@ static int lua_load_background(lua_State * L)
     return 0;
   }
 
-  if (type == 2) {
+  /* $$$ Bis (see above) */
+  if (1 || type == 2) {
     btexture->width  = dw;
     btexture->height = dh;
   } else {
@@ -2310,8 +2329,8 @@ static int lua_load_background(lua_State * L)
 	h = 1;
       }
     } else {
-      w = dw / 640.0f;
-      h = dh / 480.0f;
+      w /= 640;
+      h /= 480;
     }
 
     vdef[0].x = (1 - w) * 0.5;
