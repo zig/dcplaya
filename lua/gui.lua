@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.21 2002-12-06 12:05:42 zigziggy Exp $
+--- $Id: gui.lua,v 1.22 2002-12-06 13:08:12 zigziggy Exp $
 ---
 
 --
@@ -154,15 +154,13 @@ end
 
 -- change focused item
 function gui_new_focus(app, f)
-   local of = app.focused_fake_app.sub
+   local of = app.sub
    if f and f~=of then
       if of then
 	 evt_send(of, { key = gui_unfocus_event })
-	 evt_app_remove(of)
-	 evt_app_insert_last(app, of)
       end
       evt_app_remove(f)
-      evt_app_insert_first(app.focused_fake_app, f)
+      evt_app_insert_first(app, f)
       evt_send(f, { key = gui_focus_event })
       app.focus_time = 0
 
@@ -171,24 +169,9 @@ function gui_new_focus(app, f)
 end
 
 
--- check the focused item is in specific sublist
-function gui_check_focus(app)
-   if not app.focused_fake_app then
-      app.focused_fake_app = {
-	 handle = function(a, evt)
-		     return %app:handle(evt)
-		  end
-      }
-   end
-   if app.sub and not app.focused_fake_app.sub then
-      gui_new_focus(app, app.sub)
-   end
-end
-
-
 -- test focus item. Can test if no focus if f is nil.
 function gui_is_focus(app, f)
-   if not app or f ~= app.focused_fake_app.sub then return end
+   if not app or f ~= app.sub then return end
    return 1
 end
 
@@ -258,8 +241,8 @@ end
 -- dialog
 
 function gui_dialog_shutdown(app)
-   if app.focused_fake_app.sub then
-      evt_send(app.focused_fake_app.sub, { key = gui_unfocus_event })
+   if app.sub then
+      evt_send(app.sub, { key = gui_unfocus_event })
    end
    dl_destroy_list(app.dl)
    dl_destroy_list(app.focusup_dl)
@@ -273,9 +256,7 @@ end
 function gui_dialog_handle(app, evt)
    local key = evt.key
 
-   gui_check_focus(app)
-   local ff = app.focused_fake_app
-   local focused = ff.sub
+   local focused = app.sub
 
    if focused then
       evt_send(focused, evt)
@@ -349,11 +330,8 @@ function gui_dialog_handle(app, evt)
 end
 
 function gui_dialog_update(app, frametime)
-   gui_check_focus(app)
-   local focused = app.focused_fake_app.sub
+   local focused = app.sub
    if focused then
-      evt_update(focused, frametime)
-
       -- handle focus cursor
       
       -- converge to focused item box
