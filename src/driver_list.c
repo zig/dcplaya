@@ -74,7 +74,7 @@ int driver_list_register(driver_list_t *dl, any_driver_t * driver)
   return 0;
 }
 
-static driver_list_t * search_driver_list(any_driver_t *driver)
+driver_list_t * driver_list_which(any_driver_t *driver)
 {
   if (!driver) {
     return 0;
@@ -95,13 +95,22 @@ static driver_list_t * search_driver_list(any_driver_t *driver)
 
 int driver_register(any_driver_t * driver)
 {
-  return driver_list_register(search_driver_list(driver), driver); 
+  return driver_list_register(driver_list_which(driver), driver); 
 }
+
+int driver_unregister(any_driver_t * driver)
+{
+  return driver_list_unregister(driver_list_which(driver), driver); 
+} 
 
 /** Remove a driver from the driver list */
 int driver_list_unregister(driver_list_t *dl, any_driver_t * driver)
 {
   any_driver_t *d, *p=0;
+
+  if (!dl) {
+    return -1;
+  }
 
   for (p=0, d=dl->drivers; d && d != driver; p=d, d=d->nxt)
     ;

@@ -1,4 +1,4 @@
-/* $Id: driver_list.h,v 1.4 2002-09-06 23:16:09 ben Exp $ */
+/* $Id: driver_list.h,v 1.5 2002-09-14 02:55:40 ben Exp $ */
 
 #ifndef _DRIVER_LIST_H_
 #define _DRIVER_LIST_H_
@@ -37,6 +37,8 @@ void driver_list_shutdown(driver_list_t * dl);
 int driver_list_register(driver_list_t * dl, any_driver_t * driver);
 int driver_list_unregister(driver_list_t * dl, any_driver_t * driver);
 int driver_register(any_driver_t * driver);
+int driver_unregister(any_driver_t * driver);
+driver_list_t * driver_list_which(any_driver_t *driver);
 
 any_driver_t * driver_list_search(driver_list_t * dl, const char *name);
 
