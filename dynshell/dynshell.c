@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.83 2003-03-18 10:44:25 zigziggy Exp $
+ * @version    $Id: dynshell.c,v 1.84 2003-03-18 14:50:14 ben Exp $
  */
 
 #include "dcplaya/config.h"
@@ -2205,7 +2205,8 @@ static int lua_load_background(lua_State * L)
   if (dw > 1024) dw = 1024;
   if (dh > 512) dh = 512;
 
-  btexture = texture_lock(texid);
+  /* Don't need de-twiddle since we are going to commando that texture */
+  btexture = texture_fastlock(texid);
   if (!btexture) {
     /* Safety net ... */
     return 0;
@@ -2223,8 +2224,15 @@ static int lua_load_background(lua_State * L)
     btexture->hlog2  = greaterlog2(btexture->height);
   }
   btexture->format = stexture->format;
-  finalRatio = dh / dw;
-
+  btexture->twiddled = 0;  /* Force non twiddle */
+  texture_twiddlable(btexture);
+#if DEBUG
+  if (!btexture->twiddable) {
+    SDCRITICAL("[background] : texture [%s] not twiddlable [%dx%d] [%dx%d]\n",
+	       btexture->name,
+	       btexture->width,btexture->height,
+	       1<<btexture->wlog2,  1<<btexture->hlog2);
+  }
   if (1) {
     printf("type:[%s]\n", !type ? "scale" : (type==1?"center":"tile"));
     printf("src : [%dx%d] [%dx%d] , modulo:%d, ratio:%0.2f\n",
@@ -2237,6 +2245,9 @@ static int lua_load_background(lua_State * L)
   		 1<<btexture->wlog2,  1<<btexture->hlog2,
   		 (1<<btexture->wlog2) - btexture->width);
   }
+#endif
+
+
   /* $$$ Currently all texture are 16bit. Since blitz don't care about exact
      pixel format blitz is done with ARGB565 format. */
   Blitz(btexture->addr, dw, dh,
@@ -2244,10 +2255,11 @@ static int lua_load_background(lua_State * L)
 	stexture->addr, stexture->width, stexture->height,
 	SHAPF_RGB565, smodulo * 2);
 
+  /* Twiddle the texture :) */
+  texture_twiddle(btexture,1);
 
   /* Finally unlock the background texture */
   texture_release(btexture);
-
 
   if (img) {
     free(img);
