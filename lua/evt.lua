@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.3 2002-09-29 06:35:12 vincentp Exp $
+-- $Id: evt.lua,v 1.4 2002-09-30 02:28:56 vincentp Exp $
 --
 
 
@@ -20,7 +20,8 @@
 --
 -- name                   : the name of the application
 -- version                : the major/minor version in string format "MM.mm"
--- sub			  : sub list of application
+-- sub			  : first element in the sub list of application
+-- sublast		  : last element of the sub list of application
 -- owner		  : owner application (that is the one that contains
 --			    this one in its sub list, i.e. the parent)
 -- next			  : next app in the sub list
@@ -163,18 +164,20 @@ end
 
 -- add a sub application to an application at the beginning of its sub list
 function evt_app_insert_first(parent, app)
-	dlist_insert(parent, "sub", app, "prev", "next")
-	app.owner =  parent
+	evt_app_remove(app)
+	dlist_insert(parent, "sub", "sublast", app, "prev", "next", "owner")
+end
+
+-- add a sub application to an application at the end of its sub list
+function evt_app_insert_last(parent, app)
+	evt_app_remove(app)
+	dlist_insert(parent, "sublast", "sub", app, "next", "prev", "owner")
 end
 
 
 -- remove a sub application from an application sub list
 function evt_app_remove(app)
-	if not app.owner then
-		return
-	end
-	dlist_remove(app.owner, "sub", app, "prev", "next")
-	app.owner = nil
+	dlist_remove("sub", "sublast", app, "prev", "next", "owner")
 end
 
 
@@ -200,6 +203,9 @@ function evt_shutdown()
 		peekchar = evt_origpeekchar
 		framecounter = evt_origframecounter
 	end
+
+	evt_root_app = nil
+	evt_desktop_app = nil
 
 	print [[EVT SYSTEM SHUT DOWN]]
 

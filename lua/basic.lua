@@ -5,42 +5,57 @@
 
 -- doubly linked list support
 
--- insert a new element in list as first element
+-- insert a new element in list as first element (or as last simply by swaping
+-- ofirst and olast, iprev and inext)
 -- 
 -- o      : owner
--- oindex : index of the owner pointing to first element of list
+-- ofirst : index in the owner pointing to first element of list
+-- olast  : index in the owner pointing to last element of list
 -- i      : item to insert
--- iprev  : index of prev element
--- inext  : index of next element
-function dlist_insert(o, oindex, i, iprev, inext)
-	local f = o[oindex]
+-- iprev  : index in the item of prev element
+-- inext  : index in the item of next element
+-- iowner : index in the item of owner element
+function dlist_insert(o, ofirst, olast, i, iprev, inext, iowner)
+	local f = o[ofirst]
 	i[iprev] = nil
-	i[inext] = o[oindex]
-	o[oindex] = i
+	i[inext] = f
+	o[ofirst] = i
 	if f then
 		f[iprev] = i
 	end
+	if not o[olast] then
+		o[olast] = i
+	end
+	i[iowner] = o
 end
 
 -- remove an element from a list
 -- 
--- o      : owner
--- oindex : index of the owner pointing to first element of list
+-- ofirst : index in the owner pointing to first element of list
+-- olast  : index in the owner pointing to last element of list
 -- i      : item to insert
--- iprev  : index of prev element
--- inext  : index of next element
-function dlist_remove(o, oindex, i, iprev, inext)
+-- iprev  : index in the item of prev element
+-- inext  : index in the item of next element
+-- iowner : index in the item of owner element
+function dlist_remove(ofirst, olast, i, iprev, inext, iowner)
+	local o = i[iowner]
+	if not o then
+		return
+	end
 	local p = i[iprev]
 	local n = i[inext]
 	if p then
 		p[inext] = n
 	else
-		o[oindex] = n
+		o[ofirst] = n
 	end
 	if n then
 		n[iprev] = p
+	else
+		o[olast] = p
 	end
 
+	i[iowner] = nil
 	i[iprev] = nil
 	i[inext] = nil
 end

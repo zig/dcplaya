@@ -1,7 +1,7 @@
 --
 -- This is main DCplaya lua script
 --
--- $Id: dcplayarc.lua,v 1.17 2002-09-29 06:35:07 vincentp Exp $
+-- $Id: dcplayarc.lua,v 1.18 2002-09-30 02:28:56 vincentp Exp $
 --
 
 showconsole()
@@ -17,6 +17,8 @@ dofile (home.."lua/evt.lua")
 dofile (home.."lua/dirfunc.lua")
 dofile (home.."lua/shell.lua")
 dofile (home.."lua/zed.lua")
+dofile (home.."lua/keyboard_emu.lua")
+dofile (home.."lua/gui.lua")
 
 
 -- reading directory on PC is slow through serial port, 

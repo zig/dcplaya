@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: keyboard_emu.lua,v 1.7 2002-09-29 06:35:12 vincentp Exp $
+-- $Id: keyboard_emu.lua,v 1.8 2002-09-30 02:28:57 vincentp Exp $
 --
 
 
@@ -217,6 +217,7 @@ function ke_handle(app, evt)
 
 		if ke_active then
 			ke_set_active(nil)
+			cond_connect(1)
 		end
 
 		if ke_arrays then
@@ -244,6 +245,7 @@ function ke_handle(app, evt)
 	-- activating key toggle
 	if ke_keyactivate[key] then
 		ke_set_active(not ke_active)
+		cond_connect(not ke_active)
 		return nil
 	end
 
@@ -346,7 +348,6 @@ function ke_set_active(s)
 		ke_time = 0
 	end
 	ke_active = s
-	cond_connect(not s)
 	ke_vanishing_arrays[ke_array] = not s
 	if s then
 		dl_set_active(ke_array.dl, s)
