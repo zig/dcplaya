@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.33 2002-10-06 22:47:29 vincentp Exp $
+ * @version    $Id: dynshell.c,v 1.34 2002-10-08 08:24:03 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -333,9 +333,9 @@ static int push_dir_as_2_tables(lua_State * L, fu_dirent_t * dir, int count,
   int k,j,i;
 
   lua_settop(L,0);
-  if (!dir) {
-    return 0;
-  }
+/*   if (!dir) { */
+/*     return 0; */
+/*   } */
   if (sortdir) {
 	fu_sort_dir(dir, count, sortdir);
   }
@@ -361,9 +361,9 @@ static int push_dir_as_struct(lua_State * L, fu_dirent_t * dir, int count,
   int i, table;
 
   lua_settop(L,0);
-  if (!dir) {
-    return 0;
-  }
+/*   if (!dir) { */
+/*     return 0; */
+/*   } */
   if (sortdir) {
 	fu_sort_dir(dir, count, sortdir);
   }
@@ -461,10 +461,14 @@ static int lua_dirlist(lua_State * L)
     printf("dirlist : path to long [%s]\n", path);
     return -2;
   }
+  if (!rpath[0]) {
+	rpath[0] = '/';
+	rpath[1] = 0;
+  }
 
   count = fu_read_dir(rpath, &dir, 0);
   if (count < 0) {
-    printf("dirlist : %s\n", fu_strerr(count));
+    printf("dirlist : %s [%s] \n", fu_strerr(count), rpath);
     return -3;
   }
 
