@@ -11,7 +11,7 @@
  ********************************************************************
 
   function: Direct Form II IIR filters, plus some specializations
-  last mod: $Id: iir.c,v 1.1 2002-08-26 14:14:39 ben Exp $
+  last mod: $Id: iir.c,v 1.1.1.1 2002-08-26 14:14:39 ben Exp $
 
  ********************************************************************/
 

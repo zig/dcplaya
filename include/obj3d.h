@@ -4,7 +4,7 @@
  * @author    Ben(jamin) Gerard <ben@sashipa.com>
  * @date      20/10/2001
  * @brief     Simple 3D objects defintions for 3D-object plugins
- * @version   $Id: obj3d.h,v 1.1 2002-08-26 14:15:00 ben Exp $
+ * @version   $Id: obj3d.h,v 1.1.1.1 2002-08-26 14:15:00 ben Exp $
  */
 
 /* Copyright (C) 1998-2001 Ben(jamin) Gerard */

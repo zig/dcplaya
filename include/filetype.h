@@ -3,7 +3,7 @@
  *
  * (c) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: filetype.h,v 1.1 2002-08-26 14:15:00 ben Exp $
+ * $Id: filetype.h,v 1.1.1.1 2002-08-26 14:15:00 ben Exp $
  */
 
 #ifndef _FILETYPE_H_

@@ -4,7 +4,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.1 2002-08-26 14:15:03 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.1.1.1 2002-08-26 14:15:03 ben Exp $
  */
 
 //#define RELEASE

@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * $Id: frame.h,v 1.1 2002-08-26 14:14:50 ben Exp $
+ * $Id: frame.h,v 1.1.1.1 2002-08-26 14:14:50 ben Exp $
  */
 
 # ifndef LIBID3TAG_FRAME_H

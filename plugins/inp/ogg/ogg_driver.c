@@ -7,7 +7,7 @@
  * sndvorbisfile.
  */
 
-static char id[] = "sndoggvorbis $Id: ogg_driver.c,v 1.1 2002-08-26 14:14:35 ben Exp $";
+static char id[] = "sndoggvorbis $Id: ogg_driver.c,v 1.1.1.1 2002-08-26 14:14:35 ben Exp $";
 
 /*
 

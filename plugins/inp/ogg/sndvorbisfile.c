@@ -9,7 +9,7 @@
  */
 
 static char id[] =
-    "sndoggvorbis $Id: sndvorbisfile.c,v 1.1 2002-08-26 14:14:35 ben Exp $";
+    "sndoggvorbis $Id: sndvorbisfile.c,v 1.1.1.1 2002-08-26 14:14:35 ben Exp $";
 #include <kos.h>
 #include <stdio.h>
 #include <vorbis/codec.h>

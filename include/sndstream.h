@@ -3,7 +3,7 @@
  *
  * (C) 2000 Dan Potter
  *
- * $Id: sndstream.h,v 1.1 2002-08-26 14:15:00 ben Exp $
+ * $Id: sndstream.h,v 1.1.1.1 2002-08-26 14:15:00 ben Exp $
  */
 
 #ifndef __SNDSTREAM_H

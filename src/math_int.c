@@ -3,7 +3,7 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard
  *
- * $Id: math_int.c,v 1.1 2002-08-26 14:15:05 ben Exp $
+ * $Id: math_int.c,v 1.1.1.1 2002-08-26 14:15:05 ben Exp $
  */
 
 #include "math_int.h"

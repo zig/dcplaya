@@ -6,7 +6,7 @@
    An MP3 player using sndstream and XingMP3
 */
 
-static char id[] = "TRYP $Id: xing_driver.c,v 1.1 2002-08-26 14:14:42 ben Exp $";
+static char id[] = "TRYP $Id: xing_driver.c,v 1.1.1.1 2002-08-26 14:14:42 ben Exp $";
 
 
 /* This library is designed to be called from another program in a thread. It

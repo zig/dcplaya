@@ -11,7 +11,7 @@
  ********************************************************************
 
  function: flexible, delayed bitpacking abstraction
- last mod: $Id: bitbuffer.c,v 1.1 2002-08-26 14:14:37 ben Exp $
+ last mod: $Id: bitbuffer.c,v 1.1.1.1 2002-08-26 14:14:37 ben Exp $
 
  ********************************************************************/
 

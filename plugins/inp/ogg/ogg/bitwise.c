@@ -11,7 +11,7 @@
  ********************************************************************
 
   function: packing variable sized words into an octet stream
-  last mod: $Id: bitwise.c,v 1.1 2002-08-26 14:14:42 ben Exp $
+  last mod: $Id: bitwise.c,v 1.1.1.1 2002-08-26 14:14:42 ben Exp $
 
  ********************************************************************/
 

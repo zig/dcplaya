@@ -3,7 +3,7 @@
 os/elf.h
 (c)2000-2001 Dan Potter
 
-$Id: lef.h,v 1.1 2002-08-26 14:15:00 ben Exp $
+$Id: lef.h,v 1.1.1.1 2002-08-26 14:15:00 ben Exp $
 
 */
 

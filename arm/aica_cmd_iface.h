@@ -1,7 +1,7 @@
 #ifndef __ARM_AICA_CMD_IFACE_H
 #define __ARM_AICA_CMD_IFACE_H
 
-/* $Id: aica_cmd_iface.h,v 1.1 2002-08-26 14:15:01 ben Exp $ */
+/* $Id: aica_cmd_iface.h,v 1.1.1.1 2002-08-26 14:15:01 ben Exp $ */
 
 #define  _BEN_AICA 1
 

@@ -11,7 +11,7 @@
  ********************************************************************
 
  function: PCM data vector blocking, windowing and dis/reassembly
- last mod: $Id: block.c,v 1.1 2002-08-26 14:14:37 ben Exp $
+ last mod: $Id: block.c,v 1.1.1.1 2002-08-26 14:14:37 ben Exp $
 
  Handle windowing, overlap-add, etc of the PCM vectors.  This is made
  more amusing by Vorbis' current two allowed block sizes.

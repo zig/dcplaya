@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile,v 1.1 2002-08-26 14:15:03 ben Exp $
+# $Id: Makefile,v 1.1.1.1 2002-08-26 14:15:03 ben Exp $
 
 LIBNAME=libdreammp3.a
 OPTIMIZE = $(OPTIMIZE_FOR_SPEED)

@@ -4,7 +4,7 @@ elf.c
 (c)2000-2001 Dan Potter
 */
 
-static char id[] = "KOS $Id: lef.c,v 1.1 2002-08-26 14:15:03 ben Exp $";
+static char id[] = "KOS $Id: lef.c,v 1.1.1.1 2002-08-26 14:15:03 ben Exp $";
 
 #include <malloc.h>
 #include <string.h>
