@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   RAM disk for KOS file system
  * 
- * $Id: fs_ramdisk.c,v 1.1 2002-09-17 20:11:03 ben Exp $
+ * $Id: fs_ramdisk.c,v 1.2 2002-09-17 23:28:41 ben Exp $
  */
 
 #include <arch/types.h>
@@ -161,8 +161,8 @@ static int realloc_node(node_t * node, int req_size)
   void * data;
   int missing = req_size - node->max;
 
-  SDDEBUG("%s [%s] to %d, missing %d\n", __FUNCTION__,
-	  node->entry.name, req_size, missing);
+/*   SDDEBUG("%s [%s] to %d, missing %d\n", __FUNCTION__, */
+/* 	  node->entry.name, req_size, missing); */
 
   if (missing <= 0) {
     return 0;
@@ -372,7 +372,7 @@ static ssize_t read(file_t fd, void * buffer, size_t size)
   openfile_t * of;
   int end_pos, n;
 
-  SDDEBUG("%s (%d, %p, %d)\n", __FUNCTION__, fd, buffer, size);
+  //  SDDEBUG("%s (%d, %p, %d)\n", __FUNCTION__, fd, buffer, size);
   
   fd = valid_file(fd);
   if (fd == INVALID_FH || ! (fh[fd].mode & READ_MODE) || size < 0) {
@@ -392,11 +392,11 @@ static ssize_t read(file_t fd, void * buffer, size_t size)
 	
   n = end_pos - of->pos;
   memcpy(d, of->node->data + of->pos, n);
-  SDDEBUG("%s copied [%p %p+%d %d]\n", __FUNCTION__,
-	  d, of->node->data, of->pos, n);
+  //  SDDEBUG("%s copied [%p %p+%d %d]\n", __FUNCTION__,
+  //	  d, of->node->data, of->pos, n);
   of->pos += n;
 
-  SDDEBUG("--> %d bytes\n", n);
+  //  SDDEBUG("--> %d bytes\n", n);
 	
   return n;
 }
@@ -408,7 +408,7 @@ static ssize_t write(file_t fd, const void * buffer, size_t size)
   openfile_t * of;
   int end_pos, n;
 
-  SDDEBUG("%s (%d, %p, %d)\n", __FUNCTION__, fd, buffer, size);
+  //  SDDEBUG("%s (%d, %p, %d)\n", __FUNCTION__, fd, buffer, size);
 
   fd = valid_file(fd);
   if (fd == INVALID_FH || ! (fh[fd].mode & WRITE_MODE) || size < 0) {
@@ -431,14 +431,14 @@ static ssize_t write(file_t fd, const void * buffer, size_t size)
 	
   n = end_pos - of->pos;
   memcpy(of->node->data + of->pos, d, n);
-  SDDEBUG("%s copied [%p+%d %p %d]\n", __FUNCTION__,
-	  of->node->data, of->pos, d, n);
+  //  SDDEBUG("%s copied [%p+%d %p %d]\n", __FUNCTION__,
+  //	  of->node->data, of->pos, d, n);
   of->pos += n;
   if (of->pos > of->node->entry.size) {
     of->node->entry.size = of->pos;
   }
 	
-  SDDEBUG("--> %d bytes\n", n);
+  //  SDDEBUG("--> %d bytes\n", n);
   return n;
 }
 
@@ -488,7 +488,10 @@ static file_t open(const char *fn, int mode)
     if (mode & O_DIR) {
       return open_dir(fn, mode);
     } else {
-      /* $$$ BEN: Don't know what to do with O_META and O_TRUNC */
+      /* $$$ BEN: Don't know what to do with O_META and O_TRUNC
+       * $$$ BEN: O_TRUNC means files is emptied at creation. Not supported
+       *     by this version of KOS, but ok with latest.
+       */
       SDERROR("Unknown/unsupported extended open mode\n");
       goto error;
     }

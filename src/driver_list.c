@@ -6,6 +6,7 @@
 #include "driver_list.h"
 #include "inp_driver.h"
 #include "filetype.h"
+#include "sysdebug.h"
 
 driver_list_t inp_drivers;
 driver_list_t obj_drivers;
@@ -17,6 +18,7 @@ static int file_type;
 /** Initialize a driver list */
 int driver_list_init(driver_list_t *dl, const char *name)
 {
+  SDDEBUG("%s(%s)\n", __FUNCTION__, name);
   dl->n = 0;
   dl->drivers = 0;
   dl->name = name;
@@ -59,6 +61,8 @@ int driver_list_register(driver_list_t *dl, any_driver_t * driver)
   }
   d = driver_list_search(dl, driver->name);
   if (d) {
+    SDERROR("%s([%s], [%s]) : Driver already exists.\n",
+	    __FUNCTION__, dl->name, driver->name);
     return -1;
   }
   driver->nxt = dl->drivers;
@@ -70,6 +74,8 @@ int driver_list_register(driver_list_t *dl, any_driver_t * driver)
   if (driver->type == INP_DRIVER) {
     ((inp_driver_t *)driver)->id = file_type++;
   }
+
+  SDDEBUG("List [%s] : added #%d [%s]\n", dl->name, dl->n, dl->drivers->name);
 
   return 0;
 }
@@ -122,6 +128,9 @@ int driver_list_unregister(driver_list_t *dl, any_driver_t * driver)
     }
     --dl->n;
   }
+  SDDEBUG("%s([%s], [%s]) : %s\n", __FUNCTION__, dl->name, driver->name,
+	  d ? "success" : "failure");
+
   return d ? 0 : -1;
 }
 
@@ -144,7 +153,7 @@ static int ToUpper(int c)
   return c;
 }
 
-/** $$ apparemant ya un bug ici : .lef_ est pris contre .lef !! */
+/** $$$ Ben: apparemant ya un bug ici : .lef_ est pris contre .lef !! */
 static const char * extcmp(const char * extlist, const char * ext)
 {
   int a,b;
