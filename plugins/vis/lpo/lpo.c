@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.12 2002-12-30 12:32:51 ben Exp $
+ * $Id: lpo.c,v 1.13 2003-01-02 11:53:01 ben Exp $
  */
 
 #include <stdio.h>
@@ -171,8 +171,8 @@ static void update_peek_info(peek_info_t * info, int v)
     info->max = info->val;
   } else {
     info->max *= 0.99f;
-    if (info->max < 1E-6) info->max = 0;
   }
+  if (info->max < 0.001) info->max = 0.001;
 
   info->difold = info->difval;
   info->difval = info->val - info->old;
@@ -224,8 +224,9 @@ static int anim(unsigned int ms)
     update_peek_info(&info[i].db, int_decibel[v]);
   }
 
-  pi = &info[0].lin;
-  if ((pi->difmaxflag&3) == 2) {
+  pi = &info[2].lin;
+  //  if ((pi->difmaxflag&3) == 2) {
+  if ((pi->maxflag&3) == 2) {
     flash = (pi->difchg * 2.60f) + 1.0f;
     if (change_mode & FLASH_MODE) {
       change_object(random_object(curobj));
@@ -237,6 +238,7 @@ static int anim(unsigned int ms)
   {
     float max = 0, val = 0;
     for (i=0;i<3;++i) {
+      pi = &info[(i>>1)<<1].lin;
       val += pi->val;
       max += pi->max;
     }
@@ -250,9 +252,12 @@ static int anim(unsigned int ms)
 
   /* Calculate rotation speed */
 
-  pi = &info[2].lin;
-  if ((pi->difmaxflag&3) == 2) {
-    rps_sign = - rps_sign;
+  pi = &info[1].lin;
+  if ((pi->maxflag&3) == 2) {
+    static int toggle = 0;
+    toggle == (toggle+1) & 3;
+    if (!toggle)
+      rps_sign = - rps_sign;
   }
 
   pi = &info[1].lin;
@@ -453,8 +458,8 @@ static int init(any_driver_t *d)
   border_def_t borderdef;
   static fftband_limit_t limits[] = {
     {0, 150},
-    {150, 2000},
-    {2000, 44100},
+    {150, 1500},
+    {1500, 44100},
   }; 
 
   curobj = 0;
