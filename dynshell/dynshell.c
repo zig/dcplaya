@@ -1,4 +1,12 @@
-/* Dynamic LUA shell */
+/**
+ * @ingroup    dcplaya
+ * @file       dynshell.c
+ * @author     vincent penne <ziggy@sashipa.com>
+ * @date       2002/11/09
+ * @brief      Dynamic LUA shell
+ *
+ * @version    $Id: dynshell.c,v 1.7 2002-09-14 04:02:03 zig Exp $
+ */
 
 #include <stdio.h>
 #include <kos.h>
@@ -12,67 +20,7 @@
 
 #include "plugin.h"
 
-#include "setjmp.h"
-
-static jmp_buf guard_jmp;
-
-// for reference
-//typedef void (*irq_handler)(irq_t source, irq_context_t *context);
-
-//static int saved_irq;
-
-/*
- * Working with KOS 1.1.5, may change with other versions !!
- *
- * This is the table where context is saved when an exception occure
- * After the exception is handled, context will be restored and 
- * an RTE instruction will be issued to come back to the caller.
- * Modifying the content of the table BEFORE returning from the handler
- * of an exception let us do interesting tricks :)
- *
- * 0x00 .. 0x3c : Registers R0 to R15
- * 0x40         : SPC (return adress of RTE)
- * 0x58         : SSR (saved SR, restituted after RTE)
- * 
- *
- */
-extern void * * irq_srt_addr;
-
-static void guard_irq_handler(irq_t source, irq_context_t *context)
-{
-  //printf("CATCHING EXCEPTION IN SHELL\n");
-
-  irq_dump_regs(0, source);
-
-  printf("CATCHING EXCEPTION IN SHELL\n");
-
-  // Simulate a call to longjmp by directly changing stored 
-  // context of the exception
-  irq_srt_addr[0x40/4] = longjmp;
-  irq_srt_addr[4] = guard_jmp;
-  irq_srt_addr[5] = (void *) -1;
-
-  return;
-
-#if 0
-  clear_irq_inside_int();
-  //irq_restore(saved_irq);
-
-  save_regs_finish2(guard_jmp, -1);
-  //irq_force_return2(guard_jmp, -1);
-
-  printf("CATCHING EXCEPTION IN SHELL\n");
-
-  //irq_set_context(&thd_current->context);
-  //irq_restore(0);
-  //irq_enable();
-  //irq_restore(saved_irq);
-
-
-  // if an exception occure, then try to recover it ...
-  longjmp(guard_jmp, -1);
-#endif
-}
+#include "exceptions.h"
 
 
 
@@ -98,28 +46,6 @@ typedef struct shell_command_description {
 } shell_command_description_t;
 
 
-
-
-static int exceptions_code[] = {
-  EXC_USER_BREAK_PRE	, // 0x01e0	/* User break before instruction */
-  EXC_INSTR_ADDRESS	, // 0x00e0	/* Instruction address */
-  EXC_ITLB_MISS		, // 0x00a0	/* Instruction TLB miss */
-  EXC_ITLB_PV		, // 0x00a0	/* Instruction TLB protection violation */
-  EXC_ILLEGAL_INSTR	, // 0x0180	/* Illegal instruction */
-  EXC_GENERAL_FPU		, // 0x0800	/* General FPU exception */
-  EXC_SLOT_FPU		, // 0x0820	/* Slot FPU exception */
-  EXC_DATA_ADDRESS_READ	, // 0x00e0	/* Data address (read) */
-  EXC_DATA_ADDRESS_WRITE	, // 0x0100	/* Data address (write) */
-  EXC_DTLB_MISS_READ	, // 0x0040	/* Data TLB miss (read) */
-  EXC_DTLB_MISS_WRITE	, // 0x0060	/* Data TLB miss (write) */
-  EXC_DTLB_PV_READ	, // 0x00a0	/* Data TLB P.V. (read) */
-  EXC_DTLB_PV_WRITE	, // 0x00c0	/* Data TLB P.V. (write) */
-  EXC_FPU			, // 0x0120	/* FPU exception */
-  EXC_INITIAL_PAGE_WRITE	, // 0x0120	/* Initial page write exception */
-  0
-};
-
-
 static int dynshell_command(const char * fmt, ...)
 {
   int i;
@@ -127,30 +53,26 @@ static int dynshell_command(const char * fmt, ...)
   int result = -1;
   //printf("COMMAND <%s>\n", com);
 
-  if (!setjmp(guard_jmp)) {
+  EXPT_GUARD_BEGIN;
 
-    //saved_irq = irq_get_sr();
-
-    for (i=0; exceptions_code[i]; i++)
-      irq_set_handler(exceptions_code[i], guard_irq_handler);
-    //irq_set_handler(0x100, guard_irq_handler);
-
-    if (*fmt) {
-      va_list args;
-      va_start(args, fmt);
-      vsprintf(com, fmt, args);
-      va_end(args);
+  if (*fmt) {
+    va_list args;
+    va_start(args, fmt);
+    vsprintf(com, fmt, args);
+    va_end(args);
       
-      result = lua_dostring(shell_lua_state, com);
-    } else
-      result = 0;
-  }
+    result = lua_dostring(shell_lua_state, com);
+  } else
+    result = 0;
+
+  EXPT_GUARD_CATCH;
+
+  printf("CATCHING EXCEPTION IN SHELL !\n");
+  irq_dump_regs(0, 0);
+
+  EXPT_GUARD_END;
 
   
-  for (i=0; exceptions_code[i]; i++)
-    irq_set_handler(exceptions_code[i], 0);
-  //irq_set_handler(0x100, 0);
-
   return result;
   
 }
@@ -280,6 +202,7 @@ static int lua_path_load(lua_State * L)
   ext[0] = 0;
   use_ext = 0;
 
+  // get possibly next parameters and guess there meaning
   for (i=2; i<=nparam; i++) {
     if (lua_isstring(L, i)) { // this is probably the extension parameter
       strcpy(ext, lua_tostring(L, i)/*, sizeof(ext)*/);

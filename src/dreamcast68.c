@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.16 2002-09-14 00:57:26 zig Exp $
+ * @version   $Id: dreamcast68.c,v 1.17 2002-09-14 04:02:04 zig Exp $
  */
 
 //#define RELEASE
@@ -48,6 +48,8 @@
 #include "syserror.h"
 #include "console.h"
 #include "shell.h"
+
+#include "exceptions.h"
 
 float fade68;
 uint32 frame_counter68 = 0;
@@ -814,6 +816,10 @@ int dreammp3_main(int argc, char **argv)
   //  vid_border_color(0,0,0);
 
 
+  /* Initialize exceptions handling */
+  expt_init();
+
+
   /* Initialize shell and LUA */
   if (shell_init()) {
     STHROW_ERROR(error);
@@ -871,6 +877,9 @@ int dreammp3_main(int argc, char **argv)
 error:
   dbglog_set_level(DBG_DEBUG);
   dbglog( DBG_DEBUG, ">> " __FUNCTION__ " : error line [%d]\n", err);
+
+  /* Shutting down exceptions handling */
+  expt_shutdown();
 
   return 0;
 }
