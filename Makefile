@@ -3,9 +3,9 @@
 #
 # (C) COPYRIGHT 2002 benjamin gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.25 2003-05-04 12:53:58 benjihan Exp $ 
+# $Id: Makefile,v 1.26 2003-07-30 10:40:32 benjihan Exp $ 
 #
-TARGETS=dreammp3.elf
+TARGETS=dcplaya.elf
 
 SUBDIRS = arm data plugins src libs dynshell
 
@@ -22,7 +22,7 @@ ELF_EXTRA += -L./src -L./libs/z -L./libs/draw -L./libs/translator -L./libs/lua -
 KOS_INCS+= -I. -Iinclude
 ALL_INCS= -I$(KOS_INCS) -I$(KOS_BASE)/kernel/arch/$(KOS_ARCH)/include
 
-CLEAN_LOCAL=symtab.h tmp_symtab.h full-symb-dreammp3.elf debug.log
+CLEAN_LOCAL=symtab.h tmp_symtab.h full-symb-$(TARGETS) debug.log
 
 
 my_all: all TODO
@@ -58,12 +58,11 @@ $(TARGETS): force_$(TARGETS) $(OBJS)
 		done; \
 		rm -f tmp_$@; \
 	)
-	cp -f $@ full-symb-$@
-	@$(KOS_STRIP) -v $@
+	@cp -fv $@ full-symb-$@
+	@$(KOS_STRIP) $@
 
 send:
-#	@clear
-	@dc-tool -x $(TARGETS) | tee debug.log
+	$(KOS_LOADER) $(KOS_LOADER_FLAGS) $(TARGETS) | tee debug.log
 
 make-data:
 	$(MAKEDATA)
@@ -94,7 +93,7 @@ commit: TODO
 update: TODO
 	cvs update -d 2>&1 | tee - cvs.log
 
-DEPEND_EXTRA=depend_extra
+DEPEND_EXTRA=depend_extra
 depend_extra:
 	@touch "symtab.h"
 
