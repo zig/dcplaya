@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist_driver.c,v 1.8 2003-03-10 22:55:33 ben Exp $
+ * $Id: entrylist_driver.c,v 1.9 2003-03-28 14:01:45 ben Exp $
  */
 
 #include <stdlib.h>
@@ -179,69 +179,76 @@ static luashell_command_description_t driver_commands[] = {
 
   /* Internal commands */
   {
-    DRIVER_NAME"_driver_init", 0,         /* long and short names */
-    "print [["
-    DRIVER_NAME"_driver_init : "
-    "INTERNAL ; initialize lua side of " DRIVER_NAME " driver."
-    "]]",                                 /* usage */
-    SHELL_COMMAND_C, lua_entrylist_init   /* function */
+    /* long names, short names and topic */
+    DRIVER_NAME"_driver_init", 0, 0,
+    /* usage */
+    DRIVER_NAME"_driver_init() : "
+    "INTERNAL ; initialize lua side of " DRIVER_NAME " driver.",
+    /* function */
+    SHELL_COMMAND_C, lua_entrylist_init
   },
 
   {
-    DRIVER_NAME"_driver_shutdown", 0,        /* long and short names */
-    "print [["
-    DRIVER_NAME"_driver_shutdown : "
-    "INTERNAL ; shutdown lua side of " DRIVER_NAME " driver."
-    "]]",                                    /* usage */
-    SHELL_COMMAND_C, lua_entrylist_shutdown  /* function */
+    /* long names, short names and topic */
+    DRIVER_NAME"_driver_shutdown", 0, 0,
+    /* usage */
+    DRIVER_NAME"_driver_shutdown() : "
+    "INTERNAL ; shutdown lua side of " DRIVER_NAME " driver.",
+    /* function */
+    SHELL_COMMAND_C, lua_entrylist_shutdown
   },
 
   /* Creation command. */
   {
-    DRIVER_NAME"_new", 0,         /* long and short names */
-    "print [["
-    DRIVER_NAME"_new : "
-    "Create a new empty entry-list."
-    "]]",                                 /* usage */
-    SHELL_COMMAND_C, lua_entrylist_new    /* function */
+    /* long names, short names and topic */
+    DRIVER_NAME"_new", 0, 0,
+    /* usage */
+    DRIVER_NAME"_new() : "
+    "Create a new empty entry-list.",
+    /* function */
+    SHELL_COMMAND_C, lua_entrylist_new
   },
 
   /* Lock commands. */
 
   {
-    DRIVER_NAME"_lock", 0,                /* long and short names */
-    "print [["
+    /* long names, short names and topic */
+    DRIVER_NAME"_lock", 0, 0,
+    /* usage */
     DRIVER_NAME"_lock(entrylist) : "
     "Recursive lock of an entry-list. CAUTION : do not forget to unlock"
-    " the entry-list as many times it has been locked."
-    "]]",                                 /* usage */
-    SHELL_COMMAND_C, lua_entrylist_lock   /* function */
+    " the entry-list as many times it has been locked.",
+    /* function */
+    SHELL_COMMAND_C, lua_entrylist_lock
   },
 
   {
-    DRIVER_NAME"_unlock", 0,              /* long and short names */
-    "print [["
+    /* long names, short names and topic */
+    DRIVER_NAME"_unlock", 0, 0,
+    /* usage */
     DRIVER_NAME"_unlock(entrylist) : "
     "Unlock an entry-list. CAUTION : Entry-list must be unlocked as many times"
-    " it has been locked. Not more, not less !"
-    "]]",                                 /* usage */
-    SHELL_COMMAND_C, lua_entrylist_unlock /* function */
+    " it has been locked. Not more, not less !",
+    /* function */
+    SHELL_COMMAND_C, lua_entrylist_unlock 
   },
 
   /* clear command */
   {
-    DRIVER_NAME"_clear", 0,                /* long and short names */
-    "print [["
+    /* long names, short names and topic */
+    DRIVER_NAME"_clear", 0, 0,
+    /* usage */
     DRIVER_NAME"_clear(entrylist) : "
-    "Clear an entry-list : remove all entries. Keep path and loading stat."
-    "]]",                                 /* usage */
-    SHELL_COMMAND_C, lua_entrylist_clear  /* function */
+    "Clear an entry-list : remove all entries. Keep path and loading stat.",
+    /* function */
+    SHELL_COMMAND_C, lua_entrylist_clear
   },
 
   /* load dir command */
   {
-    DRIVER_NAME"_load", 0,                /* long and short names */
-    "print [["
+    /* long names, short names and topic */
+    DRIVER_NAME"_load", 0, 0,
+    /* usage */
     DRIVER_NAME"_load(entrylist, path [,filter]) : "
     "Load a directory into entry-list.\n"
     "filter is a string composed of control characters. Lowercase/uppercase "
@@ -254,9 +261,9 @@ static luashell_command_description_t driver_commands[] = {
     " <p> playlist\n"
     " <l> lua\n"
     " <t> text\n"
-    " <a> all types\n"
-    "]]",                                 /* usage */
-    SHELL_COMMAND_C, lua_entrylist_load   /* function */
+    " <a> all types",
+    /* function */   
+    SHELL_COMMAND_C, lua_entrylist_load
   },
  
   {0},                                    /* end of the command list */
@@ -271,7 +278,10 @@ any_driver_t entrylist_driver =
     DRIVER_NAME,           /**< Driver name                     */
     "Benjamin Gerard",     /**< Driver authors                  */
     "Entry-list LUA "      /**< Description                     */
-    "extension ",
+    "extension provides "
+    "function for loading "
+    "directory in a "
+    "separate thread.",
     0,                     /**< DLL handler                     */
     driver_init,          /**< Driver init                     */
     driver_shutdown,      /**< Driver shutdown                 */

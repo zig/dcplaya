@@ -4,7 +4,7 @@
  * @date      2002/09/20
  * @brief     mikmod input plugin for dcplaya
  *
- * $Id: mikmod_driver.c,v 1.6 2003-03-10 22:55:33 ben Exp $
+ * $Id: mikmod_driver.c,v 1.7 2003-03-28 14:01:45 ben Exp $
  */
 
 #include <stdio.h>
@@ -332,7 +332,7 @@ static int update_info(playa_info_t *info, MODULE *mod, char *tmp)
 
 static int disk_info(playa_info_t *info, MODULE * mod)
 {
-  char tmp[512];
+  char tmp[1024];
 
   //  SDDEBUG("%s(%p,%p)\n", __FUNCTION__, info, mod);
 
@@ -360,10 +360,46 @@ static int disk_info(playa_info_t *info, MODULE * mod)
   playa_info_title(info,mod->songname);
   playa_info_year(info,0);
   playa_info_genre(info,"tracker");
-  playa_info_comments(info,mod->comment);
-
-  //  SDDEBUG("%s(%p,%p) := 0\n");
-
+  if (mod->comment && mod->comment[0]) {
+    playa_info_comments(info,mod->comment);
+  } else {
+    /* Building comment string from sample names, since it was something
+     * like a tradition in old modules, to write comments, copyright and
+     * more here ;)
+     */
+    const int max = sizeof(tmp) - 2; /* '\0' and suplemental space */
+    int i, len, spc, oc;
+    for (oc = i = len = spc = 0; i<mod->numsmp && len<max; ++i) {
+      const char * s, * iname = mod->samples[i].samplename;
+      if (iname && iname[1]) {
+	int c;
+	for (s=iname; len<max && (c=*s, c); s++) {
+	  if (c >= 32 && c < 128) {
+	    if (c == ' ') {
+	      oc = 1;
+	    } else {
+	      if (oc) {
+		tmp[len++] = ' ';
+		oc = 0;
+		spc++;
+	      }
+	      tmp[len++] = c;
+	    }
+	  }
+	}
+	oc = 1; /* Force space at end of sample */
+      }
+    }
+    if (len) {
+      tmp[len] = 0;
+      /* Thats my hack :
+       * Keep comment only if 12.5% of compressed space found !
+       */
+      if (8*spc > len) { 
+	playa_info_comments(info,tmp);
+      }
+    }
+  }
   return 0;
 }
 

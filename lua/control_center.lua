@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.26 2003-03-26 23:02:48 ben Exp $
+--- $Id: control_center.lua,v 1.27 2003-03-28 14:01:44 ben Exp $
 ---
 
 --- @defgroup  dcplaya_lua_cc_app  Control Center
@@ -356,6 +356,9 @@ function control_center_handle(app, evt)
       return nil
    end
    
+---$$$
+   print("cc leave", key)
+
    return evt
 end
 

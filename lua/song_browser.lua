@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.66 2003-03-27 05:48:05 ben Exp $
+--- $Id: song_browser.lua,v 1.67 2003-03-28 14:01:44 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song Browser
@@ -305,6 +305,9 @@ function song_browser_handle(sb, evt)
 	 action = 2
       end
    else
+      if __DEBUG_EVT then
+	 print("sb leave",key)
+      end
       return evt
    end
 

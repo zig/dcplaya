@@ -4,7 +4,7 @@
 --- @author   benjamin gerard
 --- @brief    Fundamental lua stuff.
 ---
---- $Id: init.lua,v 1.23 2003-03-26 23:02:49 ben Exp $
+--- $Id: init.lua,v 1.24 2003-03-28 14:01:44 ben Exp $
 ---
 
 --- @defgroup  dcplaya_lua_basics_library  LUA libraries
@@ -40,169 +40,387 @@ if type(doshellcommand) ~= "function" then
 
 --- Simple doshellcommand (reimplemented in shell.lua).
 --- @ingroup dcplaya_lua_basics
-
+--- @param string lua command
+--- @code
 function doshellcommand(string)
    return dostring(string)
 end
+--- @endcode
+--: doshellcommand(string);
 
 end
 
---- @name Help functions.
---- @ingroup dcplaya_lua_basics
+--- @defgroup  dcplaya_lua_basics_help  Help system
+--- @ingroup   dcplaya_lua_basics
+--- @brief     Dynamic help for shell commands
+---
+---  The help system is hierarchic system. On the top of which stands
+---  topics. Each topics holds commands. Each command has at least a name
+---  and a usage (help) message. Commands may have a optional short name.
+---  Their is a special topic for the drivers named "drivers". Help on drivers
+---  give the list of all loaded driver. Help on a driver name display
+---  information on that driver as well as the commands associate to it.
+---  Driver commands are stored by default in a topic of the name of the
+---  driver, but driver may choose other topic for each command it provides.
+---
+---  It is possible to have a the same name for different command usage in
+---  different topic. To access a command in a given topic help() command
+---  allow to specify a full qualified command name `topic/command`.
+---  The "*" star may be use as a wild-card on either topic or command.
+---  A single "*" or a "* / *" will display topics list and the listing of
+---  command for each topic. 
+---  The wild-card only works for regular topics not for "drivers".
+---
+--- @author    benjamin gerard
 --- @{
---
-if type(shell_help_array) ~= "table" then
-   shell_help_array = {}
-end
-if type(shell_general_commands) ~= "table" then
-   shell_general_commands = {}
-end
+---
 
 --- Add help about a shell command.
-function addhelp(fname, help_func, loc)
-   if type(fname)=="function" then
-      fname=getinfo(fname).name
+--- @param  name        name of command to add to the help (mandatory)
+--- @param  short_name  optional short name for the command
+--- @param  topics      help topics (defaulted to "general")
+--- @param  help        help string (mandatory). 
+--- @return error-code
+--- @retval nil on error
+--
+function addhelp(name, short_name, topics, help)
+   if type(help)  ~= "string" then return end
+   if type(name)=="function" then -- $$$ ben : little bit hacky, isn't it ?
+      fname=getinfo(name).name
    end
-   if fname then
-      shell_help_array[fname] = help_func
-      if not loc then
-	 shell_general_commands[fname] = help_func
+   if type(name) ~= "string" then return end
+   if type(topics) ~= "string" then topics = "general" end
+   if type(help_topics[topics]) ~= "table" then
+      if __DEBUG then
+	 print("Creating new topics : "..topics)
       end
-   else
-      print ("Warning : calling addhelp on a nil fname")
+      help_topics[topics] = {}
    end
+   if __DEBUG then
+      print("Add "..name.." to "..topics)
+   end
+   help_topics[topics][name] = {
+      short_name = short_name,
+      help = help
+   }
+   if short_name then 
+      help_topics[topics][short_name] = name
+      local n,s = getglobal(name), getglobal(short_name)
+      if type(n) == "function" and type(s) == "nil" then
+	 if __DEBUG then
+	    print("Create " .. short_name .. " alias for " .. name)
+	 end
+	 setglobal(short_name,n)
+      end
+   end
+   return 1
 end
 
---- Help about a shell command.
-function help(fname)
-   local h,n,i,j,c,k,v,t,sortkey,mx
-
-   if fname then
-      h = shell_help_array[fname]
-   end
-   if h then
-      -- Help on a command
-      dostring (h)
-      return
-   end
-
-   -- $$$ Reimplement froeach here for print only and without index !
-   local foreach = function (t, dummy)
-		      local i,v
+--- Display a list formatted list of commands
+--- @param  tbl         table
+--- @param  max_width   length of the longest name in the table
+--- @param  wait_key    wait key stroke if listing too long.
+--- @see ls_column()
+--- @internal
+function help_list(tbl, max_width, wait_key)
+   -- Simple replacement function in case ls_column is not defined.
+   local foreach = function (t, dummy) local i,v
 		      for i,v in t do
 			 print(v)
 		      end
 		   end
-   
-   local driver
-   if fname then
-      driver = driver_list[fname]
-   end
-   if driver then
-      -- Help on a driver --
-      print ([[driver:      ]] .. driver.name)
-      print ([[description: ]] .. driver.description)
-      print ([[authors:     ]] .. driver.authors)
-      print ([[version:     ]] .. format("%d.%02d",
-				  driver.version/256, mod(driver.version,256)))
-      print ([[type:        ]] .. format("%s",
-			       strchar(mod(driver.type,256),
-				       mod(driver.type/256,256),
-				       mod(driver.type/65536,256))))
-      h = driver.luacommands
-      if h then
-	 local n = 1
-	 local i, c
-
-	 n = 1
-	 sortkey = {}
-	 for i, c in h do
-	    sortkey[n] = c.name .. "##" .. i
-	    n = n + 1
-	 end
-	 sort(sortkey)
-
-	 n = 1
-	 t = { }
-	 mx = 0
-	 for i, c in sortkey do
-	    local a,b,j = strfind(c,".*##(%d+)")
-	    if j then
-	       local k = h[tonumber(j)]
-	       t[n] = k.name
-		  .. ((k.short_name and (" ("..k.short_name..")")) or "")
-	       mx = max(mx, strlen(t[n]))
-	       n = n+1
-	    end
-	 end
-
-	 print [[commands are:]]
-	 if type(ls_column) == "function" then
-	    ls_column(t,mx+1,1)
-	 else
-	    foreach (t, print)
-	 end
-      end
-      return
-   end
-
-   sortkey = {}
-   n = 1
-   mx = 0
-   for i, v in shell_general_commands do
-      sortkey[n] = i
-      n = n + 1
-      mx = max(mx,strlen(i))
-   end
-   sort(sortkey)
-
-   t = { }
-   n = 1
-   for i, v in sortkey do
-      t[n] = v
-      n = n + 1
-   end
-
-   print [[general commands are:]]
    if type(ls_column) == "function" then
-      ls_column(t,mx+1,1)
+      ls_column(tbl,max_width+1, not wait_key)
    else
-      foreach (t, print)
-   end
-   
-   n = 1
-   sortkey = {}
-   mx = 0
-   for i, c in driver_list do
-      sortkey[n] = i
-      n = n + 1
-      mx = max(mx,strlen(i))
-   end
-   sort(sortkey)
-
-   t = { }
-   n = 1
-   for i, v in sortkey do
-      t[n] = v
-      n = n+1
-   end
-
-   print [[drivers are:]]
-   if type(ls_column) == "function" then
-      ls_column(t,mx+1,1)
-   else
-      foreach (t, print)
+      foreach (tbl, print)
    end
 end
 
---- Alias for help()
---: usage(what)
-usage=help
+--- Build a sorted table of name (shortname) entry
+--- @param  tbl  table to sort
+--- @return a sorted table
+--- @internal
+function help_sort_key(tbl)
+   if type(tbl) ~= "table" then return end
+   local sorted = {}
+   local i,v
+   for i,v in tbl do
+      local name = nil
+      if tag(v) == driver_tag then
+	 name = i
+      elseif type(v) == "table" then -- Skip short name entry
+	 name = i
+	 if v.short_name then
+	    name = name .. "(" .. v.short_name .. ")"
+	 end
+      end
+      if name then tinsert(sorted, name) end
+   end
+   sort(sorted)
+   return sorted
+end
 
-addhelp(help,
-[[print [[help(command_name|driver_name) : show information about a command]]]])
-addhelp(addhelp,
-[[print [[addhelp(command_name, string_to_execute) : add usage information about a command]]]])
+--- Process listing of a table
+---
+---   The help_list_key_table() function sort the given table with
+---   the help_sort_key() function, finds the longest name and 
+---   display the list with the help_list() function.
+--- @param  tbl       topic ot driver table 
+--- @param  label     optional message to display before the listing
+--- @param  wait_key  wait for a key stroke if listing too long
+--- @return error-code
+--- @retval nil on error
+--- @see help_sort_key()
+--- @see help_list()
+--- @internal
+function help_list_key_table(tbl, label, wait_key)
+   local sorted = help_sort_key(tbl)
+   if not sorted then return end
+   local n,maxi,i = getn(sorted),0
+   for i=1,n do
+      maxi = max(maxi,strlen(sorted[i]))
+   end
+   if n > 0 then
+      if label then
+	 print(label)
+      end
+      help_list(sorted, maxi, wait_key)
+   end
+   return 1
+end
+
+--- Display a list of all topics.
+--- @param wait_key  wait for a key stroke if listing too long
+--- @return error-code
+--- @retval nil on error
+function help_on_topics(wait_key)
+   return help_list_key_table(help_topics, "topics:", wait_key)
+end
+
+--- Display a list of all drivers.
+--- @param wait_key  wait for a key stroke if listing too long
+--- @return error-code
+--- @retval nil on error
+function help_on_drivers(wait_key)
+   return help_list_key_table(driver_list, "drivers:", wait_key)
+end
+
+--- Display a list of all commands in given topics or the list of drivers.
+--- @param  topic    topic name or special "drivers" topic
+--- @param  wait_key  wait for a key stroke if listing too long
+--- @return error-code
+--- @retval nil on error
+function help_on_topic(topic, wait_key, no_topics)
+   if type(help_topics) ~= "table" then return end
+   if type(topic) ~= "string" then
+      help_on_topics(wait_key)
+      return
+   elseif not help_topics[topic] then
+      if not no_topics then
+	 print(topic .. " : no such topic")
+	 help_on_topics(wait_key)
+      end
+      return
+   end
+   if topic == "drivers" then
+      return help_on_drivers(wait_key)
+   end
+   help_list_key_table(help_topics[topic], "topic "..topic..":", wait_key)
+   return 1
+end
+
+--- Display help a given driver.
+--- @param  driver_name  name of driver
+--- @param  wait_key  wait for a key stroke if listing too long
+--- @param  do not fall to display driver list if the driver is not found.
+--- @return error code
+--- @retval nil on error (not found)
+function help_on_driver(driver_name, wait_key, no_drivers)
+   if type(driver_list) ~= "table" then return end
+   local driver = driver_list[driver_name]
+   if not driver then
+      if not no_drivers then
+	 print(driver_name .. " : no such driver")
+	 help_on_drivers(wait_key)
+      end
+      return
+   end
+   print("driver " .. driver_name .. ":")
+   print ([[name:        ]] .. driver.name)
+   print ([[description: ]] .. driver.description)
+   print ([[authors:     ]] .. driver.authors)
+   print ([[version:     ]]
+	  .. format("%d.%02d", driver.version/256, mod(driver.version,256)))
+   print ([[type:        ]] .. format("%s",
+				      strchar(mod(driver.type,256),
+					      mod(driver.type/256,256),
+					      mod(driver.type/65536,256))))
+   local h = driver.luacommands
+   if h then
+      local tbl,n,i,c,l = {}, 1
+      for i,c in h do
+	 local name, short_name = c.name, c.short_name 
+	 if not name then name, short_name = short_name, name end
+	 if name then
+	    tbl[name] = { short_name = short_name }
+	 end
+      end
+      print()
+      help_list_key_table(tbl, driver_name .. " commands:", wait_key)
+   end
+   return 1
+end
+
+--- Display usage for a command in a given topic.
+--- @param  command  command name (either short or long name)
+--- @param  topic    topic the command belong to or "*" for all
+--- @return number of matching comands 
+--- @retval nil on error (not found)
+function help_command_usage(command, topic, only_one)
+   if type(command) ~= "string" or
+      type(topic) ~= "string" or
+      type(help_topics) ~= "table" then return end
+   
+   local topics = help_topics
+   if topic ~= "*" then
+      topics = { [topic] = help_topics[topic] }
+   end
+   local n,i,t = 0
+   for topic,t in topics do
+      if type(t) == "table" then
+	 local c = t[command]
+	 if type(c) == "string" then command,c = c,t[c] end
+	 if type(c) == "table" then
+	    local help = topic .. "/" .. command
+	    if c.short_name then
+	       help = help .. "(" .. c.short_name .. ")"
+	    end
+	    print(help)
+	    print(c.help)
+	    if only_one then return 1 end
+	 else n = n + 1 end
+      end
+   end
+   return n > 0 and n
+end
+
+--- Display help on a command.
+---
+---   This function is a alias for
+--- @code
+---  help_command_usage(command_name, "*", 1)
+--- @endcode
+---
+--- @param  command_name  command name (either short or long name)
+--- @return error code
+--- @return on error (not found)
+--- @see help_command_usage()
+function help_on_command(command_name) --, wait_key, no_commands)
+   return help_command_usage(command_name, "*", 1)
+--  then
+--     if type(command_name) ~= "string" or 
+--       type(help_topics) ~= "table" then return end
+--    local topic,v
+--    for topic,v in help_topics do
+--       if help_command_usage(command_name, topic) then
+-- 	 return 1
+--       end
+--    end
+end
+
+--- Help about a shell command.
+--- @param  name      command name
+--- @param  wait_key  wait for on keystroke if listing is too long
+---
+---  Help hierarchy:
+---   - name is nil or "topics",  display the list of topics
+---   - name is "drivers", display the list of drivers
+---   - name is "*" display topics and topics command list (each of them)
+---   - name is "topic/command", display help on this fully qualified command
+---              topic and command an be "*".
+---   - name is a topic, display the list of commands in this topic
+---   - name is a driver, display driver info and its commands
+---   - name is a command, display usage of the first matching command on
+---     on all topics.
+---
+function help(name, wait_key)
+   local h,n,i,j,c,k,v,t,sortkey,mx
+   if type (name) ~= "string" or name == "topics" then
+      return help_on_topics(wait_key)
+   end
+   if type(help_topics) ~= "table" then return end
+   if name == "drivers" then
+      return help_on_drivers(wait_key)
+   end
+
+   local a,b,topic,command = strfind(name,"^(.*)/(.*)$")
+   if a then
+      if topic == "" then topic = "*" end
+      if command == "" then command = "*" end
+      name = topic .. "/" .. command
+   end
+
+   if name == "*" or name == "*/*" then
+      help_on_topics(wait_key)
+      print()
+      local i,v
+      for i,v in help_topics do
+	 help_on_topic(i,wait_key,1)
+	 print()
+      end
+      help_on_drivers(wait_key)
+      return 1
+   end
+
+   if a then
+      if command == "*" then
+	 return help_on_topic(topic,wait_key, 1) or
+	    help_on_driver(topic, wait_key, 1)
+      else
+	 return help_command_usage(command, topic)
+      end
+   end
+
+   return help_on_topic(name, wait_key, 1)
+      or help_on_driver(name, wait_key, 1)
+      or help_on_command(name, wait_key, 1)
+end
+
+--- Initialize the help system.
+--- @param  force  force reinitialization if already initialized (discard
+---                all registrered commands, topics and drivers.
+function help_init(force)
+   if force or type(help_topics) ~= "table" then
+      help_topics = {}
+   end
+end
+
+--- Shutdown the help system.
+--- @code
+function help_shutdown()
+   help_init(force)
+end
+--- @endcode
+
+help_init()
+
+--- Alias for help().
+--- @see help()
+--: usage(what, wait_key);
+usage=help
+setglobal("?",help)
+
+addhelp("addhelp",nil,"helps",
+[[addhelp(nil|*|"topics"|drivers|driver-name|command-name,short-name|nil,topics|nil,message)
+      Add usage information about a command. short-name is optional. If it is given but undefined and command-name is a function addhelp will create it. topics is defaulted to "general". If a command is defined in multiple topics, you can qualify it by a slash /. e.g help("helps/addhelp") will display this text even if another addhelp commands have been added to another topic. If you don\'t the result is undefined.]])
+
+addhelp("help","?","helps",
+[[help("topics"|topic-name|"drivers"|driver-name|command-name [, wait_key])
+      Show help on various subject. wait_key waits key stroke if display is too long.]])
+
+addhelp("syntax",nil,"helps",
+	[[Syntax of command usage := command-name(a1|b1 [,b2 [,b3 [,...] ] ])
+the `|` means OR. the [ ] mean optional. Commands are displayed in fully qualified form (topic/command). short name are prefixed without topic qualifier between parenthesis]])
 
 --
 --- @}
@@ -219,22 +437,23 @@ addhelp(addhelp,
 --- @ingroup dcplaya_lua_basics_driver
 --- @internal
 --
-function register_commands(dd, commands, force)
+--- $$$ ben I don't see what is the reason for this command !!!
+--- commands exist as soon as the driver is loaded and there is no need
+--- to register them
+function register_commands(driver_name, dd, commands, force)
    if not commands then
       return
    end
-
+   local topic = driver_name
    local i, c
    for i, c in commands do
       if force or c.registered == 0 then
-	 print ("Registering new command ", c.name)
-	 setglobal(c.name, c["function"])
-	 addhelp(c.name, c.usage, 1)
-	 if c.short_name then
-	    print ("Short name ", c.short_name)
-	    setglobal(c.short_name, c["function"])
-	    addhelp(c.short_name, c.usage, 1)
+	 if __DEBUG then
+	    print ("Registering new command ", c.name)
 	 end
+	 setglobal(c.name, c["function"])
+	 topic = c.topic or topic
+	 addhelp(c.name, c.short_name, topic, c.usage)
 	 c.registered = 1
       end
    end
@@ -258,7 +477,9 @@ function update_driver_list(list, force)
 	 new = 1
       end
       if old_d and not driver_is_same(old_d, d) then
-	 print("Warning : replacing driver '", d.name, "' in list")
+	 if __DEBUG then
+	    print("Warning : replacing driver '", d.name, "' in list")
+	 end
 	 new = 1
       end
       --	 print (d.name, force, new)
@@ -275,7 +496,7 @@ function update_driver_list(list, force)
 	 
 	 -- register commands
 	 local commands = d.luacommands
-	 register_commands(driver_list[d.name], commands, force)
+	 register_commands(d.name, driver_list[d.name], commands, force)
 	 
 	 -- if an init function exists, then call it
 	 local init
@@ -349,9 +570,9 @@ end -- if not init_lua then
 --- @ingroup dcplaya_lua_basics_library
 ---
 ---   For each path stored in the libpath table, the loadlib function
----   calls a dolfile({PATH}/{NAME}.lua). It stops if the library loads
+---   calls a dofile({PATH}/{NAME}.lua). It stops if the library loads
 ---   properly and returns a non nil value.
----   On success, the loaded_libraries[{NAME}] is set to 1 and the fullpath
+---   On success, the loaded_libraries[{NAME}] is set to 1 and the full-path
 ---   is returned.
 ---   On failure, the loaded_libraries[{NAME}] is unset and the function
 ---   returns nil.
@@ -415,18 +636,25 @@ function dolib(name,force,libpath)
    end
    
    if loaded_libraries[name] and not force then
-      print(format("Library %q " ..
-		   ((loaded_libraries[name] == 1 and "already loaded") or
-		    "currently loading"),name))
+      if __DEBUG then
+	 print(format("Library %q " ..
+		      ((loaded_libraries[name] == 1 and "already loaded") or
+		       "currently loading"),name))
+      end
       return 1
    end
-   print(format("Loading library %q",name))
+   if __DEBUG then
+      print(format("Loading library %q",name))
+   end
    local path = loadlib(name, libpath)
    if not path then
       print(format("Load library %q failed", name))
       return
    end
-   print(format("Library %q loaded from %q",name,path))
+   if __DEBUG then
+      print(format("Library %q loaded from %q",name,path))
+   end
    return 1
 end
 
+return 1

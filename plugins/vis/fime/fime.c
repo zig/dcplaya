@@ -1,10 +1,10 @@
 /** @ingroup dcplaya_vis_driver
  *  @file    fime.c
- *  @author  benjamin gerard 
+ *  @author  benjamin gerard
  *  @date    2003/01/17
  *  @brief   Fly Into a Musical Environment
- *  $Id: fime.c,v 1.9 2003-03-10 22:55:34 ben Exp $
- */ 
+ *  $Id: fime.c,v 1.10 2003-03-28 14:01:45 ben Exp $
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -116,7 +116,7 @@ static int start(void)
   err = err || fime_ground_init(4,20,6,20);
 
   {
-    static const char * names[] = { "star", "asteroid_low", 0 }; 
+    static const char * names[] = { "star", "asteroid_low", 0 };
     fime_star_box_t box = { -6, 6, -4, -1, 0, 20 };
 
     starfield = fime_star_init(32, names, &box, 0);
@@ -166,7 +166,7 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
     float y = (*shipmtx)[3][1];
     float z = (*shipmtx)[3][2];
 
-    float cam_x = x; 
+    float cam_x = x;
     float cam_y = y - 1.1/2;
     float cam_z = z - 1.5;
     z += 3;
@@ -265,7 +265,7 @@ static void lua_setcolor(lua_State * L, float * c)
     }
   }
 }
- 
+
 static int lua_setambient(lua_State * L)
 {
   lua_setcolor(L,(float *) &ambient);
@@ -274,13 +274,16 @@ static int lua_setambient(lua_State * L)
 
 static luashell_command_description_t commands[] = {
   {
-    "fime_setambient", 0,              /* long and short names */
-    "print [["
-    "fime_setambient(a, r, g, b) : set ambient color."
-    "]]",                                /* usage */
-    SHELL_COMMAND_C, lua_setambient      /* function */
+    /* long name, short name, topic */
+    "fime_setambient", 0, "fime",
+    /* usage */
+    "fime_setambient(a, r, g, b) : set ambient color.",
+    /* function */
+    SHELL_COMMAND_C, lua_setambient
   },
-  {0},                                   /* end of the command list */
+
+  /* end of the command list */
+  {0},
 };
 
 static vis_driver_t driver = {
@@ -288,12 +291,15 @@ static vis_driver_t driver = {
   /* Any driver. */
   {
     NEXT_DRIVER,          /* Next driver (see any_driver.h) */
-    VIS_DRIVER,           /* Driver type */      
+    VIS_DRIVER,           /* Driver type */
     0x0100,               /* Driver version */
     "fime",               /* Driver name */
     "Benjamin Gerard\0",  /* Driver authors */
     "FLy Into a Musical " /* Description */
-    "Environment",
+    "Environment. This "
+    "plugin is in develpoment "
+    "and is far from what it "
+    " intends to do.",
     0,                    /* DLL handler */
     init,                 /* Driver init */
     shutdown,             /* Driver shutdown */
@@ -302,7 +308,7 @@ static vis_driver_t driver = {
   },
 
   start,                  /* Driver start */
-  stop,                   /* Driver stop */  
+  stop,                   /* Driver stop */
   process,                /* Driver post render calculation */
   opaque_render,          /* Driver opaque render */
   transparent_render      /* Driver transparent render */

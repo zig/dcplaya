@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    keyboard emulator.
 ---
---- $Id: keyboard_emu.lua,v 1.24 2003-03-25 09:26:46 ben Exp $
+--- $Id: keyboard_emu.lua,v 1.25 2003-03-28 14:01:44 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_ke_app  Keyboard Emulator
@@ -316,9 +316,14 @@ function ke_handle(app, evt)
    end
 
    -- activating key toggle
+   -- ben : Only do this if the active_rules(1) is true, which mean that
+   -- the emulator is granted to open else just pass event for next app.
    if ke_keyactivate[key] then
-      ke_set_active(not ke_shadow_active)
-      return nil
+      if ke_active_rules.current(1) then
+	 ke_set_active(not ke_shadow_active)
+	 return nil
+      end
+      return evt
    end
 
    -- stop here if not active
@@ -327,7 +332,7 @@ function ke_handle(app, evt)
    end
 
    -- first : automatically remap joypad > 1 to first one !
-   while key >=  KBD_CONT2_C and key <= KBD_CONT4_DPAD2_RIGHT do
+   while key >= KBD_CONT2_C and key <= KBD_CONT4_DPAD2_RIGHT do
       key = key - 16
    end
 
@@ -762,3 +767,4 @@ keyboard_emu()
 --
 
 keyboard_emu_loaded = 1
+return 1

@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.21 2003-03-17 15:39:03 ben Exp $
+ * $Id: playa.c,v 1.22 2003-03-28 14:01:45 ben Exp $
  */
 
 #include <kos.h>
@@ -597,6 +597,8 @@ int playa_start(const char *fn, int track, int immediat) {
 
 
   // $$$ ben: Validate all fields ? Not sure this is really wise.
+  // Yes. it is ok like that, since there is a PLAYA_INFO_MUSIC bit
+  // that tell music as change, then all fiels must be updated 
   info.update_mask = (1 << PLAYA_INFO_SIZE) - 1;
   if (!info.info[PLAYA_INFO_TITLE].s) {
     // $$$ ben: direct access ! Not very clean.

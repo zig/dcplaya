@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.91 2003-03-27 05:48:05 ben Exp $
+ * @version    $Id: dynshell.c,v 1.92 2003-03-28 14:01:43 ben Exp $
  */
 
 #include "dcplaya/config.h"
@@ -162,7 +162,6 @@ static int lua_push_entry_func(lua_State * L, ds_structure_t * desc, void * data
 /* driver type */
 
 #include "driver_list.h"
-
 
 static
 #include "luashell_ds.h"
@@ -1317,7 +1316,6 @@ static int convert_info(lua_State * L, playa_info_t * info, int update)
 
   mask = info->update_mask | -!!update;
   
-  
   lua_settop(L,0);
   lua_newtable(L);
 
@@ -1436,6 +1434,7 @@ static int lua_music_info(lua_State * L)
 
   info = playa_info_lock();
   err = convert_info(L,info, lua_tonumber(L,1));
+  info->update_mask = 0;
   playa_info_release(info);
 
   return err;
@@ -1914,38 +1913,16 @@ static int lua_driver_info(lua_State * L, any_driver_t * driver)
       }
 
       if (com->usage) {
-	int top,top2;
-	lua_getglobal(L,"print");
 	lua_pushstring(L,"usage");
-	lua_register(L,"print",print_wrapper);
-	top = lua_gettop(L);
-	/* $$$ ben : I don't understand why the string is not returned into
-	   the stack !!! I had to do that ugly not thread safe trick :(
-	*/
-	print_wrapper_buffer[0] = 0;
-	lua_dobuffer(L,com->usage, strlen(com->usage), "print_wrap");
-	top2 = lua_gettop(L);
-	if (top2 == top && print_wrapper_buffer[0]) {
-	  lua_pushstring(L,print_wrapper_buffer);
-	  top2 = lua_gettop(L);
-	}
-	if (top2 != top+1) {
-	  lua_settop(L,top+1);
-	}
+	lua_pushstring(L,com->usage);
 	lua_settable(L,comTable);
-	lua_setglobal(L,"print");
       }
-
-      lua_pushstring(L,"type");
-      lua_pushstring(L,com->type == SHELL_COMMAND_LUA ? "lua" : "C");
-      lua_settable(L,comTable);
 
       if (com->registered) {
 	lua_pushstring(L,"registered");
 	lua_pushnumber(L,1);
 	lua_settable(L,comTable);
       }
-
       lua_settable(L,comsTable); /* set "name-command" table into "commands" */
     }
 
@@ -2762,77 +2739,97 @@ static int lua_collect(lua_State * L)
   return 0;
 }
 
-#if 0
-static char shell_basic_lua_init[] = 
-"\n shell_help_array = {}"
-"\n "
-"\n function addhelp(fname, help_func)"
-"\n   shell_help_array[fname] = help_func"
-"\n end"
-"\n "
-"\n function help(fname)"
-"\n   local h = nil"
-"\n   if fname then"
-"\n     if type(fname)==[[string]] then"
-"\n 	  fname = getglobal(fname)"
-"\n 	end"
-"\n     h = shell_help_array[fname]"
-"\n   end"
-"\n   if h then"
-"\n     dostring (h)"
-"\n   else"
-"\n     print [[commands are:]]"
-"\n     local t = { } local n = 1"
-"\n     for i, v in shell_help_array do"
-"\n       local name=getinfo(i).name"
-"\n       if not name then name = [[(?)]] end"
-"\n       t[n] = name .. [[, ]]"
-"\n       n = n+1"
-"\n     end"
-"\n     call (print, t)"
-"\n--     for i, v in shell_help_array do"
-"\n--       print ([[  ]], getinfo(i).name, [[,]])"
-"\n--     end"
-"\n   end"
-"\n end"
-"\n "
-"\n function doshellcommand(string)"
-"\n   dostring(string)"
-"\n end"
-"\n "
-"\n usage=help"
-"\n "
-"\n addhelp(help, [[print [[help(command) : show information about a command\n]]]])"
-"\n addhelp(addhelp, [[print [[addhelp(command, string_to_execute) : add usage information about a command\n]]]])"
-;
-#endif
-
 static luashell_command_description_t commands[] = {
+
+  /* system commands */
   { 
-    "malloc_stats",
-    "ms",
-
-    "print([["
+    "malloc_stats","ms","system",
     "mallocs_stats : display memory usage (system memory and video memory)\n"
-    "]])",
-
+    ,
     SHELL_COMMAND_C, lua_malloc_stats
   },
+  {
+    "thd_pass",0,0,
+    "thd_pass() : sleep for a little while, not consuming CPU time"
+    ,
+    SHELL_COMMAND_C, lua_thd_pass
+  },
+  {
+    "framecounter", 0, 0,
+    "framecounter(clear) : return the screen refresh frame counter, "
+    "if clear is set, then clear the framecounter for next time.\n"
+    "since there is 60 frame per second, it is important to clear the "
+    "framcounter often to avoid numerical imprecision due to use of floating "
+    "point number ! (become imprecise after about 24 hours ...)\n"
+    "also, this function never returns zero, it will do thd_pass() until "
+    "the framecounter is not zero ..."
+    ,
+    SHELL_COMMAND_C, lua_framecounter
+  },
+  {
+    "vcolor",0,0,
+    "vcolor(r, g, b, a)\n"
+    ,
+    SHELL_COMMAND_C, lua_vcolor
+  },
+  {
+    "clear_cd_cache",0,0,
+    "clear_cd_cache()\n"
+    ,
+    SHELL_COMMAND_C, lua_clear_cd_cache
+  },
+  {
+    "cdrom_status", "cdstat",0,
+    "cdrom_status([update]) :"
+    " Read CDROM status. If update is set the status is checked otherwise the"
+    " function returns last checked status.\n"
+    " Returns status,disk,id. Where :\n"
+    " id := a number (0:no-disk)\n"
+    " status := [busy,paused,standby,playing,seeking,"
+    "scaning,open,nodisk,error]\n"
+    " disk := [CDDA,CDROM,CDXA,CDI,GDROM,UNKNOWN];\n"
+    ,
+    SHELL_COMMAND_C, lua_cdrom_status
+  },
   { 
-    "dir_load",
-    "dirl",
-
-    "print([["
-    "dir_load(path, [max_recurse], [extension]) : enumerate all files (by default all .lef and .lez files) in given path with max_recurse (default 10) recursion, return an array of file names\n"
-    "]])",
-
-    SHELL_COMMAND_C, lua_path_load
+    "set_visual",0,0,
+    "set_visual([name]) : set/get visual plugin name.\n"
+    ,
+    SHELL_COMMAND_C, lua_set_visual
+  },
+  {
+    "frame_to_second",0,0,
+    "frame_to_second(frames) : "
+    " Convert a number of frame (vertical refresh) into seconds.\n"
+    ,
+    SHELL_COMMAND_C, lua_frame_to_second
+  },
+  {
+    "ramdisk_is_modified",0,0,
+    "ramdisk_is_modified() : "
+    "Get and clear ramdisk modification status."
+    ,
+    SHELL_COMMAND_C, lua_ramdisk_modified
+  },
+  {
+    "ramdisk_notify_path",0,0,
+    "ramdisk_modify_path(path) : "
+    "Set ramdisk modification notify path. nil desactive notification."
+    ,
+    SHELL_COMMAND_C, lua_ramdisk_notify_path
   },
 
+  /* file commands */
   { 
-    "dirlist",
-    0,
-    "print([["
+    "dir_load","dirl","file",
+    "dir_load(path, [max_recurse], [extension]) : enumerate all files"
+    " (by default all .lef and .lez files) in given path with max_recurse"
+    " (default 10) recursion, return an array of file names\n"
+    ")",
+    SHELL_COMMAND_C, lua_path_load
+  },
+  { 
+    "dirlist",0,0,
     "dirlist [switches] <path>)\n"
     " switches:\n"
     "  -2 : returns 2 separate lists (see below)\n"
@@ -2851,145 +2848,23 @@ static luashell_command_description_t commands[] = {
     "one structure by file. Each structure as two fields: \"name\" and "
     "\"size\" which contains respectively the file or directory name, "
     "and the size in bytes of files or -1 for directories.\n"
-    "]])",
-
+    ,
     SHELL_COMMAND_C, lua_dirlist
   },
-
-
   { 
-    "driver_load",
-    "dl",
-
-    "print([["
-    "driver_load(filename) : read a plugin\n"
-    "]])",
-
-    SHELL_COMMAND_C, lua_driver_load
-  },
-  { 
-    "peekchar",
-    0,
-
-    "print([["
-    "peekchar() : return input key on keyboard if available and return its value, or nil if none\n"
-    "]])",
-
-    SHELL_COMMAND_C, lua_peekchar
-  },
-  { 
-    "getchar",
-    "gc",
-
-    "print([["
-    "getchar() : wait for an input key on keyboard and return its value\n"
-    "]])",
-
-    SHELL_COMMAND_C, lua_getchar
-  },
-  {
-    "thd_pass",
-    0,
-
-    "print([["
-    "thd_pass() : sleep for a little while, not consuming CPU time"
-    "]])",
-
-    SHELL_COMMAND_C, lua_thd_pass
-  },
-  {
-    "framecounter",
-    0,
-
-    "print([["
-    "framecounter(clear) : return the screen refresh frame counter, "
-    "if clear is set, then clear the framecounter for next time.\n"
-    "since there is 60 frame per second, it is important to clear the "
-    "framcounter often to avoid numerical imprecision due to use of floating "
-    "point number ! (become imprecise after about 24 hours ...)\n"
-    "also, this function never returns zero, it will do thd_pass() until "
-    "the framecounter is not zero ..."
-    "]])",
-
-    SHELL_COMMAND_C, lua_framecounter
-  },
-  { 
-    "rawprint",
-    "rp",
-
-    "print([["
-    "rawprint( ... ) : "
-    "raw print on console (no extra linefeed like with print)\n"
-    "]])",
-
-    SHELL_COMMAND_C, lua_rawprint
-  },
-  { 
-    "consolesize",
-    "cs",
-
-    "print([["
-    "consolesize() : return width and height of the console in character\n"
-    "]])",
-
-    SHELL_COMMAND_C, lua_consolesize
-  },
-  { 
-    "toggleconsole",
-    "tc",
-
-    "print([["
-    "toggleconsole() : toggle console visibility, return old state\n"
-    "]])",
-
-    SHELL_COMMAND_C, lua_toggleconsole
-  },
-  { 
-    "showconsole",
-    "sc",
-
-    "print([["
-    "showconsole() : show console, return old state\n"
-    "]])",
-
-    SHELL_COMMAND_C, lua_showconsole
-  },
-  { 
-    "hideconsole",
-    "hc",
-
-    "print([["
-    "hideconsole() : hide console, return old state\n"
-    "]])",
-
-    SHELL_COMMAND_C, lua_hideconsole
-  },
-  { 
-    "mkdir",
-    "md",
-
-    "print([["
+    "mkdir","md",0,
     "mkdir(dirname) : create new directory\n"
-    "]])",
-
+    ,
     SHELL_COMMAND_C, lua_mkdir
   },
   { 
-    "unlink",
-    "rm",
-
-    "print([["
+    "unlink","rm",0,
     "unlink(filename) : delete a file (or a directory ?)\n"
-    "]])",
-
+    ,
     SHELL_COMMAND_C, lua_unlink
   },
-
   {
-    "dcar",
-    "ar",
-
-    "print([["
+    "dcar","ar",0,
     "dcar(command,archive[,path]) : works on archive\n"
     "  command:\n"
     "    c : create a new archive.\n"
@@ -2999,324 +2874,265 @@ static luashell_command_description_t commands[] = {
     "  options:\n"
     "    v : verbose.\n"
     "    f : ignored.\n"
-    "]])",
-
+    ,
     SHELL_COMMAND_C, lua_dcar
   },
-
   {
-    "playa_play",
-    "play",
-    "print([["
-    "play([music-file [,track, [,immediat] ] ]) : "
-    "Play a music file or get play status.\n"
-    "]])",
-
-    SHELL_COMMAND_C, lua_play
-  },
-
-  {
-    "playa_stop",
-    "stop",
-    "print([["
-    "stop([immediat]) : stop current music\n"
-    "]])",
-
-    SHELL_COMMAND_C, lua_stop
-  },
-  {
-    "playa_pause",
-    "pause",
-    "print([["
-    "pause([pause_status]) : pause or resume current music or read status\n"
-    "]])",
-    SHELL_COMMAND_C, lua_pause
-  },
-
-  {
-    "playa_fade",
-    "fade",
-    "print([["
-    "fade([seconds]) : Music fade-in / fade-out.\n"
-    " If seconds = 0 or no seconds is missing read current fade status.\n"
-    " If seconds > 0 starts a fade-in.\n"
-    " If seconds < 0 starts a fade-out.\n"
-    "]])",
-    SHELL_COMMAND_C, lua_fade
-  },
-
-  {
-    "playa_volume",
-    "volume",
-    "print([["
-    "volume([volume]) : Get/Set music volume.\n"
-    " volume is a value beetween [0..1].\n"
-    " if volume is ommited, nil or < 0 no change occurs,\n"
-    " else set volume to given value clipped to max (1).\n"
-    " Return previous value in both case."
-    "]])",
-    SHELL_COMMAND_C, lua_volume
-  },
-
-  {
-    "playa_playtime",
-    "playtime",
-    "print([["
-    "seconds,str = playa_playtime() :\n"
-    "Returns current playing time in seconds and "
-    "into a hh:mm:ss formated string."
-    "]])",
-    SHELL_COMMAND_C, lua_playtime
-  },
-
-  {
-    "playa_info",
-    "info",
-    "print([["
-    "playa_info( [update | [filename [ ,track ] ] ]) :\n"
-    "Get music information table."
-    "]])",
-    SHELL_COMMAND_C, lua_music_info
-  },
-
-  {
-    "playa_info_id",
-    "info_id",
-    "print([["
-    "playa_info_id() :\n"
-    "Get current music identifier."
-    "]])",
-    SHELL_COMMAND_C, lua_music_info_id
-  },
-
-  { 
-    "cond_connect",
-    0,
-    "print([["
-    "cond_connect(state) : set the connected state of main controller,"
-    "return old state.\n"
-    "]])",
-    SHELL_COMMAND_C, lua_cond_connect
-  },
-  {
-    "vmu_tools",
-    "vmu",
-    "print([["
-    "vmu_tools b vmupath file : Backup VMU to file.\n"
-    "vmu_tools r vmupath file : Restore file into VMU.\n"
-    "]])",
-    SHELL_COMMAND_C, lua_vmutools
-  },
-  {
-    "copy",
-    "cp",
-    "print([["
-    "copy [options] <source-file> <target-file>\n"
+    "copy","cp",0,    "copy [options] <source-file> <target-file>\n"
     "copy [options] <file1> [<file2> ...] <target-dir>\n"
     "\n"
     "options:\n"
     "\n"
     " -f : force, overwrite existing file\n"
     " -v : verbose\n"
-    "]])",
+    ,
     SHELL_COMMAND_C, lua_copy
   },
-  {
-    "vcolor",
-    0,
-    "print([["
-    "vcolor(r, g, b, a)\n"
-    "]])",
-    SHELL_COMMAND_C, lua_vcolor
-  },
-  {
-    "clear_cd_cache",
-    0,
-    "print([["
-    "clear_cd_cache()\n"
-    "]])",
-    SHELL_COMMAND_C, lua_clear_cd_cache
-  },
   { 
-    "canonical_path",
-    "canonical",
-    "print([["
+    "canonical_path","canonical",0,
     "canonical(path) : get canonical file path.\n"
-    "]])",
+    ,
     SHELL_COMMAND_C, lua_canonical_path
   },
   { 
-    "test",
-    0,
-    "print([["
+    "test",0,0,
     "test(switch,file) : various file test.\n"
     "switch is one of :"
     " -e : file exist\n"
     " -d : file exist and is a directory\n"
     " -f : file exist and is a regular file\n"
     " -s : file is not an empty regular file\n"
-    "]])",
+    ,
     SHELL_COMMAND_C, lua_test
   },
-
-  { 
-    "vmu_set_text",
-    0,
-    "print([["
-    "vmu_set_text(text) : set text to display on VMS lcd.\n"
-    "]])",
-    SHELL_COMMAND_C, lua_vmu_set_text
-  },
-  { 
-    "vmu_set_visual",
-    0,
-    "print([["
-    "vmu_set_visual([fx-number]) : set/get vmu display effects.\n"
-    "]])",
-    SHELL_COMMAND_C, lua_vmu_set_visual
-  },
-  { 
-    "vmu_set_db",
-    0,
-    "print([["
-    "vmu_set_db([boolean]) : set/get vmu display decibel scaling.\n"
-    "]])",
-    SHELL_COMMAND_C, lua_vmu_set_db
-  },
-
-  { 
-    "set_visual",
-    0,
-    "print([["
-    "set_visual([name]) : set/get visual plugin name.\n"
-    "]])",
-    SHELL_COMMAND_C, lua_set_visual
-  },
-
   {
-    "filetype",
-    0,
-    "print([["
+    "filetype",0,0,
     "filetype(filename[, filesize]) : get type, major-name, minor-name of"
     " given file.\n"
     "The filesize parameter is used only to avoid dir/regular file checking."
     " It is neccessary to fix a bug with regular files on /pc that are"
     " allowed to be opened as directory (and the contrary)."
-    "]])",
+    ,
     SHELL_COMMAND_C, lua_filetype
   },
-
   {
-    "filetype_add",
-    0,
-    "print([["
+    "filetype_add",0,0,
     "filetype_add(major [, minor ] ) : add and return a filetype.\n"
-    "]])",
+    ,
     SHELL_COMMAND_C, lua_filetype_add
   },
 
+  /* IO commands */
+  { 
+    "peekchar", 0, "io",
+    "peekchar() : return input key on keyboard if available and return"
+    " its value, or nil if none\n"
+    ,
+    SHELL_COMMAND_C, lua_peekchar
+  },
+  { 
+    "getchar","gc", 0,
+    "getchar() : wait for an input key on keyboard and return its value\n"
+    ,
+    SHELL_COMMAND_C, lua_getchar
+  },
+  { 
+    "cond_connect",0,0,
+    "cond_connect(state) : set the connected state of main controller,"
+    "return old state.\n"
+    ,
+    SHELL_COMMAND_C, lua_cond_connect
+  },
   {
-    "load_background",
-    0,
-    "print([["
+    "controler_read",0,0,    "controler_read([num]) :"
+    " Read either all or a given controler.\n"
+    " Returns respectively a table of controler table or a controler table.\n"
+    ,
+    SHELL_COMMAND_C, lua_read_controler
+  },
+  {
+    "keyboard_present",0,0,
+    "keyboard_present() : "
+    "Check the presence of keyboard controller.\n"
+    "Returns status [0|1], change [nil|1]"
+    ,
+    SHELL_COMMAND_C, lua_keyboard_present
+  },
+
+  /* Console commands */
+  { 
+    "consolesize","cs","console",
+    "consolesize() : return width and height of the console in character\n"
+    ,
+    SHELL_COMMAND_C, lua_consolesize
+  },
+  { 
+    "toggleconsole","tc",0,
+    "toggleconsole() : toggle console visibility, return old state\n"
+    ,
+    SHELL_COMMAND_C, lua_toggleconsole
+  },
+  { 
+    "showconsole", "sc",0,
+    "showconsole() : show console, return old state\n"
+    ,
+    SHELL_COMMAND_C, lua_showconsole
+  },
+  { 
+    "hideconsole","hc",0,
+    "hideconsole() : hide console, return old state\n"
+    ,
+    SHELL_COMMAND_C, lua_hideconsole
+  },
+
+
+  /* Player commands */
+  {
+    "playa_play","play","playa",
+    "play([music-file [,track, [,immediat] ] ]) : "
+    "Play a music file or get play status.\n"
+    ,
+    SHELL_COMMAND_C, lua_play
+  },
+
+  {
+    "playa_stop","stop",0,
+    "stop([immediat]) : stop current music\n"
+    ,
+    SHELL_COMMAND_C, lua_stop
+  },
+  {
+    "playa_pause","pause",0,
+    "pause([pause_status]) : pause or resume current music or read status\n"
+    ,
+    SHELL_COMMAND_C, lua_pause
+  },
+
+  {
+    "playa_fade","fade",0,
+    "fade([seconds]) : Music fade-in / fade-out.\n"
+    " If seconds = 0 or no seconds is missing read current fade status.\n"
+    " If seconds > 0 starts a fade-in.\n"
+    " If seconds < 0 starts a fade-out.\n"
+    ,
+    SHELL_COMMAND_C, lua_fade
+  },
+
+  {
+    "playa_volume","volume",0,
+    "volume([volume]) : Get/Set music volume.\n"
+    " volume is a value beetween [0..1].\n"
+    " if volume is ommited, nil or < 0 no change occurs,\n"
+    " else set volume to given value clipped to max (1).\n"
+    " Return previous value in both case."
+    ,
+    SHELL_COMMAND_C, lua_volume
+  },
+
+  {
+    "playa_playtime","playtime",0,
+    "seconds,str = playa_playtime() :\n"
+    "Returns current playing time in seconds and "
+    "into a hh:mm:ss formated string."
+    ,
+    SHELL_COMMAND_C, lua_playtime
+  },
+  {
+    "playa_info","info",0,
+    "playa_info( [update | [filename [ ,track ] ] ]) :\n"
+    "Get music information table."
+    ,
+    SHELL_COMMAND_C, lua_music_info
+  },
+  {
+    "playa_info_id","info_id",0,
+    "playa_info_id() :\n"
+    "Get current music identifier."
+    ,
+    SHELL_COMMAND_C, lua_music_info_id
+  },
+
+
+  /* VMU commands */
+  { 
+    "vmu_set_text",0,"vmu",
+    "vmu_set_text(text) : set text to display on VMS lcd.\n"
+    ,
+    SHELL_COMMAND_C, lua_vmu_set_text
+  },
+  { 
+    "vmu_set_visual",0,0,
+    "vmu_set_visual([fx-number]) : set/get vmu display effects.\n"
+    ,
+    SHELL_COMMAND_C, lua_vmu_set_visual
+  },
+  { 
+    "vmu_set_db",0,0,
+    "vmu_set_db([boolean]) : set/get vmu display decibel scaling.\n"
+    ,
+    SHELL_COMMAND_C, lua_vmu_set_db
+  },
+  {
+    "vmu_tools", "vmu",0,
+    "vmu_tools b vmupath file : Backup VMU to file.\n"
+    "vmu_tools r vmupath file : Restore file into VMU.\n"
+    ,
+    SHELL_COMMAND_C, lua_vmutools
+  },
+  {
+    "vmu_file_load",0,0,
+    "vmu_file_load(fname, path [,default]) : Load a vmu archive. Optionnaly"
+    " set this file as default vmu file.\n"
+    "Returns vmu_transfert_handle."
+    ,
+    SHELL_COMMAND_C, lua_vmu_file_load
+  },
+  {
+    "vmu_file_save",0,0,
+    "vmu_file_save(fname, path [,default]) : Save a vmu archive. Optionnaly"
+    " set this file as default vmu file.\n"
+    "Returns vmu_transfert_handle."
+    ,
+    SHELL_COMMAND_C, lua_vmu_file_save
+  },
+  {
+    "vmu_file_stat",0,0,
+    "vmu_file_stat(vmu_transfert_handle) : "
+    "Get status string of vmu transfert."
+    ,
+    SHELL_COMMAND_C, lua_vmu_file_stat
+  },
+  {
+    "vmu_file_default",0,0,
+    "vmu_file_default([path|nil]) : "
+    "Get/Set vmu default file path. Returns path or nil.\n"
+    "!!! CAUTION !!! This function respects the vmu_no_default_file"
+    " behaviours. If vmu_no_default_file is set vmu_file_default() always"
+    " returns nil."
+    ,
+    SHELL_COMMAND_C, lua_vmu_file_default
+  },
+  {
+    "vmu_state",0,0,
+    "vmu_state() : returns vmu IO access state.\n"
+    " bit 0 : set if currently reading on vmu.\n"
+    " bit 1 : set if currently writing on vmu.\n"
+    ,
+    SHELL_COMMAND_C, lua_vmu_state
+  },
+
+  /* Image command */
+  {
+    "load_background",0,0,"image"
     "load_background(filename | texure-id [ , type ]) :"
     " load background image.\n"
     " type := [\"scale\" \"center\" \"tile\", default:\"scale\"\n"
     " Returns a table with 4 vertrices { {x,y,u,v} * 4 }.\n"
-    "]])",
+    ,
     SHELL_COMMAND_C, lua_load_background
   },
-
   {
-    "frame_to_second",
-    0,
-    "print([["
-    "frame_to_second(frames) : "
-    " Convert a number of frame (vertical refresh) into seconds.\n"
-    "]])",
-    SHELL_COMMAND_C, lua_frame_to_second
-  },
-
-  {
-    "controler_read",
-    0,
-    "print([["
-    "controler_read([num]) :"
-    " Read either all or a given controler.\n"
-    " Returns respectively a table of controler table or a controler table.\n"
-    "]])",
-    SHELL_COMMAND_C, lua_read_controler
-  },
-
-  {
-    "cdrom_status",
-    "cdstat",
-    "print([["
-    "cdrom_status([update]) :"
-    " Read CDROM status. If update is set the status is checked otherwise the"
-    " function returns last checked status.\n"
-    " Returns status,disk,id. Where :\n"
-    " id := a number (0:no-disk)\n"
-    " status := [busy,paused,standby,playing,seeking,"
-    "scaning,open,nodisk,error]\n"
-    " disk := [CDDA,CDROM,CDXA,CDI,GDROM,UNKNOWN];\n"
-    "]])",
-    SHELL_COMMAND_C, lua_cdrom_status
-  },
-
-  {
-    "getgcthreshold",
-    0,
-    "print([["
-    "getgcthreshold :\nReturn current garbage collection threshold value in Kbytes."
-    "]])",
-    SHELL_COMMAND_C, LUA_getgcthreshold
-  },
-  {
-    "setgcthreshold",
-    0,
-    "print([["
-    "setgcthreshold(new_value) :\nSet current garbage collection threshold value in Kbytes."
-    "]])",
-    SHELL_COMMAND_C, LUA_setgcthreshold
-  },
-  {
-    "getgccount",
-    0,
-    "print([["
-    "getgccount :\nReturn approximate allocated blocks by the garbage collector in Kbytes."
-    "]])",
-    SHELL_COMMAND_C, LUA_getgccount
-  },
-
-  {
-    "collect",
-    0,
-    "print([["
-    "collect(step) :\nPerform the given number of step of garbage collection."
-    "]])",
-    SHELL_COMMAND_C, lua_collect
-  },
-
-  {
-    "intop",
-    0,
-    "print([["
-    "intop(a,op,b) :\n"
-    " Perform `a op b' on integer values.\n"
-    " op := [|,^,&,>,<,+,-,*,/,%].\n"
-    " Where `<' and `>' are arithmetical (signed) left and right shift.\n"
-    "  `|',`&' and `^' are bitwise OR, AND and XOR operands.\n"
-    "  `%' and `/' are signed modulo and division operands.\n"
-    "  e.g: `a = intop(a,'^',-1)' is equivalent to `a = ~a'."
-    "]])",
-    SHELL_COMMAND_C, lua_intop
-  },
-
-  {
-    "image_info",
-    "imginfo",
-    "print([["
+    "image_info","imginfo",0,
     "image_info(filename) :\n"
     " Get image information table :\n"
     " {\n"
@@ -3327,14 +3143,82 @@ static luashell_command_description_t commands[] = {
     "   bpp     = bit-per-pixel,\n."
     "   lut     = number of entry in color table or nil\n"
     " }\n"
-    "]])",
+    ,
     SHELL_COMMAND_C, lua_image_info
   },
 
+
+  /* Garbage collector commands */
   {
-    "driver_info",
-    0,
-    "print([["
+    "getgcthreshold",0,"garbage",
+    "getgcthreshold :\n"
+    "Return current garbage collection threshold value in Kbytes."
+    ,
+    SHELL_COMMAND_C, LUA_getgcthreshold
+  },
+
+  {
+    "setgcthreshold", 0,0,
+    "setgcthreshold(new_value) :\n"
+    "Set current garbage collection threshold value in Kbytes."
+    ,
+    SHELL_COMMAND_C, LUA_setgcthreshold
+  },
+  {
+    "getgccount",0,0,
+    "getgccount :\n"
+    "Return approximate allocated blocks by the garbage collector in Kbytes."
+    ,
+    SHELL_COMMAND_C, LUA_getgccount
+  },
+
+  {
+    "collect",0,0,
+    "collect(step) :\n"
+    "Perform the given number of step of garbage collection."
+    ,
+    SHELL_COMMAND_C, lua_collect
+  },
+
+
+  /* general commands */
+  {
+    "intop",0,"general",
+    "intop(a,op,b) :\n"
+    " Perform `a op b' on integer values.\n"
+    " op := [|,^,&,>,<,+,-,*,/,%].\n"
+    " Where `<' and `>' are arithmetical (signed) left and right shift.\n"
+    "  `|',`&' and `^' are bitwise OR, AND and XOR operands.\n"
+    "  `%' and `/' are signed modulo and division operands.\n"
+    "  e.g: `a = intop(a,'^',-1)' is equivalent to `a = ~a'."
+    ,
+    SHELL_COMMAND_C, lua_intop
+  },
+  { 
+    "rawprint","rp",0,
+    "rawprint( ... ) : "
+    "raw print on console (no extra linefeed like with print)\n"
+    ,
+    SHELL_COMMAND_C, lua_rawprint
+  },
+  {
+    "dostring_print",0,0,
+    "dostring_print(string) : "
+    "Like dostring but all print are done into a string."
+    " Returns printed values into a string."
+    ,
+    SHELL_COMMAND_C, lua_dostring_print
+  },
+
+  /* driver commands */
+  { 
+    "driver_load", "dl","driver",
+    "driver_load(filename) : read a plugin\n"
+    ,
+    SHELL_COMMAND_C, lua_driver_load
+  },
+  {
+    "driver_info",0,0,
     "driver_info([driver-name]) :\n"
     " Get driver information. If no driver-name is given, the function returns"
     " a table indexed by driver type conatining driver info tables indexed by"
@@ -3355,129 +3239,26 @@ static luashell_command_description_t commands[] = {
     "   type        = \"lua\" | \"C\",\n"
     "   registered  = 1 (set only if command is registered)\n"
     " }\n"
-    "]])",
+    ,
     SHELL_COMMAND_C, lua_driver_list
   },
-
   {
-    "get_driver_lists",
-    0,
-    "print([["
+    "get_driver_lists",0,0,
     "get_driver_lists() :\n"
     " Return an array of driver list indexed by their type"
     " (inp, vis, etc ...)\n"
-    "]])",
+    ,
     SHELL_COMMAND_C, lua_get_driver_lists
   },
-
   {
-    "driver_is_same",
-    0,
-    "print([["
+    "driver_is_same",0,0,
     "driver_is_same(driver1, driver2) :\n"
     " Compare two driver, return non-nil if they are the same.\n"
-    "]])",
+    ,
     SHELL_COMMAND_C, lua_driver_is_same
   },
 
-  {
-    "vmu_state",
-    0,
-    "print([["
-    "vmu_state() : returns vmu IO access state.\n"
-    " bit 0 : set if currently reading on vmu.\n"
-    " bit 1 : set if currently writing on vmu.\n"
-    "]])",
-    SHELL_COMMAND_C, lua_vmu_state
-  },
 
-  {
-    "vmu_file_load",
-    0,
-    "print([["
-    "vmu_file_load(fname, path [,default]) : Load a vmu archive. Optionnaly"
-    " set this file as default vmu file.\n"
-    "Returns vmu_transfert_handle."
-    "]])",
-    SHELL_COMMAND_C, lua_vmu_file_load
-  },
-
-  {
-    "vmu_file_save",
-    0,
-    "print([["
-    "vmu_file_save(fname, path [,default]) : Save a vmu archive. Optionnaly"
-    " set this file as default vmu file.\n"
-    "Returns vmu_transfert_handle."
-    "]])",
-    SHELL_COMMAND_C, lua_vmu_file_save
-  },
-
-  {
-    "vmu_file_stat",
-    0,
-    "print([["
-    "vmu_file_stat(vmu_transfert_handle) : "
-    "Get status string of vmu transfert."
-    "]])",
-    SHELL_COMMAND_C, lua_vmu_file_stat
-  },
-
-  {
-    "vmu_file_default",
-    0,
-    "print([["
-    "vmu_file_default([path|nil]) : "
-    "Get/Set vmu default file path. Returns path or nil.\n"
-    "!!! CAUTION !!! This function respects the vmu_no_default_file"
-    " behaviours. If vmu_no_default_file is set vmu_file_default() always"
-    " returns nil."
-    "]])",
-    SHELL_COMMAND_C, lua_vmu_file_default
-  },
-
-
-  {
-    "ramdisk_is_modified",
-    0,
-    "print([["
-    "ramdisk_is_modified() : "
-    "Get and clear ramdisk modification status."
-    "]])",
-    SHELL_COMMAND_C, lua_ramdisk_modified
-  },
-
-  {
-    "ramdisk_notify_path",
-    0,
-    "print([["
-    "ramdisk_modify_path(path) : "
-    "Set ramdisk modification notify path. nil desactive notification."
-    "]])",
-    SHELL_COMMAND_C, lua_ramdisk_notify_path
-  },
-
-  {
-    "keyboard_present",
-    0,
-    "print([["
-    "keyboard_present() : "
-    "Check the presence of keyboard controller.\n"
-    "Returns status [0|1], change [nil|1]"
-    "]])",
-    SHELL_COMMAND_C, lua_keyboard_present
-  },
-
-  {
-    "dostring_print",
-    0,
-    "print([["
-    "dostring_print(string) : "
-    "Like dostring but all print are done into a string."
-    " Returns printed values into a string."
-    "]])",
-    SHELL_COMMAND_C, lua_dostring_print
-  },
 
   {0},
 };
@@ -3496,6 +3277,7 @@ static void shell_register_lua_commands()
 {
   int i;
   lua_State * L = shell_lua_state;
+  const char * last_topic = "nil";
 
   /* Create our user data type */
 
@@ -3536,15 +3318,14 @@ static void shell_register_lua_commands()
   /* register helps */
   for (i=0; commands[i].name; i++) {
     if (commands[i].usage) {
-      dynshell_command("addhelp ([[%s]], [[%s]])", 
-		       commands[i].name, commands[i].usage);
-      if (commands[i].short_name)
-	dynshell_command("addhelp ([[%s]], [[%s]])",
-			 commands[i].short_name, commands[i].usage);
+      dynshell_command("addhelp ([[%s]], [[%s]], [[%s]], [[%s]])",
+		       commands[i].name,
+		       commands[i].short_name ? commands[i].short_name : "nil",
+		       last_topic = commands[i].topic ?
+		       commands[i].topic : last_topic,
+		       commands[i].usage);
     }
   }
- 
-  //lua_register(L, "malloc_stats", lua_malloc_stats);
 }
 
 #if 0

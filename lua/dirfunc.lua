@@ -4,7 +4,7 @@
 --- @author   benjamin gerard
 --- @brief    Directory and filename support.
 ---
---- $Id: dirfunc.lua,v 1.18 2003-03-26 23:02:49 ben Exp $
+--- $Id: dirfunc.lua,v 1.19 2003-03-28 14:01:44 ben Exp $
 ---
 
 --- Current path.
@@ -37,8 +37,8 @@ function get_path_and_leaf(pathname,pwd)
    return path,leaf
 end
 
-addhelp(get_path_and_leaf,
-	[[print[[get_path_and_leaf(pathname[,pwd]): return path,leaf from given filename. pwd is an optionnal pwd. See fullpath.]]]])
+addhelp("get_path_and_leaf",nil,"file",
+[[get_path_and_leaf(pathname[,pwd]): return path,leaf from given filename. pwd is an optionnal pwd. See fullpath.]])
 
 --- Get nude name (remove path and extension).
 --- @param    pathname full 
@@ -53,8 +53,8 @@ function get_nude_name(pathname)
    end
 end
 
-addhelp(get_nude_name,
-	[[print[[get_nude_name(pathname): return nude filename (without path nor extension).]]]])
+addhelp("get_nude_name","nude_name","file",
+[[get_nude_name(pathname): return nude filename (without path nor extension).]])
 
 --- Create a full path name.
 --- @return   fullpath of given filename
@@ -69,20 +69,31 @@ function fullpath(name, pwd)
    return canonical_path(name)
 end
 
-addhelp(fullpath,
-	[[print[[fullpath(filename[,pwd]): return fullpath of given filename. Optionnal pwd will be prefixed instead of defaut PWD global variable.]]]])
+addhelp
+("fullpath",nil,"shell",
+ [[fullpath(filename[,pwd]) : return fullpath of given filename. Optionnal `pwd` will be prefixed instead of defaut `PWD` global variable.]])
 
 --- Change current directory.
---- @warning  No check for new path validity.
-function cd(path)
-	PWD = fullpath(path)
-	if strsub(PWD, -1)~="/" then
-		PWD=PWD.."/"
-	end
-	print("PWD="..PWD)
+--- @param path new path.
+--- @return new path
+--- @retval nil on error (invalid directory)
+--
+function chdir(path)
+   if path ~= nil then
+      local p = fullpath(path)
+      if not p or (type(test) == "function" and not test("-d",p)) then
+	 print ("cd : invalid path ["..tostring(p).."]")
+	 return
+      end
+      PWD = p
+      if strsub(PWD, -1)~="/" then
+	 PWD=PWD.."/"
+      end
+   end
+   return PWD
 end
-addhelp(cd, [[print[[cd(path) : set current directory]]]])
 
+addhelp (cd,nil,"shell", 'cd([path]) : set/get current directory')
 
 --
 -- reimplement basic io function with relative path support
@@ -230,29 +241,25 @@ end
 --- @}
 ----
 
+addhelp
+(deltree, nil, "file",
+ 'deltree(path) : Recursively delete a directory and its files.')
 
-addhelp("deltree", [[
-print[[deltree(path) : Recursively delete a directory and its files
-]]]])
-
-
-addhelp("fullpath_convert", [[
-print[[fullpath_convert(function_name[, arglist]) : 
+addhelp(fullpath_convert, nil, "file",
+[[fullpath_convert(function_name[, arglist]) : 
 Reimplement given function with relative path support by converting its input parameters.
 
 - function_name is the name of the function to reimplement
 - arglist is the list of index of argument to convert or nil to convert all arguments
-]]]])
+]])
 
-addhelp(
-	ls,
-	[[
-	      print[[ls(...) : file listing]]
-	      print[[switches (can be concatenate e.g -ld)]]
-	      print[[ -l : display one file per line is its size.]]
-	      print[[ -s : sort by size instead of name.]]
-	      print[[ -d : display for each directory a content summary. This option is autimatically set if more than one directory is given.]]
-	]])
+addhelp
+(ls,nil,"file",
+[[ls(...) : file listing
+switches (can be concatenate e.g -ld)
+ -l : display one file per line is its size.
+ -s : sort by size instead of name.
+ -d : display for each directory a content summary. This option is autimatically set if more than one directory is given.]])
 
 fullpath_convert( "openfile", { 1 } )
 fullpath_convert( "readfrom", { 1 } )

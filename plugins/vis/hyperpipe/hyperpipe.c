@@ -1,10 +1,10 @@
 /** @ingroup dcplaya_vis_driver
  *  @file    hyperpipe.c
- *  @author  benjamin gerard 
+ *  @author  benjamin gerard
  *  @date    2003/01/14
  *
- *  $Id: hyperpipe.c,v 1.14 2003-03-10 22:55:34 ben Exp $
- */ 
+ *  $Id: hyperpipe.c,v 1.15 2003-03-28 14:01:45 ben Exp $
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -91,14 +91,14 @@ static obj_driver_t * light_object;
 
 /* The 3D-object */
 static obj_t hyperpipe_obj =
-{
-  "hyperpipe",    /* Name */
-  0,              /* Flags */
-  V,              /* # of vertex */
-  T,              /* # of triangle */
-  V,              /* bis */
-  T,              /* bis */
-};
+  {
+    "hyperpipe",    /* Name */
+    0,              /* Flags */
+    V,              /* # of vertex */
+    T,              /* # of triangle */
+    V,              /* bis */
+    T,              /* bis */
+  };
 
 static float max(const float a, const float b) {
   return a > b ? a : b;
@@ -420,13 +420,13 @@ static void anim_occilo2(const float seconds)
 
   az2 = az;
   az = inc_angle(az,saz);
-  
+
   get_pcm();
 
   for (i=0, vy=v; i<W; ++i) {
     int j;
     const float v = spl[i], w = (v < 0 ? -sqrtf(-v) : sqrtf(v));
-    const float 
+    const float
       w2 = fabs(w) * s,
       s1 = MIN_RAY + w2,
       s3 = MIN_RAY + w2 * 0.5,
@@ -495,7 +495,7 @@ static int analyse()
     float q;
 
     fft_fill_bands(bands3);
-   
+
     for (j=0; j<2; ++j) {
       const float avgf  = 0.988514020;
       const float avgf2 = 0.93303299;
@@ -553,7 +553,7 @@ static int analyse()
 
   r = (b[0].w>0) | ((b[1].w>0)<<1);
   if (r) {
-    r |= 0x100 
+    r |= 0x100
       & -(b[0].tacu>=3 && b[0].tacu<20)
       & -(b[1].tacu>=3 && b[1].tacu<20);
   }
@@ -590,7 +590,7 @@ static void anim_band(const float seconds)
     for (i=1; i<W-1; ++i) {
       s0 = s1;
       s1 = dtap[i];
-/*       dtap[i] = s0 * 0.91 + s1 * 0.09; */
+      /*       dtap[i] = s0 * 0.91 + s1 * 0.09; */
       dtap[i] = s0 * 0.81 + s1 * 0.192;
     }
   }
@@ -600,7 +600,7 @@ static void anim_band(const float seconds)
     int i;
     float * t0 = b[0].tap;
     float * t1 = b[1].tap;
-    
+
     for (i=0, vy=v; i<W; ++i) {
       int j;
       const float s0 = MIN_RAY + t0[i] * (MAX_RAY-MIN_RAY);
@@ -732,7 +732,7 @@ static int render(int opaque)
   if (!ready) {
     return -1;
   }
-  
+
   if (light_object && hp_lighted && texid2>0) {
     vtx_t di;
 
@@ -746,14 +746,14 @@ static int render(int opaque)
     MtxTranspose3x3(light_mtx);
     MtxScale(light_mtx,0.43);
     MtxTranslate(light_mtx,lx,ly,lz);
-    
+
     light_object->obj.flags = 0
       | DRAW_NO_FILTER
       | (opaque ? DRAW_OPAQUE : DRAW_TRANSLUCENT)
       | (texid2 << DRAW_TEXTURE_BIT);
 
     DrawObjectSingleColor(&viewport, light_mtx, proj,
-			   &light_object->obj, &di);
+			  &light_object->obj, &di);
   }
 
   if (texid>0) {
@@ -894,7 +894,7 @@ static int lua_custombordertex(lua_State * L)
   }
   border_customize(texid,borderdef);
   return 0;
-}  
+}
 
 static void lua_setcolor(lua_State * L, float * c)
 {
@@ -907,7 +907,7 @@ static void lua_setcolor(lua_State * L, float * c)
     }
   }
 }
- 
+
 static int lua_setambient(lua_State * L)
 {
   lua_setcolor(L,(float *) &ambient);
@@ -926,24 +926,88 @@ static int lua_setbasecolor(lua_State * L)
   return 0;
 }
 
+
+static char * mode2str(char * str, int mode)
+{
+  static const char modt[] = "rfb";
+  int i;
+  for (i=0; i<3; ++i) {
+    str[i] = modt[i] + ((mode & (1<<i)) ? ('A'-'a') : 0);
+  }
+  str[i] = 0;
+  return str;
+}
+
+static int str2mode(int mode, const char * str)
+{
+  if (str) {
+    int c;
+    while (c=*str++, c) {
+      switch(c) {
+      case 'r':
+	mode &= ~CHANGE_MODE;
+	break;
+      case 'R':
+	mode |= CHANGE_MODE;
+	break;
+
+      case 'f':
+	mode &= ~CHANGE_FLASH;
+	break;
+      case 'F':
+	mode |= CHANGE_FLASH;
+	break;
+
+      case 'b':
+	mode &= ~CHANGE_BORDER;
+	break;
+      case 'B':
+	mode |= CHANGE_BORDER;
+	break;
+      }
+    }
+  }
+  return mode;
+}
+
 static int lua_setchange(lua_State * L)
 {
   int mode = change_mode;
   float time = (float)change_time/1000.0f, new_time;
   int n = lua_gettop(L);
-  
+  char str[33];
+
   if (n>=1 && lua_type(L,1) != LUA_TNIL) {
-    change_mode = lua_tonumber(L,1);
+    change_mode = str2mode(mode,lua_tostring(L,1));
   }
   new_time = lua_tonumber(L,2) * 1000.0f;
   if (new_time > 0) {
     change_time = new_time;
   }
   lua_settop(L,0);
-  lua_pushnumber(L, mode);
+  lua_pushstring(L, mode2str(str,mode));
   lua_pushnumber(L, time);
-  return lua_gettop(L);
+  return 2;
 }
+
+/* static int lua_setchange(lua_State * L) */
+/* { */
+/*   int mode = change_mode; */
+/*   float time = (float)change_time/1000.0f, new_time; */
+/*   int n = lua_gettop(L); */
+
+/*   if (n>=1 && lua_type(L,1) != LUA_TNIL) { */
+/*     change_mode = lua_tonumber(L,1); */
+/*   } */
+/*   new_time = lua_tonumber(L,2) * 1000.0f; */
+/*   if (new_time > 0) { */
+/*     change_time = new_time; */
+/*   } */
+/*   lua_settop(L,0); */
+/*   lua_pushnumber(L, mode); */
+/*   lua_pushnumber(L, time); */
+/*   return lua_gettop(L); */
+/* } */
 
 static int lua_setboolean(lua_State * L, int * v)
 {
@@ -974,7 +1038,7 @@ static int lua_setmode(lua_State * L)
 {
   int omode = mode;
   int n = lua_gettop(L);
-  
+
   if (n>=1 && lua_type(L,1) != LUA_TNIL) {
     if (nfct>0) {
       mode = (unsigned int)lua_tonumber(L,1) % nfct;
@@ -990,82 +1054,93 @@ static int lua_setmode(lua_State * L)
 
 static luashell_command_description_t commands[] = {
   {
-    "hyperpipe_setambient", "hp_ambient",
-    "print [["
-    "hyperpipe_setambient(a, r, g, b) : set ambient color."
-    "]]",                                /* usage */
+    "hyperpipe_setambient", "hp_ambient", "hyperpipe",
+    /* usage */
+    "hyperpipe_setambient(a, r, g, b) : set ambient color.",
     SHELL_COMMAND_C, lua_setambient      /* function */
   },
   {
-    "hyperpipe_setdiffuse", "hp_diffuse",
-    "print [["
-    "hyperpipe_setdiffuse(a, r, g, b) : set object base color."
-    "]]",                                /* usage */
+    "hyperpipe_setdiffuse", "hp_diffuse", 0,
+    /* usage */
+    "hyperpipe_setdiffuse(a, r, g, b) : set object base color.",
     SHELL_COMMAND_C, lua_setbasecolor /* function */
   },
   {
-    "hyperpipe_setflashcolor", "hp_flashcolor",
-    "print [["
-    "hyperpipe_setflashcolor(a, r, g, b) : set flash color."
-    "]]",                                /* usage */
+    "hyperpipe_setflashcolor", "hp_flashcolor", 0,
+    /* usage */
+    "hyperpipe_setflashcolor(a, r, g, b) : set flash color.",
     SHELL_COMMAND_C, lua_setflashcolor /* function */
   },
 
   {
-    "hyperpipe_setbordertex", "hp_border",
-    "print [["
-    "hyperpipe_setbordertex(num) : set border texture type."
-    "]]",                                /* usage */
-    SHELL_COMMAND_C, lua_setbordertex    /* function */
+    "hyperpipe_setbordertex", "hp_border", 0,
+    /* usage */
+    "hyperpipe_setbordertex(num) : set border texture type.",
+    /* function */
+    SHELL_COMMAND_C, lua_setbordertex
   },
   {
-    "hyperpipe_custombordertex", "hp_customborder",
-    "print [["
+    "hyperpipe_custombordertex", "hp_customborder", 0,
+    /* usage */
     "hyperpipe_custombordertex(a1,r1,g1,b1, a2,r2,g2,b2, a3,r3,g3,b3) : "
     "set custom border texture. Each color componant could be set to nil to "
     "keep the current value.\n"
     " a1,r1,g1,b1 : border color\n"
     " a2,r2,g2,b2 : fill color\n"
-    " a3,r3,g3,b3 : link color\n"
-    "]]",                                   /* usage */
-    SHELL_COMMAND_C, lua_custombordertex    /* function */
+    " a3,r3,g3,b3 : link color\n",
+    /* function */
+    SHELL_COMMAND_C, lua_custombordertex
   },
 
   {
-    "hyperpipe_setchange", "hp_change",            /* long and short names */
-    "print [["
-    "hyperpipe_setchange(type [, time]) : Set object change properties. "
-    "type bit0:random-mode bit1:active-flash bit2:auto-border."
-    "Return old values."
-    "]]",                                /* usage */
-    SHELL_COMMAND_C, lua_setchange    /* function */
+    /* long name, short name, topic */
+    "hyperpipe_setchange", "hp_change", 0,
+    /* usage */
+    "hyperpipe_setchange([control [, time] ]) :"
+    " Set/Get object change properties.\n"
+    "control parameter is a string which chars control the properties "
+    "to change. "
+    "Uppercase letters enable properties and lowercase letters disable it. "
+    "Missing letters leave its property unchanged.\n"
+    " Properties are:\n"
+    "  'R' randomize mode\n"
+    "  'F' activate bass flash\n"
+    "  'B' activate auto change border\n"
+    "time parameter set auto-change time. 0 or nil leave it unchanged.\n"
+    "Return old values (both control,time).",
+    /* function */
+    SHELL_COMMAND_C, lua_setchange
   },
   {
-    "hyperpipe_setmode", "hp_mode",            /* long and short names */
-    "print [["
+    /* long name, short name, topic */
+    "hyperpipe_setmode", "hp_mode", 0,
+    /* usage */
     "hyperpipe_setmode([mode]) : Set display mode. "
-    "Return old values."
-    "]]",                                /* usage */
-    SHELL_COMMAND_C, lua_setmode    /* function */
+    "Return old values.",
+    /* function */
+    SHELL_COMMAND_C, lua_setmode
   },
   {
-    "hyperpipe_setopacity", "hp_opacity", /* long and short names */
-    "print [["
+    /* long name, short name, topic */
+    "hyperpipe_setopacity", "hp_opacity", 0,
+    /* usage */
     "hyperpipe_setopacity([boolean]) : get/set opacity mode. "
-    "Return old state."
-    "]]",                                /* usage */
-    SHELL_COMMAND_C, lua_setopaque    /* function */
+    "Return old state.",
+    /* function */
+    SHELL_COMMAND_C, lua_setopaque
   },
   {
-    "hyperpipe_setlighting", "hp_light",  /* long and short names */
-    "print [["
+    /* long name, short name, topic */
+    "hyperpipe_setlighting", "hp_light", 0,
+    /* usage */
     "hp_setlighting([boolean]) : Set/Get lighting process."
-    "Return old values."
-    "]]",                                /* usage */
-    SHELL_COMMAND_C, lua_setlighting    /* function */
+    "Return old values.",
+    /* function */
+    SHELL_COMMAND_C, lua_setlighting
   },
 
-  {0},                                   /* end of the command list */
+  /* end of the command list */
+  {0}
 };
 
 static vis_driver_t driver = {
@@ -1073,7 +1148,7 @@ static vis_driver_t driver = {
   /* Any driver. */
   {
     NEXT_DRIVER,          /* Next driver (see any_driver.h) */
-    VIS_DRIVER,           /* Driver type */      
+    VIS_DRIVER,           /* Driver type */
     0x0100,               /* Driver version */
     "hyperpipe",          /* Driver name */
     "Benjamin Gerard\0",  /* Driver authors */
@@ -1087,7 +1162,7 @@ static vis_driver_t driver = {
   },
 
   start,                  /* Driver start */
-  stop,                   /* Driver stop */  
+  stop,                   /* Driver stop */
   process,                /* Driver post render calculation */
   opaque_render,          /* Driver opaque render */
   transparent_render      /* Driver transparent render */

@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.26 2003-03-26 23:02:51 ben Exp $
+ * $Id: lpo.c,v 1.27 2003-03-28 14:01:45 ben Exp $
  */
 
 #include <stdio.h>
@@ -977,75 +977,59 @@ static int lua_setobject(lua_State * L)
 
 static luashell_command_description_t commands[] = {
   {
-    "lpo_setambient", 0,              /* long and short names */
-    "print [["
-    "lpo_setambient(a, r, g, b) : set ambient color."
-    "]]",                                /* usage */
+    "lpo_setambient", 0,"lpo",           /* long and short names */
+    "lpo_setambient(a, r, g, b) : set ambient color.",
     SHELL_COMMAND_C, lua_setambient      /* function */
   },
   {
-    "lpo_setbasecolor", 0,         /* long and short names */
-    "print [["
-    "lpo_setbasecolor(a, r, g, b) : set object base color."
-    "]]",                                /* usage */
+    "lpo_setbasecolor", 0,0,         /* long and short names */
+    "lpo_setbasecolor(a, r, g, b) : set object base color.",
     SHELL_COMMAND_C, lua_setbasecolor /* function */
   },
   {
-    "lpo_setflashcolor", 0,         /* long and short names */
-    "print [["
-    "lpo_setflashcolor(a, r, g, b) : set object flash color."
-    "]]",                                /* usage */
+    "lpo_setflashcolor", 0, 0,         /* long and short names */
+    "lpo_setflashcolor(a, r, g, b) : set object flash color.",
     SHELL_COMMAND_C, lua_setflashcolor /* function */
   },
   {
-    "lpo_setbordertex", 0,            /* long and short names */
-    "print [["
-    "lpo_setbordertex(num) : set border texture type."
-    "]]",                                /* usage */
+    "lpo_setbordertex", 0, 0,            /* long and short names */
+    "lpo_setbordertex(num) : set border texture type.",
     SHELL_COMMAND_C, lua_setbordertex    /* function */
   },
   {
-    "lpo_custombordertex", 0,            /* long and short names */
-    "print [["
+    "lpo_custombordertex", 0, 0,            /* long and short names */
+    /* usage */
     "lpo_custombordertex(a1,r1,g1,b1, a2,r2,g2,b2, a3,r3,g3,b3) : "
     "set custom border texture. Each color componant could be set to nil to "
     "keep the current value.\n"
     " a1,r1,g1,b1 : border color\n"
     " a2,r2,g2,b2 : fill color\n"
-    " a3,r3,g3,b3 : link color\n"
-    "]]",                                   /* usage */
+    " a3,r3,g3,b3 : link color\n",
     SHELL_COMMAND_C, lua_custombordertex    /* function */
   },
 
 
   {
-    "lpo_setremanens", 0,            /* long and short names */
-    "print [["
+    "lpo_setremanens", 0, 0,            /* long and short names */
     "lpo_setremanens([boolean]) : get/set remanens FX. "
-    "Return old state."
-    "]]",                                /* usage */
+    "Return old state.",
     SHELL_COMMAND_C, lua_setremanens    /* function */
   },
   {
-    "lpo_setopacity", 0,            /* long and short names */
-    "print [["
+    "lpo_setopacity", 0, 0,            /* long and short names */
     "lpo_setopacity([boolean]) : get/set opacity mode. "
-    "Return old state."
-    "]]",                                /* usage */
+    "Return old state.",
     SHELL_COMMAND_C, lua_setopaque    /* function */
   },
   {
-    "lpo_setcontroller", 0,            /* long and short names */
-    "print [["
+    "lpo_setcontroller", 0, 0,            /* long and short names */
     "lpo_setcontroller([cont_id]) : set/get controller control."
-    "Return old state."
-    "]]",                                /* usage */
+    "Return old state.",
     SHELL_COMMAND_C, lua_setcontroller    /* function */
   },
 
   {
-    "lpo_setchange", 0,            /* long and short names */
-    "print [["
+    "lpo_setchange", 0, 0,            /* long and short names */
     "lpo_setchange([control [, time] ]) : Set/Get object change properties. "
     "control is a string which chars control the properties to change. "
     "Uppercase letters enable properties and lowercase letters disable it. "
@@ -1055,23 +1039,18 @@ static luashell_command_description_t commands[] = {
     "  'F' activate bass flash\n"
     "  'B' activate auto change border\n"
     "time parameter set auto-change time. 0 or nil leave it unchanged.\n"
-    "Return old values (both control,time)."
-    "]]",                                /* usage */
+    "Return old values (both control,time).",
     SHELL_COMMAND_C, lua_setchange    /* function */
   },
   {
-    "lpo_setobject", 0,            /* long and short names */
-    "print [["
-    "lpo_setobject(name) : Set and get current object."
-    "]]",                                /* usage */
+    "lpo_setobject", 0, 0,            /* long and short names */
+    "lpo_setobject(name) : Set and get current object.",
     SHELL_COMMAND_C, lua_setobject    /* function */
   },
   {
-    "lpo_setlighting", 0,            /* long and short names */
-    "print [["
+    "lpo_setlighting", 0, 0,            /* long and short names */
     "lpo_setlighting([boolean]) : Set/Get lighting process."
-    "Return old values."
-    "]]",                                /* usage */
+    "Return old values.",
     SHELL_COMMAND_C, lua_setlighting    /* function */
   },
 

@@ -4,7 +4,7 @@
 --- @author  benjamin gerard
 --- @brief   basic things used into other library (evt, keyboard_emu, gui)
 ---
---- $Id: basic.lua,v 1.20 2003-03-26 23:02:48 ben Exp $
+--- $Id: basic.lua,v 1.21 2003-03-28 14:01:44 ben Exp $
 ---
 
 --
@@ -392,7 +392,7 @@ end
 --- printf like function.
 ---
 --- @param  ...  format string and arguments needed by format string.
---- @warning Add a trailing '\n'.
+--- @warning Add a trailing newline.
 function printf(...)
    print(call(format,arg))
 end

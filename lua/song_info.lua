@@ -4,7 +4,7 @@
 --- @date     2002/11/29
 --- @brief    Song info application.
 ---
---- $Id: song_info.lua,v 1.26 2003-03-26 23:02:50 ben Exp $
+--- $Id: song_info.lua,v 1.27 2003-03-28 14:01:44 ben Exp $
 
 song_info_loaded = nil
 
@@ -85,6 +85,9 @@ function song_info_create_icons(si)
 
 end
 
+
+
+
 --- Create a song-info application.
 ---
 --- @param  owner  Owner application (nil for desktop).
@@ -100,43 +103,95 @@ function song_info_create(owner, name, style)
    if not owner then owner = evt_desktop_app end
    if not name then name = "song info" end
 
+   function song_info_toggle_help(si, timeout)
+      if timeout or not si.info or si.info.valid == 0 then
+	 dl_set_active2(si.help_dl,si.info_dl,1)
+      else
+	 dl_set_active2(si.help_dl,si.info_dl,2)
+      end
+      si.help_timeout = timeout
+   end
+
+   function song_set_time_str(si, s)
+      if not si.info_time or s ~= si.info_time then
+	 if __DEBUG then
+	    printf ("si update time [%s]",s)
+	 end
+	 si.info_time = s
+	 dl_clear(si.time_dl)
+	 dl_text_prop(si.time_dl, 1, 2, 0.75, 0)
+	 dl_draw_text(si.time_dl, 0,0,0, 1,1,1,1, s)
+      end
+   end
+
    --- Default song-info update.
    --- @internal
    --
-   function song_info_update_info(si, update)
-      si.info = playa_info(update)
-      if si.info and si.info.valid then
+   function song_info_update_info(si)
+      local new_id = playa_info_id()
+      -- No info 
+      if new_id == 0 then
+	 si.info = nil;
+	 song_set_time_str(si, "--:--");
+      end
+
+      local new_music = not si.info or si.info.valid ~= new_id
+
+      -- Don't need to update, since new music update all fields.
+      -- Force the update only at start up, even if it should not
+      -- be required.
+      si.info = playa_info(new_music)
+      if si.info then
 	 local i,v
 	 for i,v in si.info do
 	    if (si.info_fields[i]) then
 	       if type(v) ~= type(si.info_fields[i].value) or
 		  v ~= si.info_fields[i].value then
+		  if __DEBUG then
+		     printf("si: %s [%s]",i,v)
+		  end
 		  si.info_fields[i].value = v
 		  song_info_draw_field(si,si.info_fields[i])
 	       end
 	    end
 	 end
 
-	 if si.info.comments then
-	    si.sinfo_default_comments = nil
-	 elseif not si.sinfo_default_comments then
-	       si.sinfo_default_comments = "***  < Welcome to DCPLAYA >           ***       <The ultimate music player for Dreamcast>         ***        < (C)2002 Benjamin Gerard >           ***             < Main programming : Benjamin Gerard and Vincent Penne >"
+	 if new_music then
+	    if si.info.comments and si.info.comments == "N/A" then
+	       si.info.comments = nil
+	    end
+	    if si.info.comments then
+	       si.sinfo_default_comments = nil
+	    elseif not si.sinfo_default_comments then
+	       si.sinfo_default_comments = "***  < Welcome to DCPLAYA >           ***       <The ultimate music player for Dreamcast>         ***        < (C)2002-2003 Benjamin Gerard >           ***             < Main programming : Benjamin Gerard and Vincent Penne >"
 	       si.info.comments = si.sinfo_default_comments
+	    end
+	    if si.info.comments then
+	       print("update comments", si.info.comments)
+	       local x
+	       local w,h = dl_measure_text(si.info_comments.dl,
+					   si.info.comments)
+	       dl_clear(si.info_comments.dl)
+	       local c = si.label_color
+	       dl_draw_scroll_text(si.info_comments.dl, 0,0,10,
+				   c[1],c[2],c[3],c[4],
+				   si.info.comments, si.info_comments.w, 1)
+	    end
 	 end
-	 
-	 if si.info.comments then
-	    local x
-	    local w,h = dl_measure_text(si.info_comments.dl,
-					si.info.comments)
-	    dl_clear(si.info_comments.dl)
-	    local c = si.label_color
-	    dl_draw_scroll_text(si.info_comments.dl, 0,0,10,
-				c[1],c[2],c[3],c[4],
-				si.info.comments, si.info_comments.w, 1)
+
+	 -- get play time
+	 local s,fs = playtime();
+	 -- Got a new track,
+	 if si.info.track or new_music then
+	    si.info_track = si.info.track
 	 end
+	 fs = (si.info_track and (si.info_track .. " ") or "")
+	    .. (fs or "??:??")
+	 dl_clear(si.time_dl)
+	 dl_text_prop(si.time_dl, 1, 2, 0.75, 0)
+	 dl_draw_text(si.time_dl, 0,0,0, 1,1,1,1, fs)
       end
    end
-
 
    --- Default song-info update.
    --- @internal
@@ -165,6 +220,14 @@ function song_info_create(owner, name, style)
 	 si:set_color(a)
       end
 
+      -- Help hide / show
+      a = si.help_timeout
+      if a then
+	 a = a - frametime
+	 a = a > 0 and a
+      end
+      song_info_toggle_help(si, a)
+
       -- Process refresh
       si.time_elapsed = si.time_elapsed + frametime
       if si.time_elapsed > si.time_refresh then
@@ -174,16 +237,7 @@ function song_info_create(owner, name, style)
 	 isplaying = play()
 
 	 -- refresh icon
-	 if isplaying == 1 then 
-	    if pause() == 1 then
-	       new_icon = 2
-	    else
-	       new_icon = 1
-	    end
-	 else
-	    new_icon = 3
-	 end
-
+	 new_icon = isplaying == 1 and (1 + pause()) or 3
 	 if si.cur_icon ~= new_icon then
 	    si.cur_icon = new_icon
 	    dl_clear(si.icon_dl);
@@ -191,26 +245,8 @@ function song_info_create(owner, name, style)
 	 end
 
 	 -- Refresh info
-	 if isplaying ~= 1 then
-	    dl_set_active2(si.info_dl,si.help_dl,2)
-	    si.info = nil
-	 else
-	    dl_set_active2(si.info_dl,si.help_dl,1)
-	    if not si.info or playa_info_id() ~= si.info.valid then
-	       song_info_update_info(si,1)
-	    else
-	    end
-	 end
+	 song_info_update_info(si)
 
-	 -- Refresh time
-	 dl_clear(si.time_dl)
-	 dl_text_prop(si.time_dl, 1, 2, 0.75, 0)
-	 local s,fs = playtime();
-	 if not fs then fs = "??:??" end
-	 if si.info and si.info.valid ~= 0 and si.info.track then
-	    fs = si.info.track.." "..fs
-	 end
-	 dl_draw_text(si.time_dl, 0,0,0, 1,1,1,1, fs)
       end
    end
 
@@ -219,6 +255,7 @@ function song_info_create(owner, name, style)
    --
    function song_info_handle(si, evt)
       local key = evt.key
+
       if key == evt_shutdown_event then
 	 si:shutdown()
 	 return evt
@@ -233,7 +270,16 @@ function song_info_create(owner, name, style)
 	    si:minimize()
 	 end
 	 return
+      elseif ke_keyactivate and ke_keyactivate[key] then
+	 print("toggle help:", si.help_timeout)
+	 song_info_toggle_help(si, (not si.help_timeout and 5))
+	 return
       end
+
+      if __DEBUG_EVT then
+	 print("si leave ", key)
+      end
+
       return evt
    end
 
@@ -508,9 +554,22 @@ function song_info_create(owner, name, style)
       dl_draw_text(si.help_dl, x, 0, 10, c[1],c[2],c[3],c[4], "Help")
       dl_text_prop(si.help_dl, 0, 16)
       c = si.text_color
-      dl_draw_text(si.help_dl, 0,24,10, c[1],c[2],c[3],c[4], "help text " ..
-		   strchar(16) .. " " .. strchar(17) .. " " ..  
-		      strchar(18) .. " " .. strchar(19))
+
+      local y = h+8
+      local i,text
+      for i,text in {
+	 "\016 ... Confirm (depends on the selected item)",
+	 "\017 ... Cancel (stop playing in Filelist / remove in Playlist)",
+	 "\018 ... Display contextual menu",
+	 "\019 ... Toggle appication switcher (access to application menu)",
+      } do
+	 w,h = dl_measure_text(si.help_dl,text)
+	 dl_draw_text(si.help_dl,
+		      7, y ,10
+		      , c[1],c[2],c[3],c[4],
+		      text)
+	 y = y + h + 4
+      end
    end
 
    song_info_draw_help(si)
@@ -538,7 +597,7 @@ function song_info_create(owner, name, style)
 	    print(w,maxw)
 	    dl_set_clipping(field.dl,0,0,maxw,-1)
 	    dl_draw_scroll_text(field.dl, 0,y,10, c[1],c[2],c[3],c[4],
-				field.label, maxw, 1, 2)
+				field.label, maxw, 0.5, 2)
 	 end
       elseif tag(field.label) == sprite_tag then
 	 field.label:draw(field.dl, 0,0,10)
@@ -552,7 +611,7 @@ function song_info_create(owner, name, style)
 	 if w > maxw then
 	    dl_set_clipping(field.dl,x,0,x+maxw,-1)
 	    dl_draw_scroll_text(field.dl, x,y,10, c[1],c[2],c[3],c[4],
-				field.value, maxw, 1, 2)
+				field.value, maxw, 0.5, 2)
 	 else
 	    x = (field.label and x) or ((maxw - w) * 0.5)
 	    dl_draw_text(field.dl, x,y,10, c[1],c[2],c[3],c[4], field.value)
@@ -623,7 +682,9 @@ function song_info_create(owner, name, style)
    dl_set_clipping(si.info_dl, 0, 0, si.info_comments.w , 0)
    dl_sublist(si.info_dl, si.info_comments.dl)
 
-   song_info_update_info(si,1)
+   si.info = nil
+   song_info_update_info(si)
+   song_info_toggle_help(si,si.help_timeout)
    si:set_color(0, 1, 1, 1)
    si:draw()
    si:open()
@@ -657,8 +718,11 @@ end
 ---
 
 -- Load texture for application icon
-local tex = tex_exist("song-info")
-   or tex_new(home .. "lua/rsc/icons/song-info.tga")
+if not (tex_exist("song-info")
+	or tex_new(home .. "lua/rsc/icons/song-info.tga"))
+then
+   print("song-info icon is missing")
+end
 
 if song_info then
    evt_shutdown_app(song_info)

@@ -8,7 +8,7 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.28 2003-03-26 23:02:51 ben Exp $
+ * $Id: fftvlr.c,v 1.29 2003-03-28 14:01:45 ben Exp $
  */
 
 #include <stdlib.h>
@@ -359,7 +359,7 @@ static void vlr_update(void)
     minv = int_decibel[min>>3];
 
     {
-      const unsigned int db_sub = min;
+/*       const unsigned int db_sub = min; */
       const float f0 = 0.7 * VLR_Y / (float)32768.0;
 
       for (i=0; i<VLR_W; ++i) {
@@ -460,7 +460,7 @@ static int fftvlr_process(viewport_t * vp, matrix_t projection, int elapsed_ms)
     MtxRotateY(tmp, -0.33468713*ay);
     MtxRotateX(tmp, 0.4);
     MtxTranspose(tmp);
-    MtxVectMult(&tlight_normal, &light_normal, tmp);
+    MtxVectMult(&tlight_normal.x, &light_normal.x, tmp);
 
     vlr_update();
 
@@ -598,59 +598,50 @@ static int lua_custombordertex(lua_State * L)
 
 static luashell_command_description_t fftvlr_commands[] = {
   {
-    "fftvlr_setambient", 0,              /* long and short names */
-    "print [["
-      "fftvlr_setambient(r, g, b, a) : set ambient color to given (r,g,b,a) "
-      "values (ranging 0..1)"
-    "]]",                                /* usage */
+    "fftvlr_setambient", 0, "fftvlr",     /* long name, short name, topic */
+    "fftvlr_setambient(r, g, b, a) : set ambient color to given (r,g,b,a) "
+    "values (ranging 0..1)",             /* usage */
     SHELL_COMMAND_C, lua_setambient      /* function */
   },
   {
-    "fftvlr_setdirectionnal", 0,         /* long and short names */
-    "print [["
-      "fftvlr_setdirectionnal(r, g, b, a) : set directionnal light color to given (r,g,b,a) "
-      "values (ranging 0..1)"
-    "]]",                                /* usage */
+    "fftvlr_setdirectionnal", 0, 0,      /* long name, short name, topic */
+    "fftvlr_setdirectionnal(r, g, b, a) :"
+    " set directionnal light color to given (r,g,b,a) "
+    "values (range 0..1)",               /* usage */
     SHELL_COMMAND_C, lua_setdirectionnal /* function */
   },
   {
-    "fftvlr_setbordertex", 0,            /* long and short names */
-    "print [["
-	"fftvlr_setbordertex([number]) : set border texture type."
-    "]]",                                /* usage */
+    "fftvlr_setbordertex", 0, 0,            /* long name, short name, topic */
+    /* usage */
+    "fftvlr_setbordertex([number]) : set border texture type.",
     SHELL_COMMAND_C, lua_setbordertex    /* function */
   },
 
   {
-    "fftvlr_custombordertex", 0,            /* long and short names */
-    "print [["
-	"fftvlr_custombordertex(a1,r1,g1,b1, a2,r2,g2,b2, a3,r3,g3,b3) : "
-	"set custom border texture. Each color componant could be set to nil to "
-	"keep the current value.\n"
-	" a1,r1,g1,b1 : border color\n"
-	" a2,r2,g2,b2 : fill color\n"
-	" a3,r3,g3,b3 : link color\n"
-    "]]",                                   /* usage */
+    "fftvlr_custombordertex", 0, 0,            /* long name, short name, topic */
+    "fftvlr_custombordertex(a1,r1,g1,b1, a2,r2,g2,b2, a3,r3,g3,b3) : "
+    "set custom border texture. Each color componant could be set to nil to "
+    "keep the current value.\n"
+    " a1,r1,g1,b1 : border color\n"
+    " a2,r2,g2,b2 : fill color\n"
+    " a3,r3,g3,b3 : link color\n",
     SHELL_COMMAND_C, lua_custombordertex    /* function */
   },
 
   {
-    "fftvlr_setdb", 0,            /* long and short names */
-    "print [["
-      "fftvlr_db(bool) : set Db scaling on/off"
-    "]]",                                /* usage */
+    "fftvlr_setdb", 0, 0,            /* long name, short name, topic */
+    "fftvlr_db(bool) : set Db scaling on/off", /* usage */
     SHELL_COMMAND_C, lua_setdb    /* function */
   },
   {
-    "fftvlr_setopacity", 0,
-    "print [["
+    "fftvlr_setopacity", 0, 0,
     "fftvlr_setopacity([boolean]) : get/set opacity mode. "
-    "Return old state."
-    "]]",                                /* usage */
+    "Return old state.",              /* usage */
     SHELL_COMMAND_C, lua_setopaque    /* function */
   },
 
-  {0},                                   /* end of the command list */
+  /* end of the command list */
+  {0},
 };
 
 static vis_driver_t fftvlr_driver =

@@ -5,7 +5,7 @@
 --- @date     2003/03/08
 --- @brief    IO control application.
 ---
---- $Id: io_control.lua,v 1.7 2003-03-26 23:02:49 ben Exp $
+--- $Id: io_control.lua,v 1.8 2003-03-28 14:01:44 ben Exp $
 ---
 
 if not dolib ("evt") then return end
@@ -180,7 +180,6 @@ function ioctrl_handle(app, evt)
 	 print("IO control desactivated")
 	 ioctrl_app = nil
       end
-      return
    end
    -- continue event chaining
    return evt

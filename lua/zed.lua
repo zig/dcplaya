@@ -3,7 +3,7 @@
 --- @author   vincent penne
 --- @brief    ZED, The Ziggy's Editor
 ---
---- $Id: zed.lua,v 1.12 2003-03-26 23:02:50 ben Exp $
+--- $Id: zed.lua,v 1.13 2003-03-28 14:01:45 ben Exp $
 --
 -- (C) 2002 Vincent Penne (aka Ziggy Stardust)
 --
@@ -512,15 +512,14 @@ end
 --- @}
 ---
 
-addhelp(zed,[[print
-[[zed(filename) : This is ZED (Ziggy's Editor).
-
- Usage is pretty standard. 
-
-   F10 : Quit
-   F2  : Save file
-   F3  : Load new file
-]]]])
+addhelp
+("zed","ed",nil,
+ 'zed([filename])\n'
+    ..
+    'Zed, Ziggy;s editor is a console based text editor.\n'
+    ..
+    ' F10 : Quit\n F2  : Save file\n F3  : Load file'
+)
 
 zed_loaded=1
 return zed_loaded

@@ -4,7 +4,7 @@
  * @author    vincent penne
  * @date      2002/09/22
  * @brief     lua shell support for dcplaya
- * @version   $Id: luashell.h,v 1.2 2003-03-26 23:02:47 ben Exp $
+ * @version   $Id: luashell.h,v 1.3 2003-03-28 14:01:44 ben Exp $
  */
 
 #ifndef _LUASHELL_H_
@@ -34,7 +34,9 @@ typedef struct luashell_command_description {
   char * name;
   /** short name of the command (optionnal). */
   char * short_name;
-  /** lua command that should print usage of the command. */
+  /** topic (optionnal, if unset s driver-name or "general" is used). */
+  char * topic;
+  /** usage . */
   char * usage;
   /** type of command (LUA or C). */
   luashell_command_type_t  type; 

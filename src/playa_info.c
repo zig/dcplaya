@@ -4,7 +4,7 @@
  * @date    2002/09/23
  * @brief   Music informations
  *
- * $Id: playa_info.c,v 1.4 2003-03-10 22:55:35 ben Exp $
+ * $Id: playa_info.c,v 1.5 2003-03-28 14:01:45 ben Exp $
  */
 
 #include <stdlib.h>
@@ -83,12 +83,15 @@ void playa_info_clean(void)
   unlockinfo();
 }
 
+static char playa_info_na_str[] = "N/A";
+
 void playa_info_free(playa_info_t *info)
 {
   int i;
   for (i=PLAYA_INFO_DESC; i<=PLAYA_INFO_COMMENTS; ++i) {
-    if (info->info[i].s) {
-      free(info->info[i].s);
+    char * s = info->info[i].s;
+    if (s && s != playa_info_na_str) {
+      free(s);
     }
   }
   info_clean(info);
@@ -209,8 +212,8 @@ static int bits(int a, int b)
 
 int playa_info_update(playa_info_t *info)
 {
-  unsigned int format_mask = PLAYA_INFO_FORMAT_MASK;
-  unsigned int vmu_mask = 
+  const unsigned int format_mask = PLAYA_INFO_FORMAT_MASK;
+  const unsigned int vmu_mask = 
     bits(PLAYA_INFO_FORMAT, PLAYA_INFO_COMMENTS);
   unsigned int u;
   int i;
@@ -220,20 +223,16 @@ int playa_info_update(playa_info_t *info)
   }
 
   u = info->update_mask;
-  //  SDDEBUG("update mask = [%X]\n", u);
+  if (!u) {
+    /* Nothing to update */
+    return 0;
+  }
 
   /* Format string depends on many things */
   u |= (!!(info->update_mask & format_mask)) << PLAYA_INFO_FORMAT;
 
   /* VMU string too */
   u |= (!!(info->update_mask & vmu_mask)) << PLAYA_INFO_VMU;
-
-  //  SDDEBUG("update mask after = [%X]\n", u);
-
-  if (!u) {
-    /* Nothing to update */
-    return 0;
-  }
 
   /* Update time string */
   if ((u & (1<<PLAYA_INFO_TIME))) {
@@ -242,7 +241,6 @@ int playa_info_update(playa_info_t *info)
   }
 
   lockinfo();
-  curinfo.valid = 0;
 
   /* Update numeric value */
   for (i = PLAYA_INFO_BITS; i <= PLAYA_INFO_BYTES; ++i) {
@@ -257,7 +255,8 @@ int playa_info_update(playa_info_t *info)
       if (curinfo.info[i].s) {
 	free(curinfo.info[i].s);
       }
-      curinfo.info[i].s = info->info[i].s;
+      curinfo.info[i].s = 
+	info->info[i].s ? info->info[i].s : playa_info_na_str;
     }
   }
 
@@ -267,7 +266,8 @@ int playa_info_update(playa_info_t *info)
     if (curinfo.info[i].s) {
       free(curinfo.info[i].s);
     }
-    curinfo.info[i].s = info->info[i].s;
+    curinfo.info[i].s =
+      info->info[i].s ? info->info[i].s : playa_info_na_str;
   }
 
   /* Update format string */
@@ -288,8 +288,11 @@ int playa_info_update(playa_info_t *info)
     make_vmu(&curinfo);
   }
 
-  curinfo.update_mask = u;
-  curinfo.valid = next_info_id();
+  /* ben : now update_mask is never get cleared. Its reader job to clear it. */
+  curinfo.update_mask |= u;
+  
+  /* ben : now valid is only incremented if music change. */
+  curinfo.valid = (u & (1<<PLAYA_INFO_MUSIC)) ? next_info_id() : info_id;
   *info = curinfo; 
   unlockinfo();
 

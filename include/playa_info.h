@@ -5,7 +5,7 @@
  * @date    2002/09/23
  * @brief   Music informations
  *
- * $Id: playa_info.h,v 1.8 2003-03-26 23:02:48 ben Exp $
+ * $Id: playa_info.h,v 1.9 2003-03-28 14:01:44 ben Exp $
  */
 
 #ifndef _PLAYA_INFO_H_
@@ -58,6 +58,7 @@ typedef enum {
   PLAYA_INFO_COMMENTS, /**< Additinnal comment       */
   /**/
 
+  PLAYA_INFO_MUSIC,    /**< New music.               */
   PLAYA_INFO_SIZE      /**< Number of fields in playa_info_t::info */
 } playa_info_e;
 

@@ -3,7 +3,7 @@
 #
 # (C) COPYRIGHT 2002 benjamin gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.22 2003-03-09 01:00:14 ben Exp $ 
+# $Id: Makefile,v 1.23 2003-03-28 14:01:43 ben Exp $ 
 #
 TARGETS=dreammp3.elf
 
@@ -33,7 +33,7 @@ symtab.h :
 	@echo "Build [$@]" 
 	@[ -e $@ ] || touch $@
 	@utils/makesymb.sh $(TARGETS) > tmp_$@
-	@diff tmp_$@ $@ > /dev/null || mv -fv tmp_$@ $@
+	@diff tmp_$@ $@ > /dev/null || mv -f tmp_$@ $@
 	@rm -f tmp_$@
 
 force_$(TARGETS): symtab.o main.o force_math.o data/romdisk.o
@@ -45,22 +45,21 @@ force_$(TARGETS): symtab.o main.o force_math.o data/romdisk.o
 
 $(TARGETS): force_$(TARGETS) $(OBJS)
 	@echo "Build [$@]"
-	@echo "--------------------------------------------------"
 	@( \
 		pass=1; \
 		rm -f tmp_$@; \
 		[ -z "0" ]; \
 		while [ $$? -ne 0 ]; do \
-			cp -fv $@ tmp_$@; \
+			cp -f $@ tmp_$@;\
 			echo "** [$@] PASS $$pass ";\
 			pass=`expr $$pass + 1`;\
 			$(MAKE) force_$@; \
-			diff tmp_$@ $@; \
+			diff tmp_$@ $@ > /dev/null; \
 		done; \
 		rm -f tmp_$@; \
 	)
-	cp -fv $@ full-symb-$@
-	@$(KOS_STRIP) -v $@		
+	cp -f $@ full-symb-$@
+	@$(KOS_STRIP) -v $@
 
 send:
 	$(MAKEDATA)

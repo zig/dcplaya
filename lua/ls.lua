@@ -3,42 +3,53 @@
 --- @author  benjamin gerard
 --- @brief   Directory listing core function.
 ---
---- $Id: ls.lua,v 1.6 2003-03-26 23:02:49 ben Exp $
+--- $Id: ls.lua,v 1.7 2003-03-28 14:01:44 ben Exp $
 ---
 
 -- Display a directory in optimized column format.
 --
-function ls_column(dir,maxi, nowait)
-   local w,h,i,n,l
+function ls_column(dir, maxi, nowait)
    if type(dir) ~= "table" then return end
-   w,h = consolesize()
-   maxi = min(w, maxi or floor(w/3))
-   n=getn(dir)
-   w = floor(w / maxi)
-   l = 10
-   local f=format("%%-%ds",maxi)
-   for i=1, n, 1 do
-      local j,r
-      if l >= h then
-	 l = 1
-	 if not nowait then getchar() end
-      end
-      j=0
-      r=""
-      while j < w and i <= n do
-	 local name
-	 if type(dir[i]) == "table" then
-	    name = dir[i].name
+   local i,name
+   local w,h = consolesize()
+   if type(maxi) ~= "number" then
+      maxi = 0
+      for i,name in dir do
+	 if type(name) == "table" and type(i) == "number" then
+	    name = name.name
 	 end
-	 if type(name) ~= "string" then
-	    name = tostring(dir[i])
+	 if type(name) == "string" then
+	    maxi = max(maxi,strlen(name))
+	 end
+      end
+      maxi = maxi + 1
+   end
+   h = h - 2
+   if maxi < 1 then maxi = 1 end
+   w = floor(w / maxi)
+   local f=format("%%-%ds",maxi)
+   local l,j,r = 0,0,""
+   for i,name in dir do
+      if type(name) == "table" and type(i) == "number" then
+	 name = name.name
+      end
+      if type(name) == "string" then
+	 if j >= w then
+	    j = 0
+	    l = l + 1
+	    if l >= h then
+	       l = 0
+	       if not nowait and getchar then getchar() end
+	    end
+	    print(r)
+	    r = ""
 	 end
 	 r = r..format(f,name)
-	 i = i+1
 	 j = j+1
       end
+   end
+   if j > 0 then
       print(r)
-      l = l + 1;
    end
 end
 
@@ -107,16 +118,16 @@ function ls_core(path,is_long,sort_by_size,detail)
 	 end
 
 	 -- Get longest name
-	 local max = strlen(dir[1].name)
-	 for i=2, n, 1 do
-	    local l = strlen(dir[i].name)
-	    if l > max then max = l end
+	 local maxi = 0
+	 for i=1, n, 1 do
+	    maxi = max(maxi,strlen(dir[i].name))
 	 end
-	 max = max + 1
+	 maxi = maxi + 1
 	 if is_long then
-	    ls_long(dir,max)
+	    ls_long(dir,maxi)
 	 else
-	    ls_column(dir,max)
+	    dir.path = nil -- hack, remove path for ls_column !
+	    ls_column(dir,maxi)
 	 end
       end
    end

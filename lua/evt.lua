@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.25 2003-03-12 13:20:48 ben Exp $
+-- $Id: evt.lua,v 1.26 2003-03-28 14:01:44 ben Exp $
 --
 
 
@@ -284,7 +284,8 @@ function evt_create_console_app()
 		  local focused = app == app.owner.sub
 
 		  if focused then
-		     if evt.key == shell_toggleconsolekey or evt.consolekey == shell_toggleconsolekey then
+		     if evt.key == shell_toggleconsolekey
+			or evt.consolekey == shell_toggleconsolekey then
 			evt_app_insert_last(app.owner, app)
 			return
 		     end
@@ -296,13 +297,15 @@ function evt_create_console_app()
 			return evt
 		     end
 		  else
-		     if evt.key == shell_toggleconsolekey or evt.consolekey == shell_toggleconsolekey then
+		     if evt.key == shell_toggleconsolekey
+			or evt.consolekey == shell_toggleconsolekey then
 			evt_app_insert_first(app.owner, app)
 			return
 		     end
 		  end
 
-		  if evt.key == evt_shutdown_event or (evt.key == gui_focus_event and evt.app == app) then
+		  if evt.key == evt_shutdown_event
+		     or (evt.key == gui_focus_event and evt.app == app) then
 		     if ke_set_active then
 			ke_set_active(1)
 		     end
@@ -320,6 +323,10 @@ function evt_create_console_app()
 		     end
 		     hideconsole()
 		     return
+		  end
+
+		  if __DEBUG_EVT then
+		     print("console leave, ",evt.key)
 		  end
 
 		  return evt
