@@ -4,7 +4,7 @@
 --- @author   benjamin gerard
 --- @brief    Directory and filename support.
 ---
---- $Id: dirfunc.lua,v 1.20 2003-03-28 19:57:16 ben Exp $
+--- $Id: dirfunc.lua,v 1.21 2003-03-29 15:33:06 ben Exp $
 ---
 
 --- Current path.
@@ -140,7 +140,6 @@ function deltree(path)
       print("deltree : bad argument")
       return
    end
-   print("deltree "..path)
    if not test("-d",path) then
       print("deltree : [".. tostring(path) .. "] is not a directory.")
       return

@@ -1,7 +1,7 @@
 --- @date 2002/12/06
 --- @author benjamin gerard
 --- @brief  LUA script to initialize dcplaya VMU backup.
---- $Id: vmu_init.lua,v 1.27 2003-03-28 19:57:17 ben Exp $
+--- $Id: vmu_init.lua,v 1.28 2003-03-29 15:33:07 ben Exp $
 ---
 
 -- Unload library
@@ -16,11 +16,17 @@ function vmu_file()
       and vmu_file_default()
 end
 
+addhelp("vmu_file",nil,"vmu",
+	'vmu_file() : see vmu_file_default(nil)')
+
 --- Set current VMU file.
 function vmu_set_file(filepath)
    return type(vmu_file_default) == "function"
       and vmu_file_default(filepath)
 end
+
+addhelp("vmu_set_file",nil,"vmu",
+	'vmu_set_file(path) : see vmu_file_default(path)')
 
 function ramdisk_init(path)
    print("Initializing RAM disk.")
@@ -45,13 +51,35 @@ if not dolib("vmu_select") then return nil end
 if not dolib("textviewer") then return nil end
 if not dolib("fileselector") then return nil end
 
+function vmu_xxx_file_check_arguments(fctname, fname, path)
+   local hd = "["..fctname.."] : "
+   if type(fname) ~= "string" then
+      print(hd.."missing filename argument")
+      return
+   end
+   if type(path) ~= "string" then
+      if __DEBUG then
+	 print(hd.."missing path argument, try default")
+      end
+      if type(ram_path) == "string" then
+	 path = ram_path .. "/dcplaya/"
+      end
+   end
+   if type(path) ~= "string" then
+      print(hd.."bad path argument (ram_path undefined)")
+      return
+   end
+   return canonical_path(fname), canonical_path(path)
+end
+
+
 --- Initialize the RAM disk.
 --
 
 --- Create dcplaya save file.
 ---
 --- @param  fname  Name of dcplaya save file.
---- @param  path   Path to archive (typically "/ram/dcplaya")
+--- @param  path   Path to archive (default to ram_path.."/dcplaya")
 ---
 --- @return error code
 --- @retval 1   success
@@ -63,24 +91,28 @@ function vmu_save_file(fname, path)
       return
    end
 
-   fname = canonical_path(fname)
-   path = canonical_path(path)
+   fname,path = vmu_xxx_file_check_arguments("vmu_save_file",fname,path)
+   if not fname then return end
 
    local hdl = vmu_file_save(fname,path)
    if hdl then
       local status = vmu_file_stat(hdl)
-      printf("vmu_save_file [%s] : [%s]\n", fname, status)
+      printf("[vmu_save_file] [%s] : [%s]\n", fname, status)
       return status == "success"
    else
-      printf("vmu_save_file [%s] : failed\n", fname)
+      printf("[vmu_save_file] [%s] : failed\n", fname)
    end
 
 end
 
+addhelp("vmu_save_file",nil,"vmu",
+	'vmu_save_file(fname [,path]) : run vmu_file_save() with default path')
+
+
 --- Read and extract save file.
 ---
 --- @param  fname  Name of dcplaya save file
---- @param  path   Extraction path (typically "/ram/dcplaya")
+--- @param  path   Extraction path (default ram_path.."/dcplaya")
 ---
 --- @return error code
 --- @retval 1   success
@@ -92,28 +124,29 @@ function vmu_load_file(fname,path)
       return
    end
 
-   fname = canonical_path(fname)
-   path = canonical_path(path)
+   fname,path = vmu_xxx_file_check_arguments("vmu_load_file",fname,path)
+   if not fname then return end
 
    local result
    local hdl = vmu_file_load(fname,path)
    if hdl then
       local status = vmu_file_stat(hdl)
-      printf("vmu_load_file [%s] : [%s]\n", fname, status)
+      printf("[vmu_load_file] [%s] : [%s]\n", fname, status)
       result = status == "success"
    else
-      printf("vmu_load_file [%s] : failed\n", fname)
+      printf("[vmu_load_file] [%s] : failed\n", fname)
    end
    ramdisk_is_modified() -- clear modified since we don't care here
    return result
-
 end
+
+addhelp("vmu_load_file",nil,"vmu",
+	'vmu_load_file(fname [,path]) : run vmu_file_load() with default path')
 
 --- Get pluged VMU list.
 function vmu_list()
    -- Check available VMU
    local dir = dirlist("-nh", "/vmu")
---   dump(dir,"vmu_list")
    if type(dir) ~= "table" or dir.n < 1 then
       print("vmu_list : no VMU found.")
       return
@@ -304,6 +337,10 @@ function vmu_init(not_load, force_choice)
       end
 
       if choice then
+	 if __DEBUG then
+	    printf ("%s for %q", tmp_not_load and "set_file" or "load_file",
+		    choice)
+	 end
 	 -- Now we have a choice, try to do it !
 	 local done
 	 if tmp_not_load then

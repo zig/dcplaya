@@ -4,7 +4,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.23 2003-03-21 03:38:01 ben Exp $
+ * @version   $Id: console.c,v 1.24 2003-03-29 15:33:07 ben Exp $
  */
 
 
@@ -68,7 +68,7 @@ void csl_init_basic_console()
   csl_window_configure(csl_basic_console,
 		       CSL_BASIC_OFFSET_X, CSL_BASIC_OFFSET_Y,
 		       w*12, h*24,
-		       1, 1,0,0);
+		       1,1,0,0);
 }
 
 void csl_init_ta_console()
@@ -96,8 +96,51 @@ void csl_init_ta_console()
   csl_ta_console->window.tr = 0.26;
   csl_ta_console->window.tg = 1.0;
   csl_ta_console->window.tb = 0.18;
+
+  csl_ta_console->window.ca = 1;
+  csl_ta_console->window.cr = 0;
+  csl_ta_console->window.cg = 1;
+  csl_ta_console->window.cb = 1;
+
 }
 
+static void change_color(float * d, float * s, int copy)
+{
+  float save;
+  int i;
+  for (i=0; i<4; ++i) {
+    save = d[i];
+    if (s) {
+      if (!(copy & 0x01)) { /* not read denied */
+	d[i] = s[i];
+      }
+      if (!(copy & 0x10)) { /* not write denid */
+	s[i] = save;
+      }
+    }
+  }
+}
+
+void csl_console_setcolor(csl_console_t * con,
+			  float * bkgcolor1, float * bkgcolor2,
+			  float * txtcolor, float * cursorcolor,
+			  int what)
+{
+  csl_window_t  * win;
+
+  if (!con) {
+    con = csl_main_console;
+  }
+  if (!con) {
+    return;
+  }
+
+  win = &con->window;
+  change_color(&win->ba1, bkgcolor1,   what >> 0);
+  change_color(&win->ba2, bkgcolor2,   what >> 1);
+  change_color(&win->ta,  txtcolor,    what >> 2);
+  change_color(&win->ca,  cursorcolor, what >> 3);
+}
 
 void csl_init_main_console()
 {
@@ -288,7 +331,7 @@ void csl_window_transparent_render(csl_console_t * c)
 		px + w,
 		c->window.y + (y+1)*14*c->window.scaley, 
 		z + 20,
-		1.0f, 0.0f, 1.0f, 1.0f);
+		c->window.ca,c->window.cr,c->window.cg,c->window.cb);
     }
   }
 

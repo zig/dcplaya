@@ -5,7 +5,7 @@
  * @author    benjamin gerard
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.h,v 1.15 2003-03-26 23:02:47 ben Exp $
+ * @version   $Id: display_list.h,v 1.16 2003-03-29 15:33:06 ben Exp $
  */
 
 #ifndef _DISPLAY_LIST_H_
@@ -112,7 +112,8 @@ typedef struct {
   dl_comid_t next_id;                   /**< Next command in list.           */
   /** Display list command flags. */
   union {
-    struct {                            /**< Fake struct to hold bit field.  */
+    /** Fake struct to hold bit field. */
+    struct {                            
       unsigned int inactive : 1;        /**< Command is inactive.            */
     };
     int all;                            /**< Access all flags.               */

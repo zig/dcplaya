@@ -1,5 +1,5 @@
 /**
- * @ingroup dcplaya_muterm_devel
+ * @ingroup dcplaya_mutermdef_devel
  * @file    mu_termdefs.h
  * @author  benjamin gerard
  * @brief   VT52 terminal code definition
@@ -8,11 +8,17 @@
 #ifndef __MU_TERMDEFS_H__
 #define __MU_TERMDEFS_H__
 
-/** @addtogroup dcplaya_muterm_devel
+/** @defgroup dcplaya_mutermdef_devel VT52 codes
+ *  @ingroup dcplaya_muterm_devel
+ *  @brief VT52 terminal codes and escape sequences.
+ * 
+ *  This is VT52 escape sequence from the Atari ST gemdos ! I can not tell
+ *  if it is real VT52 standard.
+ *
  *  @{
  */
 
-/** @name terminal key code.
+/** @name Terminal key code.
  *  @{
  */
 #define MUTERM_ESC      27  /**< escape          */
@@ -24,40 +30,45 @@
 #define MUTERM_BS       8   /**< Backspace       */
 /**@}*/
 
-/** @name VT52 escape sequence.
- * 
- *  This is VT52 escape sequence from the Atari ST gemdos ! I can not tell
- *  if it is real VT52 standard.
+/** @name Cursor move codes.
  *  @{
  */
 
-/** Cursor move codes. */
-#define MT_UP       "\033A"
-#define MT_DW       "\033B"
-#define MT_RT       "\033C"
-#define MT_LT       "\033D"
-#define MT_HOME     "\033H"
-#define MT_UPS      "\033I"
-#define MT_POS(X,Y) "\033Y"Y##X
+#define MT_UP       "\033A" /**< move 1 line up.                */
+#define MT_DW       "\033B" /**< move 1 line down.              */
+#define MT_RT       "\033C" /**< move 1 column to the right.    */
+#define MT_LT       "\033D" /**< move 1 column to the left.     */
+#define MT_HOME     "\033H" /**< move top the top left corner.  */
+#define MT_UPS      "\033I" /**< move to the top line ?         */
+#define MT_POS(X,Y) "\033Y"Y##X /**< set column, line position. */
+/**@}*/
 
-/** Clear codes. */
-#define MT_CLS      "\033E"
-#define MT_CLRHOME  "\033d"
-#define MT_CLREND   "\033J"
-#define MT_CLREOL   "\033K"
-#define MT_CLRLINE  "\033l"
-#define MT_CLRBOL   "\033o"
+/** @name Clear codes.
+ *  @{
+ */
+#define MT_CLS      "\033E" /**< clear screen, cursor move home. */
+#define MT_CLRHOME  "\033d" /**< clear from cursor to home. */
+#define MT_CLREND   "\033J" /**< clear from cursor to end. */
+#define MT_CLREOL   "\033K" /**< clear from cursor to end of line. */
+#define MT_CLRLINE  "\033l" /**< clear cursor line. */
+#define MT_CLRBOL   "\033o" /**< clear from cursor to start of line */
+/**@}*/
 
-/** Deletion / Insertoin codes. */
-#define MT_INSLINE  "\033L"
-#define MT_DELLINE  "\033M"
+/** @name Deletion / Insertion codes.
+ *  @{
+ */
+#define MT_INSLINE  "\033L" /**< insert a line. (above/below ?) cursor line. */
+#define MT_DELLINE  "\033M" /**< delete cursor line. */
+/**@}*/
 
-/** Color codes. */
+/** @name Color codes.
+ *  @{
+ */
+/** Setting cursor, background, text, video inverse and more color stuff. */
 #define MT_FGCOL(C)   "\033b"C
 #define MT_BKCOL(C)   "\033c"C
 #define MT_INVVIDEO   "\033p"
 #define MT_NORMVIDEO  "\033q"
-
 #define MT_BLACK      "\00"
 #define MT_LGREY      "\01"
 #define MT_MGREY      "\02"
@@ -74,19 +85,27 @@
 #define MT_LBLUE      "\015"
 #define MT_MBLUE      "\016"
 #define MT_HBLUE      "\017"
+/**@}*/
 
-/** Show/Hide cursor codes. */
-#define MT_CURSON   "\033e"
-#define MT_CURSOFF  "\033f"
+/** @name Show/Hide cursor codes.
+ *  @{
+ */
+#define MT_CURSON   "\033e" /**< show cursor. */
+#define MT_CURSOFF  "\033f" /**< hide cursor. */
+/**@}*/
 
-/** Save/Restore cursor position codes. */
-#define MT_CURSAVE   "\033j"
-#define MT_CURREST   "\033k"
+/** @name Save/Restore cursor position codes.
+ *  @{
+ */
+#define MT_CURSAVE   "\033j" /**< save cursor position. */
+#define MT_CURREST   "\033k" /**< restore saved position. */
+/**@}*/
 
-/** Line wrapping codes. */
-#define MT_WRAPON     "\033v"
-#define MT_WRAPOFF    "\033w"
-
+/** @name Line wrapping codes.
+ *  @{
+ */
+#define MT_WRAPON     "\033v" /**< enable line wrapping. */
+#define MT_WRAPOFF    "\033w" /**< disable line wrapping. */
 /**@}*/
 
 /**@}*/

@@ -1,11 +1,11 @@
-/*
+/**
  * @ingroup   dcplaya_obj_plugin_devel
  * @file      obj3d.h
  * @author    benjamin gerard
  * @date      2001/10/20
  * @brief     Simple 3D objects defintions for 3D-object plugins
  *
- * $Id: obj3d.h,v 1.8 2003-03-26 23:02:48 ben Exp $
+ * $Id: obj3d.h,v 1.9 2003-03-29 15:33:06 ben Exp $
  */
 
 /* Copyright (C) 1998-2001 Ben(jamin) Gerard */
@@ -19,7 +19,7 @@ DCPLAYA_EXTERN_C_START
 
 #include "vtx.h"
 
-/* @addtogroup dcplaya_obj_plugin_devel
+/** @addtogroup dcplaya_obj_plugin_devel
  *  @{
  */
 

@@ -5,7 +5,7 @@
 --- @date     2002
 --- @brief    Main dcplaya lua script.
 ---
---- $Id: dcplayarc.lua,v 1.42 2003-03-27 05:48:04 ben Exp $
+--- $Id: dcplayarc.lua,v 1.43 2003-03-29 15:33:05 ben Exp $
 ---
 ---   The @b home.."dcplayarc.lua" file is dcplaya main script.
 ---   It is executed after the dynshell has been loaded.
@@ -120,7 +120,7 @@ function scrolltext(dl, msg, txtcolor, bkgcolor, z)
    c = txtcolor
    dl_draw_scroll_text(dl, x, y, z,
 		       c[1],c[2],c[3],c[4], msg,
-		       w, 1, 1)
+		       w, 1.5, 1)
    dl_set_active(dl,1)
    return dl
 end

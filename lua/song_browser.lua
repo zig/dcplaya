@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.68 2003-03-28 19:57:17 ben Exp $
+--- $Id: song_browser.lua,v 1.69 2003-03-29 15:33:06 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song Browser
@@ -150,10 +150,6 @@ function song_browser_update_playlist(sb, frametime)
       sb.stopping = nil
       sb.playlist_idx = nil
    elseif sb.playlist_start_pos then
-      -- $$$$
-      print("playlist starting:")
-      print("@:",sb.playlist_start_pos)
-      print("LOOP:",sb.playlist_loop_pos)
       playa_stop(1) -- Don't want any music at start
       sb.playlist_idx = sb.playlist_start_pos
       sb.playlist_start_pos = nil
@@ -837,21 +833,27 @@ function songbrowser_any_action(sb, action, fl)
    local entry=fl.dir[pos]
 
    -- $$$$
-   dump(entry,action)
+   if __DEBUG then
+      dump(entry,action)
+   end
 
    local entry_path = fl:fullpath(entry)
    if not entry_path then return end
    local ftype, major, minor = filetype(entry_path, entry.size)
 
    -- $$$
-   printf("%q on %q [%q,%q]\n", action, entry_path, major, minor)
+   if __DEBUG then
+      printf("%q on %q [%q,%q]\n", action, entry_path, major, minor)
+   end
 
    local func = fl.actions[action][major] or fl.actions[action].default
    if type(func) == "function" then
       return func(fl,sb,action,entry_path,entry)
    end
    -- $$$
-   printf("No %q action for %q\n", action, entry_path)
+   if __DEBUG then
+      printf("No %q action for %q\n", action, entry_path)
+   end
 end
 
 --    *     - @b nil  if action failed
@@ -1434,9 +1436,6 @@ end
 function sbpl_open_menu(pl, sb)
    local idx = pl:get_pos()
 
-   --- $$$$
-   print("sbpl_open_menu idx, loop",idx, sb.playlist_loop_pos)
-
    local entry = pl:get_entry()
    if not entry then return end
    local root = ""
@@ -1507,10 +1506,7 @@ function sbpl_open_menu(pl, sb)
 		local pos = sb.pl:get_pos()
 		if sb.playlist_loop_pos and sb.playlist_loop_pos == pos then
 		   sb.playlist_loop_pos = nil
-		   print("unset loop at "..pos)
 		else
-		   -- $$$$
-		   print("set loop at "..pos)
 		   sb.playlist_loop_pos = pos
 		   r = 1
 		end
@@ -1954,7 +1950,6 @@ function song_browser_create(owner, name)
 		    end
 		 end,
 	 image = function (fl, sb, path, nxt)
-
 		    -- Determine if there is an image after this one
 		    -- in that case, wait for sb.slide_show_speed
 		    -- seconds
@@ -1964,8 +1959,6 @@ function song_browser_create(owner, name)
 		       local ty,ma,mi = filetype(nxt_path)
 		       if ma == "image" then
 			  sb.slide_show_timeout = sb.slide_show_speed or 10
-			  -- $$$
-			  print("Slide show mode",sb.slide_show_timeout)
 		       end
 		    end
 		    print("song_browser_playlist_actions : image")
@@ -1976,14 +1969,11 @@ function song_browser_create(owner, name)
 
 		    if song_browser_ask_background_load(sb) and
 		       sb:load_image(path) then
-		       print("-->Success")
 		       sb.playlist_wait = fl.actions.wait.image
 		       return 1
 		    end
 		    -- Remove fake wait function.
 		    sb.playlist_wait = nil
-		    
-		    print("-->Failed")
 		    sb.slide_show_timeout = nil
 		 end,
       },

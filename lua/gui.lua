@@ -3,7 +3,7 @@
 --- @author  vincent penne
 --- @brief   gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.63 2003-03-26 23:02:49 ben Exp $
+--- $Id: gui.lua,v 1.64 2003-03-29 15:33:06 ben Exp $
 ---
 ---
 
@@ -13,13 +13,25 @@
 ---
 --- dcplaya graphic user interface (gui) are
 --- @link dcplaya_application applications @endlink. Generally these
---- application display something on a box. GUI must have required
---- fields, have a look to the gui structure definition for more information
+--- applications display something on a box. GUI must have required
+--- fields, have a look to the ::gui structure definition for more information
 ---
 ---
 --- @par Z space organization
 ---
----
+---   Each gui application have a Z space from 0 to 200. This space is divided
+---   in two parts. The first from 0 to 100 is the application Z space.
+---   The second (obviously) from 100 to 200 is reserved for its children.
+---   The whole stuff is managed by a system of
+---   @link dcplaya_display_list sub-display-list @endlink directly. The 
+---   gui_child_autoplacement() to all the tricks and must be call when
+---   application focus changes. This is done by the gui_dialog_basic_handle()
+---   function, so the simpliest thing to do is to call this function in
+---   the gui application handler. Technically these functions creates a 
+---   display-list (_dl) which application display-list (dl) becomes and
+---   sublist and all suitable transforation are performed in the _dl
+---   display-list so that the [0..100] coordinates in the dl display-list
+---   match the application reserved Z. 
 ---
 --- @par Event translation
 --- 
@@ -48,79 +60,55 @@
 ---
 
 --- gui application.
---- struct gui : application {
----   /** the item box { x1, y1, x2, y2 } used for focusing.
----    *  As table are referenced, changing it will affect the focus in
----    *  both way : display and layout.
----    */
----   number box[4];
----
----   /** Default display list used to draw inside. */
----   display_list dl;
----
----   /** Z position of the item for reference to draw upon it.
----    *  @warning  z position should be handle with care. Have a look
----    *   to the Z space organization in the
----    *   @link dcplaya_lua_gui gui documentation @endlink.
----    *  @see gui_child_autoplacement()
----    *  @see gui_dialog_basic_handle()
----    **/
----    number z;
----
----   /** Table of function(app, evt) indexed by event key.
----    *  @see dcplaya_lua_event
----    */
----   event_handler event_table[event_key];
----
----   /** Table whose entry describe some functionalities. */
----    boolean flags[flag_enum];
----
----   /** Optional @link dcplaya_lua_menu_gui menu definition @endlink opened
----    *  by the
----    *  @link dcplaya_lua_application_switcher application switcher @endlink
----    */
----    menudef mainmenu_def;
----
----   /** gui flags enumeration.
----    *  @warning This documentation show tou this as "C" enumeration, in lua
----    *  implementation is value are strings.
----    */
----    enum flag_enum {
----     /** The item (usually a dialog box) eats all events except shutdown
----      *  (can be dangerous !).
----      */
----      "modal", 
----
----     /** The item cannot be focused.
----      *  @deprecated Seems not to be implemented.
----      */
----      "inactive"
----    };
---- };
----
-
-
-
-
---- @todo
--- IDEAS : (these ideas are now implemented)
---
--- * Auto layout of items based on a generalized text justifying algorithm
---   (this is now the taggedtext)
---
--- * A general gui_ask function to build easy choose dialog boxes
---
--- * A text input item
---
--- * A browser item
---
--- * A valuator item
---
--- * Allowing nested display list, every items could use its own display list,
---   contained into the parent's display list,
---   focusing would then be able to modify color/placement of items 
---   individually with respect to its focused or active state ...
---
+--: struct gui : application {
+--:   /** the item box { x1, y1, x2, y2 } used for focusing.
+--:    *  As table are referenced, changing it will affect the focus in
+--:    *  both way : display and layout.
+--:    */
+--:   number box[4];
+--:
+--:   /** Default display list used to draw inside. */
+--:   display_list dl;
+--:
+--:   /** Z position of the item for reference to draw upon it.
+--:    *  @warning  z position should be handle with care. Have a look
+--:    *   to the Z space organization in the
+--:    *   @link dcplaya_lua_gui gui documentation @endlink.
+--:    *  @see gui_child_autoplacement()
+--:    *  @see gui_dialog_basic_handle()
+--:    **/
+--:    number z;
+--:
+--:   /** Table of function(app, evt) indexed by event key.
+--:    *  @see dcplaya_lua_event
+--:    */
+--:   event_handler event_table[event_key];
+--:
+--:   /** Table whose entry describe some functionalities. */
+--:    boolean flags[flag_enum];
+--:
+--:   /** Optional @link dcplaya_lua_menu_gui menu definition @endlink opened
+--:    *  by the
+--:    *  @link dcplaya_lua_application_switcher application switcher @endlink
+--:    */
+--:    menudef mainmenu_def;
+--:
+--:   /** gui flags enumeration.
+--:    *  @warning This documentation show tou this as "C" enumeration, in lua
+--:    *  implementation is value are strings.
+--:    */
+--:    enum flag_enum {
+--:     /** The item (usually a dialog box) eats all events except shutdown
+--:      *  (can be dangerous !).
+--:      */
+--:      "modal", 
+--:
+--:     /** The item cannot be focused.
+--:      *  @deprecated Seems not to be implemented.
+--:      */
+--:      "inactive"
+--:    };
+--: };
 
 if not dolib "evt" or not dolib "box3d" or not dolib "taggedtext" then
    return
@@ -309,58 +297,6 @@ function gui_child_autoplacement(app)
    app._dl1, app._dl2 = app._dl2, app._dl1
 end
 
-
-if nil then
--- OLD VERSION
-function gui_child_autoplacement(app)
-   if not app._dl1 then
-      app._dl1 = dl_new_list(256, 1)
-      app._dl2 = dl_new_list(256, 1)
-      dl_sublist(app.dl, app._dl1)
-      dl_sublist(app.dl, app._dl2)
-   else
-      dl_clear(app._dl1)
-   end
-
-   local i = app.sub
-   if not i then
-      return
-   end
-   local n = 0
-   while i do
-      n = n + 1
-      if not i._dl and i.dl and i.dl ~= app.dl then
-	 i._dl = dl_new_list(256, 1)
-	 dl_sublist(i._dl, i.dl)
-      end
-      i = i.next
-   end
-
-   -- $$$ ben : +1 ???
-   n = n+1
-   local scale = 1/n
-   i = app.sub
---   n = 0
-   while i do
-      n = n - 1
-
-      if i._dl then
-	 dl_set_trans(i._dl,
-		      mat_trans(0, 0, 100/scale + 100*n) *
-			 mat_scale(1, 1, scale/2))
-	 dl_sublist(app._dl1, i._dl)
-      end
-      
-      i = i.next
-   end
-
-   -- swaping display lists
-   dl_set_active2(app._dl1, app._dl2, 1)
-   app._dl1, app._dl2 = app._dl2, app._dl1
-end
-end -- END OLD VERSION
-
-
 -- change focused item
 function gui_new_focus(app, f)
    local of = app.sub
@@ -440,10 +376,11 @@ function gui_minimal_handle(app,evt)
 	 -- still call shutdown user response before standard shutdown
 	 f(app, evt) 
       end
-      app.dl = nil
+      if (app.dl) then
+	 dl_set_active(app.dl)
+      end
       return evt
    end
-
    if f then
       return f(app, evt)
    end

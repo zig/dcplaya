@@ -4,7 +4,7 @@
  * @author    vincent penne
  * @date      2002/09/12
  * @brief     shell support for dcplaya
- * @version   $Id: shell.h,v 1.7 2003-03-26 23:02:48 ben Exp $
+ * @version   $Id: shell.h,v 1.8 2003-03-29 15:33:06 ben Exp $
  */
 
 /** @defgroup dcplaya_shell_devel Shell
@@ -72,7 +72,7 @@ int shell_showconsole();
  */
 int shell_hideconsole();
 
-/**@*/
+/**@}*/
 
-/**@*/
+/**@}*/
 

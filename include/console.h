@@ -4,7 +4,7 @@
  * @author    vincent penne
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.h,v 1.8 2003-03-26 23:02:47 ben Exp $
+ * @version   $Id: console.h,v 1.9 2003-03-29 15:33:06 ben Exp $
  */
 
 #ifndef _CONSOLE_H_
@@ -30,14 +30,16 @@ typedef enum csl_render_mode {
 
 
 /** Console window structure.
+ * @warning do not change color components order. Must be a,r,g,b.
  */
 typedef struct csl_window {
   int x, y;
   int w, h;
   float scalex, scaley;
-  float tr, tg, tb, ta;
-  float br1, bg1, bb1, ba1;
-  float br2, bg2, bb2, ba2;
+  float ca, cr, cg, cb;
+  float ta, tr, tg, tb;
+  float ba1, br1, bg1, bb1;
+  float ba2, br2, bg2, bb2;
   float cursor_time;
   float z;
 } csl_window_t;
@@ -112,6 +114,41 @@ void csl_disable_render_mode(csl_console_t * console, int modes);
 /** Configure console parameters. */
 void csl_window_configure(csl_console_t * console, int x, int y, int w, int h,
 			  float scalex, float scaley, float z, int opaque);
+
+/** Set and get console colors. 
+ *
+ *    The function set and the console colors. For each of the color parameter
+ *    a null value does nothing. Else it is a pointer value to a buffer of
+ *    4 floats in a,r,g,b order. If @b read-denied bit is clear (0),
+ *    the color is  used as new color. If the @b write-denied nit is clear
+ *    the previous color is write back into the buffer.
+ *    That way a default 0 will do a complete set and get operation.
+ *    Notice that setting both read/write bit for a color do the same than
+ *    a null pointer (vis-versa).
+ *
+ * @param  con         console (0 default to csl_main_console)
+ * @param  bkgcolor1   top background color (a,r,g,b)
+ * @param  bkgcolor2   bottom background color (a,r,g,b)
+ * @param  txtcolor    text color (a,r,g,b)
+ * @param  cursorcolor cursor color (a,r,g,b)
+ * @param  what        bit 0-3: read-denied bits for respectively bkgcolor1,
+ *                     bkgcolor2, txtcolor.
+ *                     bit 4-7: write-denied bits for respectively bkgcolor1,
+ *                     bkgcolor2, txtcolor.
+ *@code
+ * extern float b1[4], b2[4], t[4], c[4]; // Some color buffer...
+ * csl_console_setcolor(0,b1,b2,t,0,0x12);
+ * // b1 sets the top color of console background and gets the previous back.
+ * // b2 is read-denied, so it only gets the previous background bottom color
+ * // back.
+ * // t is write denied so it only set the text color and is unchanged.
+ * // Don't mind about cursor color.
+ *@endcode
+ */
+ void csl_console_setcolor(csl_console_t * con,
+			   float * bkgcolor1, float * bkgcolor2,
+			   float * txtcolor, float * cursorcolor, int what);
+
 
 /**@}*/
 

@@ -4,7 +4,7 @@
 --- @date   2002/10/04
 --- @brief  fileselector gui
 ---
---- $Id: fileselector.lua,v 1.29 2003-03-25 09:26:46 ben Exp $
+--- $Id: fileselector.lua,v 1.30 2003-03-29 15:33:06 ben Exp $
 --
 -- TODO : select item with space 
 --        completion with tab        
@@ -201,7 +201,8 @@ function fileselector(name,path,filename,owner)
    x5 = x4-spanx
    
    local y,y1,y2,y3,y4,y5,y6,y7,y8,y9
-   y  = (screenh-h)/2-32
+   y  = (screenh-h)/2-60
+   if y< 0 then y = 0 end
    y1 = y + bh
    y5 = y1 + getn(butdef) * (bh+spany)
    if y5 - y1 < 128 then y5 = y1 + 128 end

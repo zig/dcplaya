@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.92 2003-03-28 14:01:43 ben Exp $
+ * @version    $Id: dynshell.c,v 1.93 2003-03-29 15:33:05 ben Exp $
  */
 
 #include "dcplaya/config.h"
@@ -848,6 +848,61 @@ static int lua_hideconsole(lua_State * L)
   lua_pushnumber(L, shell_hideconsole());
 
   return 1;
+}
+
+static int lua_console_setcolor(lua_State * L)
+{
+  int n = lua_gettop(L);
+  int i, j, k;
+  float colors[4][4];
+  int read_access = 0x0F; /* read denied by default */
+
+  printf("lua_console_setcolor : %d\n",n);
+
+  /* Get colors */
+  j = 1;
+  for (k=0; k<4; ++k) {
+    colors[k][0] = 1;
+    colors[k][1] = colors[k][2] = colors[k][3] = (k == 2);
+    if (j<=n) {
+      switch (lua_type(L,j)) {
+      case LUA_TNUMBER:
+	read_access &= ~(1<<k);
+	for (i=0; i<4; ++i) {
+	  colors[k][i] = lua_tonumber(L,j++);
+	}
+	break;
+	
+      case LUA_TTABLE:
+	read_access &= ~(1<<k);
+	for (i=0; i<4; ++i) {
+	  lua_rawgeti(L,j,i);
+	  colors[k][i] = lua_tonumber(L,-1);
+	  lua_pop(L,1);
+	}
+      case LUA_TNIL:
+      default:
+	++j;
+      }
+    }
+  }
+  
+  /* Set / Get console colors */
+  csl_console_setcolor(0,colors[0],colors[1],colors[2],colors[4],read_access);
+
+  /* Write returned values back */
+  lua_settop(L,0);
+  for (k=0; k<4; ++k) {
+    int table;
+    lua_newtable(L);
+    table = lua_gettop(L);
+    for (i=0; i<4; ++i) {
+      lua_pushnumber(L, colors[k][i]);
+      lua_rawseti(L, table, i+1);
+    }
+  }
+  printf("lua_console_setcolor top=%d\n", lua_gettop(L));
+  return lua_gettop(L);
 }
 
 static int copyfile(const char *dst, const char *src,
@@ -2984,7 +3039,25 @@ static luashell_command_description_t commands[] = {
     ,
     SHELL_COMMAND_C, lua_hideconsole
   },
-
+  { 
+    "console_setcolor","concolor",0,
+    "console_setcolor("
+    "[bta, btr, btg, btb]|nil, "
+    "[ [bba, bbr, bbg, bbb]|nil, "
+    "[ [ta, tr, tg, tb]|nil,"
+    "[ [ca, cr, cg, cb]|nil ] ] ]) : set and get console colors.\n"
+    " Where :\n"
+    "  - btx are background top color components (a,r,g,b)\n"
+    "  - bbx are background bottom color components (a,r,g,b)\n"
+    "  - tx are text color components (a,r,g,b)\n"
+    "  - cx are cursor color components (a,r,g,b)\n"
+    " For each color, if the alpha (a) component is nil r,g,b must be ommit"
+    " too.\n"
+    " The function always returns 12 floats which are  the 4 components of the"
+    " 3 colors."
+    ,
+    SHELL_COMMAND_C, lua_console_setcolor
+  },
 
   /* Player commands */
   {
@@ -3317,12 +3390,17 @@ static void shell_register_lua_commands()
 
   /* register helps */
   for (i=0; commands[i].name; i++) {
+    char format[128];
+    strcpy(format,"addhelp ([[%s]],");
+    strcat(format,commands[i].short_name ? "[[%s]]" : "%s");
+    strcat(format,",[[%s]],[[%s]])");
+
     if (commands[i].usage) {
-      dynshell_command("addhelp ([[%s]], [[%s]], [[%s]], [[%s]])",
+      dynshell_command(format,
 		       commands[i].name,
 		       commands[i].short_name ? commands[i].short_name : "nil",
-		       last_topic = commands[i].topic ?
-		       commands[i].topic : last_topic,
+		       last_topic = commands[i].topic
+		       ? commands[i].topic : last_topic,
 		       commands[i].usage);
     }
   }

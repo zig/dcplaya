@@ -5,20 +5,20 @@
  * @date      2001/07/17
  * @author    Benjamin Gerard <ben@sashipa.com>
  *
- * $Id: SHAtranslatorJpg.h,v 1.2 2003-03-19 05:16:16 ben Exp $
+ * $Id: SHAtranslatorJpg.h,v 1.3 2003-03-29 15:33:07 ben Exp $
  *
  * How to decompress JPEG via jpeglib.
  *
  * JPEG decompression operations:
- *	- Allocate and initialize a JPEG decompression object
- *	- Specify the source of the compressed data (eg, a file)
- *	- Call jpeg_read_header() to obtain image info
- *	- Set parameters for decompression
- *	- jpeg_start_decompress(...);
- *	- while (scan lines remain to be read)
- *    - jpeg_read_scanlines(...);
- *	- jpeg_finish_decompress(...);
- *	- Release the JPEG decompression object
+ *   - Allocate and initialize a JPEG decompression object
+ *   - Specify the source of the compressed data (eg, a file)
+ *   - Call jpeg_read_header() to obtain image info
+ *   - Set parameters for decompression
+ *   - jpeg_start_decompress(...);
+ *   - while (scan lines remain to be read)
+ *   - jpeg_read_scanlines(...);
+ *   - jpeg_finish_decompress(...);
+ *   - Release the JPEG decompression object
  */
 
 #ifndef _SHATRANSLATORJPG_H_

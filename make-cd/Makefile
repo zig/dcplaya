@@ -3,10 +3,13 @@
 #
 # by Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.14 2003-03-28 19:57:17 ben Exp $
+# $Id: Makefile,v 1.15 2003-03-29 15:33:07 ben Exp $
 #
-# This makefile is pretty ugly. Soory :( I'll try to make a clean one
+# This makefile is pretty ugly. Sorry :( I'll try to make a clean one
 # when I get some time.
+#
+# Add a minimal target to use extra_data_minimal instead of normal extra_data
+# as extra-data directory
 #
 
 CDRECORD	= cdrecord dev=0,0,0 speed=4
@@ -22,35 +25,40 @@ ELF_TARGET	= ../dreammp3.elf
 OBJCOPY		= /opt/sh-elf/bin/sh-elf-objcopy
 DATE		:= $(shell date +%Y/%m/%d)
 
+ifeq "$(strip $(filter minimal,$(MAKECMDGOALS)))" "minimal"
+EXTRA_DATA_DIR  := extra_data_minimal
+else
+EXTRA_DATA_DIR  := extra_data
+endif
+
 all: success
 
+.PHONY: minimal
+minimal:
+	@echo "Make a minimal CD extra_data [$(EXTRA_DATA_DIR)]"
+
 success: $(1ST_READ) IP.BIN burn
-	@[ -e id.txt ] && \
-	expr `cat id.txt` + 1 > $@.tmp && \
-	mv -f $@.tmp id.txt && \
-	echo "Successfully burned DCPLAYA ID #`cat id.txt`"
+	@echo "Successfully burned DCPLAYA !!!"
 
 .PHONY: burn
 burn: burn-audio burn-data
 
-.PHONY:id.txt
-id.txt:	
-	@[ -e $@ ] || echo "0" > $@
-	@touch $@
-
 .PHONY: RELEASE
 RELEASE.txt:
+	@echo "[$@]"
 	@(echo "dcplaya alpha version"; date) > $@
 
 README.txt: ../README
-	cp $< $@
+	@echo "[$@]"
+	@cp $< $@
 
 $(ELF_TARGET):
+	@echo "[$@]"
 	@make --quiet -C .. all
 
 $(1ST_READ): $(ELF_TARGET)
 	@echo "[$@]"
-	$(OBJCOPY) -R .stack -S -O binary $< $@ \
+	@$(OBJCOPY) -R .stack -S -O binary $< $@ \
 	|| ( rm -f $(1ST_READ) && test -z 1 )
 
 audio.raw:
@@ -69,17 +77,17 @@ IP.txt: IP.m4
 IP.BIN: IP.txt
 	@echo "[$@]"
 # This one seems to be ok !
-	cp IP-dcload.bin $@
+	@cp IP-dcload.bin $@
 # Does not work :`(
 #	$(MAKEIP) $< $@ 
 
 1ST_READ.BIN: $(1ST_READ)
 	@echo "[$@]"
-	$(SCRAMBLE) $< $@
+	@$(SCRAMBLE) $< $@
 
 data.raw: tmp.iso IP.BIN
 	@echo "[$@]"
-	( cat IP.BIN ; dd if=tmp.iso bs=2048 skip=16 ) > $@
+	@( cat IP.BIN ; dd if=tmp.iso bs=2048 skip=16 ) > $@
 
 tmp.iso: dcplaya-data
 	@echo "[ISO image]"
@@ -107,25 +115,60 @@ burn-data: burn-audio data.raw
 
 .PHONY: dcplaya-docs
 dcplaya-docs :
-	$(MAKE) -C ../doc txt
-
-.PHONY: dcplaya-data
-dcplaya-data: id.txt RELEASE.txt README.txt 1ST_READ.BIN dcplaya-docs
 	@echo "[$@]"
-	@rm -rf dcplaya iso
-	@mkdir -p iso dcplaya/dynshell
-	@cp -a ../autorun.lua ../dcplayarc.lua dcplaya
-	@sed -e "s#@BUILT-DATE@#${DATE}#" ../userconf-release.lua > dcplaya/userconf.lua
-	@cp -a ../dynshell/dynshell.lez dcplaya/dynshell
-	@cp -a ../lua dcplaya
-	find dcplaya -type d -name '.xvpics' -print0 | xargs -0 -e rm -rv
-	find dcplaya -name CVS -o -name '*~' -o -name '.#*' -print0 | xargs -0 -e rm -rv
-	@cp -a ../doc/doc dcplaya
+	@$(MAKE) -C ../doc txt
+
+extra-data:
+	@echo "[$@] from [$(EXTRA_DATA_DIR)]"
+	@mkdir -p iso
+	@cp -RL "$(EXTRA_DATA_DIR)"/* iso/
+
+lua-home:
+	@echo "[$@]"
+	@mkdir -p iso/dcplaya
+	@cp -a ../autorun.lua ../dcplayarc.lua iso/dcplaya
+	@sed -e "s#@BUILT-DATE@#${DATE}#" ../userconf-release.lua \
+		> iso/dcplaya/userconf.lua
+
+lua-libs:
+	@echo "[$@]"
+	@mkdir -p iso/dcplaya/lua
+	@find ../lua -type f -name '*.lua' -exec cp {} iso/dcplaya/lua \;
+
+lua-rsc:
+	@echo "[$@]"
+	@mkdir -p iso/dcplaya/lua/rsc/icons iso/dcplaya/lua/rsc/text
+	@cp -f ../lua/rsc/icons/*.tga ../lua/rsc/icons/*.jpg \
+		iso/dcplaya/lua/rsc/icons
+	@cp -f ../lua/rsc/text/*.txt iso/dcplaya/lua/rsc/text
+
+lua: lua-home lua-libs lua-rsc
+	@echo "[$@]"
+
+distrib-doc: README.txt RELEASE.txt
+	@mkdir -p iso
+	@cp -f $^ iso
+
+distrib-devdoc: dcplaya-docs
+	@mkdir -p iso/dcplaya
+	@cp -a ../doc/doc iso/dcplaya
+
+dynshell:
+	@mkdir -p iso/dcplaya/dynshell
+	@cp -a ../dynshell/dynshell.lez iso/dcplaya/dynshell
+
+plugins: dynshell
 	@(cd ..; find plugins -type f -name '*.lez') \
 	| tar cf - -C .. -T - \
-	| tar xf - -C dcplaya
-	@cp -RL README.txt id.txt RELEASE.txt extra_data/* iso/
-	@mv dcplaya iso
+	| tar xf - -C iso/dcplaya
+
+.PHONY: distrib
+distrib: 1ST_READ.BIN distrib-doc distrib-devdoc plugins lua
+
+
+.PHONY: dcplaya-data
+dcplaya-data: clean_dir distrib extra-data
+	@echo "[$@]"
 
 .PHONY : clean
 
@@ -137,8 +180,8 @@ clean_audio:
 
 .PHONY : clean_dir
 clean_dir:
-	@echo "[clean dirs]"
-	@rm -rf  dcplaya/ iso/
+	@echo "[$@]"
+	@rm -rf iso/
 
 .PHONY : clean_file
 clean_file:

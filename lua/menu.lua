@@ -22,10 +22,12 @@ gui_menu_close_event = gui_menu_close_event or evt_new_code()
 
 --- @defgroup dcplaya_lua_menu_gui Menu GUI
 --- @ingroup  dcplaya_lua_gui
---- 
+--- @brief menu browser .
+---
+--- @author  benjamin gerard
+--- @{
 
 --- Menu definition object.
---- @ingroup dcplaya_lua_menu_gui
 --: struct menu_def : applcation {
 --:   string     name;    ///< Menu name.
 --:   number     n;       ///< Number of menu entry.
@@ -34,7 +36,6 @@ gui_menu_close_event = gui_menu_close_event or evt_new_code()
 --: };
 
 --- Menu entry object.
---- @ingroup dcplaya_lua_menu_gui
 --: struct menu_entry {
 --:   string     name;    ///< Name of entry (label).
 --:   number     size;    ///< -1:for sub-menu entry
@@ -42,7 +43,6 @@ gui_menu_close_event = gui_menu_close_event or evt_new_code()
 --: };
 
 --- Menu object.
---- @ingroup dcplaya_lua_menu_gui
 ---
 --: struct menu : application {
 --:   open();	           ///< Show/active menu
@@ -443,9 +443,6 @@ function menu_create(owner, name, def, box)
    -- ------------
    function menu_confirm(menu)
 
-      -- $$$
---      print("MENU confirm:"..tostring(menu.name))
-
       local fl = menu.fl
       if not fl then return end
       local idx = fl:get_pos()
@@ -481,7 +478,7 @@ function menu_create(owner, name, def, box)
 	 else
 	    local y = (xentry and xentry.y) or 0
 	    if not menu.def.sub then return end
-	    --- $$$ ben : y should not be ok when scrolling. 
+	    -- $$$ ben : y should not be ok when scrolling. 
 	    submenu = menu:create(subname, menu.def.sub[subname],
 				  {m[4][1]+fl.bo2[1], m[4][2]+y})
 	    --gui_child_autoplacement(menu);
@@ -496,7 +493,7 @@ function menu_create(owner, name, def, box)
       end
    end
 
-   -- Menu shutdown
+   -- Menu shutdown.
    -- -------------
    function menu_shutdown(menu)
       if not menu then return end
@@ -648,7 +645,6 @@ function menu_yesno_menu(flag,label,callback)
 end
 
 --- Create a menu GUI application.
---- @ingroup dcplaya_lua_menu_gui
 ---
 function gui_menu(owner, name, def, box)
    if not owner then owner = evt_desktop_app end
@@ -720,7 +716,6 @@ function menu_merge_def(def1,def2)
 end
 
 --- Create a menudef from a string.
---- @ingroup dcplaya_lua_menu_gui
 ---
 ---  @param   menustr  Menu creation string.
 ---  @return  menudef object
@@ -733,13 +728,13 @@ end
 ---          A string with no ',' char optionally followed by a '>' char for
 ---          a submenu entry, optionally followed by the name of the sub-menu.
 ---
+--- @warning This documentation is not up to date.
+--
 function menu_create_def(menustr)
    local start, stop, menu, title
    local len
 
    if tag(menustr) == menudef_tag then
-      -- $$$
---      print("menu_create_def : already a menudef")
       return menustr
    elseif type(menustr) ~= "string" then
       return
@@ -890,6 +885,10 @@ function menu_create_defs(def,target,parent)
 
    return menu
 end
+
+---
+--- @}
+---
 
 menu_loaded=1
 return menu_loaded

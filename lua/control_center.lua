@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.27 2003-03-28 14:01:44 ben Exp $
+--- $Id: control_center.lua,v 1.28 2003-03-29 15:33:06 ben Exp $
 ---
 
 --- @defgroup  dcplaya_lua_cc_app  Control Center
@@ -127,7 +127,6 @@ function vmu_save_as(vmu)
    local choice
    local fs = fileselector("Choose save file", path, leaf)
    choice = fs and evt_run_standalone(fs)
---   printf("SAVE AS %q", tostring(choice))
    if choice then
       return vmu_save_confirm(choice)
    end
@@ -177,7 +176,6 @@ function control_center_menucreator(target)
 		      local name=menu.fl:get_text()
 		      if name then
 			 name = (name ~= "none") and name
-			 print(name)
 			 set_visual(name)
 		      end
 		   end,
@@ -349,16 +347,18 @@ function control_center_handle(app, evt)
    end
 
    if ioctrl_ramdisk_event and key == ioctrl_ramdisk_event then
-      print("[control-center] : ioctrl_ramdisk_event");
+      if __DEBUG_EVT then
+	 print("[control-center] : ioctrl_ramdisk_event");
+      end
       if app.vmu_auto_save then
 	 vmu_save(nil, 1)
       end
       return nil
    end
    
----$$$
-   print("cc leave", key)
-
+   if __DEBUG_EVT then
+      printf("[cc] leave %d", key)
+   end
    return evt
 end
 
@@ -430,13 +430,15 @@ end
 
 -- Load application icon
 for k,v in { "dcplaya", "vmu32", "volume", "control-center", "keyboard" } do
-   local tex = tex_exist(v) or
-      tex_new(home .. "lua/rsc/icons/" .. v .. ".tga")
+   if not (tex_exist(v) or
+	   tex_new(home .. "lua/rsc/icons/" .. v .. ".tga")) then
+      print("[control-center] : no "..v.." icon found")
+   end
 end
 
 --
 --- @}
-----
+---
 
 control_center_loaded = 1
 return control_center_loaded

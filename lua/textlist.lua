@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.46 2003-03-26 23:02:50 ben Exp $
+--- $Id: textlist.lua,v 1.47 2003-03-29 15:33:06 ben Exp $
 ---
 
 -- DL hierarchy :
@@ -60,12 +60,41 @@ textlist_cursor_z = 25
 if not dolib("basic") then return end
 if not dolib("taggedtext") then return end
 
---- @defgroup dcplaya_lua_textlist Text-list GUI
+--- @defgroup dcplaya_lua_textlist Text-List
 --- @ingroup  dcplaya_lua_gui
---- @brief    Text list graphic browser.
+--- @brief    text list (graphic browser).
+---
+--- @par display-list hierarchy
+---
+--- dl (main display list)
+---  - textprop
+---  - bdl (background sublist)
+---  - ldl (sublist for item ans cursor)
+---        - clipping Y only (allow cursor text outside texlist box!)
+---        - cdl (cursor display list)
+---              - cursor-box
+---              - text or tag-text
+---        - clipping XY (item will be clipped in box)
+---        - idl (item sublist)
+---              - lotsa text  ot tagged-text
+---              - ... etc ...
+---        - udl (user sublist)
+---
+--- @par space organization :
+---
+---  dl global textlist Z := [0..100]
+---   - @b Z : [00..25] reserved for background
+---   - @b Z : [25..75] reserved for items and cursor
+---   - @b Z : [75..100] reserved for user overlay
+---
+--- Each sub-list as a transformation setted properly. This mean than each
+--- sub-list (bdl,cdl,idl,udl) as a useable Z space range [0..100]
+---
+---
+--- @author  benjamin gerard
+--- @{
 
 --- Entry displayed in textlist.
---- @ingroup dcplaya_lua_textlist
 ---
 --- struct flentry {
 ---   name; ///< Displayed text
@@ -73,7 +102,6 @@ if not dolib("taggedtext") then return end
 --- };
 
 --- textlist object definition.
---- @ingroup dcplaya_lua_textlist
 ---
 --- struct textlist {
 ---
@@ -100,15 +128,14 @@ if not dolib("taggedtext") then return end
 ---   /** Some flags.
 ---    *  flags are :
 ---    *  - @b align    Entry text horizontal alignment :
----    *  -- "left". This is the default.
----    *  -- "center".
----    *  -- "right".
+---    *     - @b "left". This is the default.
+---    *     - @b "center".
+---    *     - @b "right".
 ---    */
 ---   flags;
 --- };
 
 --- Create a textlist object.
---- @ingroup dcplaya_lua_textlist
 --- 
 --- @param  flparm   Optionnal creation structure, with optionnal fields.
 ---                  Most fields are the same than fllist ones.
@@ -127,7 +154,6 @@ function textlist_create(flparm, owner)
    if not flparm then flparm = {} end
 
    --- Change textlist position and size.
-   --- @ingroup dcplaya_lua_textlist
    ---
    --- @param  fl  textlist.
    --- @param  x   New horizontal position of textlist or nil.
@@ -187,7 +213,6 @@ function textlist_create(flparm, owner)
    end
 
    --- Change textlist position.
-   --- @ingroup dcplaya_lua_textlist
    --- 
    --- @param  fl  textlist.
    --- @param  x   New horizontal position of textlist or nil.
@@ -201,7 +226,6 @@ function textlist_create(flparm, owner)
    end
 
    --- Set textlist color.
-   --- @ingroup dcplaya_lua_textlist
    --- 
    --- @param  fl  textlist.
    --- @param  a   New alpha component or nil
@@ -234,7 +258,6 @@ function textlist_create(flparm, owner)
    end
 
    --- Center a textlist in a box.
-   --- @ingroup dcplaya_lua_textlist
    --- 
    --- @param  fl  textlist.
    --- @param  x   Horizontal position of the outer box or nil.
@@ -582,7 +605,7 @@ function textlist_create(flparm, owner)
 
    --
    --- @}
-   ----
+   ---
    
    --- Move textlist cursor.
    --
@@ -830,7 +853,6 @@ function textlist_update(fl, frametime)
 end
 
 --- Create a textlist applcation from a textlist object.
---- @ingroup dcplaya_lua_textlist
 ---
 --- @param  fl     textlist
 --- @param  owner  Parent of the created application
@@ -960,7 +982,6 @@ function textlist_create_gui(fl, owner)
 end
 
 --- Create textlist gui application.
---- @ingroup dcplaya_lua_textlist
 --
 function gui_textlist(owner, flparm)
    if not owner then return nil end
@@ -968,6 +989,10 @@ function gui_textlist(owner, flparm)
    if not fl then return end
    return textlist_create_gui(fl, owner)
 end
+
+--
+--- @}
+---
 
 if nil then
    fl = gui_textlist(evt_desktop_app, { dir=dirlist("/") })

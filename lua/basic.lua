@@ -4,7 +4,7 @@
 --- @author  benjamin gerard
 --- @brief   basic things used into other library (evt, keyboard_emu, gui)
 ---
---- $Id: basic.lua,v 1.21 2003-03-28 14:01:44 ben Exp $
+--- $Id: basic.lua,v 1.22 2003-03-29 15:33:06 ben Exp $
 ---
 
 --
@@ -396,6 +396,26 @@ end
 function printf(...)
    print(call(format,arg))
 end
+
+--- Console clear.
+---
+---  The clearconsole() function send a "\027E" string to the console
+---  with the rawprint() function. That will clear the console.
+---
+--- @code
+function clearconsole()
+   if type(rawprint) == "function" then
+      rawprint("\027E")
+   end
+end
+--- @endcode
+---
+--- @see dcplaya_mutermdef_devel for other terminal escape codes.
+---
+--: clearconsole();
+
+addhelp("clearconsole","cls","console",
+	'clearconsole() : Clear the console.')
 
 ---
 --- @}
