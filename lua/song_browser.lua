@@ -1,11 +1,29 @@
---- @ingroup  dcplaya_lua_application
+--- @ingroup  dcplaya_lua_app
 --- @file     song_browser.lua
 --- @author   benjamin gerard <ben@sashipa.com>
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.37 2003-03-07 21:04:54 ben Exp $
+--- $Id: song_browser.lua,v 1.38 2003-03-08 13:54:25 ben Exp $
 ---
+
+--- @defgroup dcplaya_lua_sb_app Song browser application
+--- @ingroup dcplaya_lua_app
+---
+---  @par song-browser introduction
+---
+---   The song browser application is used to browse dcplaya filesystem and
+---   a perform specific operation on file depending of the type. The song
+---   browser application handles playlist. Normal behaviour is to have only
+---   one instance of a song browser application. It is stored in the global
+---   variable song_browser.
+---
+
+--
+--- @name song-browser functions.
+--- @ingroup dcplaya_lua_sb_app
+--- @{
+--
 
 song_browser_loaded = nil
 if not dolib("textlist") then return end
@@ -14,6 +32,8 @@ if not dolib("sprite") then return end
 if not dolib("fileselector") then return end
 if not dolib("playlist") then return end
 
+--- Creates some sprites.
+--- @internal
 function song_browser_create_sprite(sb)
    sb.sprites = {}
    sb.sprites.texid = tex_get("dcpsprites") or tex_new("/rd/dcpsprites.tga")
@@ -74,8 +94,8 @@ end
 
 --- Create a song-browser application.
 ---
---- @param  owner  Owner application (nil for desktop).
---- @param  name   Name of application (nil for "song browser").
+--- @param  owner  Owner application (default to  desktop).
+--- @param  name   Name of application (default to "song browser").
 ---
 --- @return song-browswer application
 --- @retval nil Error
@@ -101,32 +121,28 @@ function song_browser_create(owner, name)
       text            = {font=0, size=16, aspect=1}
    }
 
-   function song_browser_update_cdrom(sb, frametime)
-      local timeout = sb.cdrom_check_timeout - frametime
-      if timeout <= 0 then
-	 timeout = 0.5
-	 local st,ty,id = cdrom_status(1)
-
-	 if id == 0 or sb.cdrom_id == 0 then
-	    local path = (sb.fl.dir and sb.fl.dir.path) or "/"
-	    local incd = strsub(path,1,3) == "/cd"
-
-	    if id == 0 and incd and st == "nodisk" then
-	       print("Drive empty")
-	       song_browser_loaddir(sb,"/")
-	    elseif id ~= sb.cdrom_id then
-	       if id ~= 0 then
-		  print(format("New CD detected #%X", id))
-		  if incd then song_browser_loaddir(sb,"/cd") end
-	       else
-		  print("No more CD in drive")
-	       end
+   --- Update CDROM status.
+   --- @param sb song-browser application
+   --- @param cd cdrom_change_event
+   --- @internal
+   function song_browser_update_cdrom(sb, cd)
+      local st,ty,id = cd.cdrom_status,cd.cdrom_disk,cd.cdrom_id
+      if id == 0 or sb.cdrom_id == 0 then
+	 local path = (sb.fl.dir and sb.fl.dir.path) or "/"
+	 local incd = strsub(path,1,3) == "/cd"
+	 if id == 0 and incd and st == "nodisk" then
+	    print("Drive empty")
+	    song_browser_loaddir(sb,"/")
+	 elseif id ~= sb.cdrom_id then
+	    if id ~= 0 then
+	       print(format("New CD detected #%X", id))
+	       if incd then song_browser_loaddir(sb,"/cd") end
+	    else
+	       print("No more CD in drive")
 	    end
 	 end
-	 sb.cdrom_stat, sb.cdrom_type, sb.cdrom_id = st, ty, id
---	 print("CD:"..sb.cdrom_stat..","..sb.cdrom_type..","..sb.cdrom_id)
       end
-      sb.cdrom_check_timeout = timeout
+      sb.cdrom_stat, sb.cdrom_type, sb.cdrom_id = st, ty, id
    end
 
    function song_browser_update_loaddir(sb, frametime)
@@ -196,7 +212,7 @@ function song_browser_create(owner, name)
    --- Song-Browser update (handles fade in / fade out).
    --  ------------------------------------------------
    function song_browser_update(sb, frametime)
-      song_browser_update_cdrom(sb, frametime)
+--      song_browser_update_cdrom(sb, frametime)
       song_browser_update_loaddir(sb, frametime)
       song_browser_update_recloader(sb, frametime)
 
@@ -270,6 +286,11 @@ function song_browser_create(owner, name)
 	       sb.key_time = 0
 	    end
 	 end
+      elseif key == ioctrl_cdrom_event then
+--	 print ("SB : ioctrl_cdrom_event")
+	 dump(evt,"ioctrl_cdrom_event")
+	 song_browser_update_cdrom(sb, evt)
+	 return
       elseif key == gui_focus_event then
 	 -- nothing to do, this will awake song-browser
       elseif key == gui_unfocus_event then
@@ -1239,7 +1260,7 @@ function song_browser_create(owner, name)
 
    -- cdrom
    sb.cdrom_stat, sb.cdrom_type, sb.cdrom_id = cdrom_status(1)
-   sb.cdrom_check_timeout = 0
+--   sb.cdrom_check_timeout = 0
 
    -- filer
    sb.el_filter = "DXIMP"
@@ -1256,7 +1277,7 @@ function song_browser_create(owner, name)
    return sb
 end
 
-if not entrylist_tag then
+if not entrylist_tag and plug_el and test("-f",plug_el) then
    driver_load(plug_el)
 end
 
@@ -1269,7 +1290,21 @@ if song_browser then
 end
 
 song_browser = song_browser_create()
+if song_browser then
+   print("song-browser running")
+end
 
+--
+--- Kill a song-browser application.
+---
+---   The song_browser_kill() function kills the given application by
+---   calling sending the evt_shutdown_app() function. If the given
+---   application is nil or song_browser the default song-browser
+---   (song_browser) is killed and the global variable song_browser is
+---   set to nil.
+---
+--- @param  sb  application to kill (default to song_browser)
+--
 function song_browser_kill(sb)
    sb = sb or song_browser
    if sb then
@@ -1277,3 +1312,7 @@ function song_browser_kill(sb)
       if sb == song_browser then song_browser = nil end
    end
 end
+
+--
+--- @}
+--

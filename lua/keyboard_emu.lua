@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: keyboard_emu.lua,v 1.16 2003-03-07 10:11:15 ben Exp $
+-- $Id: keyboard_emu.lua,v 1.17 2003-03-08 13:54:25 ben Exp $
 --
 
 dolib("keydefs")
@@ -632,5 +632,6 @@ function keyboard_emu()
 end
 
 keyboard_emu()
+ke_set_active(nil)
 
 keyboard_emu_loaded = 1
