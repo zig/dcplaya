@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.7 2002-10-16 23:59:50 benjihan Exp $
+ * $Id: display.c,v 1.8 2002-10-17 04:59:50 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -48,6 +48,8 @@ DL_FUNCTION_DECLARE(draw_box4);
 DL_FUNCTION_DECLARE(set_clipping);
 DL_FUNCTION_DECLARE(get_clipping);
 
+/* display_triangle.c */
+DL_FUNCTION_DECLARE(draw_triangle);
 
 /* display list LUA interface */
 int dl_list_tag;
@@ -397,9 +399,9 @@ static luashell_command_description_t display_commands[] = {
     "dl_draw_box4", 0,                   /* long and short names */
     "print [["
 	"dl_draw_box(list, x1, y1, x2, y2, z, "
-	"a1, r1, g1, b1,"
-	"a2, r2, g2, b2,"
-	"a3, r3, g3, b3,"
+	"a1, r1, g1, b1, "
+	"a2, r2, g2, b2, "
+	"a3, r3, g3, b3, "
 	"a4, r4, g4, b4) : draw a colored box"
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_draw_box4       /* function */
@@ -421,6 +423,39 @@ static luashell_command_description_t display_commands[] = {
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_measure_text    /* function */
   },
+
+  /* triangle interface */
+
+  {
+    "dl_draw_triangle", 0,               /* long and short names */
+    "print [["
+	"dl_draw_triangle(list, x1, y1, z1, x2, y2, z2, x3, y3, z3, "
+	"[ a1, r1, g1, b1, [ "
+	"a2, r2, g2, b2, "
+	"a3, r3, g3, b3, ] ], "
+	"[ texture-id, ] [ opacity-mode ] ) : draw a triangle"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_draw_triangle   /* function */
+  },
+
+  /* clipping interface */
+
+  {
+	"dl_set_clipping", 0,                /* long and short names */
+	"print [["
+	"dl_set_clipping(list, x1, y1, x2, y2) : set clipping box"
+	"]]",                                /* usage */
+	SHELL_COMMAND_C, lua_set_clipping    /* function */
+  },
+  
+  {
+	"dl_get_clipping", 0,                /* long and short names */
+	"print [["
+	"dl_get_clipping(list) : get clipping box {x1,y1,x2,y2}"
+	"]]",                                /* usage */
+	SHELL_COMMAND_C, lua_get_clipping    /* function */
+  },
+
 
   /* matrix interface */
 
@@ -507,24 +542,6 @@ static luashell_command_description_t display_commands[] = {
       "mat_el(mat, l, c) : get matrix element"
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_mat_el          /* function */
-  },
-
-  /* clipping interface */
-
-  {
-	"dl_set_clipping", 0,                /* long and short names */
-	"print [["
-	"dl_set_clipping(list, x1, y1, x2, y2) : set clipping box"
-	"]]",                                /* usage */
-	SHELL_COMMAND_C, lua_set_clipping    /* function */
-  },
-  
-  {
-	"dl_get_clipping", 0,                /* long and short names */
-	"print [["
-	"dl_get_clipping(list) : get clipping box {x1,y1,x2,y2}"
-	"]]",                                /* usage */
-	SHELL_COMMAND_C, lua_get_clipping    /* function */
   },
 
   {0},                                   /* end of the command list */

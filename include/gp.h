@@ -4,9 +4,8 @@
 #define _GP_H_
 
 #include <kos.h>
-
-
 #include "extern_def.h"
+#include "draw_vertex.h"
 
 DCPLAYA_EXTERN_C_START
 
@@ -44,11 +43,24 @@ void draw_box4(float x1, float y1, float x2, float y2, float z,
 			   float a2, float r2, float g2, float b2,
 			   float a3, float r3, float g3, float b3,
 			   float a4, float r4, float g4, float b4);
+/**@}*/
+
+/** @name Draw primtives.
+ *  @{
+ */
+
 /** Draw line.*/
 void draw_line(float x1, float y1, float z1, float x2, float y2, float z2,
 			   float a1, float r1, float g1, float b1,
 			   float a2, float r2, float g2, float b2,
 			   float w);
+
+/** Draw triangle. */
+void draw_triangle(const draw_vertex_t *v1,
+				   const draw_vertex_t *v2,
+				   const draw_vertex_t *v3,
+				   int flags);
+
 /**@}*/
 
 /* songmenu.c */

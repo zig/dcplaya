@@ -4,7 +4,7 @@
  * @date    2002/10/10
  * @brief   2D drawing primitives.
  *
- * $Id: 3dutils.c,v 1.3 2002-10-16 23:59:50 benjihan Exp $
+ * $Id: 3dutils.c,v 1.4 2002-10-17 04:59:50 benjihan Exp $
  */
 
 #include <stdarg.h>
@@ -70,10 +70,15 @@ void draw_triangle_no_clip(const draw_vertex_t *v1,
   vert.flags = TA_VERTEX_NORMAL;
   vert.x = v1->x; vert.y = v1->y; vert.z = v1->z;
   vert.a = v1->a; vert.r = v1->r; vert.g = v1->g; vert.b = v1->b;
+  // $$$
+  vert.a = v1->a; vert.r = 0; vert.g = 0; vert.b = 1;
+
   ta_commit_vertex(&vert, sizeof(vert));
 	
   vert.x = v2->x; vert.y = v2->y; vert.z = v2->z;
   vert.a = v2->a; vert.r = v2->r; vert.g = v2->g; vert.b = v2->b;
+  // $$$
+  vert.a = v2->a; vert.r = 0; vert.g = 1; vert.b = 0;
   ta_commit_vertex(&vert, sizeof(vert));
 	
   vert.flags = TA_VERTEX_EOL;
@@ -105,7 +110,7 @@ void draw_triangle(const draw_vertex_t *v1,
   clipflags <<= 4;
   clipflags |= vertex_clip_flags(v2);
   clipflags <<= 4;
-  clipflags = vertex_clip_flags(v3);
+  clipflags |= vertex_clip_flags(v3);
 
   if (!clipflags) {
 	/* No clipping, draw the triangle */
@@ -116,7 +121,7 @@ void draw_triangle(const draw_vertex_t *v1,
   andflags = clipflags;
   andflags &= andflags>>4;
   andflags &= andflags>>4;
-  if (andflags & 15) {
+  if (andflags) {
 	/* Outside clipping area */
 	return;
   }
@@ -132,10 +137,10 @@ void draw_triangle(const draw_vertex_t *v1,
 	draw_triangle_clip_any(v1,v2,v3,flags,2);
   } else if (flags & 0x222) {
 	/* Entering clipping stage with a TOP clipping */
-	draw_triangle_clip_any(v1,v2,v3,flags,3);
+	draw_triangle_clip_any(v1,v2,v3,flags,1);
   } else if (flags & 0x888) {
 	/* Entering clipping stage with a BOTTOM clipping */
-	draw_triangle_clip_any(v1,v2,v3,flags,4);
+	draw_triangle_clip_any(v1,v2,v3,flags,3);
   }
 
 }
