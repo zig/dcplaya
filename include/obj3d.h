@@ -1,10 +1,9 @@
 /**
- * @ingroup   dreammp3_plugins
  * @file      obj3d.h
  * @author    Ben(jamin) Gerard <ben@sashipa.com>
- * @date      20/10/2001
+ * @date      2001/10/20
  * @brief     Simple 3D objects defintions for 3D-object plugins
- * @version   $Id: obj3d.h,v 1.3 2002-09-13 14:48:25 ben Exp $
+ * @version   $Id: obj3d.h,v 1.4 2002-10-03 21:43:34 benjihan Exp $
  */
 
 /* Copyright (C) 1998-2001 Ben(jamin) Gerard */

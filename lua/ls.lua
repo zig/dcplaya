@@ -2,7 +2,7 @@
 --
 -- by benjamin gerard <ben@sashipa.com>
 --
--- $Id: ls.lua,v 1.1 2002-10-03 06:32:13 benjihan Exp $
+-- $Id: ls.lua,v 1.2 2002-10-03 21:43:34 benjihan Exp $
 --
 
 -- Display a directory in optimized column format.
@@ -67,7 +67,12 @@ function ls_core(path,is_long,sort_by_size,detail)
 	else
     	path=fullpath(path)
 	end
-	local dir = dirlist(path)
+	local dir
+	if sort_by_size then
+		dir = dirlist("-s",path)
+	else
+		dir = dirlist("-n",path)
+	end
 	if (dir) then
 		local i,n,bytes,files,dirs
 		n=getn(dir)
@@ -98,7 +103,7 @@ function ls_core(path,is_long,sort_by_size,detail)
 			end
 			max = max + 1
 			if is_long then
-				ls_all(dir,max)
+				ls_long(dir,max)
 			else
 				ls_column(dir,max)
 			end

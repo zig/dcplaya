@@ -4,7 +4,7 @@
  * @date    2002/09/30
  * @brief   File manipulation utilities.
  *
- * $Id: file_utils.c,v 1.2 2002-10-03 02:37:26 benjihan Exp $
+ * $Id: file_utils.c,v 1.3 2002-10-03 21:43:34 benjihan Exp $
  */
 
 /* #include "sysdebug.h" */
@@ -306,6 +306,7 @@ int fu_sortdir_by_name(const fu_dirent_t *a, const fu_dirent_t *b)
 int fu_sortdir_by_descending_size(const fu_dirent_t *a, const fu_dirent_t *b)
 {
   const int mask = ~(1 << ((sizeof(int)<<3)-1));
+  int r;
   if (a==b) {
     return 0;
   }
@@ -315,11 +316,16 @@ int fu_sortdir_by_descending_size(const fu_dirent_t *a, const fu_dirent_t *b)
   if (!b) {
     return 1;
   }
-  return (b->size & mask) - (a->size & mask);
+  r = (b->size & mask) - (a->size & mask);
+  if (!r) {
+	r = strnicmp(a->name, b->name, sizeof(a->name));
+  }
+  return r;
 }
 
 int fu_sortdir_by_ascending_size(const fu_dirent_t *a, const fu_dirent_t *b)
 {
+  int r;
   if (a==b) {
     return 0;
   }
@@ -329,7 +335,11 @@ int fu_sortdir_by_ascending_size(const fu_dirent_t *a, const fu_dirent_t *b)
   if (!b) {
     return 1;
   }
-  return a->size - b->size;
+  r = a->size - b->size;
+  if (!r) {
+	r = strnicmp(a->name, b->name, sizeof(a->name));
+  }
+  return r;
 }
 
 typedef int (*fu_qsort_f)(const void *, const void *);

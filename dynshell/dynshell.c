@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.30 2002-10-03 06:34:58 benjihan Exp $
+ * @version    $Id: dynshell.c,v 1.31 2002-10-03 21:43:34 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -336,7 +336,9 @@ static int push_dir_as_2_tables(lua_State * L, fu_dirent_t * dir, int count,
   if (!dir) {
     return 0;
   }
-  fu_sort_dir(dir, count, sortdir);
+  if (sortdir) {
+	fu_sort_dir(dir, count, sortdir);
+  }
 
   for (k=0; k<2; ++k) {
     lua_newtable(L);
@@ -362,7 +364,9 @@ static int push_dir_as_struct(lua_State * L, fu_dirent_t * dir, int count,
   if (!dir) {
     return 0;
   }
-  fu_sort_dir(dir, count, sortdir);
+  if (sortdir) {
+	fu_sort_dir(dir, count, sortdir);
+  }
 
   lua_newtable(L);
   table = lua_gettop(L);
@@ -385,20 +389,74 @@ static int push_dir_as_struct(lua_State * L, fu_dirent_t * dir, int count,
   return lua_gettop(L);
 }
 
-
-static int lua_path_load2(lua_State * L)
+/* Directory listing
+ * usage : dirlist [switches] path
+ *
+ *   Get sorted listing of a directory. There is to possible output depending
+ *   on the -2 switch.
+ *   If -2 is given, the function returns 2 lists, one for directory, the other
+ *   for files. This list contains file name only.
+ *   If -2 switch is ommitted, the function returns one list which contains 
+ *   one structure by file. Each structure as two fields: "name" and "size"
+ *   which contains respectively the file or directory name, and the size in
+ *   bytes of files or -1 for directories.
+ *
+ * switches:
+ *  -2 : returns 2 separate lists.
+ *  -S : sort by descending size
+ *  -s : sort by ascending size
+ *  -n : sort by name
+ */
+static int lua_dirlist(lua_State * L)
 {
   char rpath[2048];
-  const char * path;
+  const char * path = 0;
   int nparam = lua_gettop(L);
-  int count;
+  int count, i;
   fu_dirent_t * dir;
+  int two = 0, sort = 0;
+  fu_sortdir_f sortdir;
 
-  if (nparam < 1) {
-    printf("dirlist : missing parameter\n");
-    return -1;
+  /* Get parameters */
+  for (i=1; i<=nparam; ++i) {
+	const char *s = lua_tostring(L, i);
+	if (!s) {
+	  printf("dirlist : Bad parameters #%d\n", i);
+	  return -1;
+	}
+	if (s[0] == '-') {
+	  int j;
+	  for (j=1; s[j]; ++j) {
+		switch(s[j]) {
+		case '2':
+		  two = s[j];
+		  break;
+		case 's': case 'S': case 'n':
+		  if (!sort || sort==s[j]) {
+			sort = s[j];
+		  } else {
+			printf("dirlist : '%c' switch incompatible with '%c'.\n",
+				   s[j], sort);
+			return -1;
+		  }
+		  break;
+		default:
+		  printf("dirlist : invalid switch '%c'.\n", s[j]);
+		  return -1;
+		}
+	  }
+	} else if (path) {
+	  printf("dirlist : Only one path allowed. [%s].\n", s);
+	  return -1;
+	} else {
+	  path = s;
+	}
   }
-  path = lua_tostring(L, 1);
+  if (!path) {
+	printf("dirlist : Missing <path> parameter.\n");
+	return -1;
+  }
+
   if (!fn_get_path(rpath, path, sizeof(rpath), 0)) {
     printf("dirlist : path to long [%s]\n", path);
     return -2;
@@ -410,8 +468,31 @@ static int lua_path_load2(lua_State * L)
     return -3;
   }
 
-/*   count = push_dir_as_2_tables(L, dir, count, 0); */
-  count = push_dir_as_struct(L, dir, count, 0);
+  switch(sort) {
+  case 's':
+/* 	printf("sort by > size\n"); */
+	sortdir = fu_sortdir_by_ascending_size;
+	break;
+  case 'S':
+/* 	printf("sort by < size\n"); */
+	sortdir = fu_sortdir_by_descending_size;
+	break;
+  case 'n':
+/* 	printf("sort by name\n"); */
+	sortdir = fu_sortdir_by_name_dirfirst;
+	break;
+  default:
+	sortdir = 0;
+  }
+
+  if (two) {
+/* 	printf("Get 2 lists [%d]\n", count); */
+	count = push_dir_as_2_tables(L, dir, count, sortdir);
+  } else {
+/* 	printf("Get 1 list [%d]\n", count); */
+	count = push_dir_as_struct(L, dir, count, sortdir);
+  }
+/*   printf("->%d\n", count); */
 
   if (dir) free(dir);
   return count;
@@ -1222,12 +1303,27 @@ static luashell_command_description_t commands[] = {
   { 
     "dirlist",
     0,
-
     "print([["
-    "dirlist(path)\n"
+    "dirlist [switches] <path>)\n"
+	" switches:\n"
+	"  -2 : returns 2 separate lists (see below)\n"
+	"  -S : sort by descending size\n"
+	"  -s : sort by ascending size\n"
+	"  -n : sort by name\n"
+	"\n"
+	"Get sorted listing of a directory. There is to possible output depending "
+	"on the '-2' switch.\n"
+	"\n"
+	"If -2 is given, the function returns 2 lists, one for directory,"
+	"the other for files. This list contains file name only.\n"
+	"\n"
+	"If -2 switch is ommitted, the function returns one list which contains "
+	"one structure by file. Each structure as two fields: \"name\" and "
+	"\"size\" which contains respectively the file or directory name, "
+	"and the size in bytes of files or -1 for directories.\n"
     "]])",
 
-    SHELL_COMMAND_C, lua_path_load2
+    SHELL_COMMAND_C, lua_dirlist
   },
 
 
