@@ -3,7 +3,7 @@
 #
 # (C) COPYRIGHT 2002 benjamin gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.26 2003-07-30 10:40:32 benjihan Exp $ 
+# $Id: Makefile,v 1.27 2003-07-31 10:01:24 benjihan Exp $ 
 #
 TARGETS=dcplaya.elf
 
@@ -19,7 +19,7 @@ ELF_EXTRA += -L./src -L./libs/z -L./libs/draw -L./libs/translator -L./libs/lua -
 #ELF_EXTRA +=  -shared -L./src -ldreammp3 -los
 #ELF_EXTRA +=  `find src -type f -name  '*.o'` -los
 
-KOS_INCS+= -I. -Iinclude
+KOS_INCS= -I. -Iinclude
 ALL_INCS= -I$(KOS_INCS) -I$(KOS_BASE)/kernel/arch/$(KOS_ARCH)/include
 
 CLEAN_LOCAL=symtab.h tmp_symtab.h full-symb-$(TARGETS) debug.log

@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile.inc.in,v 1.30 2003-07-30 00:38:26 benjihan Exp $
+# $Id: Makefile.inc.in,v 1.31 2003-07-31 10:01:24 benjihan Exp $
 #
 
 .SUFFIXES:
@@ -28,14 +28,45 @@ export PPMTOXPM=@PPMTOXPM@
 # Setup for KOS
 # ----------------------------------------------------------------------
 
+KOS_ALL_VARS :=\
+ HOST_CC\
+ HOST_CFLAGS\
+ KOS_AFLAGS\
+ KOS_ARCH\
+ KOS_AR\
+ KOS_AS\
+ KOS_BIN2O\
+ KOS_CC\
+ KOS_CFLAGS\
+ KOS_CXXFLAGS\
+ KOS_CXX\
+ KOS_GENROMFS\
+ KOS_INCS\
+ KOS_LDFLAGS\
+ KOS_LD\
+ KOS_LOADER\
+ KOS_LOADER_FLAGS\
+ KOS_MAKE\
+ KOS_NM\
+ KOS_OBJCOPY\
+ KOS_OBJDUMP\
+ KOS_RANLIB\
+ KOS_STRIP
+
+# Genromfs utility
+KOS_GENROMFS=@KOS_GENROMFS@
+
 # Build architecture
 KOS_ARCH="@KOS_ARCH@"
 
 # KOS base paths
 KOS_BASE=@KOS_BASE@
+ifeq 'x$(origin KOS_INCS)' 'xenvironment'
+KOS_INCS:=
+endif
 KOS_INCS+= -I$(KOS_BASE)/include
 
-export KOS_ARCH KOS_BASE KOS_INCS
+#export KOS_ARCH KOS_BASE KOS_INCS
 
 # Make utility
 @SET_MAKE@
@@ -55,14 +86,14 @@ KOS_GENROMFS=@KOS_GENROMFS@
 # Binary to object
 KOS_BIN2O=@KOS_BIN2O@
 
-export KOS_MAKE KOS_LOADER KOS_BIN2O
+#export KOS_MAKE KOS_LOADER KOS_BIN2O
 
 # SH-4 compile tools
 KOS_CC=@SH_CC@
 KOS_CXX=@SH_CXX@
 KOS_AS=@SH_AS@
 KOS_LD=@SH_LD@
-export KOS_CC KOS_CXX KOS_AS KOS_LD
+#export KOS_CC KOS_CXX KOS_AS KOS_LD
 
 # SH-4 bin utils
 KOS_AR=@SH_AR@
@@ -71,7 +102,7 @@ KOS_OBJCOPY=@SH_OBJCOPY@
 KOS_OBJDUMP=@SH_OBJDUMP@
 KOS_NM=@SH_NM@
 KOS_STRIP=@SH_STRIP@
-export KOS_AR KOS_RANLIB KOS_OBJCOPY KOS_OBJDUMP KOS_NM KOS_STRIP
+#export KOS_AR KOS_RANLIB KOS_OBJCOPY KOS_OBJDUMP KOS_NM KOS_STRIP
 
 # SH-4 compile flags
 KOS_CFLAGS=@SH_CFLAGS@
@@ -79,6 +110,8 @@ KOS_CXXFLAGS=@SH_CXXFLAGS@
 KOS_AFLAGS=-little
 KOS_LDFLAGS=-ml -m4-single-only -nostartfiles -nostdlib -Wl,-Ttext=0x8c010000,--section-start,stack=0x8d000000
 export KOS_CFLAGS KOS_CPPFLAGS KOS_AFLAGS KOS_LDFLAGS
+
+export KOS_ALL_VARS $(KOS_ALL_VARS)
 
 ifndef OBJS
 S_SRCS = $(wildcard *.s) 
