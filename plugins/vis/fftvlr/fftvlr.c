@@ -8,23 +8,24 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.16 2002-09-25 21:36:45 vincentp Exp $
+ * $Id: fftvlr.c,v 1.17 2002-11-14 23:40:28 benjihan Exp $
  */
 
 #include <stdlib.h>
 #include <string.h>
+#include "gp.h"
 #include "fft.h"
 #include "vis_driver.h"
 #include "obj3d.h"
+#include "draw_vertex.h"
 #include "draw_object.h"
-
 
 //#define BENSTYLE
 
-
 /* from border.c */
-extern int bordertex, bordertex2, bordertex3;
+//extern int bordertex, bordertex2, bordertex3;
 
+static int db_scaling;
 static int curbordertex;
 
 /* From obj3d.c */
@@ -33,10 +34,10 @@ void FaceNormal(float *d, const vtx_t * v, const tri_t *t);
 /* Here are the constant (for now) parameters */
 #define VLR_X 0.5f
 #define VLR_Z 0.5f
-#define VLR_Y (4.5f)
+#define VLR_Y (1.5f)
 /*#define VLR_W 32
 #define VLR_H 96*/
-#define VLR_W 84
+#define VLR_W 40
 #define VLR_H 20
 
 /* Resulting number of triangles */
@@ -255,9 +256,11 @@ static unsigned int argb4(const float a, const float r,
 
 static void vlr_update(void)
 {
-  const float f0 = VLR_Y / 32768.0f;
+  const float f0 = (VLR_Y / 32768.0f) * (db_scaling ? 0.2 : 1.0);
   vtx_t *vy;
-  int i,j,k,stp, ow;
+  int i;
+
+  short fft[VLR_W];
 
   /* Scroll FFT towards Z axis */
   for (i=0,vy=v; i<VLR_W*(VLR_H-1); ++i, ++vy) {
@@ -266,29 +269,16 @@ static void vlr_update(void)
   /* Scroll Normals and colors (norm.w) */
   memmove(nrm, nrm + VLR_TPL, sizeof(nrm[0]) * (VLR_T - VLR_TPL));
 
+  fft_copy(fft,0,VLR_W, db_scaling);
+
   /* Update first VLR row with FFT data */
   vy = v + (VLR_H-1) * VLR_W;
-  for (ow=i=j=k=0, stp=(1<<(FFT_LOG_2-1+12))/VLR_W; i<VLR_W; ++i, j += stp) {
+  for (i=0; i<VLR_W; ++i) {
     //    int w = fft_F[j>>12];
     const float r = 0.45f;
-    //const float r = 0.75f;
-    int w = 0;
-    int n = 0;
-    int l = (j>>12);
-    while (k<l) {
-      w += fft_F[k];
-      k++;
-      n++;
-    }
-    if (n) {
-      w /= n;
-      ow = w;
-    } else
-      w = ow;
-
-    vy[i].y = (float)(w * f0 * (1.0f-r)) +  (vy[i-VLR_W].y * r);
+    float w = f0 * (float)fft[i];
+    vy[i].y = (float)(w * (1.0f-r)) +  (vy[i-VLR_W].y * r);
   }
-
 
   {
     const float la = light_color.w * 255.0f, aa = ambient_color.w * 255.0f;
@@ -333,10 +323,11 @@ static int fftvlr_init(any_driver_t *d)
   nrm = 0;
   tlk = 0;
 
+  db_scaling = 0;
 #ifdef BENSTYLE
-  curbordertex = bordertex;
+  curbordertex = 0;
 #else
-  curbordertex = bordertex3;
+  curbordertex = 2;
 #endif
 
   return 0;
@@ -373,8 +364,10 @@ static int fftvlr_process(viewport_t * vp, matrix_t projection, int elapsed_ms)
 
     vlr_update();
 
-
-    fftvlr_obj.flags = curbordertex;
+    fftvlr_obj.flags = 0
+	  | DRAW_BILINEAR
+	  | DRAW_TRANSLUCENT
+	  | (bordertex[curbordertex] << DRAW_TEXTURE_BIT);
     return 0;
   }
   return -1;
@@ -438,24 +431,22 @@ static int lua_setdirectionnal(lua_State * L)
   return 0;
 }
 
+static int lua_setdb(lua_State * L)
+{
+  int old = db_scaling;
+
+  db_scaling = lua_tonumber(L, 1) != 0.0f;
+  lua_settop(L,0);
+  lua_pushnumber(L,old);
+  return 1;
+}
+
+
 static int lua_setbordertex(lua_State * L)
 {
-  int nparam = lua_gettop(L);
-
-  if (nparam) {
-    switch ((int) lua_tonumber(L, 1)) {
-    case 0:
-      curbordertex = bordertex;
-      break;
-    case 1:
-      curbordertex = bordertex2;
-      break;
-    case 2:
-      curbordertex = bordertex3;
-      break;
-    }
+  if (lua_type(L,1) == LUA_TNUMBER) {
+	curbordertex = (unsigned int)lua_tonumber(L, 1) % 3u;
   }
-
   return 0;
 }
 
@@ -483,6 +474,16 @@ static luashell_command_description_t fftvlr_commands[] = {
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_setbordertex    /* function */
   },
+  {
+    "fftvlr_setdb", 0,            /* long and short names */
+    "print [["
+      "fftvlr_db(bool) : set Db scaling on/off"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_setdb    /* function */
+  },
+
+
+
   {0},                                   /* end of the command list */
 };
 

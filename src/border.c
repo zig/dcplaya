@@ -1,139 +1,101 @@
-/* 2002/02/16 */
+/**
+ * @file    border.c
+ * @author  benjamin gerard <ben@sashipa.com>
+ * @date    2002/02/16
+ * @brief   border rendering
+ */
 
 #include <stdarg.h>
 #include <stdio.h>
 #include "syserror.h"
 #include "gp.h"
-
-//#define RECOLOR
+#include "texture.h"
 
 borderuv_t borderuv[4];
-uint32 bordertex , bordertex2 , bordertex3;
+texid_t bordertex[3];
 
-static void make_blk(uint16 *texture, int w, int h, uint8 *d, int ws, int mode)
+static void make_blk(uint16 *texture, int w, int h, int ws, int mode)
 {
   int y = 0;
-#ifdef RECOLOR  /* Define me to have nice border tiles debug colors ! */
-  static uint16 recolor[2][2][3] =
-    {
-      {
-	{256,0,0},
-	{0,256,0},
-      },
-      {
-	{0,0,256},
-	{256,256,256},
-      }
-    };
-#endif
-
   for (y=0; y<h; ++y) {
     int x;
     
     for (x=0; x<w; ++x) {
-      uint8 c = *d++;
-      uint8 r, g, b;
-#ifdef RECOLOR
-      int xi, yi;
+      uint8 c, r, g, b;
 
-      xi = (x >> 5);
-      yi = (y >> 5);
-      r = (c * recolor[yi][xi][0]) >> 8;
-      g = (c * recolor[yi][xi][1]) >> 8;
-      b = (c * recolor[yi][xi][2]) >> 8;
-#else
+	  c = *texture;
+	  c = c>>12;
+	  c |= c<<4;
       r = g = b = c;
 
       if (mode == 2) {
-	if (c <= 0x30) {
-	  c = 180; 
-	  r = 0.4*255;
-	  g = 0.4*240;
-	  b = 0.4*75;
-	} else if (c <= 0x80) {
-	  c = 140;
-	  r = 255;
-	  g = 240;
-	  b = 75;
-	}
+		if (c <= 0x30) {
+		  c = 180; 
+		  r = 0.4*255;
+		  g = 0.4*240;
+		  b = 0.4*75;
+		} else if (c <= 0x80) {
+		  c = 140;
+		  r = 255;
+		  g = 240;
+		  b = 75;
+		}
       } else {
-
-	if (c <= 0x30 && !mode) {
-	  /* Not linked */
-	  c = 200; 
-	  r = g = b = 0x30;
-	} else if (c <= 0x80) {
-	  /* Fill color */
-	  c = 140;
-	  r = 230;
-	  g = 230;
-	  b = 230;
-	} else {
-	  /* Border color */
-	  c = r = g = b = 255;
-	}
+		if (c <= 0x30 && !mode) {
+		  /* Not linked */
+		  c = 200; 
+		  r = g = b = 0x30;
+		} else if (c <= 0x80) {
+		  /* Fill color */
+		  c = 140;
+		  r = 230;
+		  g = 230;
+		  b = 230;
+		} else {
+		  /* Border color */
+		  c = r = g = b = 255;
+		}
       }
-
-#endif
+	  
       {
-	int v = (((c)>>4)<<12) | (((r)>>4)<<8) | (((g)>>4)<<4) | ((b)>>4);
-	*texture++ = v;
+		int v = (((c)>>4)<<12) | (((r)>>4)<<8) | (((g)>>4)<<4) | ((b)>>4);
+		*texture++ = v;
       }
     }
-    d += ws-w;
+    texture += ws-w;
   }
-} 
-
-int border_setup()
-{
-  int err = -1;
-  const int w=64, h=64;
-  uint32 f;
-  uint8  *g;
-	
-  const char *fname = "/rd/bordertile.ppm";
-
-  SDDEBUG(">>\n");
-  sysdbg_indent(1,0);
-    
-  f = fs_open(fname, O_RDONLY);
-  if (!f) {
-    STHROW_ERROR(error);
-  }
-  
-  g = fs_mmap(f) + fs_total(f) - w*h;
-  if (!g) {
-    STHROW_ERROR(error);
-  }
-  /* Alloc 3 textures */
-  bordertex = ta_txr_allocate(w*h*2);
-  if (!bordertex) {
-    STHROW_ERROR(error);
-  }
-  bordertex2 = ta_txr_allocate(w*h*2);
-  if (!bordertex2) {
-    STHROW_ERROR(error);
-  }
-  bordertex3 = ta_txr_allocate(w*h*2);
-  if (!bordertex3) {
-    STHROW_ERROR(error);
-  }
-
-  make_blk((uint16*)ta_txr_map(bordertex), w, h, g, w, 0);
-  make_blk((uint16*)ta_txr_map(bordertex2), w, h, g, w, 1);
-  make_blk((uint16*)ta_txr_map(bordertex3), w, h, g, w, 2);
-
-  SDDEBUG("bordertex=%d %d\n", bordertex, bordertex2);
-	
-  err = 0;
-error:
-  if (f) {
-    fs_close(f);
-  }
-  /* $$$ BEN: There is no texture release !! Can't desaloc on error ! */
-  sysdbg_indent(-1,0);
-  SDDEBUG("<< = %d\n", err);
-  return err;
 }
 
+int border_setup(void)
+{
+  int i, err = -1;
+	
+  const char *fname = "/rd/bordertile.tga";
 
+  /* Alloc 3 textures */
+  bordertex[0] = texture_create_file(fname,"4444");
+  bordertex[1] = texture_dup(bordertex[0], "bordertile2");
+  bordertex[2] = texture_dup(bordertex[0], "bordertile3");
+
+  err = 0;
+  for (i=0; i<3; ++i) {
+	texture_t * t;
+
+	SDDEBUG("[%s] : border[%d] := %d\n", __FUNCTION__, i, bordertex[i]);
+
+	t = texture_lock(bordertex[i]);
+	if (!t) {
+	  SDERROR("[%s] : texture [#%d], lock failed\n",
+			  __FUNCTION__, bordertex[i]);
+	  err = -1;
+	  continue;
+	}
+	make_blk(t->addr, t->width, t->height, 1 << t->wlog2, i);
+
+	SDDEBUG("-> %s\n",t->name);
+
+	texture_release(t);
+  }
+
+  return err;
+}

@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/09/03
  * @brief     sidplay input plugin for dcplaya
- * @version   $Id: sidplay_driver.cxx,v 1.11 2002-10-16 23:25:00 benjihan Exp $
+ * @version   $Id: sidplay_driver.cxx,v 1.12 2002-11-14 23:40:27 benjihan Exp $
  */
 
 /* generated config include */
@@ -415,7 +415,7 @@ inp_driver_t sidplay_driver =
   ".psid\0"
   ".psid.gz\0"
   ".c64\0"
-  "c64.gz\0",
+  ".c64.gz\0",
 
   start,
   stop,

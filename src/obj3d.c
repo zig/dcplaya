@@ -4,7 +4,7 @@
  * @date    2002/02/12
  * @brief   Very simple 3D API.
  *
- * @version $Id: obj3d.c,v 1.2 2002-09-13 14:48:25 ben Exp $
+ * @version $Id: obj3d.c,v 1.3 2002-11-14 23:40:29 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -13,9 +13,8 @@
 #include "sysdebug.h"
 #include "obj_driver.h"
 #include "obj3d.h"
+#include "gp.h"
 #include "matrix.h"
-
-extern int bordertex2;
 
 static void swap (int *a, int *b) {
   int tmp = *a;
@@ -68,7 +67,7 @@ static void ResizeAndCenter(obj_t *o, const float w)
   if (o->flags) {
     return;
   }
-  o->flags = bordertex2;
+  o->flags = bordertex[2];
 
   // Set W
   for (i=0; i<o->nbv; ++i) {

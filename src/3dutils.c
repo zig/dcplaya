@@ -4,144 +4,17 @@
  * @date    2002/10/10
  * @brief   2D drawing primitives.
  *
- * $Id: 3dutils.c,v 1.7 2002-10-22 10:35:47 benjihan Exp $
+ * $Id: 3dutils.c,v 1.8 2002-11-14 23:40:28 benjihan Exp $
  */
 
 #include <stdarg.h>
 #include <stdio.h>
+#include "ta_defines.h"
 #include "gp.h"
 #include "texture.h"
 #include "sysdebug.h"
 
 #include "draw_clipping.h"
-
-/** @name List type, word 0, bit 24-26.
- *  @{
- */
-#define TA_OPACITY_BIT               25
-#define TA_OPAQUE_POLYGON_LIST       (0<<24)
-#define TA_OPAQUE_MODIFIER_LIST      (1<<24)
-#define TA_TRANSLUCENT_POLYGON_LIST  (2<<24)
-#define TA_TRANSLUCENT_MODIFIER_LIST (3<<24)
-#define TA_PUNCHTHRU_LIST            (4<<24)
-/**@}*/
-
-/** @name strip length, word 0, bit 18-19.
- *  @{
- */
-#define TA_STRIP_LENGTH(N) (((N)>>1)<<18)
-#define TA_STRIP_LENGTH1 (0<<18)
-#define TA_STRIP_LENGTH2 (1<<18)
-#define TA_STRIP_LENGTH4 (2<<18)
-#define TA_STRIP_LENGTH6 (3<<18)
-/**@}*/
-
-/** @name clip mode, word 0, bit 16-17.
- *  @{
- */
-#define TA_CLIP_MODE_DISABLE  (0<<16)
-#define TA_CLIP_MODE_RESERVED (1<<16)
-#define TA_CLIP_MODE_INSIDE   (2<<16)
-#define TA_CLIP_MODE_OUTSIDE  (3<<16)
-/**@}*/
-
-/** @name modifier affect, word 0, bit 7.
- *  @{
- */
-#define TA_MODIFIER_AFFECT_DISABLE (0<<7)
-#define TA_MODIFIER_AFFECT_ENABLE  (1<<7) /**< only valid for POLYGON. */
-/**@}*/
-
-/** @name modifier mode, word 0, bit 6.
- *  @{
- */
-#define TA_MODIFIER_CHEAP_SHADOW (0<<6)
-#define TA_MODIFIER_NORMAL       (1<<6)
-/**@}*/
-
-/** @name color type, word 0, bit 4-5.
- *  @{
- */
-#define TA_COLOR_TYPE_ARGB                    (0<<4)
-#define TA_COLOR_TYPE_FLOAT                   (1<<4)
-#define TA_COLOR_TYPE_INTENSITY               (2<<4)
-#define TA_COLOR_TYPE_INTENSITY_PREVIOUS_FACE (3<<4)
-/**@}*/
-
-/** @name textured, word 0, bit 3.
- *  @{
- */
-#define TA_TEXTURE_BIT     3
-#define TA_TEXTURE_DISABLE (0<<3)
-#define TA_TEXTURE_ENABLE  (1<<3)
-/**@}*/
-
-/** @name specular highlight, word 0, bit 2.
- *  @{
- */
-#define TA_SPECULAR_DISABLE (0<<2)
-#define TA_SPECULAR_ENABLE  (1<<2)
-/**@}*/
-
-/** @name shading, word 0, bit 1.
- *  @{
- */
-#define TA_SHADING_BIT      1
-#define TA_FLAT_SHADING     (0<<1)
-#define TA_GOURAUD_SHADING  (1<<1)
-/**@}*/
-
-/** @name UV format, word 0, bit 0.
- *  @{
- */
-#define TA_UV_32  (0<<0)
-#define TA_UV_16  (1<<0)
-/**@}*/
-
-/** @name Depth mode, word 1, bit 29-31.
- *  @{
- */
-#define TA_DEPTH_NEVER	       (0<<29)
-#define TA_DEPTH_LESS	       (1<<29)
-#define TA_DEPTH_EQUAL         (2<<29)
-#define TA_DEPTH_LESSEQUAL     (3<<29)
-#define TA_DEPTH_GREATER       (4<<29)
-#define TA_DEPTH_NOTEQUAL	   (5<<29)
-#define TA_DEPTH_GREATEREQUAL  (6<<29)
-#define TA_DEPTH_ALWAYS	       (7<<29)
-/**@}*/
-
-/** @name Culling mode, word 1, bit 27-28.
- *  @{
- */
-#define TA_CULLING_DISABLE	(0<<27)
-#define TA_CULLING_SMALL	(1<<27)
-#define TA_CULLING_CCW	    (2<<27)
-#define TA_CULLING_CW	    (3<<27)
-/**@)*/
-
-/** @name Z-write, word 1, bit 26.
- *  @{
- */
-#define TA_ZWRITE_DISABLE	(0<<26)
-#define TA_ZWRITE_ENABLE	(1<<26)
-/**@)*/
-
-
-/** @name Mipmap D-calcul, word 1, bit 20
- *  @{
- */
-#define TA_DCALC_APPROX (0<<20)
-#define TA_DCALC_EXACT  (1<<20)
-/**@}*/
-
-typedef struct {
-  volatile uint32 word1;
-  volatile uint32 word2;
-  volatile uint32 word3;
-  volatile uint32 word4;
-  volatile uint32 words[4];
-} ta_hw_poly_t;
 
 typedef struct {
   uint32 word1;
@@ -166,7 +39,6 @@ static const ta_poly_t poly_table[4] = {
 };
 
 static ta_hw_poly_t cur_poly;
-static const ta_hw_poly_t * hw_poly = (void*)(0xe0<<24);
 
 static const int draw_zwrite  = TA_ZWRITE_ENABLE;
 static const int draw_ztest   = TA_DEPTH_GREATER;
@@ -179,8 +51,6 @@ static void make_poly_hdr(ta_hw_poly_t * poly, int flags)
   texid_t texid;
   int idx;
   uint32 word3, word4;
-
-/*   static int toto = 0; */
 
   t = 0;
   texid = DRAW_TEXTURE(flags);
@@ -209,28 +79,18 @@ static void make_poly_hdr(ta_hw_poly_t * poly, int flags)
   }
   poly->word3 = word3;
   poly->word4 = word4;
+}
 
-/*   if (toto < 16) { */
-/* 	toto++; */
-/* 	printf("idx=%d\n",idx); */
-/* 	if (!t) { */
-/* 	  printf("texture NULL pointer\n"); */
-/* 	} else { */
-/* 	  printf("texture %s : %dx%dx%s, %dx%d, %p,%x\n", */
-/* 			 t->name, t->width, t->height, texture_formatstr(t->format), */
-/* 			 t->wlog2, t->hlog2, t->addr, t->ta_tex); */
-/* 	} */
-/* 	printf("poly words: %08x %08x %08x %08x\n", */
-/* 			 poly->word1,poly->word2,poly->word3,poly->word4); */
-/*   } */
-
+void draw_poly_hdr(ta_hw_poly_t * poly, int flags)
+{
+  make_poly_hdr(poly, flags);
 }
 
 static int sature(const float a)
 {
   int v;
 
-  v = (int)a;
+  v = (int) a;
   v = v & ~(v>>31);
   v = v | (((255-v)>>31) & 255);
   return v;
@@ -256,11 +116,7 @@ void draw_triangle_no_clip(const draw_vertex_t *v1,
 
   if (DRAW_TEXTURE(flags) == DRAW_NO_TEXTURE) {
 	/* No texture */
-	volatile struct vargb_s {
-	  int flags;
-	  float x,y,z;
-	  float a,r,g,b;
-	} * v = (void*)(0xe0<<24);
+	volatile ta_hw_col_vtx_t * v = HW_COL_VTX;
 
 	/* Vertex 1 */
 	v->flags = TA_VERTEX_NORMAL;
@@ -280,20 +136,7 @@ void draw_triangle_no_clip(const draw_vertex_t *v1,
 	ta_commit32_nocopy();
 
   } else {
-	volatile struct vtargb_s {
-	  uint32 flags;
-	  float x,y,z,u,v;
-	  uint32 col, addcol;
-	}  * v= (void *)(0xe0<<24);
-
-/* 	static int toto; */
-/* 	if (toto < 5) { */
-/* 	  toto++; */
-/* 	  printf("u1: %f, v1:%f\n", v1->u, v1->v); */
-/* 	  printf("u2: %f, v2:%f\n", v2->u, v2->v); */
-/* 	  printf("u3: %f, v3:%f\n", v3->u, v3->v); */
-/* 	} */
-
+	volatile ta_hw_tex_vtx_t  * v = HW_TEX_VTX;
 
 	/* Vertex 1 */
 	v->flags = TA_VERTEX_NORMAL;
@@ -318,34 +161,50 @@ void draw_triangle_no_clip(const draw_vertex_t *v1,
   }
 }
 
-void draw_strip_no_clip(const draw_vertex_t *v,
+void draw_strip_no_clip(const draw_vertex_t *vtx,
 						int n, int flags)
 {
-  int i;
-  poly_hdr_t poly;
 
-  vertex_oc_t vert;
-  int ta_flags = 0;
-  if (DRAW_OPACITY(flags) == DRAW_TRANSLUCENT) {
-	ta_flags = TA_TRANSLUCENT;
+  make_poly_hdr(&cur_poly, flags);
+  ta_commit32_inline(&cur_poly);
+
+  if (DRAW_TEXTURE(flags) == DRAW_NO_TEXTURE) {
+	/* No texture */
+	volatile ta_hw_col_vtx_t * const v = HW_COL_VTX;
+
+	while (--n > 0) {
+	  v->flags = TA_VERTEX_NORMAL;
+	  v->x = vtx->x; v->y = vtx->y; v->z = vtx->z;
+	  v->a = vtx->a; v->r = vtx->r; v->g = vtx->g; v->b = vtx->b;
+	  ta_commit32_nocopy();
+	}
+	v->flags = TA_VERTEX_EOL;
+	v->x = vtx->x; v->y = vtx->y; v->z = vtx->z;
+	v->a = vtx->a; v->r = vtx->r; v->g = vtx->g; v->b = vtx->b;
+	ta_commit32_nocopy();
+
+  } else {
+	/* Textured */
+	volatile ta_hw_tex_vtx_t * const v = HW_TEX_VTX;
+
+	v->flags = TA_VERTEX_NORMAL;
+	while (--n > 0) {
+	  v->x = vtx->x; v->y = vtx->y; v->z = vtx->z;
+	  v->u = vtx->u; v->v = vtx->v;
+	  v->col = argb255(vtx);
+	  v->addcol = 0;
+	  ta_commit32_nocopy();
+	  ++vtx;
+	}
+
+	v->flags = TA_VERTEX_EOL;
+	v->x = vtx->x; v->y = vtx->y; v->z = vtx->z;
+	v->u = vtx->u; v->v = vtx->v;
+	v->col = argb255(vtx);
+	v->addcol = 0;
+	ta_commit32_nocopy();
   }
-  /* $$$ TODO : Texture, and shading modes */
-
-  ta_poly_hdr_col(&poly, ta_flags);
-  ta_commit_poly_hdr(&poly);
-
-  vert.flags = TA_VERTEX_NORMAL;
-  for (i=0; i<n-1; ++i) {
-	vert.x = v->x; vert.y = v->y; vert.z = v->z;
-	vert.a = v->a; vert.r = v->r; vert.g = v->g; vert.b = v->b;
-	ta_commit_vertex(&vert, sizeof(vert));
-  }
-  vert.flags = TA_VERTEX_EOL;
-  vert.x = v->x; vert.y = v->y; vert.z = v->z;
-  vert.a = v->a; vert.r = v->r; vert.g = v->g; vert.b = v->b;
-  ta_commit_vertex(&vert, sizeof(vert));
 }
-
 
 /** Calculates clipping flags for a vertex. */
 static int vertex_clip_flags(const draw_vertex_t *v)

@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.13 2002-10-23 02:07:44 benjihan Exp $
+ * $Id: display.c,v 1.14 2002-11-14 23:40:27 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -56,6 +56,9 @@ DL_FUNCTION_DECLARE(get_clipping);
 
 /* display_triangle.c */
 DL_FUNCTION_DECLARE(draw_triangle);
+
+/* display_strip.c */
+DL_FUNCTION_DECLARE(draw_strip);
 
 /* display_texture.c */
 DL_FUNCTION_DECLARE(tex_new);
@@ -436,17 +439,24 @@ static luashell_command_description_t display_commands[] = {
   },
 
   /* triangle interface */
-
   {
     "dl_draw_triangle", 0,               /* long and short names */
     "print [["
-	"dl_draw_triangle(list, x1, y1, z1, x2, y2, z2, x3, y3, z3, "
-	"[ a1, r1, g1, b1, [ "
-	"a2, r2, g2, b2, "
-	"a3, r3, g3, b3, ] ], "
-	"[ texture-id, ] [ opacity-mode ] ) : draw a triangle"
+	"dl_draw_triangle(list, matrix | (vector[,vector,vector]) "
+	"[, [ texture-id, ] [ opacity-mode ] ] ) : draw a triangle"
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_draw_triangle   /* function */
+  },
+
+  /* strip interface */
+
+  {
+    "dl_draw_strip", 0,               /* long and short names */
+    "print [["
+	"dl_draw_strip(list, matrix | (vector,n) "
+	"[, [ texture-id, ] [ opacity-mode ] ] ) : draw a strip"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_draw_strip   /* function */
   },
 
   /* clipping interface */

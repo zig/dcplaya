@@ -4,7 +4,7 @@
  * @date      2002/09/20
  * @brief     mikmod input plugin for dcplaya
  *
- * $Id: mikmod_driver.c,v 1.3 2002-09-25 03:21:22 benjihan Exp $
+ * $Id: mikmod_driver.c,v 1.4 2002-11-14 23:40:27 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -91,7 +91,7 @@ static void build_extensions(void)
       type = "m15";
     }
 
-    SDDEBUG("loader [%s]\n", l->type);
+/*     SDDEBUG("loader [%s]\n", l->type); */
     
     if (!type) {
       continue;
@@ -100,17 +100,15 @@ static void build_extensions(void)
     strcpy(ext+1, type);
     j = i;
     i += add_ext(extensions + i, ext, max-i);
-    if (i>j) {
-      SDDEBUG("--> [%s]\n", extensions + j);
-    }
+/*     if (i>j) { */
+/*       SDDEBUG("--> [%s]\n", extensions + j); */
+/*     } */
     j = i;
     strcat(ext, ".gz");
     i += add_ext(extensions + i, ext, max-i);
-    if (i>j) {
-      SDDEBUG("--> [%s]\n", extensions + j);
-    }
-    
-    i += add_ext(extensions + i, ext, max-i);
+/*     if (i>j) { */
+/*       SDDEBUG("--> [%s]\n", extensions + j); */
+/*     } */
   }
 
   extensions[i++] = 0;

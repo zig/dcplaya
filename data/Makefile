@@ -1,6 +1,6 @@
 # Makefile - dcplaya - data
 #
-# $Id: Makefile,v 1.3 2002-10-11 12:12:12 benjihan Exp $
+# $Id: Makefile,v 1.4 2002-11-14 23:40:26 benjihan Exp $
 #
 
 TARGETS=
@@ -11,27 +11,17 @@ REQUIRED_LOCAL=req_local
 my_all: vmuimg romdisk
 
 # Images
-bckimg : romdisk/dream68.red romdisk/dream68.blu romdisk/dream68.grn
-fntimg : romdisk/font16x16.ppm romdisk/font8x14.ppm
-bdrimg : romdisk/bordertile.ppm
+fntimg : romdisk/font16x16.tga romdisk/font8x14.tga
+bdrimg : romdisk/bordertile.tga romdisk/dcpsprites.tga
 
 vmuimg : ../include/vmu_sc68.h ../include/vmu_font.h
 	@echo "Build [$@]"
 
-.INTERMEDIATE: romimg bckimg fntimg bdrimg
-romimg: bckimg fntimg bdrimg
+.INTERMEDIATE: romimg fntimg bdrimg
+romimg: fntimg bdrimg
 
-tmp/dream68.pnm : img/dream68.png
-	pngtopnm $< > $@
-
-romdisk/%.ppm : img/%.tga
-	tgatoppm $< > tmp/$*.ppm && \
-	ppmtorgb3 tmp/$*.ppm && \
-	mv tmp/$*.red $@ && \
-	rm -f tmp/$**
-
-romdisk/%.red romdisk/%.blu romdisk/%.grn: tmp/%.pnm
-	ppmtorgb3 $< && mv tmp/$*.[rgb][erl][dnu] romdisk
+romdisk/%.tga : img/%.tga
+	cp $< $@
 
 ../include/%.h : img/%.ppm
 	@echo "Creating VMU pixmap '$@'"

@@ -5,7 +5,7 @@
  * @date     2002/07/??
  * @brief    dcplaya FFT.
  *
- * @id $Id: fft.h,v 1.4 2002-09-13 00:27:11 ben Exp $
+ * @id $Id: fft.h,v 1.5 2002-11-14 23:40:27 benjihan Exp $
  *
  */
 
@@ -17,14 +17,36 @@
 DCPLAYA_EXTERN_C_START
 
 /* $$$ BEN: Ca macrhe pas  vraiment quand on le change ! */
-#define FFT_LOG_2 8   /** FFT size (log 2) . Max is 12. */
+#define FFT_LOG_2 9   /** FFT size (log 2) . Max is 12. */
 
-extern short fft_R[]; /**< FFT Real numbers.                             */
-extern short fft_I[]; /**< FFT Imaginary numbers.                        */
-extern short fft_F[]; /**< FFT final frequency scaled result [0..32767]. */
-extern short fft_D[]; /**< FFT final in Db [0..32767].                   */
+//extern short fft_R[]; /**< FFT Real numbers.                             */
+//extern short fft_I[]; /**< FFT Imaginary numbers.                        */
+//extern short fft_F[]; /**< FFT final frequency scaled result [0..32767]. */
+//extern short fft_D[]; /**< FFT final in Db [0..32767].                   */
 
-/** Caculate FFT from PCM.
+
+/** Init FFT.
+ *
+ *  The fft_init() function initializes FFT buffering system.
+ *
+ *  @param  nbuffer   Number of FFT buffers
+ *  @return error-code
+ *  @retval 0 Ok
+ */
+int fft_init(int nbuffer);
+
+/** Shutdown FFT interface.
+ */
+void fft_shutdown(void);
+
+/** Get FFT buffer size. */
+int fft_frag_size(void);
+/** Get FFT buffer overlapping size. */
+int fft_frag_overlap(void);
+/** Get number of FFT buffer. */
+int fft_frags(void);
+
+/** Calculate FFT from PCM.
  *
  *  The fft() function calculates FFT for a given 16 bit stereo PCM buffer.
  *  Left and right channels are mixed together.
@@ -36,8 +58,10 @@ extern short fft_D[]; /**< FFT final in Db [0..32767].                   */
  *  @param  frq       Playback frequency (in Hz).
  *
  */
+void fft_queue(int * spl, int nbSpl, int frq);
 
-void fft(int *spl, int nbSpl, int splFrame, int frq);
+/** */
+void fft_copy(short * fft, short * pcm, int n, int db);
 
 DCPLAYA_EXTERN_C_END
 

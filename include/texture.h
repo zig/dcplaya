@@ -4,7 +4,7 @@
  * @date    2002/10/20
  * @brief   texture manager
  *
- * $Id: texture.h,v 1.3 2002-10-23 00:00:18 benjihan Exp $
+ * $Id: texture.h,v 1.4 2002-11-14 23:40:27 benjihan Exp $
  */
 
 #ifndef _TEXTURE_H_
@@ -23,11 +23,11 @@ typedef struct {
   int wlog2;     /**< Log2 of texture width in pixel */
   int hlog2;     /**< Log2 of height in pixel        */
   int format;    /**< see list in ta.h               */
-  int ref;       /**< Reference counter  */
-  int lock;      /**< Lock counter       */
+  int ref;       /**< Reference counter              */
+  int lock;      /**< Lock counter                   */
 
-  void * addr;   /**< Mapped VRAM address       */
-  uint32 ta_tex; /**< Texture address for TA */
+  void * addr;   /**< Mapped VRAM address            */
+  uint32 ta_tex; /**< Texture address for TA         */
 } texture_t;
 
 struct _texture_create_s;
@@ -61,6 +61,19 @@ void texture_shutdown(void);
 
 /** Get a texture identifier by name. */
 texid_t texture_get(const char * texture_name);
+
+/** Duplicate a texture.
+ *
+ *     The texture_dup() function duplicates a texture. Everything gets copied
+ *     including texture bitmap.
+ *
+ *  @param  texid   texture-id to duplicate
+ *  @param  name    duplicated texture name
+ *
+ *  @return texture-id
+ *  @retval -1 Error
+ */
+texid_t texture_dup(texid_t texid, const char * name);
 
 /** Create a new texture.
  *

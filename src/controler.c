@@ -114,7 +114,7 @@ int controler_thread(void * dummy)
     elapsed_frame = frame - elapsed_frame;
 
     if (elapsed_frame) {
-      static report = 0;
+      static int report = 0;
       int oldfunc;
 
       spinlock_lock(&controler_mutex);

@@ -5,7 +5,7 @@
  * @date     2002/10/24
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist_loader.h,v 1.2 2002-11-04 22:41:53 benjihan Exp $
+ * $Id: entrylist_loader.h,v 1.3 2002-11-14 23:40:27 benjihan Exp $
  */
 
 #ifndef _ENTRY_LOADER_H_
@@ -15,12 +15,15 @@
 
 /* typedef int (*el_filter_f)(el_entry_t * e); */
 
-typedef struct {
-  int dir      : 1;
-  int regular  : 1;
-  int playlist : 1;
-  int plugins  : 1;
-  int playable : 1;
+typedef union {
+  int all;
+  struct {
+	int dir      : 1;
+	int regular  : 1;
+	int playlist : 1;
+	int plugins  : 1;
+	int playable : 1;
+  };
 } el_filter_t;
 
 

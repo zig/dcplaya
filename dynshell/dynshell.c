@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.38 2002-11-04 22:41:53 benjihan Exp $
+ * @version    $Id: dynshell.c,v 1.39 2002-11-14 23:40:27 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -1690,7 +1690,7 @@ static luashell_command_description_t commands[] = {
     "info",
     0,
     "print([["
-    "info([filename, [track]]) :\n"
+    "info([filename [ ,track ] ]) :\n"
     "]])",
     SHELL_COMMAND_C, lua_music_info
   },

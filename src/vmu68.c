@@ -1,5 +1,5 @@
 /**
- * $Id: vmu68.c,v 1.4 2002-09-27 03:20:20 benjihan Exp $
+ * $Id: vmu68.c,v 1.5 2002-11-14 23:40:29 benjihan Exp $
  */
 #include "config.h"
 
@@ -230,34 +230,23 @@ static int find_sign_change(int *spl, int n)
   return 0;
 }
 
-static void draw_samples(char *buf, int *spl, int nbSpl)
+static void draw_samples(char *buf)
 {
-  int i, x, stp;
+  short spl[48];
+  int x;
 
-  for (i = 0; i < 48 / 8; ++i) {
-    buf[48 + i] = 0xff;
+  fft_copy(0, spl, 48, 0);
+  for (x = 0; x < 48 / 8; ++x) {
+    buf[48 + x] = 0xff;
   }
 
-  if (!spl)
-    return;
-
-  //  i = find_sign_change(spl, nbSpl);
-  i = 0;
-
-  stp = ((nbSpl - i) << 12) / 48;
-  i <<= 12;
-  for (x = 0; x < 48; i += stp, ++x) {
-    int h = spl[i >> 12];
-    int r, l;
+  for (x = 0; x < 48; ++x) {
+    int h = spl[x];
     int xi = x >> 3;
     int xb = 0x80 >> (x & 7);
     int o1, o2;
 
-    r = (signed short) h;				// -32768 +32767
-    l = h >> 16;
-    h = (r + l);								// -65536 +65534
-    ++h;
-    h >>= 13;										// -8 - 8
+    h >>= 11;										// -8 - 8
     o1 = xi + (48 / 8) * (h + 8);
     o2 = xi + (48 / 8) * (8);
 		
@@ -285,23 +274,24 @@ static struct {
 
 extern short int_decibel[4096];
 
-static void draw_fft(char *buf, short *R, short *I, int n)
+static void draw_fft(unsigned char * buf)
 {
   const int g = 27;
-  int i, x, stp;
+  const int shift = 10;
+  int x;
+  unsigned short fft[48];
 
-  if (n<=0)
-    return;
-		
-  stp = (n << 12) / 48;
-  for (i = 0, x = 47; x >= 0; i += stp, --x) {
+
+  fft_copy(fft, 0, 48, 1);
+
+  for (x = 47; x >= 0; --x) {
     int xi = x >> 3;
     int xb = 0x80 >> (x & 7);
     int v;
     int o1, hat;
 
     /* New entry */
-    v = fft_D[i>>12];
+    v = fft[47-x];
 		
     /* Smoothing */
     if (v > fft_bar[x].v) {
@@ -313,78 +303,79 @@ static void draw_fft(char *buf, short *R, short *I, int n)
     hat = fft_bar[x].hat;
     if (v >= hat) {
       if (0) {
-	fft_bar[x].cnt = 32;
-	fft_bar[x].fall = 0;
+		fft_bar[x].cnt = 32;
+		fft_bar[x].fall = 0;
       } else if (v > fft_bar[x].v) {
-	const int min = -g * 70;
+		const int min = -g * 70;
         int fall;
         const int method = 5;
 		  
-	fft_bar[x].cnt = 0;
-	fall = fft_bar[x].fall;
-	if (fall>0) fall = 0;
+		fft_bar[x].cnt = 0;
+		fall = fft_bar[x].fall;
+		if (fall>0) fall = 0;
 		    
-	// $$ hack !!! 
-	hat =  fft_bar[x].v;
+		// $$ hack !!! 
+		hat =  fft_bar[x].v;
 		    
-	switch (method) {
-	case 1: /* Trankil */
-	  fall = - ((v + (v - hat)) >> 5);
-	  break;
-	case 2: /* Dynamic mais pas trop  */
-	  fall = -(((v + (v - hat)) * g) >> 10);
-	  break;
-	case 3: /* Ca monte haut ! */
-	  fall += -(((v + (v - hat)) * g) >> 12);
-	  break;
-	case 4:
-	  fall += -((((v>>1) + (v - hat)) * g) >> 11);
-	  break;
-	case 5: /* Dynamic mais pas trop  */
-	  fall = -(((((v>>1) + (v - hat)) * g) * 3)  >> 11);
-	  break;
+		switch (method) {
+		case 1: /* Trankil */
+		  fall = - ((v + (v - hat)) >> (shift>>1));
+		  break;
+		case 2: /* Dynamic mais pas trop  */
+		  fall = -(((v + (v - hat)) * g) >> (shift-1));
+		  break;
+		case 3: /* Ca monte haut ! */
+		  fall += -(((v + (v - hat)) * g) >> (shift+1));
+		  break;
+		case 4:
+		  fall += -((((v>>1) + (v - hat)) * g) >> shift);
+		  break;
+		case 5: /* Dynamic mais pas trop  */
+		  fall = -(((((v>>1) + (v - hat)) * g) * 3)  >> shift);
+		  break;
 		      
-	default:
-	  fall = -g * 50;
-	}
-	if (fall < min) fall = min;
-	fft_bar[x].fall = fall;
+		default:
+		  fall = -g * 50;
+		}
+		if (fall < min) fall = min;
+		fft_bar[x].fall = fall;
       }
       hat = v;
     } else {
       if (fft_bar[x].cnt > 0) {
-	fft_bar[x].cnt--;
+		fft_bar[x].cnt--;
       }
       if (!fft_bar[x].cnt) {
-	//  		  const int fall_max = 1024;
-	//	  	  const int smooth = 240;
-	int fall;
+		//  		  const int fall_max = 1024;
+		//	  	  const int smooth = 240;
+		int fall;
 		    
-	//		    fall = ((fft_bar[x].fall * smooth) + (fall_max * (256-smooth))) >> 8;
-	//		    fall = ((fft_bar[x].fall * smooth) + (fall_max * (256-smooth))) >> 8;
+		//		    fall = ((fft_bar[x].fall * smooth) + (fall_max * (256-smooth))) >> 8;
+		//		    fall = ((fft_bar[x].fall * smooth) + (fall_max * (256-smooth))) >> 8;
         fall = fft_bar[x].fall + g;
-	fft_bar[x].fall = fall;
-	hat -= fall;
-	if (hat <= 0) {
-	  hat = 0;
-	  fall = 0;
-	}
-	else if(hat > (28<<11)) hat = 28<<11;
+		fft_bar[x].fall = fall;
+		hat -= fall;
+		if (hat <= 0) {
+		  hat = 0;
+		  fall = 0;
+		} else if(hat > (28<<shift)) {
+		  hat = 28<<shift;
+		}
       }
     }
     fft_bar[x].hat  =   hat;
-    hat             >>= 11;
+    hat             >>= shift;
     fft_bar[x].v    =   v;
-    v               >>= 11;
+    v               >>= shift;
 
     o1 = xi;
     buf[xi+(48/8)*hat] |= xb;
 		
     if (v>0) {
-      if (v > 15) v = 30;
+      if (v > 20) v = 20;
       do {
-	buf[o1] |= xb;
-	o1 += 48 / 8;
+		buf[o1] |= xb;
+		o1 += 48 / 8;
       } while (--v);
     }
   }
@@ -432,7 +423,7 @@ void vmu_lcd_title()
   draw_lcd(title[0]);
 }
 
-void vmu_lcd_update(int *spl, int nbSpl, int splFrame)
+void vmu_lcd_update(/*int *spl, int nbSpl, int splFrame*/)
 {
   const char *info_str = vmu_scrolltext;
 
@@ -513,19 +504,14 @@ void vmu_lcd_update(int *spl, int nbSpl, int splFrame)
   if (1) {
     int option = option_lcd_visual();
 	
-    if (option != OPTION_LCD_VISUAL_NONE && spl 
-	&& nbSpl>0 
-	&& playa_isplaying()) {
-      if (option == OPTION_LCD_VISUAL_SCOPE) {
-	draw_samples(vmutmp[0], spl, nbSpl);
-      } else {
-        draw_fft(vmutmp[0], fft_R, fft_I,
-		 (option == OPTION_LCD_VISUAL_FFT_FULL)
-		 ? (1<<(FFT_LOG_2-1))
-		 : (1<<(FFT_LOG_2-2))); 
-
-      }
-    }
+	switch (option) {
+	case OPTION_LCD_VISUAL_SCOPE:
+	  draw_samples(vmutmp[0]);
+	  break;
+	case OPTION_LCD_VISUAL_FFT_FULL:
+	  draw_fft(vmutmp[0]);
+	  break;
+	}
   }
 	
   /* Finally copy temporary buffer to VMU LCD */

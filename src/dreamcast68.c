@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.30 2002-10-30 20:01:20 benjihan Exp $
+ * @version   $Id: dreamcast68.c,v 1.31 2002-11-14 23:40:29 benjihan Exp $
  */
 
 //#define RELEASE
@@ -24,6 +24,7 @@
 #include "sndstream.h"
 #include "songmenu.h"
 #include "gp.h"
+#include "draw_clipping.h"
 
 /* dreamcast68 includes */
 #include "file_wrapper.h"
@@ -41,7 +42,7 @@
 #include "playa.h"
 #include "plugin.h"
 #include "lef.h"
-#include "fft.h"
+//#include "fft.h"
 #include "viewport.h"
 #include "fs_ramdisk.h"
 #include "screen_shot.h"
@@ -62,7 +63,7 @@ controler_state_t controler68;
 
 static obj_t * curlogo;
 
-extern void vmu_lcd_update(int *b, int n, int cnt);
+extern void vmu_lcd_update(/*int *b, int n, int cnt*/);
 extern int vmu68_init(void);
 extern int vmu_lcd_title();
 
@@ -466,6 +467,9 @@ static int no_mt_init(void)
   /* Viewport init */
   viewport_set(&viewport, 0, 0, SCREEN_W, SCREEN_H, 1.0f);
 
+  /* Set clipping */
+  draw_set_clipping(0, 0, SCREEN_W, SCREEN_H);
+
   /* Projection init */
   MtxProjection(projection, 70*2.0*3.14159/360,
 		0.01, (float)SCREEN_W/SCREEN_H,
@@ -490,10 +494,12 @@ static int no_mt_init(void)
   }
 
   /* Setup background display */
+#if 0
   if (bkg_init() < 0) {
     err = __LINE__;
     goto error;
   }
+#endif
 
   /* Setup border poly */
   if (border_setup() < 0) {
@@ -570,14 +576,13 @@ static void update_lcd(void)
 
 static void update_fft(void)
 {
-  int *buf, nb, cnt, frq;
-  static int scnt = -1;
+/*   int *buf, nb, cnt, frq; */
+/*   static int scnt = -1; */
 
-  playa_get_buffer(&buf, &nb, &cnt, &frq);
-  if (cnt == scnt) return;
-  scnt = cnt;
-  fft(buf, nb, cnt, frq);
-
+/*   playa_get_buffer(&buf, &nb, &cnt, &frq); */
+/*   if (cnt == scnt) return; */
+/*   scnt = cnt; */
+/*   fft(buf, nb, cnt, frq); */
 }
 
 
@@ -726,7 +731,7 @@ void main_thread(void *cookie)
 
     /* Opaque list *************************************/
     //my_vid_border_color(255,0,0);
-    bkg_render(fade68, info_is_help() || !is_playing);
+/*     bkg_render(fade68, info_is_help() || !is_playing); */
 
     /* Visual opaque list */
     render_visual_opaque();

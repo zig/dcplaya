@@ -1,45 +1,39 @@
 /**
- * $Id: draw_object.c,v 1.6 2002-10-10 06:05:37 benjihan Exp $
+ * $Id: draw_object.c,v 1.7 2002-11-14 23:40:29 benjihan Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <dc/fmath.h>
+
 #include <dc/ta.h>
 
+#include "gp.h"
 #include "sysdebug.h"
 #include "draw_object.h"
-
-extern int bordertex, bordertex2;
 
 typedef struct {
   float u;
   float v;
 } uv_t;
 
-typedef struct s_v_t {
-  int flags;
-  float x,y,z,u,v;
-  unsigned int col, addcol;
-} v_t;
-
-static volatile v_t * const hw = (volatile v_t *)(0xe0<<24);
 static matrix_t mtx;
+static ta_hw_tex_vtx_t * const hw = HW_TEX_VTX;
 
 static vtx_t * transform = 0;
 static int transform_sz = 0;
 
 static uv_t uvlinks[8][4] =
-{
-  /* 0 cba */  { {0.0f,0.5f},   {0.0f,0.0f},    {0.5f,0.0f},   {0,0} },
-  /* 1 cbA */  { {0.5f,0.0f},   {0.5f,0.5f},    {1.0f,0.0f},   {0,0} },
-  /* 2 cBa */  { {1.0f,0.1f},   {0.5f,0.5f},    {0.5f,0.1f},   {0,0} },
-  /* 3 cBA */  { {0.0f,1.0f},   {0.0f,0.5f},    {0.5f,0.5f},   {0,0} },
-  /* 4 Cba */  { {0.5f,0.1f},   {1.0f,0.1f},    {0.5f,0.5f},   {0,0} },
-  /* 5 CbA */  { {0.0f,0.5f},   {0.5f,0.5f},    {0.0f,1.0f},   {0,0} },
-  /* 6 CBa */  { {0.5f,0.5f},   {0.0f,1.0f},    {0.0f,0.5f},   {0,0} },
-  /* 7 CBA */  { {0.5f,1.0f},   {0.5f,0.5f},    {1.0f,0.5f},   {0,0} },
-};
+  {
+	/* 0 cba */  { {0.0f,0.5f},   {0.0f,0.0f},    {0.5f,0.0f},   {0,0} },
+	/* 1 cbA */  { {0.5f,0.0f},   {0.5f,0.5f},    {1.0f,0.0f},   {0,0} },
+	/* 2 cBa */  { {1.0f,0.1f},   {0.5f,0.5f},    {0.5f,0.1f},   {0,0} },
+	/* 3 cBA */  { {0.0f,1.0f},   {0.0f,0.5f},    {0.5f,0.5f},   {0,0} },
+	/* 4 Cba */  { {0.5f,0.1f},   {1.0f,0.1f},    {0.5f,0.5f},   {0,0} },
+	/* 5 CbA */  { {0.0f,0.5f},   {0.5f,0.5f},    {0.0f,1.0f},   {0,0} },
+	/* 6 CBa */  { {0.5f,0.5f},   {0.0f,1.0f},    {0.0f,0.5f},   {0,0} },
+	/* 7 CBA */  { {0.5f,1.0f},   {0.5f,0.5f},    {1.0f,0.5f},   {0,0} },
+  };
 
 static int sature(const float a)
 {
@@ -61,7 +55,7 @@ static unsigned int argb255(const vtx_t *color)
 }
 
 static unsigned int argb4(const float a, const float r,
-			  const float g, const float b)
+						  const float g, const float b)
 {
   return
     (sature(a) << 24) |
@@ -88,7 +82,7 @@ static int init_transform(int nb)
 }
 
 static void TransformVtx(vtx_t * d, const obj_t *o,
-			 const viewport_t *vp, matrix_t m)
+						 const viewport_t *vp, matrix_t m)
 {
   int n = o->nbv;
 
@@ -179,18 +173,13 @@ static void set_clipping(cl_t xmin, cl_t ymin, cl_t xmax, cl_t ymax)
 extern controler_state_t controler68;
 
 int DrawObjectPostProcess(viewport_t * vp, matrix_t local, matrix_t proj,
-			  obj_t *o)
+						  obj_t *o)
 {
- if (!vp || !o) {
+  if (!vp || !o) {
     return -1;
   }
 
- if (!o->flags) {
-   SDWARNING("3D-object [%s] has no texture-id, set default\n", o->name);
-   o->flags = bordertex2;
- }
-
- if (init_transform(o->nbv) < 0) {
+  if (init_transform(o->nbv) < 0) {
     return -1;
   }
 
@@ -200,40 +189,12 @@ int DrawObjectPostProcess(viewport_t * vp, matrix_t local, matrix_t proj,
   TransformVtx(transform, o, vp, mtx);
   TestVisibleFace(o);
 
-  // $$$ TEST
-/*   { */
-/* 	static int which; */
-/* 	static union { */
-/* 	  int   i; */
-/* 	  float f; */
-/* 	} v[4] = {{70},{295},{ 75}, {135}}; */
-
-/* 	if (controler_pressed(&controler68, CONT_Y)) { */
-/* 	  which = (which+1)&3; */
-/* 	} */
-	
-/* 	if (controler_pressed(&controler68,CONT_DPAD_LEFT)) { */
-/* 	  v[which].i -= 1; */
-/* 	  printf("[%d %d %d %d] [%.3f %.3f %.3f %.3f]\n", */
-/* 			 v[0].i,v[1].i,v[2].i,v[3].i,v[0].f,v[1].f,v[2].f,v[3].f); */
-/* 	} else if (controler_pressed(&controler68,CONT_DPAD_RIGHT)) { */
-/* 	  v[which].i += 1; */
-/* 	  printf("[%d %d %d %d] [%.3f %.3f %.3f %.3f]\n", */
-/* 			 v[0].i,v[1].i,v[2].i,v[3].i,v[0].f,v[1].f,v[2].f,v[3].f); */
-/* 	} */
-/* 	set_clipping(v[0].i, v[1].i, v[2].i, v[3].i); */
-/*   } */
-
-  //[75 295 75 140]
-
-
   return 0;
 }
 
 int DrawObjectSingleColor(viewport_t * vp, matrix_t local, matrix_t proj,
-			  obj_t *o, vtx_t *color)
+						  obj_t *o, vtx_t *color)
 {
-  poly_hdr_t poly;
   unsigned int col;
 
   if (DrawObjectPostProcess(vp, local, proj, o) < 0) {
@@ -248,17 +209,8 @@ int DrawObjectSingleColor(viewport_t * vp, matrix_t local, matrix_t proj,
     vtx_t * nrm = o->nvx;
     int     n = o->nbf;
 
-    
-    ta_poly_hdr_txr(&poly, TA_TRANSLUCENT, TA_ARGB4444, 64, 64, o->flags,
-		    TA_NO_FILTER);
-
-    poly.flags1 &= ~(3<<4);
-
-	// $$$ Test clipping
-/* 	poly.flags1 &= ~(3<<16); */
-/* 	poly.flags1 |=  (3<<16); */
-
-    ta_commit_poly_hdr(&poly);
+    draw_poly_hdr(HW_POLY, o->flags);
+	ta_commit32_nocopy();
 
     hw->addcol = 0;
     hw->col = col;
@@ -271,9 +223,8 @@ int DrawObjectSingleColor(viewport_t * vp, matrix_t local, matrix_t proj,
       uv_t * uvl;
 
       if (f->flags) {
-	continue;
+		continue;
       }
-
 
       lflags  = t[l->a].flags << 0;
       lflags |= t[l->b].flags << 1;
@@ -312,11 +263,9 @@ int DrawObjectSingleColor(viewport_t * vp, matrix_t local, matrix_t proj,
 }
 
 int DrawObjectLighted(viewport_t * vp, matrix_t local, matrix_t proj,
-		      obj_t *o,
-		      vtx_t *ambient, vtx_t *light, vtx_t *diffuse)
+					  obj_t *o,
+					  vtx_t *ambient, vtx_t *light, vtx_t *diffuse)
 {
-  poly_hdr_t poly;
-
   float aa, ar, ag, ab;
   float la, lr, lg, lb;
   vtx_t tlight;
@@ -347,16 +296,8 @@ int DrawObjectLighted(viewport_t * vp, matrix_t local, matrix_t proj,
     vtx_t * nrm = o->nvx;
     int     n = o->nbf;
     
-    ta_poly_hdr_txr(&poly, TA_TRANSLUCENT, TA_ARGB4444, 64, 64, o->flags,
-		  TA_NO_FILTER);
-
-    poly.flags1 &= ~(3<<4);
-
-	// $$$ Test clipping
-/* 	poly.flags1 &= ~(3<<16); */
-/* 	poly.flags1 |=  (3<<16); */
-
-    ta_commit_poly_hdr(&poly);
+    draw_poly_hdr(HW_POLY, o->flags);
+	ta_commit32_nocopy();
 
     hw->addcol = 0;
  
@@ -370,18 +311,18 @@ int DrawObjectLighted(viewport_t * vp, matrix_t local, matrix_t proj,
       float coef;
 
       if (f->flags) {
-	continue;
+		continue;
       }
 
       coef = nrm->x * tlight.x 
-	+ nrm->y * tlight.y 
-	+ nrm->z * tlight.z;
-
+		+ nrm->y * tlight.y 
+		+ nrm->z * tlight.z;
+	  
       if (coef < 0) {
-	coef = 0;
+		coef = 0;
       }
       hw->col = argb4(aa + coef * la, ar + coef * lr,
-		      ag + coef * lg, ab + coef * lb);
+					  ag + coef * lg, ab + coef * lb);
 	
       lflags  = t[l->a].flags << 0;
       lflags |= t[l->b].flags << 1;
@@ -421,11 +362,9 @@ int DrawObjectLighted(viewport_t * vp, matrix_t local, matrix_t proj,
 }
 
 int DrawObjectFrontLighted(viewport_t * vp, matrix_t local, matrix_t proj,
-		      obj_t *o,
-		      vtx_t *ambient, vtx_t *diffuse)
+						   obj_t *o,
+						   vtx_t *ambient, vtx_t *diffuse)
 {
-  poly_hdr_t poly;
-
   float aa, ar, ag, ab;
   float la, lr, lg, lb;
 
@@ -453,17 +392,9 @@ int DrawObjectFrontLighted(viewport_t * vp, matrix_t local, matrix_t proj,
     tlk_t * l = o->tlk;
     vtx_t * nrm = o->nvx;
     int     n = o->nbf;
-    
-    ta_poly_hdr_txr(&poly, TA_TRANSLUCENT, TA_ARGB4444, 64, 64, o->flags,
-		  TA_NO_FILTER);
 
-    poly.flags1 &= ~(3<<4);
-
-	// $$$ Test clipping
-/* 	poly.flags1 &= ~(3<<16); */
-/* 	poly.flags1 |=  (3<<16); */
-
-    ta_commit_poly_hdr(&poly);
+    draw_poly_hdr(HW_POLY, o->flags);
+	ta_commit32_nocopy();
 
     hw->addcol = 0;
  
@@ -477,15 +408,15 @@ int DrawObjectFrontLighted(viewport_t * vp, matrix_t local, matrix_t proj,
       float coef;
 
       if (f->flags) {
-	continue;
+		continue;
       }
 
       coef = m02 * nrm->x + m12 * nrm->y + m22 * nrm->z;
       if (coef < 0) {
-	coef = 0;
+		coef = 0;
       }
       hw->col = argb4(aa + coef * la, ar + coef * lr,
-		      ag + coef * lg, ab + coef * lb);
+					  ag + coef * lg, ab + coef * lb);
 	
       lflags  = t[l->a].flags << 0;
       lflags |= t[l->b].flags << 1;
@@ -526,10 +457,8 @@ int DrawObjectFrontLighted(viewport_t * vp, matrix_t local, matrix_t proj,
 
 
 int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
-			 obj_t *o)
+						 obj_t *o)
 {
-  poly_hdr_t poly;
-
   if (DrawObjectPostProcess(vp, local, proj, o) < 0) {
     return -1;
   }
@@ -541,34 +470,23 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
     vtx_t * nrm = o->nvx;
     int     n = o->nbf;
     
-    ta_poly_hdr_txr(&poly, TA_TRANSLUCENT, TA_ARGB4444, 64, 64, o->flags,
-		  TA_NO_FILTER);
-
-    poly.flags1 &= ~(3<<4);
-
-	// $$$ Test clipping
-/* 	{ */
-/* 	  static int toto = 3; */
-/* 	  poly.flags1 &= ~(3<<16); */
-/* 	  poly.flags1 |=  (3<<16); */
-/* 	  toto ^= 1; */
-/* 	} */
-
-    ta_commit_poly_hdr(&poly);
-
-    hw->addcol = 0;
  
     if (!l) {
       // $$$ !
       return -1;
     }
+
+    draw_poly_hdr(HW_POLY, o->flags);
+	ta_commit32_nocopy();
+    hw->addcol = 0;
+
     for(n=o->nbf ;n--; ++f, ++l, ++nrm)  {
       int lflags = 0;
       unsigned int cola, colb, colc, col;
       uv_t * uvl;
 
       if (f->flags) {
-	continue;
+		continue;
       }
 
       col = *(int *)&nrm->w;
@@ -578,22 +496,22 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
 
       // $$$ ben : hack to remove invible face glitch! There is lotsa optimize to do here.
       {
-	const int m2 = 0x7f7f7f7f;
-	int tmp, m;
-	col  = (col  >> 1) & 0x7f7f7f7f;
-	tmp = col/* >> 1*/;
+		const int m2 = 0x7f7f7f7f;
+		int tmp, m;
+		col  = (col  >> 1) & 0x7f7f7f7f;
+		tmp = col/* >> 1*/;
 
-	m = -t[l->a].flags;
-	m = -1;
-	cola = (((cola >> 1) & ~m) | (tmp & m)) & m2;  
+		m = -t[l->a].flags;
+		m = -1;
+		cola = (((cola >> 1) & ~m) | (tmp & m)) & m2;  
 
-	m = -t[l->b].flags;
-	m = -1;
-	colb = (((colb >> 1) & ~m) | (tmp & m)) & m2;  
+		m = -t[l->b].flags;
+		m = -1;
+		colb = (((colb >> 1) & ~m) | (tmp & m)) & m2;  
 
-	m = -t[l->c].flags;
-	m = -1;
-	colc = (((colc >> 1) & ~m) | (tmp & m)) & m2;  
+		m = -t[l->c].flags;
+		m = -1;
+		colc = (((colc >> 1) & ~m) | (tmp & m)) & m2;  
       }
 
       lflags  = t[l->a].flags << 0;
@@ -614,6 +532,7 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
       ta_commit32_nocopy();
 
       //	hw->flags = TA_VERTEX;
+
       hw->col = /*col + */colb + cola;
       hw->x = transform[f->b].x;
       hw->y = transform[f->b].y;

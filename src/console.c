@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.13 2002-10-11 12:09:28 benjihan Exp $
+ * @version   $Id: console.c,v 1.14 2002-11-14 23:40:28 benjihan Exp $
  */
 
 
@@ -54,7 +54,7 @@ void csl_init_main_console()
     return;
 
 #if 1
-  csl_main_console = csl_console_create((640 - 2*CSL_BASIC_OFFSET_X)/12, 
+  csl_main_console = csl_console_create((640 - 2*CSL_BASIC_OFFSET_X)/8, 
 					(512 - 2*CSL_BASIC_OFFSET_Y)/24, 
 					CSL_RENDER_BASIC);
 #else
@@ -100,16 +100,18 @@ csl_console_t * csl_console_create(int ncol, int nline, int render_modes)
 
   console = (csl_console_t *) calloc(1, sizeof(csl_console_t));
 
-  if (console == NULL)
+  if (console == NULL) {
     STHROW_ERROR(error);
+  }
 
   /* Insert into the list */
   console->next = csl_first_console;
   csl_first_console = console;
 
   console->term = MUterm_create(ncol, nline, 1);
-  if (console->term == NULL)
+  if (console->term == NULL) {
     STHROW_ERROR(error);
+  }
 
   console->w = ncol;
   console->h = nline;
@@ -118,8 +120,9 @@ csl_console_t * csl_console_create(int ncol, int nline, int render_modes)
   return console;
 
  error:
-  if (console)
+  if (console) {
     csl_console_destroy(console);
+  }
 
   return NULL;
 }
@@ -211,13 +214,13 @@ void csl_window_transparent_render(csl_console_t * c)
   int y;
   char s[128]; // warning : console with 128 cars width max
   char * p;
-  float oldscale;
+  float oldsize;
   int oldfont, oldescape;
-
-  //oldscale = text_set_font_size(c->window.scalex);
+  
 
   //spinlock_lock(&c->mutex);
-
+  
+  oldsize = text_set_font_size(8);
   oldfont = text_set_font(1); // Select fixed spacing font
   oldescape = text_set_escape(-1); // No escape character
 
@@ -276,10 +279,9 @@ void csl_window_transparent_render(csl_console_t * c)
 
   }
 
-  //text_set_font_size(oldscale);
-
   text_set_font(oldfont);
   text_set_escape(oldescape);
+  text_set_font_size(oldsize);
   
   spinlock_unlock(&c->mutex);
 
@@ -400,6 +402,9 @@ void csl_vprintf(csl_console_t * console, const char *fmt, va_list args )
   spinlock_unlock(&console->mutex);
 }
 
+
+extern int controler_getchar();
+extern int controler_peekchar();
 
 int csl_getchar()
 {

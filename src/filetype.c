@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   Deal with file types and extensions.
  *
- * $Id: filetype.c,v 1.6 2002-11-04 22:41:53 benjihan Exp $
+ * $Id: filetype.c,v 1.7 2002-11-14 23:40:29 benjihan Exp $
  */
 
 #include <string.h>
@@ -37,6 +37,16 @@ int filetype_add(const char *exts)
 	return i;
   }
   playables[i] = exts;
+
+  {
+	int len;
+	while(len = strlen(exts), len > 0) {
+/* 	  printf("add as %d : '%s'\n", i+ FILETYPE_PLAYABLE, exts); */
+	  exts+= len+1;
+	}
+  }
+
+
   return i + FILETYPE_PLAYABLE;
 }
 
@@ -64,6 +74,7 @@ static int extfind(const char * extlist, const char * ext)
   if (extlist && ext) {
 	int len;
 	while (len = strlen(extlist), len > 0) {
+/* 	  printf("cmp ('%s','%s')\n", ext,extlist);  */
 	  if (!stricmp(ext,extlist)) {
 		return 1;
 	  }
@@ -99,24 +110,33 @@ int filetype_regular(const char * fname)
 	  { ".gz",  FILETYPE_UNKNOWN | FILETYPE_GZ },
       {      0, FILETYPE_UNKNOWN }
     };
-  const char * e;
+  const char * e, * e2;
+
+/*   printf("find-type [%s] : ",fname); */
 
   e = fn_ext(fname);
   if (e && e[0]) {
+/* 	printf("ext:[%s] ", e); */
+
     type = find_ext(e, ext);
 	if (FILETYPE(type) == FILETYPE_UNKNOWN) {
-	  int playtype;
-	  playtype = find_playable(e);
-	  if (playtype) {
-		type = (type & FILETYPE_GZ) | playtype;
+	  e2 = e;
+	  if (type & FILETYPE_GZ) {
+		e2 = fn_secondary_ext(fname,0);
+/* 		printf("ext2:[%s] ", e2); */
+	  }
+	  if (e2 && e2[0]) {
+		int playtype = find_playable(e2);
+		if (playtype) {
+		  type = (type & FILETYPE_GZ) | playtype;
+		}
 	  }
 	}
 
 	if (type == (FILETYPE_GZ | FILETYPE_UNKNOWN)) {
-	  const char * e2;
 	  unsigned int len;
 	  e2 = fn_secondary_ext(fname,0);
-	  if (e[0] && (len = e-e2, len < 7u)) {
+	  if (len = e-e2, (len > 0 && len < 7u)) {
 		char tmp[8];
 		memcpy(tmp,e2,len);
 		tmp[len] = 0;
@@ -124,6 +144,7 @@ int filetype_regular(const char * fname)
 	  }
 	}
   }
+/*   printf(" -> %04X\n", type); */
   return type;
 }
 

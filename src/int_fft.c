@@ -74,6 +74,10 @@ extern fixed Sinewave[N_WAVE];	/* placed at end of this file for clarity */
 int db_from_ampl(fixed re, fixed im);
 fixed fix_mpy(fixed a, fixed b);
 
+
+static int fft(fixed fr[], fixed fi[], int m);
+static int ifft(fixed fr[], fixed fi[], int m);
+
 /*
         fix_fft() - perform fast Fourier transform.
 
@@ -84,8 +88,13 @@ fixed fix_mpy(fixed a, fixed b);
 */
 int fix_fft(fixed fr[], fixed fi[], int m, int inverse)
 {
+  return inverse ? ifft(fr,fi,m) : fft(fr,fi,m);
+}
+
+static int fft(fixed fr[], fixed fi[], int m)
+{
 	int mr, nn, i, j, l, k, istep, n, scale, shift;
-	fixed qr, qi, tr, ti, wr, wi, t;
+	fixed qr, qi, tr, ti, wr, wi;
 
 	n = 1 << m;
 
@@ -117,30 +126,11 @@ int fix_fft(fixed fr[], fixed fi[], int m, int inverse)
 	l = 1;
 	k = LOG2_N_WAVE - 1;
 	while (l < n) {
-		if (inverse) {
-			/* variable scaling, depending upon data */
-			shift = 0;
-			for (i = 0; i < n; ++i) {
-				j = fr[i];
-				if (j < 0)
-					j = -j;
-				m = fi[i];
-				if (m < 0)
-					m = -m;
-				if (j > 16383 || m > 16383) {
-					shift = 1;
-					break;
-				}
-			}
-			if (shift)
-				++scale;
-		} else {
-			/* fixed scaling, for proper normalization -
-			   there will be log2(n) passes, so this
-			   results in an overall factor of 1/n,
-			   distributed to maximize arithmetic accuracy. */
-			shift = 1;
-		}
+	  /* fixed scaling, for proper normalization -
+		 there will be log2(n) passes, so this
+		 results in an overall factor of 1/n,
+		 distributed to maximize arithmetic accuracy. */
+	  shift = 1;
 		/* it may not be obvious, but the shift will be performed
 		   on each data point exactly once, during this pass. */
 		istep = l << 1;
@@ -149,33 +139,113 @@ int fix_fft(fixed fr[], fixed fi[], int m, int inverse)
 			/* 0 <= j < N_WAVE/2 */
 			wr = Sinewave[j + N_WAVE / 4];
 			wi = -Sinewave[j];
-			if (inverse)
-				wi = -wi;
-			if (shift) {
-				wr >>= 1;
-				wi >>= 1;
-			}
+			wr >>= 1;
+			wi >>= 1;
 			for (i = m; i < n; i += istep) {
-				j = i + l;
-				tr = fix_mpy(wr, fr[j]) - fix_mpy(wi, fi[j]);
-				ti = fix_mpy(wr, fi[j]) + fix_mpy(wi, fr[j]);
-				qr = fr[i];
-				qi = fi[i];
-				if (shift) {
-					qr >>= 1;
-					qi >>= 1;
-				}
-				fr[j] = qr - tr;
-				fi[j] = qi - ti;
-				fr[i] = qr + tr;
-				fi[i] = qi + ti;
+			  j = i + l;
+			  tr = fix_mpy(wr, fr[j]) - fix_mpy(wi, fi[j]);
+			  ti = fix_mpy(wr, fi[j]) + fix_mpy(wi, fr[j]);
+			  qr = fr[i];
+			  qi = fi[i];
+			  qr >>= 1;
+			  qi >>= 1;
+			  fr[j] = qr - tr;
+			  fi[j] = qi - ti;
+			  fr[i] = qr + tr;
+			  fi[i] = qi + ti;
 			}
 		}
 		--k;
 		l = istep;
 	}
-
 	return scale;
+}
+
+static int ifft(fixed fr[], fixed fi[], int m)
+{
+  int mr, nn, i, j, l, k, istep, n, scale, shift;
+  fixed qr, qi, tr, ti, wr, wi;
+
+  n = 1 << m;
+
+  if (n > N_WAVE)
+	return -1;
+
+  mr = 0;
+  nn = n - 1;
+  scale = 0;
+
+  /* decimation in time - re-order data */
+  for (m = 1; m <= nn; ++m) {
+	l = n;
+	do {
+	  l >>= 1;
+	} while (mr + l > nn);
+	mr = (mr & (l - 1)) + l;
+
+	if (mr <= m)
+	  continue;
+	tr = fr[m];
+	fr[m] = fr[mr];
+	fr[mr] = tr;
+	ti = fi[m];
+	fi[m] = fi[mr];
+	fi[mr] = ti;
+  }
+
+  l = 1;
+  k = LOG2_N_WAVE - 1;
+  while (l < n) {
+	/* variable scaling, depending upon data */
+	shift = 0;
+	for (i = 0; i < n; ++i) {
+	  j = fr[i];
+	  if (j < 0)
+		j = -j;
+	  m = fi[i];
+	  if (m < 0)
+		m = -m;
+	  if (j > 16383 || m > 16383) {
+		shift = 1;
+		break;
+	  }
+	}
+	if (shift)
+	  ++scale;
+	/* it may not be obvious, but the shift will be performed
+	   on each data point exactly once, during this pass. */
+	istep = l << 1;
+	for (m = 0; m < l; ++m) {
+	  j = m << k;
+	  /* 0 <= j < N_WAVE/2 */
+	  wr = Sinewave[j + N_WAVE / 4];
+	  wi = -Sinewave[j];
+	  wi = -wi;
+	  if (shift) {
+		wr >>= 1;
+		wi >>= 1;
+	  }
+	  for (i = m; i < n; i += istep) {
+		j = i + l;
+		tr = fix_mpy(wr, fr[j]) - fix_mpy(wi, fi[j]);
+		ti = fix_mpy(wr, fi[j]) + fix_mpy(wi, fr[j]);
+		qr = fr[i];
+		qi = fi[i];
+		if (shift) {
+		  qr >>= 1;
+		  qi >>= 1;
+		}
+		fr[j] = qr - tr;
+		fi[j] = qi - ti;
+		fr[i] = qr + tr;
+		fi[i] = qi + ti;
+	  }
+	}
+	--k;
+	l = istep;
+  }
+
+  return scale;
 }
 
 

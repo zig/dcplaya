@@ -4,7 +4,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.3 2002-10-23 02:09:05 benjihan Exp $
+ * $Id: texture.c,v 1.4 2002-11-14 23:40:29 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -118,6 +118,61 @@ texid_t texture_get(const char * texture_name)
   return allocator_index(texture, find_name(texture_name));
 }
 
+texid_t texture_dup(texid_t texid, const char * name)
+{
+  texture_t * ts, * t = 0;
+  int size;
+
+  SDDEBUG("[%s] : %d [%s]\n",
+		  __FUNCTION__, texid, name);
+
+  /* Look for an existing texture */
+  ts = find_name(name);
+  if (ts) {
+	SDERROR("Texture [%s] already exist.\n", name);
+	ts = 0;
+	goto error;
+  }
+
+  ts = texture_lock(texid);
+  if (!ts) {
+	SDERROR("Texture [#%d] not found.\n", texid);
+	goto error;
+  }
+
+  /* Alloc a texture. */ 
+  t = allocator_alloc_inside(texture);
+  if (!t) {
+	goto error;
+  }
+  texture_clean(t);
+  strncpy(t->name, name, sizeof(t->name)-1);
+  t->width  = ts->width;
+  t->height = ts->height;
+  t->wlog2  = ts->wlog2;
+  t->hlog2  = ts->hlog2;
+  t->format = ts->format;
+  size = t->height << t->wlog2;
+  t->ta_tex = ta_txr_allocate(size<<1);
+  /* $$$ TODO check alloc error */ 
+  t->addr = ta_txr_map(t->ta_tex);
+  /** $$$ Don't know if it is a good things to do ... */
+  t->ta_tex += ta_state.texture_base;
+  memcpy(t->addr, ts->addr, size<<1);
+  texture_release(ts);
+  return allocator_index(texture, t);
+
+ error:
+  if (ts) {
+	texture_release(ts);
+  }
+  if (t) {
+	texture_clean(t);
+	allocator_free(texture, t);
+  }
+  return -1;
+}
+
 texid_t texture_create(texture_create_t * creator)
 {
   texture_t * t = 0;
@@ -194,7 +249,6 @@ texid_t texture_create(texture_create_t * creator)
 		 y<h && n==pixelperline;
 		 ++y, dest+=bytesperline) {
 	  n = creator->reader(dest, pixelperline, creator);
-	  SDDEBUG("copied line %d %p -> %d\n",y,dest,n);  
 	}
 	if (n != pixelperline) {
 	  size = -1;
@@ -467,6 +521,8 @@ texture_t * texture_lock(texid_t texid)
   allocator_lock(texture);
   if (t=get_texture(texid), t) {
 	if (t->lock) {
+	  SDERROR("[%s] : #%d [%s] already locked\n",
+			  __FUNCTION__, texid, t->name);
 	  t = 0;
 	} else {
 	  t->lock = 1;

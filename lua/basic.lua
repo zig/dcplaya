@@ -4,7 +4,7 @@
 --- @author  benjamin gerard <ben@sashipa.com>
 --- @brief   basic things used into other library (evt, keyboard_emu, gui)
 ---
---- $Id: basic.lua,v 1.10 2002-10-30 19:59:30 benjihan Exp $
+--- $Id: basic.lua,v 1.11 2002-11-14 23:40:27 benjihan Exp $
 ---
 
 -- Unload library
@@ -354,6 +354,18 @@ function clip_value(v,min,max)
 	if min and v < min then v = min end
 	if max and v > max then v = max end
 	return v
+end
+
+--- Set a vextex.
+--- @ingroup dcplaya_lua_basics
+--- @param  vect  Vector (matrix line)
+--- @param  from  Table containing vector components
+---
+function set_vertex(vect, from)
+	local i,v
+	for i,v in from do
+		vect[i]=v
+	end
 end
 
 settagmethod(tag( {} ), "add", table_add)

@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.12 2002-10-25 01:03:54 benjihan Exp $
+ * $Id: playa.c,v 1.13 2002-11-14 23:40:29 benjihan Exp $
  */
 
 #include <kos.h>
@@ -17,9 +17,9 @@
 #include "driver_list.h"
 #include "file_wrapper.h"
 #include "fifo.h"
+#include "fft.h"
 
 #define PLAYA_THREAD
-
 
 #define VCOLOR(R,G,B) vid_border_color(R,G,B)
 
@@ -184,6 +184,7 @@ static void * sndstream_callback(int size)
   }
   out_samples = size;
   out_count++;
+  fft_queue(out_buffer, size, current_frq);
   return out_buffer;
 }
 
@@ -193,6 +194,7 @@ void sndstream_thread(void *cookie)
 
   stream_init(sndstream_callback, 1<<14);
   stream_start(1200, current_frq=44100, playavolume, current_stereo=1);
+
   // $$$ Aprox sync VBL
   //stream_start(736, current_frq=44100, playavolume, current_stereo=1);
   //  stream_start(256, 44100, playavolume, 1);
@@ -369,6 +371,8 @@ int playa_init()
 
   playa_info_init();
   fifo_init(1024 * 256);
+  fft_init(4);
+
   playa_haltsem = sem_create(0);
 
   SDDEBUG("Create soundstream thread\n");

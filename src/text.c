@@ -4,52 +4,16 @@
  * @date   2002/02/11
  * @brief  drawing and formating text primitives
  *
- * $Id: text.c,v 1.7 2002-10-28 18:53:42 benjihan Exp $
+ * $Id: text.c,v 1.8 2002-11-14 23:40:29 benjihan Exp $
  */
 
 #include <stdarg.h>
 #include "sysdebug.h"
+#include "texture.h"
 #include "gp.h"
+#include "draw_clipping.h"
 
 #define CLIP(a, min, max) ((a)<(min)? (min) : ((a)>(max)? (max) : (a)))
-
-static uint32 fnttexture = 0;
-static float xscale;
-static float yscale;
-
-static float text_xscale;
-static float text_yscale;
-static unsigned int text_argb;
-
-static float text_xscale_save;
-static float text_yscale_save;
-static unsigned int text_argb_save;
-
-//static float text_color_a, text_color_r, text_color_g, text_color_b;
-
-/* define me to use 16x16 instead of 8x12 font */
-//#undef USE_FONT_16x16
-#define USE_FONT_16x16 1
-#undef USE_FONT_8x14
-//#define USE_FONT_8x14
-
-#ifdef USE_FONT_16x16
-# define FONT_TEXTURE_W 256
-# define FONT_TEXTURE_H 128
-# define FONT_CHAR_W 16
-# define FONT_CHAR_H 16
-# define FONT_FIRST_CHAR 0
-# define FONT_LAST_CHAR 128u
-#elif defined USE_FONT_8x14
-# define FONT_TEXTURE_W 128
-# define FONT_TEXTURE_H 256
-# define FONT_CHAR_W 8
-# define FONT_CHAR_H 14
-# define FONT_FIRST_CHAR 0
-# define FONT_LAST_CHAR 256u
-#else
-# error "NO FONT DEFINED"
-#endif
 
 typedef struct {
   float w;
@@ -57,20 +21,43 @@ typedef struct {
   float u1, u2, v1, v2;
 } myglyph_t;
 
-static myglyph_t myglyph_p[FONT_LAST_CHAR]; // proportional spacing
-static myglyph_t myglyph_f[FONT_LAST_CHAR]; // fixed spacing
-static myglyph_t * myglyph = myglyph_p;
+typedef struct {
+  texid_t texid;
+  float wc;
+  float hc;
+  float xs;
+  float ys;
+  unsigned int n;
+  myglyph_t glyph[1];
+} font_t;
 
+static font_t dummyfont = {
+  0, 16, 16, 1, 1, 1, { { 16, 16, 0, 1, 0, 1 } }
+};
+
+static int nfont;
+static font_t * fonts[8];
+static font_t * curfont;
+
+static fontid_t fontid;
+static float text_size;
+static float text_xscale;
+static float text_yscale;
+static unsigned int text_argb;
+
+static fontid_t fontid_save;
+static float text_size_save;
+static float text_xscale_save;
+static float text_yscale_save;
+static unsigned int text_argb_save;
 static int escape_char = '%';
-
-extern float clipbox[];
 
 static int do_escape(int c, va_list * list);
 
-static void bounding(uint8 *img, int w, int h, int bpl, int *box)
+static void bounding(uint16 * img, int w, int h, int bpl, int *box)
 {
-  int x,y;
-  uint8 *b;
+  int x , y;
+  uint16 * b;
 
   box[0] = w;
   box[1] = h;
@@ -102,122 +89,124 @@ static void bounding(uint8 *img, int w, int h, int bpl, int *box)
     box[2] = 2;
     box[3] = h-1;
   }
-  
-  return;
 }
 
-static void make_blk(uint16 *texture, int w, int h, uint8 *g, int ws)
+fontid_t text_new_font(texid_t texid, int wc, int hc, int fixed)
 {
-  while (h--) {
-    int x;
-    
-    for (x=0; x<w; ++x) {
-      int v = *g++;
-      v = (v>>4)&15;
-      v = v | (v<<4);
-      v = v | (v<<8);
-      *texture++ = v;
-    }
-    g += ws-w;
-  }
-} 
+  font_t * fnt = 0;
+  texture_t * t = 0;
+  int x,y,c;
+  int b[4];
+  float xs, ys;
+  int lines, cpl, chars;
+  uint16 * base;
 
-int text_setup()
+  if (nfont >= sizeof(fonts)/sizeof(*fonts)) {
+	goto error;
+  }
+
+  t = texture_lock(texid);
+  if (!t) {
+	goto error;
+  }
+
+  lines = t->height / (int) hc;
+  cpl   = t->width / (int) wc;
+  chars = lines * cpl;
+
+  fnt = malloc(sizeof(*fnt) - sizeof(fnt->glyph) + chars*sizeof(*fnt->glyph));
+  if (!fnt) {
+	goto error;
+  }
+
+  fnt->texid = texid;
+  fnt->n  = chars;
+  fnt->wc = wc;
+  fnt->hc = hc;
+  fnt->xs = (float)wc / (float)t->width;
+  fnt->ys = (float)hc / (float)t->height;
+
+  xs = 1.0f / (float)t->width;
+  ys = fnt->ys;
+
+  base = t->addr;
+
+  for (c = y = 0; y < lines; ++y, base += hc << t->wlog2) {
+	uint16 * ba;
+	for (x = 0, ba = base; x < cpl; ++x, ++c, ba += wc) {
+	  myglyph_t *m = fnt->glyph + c;
+
+	  if (!fixed) {
+		bounding(ba, wc, hc, 1<<t->wlog2, b);
+		m->w = (float)(b[2] - b[0] + 2);
+		m->h = hc;
+		m->u1 = (float) (x * wc + b[0]) * xs;
+		m->u2 = (float) (x * wc + b[2]+1) * xs;
+	  } else {
+		m->w = wc;
+		m->h = hc;
+		m->u1 = (float)x * fnt->xs;
+		m->u2 = m->u1 + fnt->xs;
+	  }
+	  m->v1 = (float)y * ys;
+	  m->v2 = m->v1 + ys;
+	}
+  }
+  texture_release(t);
+    
+  /* Special case for char 4[pad] & 6[joy] */
+  for (c=4; c<8; c+=2) {
+	fnt->glyph[c].u1 = (fnt->glyph[c+cpl  ].u1 < fnt->glyph[c     ].u1)  ? 
+	  fnt->glyph[c+cpl  ].u1 : fnt->glyph[c     ].u1;
+	fnt->glyph[c].v1 = (fnt->glyph[c+ 1  ].v1 < fnt->glyph[c     ].v1)  ? 
+	  fnt->glyph[c+ 1  ].v1 : fnt->glyph[c     ].v1;
+	fnt->glyph[c].u2 = (fnt->glyph[c+1+cpl].u2 > fnt->glyph[c+1   ].u2)  ? 
+	  fnt->glyph[c+1+cpl].u2 : fnt->glyph[c+1   ].u2;
+	fnt->glyph[c].v2 = (fnt->glyph[c+cpl  ].v2 > fnt->glyph[c+1+cpl].v2)  ? 
+	  fnt->glyph[c+cpl  ].v2 : fnt->glyph[c+1+cpl].v2;
+	fnt->glyph[c].w  = wc * 2;
+	fnt->glyph[c].h  = hc * 2;
+  }
+
+  SDDEBUG("New font : id:%d %dx%d [%s]\n", nfont, (int)wc, (int)hc,
+		  fixed ? "fixed" : "proportionnel");
+
+  fonts[nfont] = fnt;
+  return nfont++;
+
+ error:
+  if (t) {
+	texture_release(t);
+  }
+  return -1;
+}
+
+int text_setup(void)
 {
-  uint16 *texture;
-  uint32 h;
-  uint8  *g;
-  const char *fontname = 
-#ifdef USE_FONT_16x16
-    "/rd/font16x16.ppm";
-#elif defined USE_FONT_8x14
-  "/rd/font8x14.ppm";
-#endif
-	
-  /* set clip box */
-  clipbox[0]=0;
-  clipbox[1]=0;
-  clipbox[2]=640;
-  clipbox[3]=480;
+  texid_t texid;
+
+  nfont = 0;
+  fontid = 0;
+  memset(fonts,0, sizeof(fonts));
   text_argb = 0xFFFFFFFF;
+  text_size = 16;
+  text_xscale = 1.0f;
+  text_yscale = 1.0f;
+  curfont = &dummyfont;
 
-  h = fs_open(fontname, O_RDONLY);
-  g = fs_mmap(h) + fs_total(h) - FONT_TEXTURE_W*FONT_TEXTURE_H;
-  fnttexture = ta_txr_allocate(FONT_TEXTURE_W*FONT_TEXTURE_H*2);
-  texture = (uint16*)ta_txr_map(fnttexture);
-  make_blk(texture, FONT_TEXTURE_W, FONT_TEXTURE_H, g, FONT_TEXTURE_W);
-  if (h) fs_close(h);
-	
-  xscale = (float)FONT_CHAR_W / (float)FONT_TEXTURE_W;
-  yscale = (float)FONT_CHAR_H / (float)FONT_TEXTURE_H;
-  text_xscale = text_yscale = 1.0f;
-  
-  {
-    int x,y,c;
-    int b[4];
-    
-    float xs = 1.0f / (float)FONT_TEXTURE_W;
-    
-    for (c=y=0; y<FONT_TEXTURE_H/FONT_CHAR_H; ++y) {
-      for (x=0; x<FONT_TEXTURE_W/FONT_CHAR_W; ++x,++c) {
-        bounding(g + x*FONT_CHAR_W + y*FONT_TEXTURE_W*FONT_CHAR_H,
-				 FONT_CHAR_W, FONT_CHAR_H, FONT_TEXTURE_W, b);
-        
-        if (c>=FONT_FIRST_CHAR && c<FONT_LAST_CHAR) {
-          myglyph_t *m = myglyph_p+c;
-          
-          m->w = (float)(b[2] - b[0] + 2);
-		  m->h = FONT_CHAR_H;
-          m->u1 = (float)(x*FONT_CHAR_W+b[0]) * xs;
-          m->u2 = (float)(x*FONT_CHAR_W+b[2]+1) * xs;
-          m->v1 = (float)y * yscale;
-          m->v2 = m->v1 + yscale;
-          /*
-			dbglog(DBG_DEBUG, "%02x '%c' w:%.2f [%.2f %.2f %.2f %.2f]\n", c, c, 
-            m->w, m->u1, m->v1, m->u2, m->v2);
-          */
+  texid = texture_create_file("/rd/font16x16", "4444");
+  text_new_font(texid,16,16,0);
+  texid = texture_create_file("/rd/font8x14", "4444");
+  text_new_font(texid,8,14,1);
+  text_set_font(0);
 
-          m = myglyph_f+c;
-#ifdef USE_FONT_16x16
-          m->w = (float)(11);
-          m->u1 = (float)(x*FONT_CHAR_W+(b[0]+b[2])/2 - 5) * xs;
-          m->u2 = (float)(x*FONT_CHAR_W+(b[0]+b[2])/2 + 6-1) * xs;
-#else
-          m->w = (float)(7+2);
-          m->u1 = (float)(x*FONT_CHAR_W) * xs;
-          m->u2 = (float)((x+1)*FONT_CHAR_W) * xs;
-#endif
-          m->v1 = (float)y * yscale;
-          m->v2 = m->v1 + yscale;
-
-        }
-      }
-    }
-    
-    /* Special case for char 4[pad] & 6[joy] */
-    for (c=4; c<8; c+=2) {
-      for (myglyph = myglyph_p ; 
-		   myglyph; 
-		   myglyph = (myglyph==myglyph_p? myglyph_f : 0) ) {
-		myglyph[c].u1 = (myglyph[c+16  ].u1 < myglyph[c     ].u1)  ? 
-		  myglyph[c+16  ].u1 : myglyph[c     ].u1;
-		myglyph[c].v1 = (myglyph[c+ 1  ].v1 < myglyph[c     ].v1)  ? 
-		  myglyph[c+ 1  ].v1 : myglyph[c     ].v1;
-		myglyph[c].u2 = (myglyph[c+1+16].u2 > myglyph[c+1   ].u2)  ? 
-		  myglyph[c+1+16].u2 : myglyph[c+1   ].u2;
-		myglyph[c].v2 = (myglyph[c+16  ].v2 > myglyph[c+1+16].v2)  ? 
-		  myglyph[c+16  ].v2 : myglyph[c+1+16].v2;
-		myglyph[c].w  = FONT_CHAR_W*2;
-		myglyph[c].h  = FONT_CHAR_H*2;
-      }
-    }
-  }
-	
   return 0;
 }
 
 static void save_state(void)
 {
+  fontid_save      = fontid;
+  text_size_save   = text_size; 
   text_xscale_save = text_xscale;
   text_yscale_save = text_yscale;
   text_argb_save   = text_argb;
@@ -225,19 +214,33 @@ static void save_state(void)
 
 static void restore_state(void)
 {
+  fontid      = fontid_save;
+  curfont     = fonts[fontid];
+  text_size   = text_size_save; 
   text_xscale = text_xscale_save;
   text_yscale = text_yscale_save;
-  text_argb   =  text_argb_save;
+  text_argb   = text_argb_save;
+
 }
 
+static myglyph_t * curglyph(unsigned int c)
+{
+  if (c >= curfont->n) {
+	  c = 0;
+  }
+  return curfont->glyph + c;
+}
 
 static float size_of_char(float * h, int c)
 {
-  if ((unsigned int)c >= FONT_LAST_CHAR) {
-    c = 0;
-  }
-  if (h) *h = myglyph[c].h * text_yscale;
-  return myglyph[c].w * text_xscale;
+  myglyph_t * g;
+  float wc, hc;
+
+  g = curglyph(c);
+  hc = g->h * text_yscale;
+  wc = g->w * text_xscale;
+  if (h) *h = hc;
+  return wc;
 }
 
 float text_measure_char(int c)
@@ -247,16 +250,21 @@ float text_measure_char(int c)
 
 static float size_of_str(float * h, const char *s)
 {
-  int c;
+  unsigned int c;
   float sum = 0, max_h = 0;
+
   while ((c=(*s++)&255), c) {
-    if ((unsigned int)c >= FONT_LAST_CHAR) {
-      c = 0;
-    }
-	if (myglyph[c].h > max_h) max_h = myglyph[c].h;
-    sum += myglyph[c].w;
+	myglyph_t * g;
+	  
+	if (c >= curfont->n) {
+	  c = 0;
+	}
+	g = curfont->glyph + c;
+	if (g->h > max_h) max_h = g->h;
+	sum += g->w;
   }
   if (h) *h = max_h * text_yscale;
+
   return sum * text_xscale;
 }
 
@@ -267,25 +275,24 @@ static float size_of_strf(float *h, const char *s, va_list list)
 
   save_state();
   while ((c=(*s++)&255), c) {
+	myglyph_t * g;
+	float ch;
 	if (esc) {
 	  c = do_escape(c, &list);
 	  esc = 0;
 	} else if (c==escape_char) {
       esc = 1;
 	  c = -1;
-    } else if ((unsigned int)c >= FONT_LAST_CHAR) {
-		c = 0;
-	}
+    }
 	if (c == -1) continue;
-	if ((unsigned int)c >= FONT_LAST_CHAR) c = 0;
-	{
-	  float ch = myglyph[c].h * text_yscale;
-	  if (ch > maxh) maxh = ch;
-	  sum += myglyph[c].w * text_xscale;
-	}
+	g = curglyph(c);
+	ch = g->h * text_yscale;
+	if (ch > maxh) maxh = ch;
+	sum += g->w * text_xscale;
   }
   restore_state();
   if (h) *h = maxh;
+
   return sum;
 }
 
@@ -320,25 +327,24 @@ void text_size_str(const char * s, float * w, float * h)
 /* Draw one font character (16x16); assumes polygon header already sent */
 static float draw_text_char(float x1, float y1, float z1,
                             float scalex, float scaley,
-/*                             float a, float r, float g, float b, */
                             int c)
 {
-  float wc, hc = (float)FONT_CHAR_H * scaley;
-/*   int ix,iy; */
+  float wc, hc;
   float u1,u2,v1,v2;
   float x2,y2;
+  myglyph_t * g;
 	
-  typedef struct s_v_t {
-    int flags;
-    float x,y,z,u,v;
-    unsigned int col;
-    unsigned int addcol;
-  } v_t;
+  ta_hw_tex_vtx_t * hw = HW_TEX_VTX;
 
-  volatile v_t * const hw = (v_t *)(0xe0<<24);
+  g = curglyph(c);
+  if (!g) {
+	return x1;
+  }
 
   /* Compute width and height */
-  wc = myglyph[c].w * scalex;
+  wc = g->w * scalex;
+  hc = g->h * scaley;
+
   if (c==4 || c==6) {
     y1 -= hc * 0.5f;
     hc *= 2.0f;
@@ -360,10 +366,10 @@ static float draw_text_char(float x1, float y1, float z1,
   }
 
   /* Compute UV */
-  u1 = myglyph[c].u1;
-  u2 = myglyph[c].u2;
-  v1 = myglyph[c].v1;
-  v2 = myglyph[c].v2;
+  u1 = g->u1;
+  u2 = g->u2;
+  v1 = g->v1;
+  v2 = g->v2;
   
   /* Left clip */
   if (x1 < clipbox[0]) {
@@ -458,11 +464,8 @@ static int do_escape(int c, va_list *list)
 	text_argb = va_arg(*list, unsigned int);
 	break;
   case 's':
-	{
-	  c = -1;
-	  text_xscale = text_yscale =
-		(float)va_arg(*list, int) * (1.0f/(float)FONT_CHAR_W);
-	} break;
+	text_set_font_size((float)va_arg(*list, int));
+	break;
   default:
 	SDWARNING("[%s] : weird escape char : 0x%02X\n",__FUNCTION__, c);
   }
@@ -475,21 +478,22 @@ static int do_escape(int c, va_list *list)
 float text_draw_vstrf(float x1, float y1, float z1,
 							 const char *s, va_list list)
 {
-  poly_hdr_t poly;
   int esc = 0, c;
   float maxh = 0;
-  int filter = (text_yscale == 1.0f && text_xscale == 1.0f)
-	? TA_NO_FILTER
-	: TA_BILINEAR_FILTER;
+  int flags;
 
   if (x1>=clipbox[2] || y1>=clipbox[3]) {
 	return 0;
   }
 
-  ta_poly_hdr_txr(&poly, TA_TRANSLUCENT, TA_ARGB4444, FONT_TEXTURE_W,
-				  FONT_TEXTURE_H, fnttexture, filter);
-  poly.flags1 &= ~(3<<4);
-  ta_commit_poly_hdr(&poly);
+  flags = 0
+	| DRAW_TRANSLUCENT
+	| ((text_yscale == 1.0f && text_xscale == 1.0f)
+	   ? DRAW_NO_FILTER : DRAW_BILINEAR)
+	| (curfont->texid << DRAW_TEXTURE_BIT);
+
+  draw_poly_hdr(HW_POLY, flags);
+  ta_commit32_nocopy();
 
   while (c=(*s++)&255, c) {
 	float curh;
@@ -504,12 +508,12 @@ float text_draw_vstrf(float x1, float y1, float z1,
 	if (c == -1) continue;
 
     if (c == ' ') {
-      x1 += myglyph[32].w * text_xscale;
-	  curh = myglyph[32].h * text_yscale;
+      x1 += curfont->glyph[32].w * text_xscale;
+	  curh = curfont->glyph[32].h * text_yscale;
     } else {
-	  if ((unsigned int)c >= FONT_LAST_CHAR) c = 0;
+	  myglyph_t * g = curglyph(c);
       x1 = draw_text_char(x1, y1, z1, text_xscale, text_yscale, c);
-	  curh = myglyph[c].h * text_yscale;
+	  curh = g->h * text_yscale;
     }
 	if (curh > maxh) maxh = curh;
 
@@ -578,8 +582,7 @@ float text_draw_str_inside(float x1, float y1, float x2, float y2, float z1,
   const float boxw = x2 - x1;
   const float boxh = y2 - y1;
   float scale = 2.0f, strw, strh;
-  poly_hdr_t poly;
-  int c;
+  int c, flags;
 	
   if (!s) {
     return 0.0f;
@@ -598,15 +601,18 @@ float text_draw_str_inside(float x1, float y1, float x2, float y2, float z1,
   x1 += (boxw - strw) * 0.5f;
   y1 += (boxh - strh) * 0.5f;
 
-  ta_poly_hdr_txr(&poly, TA_TRANSLUCENT, TA_ARGB4444, 
-				  FONT_TEXTURE_W, FONT_TEXTURE_H, fnttexture, TA_NO_FILTER);
-  poly.flags1 &= ~(3<<4);
-  ta_commit_poly_hdr(&poly);
+  flags = 0
+	| DRAW_TRANSLUCENT
+	| DRAW_BILINEAR
+	| (curfont->texid << DRAW_TEXTURE_BIT);
+
+  draw_poly_hdr(HW_POLY, flags);
+  ta_commit32_nocopy();
+
   while (c=(*s++)&255, c) {
     if (c == ' ') {
-      x1 += myglyph[32].w * scale;
+      x1 += curfont->glyph[32].w * scale;
     } else {
-	  if ((unsigned int)c >= FONT_LAST_CHAR) c = 0;
       x1 = draw_text_char(x1, y1, z1, scale, scale, c);
     }
   }
@@ -616,27 +622,29 @@ float text_draw_str_inside(float x1, float y1, float x2, float y2, float z1,
 
 float text_set_font_size(float size)
 {
-  float save = text_xscale * (float)FONT_CHAR_W;
-  text_xscale = text_yscale = size / (float)FONT_CHAR_H;
-  return save;
+  float old = text_size;
+
+  text_size   = size;
+  text_xscale = text_size / curfont->wc;
+  text_yscale = text_xscale; //text_size / curfont->hc;
+  return old;
 }
 
-
-int text_set_font(int n)
+fontid_t text_set_font(fontid_t n)
 {
-  int old = (myglyph == myglyph_f);
+  int old = fontid;
 
-  myglyph = n? myglyph_f : myglyph_p;
-
+  if ((unsigned int)n < nfont) {
+	curfont = fonts[fontid = n];
+	text_set_font_size(text_size);
+  }
   return old;
 }
 
 int text_set_escape(int n)
 {
   int old = escape_char;
-
   escape_char = n;
-
   return old;
 }
 

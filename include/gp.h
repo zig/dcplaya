@@ -1,4 +1,4 @@
-/* $Id */
+/* $Id: gp.h,v 1.11 2002-11-14 23:40:27 benjihan Exp $ */
 
 #ifndef _GP_H_
 #define _GP_H_
@@ -6,19 +6,53 @@
 #include <kos.h>
 #include "extern_def.h"
 #include "draw_vertex.h"
+#include "texture.h"
 
 DCPLAYA_EXTERN_C_START
 
-/** @name Background functions.
- *  @{
+/** @name  Tile accelerator interface.
  */
-/** Init background. */
-int bkg_init(void);
-/** Render background in opaque mode */
-void bkg_render(float fade, int info_flag);
+
+typedef struct {
+  volatile uint32 word1;
+  volatile uint32 word2;
+  volatile uint32 word3;
+  volatile uint32 word4;
+  volatile uint32 words[4];
+} ta_hw_poly_t;
+
+typedef struct {
+  volatile uint32 flags;
+  volatile float x;
+  volatile float y;
+  volatile float z;
+  volatile float a;
+  volatile float r;
+  volatile float g;
+  volatile float b;
+} ta_hw_col_vtx_t;
+
+typedef struct {
+  volatile uint32 flags;
+  volatile float x;
+  volatile float y;
+  volatile float z;
+  volatile float u;
+  volatile float v;
+  volatile uint32 col;
+  volatile uint32 addcol;
+} ta_hw_tex_vtx_t;
+
+#define HW_COL_VTX ((ta_hw_col_vtx_t *)(0xe0<<24))
+#define HW_TEX_VTX ((ta_hw_tex_vtx_t *)(0xe0<<24))
+#define HW_POLY    ((ta_hw_poly_t    *)(0xe0<<24))
+
 /**@}*/
 
-/** @name Draw primitives
+/** Build a TA poly header. */
+void draw_poly_hdr(ta_hw_poly_t * poly, int flags);
+
+/** @name Draw primitives.
  *  @{
  */
 
@@ -61,17 +95,31 @@ void draw_triangle(const draw_vertex_t *v1,
 				   const draw_vertex_t *v3,
 				   int flags);
 
+/** Draw strip. */
+void draw_strip(const draw_vertex_t *v, int n, int flags);
+
 /**@}*/
 
 /* songmenu.c */
 void song_menu_render();
 
 /* text.c */
+typedef unsigned int fontid_t;
+
+/** Init the text primitive. */
 int text_setup(void);
+
+/** Create a new font. */
+fontid_t text_new_font(texid_t texid, int wc, int hc, int fixed);
+
+/** Set text format strong escape char. */
 int text_set_escape(int n);
 
+/** Set current font size. */
 float text_set_font_size(float size);
-int text_set_font(int n);
+
+/** Set current font. */
+fontid_t text_set_font(fontid_t fontid);
 
 unsigned int text_get_argb(void);
 void text_get_color(float *a, float *r, float *g, float *b);
@@ -95,23 +143,20 @@ float text_measure_vstrf(const char * s, va_list list);
 float text_measure_strf(const char * s, ...);
 void text_size_str(const char * s, float * w, float * h);
 
-/* 3dutils.c */
-
-                     
-
 /* border.c */
 
 typedef struct {
-  uint32 texid;
+  texid_t texid;
   uint32 align;
   struct {
     float u,v;
   } uv[3];
 } borderuv_t;
 
-int border_setup();
+int border_setup(void);
+
 extern borderuv_t borderuv[];
-extern uint32 bordertex, bordertex2;
+extern texid_t bordertex[];
 
 DCPLAYA_EXTERN_C_END
 

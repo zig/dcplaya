@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist.c,v 1.6 2002-11-04 22:41:53 benjihan Exp $
+ * $Id: entrylist.c,v 1.7 2002-11-14 23:40:27 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -435,6 +435,8 @@ EL_FUNCTION_START(load)
 	  case 'P':
 		filter.playable  = 1;
 		break;
+	  case '*':
+		filter.all = -1;
 	  }
 	}
   }
