@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, texture interface
  * 
- * $Id: display_texture.c,v 1.8 2003-03-10 22:55:33 ben Exp $
+ * $Id: display_texture.c,v 1.9 2003-03-18 14:45:50 ben Exp $
  */
 
 #include <stdio.h>
@@ -153,7 +153,7 @@ DL_FUNCTION_DECLARE(tex_info)
 
   GET_TEXID(texid,1,1);
 
-  if (t = texture_lock(texid), !t) {
+  if (t = texture_fastlock(texid), !t) {
 	printf("%s : invalid texture\n", __FUNCTION__);
 	return 0;
   }
@@ -184,10 +184,25 @@ DL_FUNCTION_DECLARE(tex_info)
   lua_pushnumber(L,1<<t->hlog2);
   lua_settable(L,1);
 
-
   lua_pushstring(L,"format");
   lua_pushstring(L,texture_formatstr(t->format));
   lua_settable(L,1);
+
+  
+  lua_pushstring(L,texture_formatstr(t->format));
+  lua_settable(L,1);
+
+  if (t->twiddled) {
+    lua_pushstring(L,"twiddled");
+    lua_pushnumber(L,t->twiddled);
+    lua_settable(L,1);
+  }
+
+  if (t->twiddlable) {
+    lua_pushstring(L,"twiddlable");
+    lua_pushnumber(L,t->twiddlable);
+    lua_settable(L,1);
+  }
 
   lua_pushstring(L,"count");
   lua_pushnumber(L,t->ref);
