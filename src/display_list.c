@@ -5,7 +5,7 @@
  * @author    benjamin gerard <ben@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.c,v 1.13 2002-12-11 14:18:50 ben Exp $
+ * @version   $Id: display_list.c,v 1.14 2002-12-16 23:39:36 ben Exp $
  */
 
 #include <malloc.h>
@@ -574,7 +574,7 @@ dl_comid_t dl_sublist_command(dl_list_t * dl, dl_list_t * sublist,
   
  finish:
 
-  SDDEBUG("[%s] : [%p,%p] := [%d]\n", __FUNCTION__, dl, sublist, err);
+/*   SDDEBUG("[%s] : [%p,%p] := [%d]\n", __FUNCTION__, dl, sublist, err); */
 
   return err;
 }

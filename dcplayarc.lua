@@ -1,7 +1,7 @@
 --
 -- This is main DCplaya lua script
 --
--- $Id: dcplayarc.lua,v 1.20 2002-12-04 13:46:11 zigziggy Exp $
+-- $Id: dcplayarc.lua,v 1.21 2002-12-16 23:39:35 ben Exp $
 --
 
 showconsole()
@@ -41,7 +41,8 @@ plug_obj	= home.."plugins/obj/obj.lez"
 plug_lpo	= home.."plugins/vis/lpo/lpo.lef"
 plug_fftvlr	= home.."plugins/vis/fftvlr/fftvlr.lez"
 
-
+plug_el=home.."plugins/exe/entrylist/entrylist.lez"
+plug_jpeg  = home.."plugins/img/jpeg/jpeg.lez"
 
 
 -- reading user config

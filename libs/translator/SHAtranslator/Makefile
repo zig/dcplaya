@@ -1,2 +1,2 @@
-KOS_LOCAL_INCS = -I..
+KOS_LOCAL_INCS = -I..  -I../..
 include ../../../Makefile.inc

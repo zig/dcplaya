@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.49 2002-12-16 21:37:07 zigziggy Exp $
+ * @version    $Id: dynshell.c,v 1.50 2002-12-16 23:39:35 ben Exp $
  */
 
 #include <stdio.h>
@@ -30,6 +30,9 @@
 #include "dcar.h"
 #include "gzip.h"
 #include "playa.h"
+#include "draw/texture.h"
+#include "translator/translator.h"
+#include "translator/SHAtranslator/SHAtranslatorBlitter.h"
 
 #include "exceptions.h"
 
@@ -1643,6 +1646,187 @@ static int lua_filetype_add(lua_State * L)
   return 1;
 }
 
+static int greaterlog2(int v)
+{
+  int i;
+  for (i=0; i<(sizeof(int)<<3); ++i) {
+	if ((1<<i) >= v) {
+	  return i;
+	}
+  }
+  return -1;
+}
+
+static int lua_load_background(lua_State * L)
+{
+  texid_t texid;
+  texture_t tmp, * btexture, * stexture = 0;
+  SHAwrapperImage_t * img = 0;
+  int i;
+  int type;
+  const char * typestr;
+  float dw, dh, orgRatio, finalRatio, u1, v1, w, h;
+  int smodulo = 0;
+
+  struct {
+	float x,y,u,v;
+  } vdef[2];
+
+  texid = texture_get("background");
+  if (texid < 0) {
+	texid = texture_create_flat("background",1024,512,0xFFFFFFFF);
+  }
+  if (texid < 0) {
+	printf("load_background : no [background] texture.\n");
+	return 0;
+  }
+
+  btexture = texture_lock(texid);
+  if (!btexture) {
+	/* Safety net ... */
+	return 0;
+  }
+
+  /* Little dangerous things ... But avoid to lock rendering */
+  texture_release(btexture);
+
+  switch(lua_type(L,1)) {
+  case LUA_TNUMBER:
+	stexture = texture_lock(lua_tonumber(L,1));
+	if (stexture) {
+	  texture_release(stexture);
+	  smodulo = (1 << stexture->wlog2) - stexture->width;
+	}
+	break;
+  case LUA_TSTRING:
+	img = LoadImageFile(lua_tostring(L,1));
+	if (img) {
+	  tmp.width = img->width;
+	  tmp.height = img->height;
+	  tmp.wlog2 = greaterlog2(img->width);
+	  tmp.hlog2 = greaterlog2(img->height);
+	  tmp.addr = img->data;
+	  stexture = &tmp;
+	  ARGB32toRGB565(tmp.addr, tmp.addr, tmp.width * tmp.height);
+	}
+	break;
+  }
+
+  if (!stexture) {
+	if (img) free(img);
+	printf("load_background : invalid source image.\n");
+	return 0;
+  }
+
+  type = 0;
+  typestr = lua_tostring(L,2);
+  if (typestr) {
+	if (!stricmp(typestr,"center")) {
+	  type = 1;
+	} else if (!stricmp(typestr,"tile")) {
+	  type = 2;
+	}
+  }
+
+  /* Original aspect ratio */
+  w = dw = stexture->width;
+  h = dh = stexture->height;
+  orgRatio = dh / dw;
+
+  if (type == 2) {
+	/* Tile needs power of 2 dimension */
+	dw = (float)(1 << stexture->wlog2);
+	dh = (float)(1 << stexture->hlog2);
+  }
+
+  if (dw > 1024) dw = 1024;
+  if (dh > 512) dh = 512;
+  btexture->width  = dw;
+  btexture->height = dh;
+  btexture->wlog2  = greaterlog2(btexture->width);
+  btexture->hlog2  = greaterlog2(btexture->height);
+  finalRatio = dh / dw;
+
+  printf("type:[%s]\n", !type ? "scale" : (type==1?"center":"tile"));
+  printf("src : [%dx%d] [%dx%d] , modulo:%d, ratio:%0.2f\n",
+		 stexture->width,stexture->height,
+		 1<<stexture->wlog2, 1<<stexture->hlog2,
+		 smodulo, orgRatio);
+
+  printf("bkg : [%dx%d] [%dx%d], modulo:%d\n",
+		 btexture->width,btexture->height,
+		 1<<btexture->wlog2,  1<<btexture->hlog2,
+		 (1<<btexture->wlog2) - btexture->width);
+
+  /* $$$ Currently all texture are 16bit. Since blitz don't care about exact
+     pixel format blitz is done with ARGB565 format. */
+  Blitz(btexture->addr, btexture->width, btexture->height,
+		SHAPF_RGB565, ((1<<btexture->wlog2) - btexture->width) * 2,
+		stexture->addr, stexture->width, stexture->height,
+		SHAPF_RGB565, smodulo * 2);
+  if (img) {
+	free(img);
+  }
+
+  vdef[0].u = vdef[0].v = 0;
+
+  /* Number of pixel per U/V */
+  u1 = 1.0f / (float) (1<<btexture->wlog2);
+  v1 = 1.0f / (float) (1<<btexture->hlog2);
+  
+  if (type != 2) {
+	vdef[1].u = (float)btexture->width * u1;
+	vdef[1].v = (float)btexture->height * v1;
+
+	if (!type) {
+	  w = 1;
+	  h = (640.0f / 480.0f) * orgRatio;
+	  if (h > w) {
+		w /= h;
+		h = 1;
+	  }
+	} else {
+	  w = dw / 640.0f;
+	  h = dh / 480.0f;
+	}
+
+	vdef[0].x = (1 - w) * 0.5;
+	vdef[0].y = (1 - h) * 0.5;
+	vdef[1].x = 1 - vdef[0].x;
+	vdef[1].y = 1 - vdef[0].y;
+
+  } else {
+	u1 = 1.0f / w;
+	v1 = 1.0f / h;
+
+	vdef[1].u = 640.0f * u1;
+	vdef[1].v = 480.0f * v1;
+	vdef[0].x = vdef[0].y = 0;
+	vdef[1].x = vdef[1].y = 1;
+  }
+
+  lua_settop(L, 0);
+  lua_newtable(L);
+  for (i=0; i<4; ++i) {
+    lua_newtable(L);
+
+	lua_pushnumber(L, vdef[i&1].x);      /* X */
+	lua_rawseti(L, 2, 1);
+
+	lua_pushnumber(L, vdef[(i&2)>>1].y); /* Y */
+	lua_rawseti(L, 2, 2);
+
+	lua_pushnumber(L, vdef[i&1].u);      /* U */
+	lua_rawseti(L, 2, 3);
+
+	lua_pushnumber(L, vdef[(i&2)>>1].v); /* V */
+	lua_rawseti(L, 2, 4);
+
+	lua_rawseti(L, 1, i+1);
+  }
+  return 1;
+}
+
 #if 0
 static char shell_basic_lua_init[] = 
 "\n shell_help_array = {}"
@@ -2061,10 +2245,20 @@ static luashell_command_description_t commands[] = {
     SHELL_COMMAND_C, lua_filetype_add
   },
 
+  {
+	"load_background",
+	0,
+	"print([["
+    "load_background(filename | texure-id [ , type ]) :"
+	" load background image.\n"
+	" type := [\"scale\" \"center\" \"tile\", default:\"scale\"\n"
+	" Returns a table with 4 vertrices { {x,y,u,v} * 4 }.\n"
+    "]])",
+    SHELL_COMMAND_C, lua_load_background
+  },
+
   {0},
 };
-
-
 
 static void shell_register_lua_commands()
 {

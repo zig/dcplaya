@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.12 2002-12-15 23:24:19 zigziggy Exp $
+--- $Id: song_browser.lua,v 1.13 2002-12-16 23:39:36 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -493,7 +493,7 @@ function song_browser_create(owner, name)
 end
 
 if not entrylist_tag then
-	dl(plug_el)
+	driver_load(plug_el)
 end
 
 sb = song_browser_create()

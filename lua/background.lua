@@ -20,18 +20,27 @@ background_tag = background_tag or newtag()
 --- @param  type     One of [ "scale", "center", "tile" ] default : "scale"
 function background_set_texture(bkg, texture, type)
    if tag(bkg) ~= background_tag then return end
-   local vtx = load_background(texture, v_align, h_align)
-   if vtx then
-	  dump(vtx)
-	  local i,v
-	  for i,v in vtx do
-		 set_vertex(bkg.vtx[i],
-					{ v[1], v[2], 0, 1,
-					   nil,nil,nil,nil,
-					   v[3],v[4] } )
+   local i,v
+   if not texture then
+	  bkg.tex = nil
+	  set_vertex(bkg.vtx[1],{ 0, 0, 0, 1 })
+	  set_vertex(bkg.vtx[2],{ 1, 0, 0, 1 })
+	  set_vertex(bkg.vtx[3],{ 0, 1, 0, 1 })
+	  set_vertex(bkg.vtx[4],{ 1, 1, 0, 1 })
+   else
+	  local vtx = load_background(texture, type)
+	  if vtx then
+-- 		 dump(vtx)
+		 for i,v in vtx do
+			set_vertex(bkg.vtx[i],
+					   { v[1], v[2], 0, 1,
+						  nil,nil,nil,nil,
+						  v[3],v[4] } )
+		 end
 	  end
+	  bkg.tex = tex_get("background")
    end
-   bkg.tex = tex_get("background")
+   bkg:draw()
 end
 
 --- Set background colors.
@@ -53,6 +62,7 @@ function background_set_colors(bkg, color1, color2, color3, color4)
    end
    bkg.noalpha = (color1[1] == 1) and (color2[1] == 1)
 	  and (color3[1] == 1) and (color4[1] == 1)
+   bkg:draw()
 end
 
 --- Draw background.
@@ -88,20 +98,22 @@ function background_create()
 	  draw = background_draw,
    }
    settag(bkg, background_tag)
-
+   bkg:set_texture()
+   bkg:set_color()
    return bkg
 end
 
-bkg = background_create()
-if bkg then
-   dl = dl_new_list(128,1)
-   bkg:set_texture("/rd/dcpsprites.tga")
---   bkg:set_texture("/pc/pucca1_1024.jpg")
-   bkg:set_color()
-   dl_set_trans(bkg.dl, mat_scale(640,480,1))
-   dl_set_trans(dl, mat_trans(0,0,0.0001))
-   bkg:draw(dl)
-   dl_set_active(dl,1)
+background = background_create()
+if background then
+   background_dl = dl_new_list(128,1)
+   background:set_texture("/rd/dcpbkg.jpg", "scale")
+--   background:set_texture("/pc/ptest.jpg","tile")
+--   background:set_texture(home.."lua/rsc/icons/dcplaya.jpg","tile")
+--   background:set_color( {1,1,0,0}, {1,0.5,0.5,0.5}, nil,  {1,0,1,1} )
+   dl_set_trans(background.dl, mat_scale(640,480,1))
+   dl_set_trans(background_dl, mat_trans(0,0,0.0001))
+   background:draw(background_dl)
+   dl_set_active(background_dl,1)
 end
 
 background_loaded = 1

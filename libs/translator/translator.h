@@ -4,7 +4,7 @@
  *  @author  benjamin gerard <ben@sashipa.com>
  *  @date    2002/09/27
  *  @brief   Image translators.
- *  $Id: translator.h,v 1.3 2002-12-15 16:15:03 ben Exp $
+ *  $Id: translator.h,v 1.4 2002-12-16 23:39:36 ben Exp $
  */
 
 #ifndef _TRANSLATOR_H_
@@ -33,5 +33,9 @@ int AddTranslator(translator_t translator);
 
 /** Remove an image translator. */
 int DelTranslator(translator_t translator);
+
+/** Blit an image block. */
+void Blitz(void *dst, int dw, int dh, int dformat, int dmodulo,
+		   const void *src, int sw, int sh, int sformat, int smodulo);
 
 #endif /* #ifndef _TRANSLATOR_H_ */

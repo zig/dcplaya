@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.22 2002-12-15 22:43:08 zigziggy Exp $
+ * $Id: display.c,v 1.23 2002-12-16 23:39:36 ben Exp $
  */
 
 #include <stdlib.h>
@@ -589,7 +589,7 @@ static luashell_command_description_t display_commands[] = {
   {
 	"tex_new", 0,                        /* long and short names */
 	"print [["
-	"tex_new(filename) or tex_new(name,width,heigth,format) :\n"
+	"tex_new(filename) or tex_new(name,width,heigth,a,r,g,b) :\n"
 	"Create a new texure. Returns texture identifier"
 	"]]",                                /* usage */
 	SHELL_COMMAND_C, lua_tex_new         /* function */

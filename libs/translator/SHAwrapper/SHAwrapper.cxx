@@ -3,14 +3,14 @@
  * @brief     SHAtranslator "C" wrapper
  * @date      2002/09/27
  * @author    Ben(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAwrapper.cxx,v 1.3 2002-12-15 16:15:03 ben Exp $
+ * @version   $Id: SHAwrapper.cxx,v 1.4 2002-12-16 23:39:36 ben Exp $
  */
 
 #include "SHAwrapper/SHAwrapper.h"
 #include "SHAtk/SHAstreamMem.h"
 #include "SHAtk/SHAstreamFile.h"
 #include "SHAtranslator/SHAtranslator.h"
-// #include "SHAtranslator/SHAtranslatorTga.h"
+#include "SHAblitter/SHAblitter.h"
 
 #include "sysdebug.h"
 
@@ -151,7 +151,7 @@ static SHAwrapperImage_t * SHAwrapperLoad(SHAstream * in)
 
     const char **ext;
     ext = t->Extension();
-	SDDEBUG("[%s] : translator [%s]\n", __FUNCTION__, ext[0]);
+ 	SDDEBUG("[%s] : translator [%s]\n", __FUNCTION__, ext[0]);
     img = SHAwrapperLoad(t, in, pos);
     if (img) {
       break;
@@ -184,4 +184,15 @@ SHAwrapperImage_t * SHAwrapperLoadMemory(void *buffer, int size)
   }
 
   return SHAwrapperLoad(&in);
+}
+
+/** Blit an image block. */
+void SHAwrapperBlitz(void *dst, int dw, int dh, int dformat, int dmod,
+					 const void *src, int sw, int sh, int sformat, int smod)
+{
+  SHAblitter blitter;
+
+  blitter.Source((SHApixelFormat_e)sformat, (void *)src, sw, sh, smod);
+  blitter.Destination((SHApixelFormat_e)dformat, dst, dw, dh, dmod);
+  blitter.Copy();
 }

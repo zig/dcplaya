@@ -4,7 +4,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.1 2002-11-25 16:42:28 ben Exp $
+ * $Id: texture.c,v 1.2 2002-12-16 23:39:36 ben Exp $
  */
 
 #include <stdlib.h>
@@ -74,7 +74,7 @@ int texture_init(void)
 	return -1;
   }
   ta_txr_release_all();
-  texture_create_flat("default", 0xFFFFFF);
+  texture_create_flat("default", 8, 8, 0xFFFFFF);
   return 0;
 }
 
@@ -297,41 +297,56 @@ static int memreader(uint8 *buffer, int n, texture_create_t * tc)
   return n;
 }
 
-texid_t texture_create_flat(const char *name, unsigned int argb)
-{
-  int i,alpha,dst_format;
-  uint32 texture[8*8];
-  texture_create_memory_t memcreator;
+/** Texture creator for flat texture. */
+typedef struct {
+  texture_create_t creator; /**< General purpose creator  */
+  uint16 color;             /**< Colorvalue               */
+} texture_create_flat_t;
 
-  /* Setup texture bitmap */
-  for (i=0;i <64; ++i) {
-	texture[i] = argb;
+static int flatreader(uint8 *buffer, int n, texture_create_t * tc)
+{
+  texture_create_flat_t * tcm = (texture_create_flat_t *)tc;
+  int i;
+  uint16 val;
+  if (n <= 0) {
+	return 0;
   }
+  val = tcm->color;
+  for (i=0; i<n; ++i) {
+	((uint16 *)buffer)[i] = val;
+  }
+  return n;
+}
+
+texid_t texture_create_flat(const char *name, int width, int height,
+							unsigned int argb)
+{
+  int alpha,dst_format;
+  texture_create_flat_t flatcreator;
+
+  width  = width  ? width  : 8;
+  height = height ? height : 8;
 
   /* Setup memory creator */
-  memset(&memcreator, 0, sizeof(memcreator));
-  strncpy(memcreator.creator.name, name, sizeof(memcreator.creator.name)-1);
+  memset(&flatcreator, 0, sizeof(flatcreator));
+  strncpy(flatcreator.creator.name, name, sizeof(flatcreator.creator.name)-1);
 
   /* Determine destination format depending on alpha value */
   alpha = argb & 0xFF000000;
   if (alpha && alpha != 0xFF000000) { 
 	dst_format = TA_ARGB4444;
-	memcreator.convertor = ARGB32toARGB4444;
+	ARGB32toARGB4444(&flatcreator.color, &argb, 1);
   } else {
 	dst_format = TA_RGB565;
-	memcreator.convertor = ARGB32toRGB565;
+	ARGB32toRGB565(&flatcreator.color, &argb, 1);
   }
 
-  memcreator.bpplog2 = 2;
-  memcreator.creator.width     = 8;
-  memcreator.creator.height    = 8;
-  memcreator.creator.formatstr = texture_formatstr(dst_format);
-  memcreator.creator.reader    = memreader;
-  memcreator.org =
-  memcreator.cur = (uint8 *)texture;
-  memcreator.end = memcreator.org + (8*8*4);
+  flatcreator.creator.width     = width;
+  flatcreator.creator.height    = height;
+  flatcreator.creator.formatstr = texture_formatstr(dst_format);
+  flatcreator.creator.reader    = flatreader;
 
-  return texture_create(&memcreator.creator);
+  return texture_create(&flatcreator.creator);
 }
 
 texid_t texture_create_file(const char *fname, const char * formatstr)
@@ -343,7 +358,6 @@ texid_t texture_create_file(const char *fname, const char * formatstr)
   texid_t texid = -1;
   int src_format, dst_format;
   texture_t * t;
-
 
   if (!fname) {
 	return -1;
@@ -387,19 +401,18 @@ texid_t texture_create_file(const char *fname, const char * formatstr)
   SDDEBUG("height  : %d\n", img->height);
   SDDEBUG("lutSize : %d\n", img->lutSize);
 
-
   /* Convert source format. */
   switch (img->type) {
-  case SHAWIF_RGB565:
+  case SHAPF_RGB565:
     src_format = TA_RGB565;
     break;
-  case SHAWIF_ARGB1555:
+  case SHAPF_ARGB1555:
     src_format = TA_ARGB1555;
     break;
-  case SHAWIF_ARGB4444:
+  case SHAPF_ARGB4444:
     src_format = TA_ARGB4444;
     break;
-  case SHAWIF_ARGB32:
+  case SHAPF_ARGB32:
     src_format = -2;
     break;
   default:

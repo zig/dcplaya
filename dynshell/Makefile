@@ -2,14 +2,14 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile,v 1.1 2002-09-13 16:03:10 zig Exp $
+# $Id: Makefile,v 1.3 2002-12-16 23:39:35 ben Exp $
 
-LEFS=dynshell.lef
+LEF=yes
 OPTIMIZE = $(OPTIMIZE_FOR_SPEED)
 
 TOPDIR:=$(dir $(shell pwd))
 
-KOS_LOCAL_INCS := -I../include -I..
+KOS_LOCAL_INCS := -I../include -I.. -I../libs
 
 KOS_LOCAL_CFLAGS += -DDREAMMP3_HOME="\"$(TOPDIR)\""
 

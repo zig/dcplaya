@@ -4,7 +4,7 @@
  * @date    2002/10/20
  * @brief   texture manager
  *
- * $Id: texture.h,v 1.1 2002-11-25 16:42:28 ben Exp $
+ * $Id: texture.h,v 1.2 2002-12-16 23:39:36 ben Exp $
  */
 
 #ifndef _TEXTURE_H_
@@ -90,7 +90,8 @@ texid_t texture_dup(texid_t texid, const char * name);
 texid_t texture_create(texture_create_t * creator);
 
 /** Create a flat texture. */
-texid_t texture_create_flat(const char *name, unsigned int argb);
+texid_t texture_create_flat(const char *name, int width, int height,
+							unsigned int argb);
 
 /** Create a new texture from a image file.
  *

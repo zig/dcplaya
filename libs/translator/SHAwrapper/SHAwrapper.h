@@ -4,7 +4,7 @@
  * @brief     SHAtranslator "C" wrapper
  * @date      2002/09/27
  * @author    Ben(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAwrapper.h,v 1.3 2002-12-15 16:15:03 ben Exp $
+ * @version   $Id: SHAwrapper.h,v 1.4 2002-12-16 23:39:36 ben Exp $
  */
 #ifndef _SHAWRAPPER_H_
 #define _SHAWRAPPER_H_
@@ -26,6 +26,10 @@ int SHAwrapperAddTranslator(void * translator);
 
 /** Remove an image translator. */
 int SHAwrapperDelTranslator(void * translator);
+
+/** Blit an image block. */
+void SHAwrapperBlitz(void *dst, int dw, int dh, int dformat, int dmod,
+					 const void *src, int sw, int sh, int sformat, int smod);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

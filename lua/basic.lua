@@ -4,7 +4,7 @@
 --- @author  benjamin gerard <ben@sashipa.com>
 --- @brief   basic things used into other library (evt, keyboard_emu, gui)
 ---
---- $Id: basic.lua,v 1.12 2002-12-05 08:17:47 ben Exp $
+--- $Id: basic.lua,v 1.13 2002-12-16 23:39:36 ben Exp $
 ---
 
 -- Unload library
@@ -365,7 +365,7 @@ end
 function set_vertex(vect, from)
    local i,v
    for i,v in from do
-	  vect[i]=v
+	  if v then vect[i]=v end
    end
 end
 

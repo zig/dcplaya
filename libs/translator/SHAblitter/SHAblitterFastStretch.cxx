@@ -4,12 +4,14 @@
  * @brief     Soft blitter fast stretching implementation.
  * @date      2001/08/01
  * @author    BeN(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAblitterFastStretch.cxx,v 1.1 2002-09-27 16:45:07 benjihan Exp $
+ * @version   $Id: SHAblitterFastStretch.cxx,v 1.2 2002-12-16 23:39:36 ben Exp $
  */
 
 #include "SHAblitter/SHAblitter.h"
 #include "SHAsys/SHAsysTypes.h"
 #include <string.h>
+
+#include "sysdebug.h"
 
 #define SHABLITTER_STRETCH_FIX 16
 
@@ -67,6 +69,7 @@ template <class T> void SHAblitterFastStretch(T * dst, T * src, int dstAdd, int 
 
   if (dstH == srcH) {
     // Fast case : no vertical stretching
+// 	SDDEBUG("Fast case : no vertical stretching\n");
     do {
       SHAblitterFastStretchLine (dst, src, dstW, srcOverDst);
       dst = (T *)Inc(dst, dstAdd);
@@ -74,17 +77,22 @@ template <class T> void SHAblitterFastStretch(T * dst, T * src, int dstAdd, int 
     } while (--dstH);
   } else {
     // Vertical streching : see if it is reducing or enlarging.
+// 	SDDEBUG("Vertical streching : see if it is reducing or enlarging.\n");
+
     int srcAdd2;
     int h = dstH;
     
     if (dstH >= srcH) {
       // Enlarge
+// 	SDDEBUG("Enlarging.\n");
+	
       srcAdd2 = 0;
     } else {
       // Reduce. Works for enlarge too.
       int nline = srcH / dstH;
       srcAdd2 = srcAdd * nline;
       srcH -= dstH * nline;
+// 	  SDDEBUG("Reducing.\n");
     }
     
     // Bresenham in both emlarge and reduce cases.

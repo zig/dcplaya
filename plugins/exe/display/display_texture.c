@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, texture interface
  * 
- * $Id: display_texture.c,v 1.3 2002-11-25 16:56:09 ben Exp $
+ * $Id: display_texture.c,v 1.4 2002-12-16 23:39:36 ben Exp $
  */
 
 #include <stdio.h>
@@ -23,10 +23,15 @@
 	return 0; \
   }
 
+
 /* Create a new texture. */
+/* Syntaxes :
+ * 1) "filename" [, "type"]
+ * 2) "name", w, h, a, r, g, b
+ */
 DL_FUNCTION_DECLARE(tex_new)
 {
-  const char * name, *type = 0;
+  const char * name, * type = 0;
   int w,h;
   int n = lua_gettop(L);
   texid_t texid = -1;
@@ -43,20 +48,27 @@ DL_FUNCTION_DECLARE(tex_new)
 	} 
 	texid = texture_create_file(name, type);
 	if (texid == -1) {
-	  printf("%s : unable to create texture from file %s\n", __FUNCTION__,
+	  printf("%s : unable to create texture from file [%s]\n", __FUNCTION__,
 			 name);
 	  return 0;
 	}
   } else {
-	w = lua_tonumber(L,2);
-	h = lua_tonumber(L,3);
-	type = lua_tostring(L,4);
-	if (!type) {
-	  type = "argb1555";
+	draw_color_t color;
+	draw_argb_t argb;
+
+	w = (lua_type(L,2) == LUA_TNUMBER) ? lua_tonumber(L,2) : 0;
+	h = (lua_type(L,3) == LUA_TNUMBER) ? lua_tonumber(L,3) : 0;
+	color.a = (lua_type(L,4) == LUA_TNUMBER) ? lua_tonumber(L,4) : 1;
+	color.r = (lua_type(L,5) == LUA_TNUMBER) ? lua_tonumber(L,5) : 1;
+	color.g = (lua_type(L,6) == LUA_TNUMBER) ? lua_tonumber(L,6) : 1;
+	color.b = (lua_type(L,7) == LUA_TNUMBER) ? lua_tonumber(L,7) : 1;
+	argb = draw_color_float_to_argb(&color);
+	texid = texture_create_flat(name, w, h, argb);
+	if (texid == -1) {
+	  printf("%s : unable to create flat texture [%s] [%dx%dx%08X]\n",
+			 __FUNCTION__, name, w, h, argb);
+	  return 0;
 	}
-	printf("%s : creating [%dx%dx%s] not implemented\n", __FUNCTION__,
-		   w,h,type);
-	return 0;
   }
   
   lua_settop(L,0);
