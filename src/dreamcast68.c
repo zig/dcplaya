@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.21 2002-09-16 05:25:08 zig Exp $
+ * @version   $Id: dreamcast68.c,v 1.22 2002-09-17 20:11:03 ben Exp $
  */
 
 //#define RELEASE
@@ -43,6 +43,7 @@
 #include "lef.h"
 #include "fft.h"
 #include "viewport.h"
+#include "fs_ramdisk.h"
 
 #include "sysdebug.h"
 #include "syserror.h"
@@ -481,6 +482,13 @@ static int no_mt_init(void)
 {
   int err = 0;
   dbglog(DBG_DEBUG, ">> " __FUNCTION__ "\n");
+
+  /* ramdisk init */
+  if (fs_ramdisk_init(0) < 0) {
+    SDERROR("ramdisk init failure");
+    err = __LINE__;
+    goto error;
+  }
 
   /* Viewport init */
   viewport_set(&viewport, 0, 0, SCREEN_W, SCREEN_H, 1.0f);
