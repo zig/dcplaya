@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.36 2003-03-07 10:11:16 ben Exp $
+--- $Id: song_browser.lua,v 1.37 2003-03-07 21:04:54 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -257,7 +257,7 @@ function song_browser_create(owner, name)
       local action
 
       -- $$$ Test 96 '`' to prevent event eating for the console switching.
-      if key >= 0 and key<128 and key ~= 96 then
+      if key >= 32 and key<128 and key ~= 96 then
 	 local key_char 
 	 key_char = strchar(key)
 	 if key_char then
