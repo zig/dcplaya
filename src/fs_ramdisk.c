@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   RAM disk for KOS file system
  * 
- * $Id: fs_ramdisk.c,v 1.12 2003-03-10 22:55:35 ben Exp $
+ * $Id: fs_ramdisk.c,v 1.13 2003-03-11 21:32:16 ben Exp $
  */
 
 #ifdef VPSPECIAL
@@ -23,6 +23,8 @@
 #include "sysdebug.h"
 #include "fs_ramdisk.h"
 
+/* #define RAMDISK_TEST */
+
 /* Allocation block size */
 #define ALLOC_BLOCK_SIZE 1024
 
@@ -34,11 +36,6 @@
 #define MAX_RD_FILES 	32            /**< Must not excess 32 */
 #define INVALID_FH  	MAX_RD_FILES
 
-/* Macro to work with node open field. */
-#define UNLINKED        (1<<31)
-#define IS_UNLINKED(V)  ((V)->open & UNLINKED)
-#define OPEN_COUNT(V)   ((V)->open & ~UNLINKED)
-
 /** RAM disk i-node */
 typedef struct _node_s {
   struct _node_s   * big_bros;       /**< Previous node same level   */
@@ -49,7 +46,12 @@ typedef struct _node_s {
   dirent_t           entry;          /**< Kos directory entry.       */
   int                max;            /**< Data allocated size.       */
   uint8            * data;           /**< File data                  */
-  int                open;           /**< Open count                 */
+  struct {
+    unsigned int open:29;            /**< Open count                 */
+    unsigned int unlinked:1;         /**< Node requested for unlink  */
+    unsigned int notify:1;           /**< Node send notification     */
+    unsigned int modified:1;         /**< Node modified              */
+  } flags;                           /**< Node flags.                */
 } node_t;
 
 typedef struct
@@ -69,12 +71,20 @@ static node_t * root = 0;
 static int fh_mask;       
 static openfile_t fh[32];
 
+/* Notification :
+ *  This mechanism is use to notify ramdisk modification.
+ */
+/* Set when ramdisk is modified a notification not read. */
+static int modify; 
 
 /* File data alignment */
 const int align = 16;
 
 /* Mutex for file handles */
 static spinlock_t fh_mutex;
+
+/* Mutex for node modification (modify notify) */
+static spinlock_t node_mutex;
 
 /* Used to compare 2 names. We could easily change case sensitivity */
 static int namecmp(const char *n1, const char *n2)
@@ -191,6 +201,8 @@ static void attach_node(node_t * father, node_t * node)
   } else {
     father->son = node;
   }
+  father->flags.modified = 1; /* Attach modify father ! */
+  node->flags.notify = father->flags.notify;
 }
 
 static void detach_node(node_t * node)
@@ -201,6 +213,7 @@ static void detach_node(node_t * node)
   if (!node) {
     return;
   }
+
   /* Remove this node from directory reading. */
   for (i=0; i<MAX_RD_FILES; ++i) {
     if (fh[i].readdir == node) {
@@ -225,7 +238,9 @@ static void release_node(node_t * node)
     if (node->data) {
       free(node->data);
     }
-    free(node);
+    if (node != &root_node) {
+      free(node);
+    }
   }
 }
 
@@ -236,21 +251,27 @@ static void release_nodes(node_t * node)
     return;
   }
   SDINDENT;
+
   release_nodes(node->son);
   release_nodes(node->little_bros);
   release_node(node);
+
   SDUNINDENT;
 }
 
-static void dump_node(node_t * node)
+static void dump_node(node_t * node, const char * label)
 {
+  SDINDENT;
+  SDDEBUG("Dump node [%s]\n", label);
   SDINDENT;
   if (node) {
     SDDEBUG("Name:   '%s'\n", node->entry.name);
     SDDEBUG("size:   %d\n", node->entry.size);
     SDDEBUG("alloc:  %d\n", node->max);
-    SDDEBUG("open:   %d\n", OPEN_COUNT(node));
-    SDDEBUG("unlink: %s\n", IS_UNLINKED(node)?"yes":"no");
+    SDDEBUG("open:   %d\n", node->flags.open);
+    SDDEBUG("notify: %d\n", node->flags.notify);
+    SDDEBUG("modify: %d\n", node->flags.modified);
+    SDDEBUG("unlink: %d\n", node->flags.unlinked);
     SDDEBUG("lbros:  '%s'\n", !node->little_bros ?
 	    "<null>":node->little_bros->entry.name);
     SDDEBUG("bbros:  '%s'\n", !node->big_bros ?
@@ -263,9 +284,9 @@ static void dump_node(node_t * node)
     SDDEBUG("Name:   '<null>'\n");
   }
   SDUNINDENT;
+  SDUNINDENT;
 }
  
-
 /*
 static void remap_node(node_t * n0, node_t *n1)
 {
@@ -358,6 +379,10 @@ static node_t * create_node(const char *name, int datasize)
     goto error;
   }
   clean_node(node);
+  /* created node is always modified ;) becauze it modify the directory 
+   * structure.  
+   */
+  node->flags.modified = 1;
 
   /* Copy filename. */
   strcpy(node->entry.name, name);
@@ -408,7 +433,7 @@ static node_t * find_node_same_level(node_t *node, const char *fn, int what)
   /* Search ... */
   for (; node; node = node->little_bros) {
     //    SDDEBUG("SCAN [%s]%s\n", node->entry.name, is_dir(node)?"*":"");
-    if (IS_UNLINKED(node)) {
+    if (node->flags.unlinked) {
       SDDEBUG("Skipping [%s] (scheduled for unlink)\n", node->entry.name);
       continue;
     }
@@ -514,11 +539,12 @@ static ssize_t read(file_t fd, void * buffer, size_t size)
     return -1;
   }
   of = fh + fd;
-	
-  if (!size || of->pos >= of->node->entry.size) {
+
+  if (!size) {
     return 0;
   }
 		
+  spinlock_lock(&node_mutex);
   end_pos = of->pos + size;
   if (end_pos > of->node->entry.size) {
     end_pos = of->node->entry.size;
@@ -526,6 +552,7 @@ static ssize_t read(file_t fd, void * buffer, size_t size)
   n = end_pos - of->pos;
   memcpy(d, of->node->data + of->pos, n);
   of->pos = end_pos;
+  spinlock_unlock(&node_mutex);
 	
   return n;
 }
@@ -571,6 +598,12 @@ static ssize_t write(file_t fd, const void * buffer, size_t size)
   if (of->pos > of->node->entry.size) {
     of->node->entry.size = of->pos;
   }
+
+  if (n>0) {
+    of->node->flags.modified = 1;
+  }
+
+  spinlock_unlock(&node_mutex);
 	
   //SDDEBUG("--> %d bytes\n", n);
   return n;
@@ -682,7 +715,9 @@ static file_t open(const char *fn, int mode)
   //  SDDEBUG("open('%s') in [%s]\n", fn , modestr(omode));
 
   //  SDDEBUG("Find [%s] [%s] node:\n", fn, whatstr(3));
+  spinlock_lock(&node_mutex);
   node = find_node(root, fname, 3);
+
   //  SDDEBUG("FOUND-NODE:\n");
   //  dump_node(node);
 
@@ -690,17 +725,19 @@ static file_t open(const char *fn, int mode)
     /* Node already exist. Perform some checks. */
     if ((omode ^ -is_dir(node)) & DIR_MODE) {
       SDERROR("Incompatible file/dir mode\n");
+      spinlock_unlock(&node_mutex);
       goto error;
     }
 
     if (omode == (DIR_MODE | WRITE_MODE)) {
       SDERROR("Directory already exist\n");
+      spinlock_unlock(&node_mutex);
       goto error;
     }
-
   } else /* if (!node) */ {
     if ( ! (omode & WRITE_MODE) ) {
 /*       SDERROR("Not found and not created.\n"); */
+      spinlock_unlock(&node_mutex);
       goto error;
     }
 
@@ -718,6 +755,7 @@ static file_t open(const char *fn, int mode)
 
     if (!father) {
       SDERROR("Path not found.\n");
+      spinlock_unlock(&node_mutex);
       goto error;
     }
 
@@ -727,16 +765,17 @@ static file_t open(const char *fn, int mode)
     //    dump_node(node);
 
     if (!node) {
+      spinlock_unlock(&node_mutex);
       goto error;
     }
-    node->entry.size = -!!(omode & DIR_MODE);
 
+    /* Node inherit notification prperties from its father. */
+    node->entry.size = -!!(omode & DIR_MODE);
     attach_node(father, node);
   }
+  ++node->flags.open;
 
   /* Fill the fh structure */
-  ++node->open;
-
   if (omode & DIR_MODE) {
     fh[fd].readdir = (omode & READ_MODE) ? node->son : 0;
   } else {
@@ -745,6 +784,9 @@ static file_t open(const char *fn, int mode)
   fh[fd].mode = omode;
   fh[fd].node = node; /* $$$ Last to be set, atomic op that valided
 			 opened file */
+
+  // dump_node(node, fn);
+  spinlock_unlock(&node_mutex);
 
   //  SDDEBUG("FINAL-NODE:\n");
   //  dump_node(node);
@@ -772,16 +814,25 @@ static void close(uint32 fd)
 
   /* Check that the fd is valid */
   if (fd = valid_file(fd, -1), fd != INVALID_FH) {
-    if (!OPEN_COUNT(fh[fd].node)) {
+    node_t * node = fh[fd].node;
+    int open;
+    spinlock_lock(&node_mutex);
+    
+    if (open = node->flags.open, !open) {
       SDERROR("-->Invalid open count\n");
-      return; 
+      spinlock_unlock(&node_mutex);
+      return;
     }
-    --fh[fd].node->open;
+    node->flags.open = --open;
+    if(!open && node->flags.notify) {
+      modify += node->flags.modified;
+    }
+    node->flags.modified = 0;
 
-    if (IS_UNLINKED(fh[fd].node) &&
-	!OPEN_COUNT(fh[fd].node)) {
+    if (node->flags.unlinked && !open) {
       really_unlink(fh[fd].node);
     }
+    spinlock_unlock(&node_mutex);
 
     spinlock_lock(&fh_mutex);
     fh_mask &= ~(1 << fd);
@@ -865,19 +916,15 @@ static dirent_t * readdir(file_t fd)
     return 0;
   }
 
-  /* Don't need to check mode, readdir only set for READ_MODE */ 
-  rd = fh[fd].readdir;
-  if (rd) {
-    fh[fd].readdir = rd->little_bros;
-    /*
-    SDDEBUG("-->%s success [%s] [%d]\n", __FUNCTION__,
-	    rd->entry.name, rd->entry.size);
-    */
-    return &rd->entry;
-  }
+  spinlock_lock(&node_mutex);
+  /* Don't need to check mode, readdir only set for READ_MODE */
+  for (rd = fh[fd].readdir; rd && rd->flags.unlinked; rd = rd->little_bros)
+    ;
+  fh[fd].readdir = rd;
+  spinlock_unlock(&node_mutex);
 
   //  SDDEBUG("-->end of dir\n");
-  return 0;
+  return rd ? &rd->entry : 0;
 }
 
 
@@ -980,22 +1027,35 @@ static int unlink(const char *fn)
     return -1;
   }
 
-  if (OPEN_COUNT(node)) {
+  spinlock_lock(&node_mutex);
+
+  if (node->father && node->father->flags.notify) {
+    ++modify;
+  }
+
+  if (node->flags.open) {
     /* Node is open... Just flag it for unlinking. */
     SDDEBUG("-->Scheduled for unlink\n");
-    node->open |= UNLINKED;
+    node->flags.unlinked = 1;
   } else {
     /* Node is closed... */
     really_unlink(node);
   }
+  spinlock_unlock(&node_mutex);
+
   return 0;
 }
 
+/* Assume node will be modified ! */
 static void * mmap(file_t fd)
 {
-  if (fd = valid_regular(fd,-1), fd == INVALID_FH) {	
+  if (fd = valid_regular(fd,-1), fd == INVALID_FH) {
     return 0;
   }
+  spinlock_lock(&node_mutex);
+  fh[fd].node->flags.modified = 1;
+  spinlock_unlock(&node_mutex);
+
   return fh[fd].node->data;
 }
 
@@ -1033,14 +1093,16 @@ int fs_ramdisk_init(int max_size)
   
   clean_node(&root_node);
   root_node.entry.size = -1;
-
-  /* Set max size to max if 0 is requested. $$$ BEN: Note used  */ 
+  root_node.flags.notify = 1;
+  
+  /* Set max size to max if 0 is requested. $$$ BEN: Not used  */ 
   max_size -= !max_size;
 
   clean_openfiles();
 	
   /* Init thread mutexes */
   spinlock_init(&fh_mutex);
+  spinlock_init(&node_mutex);
 
   /* Register with VFS */
   if (fs_handler_add("/ram", &vh)) {
@@ -1049,14 +1111,16 @@ int fs_ramdisk_init(int max_size)
   }
   fh_mask = 0;
   root = &root_node;
+  modify = 0;
 
-#if DEBUG && 0
+#if RAMDISK_TEST
   test();
 #endif
 
 
   return 0;
 }
+
 /* De-init the file system */
 int fs_ramdisk_shutdown(void)
 {
@@ -1064,18 +1128,79 @@ int fs_ramdisk_shutdown(void)
 
   if (root) {
     spinlock_lock(&fh_mutex);
+    spinlock_lock(&node_mutex);
     fh_mask = 0;
     clean_openfiles();
     release_nodes(root);
-    spinlock_unlock(&fh_mutex);
     root = 0;
   }
+  modify = 0;
 
   return fs_handler_remove(&vh);
 }
 
+/* Check modification flag */
+int fs_ramdisk_modified(void)
+{
+  int ret;
+  spinlock_lock(&node_mutex);
+  ret = modify;
+  modify = 0;
+  spinlock_unlock(&node_mutex);
+  return ret;
+}
 
-#if DEBUG
+static void notify_node(node_t * node, int notify)
+{
+  if (node) {
+    node->flags.notify = notify;
+/*     dump_node(node, "Notify"); */
+  }
+}
+
+static void notify_nodes(node_t * node, node_t * except, int notify)
+{
+  if (!node || node == except) {
+    return;
+  }
+  notify_nodes(node->son, except, notify);
+  notify_nodes(node->little_bros, except, notify);
+  notify_node(node, notify);
+}
+
+int fs_ramdisk_notify_path(const char *path)
+{
+  node_t * node;
+  char fname[1024];
+  const char * leaf;
+  int slash_end;
+
+  if (path && strstr(path,"/ram/") == path) {
+    path += 4;
+  }
+
+  leaf = valid_filename(fname, sizeof(fname), path, &slash_end, 0);
+  if (!leaf) {
+    SDERROR("[fs_ramdisk_notify_path] : [%s] no leaf\n", path);
+    return -1;
+  }
+
+  spinlock_lock(&node_mutex);
+  node = find_node(root, fname, 2);
+  if (!node) {
+    spinlock_unlock(&node_mutex);
+    SDERROR("[fs_ramdisk_notify_path] : [%s] not found\n", fname);
+    return -1;
+  }
+
+  notify_nodes(root, node, 0);
+  notify_nodes(node, 0, 1);
+
+  spinlock_unlock(&node_mutex);
+  return 0;
+}
+
+#if RAMDISK_TEST
 
 static int copyfile(const char *fn1, const char *fn2)
      /* $$$ Give it a try */

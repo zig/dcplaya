@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.77 2003-03-11 13:34:43 ben Exp $
+ * @version    $Id: dynshell.c,v 1.78 2003-03-11 21:32:16 ben Exp $
  */
 
 #include "dcplaya/config.h"
@@ -34,6 +34,7 @@
 #include "gzip.h"
 #include "playa.h"
 #include "vmu_file.h"
+#include "fs_ramdisk.h"
 #include "draw/texture.h"
 #include "translator/translator.h"
 #include "translator/SHAtranslator/SHAtranslatorBlitter.h"
@@ -2481,6 +2482,23 @@ static int lua_vmu_file_stat(lua_State * L)
   return lua_gettop(L);
 }
 
+static int lua_ramdisk_modified(lua_State * L)
+{
+  int ret;
+  ret = fs_ramdisk_modified();
+  if (ret) {
+    lua_pushnumber(L,1);
+    return 1;
+  }
+  return 0;
+}
+  
+static int lua_ramdisk_notify_path(lua_State * L)
+{
+  fs_ramdisk_notify_path(lua_tostring(L,1));
+  return 0;
+}
+
 static int LUA_setgcthreshold(lua_State * L)
 {
   lua_setgcthreshold(L, lua_tonumber(L, 1));
@@ -3161,6 +3179,26 @@ static luashell_command_description_t commands[] = {
     "Get status string of vmu transfert."
     "]])",
     SHELL_COMMAND_C, lua_vmu_file_stat
+  },
+
+  {
+    "ramdisk_is_modified",
+    0,
+    "print([["
+    "ramdisk_is_modified() : "
+    "Get and clear ramdisk modification status."
+    "]])",
+    SHELL_COMMAND_C, lua_ramdisk_modified
+  },
+
+  {
+    "ramdisk_notify_path",
+    0,
+    "print([["
+    "ramdisk_modify_path(path) : "
+    "Set ramdisk modification notify path. nil desactive notification."
+    "]])",
+    SHELL_COMMAND_C, lua_ramdisk_notify_path
   },
 
   {0},

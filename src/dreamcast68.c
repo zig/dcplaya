@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.53 2003-03-11 13:35:50 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.54 2003-03-11 21:32:16 ben Exp $
  */
 
 //#define RELEASE
@@ -1058,7 +1058,15 @@ int dreammp3_main(int argc, char **argv)
   cdrom_reinit();
 
   /* ramdisk init : needed by vmu_load() */
-  fs_ramdisk_init(0);
+  if (!fs_ramdisk_init(0)) {
+    /* create default dir */
+    fu_create_dir("/ram/tmp");
+    fu_create_dir("/ram/dcplaya");
+    /* set notification on dcplaya dir */
+    fs_ramdisk_notify_path("/ram/dcplaya");
+    /* clear modified state */
+    fs_ramdisk_modified();
+  }
 
   /* Initialize the vmu file module as soon as possible... */
   if (!vmu_file_init()) {
