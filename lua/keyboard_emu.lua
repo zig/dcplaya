@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: keyboard_emu.lua,v 1.14 2002-12-23 09:01:36 ben Exp $
+-- $Id: keyboard_emu.lua,v 1.15 2003-03-06 19:59:41 zigziggy Exp $
 --
 
 dolib("keydefs")
@@ -33,7 +33,7 @@ ke_themes = {
       ke_keycolor1	= { 0.6, 0.2, 0.7, 0.7 } 
       ke_keycolor2	= { 0.6, 0.2, 0.2, 0.4 } 
       ke_textcolor	= { 1.0, 0.9, 0.9, 0.2 } 
-      ke_textcolor	= { 1.0, 0.2, 0, 0 } 
+--      ke_textcolor	= { 1.0, 0.2, 0, 0 } 
    end,
 
    function()
@@ -445,6 +445,7 @@ function ke_init()
 
       dl_clear(dl)
       dl_draw_box(dl, ke_box, ke_z, ke_boxcolor, ke_boxcolor)
+      dl_text_prop(dl, 0, 14)
       
    end
 

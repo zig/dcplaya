@@ -4,7 +4,7 @@
  * @author   ben(jamin) gerard <ben@sashipa.com>
  * @brief    drawing text interface
  *
- * $Id: text.h,v 1.4 2002-12-17 23:31:07 ben Exp $
+ * $Id: text.h,v 1.5 2003-03-06 19:59:41 zigziggy Exp $
  */
 
 #ifndef _TEXT_H_
@@ -45,7 +45,7 @@ void text_shutdown(void);
  */
 
 /** Create a new font. */
-fontid_t text_new_font(texid_t texid, int wc, int hc, int fixed);
+fontid_t text_new_font(texid_t texid, int wc, int hc, int fixed, float wspace, float wadd);
 
 /** Set current text font. */
 fontid_t text_set_font(fontid_t fontid);

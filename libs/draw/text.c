@@ -5,7 +5,7 @@
  * @date    2002/02/11
  * @brief   drawing and formating text primitives
  *
- * $Id: text.c,v 1.6 2002-12-17 23:31:07 ben Exp $
+ * $Id: text.c,v 1.7 2003-03-06 19:59:41 zigziggy Exp $
  */
 
 #include <stdarg.h>
@@ -33,7 +33,13 @@ typedef struct {
   float xs;
   float ys;
   unsigned int n;
+
+  float wadd; /**< additional value to add to x when printing several */
+              /**  adjacent characters in a string. */
+
+  /* NEED TO BE LAST */
   myglyph_t glyph[1];
+
 } font_t;
 
 static font_t dummyfont = {
@@ -104,7 +110,7 @@ static void bounding(uint16 * img, int w, int h, int bpl, int *box)
   }
 }
 
-fontid_t text_new_font(texid_t texid, int wc, int hc, int fixed)
+fontid_t text_new_font(texid_t texid, int wc, int hc, int fixed, float wspace, float wadd)
 {
   font_t * fnt = 0;
   texture_t * t = 0;
@@ -138,6 +144,7 @@ fontid_t text_new_font(texid_t texid, int wc, int hc, int fixed)
   fnt->hc = hc;
   fnt->xs = (float)wc / (float)t->width;
   fnt->ys = (float)hc / (float)t->height;
+  fnt->wadd = wadd;
 
   xs = 1.0f / (float)t->width;
   ys = fnt->ys;
@@ -180,6 +187,9 @@ fontid_t text_new_font(texid_t texid, int wc, int hc, int fixed)
 	fnt->glyph[c].w  = wc * 2;
 	fnt->glyph[c].h  = hc * 2;
   }
+
+  if (!fixed && wspace)
+    fnt->glyph[' '].w = wspace;
 
   SDDEBUG("New font : id:%d %dx%d [%s]\n", nfont, (int)wc, (int)hc,
 		  fixed ? "fixed" : "proportionnel");
@@ -240,9 +250,10 @@ int text_init(void)
   fonts[0] = &dummyfont;
 
   texid = texture_create_file("/rd/font16x16", "4444");
-  text_new_font(texid,16,16,0);
+/*  text_new_font(texid,16,16,0, 0, 0); */
+  text_new_font(texid,16,16,0, 9, -4);
   texid = texture_create_file("/rd/font8x14", "4444");
-  text_new_font(texid,8,14,1);
+  text_new_font(texid,8,14,1, 0, 0);
   text_set_font(0);
 
  error:
@@ -279,7 +290,7 @@ static float size_of_char(float * h, int c)
 
   g = curglyph(c);
   hc = g->h * yscale;
-  wc = g->w * xscale;
+  wc = (curfont->wadd + g->w) * xscale;
   if (h) *h = hc;
   return wc;
 }
@@ -318,7 +329,7 @@ static float size_of_str(float * h, const char *s)
 	}
 	g = curfont->glyph + c;
 	if (g->h > max_h) max_h = g->h;
-	sum += g->w;
+	sum += (g->w + curfont->wadd);
   }
   if (h) *h = max_h * yscale;
 
@@ -534,7 +545,7 @@ static float draw_text_char(float x1, float y1, float z1,
   hw->v = v1;
   ta_commit32_nocopy();
 	
-  return x2;
+  return x2 + curfont->wadd*scalex;
 }
 
 static int do_escape(int c, va_list *list)
@@ -725,7 +736,7 @@ float text_draw_str_inside(float x1, float y1, float x2, float y2, float z1,
 
   while (c=(*s++)&255, c) {
     if (c == ' ') {
-      x1 += curfont->glyph[32].w * xscale;
+      x1 += (curfont->glyph[32].w + curfont->wadd) * xscale;
     } else {
       x1 = draw_text_char(x1, y1, z1, xscale, yscale, c);
     }
