@@ -2,7 +2,7 @@
  *  @file    nsf_driver.c
  *  @author  benjamin gerard 
  *
- *  $Id: nsf_driver.c,v 1.1 2003-04-08 20:46:46 ben Exp $
+ *  $Id: nsf_driver.c,v 1.2 2003-04-09 14:50:32 ben Exp $
  */ 
 
 /* Adapted from nosefart main_linux.c */
@@ -40,7 +40,7 @@ static unsigned int splGoal;    // Sample goal (end of track)
 static unsigned int zeroCnt;    // Number of successive zero sample recieved
 static unsigned int zeroGoal;   // Number of zero samples to detect end.
 static uint16 oldspl;
-static void *nsfbuffer;
+/* static void *nsfbuffer; */
 
 static char * make_desc(nsf_t * nsf, char *tmp)
 {
@@ -100,38 +100,32 @@ static int nsf_info(playa_info_t *info, nsf_t * nsf)
 }
 
 /* Load an NSF file. */
-static nsf_t * load_nsf_file(const char * filename, void ** ptr_buffer)
+static nsf_t * load_nsf_file(const char * filename)
 {
   nsf_t * nsf = 0;
 
-#if 0
-  void * buffer;
+#if 1
   int buffer_len;
+  void * buffer = 0;
   buffer = gzip_load(filename, &buffer_len);
   SDDEBUG("LOAD:%p %d\n",buffer,buffer_len);
   if (buffer) {
     nsf = nsf_load(0/*(char *)filename*/, buffer, buffer_len);
+    free(buffer);
   }
 #else
-  void * buffer = 0;
   nsf = nsf_load((char *)filename,0,0);
 #endif
 
   if (!nsf) {
-    if (buffer) {
-      free(buffer);
-      buffer = 0;
-    }
     SDERROR("Error opening \"%s\"\n", filename);
   }
-  *ptr_buffer = buffer;
   return nsf;
 }
 
 /* start track, display which it is, and what channels are enabled */
 static int nsf_setupsong(void)
 {
-  int err;
   if (!nsf) {
     return -1;
   }
@@ -220,7 +214,7 @@ static int init(any_driver_t * driver)
 
   nsf_init();
   nsf = 0;
-  nsfbuffer = 0;
+/*   nsfbuffer = 0; */
   minMs = 6<<10;       /* All tracks have 6 seconds time minimum */
   maxMs = (60*8)<<10;  /* All tracks have 8 minutes time maximum */
   zeroMs = 6<<10;      /* Successive zero time for end detection */
@@ -232,10 +226,10 @@ static int stop(void)
 {
   SDDEBUG("%s()\n", __FUNCTION__);
   close_nsf_file();
-  if (nsfbuffer) {
-    free(nsfbuffer);
-    nsfbuffer = 0;
-  }
+/*   if (nsfbuffer) { */
+/*     free(nsfbuffer); */
+/*     nsfbuffer = 0; */
+/*   } */
   pcm_buffer_shutdown();
   pcm_count = 0;
   pcm_ptr = 0;
@@ -252,7 +246,7 @@ int start(const char *fn, int track, playa_info_t *inf)
 
   if (fn) {
     stop();
-    nsf = load_nsf_file(fn, &nsfbuffer);
+    nsf = load_nsf_file(fn);
   }
   err = play(track+1, inf) < 0;
 
@@ -371,13 +365,9 @@ static int info(playa_info_t *info, const char *fname)
   if (!fname) {
     err = nsf_info(info, nsf);
   } else {
-    void * buffer = 0;
-    nsf_t * nsf = load_nsf_file(fname, &buffer);
+    nsf_t * nsf = load_nsf_file(fname);
     err = nsf_info(info, nsf);
     nsf_free(&nsf);
-    if (buffer) {
-      free(buffer);
-    }
   }
   return err;
 }

@@ -20,7 +20,7 @@
 ** nsf.h
 **
 ** NSF loading/saving related defines / prototypes
-** $Id: nsf.h,v 1.1 2003-04-08 20:53:00 ben Exp $
+** $Id: nsf.h,v 1.2 2003-04-09 14:50:32 ben Exp $
 */
 
 #ifndef _NSF_H_
@@ -60,7 +60,8 @@ enum
 {
    NSF_FILTER_NONE,
    NSF_FILTER_LOWPASS,
-   NSF_FILTER_WEIGHTED
+   NSF_FILTER_WEIGHTED,
+   NSF_FILTER_MAX, /* $$$ ben : add this one for range chacking */
 };
 
 typedef struct nsf_s
@@ -90,6 +91,9 @@ typedef struct nsf_s
    uint8  current_song;       /* current song */
    boolean bankswitched;      /* is bankswitched? */
 
+  /* $$$ ben : Last error string */
+   const char * errstr;       
+
    /* CPU and APU contexts */
    nes6502_context *cpu;
    apu_t *apu;
@@ -98,23 +102,48 @@ typedef struct nsf_s
    void (*process)(void *buffer, int num_samples);
 } nsf_t;
 
-/* Function prototypes */
-extern void nsf_init(void);
+/* $$$ ben : Generic loader struct */
+struct nsf_loader_t {
+  /* Init and open. */
+  int (*open)(struct nsf_loader_t * loader);
 
-extern nsf_t *nsf_load(char *filename, void *source, int length);
+  /* Close and shutdown. */
+  void (*close) (struct nsf_loader_t * loader);
+
+  /* This function should return <0 on error, else the number of byte NOT read.
+   * that way a simple 0 test tell us if read was complete.
+   */
+  int (*read) (struct nsf_loader_t * loader, void *data, int n);
+
+  /* Get file length. */
+  int (*length) (struct nsf_loader_t * loader);
+
+  /* Get filename (for debug). */
+  const char * (*fname) (struct nsf_loader_t * loader);
+
+};
+
+/* Function prototypes */
+extern int nsf_init(void);
+
+extern nsf_t * nsf_load_extended(struct nsf_loader_t * loader);
+extern nsf_t *nsf_load(const char *filename, void *source, int length);
 extern void nsf_free(nsf_t **nsf_info);
 
-extern void nsf_playtrack(nsf_t *nsf, int track, int sample_rate, int sample_bits, 
+extern int nsf_playtrack(nsf_t *nsf, int track, int sample_rate, int sample_bits, 
                           boolean stereo);
 extern void nsf_frame(nsf_t *nsf);
-extern void nsf_setchan(nsf_t *nsf, int chan, boolean enabled);
-extern void nsf_setfilter(nsf_t *nsf, int filter_type);
+extern int nsf_setchan(nsf_t *nsf, int chan, boolean enabled);
+extern int nsf_setfilter(nsf_t *nsf, int filter_type);
 
 #endif /* _NSF_H_ */
 
 /*
 ** $Log: nsf.h,v $
-** Revision 1.1  2003-04-08 20:53:00  ben
+** Revision 1.2  2003-04-09 14:50:32  ben
+** Clean NSF api.
+**
+** Revision 1.1  2003/04/08 20:53:00  ben
 ** Adding more files...
 **
 ** Revision 1.11  2000/07/04 04:59:24  matt

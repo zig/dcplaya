@@ -20,7 +20,7 @@
 ** nsf.c
 **
 ** NSF loading/saving related functions
-** $Id: nsf.c,v 1.1 2003-04-08 20:53:00 ben Exp $
+** $Id: nsf.c,v 1.2 2003-04-09 14:50:32 ben Exp $
 */
 
 #include <stdio.h>
@@ -316,9 +316,10 @@ void nes_shutdown(nsf_t *nsf)
    }
 }
 
-void nsf_init(void)
+int nsf_init(void)
 {
    nes6502_init();
+   return 0;
 }
 
 /* Initialize NES CPU, hardware, etc. */
@@ -389,146 +390,350 @@ static void nsf_setup(nsf_t *nsf)
 #define  SWAP_16(x)  (((uint16) x >> 8) | (((uint16) x & 0xFF) << 8))
 #endif /* !HOST_LITTLE_ENDIAN */
 
-/* Load a ROM image into memory */
-nsf_t *nsf_load(char *filename, void *source, int length)
+/* $$$ ben : find extension. Should be OK with DOS, but not with some
+ * OS like RiscOS ... */
+static char * find_ext(char *fn)
 {
-   FILE *fp = NULL;
-   char *new_fn = NULL;
-   nsf_t *temp_nsf;
+  char * a, * b, * c;
+  a = strrchr(fn,'.');
+  b = strrchr(fn,'/');
+  c = strrchr(fn,'\\');
+  if (a <= b || a <= c) {
+    a = 0;
+  }
+  return a;
+}
 
-   if (NULL == filename && NULL == source)
-      return NULL;
- 
-   if (NULL == source)
-   {
-      fp = fopen(filename, "rb");
+/* $$$ ben : FILE loader */
+struct nsf_file_loader_t {
+  struct nsf_loader_t loader;
+  FILE *fp;
+  char * fname;
+  int name_allocated;
+};
 
-      /* Didn't find the file?  Maybe the .NSF extension was omitted */
-      if (NULL == fp)
-      {
-         new_fn = malloc(strlen(filename) + 5);
-         if (NULL == new_fn)
-            return NULL;
-         strcpy(new_fn, filename);
+static int nfs_open_file(struct nsf_loader_t *loader)
+{
+  struct nsf_file_loader_t * floader = (struct nsf_file_loader_t *)loader;
 
-         if (NULL == strrchr(new_fn, '.'))
-            strcat(new_fn, ".nsf");
+  floader->name_allocated = 0;
+  floader->fp = 0;
+  if (!floader->fname) {
+    return -1;
+  }
+  floader->fp = fopen(floader->fname,"rb");
+  if (!floader->fp) {
+    char * fname, * ext;
+    ext = find_ext(floader->fname);
+    if (ext) {
+      /* There was an extension, so we do not change it */
+      return -1;
+    }
+    fname = malloc(strlen(floader->fname) + 5);
+    if (!fname) {
+      return -1;
+    }
+    /* try with .nsf extension. */
+    strcpy(fname, floader->fname);
+    strcpy(fname + (ext - floader->fname), ".nsf");
+    floader->fp = fopen(fname,"rb");
+    if (!floader->fp) {
+      free(fname);
+      return -1;
+    }
+    floader->fname = fname;
+    floader->name_allocated = 1;
+  }
+  return 0;
+}
 
-         fp = fopen(new_fn, "rb");
+static void nfs_close_file(struct nsf_loader_t *loader)
+{
+  struct nsf_file_loader_t * floader = (struct nsf_file_loader_t *)loader;
+  if (floader->fp) {
+    fclose(floader->fp);
+    floader->fp = 0;
+  }
+  if (floader->fname && floader->name_allocated) {
+    free(floader->name_allocated);
+    floader->fname = 0;
+    floader->name_allocated = 0;
+  }
+}
 
-         if (NULL == fp)
-         {
-            log_printf("could not find file '%s'\n", new_fn);
-            free(new_fn);
-            return NULL;
-         }
-      }
-   }
+static int nfs_read_file(struct nsf_loader_t *loader, void *data, int n)
+{
+  struct nsf_file_loader_t * floader = (struct nsf_file_loader_t *)loader;
+  int r = fread(data, 1, n, floader->fp);
+  if (r >= 0) {
+    r = n-r;
+  }
+  return r;
+}
 
-   temp_nsf = malloc(sizeof(nsf_t));
-   if (NULL == temp_nsf)
-      return NULL;
+static int nfs_length_file(struct nsf_loader_t *loader)
+{
+  struct nsf_file_loader_t * floader = (struct nsf_file_loader_t *)loader;
+  long save, pos;
+  save = ftell(floader->fp);
+  fseek(floader->fp, 0, SEEK_END);
+  pos = ftell(floader->fp);
+  fseek(floader->fp, save, SEEK_SET);
+  return pos;
+}
 
-   /* Read in the header */
-   if (NULL == source)
-      fread(temp_nsf, 1, NSF_HEADER_SIZE, fp);
-   else
-      memcpy(temp_nsf, source, NSF_HEADER_SIZE);
+static const char * nfs_fname_file(struct nsf_loader_t *loader)
+{
+  struct nsf_file_loader_t * floader = (struct nsf_file_loader_t *)loader;
+  return floader->fname ? floader->fname : "<null>";
+}
 
-   if (memcmp(temp_nsf->id, NSF_MAGIC, 5))
-   {
-      if (NULL == source)
-      {
-         log_printf("%s is not an NSF format file\n", new_fn);
-         fclose(fp);
-         free(new_fn);
-      }
-      nsf_free(&temp_nsf);
-      return NULL;
-   }
+static struct nsf_file_loader_t nsf_file_loader = {
+  {
+    nfs_open_file,
+    nfs_close_file,
+    nfs_read_file,
+    nfs_length_file,
+    nfs_fname_file
+  },
+  0,0,0
+};
 
-   /* fixup endianness */
-   temp_nsf->load_addr = SWAP_16(temp_nsf->load_addr);
-   temp_nsf->init_addr = SWAP_16(temp_nsf->init_addr);
-   temp_nsf->play_addr = SWAP_16(temp_nsf->play_addr);
-   temp_nsf->ntsc_speed = SWAP_16(temp_nsf->ntsc_speed);
-   temp_nsf->pal_speed = SWAP_16(temp_nsf->pal_speed);
+struct nsf_mem_loader_t {
+  struct nsf_loader_t loader;
+  uint8 *data;
+  unsigned long cur;
+  unsigned long len;
+  char fname[32];
+};
 
-   /* we're now at position 80h */
-   if (NULL == source)
-   {
-      fseek(fp, 0, SEEK_END);
-      temp_nsf->length = ftell(fp) - NSF_HEADER_SIZE;
-   }
-   else
-   {
-      temp_nsf->length = length - NSF_HEADER_SIZE;
-   }
+static int nfs_open_mem(struct nsf_loader_t *loader)
+{
+  struct nsf_mem_loader_t * mloader = (struct nsf_mem_loader_t *)loader;
+  if (!mloader->data) {
+    return -1;
+  }
+  mloader->cur = 0;
+  sprintf(mloader->fname,"<mem(%p,%u)>",
+	  mloader->data, (unsigned int)mloader->len);
+  return 0;
+}
+
+static void nfs_close_mem(struct nsf_loader_t *loader)
+{
+  struct nsf_mem_loader_t * mloader = (struct nsf_mem_loader_t *)loader;
+  mloader->data = 0;
+  mloader->cur = 0;
+  mloader->len = 0;
+}
+
+static int nfs_read_mem(struct nsf_loader_t *loader, void *data, int n)
+{
+  struct nsf_mem_loader_t * mloader = (struct nsf_mem_loader_t *)loader;
+  int rem;
+  if (n <= 0) {
+    return n;
+  }
+  if (!mloader->data) {
+    return -1;
+  }
+  rem = mloader->len - mloader->cur;
+  if (rem > n) {
+    rem = n;
+  }
+  memcpy(data, mloader->data + mloader->cur, rem);
+  mloader->cur += rem;
+  return n - rem;
+}
+
+static int nfs_length_mem(struct nsf_loader_t *loader)
+{
+  struct nsf_mem_loader_t * mloader = (struct nsf_mem_loader_t *)loader;
+  return mloader->len;
+}
+
+static const char * nfs_fname_mem(struct nsf_loader_t *loader)
+{
+  struct nsf_mem_loader_t * mloader = (struct nsf_mem_loader_t *)loader;
+  return mloader->fname;
+}
+
+static struct nsf_mem_loader_t nsf_mem_loader = {
+  { nfs_open_mem, nfs_close_mem, nfs_read_mem, nfs_length_mem },
+  0,0,0
+};
+
+nsf_t * nsf_load_extended(struct nsf_loader_t * loader)
+{
+  nsf_t *temp_nsf = 0;
+  int length;
+  char id[6];
+
+  /* no loader ! */ 
+  if (!loader) {
+    return NULL;
+  }
+  
+  /* Open the "file" */
+  if (loader->open(loader) < 0) {
+    return NULL;
+  }
+
+  /* Get file size, and exit if there is not enought data for NSF header
+   * and more since it does not make sens to have header without data.
+   */
+  length = loader->length(loader);
+  if (length <= NSF_HEADER_SIZE) {
+    log_printf("nsf : [%s] not an NSF format file\n",
+	       loader->fname(loader));
+    goto error;
+  }
+
+  /* Read magic */
+  if (loader->read(loader, id, 5)) {
+    log_printf("nsf : [%s] error reading magic number\n",
+	       loader->fname(loader));
+    goto error;
+  }
+
+  /* Check magic */
+  if (memcmp(id, NSF_MAGIC, 5)) {
+    log_printf("nsf : [%s] is not an NSF format file\n",
+	       loader->fname(loader));
+    goto error;
+  }
+
+  /* $$$ ben : Now the file should be an NSF, we can start allocating.
+   * first : the nsf struct
+   */
+  temp_nsf = malloc(sizeof(nsf_t));
+  if (NULL == temp_nsf) {
+    log_printf("nsf : [%s] error allocating nsf header\n",
+	       loader->fname(loader));
+    goto error;
+  }
+  /* $$$ ben : safety net */
+  memset(temp_nsf,0,sizeof(nsf_t));
+  /* Copy magic ID */
+  memcpy(temp_nsf,id,5);
+
+  /* Read header (without MAGIC) */
+  if (loader->read(loader, (int8 *)temp_nsf+5, NSF_HEADER_SIZE - 5)) {
+    log_printf("nsf : [%s] error reading nsf header\n",
+	       loader->fname(loader));
+    goto error;
+  }
+
+  /* fixup endianness */
+  temp_nsf->load_addr = SWAP_16(temp_nsf->load_addr);
+  temp_nsf->init_addr = SWAP_16(temp_nsf->init_addr);
+  temp_nsf->play_addr = SWAP_16(temp_nsf->play_addr);
+  temp_nsf->ntsc_speed = SWAP_16(temp_nsf->ntsc_speed);
+  temp_nsf->pal_speed = SWAP_16(temp_nsf->pal_speed);
+  
+  temp_nsf->length = length - NSF_HEADER_SIZE;
+
+  /* we're now at position 80h */
 
    /* Allocate NSF space, and load it up! */
    temp_nsf->data = malloc(temp_nsf->length);
-   if (NULL == temp_nsf->data)
-   {
-      log_printf("error allocating memory for NSF data\n");
-      nsf_free(&temp_nsf);
-      return NULL;
+   if (NULL == temp_nsf->data) {
+     log_printf("nsf : [%s] error allocating nsf data\n",
+		loader->fname(loader));
+     goto error;
    }
 
-   /* seek to end of header, read in data */
-   if (NULL == source)
-   {
-      fseek(fp, NSF_HEADER_SIZE, SEEK_SET);
-      fread(temp_nsf->data, temp_nsf->length, 1, fp);
-
-      fclose(fp);
-
-      if (new_fn)
-         free(new_fn);
+   /* Read data */
+   if (loader->read(loader, temp_nsf->data, temp_nsf->length)) {
+     log_printf("nsf : [%s] error reading NSF data\n",
+		loader->fname(loader));
+     goto error;
    }
-   else
-      memcpy(temp_nsf->data, (uint8 *) source + NSF_HEADER_SIZE, length);
+
+   /* Close "file" */
+   loader->close(loader);
+   loader = 0;
 
    /* Set up some variables */
    nsf_setup(temp_nsf);
-
    temp_nsf->apu = NULL; /* just make sure */
 
-   if (nsf_cpuinit(temp_nsf))
-   {
-      nsf_free(&temp_nsf);
-      return NULL;
+   if (nsf_cpuinit(temp_nsf)) {
+     log_printf("nsf : error cpu init\n");
+     goto error;
    }
-
    return temp_nsf;
+
+   /* $$$ ben : some people tell that goto are not clean. I am not agree with
+    * them. In most case, it allow to avoid code duplications, which are as
+    * most people know a source of error... Here we are sure of being ckean
+    */
+ error:
+   if (loader) {
+     loader->close(loader);
+   }
+   if (temp_nsf) {
+     nsf_free(&temp_nsf);
+   }
+   return 0;
+}
+
+/* Load a ROM image into memory */
+nsf_t *nsf_load(const char *filename, void *source, int length)
+{
+  struct nsf_loader_t * loader = 0;
+
+  /* $$$ ben : new loader */
+  if (filename) {
+    nsf_file_loader.fname = (char *)filename;
+    loader = &nsf_file_loader.loader;
+  } else {
+    nsf_mem_loader.data = source;
+    nsf_mem_loader.len = length;
+    nsf_mem_loader.fname[0] = 0;
+    loader = &nsf_mem_loader.loader;
+  }
+  return nsf_load_extended(loader);
 }
 
 /* Free an NSF */
-void nsf_free(nsf_t **nsf)
+void nsf_free(nsf_t **pnsf)
 {
-   if (*nsf)
-   {
-      if ((*nsf)->apu)
-         apu_destroy((*nsf)->apu);
+  nsf_t *nsf;
 
-      nes_shutdown(*nsf);
+  if (!pnsf) {
+    return;
+  }
 
-      if ((*nsf)->data)
-         free((*nsf)->data);
+  nsf = *pnsf;
+  /* $$$ ben : Don't see why passing a pointer to pointer
+   *  is not to clear it :) */
+  *pnsf = 0;
 
-      free(*nsf);
-   }
+  if (nsf) {
+    if (nsf->apu)
+      apu_destroy(nsf->apu);
+    
+    nes_shutdown(nsf);
+    
+    if (nsf->data)
+      free(nsf->data);
+
+    free(nsf);
+
+  }
 }
 
-void nsf_setchan(nsf_t *nsf, int chan, boolean enabled)
+int nsf_setchan(nsf_t *nsf, int chan, boolean enabled)
 {
-   if (nsf)
-   {
-      nsf_setcontext(nsf);
-      apu_setchan(chan, enabled);
-   }
+   if (!nsf)
+     return -1;
+
+   nsf_setcontext(nsf);
+   return apu_setchan(chan, enabled);
 }
 
-void nsf_playtrack(nsf_t *nsf, int track, int sample_rate, int sample_bits, boolean stereo)
+int nsf_playtrack(nsf_t *nsf, int track, int sample_rate, int sample_bits, boolean stereo)
 {
    ASSERT(nsf);
 
@@ -542,8 +747,11 @@ void nsf_playtrack(nsf_t *nsf, int track, int sample_rate, int sample_bits, bool
    nsf->apu = apu_create(sample_rate, nsf->playback_rate, sample_bits, stereo);
    if (NULL == nsf->apu)
    {
+     /* $$$ ben : from my point of view this is not clean. Function should
+      *	never destroy object it has not created...
+      */
       nsf_free(&nsf);
-      return;
+      return -1;
    }
 
    apu_setext(nsf->apu, nsf_getext(nsf));
@@ -566,20 +774,25 @@ void nsf_playtrack(nsf_t *nsf, int track, int sample_rate, int sample_bits, bool
    apu_reset();
 
    nsf_inittune(nsf);
+
+   return nsf->current_song;
 }
 
-void nsf_setfilter(nsf_t *nsf, int filter_type)
+int nsf_setfilter(nsf_t *nsf, int filter_type)
 {
-   if (nsf)
-   {
-      nsf_setcontext(nsf);
-      apu_setfilter(filter_type);
-   }
+  if (!nsf) {
+    return -1;
+  }
+  nsf_setcontext(nsf);
+  return apu_setfilter(filter_type);
 }
 
 /*
 ** $Log: nsf.c,v $
-** Revision 1.1  2003-04-08 20:53:00  ben
+** Revision 1.2  2003-04-09 14:50:32  ben
+** Clean NSF api.
+**
+** Revision 1.1  2003/04/08 20:53:00  ben
 ** Adding more files...
 **
 ** Revision 1.14  2000/07/05 14:54:45  matt
