@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.14 2002-09-19 08:18:12 vincentp Exp $
+ * @version    $Id: dynshell.c,v 1.15 2002-09-20 06:08:57 vincentp Exp $
  */
 
 #include <stdio.h>
@@ -101,6 +101,7 @@ static int lua_malloc_stats(lua_State * L)
 #define MAX_DIR 32
 
 static const char * home = "/pc"  DREAMMP3_HOME;
+static const char * initfile = "/pc"  DREAMMP3_HOME "/lua/init.lua";
 
 static int r_path_load(lua_State * L, char *path, unsigned int level, const char * ext, int count)
 {
@@ -287,26 +288,100 @@ static int lua_consolesize(lua_State * L)
 
 static int lua_toggleconsole(lua_State * L)
 {
-  shell_toggleconsole();
+  lua_pushnumber(L, shell_toggleconsole());
 
-  return 0;
+  return 1;
 }
 
 static int lua_showconsole(lua_State * L)
 {
-  shell_showconsole();
+  lua_pushnumber(L, shell_showconsole());
 
-  return 0;
+  return 1;
 }
 
 static int lua_hideconsole(lua_State * L)
 {
-  shell_hideconsole();
+  lua_pushnumber(L, shell_hideconsole());
+
+  return 1;
+}
+
+static int copyfile(const char *fn1, const char *fn2)
+     /* $$$ Give it a try */
+{
+  file_t fd, fd2;
+
+  //SDDEBUG("%s [%s] <- [%s]\n", __FUNCTION__, fn1, fn2);
+  //SDINDENT;
+
+  fd  = fs_open(fn1, O_WRONLY);
+  fd2 = fs_open(fn2, O_RDONLY);
+
+  if (fd && fd2) {
+    char buf[256];
+    int n;
+
+    do {
+      n = fs_read(fd2, buf, 256);
+      if (n > 0) {
+	fs_write(fd,buf,n);
+      }
+    } while (n > 0);
+  }
+
+  if (fd) fs_close(fd);
+  if (fd2) fs_close(fd2);
+
+  //SDUNINDENT;
+  return 0;
+}
+
+static int createdir(const char *fn)
+{
+  file_t fd;
+
+  //SDDEBUG("%s [%s]\n", __FUNCTION__, fn);
+  //SDINDENT;
+
+  fd  = fs_open(fn, O_WRONLY|O_DIR);
+  if (fd) {
+    fs_close(fd);
+  } else {
+    return -1;
+  }
+  //SDUNINDENT;
+  return 0;
+}
+
+static int lua_mkdir(lua_State * L)
+{
+  int nparam = lua_gettop(L);
+  int i;
+
+  for (i=1; i<= nparam; i++) {
+    if (createdir(lua_tostring(L, i)))
+      printf("mkdir : failed creating directory '%s'\n", lua_tostring(L, i));
+  }
+
+  return 0;
+}
+
+static int lua_unlink(lua_State * L)
+{
+  int nparam = lua_gettop(L);
+  int i;
+
+  for (i=1; i<= nparam; i++) {
+    if (fs_unlink(lua_tostring(L, i)))
+      printf("unlink : failed deleting '%s'\n", lua_tostring(L, i));
+  }
 
   return 0;
 }
 
 
+#if 0
 static char shell_basic_lua_init[] = 
 "\n shell_help_array = {}"
 "\n "
@@ -349,6 +424,7 @@ static char shell_basic_lua_init[] =
 "\n addhelp(help, [[print [[help(command) : show information about a command\n]]]])"
 "\n addhelp(addhelp, [[print [[addhelp(command, string_to_execute) : add usage information about a command\n]]]])"
 ;
+#endif
 
 static shell_command_description_t commands[] = {
   { 
@@ -366,7 +442,7 @@ static shell_command_description_t commands[] = {
     "dirl",
 
     "print([["
-    "dir_load(path, [max_recurse], [extension]) : enumerate all files (by default all .lef files) in given path with max_recurse recursion, return an array of file names\n"
+    "dir_load(path, [max_recurse], [extension]) : enumerate all files (by default all .lef and .lez files) in given path with max_recurse (default 10) recursion, return an array of file names\n"
     "]])",
 
     SHELL_COMMAND_C, lua_path_load
@@ -416,7 +492,7 @@ static shell_command_description_t commands[] = {
     "tc",
 
     "print([["
-    "toggleconsole() : toggle console visibility\n"
+    "toggleconsole() : toggle console visibility, return old state\n"
     "]])",
 
     SHELL_COMMAND_C, lua_toggleconsole
@@ -426,7 +502,7 @@ static shell_command_description_t commands[] = {
     "sc",
 
     "print([["
-    "showconsole() : show console\n"
+    "showconsole() : show console, return old state\n"
     "]])",
 
     SHELL_COMMAND_C, lua_showconsole
@@ -436,10 +512,30 @@ static shell_command_description_t commands[] = {
     "hc",
 
     "print([["
-    "hideconsole() : hide console\n"
+    "hideconsole() : hide console, return old state\n"
     "]])",
 
     SHELL_COMMAND_C, lua_hideconsole
+  },
+  { 
+    "mkdir",
+    "md",
+
+    "print([["
+    "mkdir(dirname) : create new directory\n"
+    "]])",
+
+    SHELL_COMMAND_C, lua_mkdir
+  },
+  { 
+    "unlink",
+    "rm",
+
+    "print([["
+    "unlink(filename) : delete a file (or a directory ?)\n"
+    "]])",
+
+    SHELL_COMMAND_C, lua_unlink
   },
   {0},
 };
@@ -450,9 +546,15 @@ static void shell_register_lua_commands()
 {
   int i;
 
-  lua_dobuffer(shell_lua_state, shell_basic_lua_init, sizeof(shell_basic_lua_init) - 1, "init");
+  lua_dostring(shell_lua_state, 
+	       "\n function doshellcommand(string)"
+	       "\n   dostring(string)"
+	       "\n end");
 
   dynshell_command("home = [[%s]]", home);
+
+  //lua_dobuffer(shell_lua_state, shell_basic_lua_init, sizeof(shell_basic_lua_init) - 1, "init");
+  lua_dofile(shell_lua_state, initfile);
 
   for (i=0; commands[i].name; i++) {
     lua_register(shell_lua_state, 

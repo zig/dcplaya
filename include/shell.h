@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/12
  * @brief     shell support for dcplaya
- * @version   $Id: shell.h,v 1.4 2002-09-19 08:18:12 vincentp Exp $
+ * @version   $Id: shell.h,v 1.5 2002-09-20 06:08:58 vincentp Exp $
  */
 
 
@@ -33,6 +33,6 @@ void shell_load(const char * fname);
  */
 void shell_wait();
 
-void shell_toggleconsole();
-void shell_showconsole();
-void shell_hideconsole();
+int shell_toggleconsole();
+int shell_showconsole();
+int shell_hideconsole();

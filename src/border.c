@@ -5,8 +5,10 @@
 #include "syserror.h"
 #include "gp.h"
 
+//#define RECOLOR
+
 borderuv_t borderuv[4];
-uint32 bordertex , bordertex2;
+uint32 bordertex , bordertex2 , bordertex3;
 
 static void make_blk(uint16 *texture, int w, int h, uint8 *d, int ws, int mode)
 {
@@ -29,9 +31,11 @@ static void make_blk(uint16 *texture, int w, int h, uint8 *d, int ws, int mode)
     int x;
     
     for (x=0; x<w; ++x) {
-      uint8 c = *d++, r, g, b;
+      uint8 c = *d++;
+      uint8 r, g, b;
 #ifdef RECOLOR
       int xi, yi;
+
       xi = (x >> 5);
       yi = (y >> 5);
       r = (c * recolor[yi][xi][0]) >> 8;
@@ -39,21 +43,37 @@ static void make_blk(uint16 *texture, int w, int h, uint8 *d, int ws, int mode)
       b = (c * recolor[yi][xi][2]) >> 8;
 #else
       r = g = b = c;
-     
-      if (c <= 0x30 && !mode) {
-	/* Not linked */
-	c = 200; 
-	r = g = b = 0x30;
-      } else if (c <= 0x80) {
-	/* Fill color */
-	c = 140;
-	r = 230;
-	g = 230;
-	b = 230;
+
+      if (mode == 2) {
+	if (c <= 0x30) {
+	  c = 180; 
+	  r = 0.4*255;
+	  g = 0.4*240;
+	  b = 0.4*75;
+	} else if (c <= 0x80) {
+	  c = 140;
+	  r = 255;
+	  g = 240;
+	  b = 75;
+	}
       } else {
-	/* Border color */
-	c = r = g = b = 255;
+
+	if (c <= 0x30 && !mode) {
+	  /* Not linked */
+	  c = 200; 
+	  r = g = b = 0x30;
+	} else if (c <= 0x80) {
+	  /* Fill color */
+	  c = 140;
+	  r = 230;
+	  g = 230;
+	  b = 230;
+	} else {
+	  /* Border color */
+	  c = r = g = b = 255;
+	}
       }
+
 #endif
       {
 	int v = (((c)>>4)<<12) | (((r)>>4)<<8) | (((g)>>4)<<4) | ((b)>>4);
@@ -85,7 +105,7 @@ int border_setup()
   if (!g) {
     STHROW_ERROR(error);
   }
-  /* Alloc 2 textures */
+  /* Alloc 3 textures */
   bordertex = ta_txr_allocate(w*h*2);
   if (!bordertex) {
     STHROW_ERROR(error);
@@ -94,9 +114,14 @@ int border_setup()
   if (!bordertex2) {
     STHROW_ERROR(error);
   }
+  bordertex3 = ta_txr_allocate(w*h*2);
+  if (!bordertex3) {
+    STHROW_ERROR(error);
+  }
 
   make_blk((uint16*)ta_txr_map(bordertex), w, h, g, w, 0);
   make_blk((uint16*)ta_txr_map(bordertex2), w, h, g, w, 1);
+  make_blk((uint16*)ta_txr_map(bordertex3), w, h, g, w, 2);
 
   SDDEBUG("bordertex=%d %d\n", bordertex, bordertex2);
 	

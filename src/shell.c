@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     shell support for dcplaya
- * @version   $Id: shell.c,v 1.9 2002-09-20 00:22:15 benjihan Exp $
+ * @version   $Id: shell.c,v 1.10 2002-09-20 06:08:58 vincentp Exp $
  */
 
 #include <kos.h>
@@ -34,14 +34,15 @@ static shell_command_func_t shell_command_func;
 
 #define MAX_COMMANDS 128
 
-static char * history[MAX_COMMANDS];
-static int write_history;
-static int read_history;
-
 static char * commands[MAX_COMMANDS];
 static int write_command;
 static int read_command;
 
+
+// HISTORY NOT IMPLEMENTED YET HERE (but implemented in LUA shell so who cares)
+static char * history[MAX_COMMANDS];
+static int write_history;
+static int read_history;
 
 
 
@@ -257,18 +258,24 @@ shell_command_func_t shell_set_command_func(shell_command_func_t func)
   return old;
 }
 
-void shell_toggleconsole()
+int shell_toggleconsole()
 {
+  int old = show_console;
   show_console = !show_console;
+  return old;
 }
 
-void shell_showconsole()
+int shell_showconsole()
 {
+  int old = show_console;
   show_console = 1;
+  return old;
 }
 
-void shell_hideconsole()
+int shell_hideconsole()
 {
+  int old = show_console;
   show_console = 0;
+  return old;
 }
 

@@ -8,7 +8,7 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.11 2002-09-20 01:24:36 vincentp Exp $
+ * $Id: fftvlr.c,v 1.12 2002-09-20 06:08:58 vincentp Exp $
  */
 
 #include <stdlib.h>
@@ -18,8 +18,12 @@
 #include "obj3d.h"
 #include "draw_object.h"
 
+
+//#define BENSTYLE
+
+
 /* from border.c */
-extern int bordertex, bordertex2;
+extern int bordertex, bordertex2, bordertex3;
 
 /* From obj3d.c */
 void FaceNormal(float *d, const vtx_t * v, const tri_t *t);
@@ -32,6 +36,8 @@ void FaceNormal(float *d, const vtx_t * v, const tri_t *t);
 #define VLR_H 48
 /*#define VLR_W 32
 #define VLR_H 96*/
+#define VLR_W 84
+#define VLR_H 20
 
 /* Resulting number of triangles */
 #define VLR_TPL ((VLR_W-1)*2)
@@ -56,7 +62,9 @@ static vtx_t light_normal = {
 };
 
 static vtx_t tlight_normal;
-/*
+
+#ifdef BENSTYLE
+
 static vtx_t light_color = {
     1.5,
     1.1,
@@ -70,7 +78,24 @@ static vtx_t ambient_color = {
   -1.0,
   0.8
 };
-*/
+
+#else
+
+static vtx_t light_color = {
+  0.9,
+  0.90,
+  0.9,
+  0.5
+};
+
+static vtx_t ambient_color = {
+  0.5,
+  0.3,
+  0.1,
+  0.5
+};
+
+#endif
 
 /*static vtx_t light_color = {
     1.5,
@@ -87,20 +112,6 @@ static vtx_t ambient_color = {
 };
 */
 
-
-static vtx_t light_color = {
-  0.9,
-  0.90,
-  0.9,
-  0.5
-};
-
-static vtx_t ambient_color = {
-  0.5,
-  0.3,
-  0.1,
-  0.5
-};
 
 
 
@@ -357,7 +368,11 @@ static int fftvlr_process(viewport_t * vp, matrix_t projection, int elapsed_ms)
     vlr_update();
 
 
+#ifdef BENSTYLE
     fftvlr_obj.flags = bordertex;
+#else
+    fftvlr_obj.flags = bordertex3;
+#endif
     return 0;
   }
   return -1;

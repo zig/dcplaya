@@ -3,7 +3,7 @@
 --
 -- (C) 2002 Vincent Penne (aka Ziggy Stardust)
 --
--- $Id: zed.lua,v 1.7 2002-09-19 15:53:06 vincentp Exp $
+-- $Id: zed.lua,v 1.8 2002-09-20 06:08:58 vincentp Exp $
 --
 
 rp ("Initializing ZED ... ")
@@ -65,6 +65,9 @@ end
 function zed_initconsole()
 	rp(MT_WRAPOFF)
 	zed_cls()
+
+	-- warning : not reentrant (global variable !)
+	zed_oldconsole = (showconsole() ~= 0)
 end
 
 
@@ -72,6 +75,13 @@ end
 function zed_desinitconsole()
 	rp(MT_WRAPON)
 	zed_cls()
+
+	-- warning : not reentrant (global variable !)
+	if zed_oldconsole then
+		showconsole()
+	else
+		hideconsole()
+	end
 end
 
 

@@ -3,8 +3,14 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   RAM disk for KOS file system
  * 
- * $Id: fs_ramdisk.c,v 1.4 2002-09-20 00:22:14 benjihan Exp $
+ * $Id: fs_ramdisk.c,v 1.5 2002-09-20 06:08:58 vincentp Exp $
  */
+
+#ifdef VPSPECIAL
+/* VP : added this to remove debug messages and test :) */
+# undef DEBUG
+# undef DEBUG_LOG
+#endif
 
 #include <arch/types.h>
 #include <kos/thread.h>
