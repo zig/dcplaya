@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.34 2003-03-09 11:14:46 ben Exp $
+--- $Id: textlist.lua,v 1.35 2003-03-09 13:15:54 ben Exp $
 ---
 
 -- Unload the library
@@ -112,7 +112,7 @@ function textlist_create(flparm)
 	 elseif	h > fl.minmax[4] then h = fl.minmax[4] end
       end
 
-      if not fl.no_keep_in_screen then
+      if not fl.keepin then
 	 -- $$$ ben : screen size should be in variable on day !
 	 local sx1,sy1,sx2,sy2 = 15, 15, 640-15, 480-15
 	 
@@ -656,6 +656,7 @@ function textlist_create(flparm)
       if flparm.dircolor  then fl.dircolor	= flparm.dircolor	end
       if flparm.bkgcolor  then fl.bkgcolor	= flparm.bkgcolor	end
       if flparm.curcolor  then fl.curcolor	= flparm.curcolor	end
+      if flparm.keepin    then fl.keepin        = flparm.keepin         end
       fl.owner = flparm.owner
    end
 

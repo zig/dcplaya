@@ -233,30 +233,79 @@ function menu_create(owner, name, def, box, x1, y1)
       elseif key == gui_unfocus_event then
 --	 print("MENU handle [gui_unfocus_event] : " .. tostring(menu.name))
 --	 vmu_set_text(nil)
+      elseif key == gui_menu_close_event then
+-- 	 print("MENU handle [gui_menu_close_event] : " .. tostring(menu.name))
+	 -- force open will set menu in screen !
+	 -- $$$ verify validity of this trick 
+	 menu:open()
 	 return
       end
       return evt
    end
 
-   -- Menu move
-   -- ---------
-   function menu_move(menu,movx,movy,movz,move_sub)
-
-      -- $$$
---      print("MENU move:"..tostring(menu.name))
-
-      if tag(menu) ~= menu_tag or not menu.fl then return end
-      local box,z = menu.fl.box, menu.fl.bo2 and menu.fl.bo2[3]
-      local x,y = box and box[1], box and box[2]
-      menu.fl:set_pos(x and movx and x+movx,
-		      y and movy and y+movy,
-		      z and movz and z+moz)
-      if move_sub and type(menu.sub_menu) == "table" then
+   --
+   function menu_movesub(menu,movx,movy,movz)
+      -- Move sub
+      if type(menu.sub_menu) == "table" then
 	 local i,m
 	 for i,m in menu.sub_menu do
-	    menu_move(m,movx,movy,movz,1)
+	    if tag(m) == menu_tag then
+	       m:move(movx,movy,movz,1,nil)
+	    end
 	 end
       end
+
+   end
+
+   -- Menu move
+   -- ---------
+   function menu_move(menu,movx,movy,movz,move_sub,move_owner)
+      if tag(menu) ~= menu_tag or not menu.fl then return end
+      local box = menu.fl.box
+      if not box then return end
+
+      printf("move menu %q x:%s y:%s z:%s sub:%s owner:%s",
+	     tostring(menu.def.title),
+	     tostring(movx),
+	     tostring(movy),
+	     tostring(movz),
+	     move_sub and "OK" or "NO",
+	     move_owner and "OK" or "NO"
+	  )
+
+      -- Get current menu position
+      local x,y,z = box[1], box[2], menu.fl.bo2 and menu.fl.bo2[3]
+
+      -- Move it
+      menu.fl:set_pos(movx and x+movx,
+		      movy and y+movy,
+		      movz and z+movz)
+
+      -- Get new menu position
+      local nx,ny,nz = box[1], box[2], menu.fl.bo2 and menu.fl.bo2[3]
+
+      -- Calculate effective move
+      movx = nx ~= x and nx-x
+      movy = ny ~= y and ny-y
+      movz = z and nz and nz ~= z and nz - z
+
+      printf("Efective move: %s %s %s",
+	     tostring(movx),
+	     tostring(movy),
+	     tostring(movz))
+
+      -- Move owner
+--       print("type of owner:"..type(menu.owner))
+
+      if move_owner and tag(menu.owner) == menu_tag then
+	 print("move owner:"..menu.owner.def.title)
+	 menu.owner:move(movx,movy,movz,nil,1)
+      end
+      
+      if move_sub then
+	 menu_movesub(menu,movx,movy,movz)
+      end
+
    end
 
    -- Menu open
@@ -280,8 +329,8 @@ function menu_create(owner, name, def, box, x1, y1)
 	    or (box[3] > 640 and 640-box[3])
 	 movy = (box[2] < 0 and -box[2])
 	    or (box[4] > 480 and 480-box[4])
-	 if (movx or movy) and tag(menu.root_menu) == menu_tag then
-	    menu.root_menu:move(movx,movy,nil,1)
+	 if (movx or movy) then --and tag(menu.root_menu) == menu_tag then
+	    menu:move(movx,movy,nil,1,1)
 	 end
       end
    end
@@ -517,7 +566,9 @@ function menu_create(owner, name, def, box, x1, y1)
 				bkgcolor  = nil,
 				curcolor  = menu.style.body_curcolor,
 				border    = menu.style.border,
-				span      = menu.style.span,			     } )
+				span      = menu.style.span,
+				keepin    = 1,
+			     } )
 
    menu.fl.fade_spd = 4
    menu.fl.draw_background = menufl_draw_background
@@ -548,9 +599,11 @@ function menu_create(owner, name, def, box, x1, y1)
       menu.root_menu = menu
    end
 
+   evt_app_insert_first(owner, menu)
+
+   -- After insetion because we need owner here
    menu:open()
 
-   evt_app_insert_first(owner, menu)
    return menu
 end
 
