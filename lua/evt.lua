@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.10 2002-12-05 08:17:47 ben Exp $
+-- $Id: evt.lua,v 1.11 2002-12-06 12:05:42 zigziggy Exp $
 --
 
 
@@ -57,8 +57,8 @@ dolib("display_init")
 -- create a new event code
 function evt_new_code()
    if not evt_free_code then
-	  -- free event code start at KBD_USER value ...
-	  evt_free_code = KBD_USER
+      -- free event code start at KBD_USER value ...
+      evt_free_code = KBD_USER
    end
 
    evt_free_code = evt_free_code + 1
@@ -74,43 +74,46 @@ function evt_send(app, evt)
    --	if app.name then name = app.name end
    --	print (format("[S] [%d] [%s]",evt.key, name))
 
-   local i = app.sub
-   while i do
-	  local n = i.next
-	  evt = evt_send(i, evt)
-	  if not evt then
-		 return
-	  end
-	  i = n
-   end
-
-   --	print (format("[R] [%d] [%s]", evt.key, name))
-
    if app.handle then
-	  evt = app:handle(evt)
+      evt = app:handle(evt)
+      if not evt then
+	 return
+      end
    end
-
+   
    --	if not evt then
    --		print (format("[H] [%s]", name))
    --	end
 
+   local i = app.sub
+   while i do
+      local n = i.next
+      evt = evt_send(i, evt)
+      if not evt then
+	 return
+      end
+      i = n
+   end
+   
+   --	print (format("[R] [%d] [%s]", evt.key, name))
+   
    return evt
 end
 
 -- INTERNAL
 function evt_update(app, frametime)
 
+   if app.update then
+      app:update(frametime)
+   end
+
    local i = app.sub
    while i do
-	  local n = i.next
-	  evt_update(i, frametime)
-	  i = n
+      local n = i.next
+      evt_update(i, frametime)
+      i = n
    end
-
-   if app.update then
-	  app:update(frametime)
-   end
-
+   
 end
 
 
@@ -122,26 +125,26 @@ function evt_peek()
    local frametime
 
    repeat
-	  key = evt_origpeekchar()
-
-	  if key then
-		 vcolor(255, 0, 0)
-		 evt = { key = key }
-		 evt = evt_send(evt_root_app, evt)
-		 if evt then
-			return evt
-		 end
-		 vcolor(0, 0, 0)
-	  else
-		 -- do collect garbage once per frame for smoother animation
-		 collectgarbage()
-
-		 -- calculate frame time
-		 evt_curframecounter = evt_origframecounter(1)
-		 frametime = evt_curframecounter/60
-	  end
+      key = evt_origpeekchar()
+      
+      if key then
+	 vcolor(255, 0, 0)
+	 evt = { key = key }
+	 evt = evt_send(evt_root_app, evt)
+	 if evt then
+	    return evt
+	 end
+	 vcolor(0, 0, 0)
+      else
+	 -- do collect garbage once per frame for smoother animation
+	 collectgarbage()
+	 
+	 -- calculate frame time
+	 evt_curframecounter = evt_origframecounter(1)
+	 frametime = evt_curframecounter/60
+      end
    until not key
-
+   
    -- call update method of applications
    vcolor(100, 0, 0)
    evt_update(evt_root_app, frametime)
@@ -154,7 +157,7 @@ function evt_peekchar()
    local evt
    evt = evt_peek()
    if evt then
-	  return evt.key
+      return evt.key
    end
 end
 
@@ -162,7 +165,7 @@ end
 function evt_wait()
    local evt
    repeat
-	  evt = evt_peek()
+      evt = evt_peek()
    until evt
 
    return evt
@@ -198,23 +201,32 @@ function evt_framecounter()
    return evt_curframecounter
 end
 
+
+---
+--- call this to shutdown an application, send to it the shutdown event
+---
+--- @warning when the application receive the shutdown event, it should 
+---          preserve the next, prev and owner fields so that it can be 
+---          removed from the owner's list correctly
+---
 function evt_shutdown_app(app)
    evt_send(app, { key = evt_shutdown_event } )
    evt_app_remove(app)
 end
 
+
 -- shutdown event system
 function evt_shutdown()
 
    if evt_root_app and evt_shutdown_event then
-	  -- send shutdown event too all application
-	  evt_send(evt_root_app, { key = evt_shutdown_event } )
+      -- send shutdown event too all application
+      evt_send(evt_root_app, { key = evt_shutdown_event } )
    end
 
    if evt_origgetchar then
-	  getchar = evt_origgetchar
-	  peekchar = evt_origpeekchar
-	  framecounter = evt_origframecounter
+      getchar = evt_origgetchar
+      peekchar = evt_origpeekchar
+      framecounter = evt_origframecounter
    end
 
    evt_root_app = nil
@@ -233,11 +245,11 @@ function evt_init()
    end
 
    if not evt_origgetchar then
-	  -- get original getchar and peekchar
-	  -- the event system will replace these two variables later
-	  evt_origgetchar = getchar
-	  evt_origpeekchar = peekchar
-	  evt_origframecounter = framecounter
+      -- get original getchar and peekchar
+      -- the event system will replace these two variables later
+      evt_origgetchar = getchar
+      evt_origpeekchar = peekchar
+      evt_origframecounter = framecounter
    end
 
 
@@ -249,15 +261,15 @@ function evt_init()
 
    evt_root_app = {
 
-	  name = "root",
-	  version = "0.9"
+      name = "root",
+      version = "0.9"
 
    }
 
    evt_desktop_app = {
 
-	  name = "desktop",
-	  version = "0.9"
+      name = "desktop",
+      version = "0.9"
 
    }
 

@@ -4,7 +4,7 @@
 --- @author   benjamin gerard <ben@sashipa.com>
 --- @brief    Fundamental lua stuff.
 ---
---- $Id: init.lua,v 1.11 2002-12-04 10:47:25 ben Exp $
+--- $Id: init.lua,v 1.12 2002-12-06 12:05:42 zigziggy Exp $
 ---
 
 -- do this file only once !
@@ -128,10 +128,10 @@ function register_commands(dd, commands, force)
 		 print ("Registering new command ", c.name)
 		 setglobal(c.name, c["function"])
 		 addhelp(c.name, c.usage, 1)
-		 if c.shortname then
-			print ("Short name ", c.name)
-			setglobal(c.shortname, c["function"])
-			addhelp(c.shortname, c.usage, 1)
+		 if c.short_name then
+			print ("Short name ", c.short_name)
+			setglobal(c.short_name, c["function"])
+			addhelp(c.short_name, c.usage, 1)
 		 end
 		 c.registered = 1
 	  end

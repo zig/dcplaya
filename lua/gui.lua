@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.20 2002-12-05 08:17:47 ben Exp $
+--- $Id: gui.lua,v 1.21 2002-12-06 12:05:42 zigziggy Exp $
 ---
 
 --
@@ -53,109 +53,157 @@ gui_focus_border_width = 2
 gui_focus_border_height = 2
 
 gui_keyup = { 
-	[KBD_KEY_UP] = 1, 
-	[KBD_CONT1_DPAD_UP] = 1, [KBD_CONT1_DPAD2_UP] = 1, 
-	[KBD_CONT2_DPAD_UP] = 1, [KBD_CONT2_DPAD2_UP] = 1, 
-	[KBD_CONT3_DPAD_UP] = 1, [KBD_CONT3_DPAD2_UP] = 1, 
-	[KBD_CONT4_DPAD_UP] = 1, [KBD_CONT4_DPAD2_UP] = 1
+   [KBD_KEY_UP] = 1, 
+   [KBD_CONT1_DPAD_UP] = 1, [KBD_CONT1_DPAD2_UP] = 1, 
+   [KBD_CONT2_DPAD_UP] = 1, [KBD_CONT2_DPAD2_UP] = 1, 
+   [KBD_CONT3_DPAD_UP] = 1, [KBD_CONT3_DPAD2_UP] = 1, 
+   [KBD_CONT4_DPAD_UP] = 1, [KBD_CONT4_DPAD2_UP] = 1
 }
 gui_keydown = { 
-	[KBD_KEY_DOWN] = 1, 
-	[KBD_CONT1_DPAD_DOWN] = 1, [KBD_CONT1_DPAD2_DOWN] = 1, 
-	[KBD_CONT2_DPAD_DOWN] = 1, [KBD_CONT2_DPAD2_DOWN] = 1, 
-	[KBD_CONT3_DPAD_DOWN] = 1, [KBD_CONT3_DPAD2_DOWN] = 1, 
-	[KBD_CONT4_DPAD_DOWN] = 1, [KBD_CONT4_DPAD2_DOWN] = 1
+   [KBD_KEY_DOWN] = 1, 
+   [KBD_CONT1_DPAD_DOWN] = 1, [KBD_CONT1_DPAD2_DOWN] = 1, 
+   [KBD_CONT2_DPAD_DOWN] = 1, [KBD_CONT2_DPAD2_DOWN] = 1, 
+   [KBD_CONT3_DPAD_DOWN] = 1, [KBD_CONT3_DPAD2_DOWN] = 1, 
+   [KBD_CONT4_DPAD_DOWN] = 1, [KBD_CONT4_DPAD2_DOWN] = 1
 }
 gui_keyleft = { 
-	[KBD_KEY_LEFT] = 1, 
-	[KBD_CONT1_DPAD_LEFT] = 1, [KBD_CONT1_DPAD2_LEFT] = 1, 
-	[KBD_CONT2_DPAD_LEFT] = 1, [KBD_CONT2_DPAD2_LEFT] = 1, 
-	[KBD_CONT3_DPAD_LEFT] = 1, [KBD_CONT3_DPAD2_LEFT] = 1, 
-	[KBD_CONT4_DPAD_LEFT] = 1, [KBD_CONT4_DPAD2_LEFT] = 1
+   [KBD_KEY_LEFT] = 1, 
+   [KBD_CONT1_DPAD_LEFT] = 1, [KBD_CONT1_DPAD2_LEFT] = 1, 
+   [KBD_CONT2_DPAD_LEFT] = 1, [KBD_CONT2_DPAD2_LEFT] = 1, 
+   [KBD_CONT3_DPAD_LEFT] = 1, [KBD_CONT3_DPAD2_LEFT] = 1, 
+   [KBD_CONT4_DPAD_LEFT] = 1, [KBD_CONT4_DPAD2_LEFT] = 1
 }
 gui_keyright = { 
-	[KBD_KEY_RIGHT] = 1, 
-	[KBD_CONT1_DPAD_RIGHT] = 1, [KBD_CONT1_DPAD2_RIGHT] = 1, 
-	[KBD_CONT2_DPAD_RIGHT] = 1, [KBD_CONT2_DPAD2_RIGHT] = 1, 
-	[KBD_CONT3_DPAD_RIGHT] = 1, [KBD_CONT3_DPAD2_RIGHT] = 1, 
-	[KBD_CONT4_DPAD_RIGHT] = 1, [KBD_CONT4_DPAD2_RIGHT] = 1
+   [KBD_KEY_RIGHT] = 1, 
+   [KBD_CONT1_DPAD_RIGHT] = 1, [KBD_CONT1_DPAD2_RIGHT] = 1, 
+   [KBD_CONT2_DPAD_RIGHT] = 1, [KBD_CONT2_DPAD2_RIGHT] = 1, 
+   [KBD_CONT3_DPAD_RIGHT] = 1, [KBD_CONT3_DPAD2_RIGHT] = 1, 
+   [KBD_CONT4_DPAD_RIGHT] = 1, [KBD_CONT4_DPAD2_RIGHT] = 1
 }
 gui_keyconfirm = { 
-	[KBD_ENTER] = 1, 
-	[KBD_CONT1_A] = 1, 
-	[KBD_CONT2_A] = 1, 
-	[KBD_CONT3_A] = 1, 
-	[KBD_CONT4_A] = 1, 
+   [KBD_ENTER] = 1, 
+   [KBD_CONT1_A] = 1, 
+   [KBD_CONT2_A] = 1, 
+   [KBD_CONT3_A] = 1, 
+   [KBD_CONT4_A] = 1, 
 }
 gui_keycancel = { 
-	[KBD_ESC] = 1, 
-	[KBD_CONT1_B] = 1, 
-	[KBD_CONT2_B] = 1, 
-	[KBD_CONT3_B] = 1, 
-	[KBD_CONT4_B] = 1, 
+   [KBD_ESC] = 1, 
+   [KBD_CONT1_B] = 1, 
+   [KBD_CONT2_B] = 1, 
+   [KBD_CONT3_B] = 1, 
+   [KBD_CONT4_B] = 1, 
 }
 gui_keymenu = { 
-	[KBD_TAB] = 1, 
-	[KBD_CONT1_Y] = 1, 
-	[KBD_CONT2_Y] = 1, 
-	[KBD_CONT3_Y] = 1, 
-	[KBD_CONT4_Y] = 1, 
+   [KBD_TAB] = 1, 
+   [KBD_CONT1_Y] = 1, 
+   [KBD_CONT2_Y] = 1, 
+   [KBD_CONT3_Y] = 1, 
+   [KBD_CONT4_Y] = 1, 
 }
 gui_keyselect = { 
-	[KBD_BACKSPACE] = 1, 
-	[KBD_CONT1_X] = 1, 
-	[KBD_CONT2_X] = 1, 
-	[KBD_CONT3_X] = 1, 
-	[KBD_CONT4_X] = 1, 
+   [KBD_BACKSPACE] = 1, 
+   [KBD_CONT1_X] = 1, 
+   [KBD_CONT2_X] = 1, 
+   [KBD_CONT3_X] = 1, 
+   [KBD_CONT4_X] = 1, 
 }
 
 -- compute an automatic guess if none is given
 function gui_orphanguess_z(z)
-	if not z then
-		z = gui_curz
-		gui_curz = gui_curz + 100
-	end
-	return z
+   if not z then
+      --      z = gui_curz
+      --      gui_curz = gui_curz + 100
+      z = 0
+   end
+   return z
 end
 
 -- compute an automatic guess if none is given, using parent's z
 function gui_guess_z(owner, z)
-	if not z then
-		z = gui_orphanguess_z(owner.z) + 10
-	end
-	return z
+   if not z then
+      z = gui_orphanguess_z(owner.z) + 10
+   end
+   return z
+end
+
+
+
+-- place child of a dialog box
+function gui_child_autoplacement(app)
+   local i = app.sub
+   if not i then
+      return
+   end
+   local n = 0
+   while i do
+      n = n + 1
+      i = i.next
+   end
+
+   local scale = 100/n
+   i = app.sub
+   n = 0
+   while i do
+      
+
+      i = i.next
+   end
 end
 
 
 -- change focused item
 function gui_new_focus(app, f)
-	if f and f ~= app.sub then
-		evt_send(app.sub, { key = gui_unfocus_event })
-		evt_app_remove(f)
-		evt_app_insert_first(app, f)
-		app.focus_time = 0
-		evt_send(app.sub, { key = gui_focus_event })
-	end
+   local of = app.focused_fake_app.sub
+   if f and f~=of then
+      if of then
+	 evt_send(of, { key = gui_unfocus_event })
+	 evt_app_remove(of)
+	 evt_app_insert_last(app, of)
+      end
+      evt_app_remove(f)
+      evt_app_insert_first(app.focused_fake_app, f)
+      evt_send(f, { key = gui_focus_event })
+      app.focus_time = 0
+
+      return 1
+   end
 end
+
+
+-- check the focused item is in specific sublist
+function gui_check_focus(app)
+   if not app.focused_fake_app then
+      app.focused_fake_app = {
+	 handle = function(a, evt)
+		     return %app:handle(evt)
+		  end
+      }
+   end
+   if app.sub and not app.focused_fake_app.sub then
+      gui_new_focus(app, app.sub)
+   end
+end
+
 
 -- test focus item. Can test if no focus if f is nil.
 function gui_is_focus(app, f)
-	if not app or f ~= app.sub then return end
-	return 1
+   if not app or f ~= app.focused_fake_app.sub then return end
+   return 1
 end
 
 function gui_less(b1, b2, i)
-	return b1[i] < b2[i]
+   return b1[i] < b2[i]
 end
 function gui_more(b1, b2, i)
---	print (b1[i], b2[i])
-	return b1[i] > b2[i]
+   --	print (b1[i], b2[i])
+   return b1[i] > b2[i]
 end
 
 function gui_boxdist(b1, b2)
-	local x = b2[1] - b1[1]
-	local y = b2[2] - b1[2]
-	return x*x + y*y
+   local x = b2[1] - b1[1]
+   local y = b2[2] - b1[2]
+   return x*x + y*y
 end
 
 -- find closest item to given box, satisfying given condition
@@ -164,54 +212,54 @@ gui_closestcoef_horizontal = { 1, 5, 1, 5 }
 gui_closestcoef_vertical = { 5, 1, 5, 1 }
 function gui_closest(app, box, coef, cond, condi)
 
-	if not coef then
-		coef = gui_closestcoef
-	end
-	box = box * coef
-	local i = app.sub
-	if not i then
-		return
-	end
-	local imin = nil
-	local min = 1000000000
-	repeat
-		local b = i.box * coef
-		if not cond or cond(b, box, condi) then
-			local d = gui_boxdist(b, box)
-			if d < min then
-				imin = i
-				min = d
-			end
-		end
+   if not coef then
+      coef = gui_closestcoef
+   end
+   box = box * coef
+   local i = app.sub
+   if not i then
+      return
+   end
+   local imin = nil
+   local min = 1000000000
+   repeat
+      local b = i.box * coef
+      if not cond or cond(b, box, condi) then
+	 local d = gui_boxdist(b, box)
+	 if d < min then
+	    imin = i
+	    min = d
+	 end
+      end
 
-		i = i.next
-	until not i
+      i = i.next
+   until not i
 
---	print (min, app.sub, imin)
-	
-	return imin
-	
+   --	print (min, app.sub, imin)
+   
+   return imin
+   
 end
 
 -- A minimal handle function
 function gui_minimal_handle(app,evt)
-	local key = evt.key
-	if key == evt_shutdown_event then
-		app.dl = nil
-		return evt
-	end
-	local f = app.event_table[key]
-	if f then
-		return f(app, evt)
-	end
-	return evt
+   local key = evt.key
+   if key == evt_shutdown_event then
+      app.dl = nil
+      return evt
+   end
+   local f = app.event_table[key]
+   if f then
+      return f(app, evt)
+   end
+   return evt
 end
 
 -- dialog
 
 function gui_dialog_shutdown(app)
-   if app.sub then
-	  evt_send(app.sub, { key = gui_unfocus_event })
+   if app.focused_fake_app.sub then
+      evt_send(app.focused_fake_app.sub, { key = gui_unfocus_event })
    end
    dl_destroy_list(app.dl)
    dl_destroy_list(app.focusup_dl)
@@ -225,111 +273,128 @@ end
 function gui_dialog_handle(app, evt)
    local key = evt.key
 
+   gui_check_focus(app)
+   local ff = app.focused_fake_app
+   local focused = ff.sub
+
+   if focused then
+      evt_send(focused, evt)
+      if not evt then
+	 return
+      end
+   end
+
    if key == evt_shutdown_event then
-	  gui_dialog_shutdown(app)
-	  return evt -- pass the shutdown event to next app
+      gui_dialog_shutdown(app)
+      return evt -- pass the shutdown event to next app
    end
    
    --	print("dialog key:"..key)
    local f = app.event_table[key]
    if f then
-	  return f(app, evt)
+      return f(app, evt)
    end
    
-   local focused = app.sub
    if focused then
-	  if gui_keyconfirm[key] then
-		 evt_send(focused, { key = gui_press_event })
-		 return
-	  end
+      if gui_keyconfirm[key] then
+	 evt_send(focused, { key = gui_press_event })
+	 return
+      end
 
-	  if gui_keymenu[key] then
-		 evt_send(focused, { key = gui_menu_event })
-		 return
-	  end
-	  
-	  if gui_keyup[key] then
-		 gui_new_focus(app, 
-					   gui_closest(app, focused.box, 
-								   gui_closestcoef_vertical, gui_less, 4))
-		 return
-	  end
-	  
-	  if gui_keydown[key] then
-		 gui_new_focus(app, 
-					   gui_closest(app, focused.box, 
-								   gui_closestcoef_vertical, gui_more, 2))
-		 return
-	  end
-	  
-	  if gui_keyleft[key] then
-		 gui_new_focus(app, 
-					   gui_closest(app, focused.box, 
-								   gui_closestcoef_horizontal, gui_less, 3))
-		 return
-	  end
-	  
-	  if gui_keyright[key] then
-		 gui_new_focus(app, 
-					   gui_closest(app, focused.box, 
-								   gui_closestcoef_horizontal, gui_more, 1))
-		 return
-	  end
-	  
+      if gui_keymenu[key] then
+	 evt_send(focused, { key = gui_menu_event })
+	 return
+      end
+      
+      if gui_keyup[key] then
+	 if gui_new_focus(app, 
+			  gui_closest(app, focused.box, 
+				      gui_closestcoef_vertical, gui_less, 4)) then
+	    return
+	 end
+      end
+      
+      if gui_keydown[key] then
+	 if gui_new_focus(app, 
+			  gui_closest(app, focused.box, 
+				      gui_closestcoef_vertical, gui_more, 2)) then
+	    return
+	 end
+      end
+      
+      if gui_keyleft[key] then
+	 if gui_new_focus(app, 
+			  gui_closest(app, focused.box, 
+				      gui_closestcoef_horizontal, gui_less, 3)) then
+	    return
+	 end
+      end
+      
+      if gui_keyright[key] then
+	 if gui_new_focus(app, 
+			  gui_closest(app, focused.box, 
+				      gui_closestcoef_horizontal, gui_more, 1)) then
+	    return
+	 end
+      end
+      
    end
    
    if app.flags.modal then
-	  print("modal !!")
-	  return nil
+      print("modal !!")
+      return nil
    end
    --	print("dialog unhandle:"..key)
    return evt
 end
 
 function gui_dialog_update(app, frametime)
-   local focused = app.sub
+   gui_check_focus(app)
+   local focused = app.focused_fake_app.sub
    if focused then
-	  -- handle focus cursor
-	  
-	  -- converge to focused item box
-	  app.focus_box = app.focus_box + 
-		 20 * frametime * (focused.box - app.focus_box)
-	  
-	  -- set focus cursor position and color
-	  dl_set_trans(app.focusup_dl, 
-				   mat_scale(app.focus_box[3] - app.focus_box[1], 
-							 gui_focus_border_height, 1) *
-					  mat_trans(app.focus_box[1],
-								app.focus_box[2]-gui_focus_border_height, 0))
-	  dl_set_trans(app.focusdown_dl, 
-				   mat_scale(app.focus_box[3] - app.focus_box[1], 
-							 gui_focus_border_height, 1) *
-					  mat_trans(app.focus_box[1], app.focus_box[4], 0))
-	  dl_set_trans(app.focusleft_dl, 
-				   mat_scale(gui_focus_border_width, 
-							 2*gui_focus_border_height	+ app.focus_box[4]
-								- app.focus_box[2], 1)
-					  * mat_trans(app.focus_box[1]-gui_focus_border_width,
-								  app.focus_box[2]-gui_focus_border_height, 0))
-	  dl_set_trans(app.focusright_dl, 
-				   mat_scale(gui_focus_border_width, 
-							 2*gui_focus_border_height + app.focus_box[4] - app.focus_box[2], 1) *
-					  mat_trans(app.focus_box[3], app.focus_box[2]-gui_focus_border_height, 0))
-	  
-	  app.focus_time = app.focus_time + frametime
-	  local ci = 0.5+0.5*cos(360*app.focus_time*2)
-	  
-	  local focus_dl
-	  for _, focus_dl in { app.focusup_dl, app.focusdown_dl, app.focusleft_dl, app.focusright_dl } do
-		 dl_set_color(focus_dl, ci, 1, ci, ci)
-		 dl_set_active(focus_dl, 1)
-	  end
-	  
+      evt_update(focused, frametime)
+
+      -- handle focus cursor
+      
+      -- converge to focused item box
+      app.focus_box = app.focus_box + 
+	 20 * frametime * (focused.box - app.focus_box)
+      
+      -- set focus cursor position and color
+      dl_set_trans(app.focusup_dl, 
+		   mat_scale(app.focus_box[3] - app.focus_box[1], 
+			     gui_focus_border_height, 1) *
+		      mat_trans(app.focus_box[1],
+				app.focus_box[2]-gui_focus_border_height, 0))
+      dl_set_trans(app.focusdown_dl, 
+		   mat_scale(app.focus_box[3] - app.focus_box[1], 
+			     gui_focus_border_height, 1) *
+		      mat_trans(app.focus_box[1], app.focus_box[4], 0))
+      dl_set_trans(app.focusleft_dl, 
+		   mat_scale(gui_focus_border_width, 
+			     2*gui_focus_border_height	+ app.focus_box[4]
+				- app.focus_box[2], 1)
+		      * mat_trans(app.focus_box[1]-gui_focus_border_width,
+				  app.focus_box[2]-gui_focus_border_height, 0))
+      dl_set_trans(app.focusright_dl, 
+		   mat_scale(gui_focus_border_width, 
+			     2*gui_focus_border_height + app.focus_box[4] - app.focus_box[2], 1) *
+		      mat_trans(app.focus_box[3], app.focus_box[2]-gui_focus_border_height, 0))
+      
+      app.focus_time = app.focus_time + frametime
+      local ci = 0.5+0.5*cos(360*app.focus_time*2)
+      
+      local focus_dl
+      for _, focus_dl in { app.focusup_dl, app.focusdown_dl, app.focusleft_dl, app.focusright_dl } do
+	 dl_set_color(focus_dl, ci, 1, ci, ci)
+	 dl_set_active(focus_dl, 1)
+      end
+      
    else
-	  -- no focus cursor
-	  if app.focus_dl then 
-		 dl_set_active(app.focus_dl, nil)
-	  end
+      -- no focus cursor
+      if app.focus_dl then 
+	 dl_set_active(app.focus_dl, nil)
+      end
    end
    
 end
@@ -344,30 +409,30 @@ function gui_new_dialog(owner, box, z, dlsize, text, mode)
    z = gui_orphanguess_z(z)
 
    if not dlsize then
-	  dlsize = 10*1024
+      dlsize = 10*1024
    end
    dial = { 
 
-	  name = "gui_dialog",
-	  version = "0.9",
-	  
-	  handle = gui_dialog_handle,
-	  update = gui_dialog_update,
-	  
-	  dl = dl_new_list(dlsize, 1),
-	  box = box,
-	  z = z,
-	  
-	  focusup_dl = dl_new_list(256, 0),
-	  focusdown_dl = dl_new_list(256, 0),
-	  focusleft_dl = dl_new_list(256, 0),
-	  focusright_dl = dl_new_list(256, 0),
-	  focus_box = box,
-	  focus_time = 0,  -- blinking time
-	  
-	  event_table = { },
-	  flags  = { }
-	  
+      name = "gui_dialog",
+      version = "0.9",
+      
+      handle = gui_dialog_handle,
+      update = gui_dialog_update,
+      
+      dl = dl_new_list(dlsize, 1),
+      box = box,
+      z = z,
+      
+      focusup_dl = dl_new_list(256, 0),
+      focusdown_dl = dl_new_list(256, 0),
+      focusleft_dl = dl_new_list(256, 0),
+      focusright_dl = dl_new_list(256, 0),
+      focus_box = box,
+      focus_time = 0,  -- blinking time
+
+      event_table = { },
+      flags  = { }
+      
    }
    
    -- draw surrounding box
@@ -376,14 +441,14 @@ function gui_new_dialog(owner, box, z, dlsize, text, mode)
    -- draw the focus cursor
    local focus_dl
    for _, focus_dl in 
-	  { dial.focusup_dl, dial.focusdown_dl, 
-	  dial.focusleft_dl, dial.focusright_dl } do
-	  dl_draw_box(focus_dl, { 0, 0,  1, 1 }, 
-			z+0.5, { 1, 1, 1, 1 }, { 1, 1, 1, 1 })
+      { dial.focusup_dl, dial.focusdown_dl, 
+      dial.focusleft_dl, dial.focusright_dl } do
+      dl_draw_box(focus_dl, { 0, 0,  1, 1 }, 
+		  z+0.5, { 1, 1, 1, 1 }, { 1, 1, 1, 1 })
    end
    
    if text then
-	  gui_label(dial, text, mode)
+      gui_label(dial, text, mode)
    end
    
    evt_app_insert_first(owner, dial)
@@ -401,53 +466,53 @@ function gui_button_shutdown(app)
 end
 
 function gui_button_handle(app, evt)
-	local key = evt.key
+   local key = evt.key
 
-	if key == evt_shutdown_event then
-		gui_button_shutdown(app)
-		return evt -- pass the shutdown event to next app
-	end
+   if key == evt_shutdown_event then
+      gui_button_shutdown(app)
+      return evt -- pass the shutdown event to next app
+   end
 
-	local f = app.event_table[key]
-	if f then
-		return f(app, evt)
-	end
+   local f = app.event_table[key]
+   if f then
+      return f(app, evt)
+   end
 
-	return evt
+   return evt
 end
 
 -- warning : owner must be a gui item (we use its dl)
 function gui_new_button(owner, box, text, mode, z)
-	local app
+   local app
 
-	z = gui_guess_z(owner, z)
+   z = gui_guess_z(owner, z)
 
-	app = { 
+   app = { 
 
-		name = "gui_button",
-		version = "0.9",
+      name = "gui_button",
+      version = "0.9",
 
-		handle = gui_button_handle,
-		update = gui_button_update,
+      handle = gui_button_handle,
+      update = gui_button_update,
 
-		dl = owner.dl,
-		box = box,
-		z = z,
+      dl = owner.dl,
+      box = box,
+      z = z,
 
-		event_table = { },
-		flags = { }
+      event_table = { },
+      flags = { }
 
-	}
+   }
 
-	dl_draw_box(app.dl, app.box, z, gui_button_color1, gui_button_color2)
+   dl_draw_box(app.dl, app.box, z, gui_button_color1, gui_button_color2)
 
-	if text then
-		gui_label(app, text, mode)
-	end
+   if text then
+      gui_label(app, text, mode)
+   end
 
-	evt_app_insert_last(owner, app)
+   evt_app_insert_last(owner, app)
 
-	return app
+   return app
 end
 
 
@@ -456,18 +521,18 @@ end
 --
 function gui_input_shutdown(app)
    if app then
-	  local i,v
-	  for i,v in app do app[i] = 0 end
+      local i,v
+      for i,v in app do app[i] = 0 end
    end
 end
 
 gui_input_edline_set = {
-	[KBD_KEY_HOME] = 1,
-	[KBD_KEY_END] = 1,
-	[KBD_KEY_LEFT] = 1,
-	[KBD_KEY_RIGHT] = 1,
-	[KBD_KEY_DEL] = 1,
-	[KBD_BACKSPACE] = 1,
+   [KBD_KEY_HOME] = 1,
+   [KBD_KEY_END] = 1,
+   [KBD_KEY_LEFT] = 1,
+   [KBD_KEY_RIGHT] = 1,
+   [KBD_KEY_DEL] = 1,
+   [KBD_BACKSPACE] = 1,
 }
 
 --- Input GUI event handler.
@@ -476,36 +541,36 @@ function gui_input_handle(app, evt)
    local key = evt.key
 
    if key == evt_shutdown_event then
-	  gui_input_shutdown(app)
-	  return evt -- pass the shutdown event to next app
+      gui_input_shutdown(app)
+      return evt -- pass the shutdown event to next app
    end
 
    local f = app.event_table[key]
    if f then
-	  return f(app, evt)
+      return f(app, evt)
    end
    
    if not app.prev then
-	  if ((key >= 32 and key < 128) or gui_input_edline_set[key]) then
-		 app.input,app.input_col = zed_edline(app.input,app.input_col,key)
-		 gui_input_display_text(app)
-		 return nil
-	  elseif gui_keyconfirm[key] then
-		 evt_send(app.owner, { key=gui_input_confirm_event, input=app })
-		 return nil
-	  elseif gui_keycancel[key] then
-		 gui_input_set(app,strsub(app.input,1,app.input_col-1))
-		 return nil
-	  end
+      if ((key >= 32 and key < 128) or gui_input_edline_set[key]) then
+	 app.input,app.input_col = zed_edline(app.input,app.input_col,key)
+	 gui_input_display_text(app)
+	 return nil
+      elseif gui_keyconfirm[key] then
+	 evt_send(app.owner, { key=gui_input_confirm_event, input=app })
+	 return nil
+      elseif gui_keycancel[key] then
+	 gui_input_set(app,strsub(app.input,1,app.input_col-1))
+	 return nil
+      end
    end
 
    if key == gui_focus_event and ke_set_active then
-	  ke_set_active(1)
-	  return nil
+      ke_set_active(1)
+      return nil
    end
    if key == gui_unfocus_event and ke_set_active then
-	  ke_set_active(nil)
-	  return nil
+      ke_set_active(nil)
+      return nil
    end
    
    return evt
@@ -522,34 +587,34 @@ function gui_input_display_text(app)
 
    w, h = dl_measure_text(app.input_dl, strsub(app.input, 1, app.input_col-1))
    dl_draw_box(app.input_dl, x+w, y, x+w+2, y+h, z,
-			   gui_input_cursor_color1, gui_input_cursor_color2)
---	print (x+w, y, x+w+2, y+h)
+	       gui_input_cursor_color1, gui_input_cursor_color2)
+   --	print (x+w, y, x+w+2, y+h)
 end
 
 -- set the input text
 function gui_input_set(app, string, col)
-	if not string then
-		string = ""
-	end
-	if not col then
-		col = strlen(string)+1
-	end
-	app.input = string
-	app.input_col = col
-	gui_input_display_text(app)
+   if not string then
+      string = ""
+   end
+   if not col then
+      col = strlen(string)+1
+   end
+   app.input = string
+   app.input_col = col
+   gui_input_display_text(app)
 end
 
 -- insert text
 function gui_input_insert(app, string, col)
-	if not string or string == "" then return end
-	if col then app.input_col = col end
-	local i,len
-	len = strlen(string)
-	for i=1, len, 1 do
-		app.input, app.input_col = zed_edline(app.input, app.input_col,
-			strbyte(string,i))
-	end
-	gui_input_display_text(app)
+   if not string or string == "" then return end
+   if col then app.input_col = col end
+   local i,len
+   len = strlen(string)
+   for i=1, len, 1 do
+      app.input, app.input_col = zed_edline(app.input, app.input_col,
+					    strbyte(string,i))
+   end
+   gui_input_display_text(app)
 end
 
 -- warning : owner must be a gui item (we use its dl)
@@ -559,22 +624,22 @@ function gui_new_input(owner, box, text, mode, string, z)
    z = gui_guess_z(owner, z)
    
    app = { 
-	  
-	  name = "gui_input",
-	  version = "0.9",
-	  
-	  handle = gui_input_handle,
-	  update = gui_input_update,
-	  
-	  dl = owner.dl,
-	  box = box,
-	  z = z,
-	  
-	  event_table = { },
-	  flags = { },
-	  
-	  input_dl = dl_new_list(1024, 1)
-	  
+      
+      name = "gui_input",
+      version = "0.9",
+      
+      handle = gui_input_handle,
+      update = gui_input_update,
+      
+      dl = owner.dl,
+      box = box,
+      z = z,
+      
+      event_table = { },
+      flags = { },
+      
+      input_dl = dl_new_list(1024, 1)
+      
    }
    
    dl_draw_box(app.dl, app.box, z, gui_input_color1, gui_input_color2)
@@ -582,14 +647,14 @@ function gui_new_input(owner, box, text, mode, string, z)
    gui_input_set(app, string)
    
    if text then
-	  gui_label(app, text, mode)
+      gui_label(app, text, mode)
    end
    
    evt_app_insert_last(owner, app)
    
    -- if we are the focused widget, then show the keyboard
    if app.sub == app and ke_set_active then
-	  ke_set_active(1)
+      ke_set_active(1)
    end
    
    return app
@@ -600,14 +665,14 @@ function gui_text_set(app, text)
    dl_clear(app.dl)
    dl_draw_box(app.dl, app.box, z, {0.1, 1, 1, 1} , {0.15, 1, 1, 1})
    if text and strlen(text) > 0 then
-	  gui_label(app, text, app.mode)
+      gui_label(app, text, app.mode)
    end
    dl_set_active(app.dl,1)
 end
 
 function gui_destroy_text(app)
    if app then
-	  dl_destroy_list(app.dl)
+      dl_destroy_list(app.dl)
    end
 end
 
@@ -617,15 +682,15 @@ function gui_new_text(owner, box, text, mode, z)
    z = gui_guess_z(owner, z)
 
    app = { 
-	  name = "gui_text",
-	  version = "1.0",
-	  handle = gui_minimal_handle,
-	  dl = dl_new_list(1024),
-	  box = box,
-	  z = z,
-	  event_table = { },
-	  flags = { inactive = 1 },
-	  mode = mode
+      name = "gui_text",
+      version = "1.0",
+      handle = gui_minimal_handle,
+      dl = dl_new_list(1024),
+      box = box,
+      z = z,
+      event_table = { },
+      flags = { inactive = 1 },
+      mode = mode
    }
    gui_text_set(app, text)
    evt_app_insert_last(owner, app)
@@ -639,23 +704,23 @@ function gui_new_children(owner, name, handle, box, mode, z)
    z = gui_guess_z(owner, z)
    
    if not name then
-	  if owner.name then name = "child_of_"..owner.name
-	  else name = "gui_child" end
+      if owner.name then name = "child_of_"..owner.name
+      else name = "gui_child" end
    end
    
    if not handle then
-	  handle = gui_minimal_handle
+      handle = gui_minimal_handle
    end
    
    app = { 
-	  name = name,
-	  handle = handle,
-	  dl = dl_new_list(1024),
-	  box = box,
-	  z = z,
-	  event_table = { },
-	  flags = {},
-	  mode = mode
+      name = name,
+      handle = handle,
+      dl = dl_new_list(1024),
+      box = box,
+      z = z,
+      event_table = { },
+      flags = {},
+      mode = mode
    }
    evt_app_insert_last(owner, app)
    return app
@@ -663,110 +728,110 @@ end
 
 -- display justified text into given box
 function gui_justify(dl, box, z, color, text, mode)
-	local w = 0
-	local h = 0
-	local list = { }
-	local wlist = { }
-	local hlist = { }
-	local bw = box[3] - box[1] -- box width
+   local w = 0
+   local h = 0
+   local list = { }
+   local wlist = { }
+   local hlist = { }
+   local bw = box[3] - box[1] -- box width
 
-	if not mode then
-		mode = { }
-	end
-	
-	-- split the text into portions that fits into the width of the box
-	-- TODO handle \n character
-	local start = 1
-	local len = strlen(text)
-	
-	while start <= len do
-		local e1, e2 = strfind(text, "[%s%p]+", start)
-		if not e2 then
-			e2 = len
-		end
-		local last = e2
-		while dl_measure_text(dl, strsub(text, start, e2)) < bw do
-			last = e2
-			e1, e2 = strfind(text, "[%s%p]+", e2+1)
-			if not e2 then
-				last = len
-				e2 = len
-				break
-			end
-		end
-		local s = strsub(text, start, last)
-		tinsert(list, strsub(text, start, last))
-		local cw, ch = dl_measure_text(dl, s)
-		tinsert(wlist, cw)
-		tinsert(hlist, ch)
-		w = max(w, cw)
-		h = h + ch
-		start = last+1
-	end
+   if not mode then
+      mode = { }
+   end
+   
+   -- split the text into portions that fits into the width of the box
+   -- TODO handle \n character
+   local start = 1
+   local len = strlen(text)
+   
+   while start <= len do
+      local e1, e2 = strfind(text, "[%s%p]+", start)
+      if not e2 then
+	 e2 = len
+      end
+      local last = e2
+      while dl_measure_text(dl, strsub(text, start, e2)) < bw do
+	 last = e2
+	 e1, e2 = strfind(text, "[%s%p]+", e2+1)
+	 if not e2 then
+	    last = len
+	    e2 = len
+	    break
+	 end
+      end
+      local s = strsub(text, start, last)
+      tinsert(list, strsub(text, start, last))
+      local cw, ch = dl_measure_text(dl, s)
+      tinsert(wlist, cw)
+      tinsert(hlist, ch)
+      w = max(w, cw)
+      h = h + ch
+      start = last+1
+   end
 
-	-- display the text
-	local x, y
-	if mode.y == "down" then
-		y = box[4] - h
-	elseif mode.y == "downout" then
-		y = box[4]
-	elseif mode.y == "up" then
-		y = box[2]
-	elseif mode.y == "upout" then
-		y = box[2] - h
-	else
-		y = (box[2] + box[4] - h) / 2
-	end
-	local i, n
-	n = list.n
-	for i=1, n, 1 do
-		local cw = wlist[i]
-		local s = list[i]
+   -- display the text
+   local x, y
+   if mode.y == "down" then
+      y = box[4] - h
+   elseif mode.y == "downout" then
+      y = box[4]
+   elseif mode.y == "up" then
+      y = box[2]
+   elseif mode.y == "upout" then
+      y = box[2] - h
+   else
+      y = (box[2] + box[4] - h) / 2
+   end
+   local i, n
+   n = list.n
+   for i=1, n, 1 do
+      local cw = wlist[i]
+      local s = list[i]
 
-		if mode.x == "right" then
-			x = box[3] - cw
-		elseif mode.x == "rightout" then
-			x = box[3]
-		elseif mode.x == "left" then
-			x = box[1]
-		elseif mode.x == "leftout" then
-			x = box[1] - cw
-		else
-			x = (box[1] + box[3] - cw) / 2
-		end
+      if mode.x == "right" then
+	 x = box[3] - cw
+      elseif mode.x == "rightout" then
+	 x = box[3]
+      elseif mode.x == "left" then
+	 x = box[1]
+      elseif mode.x == "leftout" then
+	 x = box[1] - cw
+      else
+	 x = (box[1] + box[3] - cw) / 2
+      end
 
-		dl_draw_text(dl, x, y, z, color, s)
+      dl_draw_text(dl, x, y, z, color, s)
 
-		y = y + hlist[i]
-	end
+      y = y + hlist[i]
+   end
 
-	-- TODO return bounding box of text
+   -- TODO return bounding box of text
 end
 
 -- add a label to a gui item
 function gui_label(app, text, mode)
---	gui_justify(app.dl, app.box + gui_text_shiftbox, app.z+1, gui_text_color, text, mode)
-	gui_justify(app.dl, app.box, app.z+1, gui_text_color, text, mode)
-	-- TODO use an optional mode.boxcolor and render a box around text if it is set ...
+   --	gui_justify(app.dl, app.box + gui_text_shiftbox, app.z+1, gui_text_color, text, mode)
+   gui_justify(app.dl, app.box, app.z+1, gui_text_color, text, mode)
+   -- TODO use an optional mode.boxcolor and render a box around text if it is set ...
 end
 
 
 function gui_shutdown()
-	gui_curz = 1000
+   gui_curz = 1000
 end
 
 function gui_init()
-	gui_shutdown()
-	gui_curz = 1000
-	gui_press_event		= evt_new_code()
-	gui_menu_event		= evt_new_code()
-	gui_focus_event		= evt_new_code()
-	gui_unfocus_event	= evt_new_code()
-	gui_input_confirm_event	= evt_new_code()
-	gui_item_confirm_event	= evt_new_code()
-	gui_item_cancel_event	= evt_new_code()
-	gui_item_change_event	= evt_new_code()
-	gui_color_change_event	= evt_new_code() -- arg:color
+   gui_shutdown()
+   gui_curz = 1000
+   gui_press_event		= evt_new_code()
+   gui_menu_event		= evt_new_code()
+   gui_focus_event		= evt_new_code()
+   gui_unfocus_event	= evt_new_code()
+   gui_input_confirm_event	= evt_new_code()
+   gui_item_confirm_event	= evt_new_code()
+   gui_item_cancel_event	= evt_new_code()
+   gui_item_change_event	= evt_new_code()
+   gui_color_change_event	= evt_new_code() -- arg:color
 end
 
 gui_init()
@@ -777,57 +842,72 @@ gui_loaded = 1
 -- --------------------------------------------------------------------
 -- SAMPLE TEST CODE
 
-function dialog_test()
-	-- create a dialog box with a label outside of the box
-	dial = gui_new_dialog(evt_desktop_app, { 100, 100, 400, 300 }, 2000, nil,
-			"My dialog box", { x = "left", y = "upout" } )
+function dialog_test(parent)
+   if not parent then
+      parent = evt_desktop_app
+   end
 
-	-- add some text inside the dialog box
-	gui_label(dial, 
-	[[
-		Hello World ! 
-		Ceci est un tres long texte on purpose !!!!
-	]], { y="up" } )
+   -- create a dialog box with a label outside of the box
+   local box = { 100, 100, 400, 300 }
+   if parent.box then
+      box[1] = box[1] + parent.box[1] + 100
+      box[2] = box[2] + parent.box[2]
+      box[3] = box[3] + parent.box[1] + 100
+      box[4] = box[4] + parent.box[2]
+   end
+   dial = gui_new_dialog(parent, box, 2000, nil,
+			 "My dialog box", { x = "left", y = "upout" } )
+   
+   -- add some text inside the dialog box
+   gui_label(dial, 
+	     [[
+		   Hello World ! 
+		   Ceci est un tres long texte on purpose !!!!
+	     ]], { y="up" } )
 
-	-- create a few buttons with labels
-	but = gui_new_button(dial, { 150, 200, 200, 220 }, "OK")
-
-	-- add a gui_press_event response
-	but.event_table[gui_press_event] =
-		function(but, evt)
-			print [[OK !!]]
-			evt_shutdown_app(but.owner)
-			return nil -- block the event
-		end
-
-	but = gui_new_button(dial, { 250, 200, 340, 220 }, "CANCEL")
-	but.event_table[gui_press_event] =
-		function(but, evt)
-			print [[CANCEL !!]]
-			evt_shutdown_app(but.owner)
-			return nil -- block the event
-		end
-
-	but = gui_new_button(dial, { 150, 250, 200, 270 }, "TITI")
-	but.event_table[gui_press_event] =
-		function(but, evt)
-			print [[TITI !!]]
-			return nil -- block the event
-		end
-
-	but = gui_new_button(dial, { 250, 250, 300, 270 }, "TOTO")
-	but.event_table[gui_press_event] =
-		function(but, evt)
-			print [[TOTO !!]]
-			return nil -- block the event
-		end
-
-	-- create an input item
-	input = gui_new_input(dial, { 120, 160, 380, 190 }, "Login :",
-				{ x = "left", y="upout" }, "ziggy")
-	return dial
+   local x = box[1] - 100
+   local y = box[2] - 100
+   
+   -- create a few buttons with labels
+   but = gui_new_button(dial, { x + 150, y + 200, x + 200, y + 220 }, "OK")
+   
+   -- add a gui_press_event response
+   but.event_table[gui_press_event] =
+      function(but, evt)
+	 print [[OK !!]]
+	 evt_shutdown_app(but.owner)
+	 return nil -- block the event
+      end
+   
+   but = gui_new_button(dial, { x + 250, y + 200, x + 340, y + 220 }, "CANCEL")
+   but.event_table[gui_press_event] =
+      function(but, evt)
+	 print [[CANCEL !!]]
+	 evt_shutdown_app(but.owner)
+	 return nil -- block the event
+      end
+   
+   but = gui_new_button(dial, { x + 150, y + 250, x + 200, y + 270 }, "TITI")
+   but.event_table[gui_press_event] =
+      function(but, evt)
+	 print [[TITI !!]]
+	 return nil -- block the event
+      end
+   
+   but = gui_new_button(dial, { x + 250, y + 250, x + 300, y + 270 }, "TOTO")
+   but.event_table[gui_press_event] =
+      function(but, evt)
+	 print [[TOTO !!]]
+	 return nil -- block the event
+      end
+   
+   -- create an input item
+   input = gui_new_input(dial, { x + 120, y + 160, x + 380, y + 190 }, "Login :",
+			 { x = "left", y="upout" }, "ziggy")
+   return dial
 end
 
-if nil then
-	dial = dialog_test()
+if 1 then
+   dial = dialog_test()
+   dialog_test(dial)
 end
