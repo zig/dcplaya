@@ -12,8 +12,8 @@
      //     NIMP(no_rnd_avg2)
      //     NIMP(strtol)
 /*      NIMP(time) */
-     NIMP(localtime)
-     NIMP(gmtime)
+/*      NIMP(localtime) */
+/*      NIMP(gmtime) */
      NIMP(atof)
 /*      NIMP(mktime) */
      //     NIMP(__ashldi3)

@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.30 2003-07-29 08:30:23 benjihan Exp $
+--- $Id: control_center.lua,v 1.31 2004-07-31 22:55:18 vincentp Exp $
 ---
 
 --- @defgroup  dcplaya_lua_cc_app  Control Center
@@ -154,12 +154,13 @@ function control_center_menucreator(target)
    control_center_create_sprites(cc)
 
    local root = ":" .. target.name .. ":" .. 
-      '{menu_dcp}about{about},{menu_vol}volume{volume},{menu_vmu}vmu >vmu,plugins >plugins,{menu_kbd}keyboard >keyboard'
+      '{menu_dcp}about{about},{menu_vol}volume{volume},{menu_vmu}vmu >vmu,plugins >plugins,{menu_kbd}keyboard >keyboard,{menu_net}network{network}'
 
 
    local cb = {
       about = control_center_about,
       volume = control_center_volume,
+      network = net_connect_dialog,
       setvmuvis = function (menu) 
 		     local cc = menu.root_menu.target
 		     local pos = menu.fl:get_pos()
@@ -194,8 +195,8 @@ function control_center_menucreator(target)
 		     if vmufile then
 			--- @TODO Check ramdisk modified here before to
 			--- commando it !!
-			deltree(ram_path) -- $$$ !! Outch !!
-			result = vmu_load_file(vmufile,ram_path)
+			deltree(ram_path.."/dcplaya") -- $$$ !! Outch !!
+			result = vmu_load_file(vmufile,ram_path.."/dcplaya")
 		     else
 			result = vmu_init()
 		     end

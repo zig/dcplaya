@@ -4,14 +4,14 @@
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sasahipa.com>
 #
 #
-# $Id: Makefile,v 1.4 2004-07-13 09:24:19 vincentp Exp $
+# $Id: Makefile,v 1.5 2004-07-31 22:55:18 vincentp Exp $
 #
 
 LEZ=yes
 
-FFMPEG_DIR		:= ffmpeg
+FFMPEG_DIR	:= ffmpeg
 FFMPEG_INCS 	:= .
-FFMPEG_LIB		:= $(FFMPEG_DIR)/libavformat.a $(FFMPEG_DIR)/libavcodec.a
+FFMPEG_LIB	:= $(FFMPEG_DIR)/libavformat.a $(FFMPEG_DIR)/libavcodec.a
 
 LEF_TARGET_EXTRA_DEP := $(FFMPEG_LIB) sha123/libsha123.a istream/libistream.a
 #LEF_EXTRA := -L$(FFMPEG_DIR) -Lsha123 -Listream -lavformat -lavcodec -lsha123 -listream

@@ -15,9 +15,13 @@ extern netif_t * netif;
 
 static int net_tx(const uint8 *data, int len, int mode)
 {
-  if (netif)
-    return netif->if_tx(netif, data, len, mode);
-  else
+  if (netif) {
+    int res;
+    //vid_border_color(255, 0, 0);
+    res =  netif->if_tx(netif, data, len, mode);
+    //vid_border_color(0, 0, 0);
+    return res;
+  } else
     return 0;
 }
 

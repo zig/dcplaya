@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Exceptions and guardians handling
  *
- * @version    $Id: exceptions.c,v 1.6 2004-07-04 14:16:45 vincentp Exp $
+ * @version    $Id: exceptions.c,v 1.7 2004-07-31 22:55:19 vincentp Exp $
  */
 
 #include <kos.h>
@@ -64,26 +64,6 @@ static struct {
 extern symbol_t main_symtab[];
 extern int main_symtab_size;
 
-static symbol_t * find_symb(void * addr)
-{
-  uint dist = ~0;
-  int i, best = -1;
-  uint a = (uint) addr;
-  
-  for (i=0; i<main_symtab_size; i++) {
-    uint b = (uint) main_symtab[i].addr;
-
-    if (a-b < dist) {
-      dist = a-b;
-      best = i;
-    }
-  }
-  if (best >= 0)
-    return main_symtab + best;
-  else
-    return 0;
-}
-
 static void guard_irq_handler(irq_t source, irq_context_t *context)
 {
   if (source == EXC_FPU) {
@@ -91,7 +71,7 @@ static void guard_irq_handler(irq_t source, irq_context_t *context)
     symbol_t * symb;
     int i;
 
-    symb = find_symb(irq_srt_addr->pc);
+    symb = lef_closest_symbol(irq_srt_addr->pc);
     if (symb) {
       printf("FPU EXCEPTION PC = %s + 0x%x (0x%x)\n", 
 	     symb->name, 
@@ -112,7 +92,7 @@ static void guard_irq_handler(irq_t source, irq_context_t *context)
     uint * stack = (uint *) irq_srt_addr->r[15];
 
     for (i=15; i>=0; i--) {
-      symb = find_symb(stack[i]);
+      symb = lef_closest_symbol(stack[i]);
       if (symb) {
 	printf("STACK#%2d = 0x%8x (%s + 0x%x)\n", i, stack[i],
 	       symb->name, 
@@ -126,14 +106,14 @@ static void guard_irq_handler(irq_t source, irq_context_t *context)
 	break;
       }
 
-    symb = find_symb(irq_srt_addr->pc);
+    symb = lef_closest_symbol(irq_srt_addr->pc);
     if (symb) {
       printf("PC = %s + 0x%x (0x%x)  ", 
 	     symb->name, 
 	     ((int)irq_srt_addr->pc) - ((int)symb->addr), irq_srt_addr->pc);
     }
 
-    symb = find_symb(irq_srt_addr->pr);
+    symb = lef_closest_symbol(irq_srt_addr->pr);
     if (symb) {
       printf("PR = %s + 0x%x (0x%x)\n", 
 	     symb->name, 
@@ -149,7 +129,8 @@ static void guard_irq_handler(irq_t source, irq_context_t *context)
   if (thd_current->expt_guard_stack_pos >= 0) {
     // Simulate a call to longjmp by directly changing stored 
     // context of the exception
-    irq_srt_addr->r[0x40/4] = longjmp;
+    //irq_srt_addr->r[0x40/4] = longjmp;
+    irq_srt_addr->pc = longjmp;
     irq_srt_addr->r[4] = thd_current->expt_jump_stack[thd_current->expt_guard_stack_pos];
     irq_srt_addr->r[5] = (void *) -1;
   } else {

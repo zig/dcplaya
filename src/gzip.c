@@ -5,7 +5,7 @@
  * @date     2002/09/20
  * @brief    Simple gzipped file access.
  *
- * $Id: gzip.c,v 1.5 2004-06-30 15:17:36 vincentp Exp $
+ * $Id: gzip.c,v 1.6 2004-07-31 22:55:19 vincentp Exp $
  */
 
 #include <kos/fs.h>
@@ -53,7 +53,7 @@ static int is_gz(int fd, int len)
 
 void *gzip_load(const char *fname, int *ptr_ulen)
 {
-  int fd = 0;
+  int fd = -1;
   gzFile f = 0;
   int len, ulen = 0;
   void * uncompr = 0;
@@ -62,7 +62,7 @@ void *gzip_load(const char *fname, int *ptr_ulen)
 /*   SDINDENT; */
 
   fd = fs_open(fname, O_RDONLY);
-  if (!fd) {
+  if (fd<0) {
     return 0; /* VP : workaround gcc bug, uncompr was not zero after 
 		 the goto !! */
 /*    goto error;*/
@@ -79,7 +79,7 @@ void *gzip_load(const char *fname, int *ptr_ulen)
     SDERROR("gzopen failed\n");
     goto error;
   }
-  fd = 0; /* $$$ Closed by gzclose(). Verify fdopen() rules. */
+  fd = -1; /* $$$ Closed by gzclose(). Verify fdopen() rules. */
 
   uncompr = calloc(1, ulen);
   if (!uncompr) {
@@ -102,7 +102,7 @@ void *gzip_load(const char *fname, int *ptr_ulen)
   }
 
  end:
-  if (fd) {
+  if (fd>=0) {
     fs_close(fd);
   }
   if (f) {
@@ -126,7 +126,7 @@ int gzip_save(const char *fname, const void * buffer, int len)
 {
   gzFile f = 0;
   int clen = -1;
-  int fd = 0, fd2, err;
+  int fd = -1, fd2, err;
 
 /*   SDDEBUG("[%s] : [%s] [%p] [%d]\n", __FUNCTION__, fname, buffer, len); */
 /*   SDINDENT; */
@@ -136,7 +136,7 @@ int gzip_save(const char *fname, const void * buffer, int len)
   }
 
   fd = fs_open(fname, O_WRONLY);
-  if (!fd) {
+  if (fd<0) {
     SDERROR("[%s] : open error [%s]\n", __FUNCTION__, fname);
     goto error;
   }
@@ -147,7 +147,7 @@ int gzip_save(const char *fname, const void * buffer, int len)
     goto error;
   }
   fd2 = fd;
-  fd = 0;
+  fd = -1;
 
   if (gzwrite(f, (void*)buffer, len) != len) {
     SDERROR("[%s] : gzwrite error [%s]\n", __FUNCTION__, gzerror(f, &err));
@@ -156,7 +156,7 @@ int gzip_save(const char *fname, const void * buffer, int len)
   clen = fs_total(fd2);
   
  error:
-  if (fd) {
+  if (fd>=0) {
     fs_close(fd);
   } else if (f) {
     gzclose(f);

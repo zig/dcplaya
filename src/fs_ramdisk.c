@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   RAM disk for KOS file system
  * 
- * $Id: fs_ramdisk.c,v 1.17 2004-07-04 14:16:45 vincentp Exp $
+ * $Id: fs_ramdisk.c,v 1.18 2004-07-31 22:55:19 vincentp Exp $
  */
 
 /** @TODO add lock to file-handle. It is not thread-safe right now !!! */
@@ -1187,7 +1187,7 @@ int dcpfs_ramdisk_init(int max_size)
   spinlock_init(&node_mutex);
 
   /* Register with VFS */
-  if (fs_handler_add("/ram", &vh)) {
+  if (nmmgr_handler_add(&vh)) {
     SDERROR("[%s] : fs_handler_add failed\n", __FUNCTION__);
     return -1;
   }
@@ -1213,7 +1213,7 @@ int dcpfs_ramdisk_shutdown(void)
   }
   modify = 0;
 
-  return fs_handler_remove(&vh);
+  return nmmgr_handler_remove(&vh);
 }
 
 /* Check modification flag */

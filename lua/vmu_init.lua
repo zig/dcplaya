@@ -1,7 +1,7 @@
 --- @date 2002/12/06
 --- @author benjamin gerard
 --- @brief  LUA script to initialize dcplaya VMU backup.
---- $Id: vmu_init.lua,v 1.28 2003-03-29 15:33:07 ben Exp $
+--- $Id: vmu_init.lua,v 1.29 2004-07-31 22:55:18 vincentp Exp $
 ---
 
 -- Unload library
@@ -94,7 +94,12 @@ function vmu_save_file(fname, path)
    fname,path = vmu_xxx_file_check_arguments("vmu_save_file",fname,path)
    if not fname then return end
 
+   local scroll = gui_scrolltext and gui_scrolltext(nil, "DO NOT TURN OFF YOUR CONSOLE ! Writing VMU ... ", {1,1,1,0})
+
    local hdl = vmu_file_save(fname,path)
+
+   if scroll then dl_set_active(scroll, nil) end
+
    if hdl then
       local status = vmu_file_stat(hdl)
       printf("[vmu_save_file] [%s] : [%s]\n", fname, status)
@@ -127,8 +132,15 @@ function vmu_load_file(fname,path)
    fname,path = vmu_xxx_file_check_arguments("vmu_load_file",fname,path)
    if not fname then return end
 
+   printf("[vmu_load_file] fname='%s', path = '%s'\n", fname, path)
+
+   local scroll = gui_scrolltext and gui_scrolltext(nil, "Reading VMU ...")
+
    local result
    local hdl = vmu_file_load(fname,path)
+
+   if scroll then dl_set_active(scroll, nil) end
+
    if hdl then
       local status = vmu_file_stat(hdl)
       printf("[vmu_load_file] [%s] : [%s]\n", fname, status)
@@ -137,6 +149,7 @@ function vmu_load_file(fname,path)
       printf("[vmu_load_file] [%s] : failed\n", fname)
    end
    ramdisk_is_modified() -- clear modified since we don't care here
+
    return result
 end
 

@@ -5,7 +5,7 @@
  * @date    2002/02/11
  * @brief   drawing and formating text primitives
  *
- * $Id: text.c,v 1.13 2003-04-05 16:33:30 ben Exp $
+ * $Id: text.c,v 1.14 2004-07-31 22:55:18 vincentp Exp $
  */
 
 #include <stdarg.h>
@@ -529,6 +529,7 @@ static float draw_text_char(float x1, float y1, float z1,
   hw->v = v2;
   hw->col = argb;
   hw->addcol = 0;
+  ta_lock();
   ta_commit32_nocopy();
 	
   hw->x = x1;
@@ -549,7 +550,7 @@ static float draw_text_char(float x1, float y1, float z1,
   hw->u = u2;
   hw->v = v1;
   ta_commit32_nocopy();
-
+  ta_unlock();
 
   /* Return and shift by wadd/2 */
   return x2 + curfont->wadd * scalex * 0.5;

@@ -3,13 +3,14 @@
    ta.h
    (c)2000-2001 Dan Potter
    
-   $Id: ta.h,v 1.1 2004-07-04 14:16:45 vincentp Exp $
+   $Id: ta.h,v 1.2 2004-07-31 22:55:18 vincentp Exp $
 */
 
 #ifndef __DC_TA_H
 #define __DC_TA_H
 
 #include <arch/types.h>
+#include <dc/sq.h>
 
 /* TA buffers structure: keeps track of buffers for each frame */
 typedef struct {
@@ -260,5 +261,15 @@ void *ta_txr_map(uint32 loc);
   : )
 
 
+
+/* #define ta_lock() { vuint32 *regs = (uint32*)0xff000038; \ */
+/* 	            regs[0] = regs[1] = 0x10; \ */
+/*                     sq_lock(); } */
+
+/* #define ta_lock() sq_lock() */
+/* #define ta_unlock() sq_unlock() */
+
+#define ta_lock() (void)0 
+#define ta_unlock() (void)0 
 
 #endif	/* __DC_TA_H */

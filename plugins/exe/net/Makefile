@@ -1,14 +1,14 @@
 #
-# Make visual plugins for dreammp3
+# Make exe plugins for net
 #
-# (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
+# (C) COPYRIGHT 2002 Vincent Penne
 #
-# $Id: Makefile,v 1.2 2004-07-04 14:16:45 vincentp Exp $
+# $Id: Makefile,v 1.3 2004-07-31 22:55:18 vincentp Exp $
 #
 
 LEZ=yes
 
-KOS_LOCAL_INCS := -I. -I../../../include
+KOS_LOCAL_INCS += -I. -I../../../include
 OPTIMIZE = $(OPTIMIZE_FOR_SPEED)
 
 include ../../../Makefile.inc
@@ -16,7 +16,7 @@ include ../../../Makefile.inc
 LWIPDIR = $(KOS_BASE)/../kos-ports/lwip/lwip/src
 ARCHDIR = $(LWIPDIR)/../../kos
 
-KOS_LOCAL_CFLAGS := -DDCPLAYA=1 -DIPv4 -DLWIP_DEBUG
+KOS_LOCAL_CFLAGS += -DDCPLAYA=1 -DIPv4 -DLWIP_DEBUG
 KOS_INCS +=  \
 	-DIPv4 \
 	-I$(LWIPDIR)/include -I$(ARCHDIR)/include \
@@ -24,4 +24,4 @@ KOS_INCS +=  \
 
 KOS_LOCAL_INCS += -I../../../include -I../../../libs -I.
 
-LEF_EXTRA := -L$(KOS_BASE)/../kos-ports/lib/dreamcast -llwip4
+LEF_EXTRA += -L$(KOS_BASE)/../kos-ports/lib/dreamcast -llwip4

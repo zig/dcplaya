@@ -22,39 +22,62 @@
 #include <kos.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
+#include "lwip/lwip.h"
 #include "lwip/sockets.h"
 
 //#define DEBUG
 
 typedef struct {
   int socket;
+  int pos;
+  int stream;
 } TCPContext;
 
+struct sockaddr_in dnssrv;
 
 int dns(const char * name, struct ip_addr * res)
 {
-    int i;
-    int c;
-    unsigned char *ip = (unsigned char *)&res->addr;
+  int i;
+  int c;
+  unsigned char *ip = (unsigned char *)&res->addr;
 
-    i = 0;
-    c = 0;
+  i = 0;
+  c = 0;
     
-    res->addr = 0;
-    while(name[c] != 0) {
-	if (name[c] != '.') {
-	    ip[i] *= 10;
-	    ip[i] += name[c] - '0';
-	}
-	else
-	    i++;
-	c++;
+  res->addr = 0;
+  while(name[c] != 0) {
+    if (name[c] != '.') {
+      if (!isdigit(name[c]))
+	goto dns;
+      ip[i] *= 10;
+      ip[i] += name[c] - '0';
     }
+    else {
+      if (name[c+1] == '.')
+	goto dns;
+      i++;
+    }
+    if (i >= 5)
+      goto dns;
+    c++;
+  }
 
-    //res->addr = ntohl(res->addr);
+  //res->addr = ntohl(res->addr);
 
-    return 0;
+  return 0;
+
+ dns:
+  if (dnssrv.sin_port) {
+    if (lwip_gethostbyname(&dnssrv, name, &res->addr) < 0) {
+      printf("gethostbyname: Can't look up name");
+      return -1;
+    } else {
+      return 0;
+    }
+  } else
+    return -1;
 }
 
 
@@ -63,6 +86,7 @@ int dns(const char * name, struct ip_addr * res)
 static uint32 open(const char *uri, int flags, int udp)
 {
     char hostname[128];
+    char options[128];
     int port;
     TCPContext *s;
     int sock = -1;
@@ -82,7 +106,7 @@ static uint32 open(const char *uri, int flags, int udp)
     /* fill the dest addr */
     /* needed in any case to build the host string */
     url_split(NULL, 0, hostname, sizeof(hostname), &port, 
-              NULL, 0, uri);
+              options, sizeof(options), uri);
 
     if (port < 0)
         port = 80;
@@ -99,11 +123,13 @@ static uint32 open(const char *uri, int flags, int udp)
       goto fail;
 
     res = connect(sock, &sa, sizeof(sa));
-    printf("connect --> %d\n", res);
+    //printf("connect --> %d\n", res);
     if (res)
       goto fail;
 
     s->socket = sock;
+    s->pos = 0;
+    s->stream = strstr(options, "<stream>");
 
     return (uint32) s;
  fail:
@@ -126,9 +152,26 @@ static uint32 udpfs_open(vfs_handler_t * vfs, const char *uri, int flags)
 
 static int tcpfs_read(uint32 h, uint8 *buf, int size)
 {
+  int len = 0;
   TCPContext *s = (TCPContext *)h;
 
-  return read(s->socket, buf, size);
+  do {
+    int l;
+    //printf("reading size %d -->", size);
+    l = read(s->socket, buf, size);
+    //printf(" %d\n", l);
+    if (l >= 0) {
+      len += l;
+      s->pos += l;
+      buf += l;
+      size -= l;
+    } else if (len == 0)
+      return l;
+    else
+      return len;
+  } while(s->stream && 0 < size);
+
+  return len;
 }
 
 static off_t tcpfs_seek(uint32 hnd, int size, int whence)
@@ -137,10 +180,10 @@ static off_t tcpfs_seek(uint32 hnd, int size, int whence)
   int len = 0;
 
   if (whence != SEEK_CUR)
-    return 0;
+    return s->pos;
 
   if (size <= 0)
-    return 0;
+    return s->pos;
 
   {
     uint8 buf[1024];
@@ -156,7 +199,7 @@ static off_t tcpfs_seek(uint32 hnd, int size, int whence)
     }
   }
 
-  return len;
+  return s->pos + len;
 }
 
 static int tcpfs_write(uint32 h, uint8 *buf, int size)
@@ -169,29 +212,36 @@ static int tcpfs_write(uint32 h, uint8 *buf, int size)
 static int tcpfs_close(uint32 h)
 {
     TCPContext *s = (TCPContext *)h;
+    //printf("close socket %d\n", s->socket);
     close(s->socket);
     free(s);
     return 0;
+}
+
+static int tcpfs_tell(uint32 h)
+{
+    TCPContext *s = (TCPContext *)h;
+    return s->pos;
 }
 
 
 /* Pull all that together */
 static vfs_handler_t vh = {
   {
-    { "/tcp" },          /* path prefix */
+    { "/tcp" },         /* path prefix */
     0, 
     0x00010000,		/* Version 1.0 */
     0,			/* flags */
     NMMGR_TYPE_VFS,	/* VFS handler */
     NMMGR_LIST_INIT	/* list */
   },
-  0, 0,		       /* In-kernel, no cacheing */
+  0, 0,		        /* In-kernel, no cacheing */
   tcpfs_open, 
   tcpfs_close,
   tcpfs_read,
   tcpfs_write,
   tcpfs_seek,
-  NULL,//dcload_tell,
+  tcpfs_tell,
   NULL,//dcload_total,
   NULL,//dcload_readdir,
   NULL,               /* ioctl */
@@ -203,20 +253,20 @@ static vfs_handler_t vh = {
 /* Pull all that together */
 static vfs_handler_t vh_udpfs = {
   {
-    { "/udp" },          /* path prefix */
+    { "/udp" },         /* path prefix */
     0, 
     0x00010000,		/* Version 1.0 */
     0,			/* flags */
     NMMGR_TYPE_VFS,	/* VFS handler */
     NMMGR_LIST_INIT	/* list */
   },
-  0, 0,		       /* In-kernel, no cacheing */
+  0, 0,		        /* In-kernel, no cacheing */
   udpfs_open, 
   tcpfs_close,
   tcpfs_read,
   tcpfs_write,
   tcpfs_seek,
-  NULL,//dcload_tell,
+  tcpfs_tell,
   NULL,//dcload_total,
   NULL,//dcload_readdir,
   NULL,               /* ioctl */

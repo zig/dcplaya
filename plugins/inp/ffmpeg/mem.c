@@ -23,7 +23,9 @@ typedef struct tALLOC_REMEMBER tALLOC_REMEMBER;
 struct tALLOC_REMEMBER {
    tALLOC_REMEMBER *Next;
    void *p;
-   char Message[256];
+   const char * file;
+   int line;
+  //char Message[256];
 //   int  n;
 };
 
@@ -32,7 +34,7 @@ static tALLOC_REMEMBER *HTableAllocRemember[256], *FreeAllocRemember;
 static int do_not_check_any_more = FALSE;
 
 static void *LastChecked;
-static char *LastMessage = "SYSTEM ALLOC";
+//static char *LastMessage = "SYSTEM ALLOC";
 static tALLOC_REMEMBER *LastAR;
 
 static char Message[256];
@@ -135,7 +137,9 @@ void * _AllocCheck ( void *ptr, int line, const char *file )
                                        ^ ((((int)ptr)>>16)&255)
                                        ^ ((((int)ptr)>>24)&255);
       FreeAllocRemember = ar->Next;
-      strcpy(ar->Message, Message);
+      //strcpy(ar->Message, Message);
+      ar->line = line;
+      ar->file = file;
       ar->p = ptr;
       ar->Next = HTableAllocRemember[h];
 //      ar->n=0;
@@ -151,7 +155,7 @@ void * _AllocCheck ( void *ptr, int line, const char *file )
       //      FATAL();
    }
 
-   LastMessage = ar->Message;
+   //LastMessage = ar->Message;
    LastAR = ar;
 #endif
    return ptr;
@@ -173,7 +177,8 @@ void CheckUnfrees ( )
 {
 #ifdef ACHK
   struct {
-    char *mes;
+    const char * file;
+    int line;
     int nb;
   } *l;
   int nl = 0;
@@ -189,18 +194,19 @@ void CheckUnfrees ( )
       tALLOC_REMEMBER *ar = HTableAllocRemember[n];
       while(ar)
       {
-         if(ar->Message[0] != '!')
+         if(ar->file[0] != '!')
          {
 	    int i;
             m++;
 	    for (i=0; i<nl; i++)
-	      if (!strcmp(l[i].mes, ar->Message))
+	      if (!strcmp(l[i].file, ar->file) && l[i].line == ar->line)
 		break;
 	    if (i<nl) {
 	      l[i].nb++;
 	    } else {
 	      l[i].nb = 1;
-	      l[i].mes = ar->Message;
+	      l[i].file = ar->file;
+	      l[i].line = ar->line;
 	      nl++;
 	      //fprintf(stderr, "%s : %d \n", l[n].mes, l[n].nb);
 	    }
@@ -209,7 +215,7 @@ void CheckUnfrees ( )
       }
    }
    for (n=0; n<nl; n++) {
-     fprintf(stderr, "%s : %d \n", l[n].mes, l[n].nb);
+     fprintf(stderr, "%s (%d) : %d \n", l[n].file, l[n].line, l[n].nb);
    }
    if(m)
    {

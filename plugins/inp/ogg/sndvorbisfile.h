@@ -65,7 +65,7 @@ typedef struct
   long    actualposition;
 } VorbisFile_info_t;
 
-typedef uint32		VorbisFile_handle_t;
+typedef file_t VorbisFile_handle_t;
 
 /* Static String that is used in case a comment is not
  * set in a Stream

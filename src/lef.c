@@ -5,7 +5,7 @@
  * @author  Dan Potter
  * @brief   ELF library loader - Based on elf.c from KallistiOS 1.1.5 
  *
- * @version $Id: lef.c,v 1.17 2004-06-30 15:17:36 vincentp Exp $
+ * @version $Id: lef.c,v 1.18 2004-07-31 22:55:19 vincentp Exp $
  */
 
 #include <malloc.h>
@@ -23,6 +23,8 @@
 
 extern symbol_t main_symtab[];
 extern int main_symtab_size;
+
+static lef_prog_list_t lef_list;
 
 static int verbose = 0;
 
@@ -174,15 +176,74 @@ static void display_symbtable(struct lef_sym_t * stab,
   SDMSG(lvl, "--------------------------------------------------\n");
 }
 
+/* TODO : lookup also into plugins */
+symbol_t * lef_closest_symbol(void * addr)
+{
+  lef_prog_t * p;
+  uint dist = ~0;
+  int i;
+  symbol_t * best = NULL;
+  uint a = (uint) addr;
+  
+  for (i=0; i<main_symtab_size; i++) {
+    uint b = (uint) main_symtab[i].addr;
+
+    if (a-b < dist) {
+      dist = a-b;
+      best = main_symtab + i;
+    }
+  }
+
+  /* look up into plugins too */
+  CIRCLEQ_FOREACH(p, &lef_list, g_list) {
+    for (i=0; i<p->nb_symbols; i++) {
+      uint b = (uint) p->symbols[i].addr;
+
+      if (a-b < dist) {
+	dist = a-b;
+	best = p->symbols + i;
+      }
+    }
+  }
+
+  if (best)
+    return best;
+  else
+    return 0;
+}
+
 /* Finds a given symbol in a relocated ELF symbol table */
 static void * find_main_sym(char *name) {
   int i;
+  lef_prog_t * p;
 
   if (!*name) return 0;
 
+  /* Look into main executable */
   for (i=0; i<main_symtab_size; i++) {
     if (!strcmp((char*)main_symtab[i].name, name))
       return main_symtab[i].addr;
+  }
+
+  /* Look also into plugins */
+  //printf("Looking for '%s' in plugins\n", name);
+  CIRCLEQ_FOREACH(p, &lef_list, g_list) {
+    for (i=0; i<p->nb_symbols; i++) {
+      //printf("%d '%s'\n", i, p->symbols[i].name);
+      if (!strcmp(p->symbols[i].name, name))
+	return p->symbols[i].addr;
+    }
+  }
+
+  return 0;
+}
+
+void * lef_find_symbol(lef_prog_t * p, const char * name)
+{
+  int i;
+  for (i=0; i<p->nb_symbols; i++) {
+    if (!strcmp(p->symbols[i].name, name))
+      return p->symbols[i].addr;
   }
 
   return 0;
@@ -479,8 +540,8 @@ lef_prog_t *lef_load(const char * fname)
     }
     
     if (! (shdrs[sect].flags & SHF_ALLOC)) {
-      /* This is no more considerate as an Error because it could be debug
-	 info. A Warning should be OK. */
+      /* This is no more considered as an Error because it could be 
+	 debug info. A Warning should be OK. */
       SDWARNING("Can't reloc uncopied section : ");
       display_section(sect, shdrs+sect, 0);
       ++warnings;
@@ -524,8 +585,10 @@ info = section header index of section to which reloc applies
       /* Check symbol section */
       if (symtab[sym].shndx >= hdr->shnum
 	  /*&& symtab[sym].shndx != SHN_COMMON*/) {
-	SDERROR("Invalid symbol section index : %04x\n", symtab[sym].shndx);
-	++errors;
+	//if (symtab[sym].shndx != SHN_ABS) {
+	  SDERROR("Invalid symbol section index : %04x\n", symtab[sym].shndx);
+	  ++errors;
+	//}
 	continue;
       }
 
@@ -637,25 +700,86 @@ info = section header index of section to which reloc applies
       }
     }
   }
-  
+
   /* Look for the kernel negotiation symbols and deal with that */
   {
     int mainsym /*, getsvcsym, notifysym*/;
 
     mainsym = find_sym("_lef_main", symtab, symtabsize);
     if (mainsym < 0) {
+      errors++;
       SDERROR( "ELF contains no _lef_main\n");
       goto error;
     }
     out->main = (int (*)(int,char**))(symtab[mainsym].value);
   }
 
+  /* Create symbols table */
+  {
+    symbol_t * symbs;
+    char * p;
+    int total;
+    int nsymbs = 0, j;
+
+    total = 0;
+    for (i=0; i<symtabsize; i++)
+      if (symtab[i].info >= 17) {
+	total += strlen((char*)symtab[i].name) + 1;
+	nsymbs++;
+      }
+    
+    total += sizeof(symbol_t)*(nsymbs+1);
+    p = malloc(total);
+    symbs = (symbol_t *) p;
+    p += sizeof(symbol_t)*(nsymbs+1);
+    if (symbs == NULL) {
+      errors++;
+      SDERROR( "Cannot allocate symbols table\n");
+      goto error;
+    }
+
+    SDINFO(" Allocated %d bytes for symbols\n", total);
+
+    for (j=i=0; i<symtabsize; i++) {
+      if (symtab[i].info < 17)
+	continue;
+      symbs[j].name = p;
+      strcpy(p, (char*)symtab[i].name);
+      symbs[j].addr = (void *) symtab[i].value;
+      symbs[j].type = symtab[i].info; //'p';
+
+      p += strlen(p)+1;
+      j++;
+    }
+    symbs[i].name = 0;
+    symbs[i].addr = 0;
+
+/*     for (i=0; i<nsymbs; i++) */
+/*       printf("'%s' : 0x%8x (%d)\n",  */
+/* 	     symbs[i].name, symbs[i].addr, symbs[i].type); */
+
+
+    out->symbols = symbs;
+    out->nb_symbols = nsymbs;
+  }
+  
   if (errors) {
     goto error;
   }
 
   if (warnings) {
     SDWARNING(" Warnings:%d\n", warnings);
+  }
+
+  /* Adding the new lef_prog into the list */
+  {
+    static int init;
+    if (!init) {
+      CIRCLEQ_INIT(&lef_list);
+      init = 1;
+    }
+    
+    CIRCLEQ_INSERT_HEAD(&lef_list, out, g_list);
   }
 
   SDDEBUG("image [@%08x, @%08x, %08x] entry [%08x]\n",
@@ -694,6 +818,11 @@ void lef_free(lef_prog_t *prog) {
     if (prog->ref_count < 0) {
       SDWARNING("[%s] : minus refcount [%d]\n", __FUNCTION__, prog->ref_count);
     }
+
+    /* Remove it from the lef_prog list */
+    CIRCLEQ_REMOVE(&lef_list, prog, g_list);
+
+    free(prog->symbols);
     free(prog);
     SDDEBUG("[%s] : removed\n", __FUNCTION__);
   } else {

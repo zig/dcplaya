@@ -5,7 +5,7 @@
 --- @date     2002
 --- @brief    Main dcplaya lua script.
 ---
---- $Id: dcplayarc.lua,v 1.47 2004-07-04 14:16:44 vincentp Exp $
+--- $Id: dcplayarc.lua,v 1.48 2004-07-31 22:55:17 vincentp Exp $
 ---
 ---   The @b home.."dcplayarc.lua" file is dcplaya main script.
 ---   It is executed after the dynshell has been loaded.
@@ -64,6 +64,9 @@ if (__RELEASE) then print ("dcplaya release mode activated") end
 print ("Welcome to dcplaya !\n")
 print (format("Home is set to '%s'", home))
 
+-- VP : set this variable to nil to remove shadock edition special running
+SHADOCK_EDITION = 1
+
 -- reading directory on PC is slow through serial port, 
 -- so we precalculate available plugins instead of doing a dir_load command
 plug_spc	= home.."plugins/inp/spc/spc.lez"
@@ -84,12 +87,17 @@ plug_fime	= home.."plugins/vis/fime/fime.lez"
 plug_el         = home.."plugins/exe/entrylist/entrylist.lez"
 plug_jpeg       = home.."plugins/img/jpeg/jpeg.lez"
 plug_net        = home.."plugins/exe/net/net.lez"
+plug_web        = home.."plugins/exe/web/web.lez"
 plug_ffmpeg     = home.."plugins/inp/ffmpeg/ffmpeg.lez"
+
+codec_misc      = home.."plugins/inp/ffmpeg/codec_misc/codec_misc.codez"
+codec_xvid      = home.."plugins/inp/ffmpeg/xvid/codec_xvid.codez"
 
 -- Little function for fun !
 -- $$$ should be move ...
 
-local scroll_dl = nil
+-- VP : set it global (used to be local)
+scroll_dl = nil
 
 function scrolltext(dl, msg, txtcolor, bkgcolor, z)
    if type(msg) ~= "string" then return end
@@ -130,7 +138,7 @@ end
 
 
 -- Execute user dcplayarc (extracted from vmu into ramdisk)
-if nil and not dcplayarc_vmu_loading and
+if not dcplayarc_vmu_loading and
    type(test) == "function" and test("-f","/ram/dcplaya/dcplayarc.lua") then
 
    -- to avoid infinite loop

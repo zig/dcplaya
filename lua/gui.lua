@@ -3,7 +3,7 @@
 --- @author  vincent penne
 --- @brief   gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.64 2003-03-29 15:33:06 ben Exp $
+--- $Id: gui.lua,v 1.65 2004-07-31 22:55:18 vincentp Exp $
 ---
 ---
 
@@ -24,7 +24,7 @@
 ---   The second (obviously) from 100 to 200 is reserved for its children.
 ---   The whole stuff is managed by a system of
 ---   @link dcplaya_display_list sub-display-list @endlink directly. The 
----   gui_child_autoplacement() to all the tricks and must be call when
+---   gui_child_autoplacement() does all the tricks and must be call when
 ---   application focus changes. This is done by the gui_dialog_basic_handle()
 ---   function, so the simpliest thing to do is to call this function in
 ---   the gui application handler. Technically these functions creates a 
@@ -868,6 +868,9 @@ function gui_input_handle(app, evt)
 end
 
 function gui_input_display_text(app)
+   if not app.input then
+      return
+   end
    local w, h = dl_measure_text(app.input_dl, app.input)
    local box=app.input_box
    local x = box[1]
@@ -936,7 +939,7 @@ end
 -- warning : owner must be a gui item (we use its dl)
 function gui_new_input(owner, box, text, mode, string, z)
    local app
-   
+
    z = gui_guess_z(owner, z)
    
    app = { 
@@ -967,6 +970,9 @@ function gui_new_input(owner, box, text, mode, string, z)
    
    
    if text then
+      mode = mode or { }
+      mode.x = mode.x or "left"
+      mode.y = mode.y or "upout"
       gui_label(app, text, mode)
    end
    
@@ -1163,6 +1169,48 @@ function gui_label(app, text, mode)
    --	gui_justify(app.dl, app.box + gui_text_shiftbox, app.z+1, gui_text_color, text, mode)
    return gui_justify(app.dl, app.box, app.z+10, gui_text_color, text, mode)
    -- TODO use an optional mode.boxcolor and render a box around text if it is set ...
+end
+
+
+--- scrolling message in a box
+function gui_scrolltext(dl, msg, txtcolor, bkgcolor, z)
+   if type(msg) ~= "string" then return end
+   if type(dl_new_list) ~= "function" then
+      return
+   end
+   if tag(dl) ~= dl_tag then
+      dl = dl_new_list(strlen(msg) + 512)
+   end
+   dl_clear(dl)
+   if tag(dl) ~= dl_tag then
+      return
+   end
+   txtcolor = txtcolor or gui_text_color
+   bkgcolor = bkgcolor or {0.8,0.2,0.2,0.4}
+   z = z or 400
+
+   local size = 16
+
+   dl_text_prop(dl,0,size)
+   local w,h = dl_measure_text(dl, msg, 1 ,size)
+   w = min(w * 1.5, 512)
+
+   local x,y = (640-w) * 0.5, (480-h) * 0.5
+
+   local c = bkgcolor
+   gui_dialog_box_draw(dl, {x-8, y-8,x+w+8, y+h+3+10}, z-10,
+		       gui_box_bcolor, gui_box_color1, gui_box_color2)
+--   dl_draw_box1(dl, x, y,x+w, y+h+3, z-10,
+--		c[1],c[2],c[3],c[4])
+
+   dl_set_clipping(dl, x, y-3, x+w, y+h+3)
+
+   c = txtcolor
+   dl_draw_scroll_text(dl, x, y, z,
+		       c[1],c[2],c[3],c[4], msg,
+		       w, 1.5, 1)
+   dl_set_active(dl,1)
+   return dl
 end
 
 

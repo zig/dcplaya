@@ -3,9 +3,9 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sasahipa.com>
 #
-# $Id: Makefile,v 1.2 2002-10-23 02:07:44 benjihan Exp $
+# $Id: Makefile,v 1.3 2004-07-31 22:55:18 vincentp Exp $
 #
 
-SUBDIRS = display entrylist
+SUBDIRS = display entrylist net
 
 include ../../Makefile.inc

@@ -5,7 +5,7 @@
  * @date    2002
  * @brief   Registered driver list.
  *
- * $Id: driver_list.c,v 1.18 2003-03-10 22:55:35 ben Exp $
+ * $Id: driver_list.c,v 1.19 2004-07-31 22:55:19 vincentp Exp $
  */
 
 #include <string.h>
@@ -433,7 +433,10 @@ inp_driver_t * inp_driver_list_search_by_extension(const char *ext)
        d && !extfind(d->extensions, ext);
        d=(inp_driver_t *)d->common.nxt)
     ;
-  driver_reference(&d->common);
+
+  if (d)
+    driver_reference(&d->common);
+
   driver_list_unlock(&inp_drivers);
 
   return d;
@@ -444,11 +447,15 @@ inp_driver_t * inp_driver_list_search_by_id(int id)
   inp_driver_t * d;
 
   driver_list_lock(&inp_drivers);
+
   for (d=(inp_driver_t *)inp_drivers.drivers;
        d && d->id != id;
        d=(inp_driver_t *)d->common.nxt)
     ;
-  driver_reference(&d->common);
+
+  if (d)
+    driver_reference(&d->common);
+
   driver_list_unlock(&inp_drivers);
 
   return d;

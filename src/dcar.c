@@ -4,7 +4,7 @@
  * @date      2002/09/21
  * @brief     dcplaya archive.
  *
- * $Id: dcar.c,v 1.8 2003-03-10 22:55:34 ben Exp $
+ * $Id: dcar.c,v 1.9 2004-07-31 22:55:19 vincentp Exp $
  */
 
 #include <stdio.h>
@@ -235,7 +235,7 @@ static int gzcopy(gzFile zf, dcar_option_t * opt)
   int fd, n, r, w, len, z;
 
   fd = fs_open(opt->internal.path, O_RDONLY);
-  if (!fd) {
+  if (fd<0) {
     n = -1;
     goto error;
   }
@@ -294,7 +294,7 @@ static int gzcopy(gzFile zf, dcar_option_t * opt)
   }
 
  error:
-  if (fd) {
+  if (fd>=0) {
     fs_close(fd);
   }
   
@@ -417,7 +417,7 @@ static int r_add(dcar_option_t *opt, aentry_t * parent)
   char *pathend;
 
   fd = fs_open(opt->internal.path, O_RDONLY|O_DIR);
-  if (!fd) {
+  if (fd<0) {
     opt->errstr = "open error";
     count = -1;
     goto error;
@@ -500,7 +500,7 @@ static int r_add(dcar_option_t *opt, aentry_t * parent)
   }
   
  error:
-  if (fd) {
+  if (fd>=0) {
     fs_close(fd);
   }
   return count;
@@ -527,7 +527,7 @@ int dcar_archive(const char *name, const char *path, dcar_option_t *opt)
   char tmp[512];
   int count;
   dcar_tree_t dt;
-  int fd = 0, fd2;
+  int fd = -1, fd2;
   gzFile zf=0;
   dcar_option_t option;
   volatile int save_verbose;
@@ -578,7 +578,7 @@ int dcar_archive(const char *name, const char *path, dcar_option_t *opt)
     /* 	SDDEBUG("[%s] : skipping %d bytes\n",__FUNCTION__, opt->in.skip); */
   }
   fd2 = fd;
-  if (!fd) {
+  if (fd<0) {
     opt->errstr = "create error";
     count = -1;
     goto error;
@@ -590,7 +590,7 @@ int dcar_archive(const char *name, const char *path, dcar_option_t *opt)
     count = -1;
     goto error;
   }
-  fd = 0;
+  fd = -1;
 
   memcpy(&dt.magic, "DCAR",4);
   dt.n = count;
@@ -621,7 +621,7 @@ int dcar_archive(const char *name, const char *path, dcar_option_t *opt)
 
  error:
   free_aentries(root.son);
-  if (fd) {
+  if (fd>=0) {
     fs_close(fd);
   } else if (zf) {
     gzclose(zf);
@@ -760,7 +760,7 @@ static int extract_file(gzFile zf, dcar_option_t * opt,
   fs_unlink(fname);
 
   fd = fs_open(fname, O_WRONLY);
-  if (!fd) {
+  if (fd<0) {
     opt->errstr = "extract create error";
     return -1;
   }
@@ -904,7 +904,7 @@ int dcar_extract(const char *name, const char *path, dcar_option_t *opt)
   opt->internal.path = cpath;
 
   fd = fs_open(name, O_RDONLY);
-  if (!fd) {
+  if (fd<0) {
     opt->errstr = "open error";
     goto error;
   }
@@ -919,7 +919,7 @@ int dcar_extract(const char *name, const char *path, dcar_option_t *opt)
     opt->errstr = "reopen error";
     goto error;
   }
-  fd = 0;
+  fd = -1;
 
   if (gzread(zf, tmp, 8) != 8) {
     opt->errstr = "header read error";
@@ -972,7 +972,7 @@ int dcar_extract(const char *name, const char *path, dcar_option_t *opt)
   if (dt) {
     free(dt);
   }
-  if (fd) {
+  if (fd>=0) {
     fs_close(fd);
   }
   if (zf) {

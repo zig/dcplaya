@@ -4,7 +4,7 @@
 --- @author  benjamin gerard
 --- @brief   hyper text viewer gui.
 ---
---- $Id: textviewer.lua,v 1.22 2003-04-05 16:33:31 ben Exp $
+--- $Id: textviewer.lua,v 1.23 2004-07-31 22:55:18 vincentp Exp $
 ---
 
 if not dolib("taggedtext") then return end
@@ -28,7 +28,7 @@ function text_viever_tt_build(text, mode)
       return tt_build(format("Invalid tagged text %q.<br>",type(text)), mode)
    elseif strsub(text,1,1) == "/" then
       local buffer
-      local file = openfile(text,"rt")
+      local file = openfile(text,"r")
       if file then
 	 printf("loading tagged-text %q\n",text)
 	 buffer = read(file,"*a")
@@ -489,7 +489,7 @@ end
 function gui_file_viewer(owner, fname, box, label, mode, preformatted)
    fname = canonical_path(fname)
    if test("-f",fname) then
-      local file = openfile(fname,"rt")
+      local file = openfile(fname,"r")
       local name = get_nude_name(fname) or "text"
       if not file then return end
       local header,footer

@@ -4,7 +4,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.27 2004-07-04 14:16:45 vincentp Exp $
+ * @version   $Id: console.c,v 1.28 2004-07-31 22:55:19 vincentp Exp $
  */
 
 
@@ -41,10 +41,23 @@ csl_console_t * csl_basic_console;
 csl_console_t * csl_ta_console;
 
 extern dbgio_handler_t dbgio_dcload;
+extern dbgio_handler_t dbgio_scif;
 int (*old_printk_func)(const uint8 *data, int len, int xlat);
 
 /* added by ben for disabling console output in zed */
 int csl_echo = 1;
+
+void csl_lock(csl_console_t * csl)
+{
+  if (!irq_inside_int())
+    spinlock_lock(&csl->mutex);
+}
+
+void csl_unlock(csl_console_t * csl)
+{
+  if (!irq_inside_int())
+    spinlock_unlock(&csl->mutex);
+}
 
 static void csl_printk_func(const uint8 *data, int len, int xlat)
 {
@@ -155,8 +168,13 @@ void csl_init_main_console()
   csl_init_ta_console();
 
   csl_main_console = csl_basic_console;
-  old_printk_func = dbgio_dcload.write_buffer;
-  dbgio_dcload.write_buffer = csl_printk_func;
+  if (dbgio_dcload.detected()) {
+    old_printk_func = dbgio_dcload.write_buffer;
+    dbgio_dcload.write_buffer = csl_printk_func;
+  } else {
+    old_printk_func = dbgio_scif.write_buffer;
+    dbgio_scif.write_buffer = csl_printk_func;
+  }
 }
 
 void csl_close_main_console()
@@ -253,7 +271,7 @@ void csl_basic_render(csl_console_t * c)
   nlines = c->term->nline;
   ncols  = c->term->ncol;
 
-  /*   spinlock_lock(&c->mutex); */
+  /*   csl_lock(c); */
   for (y=0, yoffset=c->window.y; y<nlines; y++, yoffset+=24) {
     MUterm_char_t * ptr = term_line_addr(c->term, y);
     int x;
@@ -264,7 +282,7 @@ void csl_basic_render(csl_console_t * c)
     s[x] = 0;
     draw_string(c->window.x + ta_state.buffers[1].frame/2, yoffset, s, -1);
   }
-  /*   spinlock_unlock(&c->mutex); */
+  /*   csl_unlock(c); */
 }
 
 void csl_window_transparent_render(csl_console_t * c)
@@ -278,7 +296,7 @@ void csl_window_transparent_render(csl_console_t * c)
   const float z = c->window.z;
   
 
-  //spinlock_lock(&c->mutex);
+  //csl_lock(c);
   
   text_set_properties(1,16,1,1);
   /*   oldfont = text_set_font(1); // Select fixed spacing font */
@@ -343,7 +361,7 @@ void csl_window_transparent_render(csl_console_t * c)
   text_set_escape(oldescape);
   /*   text_set_properties(oldfont,oldsize,oldaspect); */
   
-  //  spinlock_unlock(&c->mutex);
+  //  csl_unlock(c);
 
 }
 
@@ -444,27 +462,27 @@ void csl_window_configure(csl_console_t * console, int x, int y, int w, int h,
 /* Functions to access to a console */
 void csl_putchar(csl_console_t * console, char c )
 {
-  spinlock_lock(&console->mutex);
+  csl_lock(console);
   MUterm_inputc(c, console->term);
   if ((console->render_modes & CSL_RENDER_BASIC) && c == '\n')
     csl_basic_render(console);
   console->window.cursor_time = 0;
-  spinlock_unlock(&console->mutex);
+  csl_unlock(console);
 }
 void csl_putstring(csl_console_t * console, const char * s )
 {
-  spinlock_lock(&console->mutex);
+  csl_lock(console);
   MUterm_input(s, console->term);
   if ((console->render_modes & CSL_RENDER_BASIC) && strchr(s, '\n'))
     csl_basic_render(console);
   console->window.cursor_time = 0;
-  spinlock_unlock(&console->mutex);
+  csl_unlock(console);
 }
 void csl_write(csl_console_t * console, const char * s, int len )
 {
   int ret = 0;
   int i;
-  spinlock_lock(&console->mutex);
+  csl_lock(console);
   for (i=0; i<len; i++) {
     int c = s[i];
     MUterm_inputc(c, console->term);
@@ -474,7 +492,7 @@ void csl_write(csl_console_t * console, const char * s, int len )
   if ((console->render_modes & CSL_RENDER_BASIC) && ret)
     csl_basic_render(console);
   console->window.cursor_time = 0;
-  spinlock_unlock(&console->mutex);
+  csl_unlock(console);
 }
 void csl_printf(csl_console_t * console, const char *fmt, ... )
 {
@@ -486,7 +504,7 @@ void csl_printf(csl_console_t * console, const char *fmt, ... )
 void csl_vprintf(csl_console_t * console, const char *fmt, va_list args )
 {
 
-  spinlock_lock(&console->mutex);
+  csl_lock(console);
   MUterm_setactive(console->term);
   MUterm_vprintf(fmt, args);
 
@@ -497,7 +515,7 @@ void csl_vprintf(csl_console_t * console, const char *fmt, va_list args )
   */
 
   console->window.cursor_time = 0;
-  spinlock_unlock(&console->mutex);
+  csl_unlock(console);
 }
 
 

@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.72 2003-07-31 12:06:24 benjihan Exp $
+--- $Id: song_browser.lua,v 1.73 2004-07-31 22:55:18 vincentp Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song Browser
@@ -184,13 +184,43 @@ function song_browser_update_playlist(sb, frametime)
 	 sb.playlist_wait = nil -- Clear wait method
 	 
 	 local path = sb.pl:fullpath(sb.pl.dir[sb.playlist_idx])
--- 	 print(path)
+
+	 -- VP : streaming support and force format option
+	 local tag, tagend
+	 local force_format
+	 tag, tagend = strfind(path, "<force-")
+	 if tag then
+	    force_format = strsub(path, tagend+3)
+	    tag = strfind(force_format, ">")
+	    if tag then
+	       force_format = strsub(force_format, 1, tag-1)
+	    else
+	       force_format = nil
+	    end
+	 end
+	 tag = strfind(path, "<endpath>")
+	 if tag then
+	    path = strsub(path, 1, tag-1)
+	 end
+
+ 	 print(path)
 	 if path then
-	    local ty, major, minor = filetype(path)
+	    local ty, major, minor = filetype(path) --, filesize(path))
 	    local f = sb.pl.actions.run[major]
 	    local r
 	    if type(f) == "function" then
+	       if ff_ff and force_format then
+		  ff_ff(force_format)
+	       end
 	       r = f(sb.pl, sb, path, nxt)
+	       if ff_ff and force_format then
+		  ff_ff()
+
+		  -- VP : temporary, assume we are streaming 
+		  -- a radio so limit the fifo size
+		  ff_lf(48) -- should be a good value for most radio
+
+	       end
 	    elseif __DEBUG then
 	       printf("skipping [%s] : no run action [%s]\n",path,major)
 	    end
@@ -854,7 +884,7 @@ function song_browser_view_file(sb, entry_path)
    elseif major == "text" or major == "lua" then
       if minor ~= "zml" then
 	 -- try to guess if zml
-	 local fh = openfile(entry_path,"rt")
+	 local fh = openfile(entry_path,"r")
 	 if not fh then return end
 	 local line = read(fh)
 	 closefile(fh)

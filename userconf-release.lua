@@ -61,11 +61,25 @@ if __RELEASE then
    local msg = "Loading drivers ... please wait"
    print(msg)
 
-   local plugins = {
-      plug_obj,
-      plug_cdda, plug_xing, plug_ogg, plug_mikmod, plug_sidplay, plug_sc68,
-      plug_lpo, plug_fftvlr, plug_hyperpipe, plug_fime, plug_spc
-   }
+   local plugins
+
+   if SHADOCK_EDITION then
+      plugins = {
+	 plug_obj,
+	 plug_cdda, plug_ffmpeg, 
+	 plug_ogg, plug_mikmod, plug_sidplay, 
+	 plug_sc68, plug_nsf,
+	 plug_lpo, plug_fftvlr, plug_hyperpipe, plug_fime
+      }
+   else
+      plugins = {
+	 plug_obj,
+	 plug_cdda, plug_ffmpeg, plug_ogg, plug_mikmod, plug_sidplay, 
+	 plug_sc68, plug_lpo, plug_fftvlr, plug_hyperpipe, plug_fime, 
+	 plug_spc
+      }
+   end
+
    -- Add entrylist driver if not already loaded.
    if type(entrylist_load) ~= "function" then
       tinsert(plugins,plug_el)
@@ -87,6 +101,7 @@ if __RELEASE then
 
    -- Really start dcplaya applications now !
    dolib("background")
+
    dolib("control_center")
    dolib("song_info")
    dolib("song_browser")
@@ -101,7 +116,7 @@ if __RELEASE then
 
    -- Set visual only if no cuurent
    local vis_name = set_visual()
-   if not vis_name or vis_name == "" then
+   if not SHADOCK_EDITION and not vis_name or vis_name == "" then
       vis_name = nil
       -- Get driver lists
       local drlist = get_driver_lists()
@@ -117,11 +132,40 @@ if __RELEASE then
    -- test again
    -- vis_name = set_visual() 
    -- $$$ failed ? Probably becoz visual really be set in the next frame ...
-   if not vis_name then
-      print("No visual plugin found :`(")
-   else
-      print("Visual plugin " .. vis_name)
+   if not SHADOCK_EDITION then
+      if not vis_name then
+	 print("No visual plugin found :`(")
+      else
+	 print("Visual plugin " .. vis_name)
+      end
    end
+
+   if scroll_dl then
+      dl_set_active(scroll_dl,nil)
+   end
+   hc()
+   dolib("net")
+   sc()
+   if scroll_dl then
+      dl_set_active(scroll_dl,1)
+   end
+
+
+   if SHADOCK_EDITION then
+      print("Shadock edition")
+      print("Loading ffmpeg codecs ...")
+      cl(codec_misc)
+      print("Playing Shadock video ...")
+      playa_play("/cd/extra/shadock.avi")
+
+      -- TO BE REMOVED !!
+--      function t()
+--	 dofile "/pc/home/zig/Dev/dc/newdcp/dcplaya/lua/taggedtext.lua"
+--	 dofile "/pc/home/zig/Dev/dc/newdcp/dcplaya/lua/net.lua"
+--      end
+   end
+
+   hc()
 
 end
 

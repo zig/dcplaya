@@ -4,7 +4,7 @@
 --- @date     2003
 --- @brief    fifo tracker application.
 ---
---- $Id: fifo_tracker.lua,v 1.6 2004-06-30 15:17:35 vincentp Exp $
+--- $Id: fifo_tracker.lua,v 1.7 2004-07-31 22:55:18 vincentp Exp $
 ---
 
 fifo_tracker_loaded = nil
@@ -89,21 +89,24 @@ function fifo_tracker_create(owner, name)
 
 
       local vtotal = ff_fifo_size and ff_fifo_size()
+      local vused = ff_fifo_used and ff_fifo_used()
       local bh = 30
-      if vtotal == 0 then 
+      if vtotal == 0 or vused == 0 then 
 	 vtotal = nil 
-      else
+	 vused = nil
+      end
+      if vtotal then
 	 bh = 15
       end
 
       
-      if percent > 900 or percent == 0 then
+      if not vtotal and percent > 900 or percent == 0 then
 	 ft.time_full = ft.time_full + frametime
       else
 	 ft.time_full = 0
       end
 
-      if percent < 100 then
+      if not vtotal and percent < 100 then
 	 ft.time_empty = ft.time_empty + frametime
       else
 	 ft.time_empty = 0
@@ -171,9 +174,12 @@ function fifo_tracker_create(owner, name)
 
       local text = format("%4d", percent)
       if vtotal then
-	 a = ff_fifo_used()
+	 a = vused
 
 	 text = text .. format(" -- %2d/%2d", a, vtotal)
+
+	 dl_set_active(ft.dl_vfull, 1)
+	 dl_set_active(ft.dl_vempty, 1)
 
 	 local x = 200 * a / vtotal
 	 dl_set_trans(ft.dl_vfull, 
@@ -188,6 +194,9 @@ function fifo_tracker_create(owner, name)
 			 *
 			 mat_trans(320-w/2, 20, 0)
 		   )
+      else
+	 dl_set_active(ft.dl_vfull, nil)
+	 dl_set_active(ft.dl_vempty, nil)
       end
 
 

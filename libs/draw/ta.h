@@ -5,7 +5,7 @@
  * @date     2002/11/22
  * @brief    draw tile accelerator interface.
  *
- * $Id: ta.h,v 1.4 2004-07-04 14:16:45 vincentp Exp $
+ * $Id: ta.h,v 1.5 2004-07-31 22:55:18 vincentp Exp $
  */
 
 #ifndef _DRAW_TA_H_
@@ -144,6 +144,15 @@ extern unsigned int draw_frame_counter;
  *  frames.
  */
 #define DRAW_SET_FLAGS(F) if (draw_current_flags != (F)) { draw_set_flags(F); } else
+
+/** You must call this before initiating any dma */
+void draw_lock();
+
+/** You must call this before initiating any dma */
+int draw_trylock();
+
+/** You must call this when you're done with dma */
+void draw_unlock();
 
 /**@}*/
 

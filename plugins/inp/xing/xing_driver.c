@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @author  Dan Potter
  *
- *  $Id: xing_driver.c,v 1.8 2003-03-17 15:35:48 ben Exp $
+ *  $Id: xing_driver.c,v 1.9 2004-07-31 22:55:19 vincentp Exp $
  */ 
 
  /* Based on :
@@ -60,7 +60,7 @@ static int pcm_count;
 static int pcm_stereo;
 
 /* MPEG file */
-static uint32     mp3_fd;
+static file_t     mp3_fd;
 static int	  frame_bytes;
 static MPEG	  mpeg;
 static MPEG_HEAD  head;
@@ -84,7 +84,7 @@ static int bs_fill(int min_bytes)
   memmove(bs_buffer, bs_ptr, bs_count);
   bs_ptr = bs_buffer;
     
-  if (mp3_fd) {
+  if (mp3_fd>=0) {
     int n;
     n = fs_read(mp3_fd, bs_buffer+bs_count, BS_SIZE - bs_count);
     ///$$$ ben: Because of a KOS bug , this does not work correctly !
@@ -175,13 +175,13 @@ static int decode_frame(void)
 /* Open an MPEG stream and prepare for decode */
 static int xing_init(const char *fn, playa_info_t * info)
 {
-  uint32	fd;
+  file_t fd;
 
   SDDEBUG(">> %s('%s')\n", __FUNCTION__, fn);
 
   /* Open the file */
   mp3_fd = fd = fs_open(fn, O_RDONLY);
-  if (fd == 0) {
+  if (fd < 0) {
     SDERROR("xing : open input file [%s] failed.\n", fn);
     return -1;
   }
@@ -318,18 +318,18 @@ static int xing_init(const char *fn, playa_info_t * info)
 
  errorout:
   SDERROR("<< %s('%s') := [-1]\n", __FUNCTION__, fn);
-  if (fd) fs_close(fd);
+  if (fd>=0) fs_close(fd);
   frame_bytes = 0;
-  mp3_fd = 0;
+  mp3_fd = -1;
   return -1;
 }
 
 static void xing_shutdown()
 {
   SDDEBUG("%s\n", __FUNCTION__);
-  if (mp3_fd) {
+  if (mp3_fd >= 0) {
     fs_close(mp3_fd);
-    mp3_fd = 0;
+    mp3_fd = -1;
   }
 }
 
@@ -339,7 +339,7 @@ static void xing_shutdown()
 static int sndmp3_init(any_driver_t * driver)
 {
   SDDEBUG("%s('%s')\n", __FUNCTION__, driver->name);
-  mp3_fd = 0;
+  mp3_fd = -1;
   return 0;
 }
 
@@ -383,7 +383,7 @@ static int sndmp3_decoder(playa_info_t * info)
 {
   int n = 0;
 	
-  if (!mp3_fd) {
+  if (mp3_fd<0) {
     return INP_DECODE_ERROR;
   }
   

@@ -30,6 +30,7 @@
 #include <stdarg.h>
 //#include <dirent.h>
 #include <kos/fs.h>
+#include <kos/sem.h>
 #include "dc/ta.h"
 #include "syscalls.h"
 #include "net.h"
@@ -52,6 +53,10 @@ ip_header_t * ip = (ip_header_t *)(pkt_buf + ETHER_H_LEN);
 udp_header_t * udp = (udp_header_t *)(pkt_buf + ETHER_H_LEN + IP_H_LEN);
 
 
+static semaphore_t * result_sema;
+kthread_t * waiting_thd;
+
+
 static int (*real_old_printk_func)(const uint8 *data, int len, int xlat);
 
 /* from console.c */
@@ -69,14 +74,40 @@ extern int (*old_printk_func)(const uint8 *data, int len, int xlat);
 # define STARTIRQ \
 	if (!irq_inside_int()) \
 	  irq_restore(oldirq); else
+
+/* If NICE is defined then sending packet will use less CPU but on the other hand it may 
+   take a while before this thread is running again */
+//#define NICE
+
+extern int bba_dma_busy;
 int eth_txts(uint8 *pkt, int len)
 {
   int res;
   int oldirq;
   for( ; ; ) {
+    if (!irq_inside_int())
+      tx_lock();
+#if 0
     STOPIRQ;
+    while (bba_dma_busy) {
+      STARTIRQ;
+      thd_pass();
+      STOPIRQ;
+    }
+#endif
+
+#ifdef NICE
     res = net_tx(pkt, len, irq_inside_int());
+#else
+    res = net_tx(pkt, len, 1);
+#endif
+
+#if 0
     STARTIRQ;
+#endif
+
+    if (!irq_inside_int())
+      tx_unlock();
 
     if (!res || irq_inside_int())
       break;
@@ -122,16 +153,20 @@ static void wait_result()
   }
 
   int fc = ta_state.frame_counter;
-  while (!escape_loop) {
-    thd_pass();
-    if (ta_state.frame_counter - fc > 60) {
+  waiting_thd = thd_current;
+  do {
+    //thd_pass();
+    sem_wait_timed(result_sema, 500);
+    if (!escape_loop && ta_state.frame_counter - fc > 60) {
       tool_ip = 0;
       printf("BBA syscall timed out !\n"
 	     "Please reconnect the dc-load client.\n");
       syscall_retval = -1;
+      waiting_thd = NULL;
       return;
     }
-  }
+  } while (!escape_loop);
+  waiting_thd = NULL;
   escape_loop = 0;
 }
 
@@ -438,16 +473,17 @@ typedef struct {
     unsigned char map[16384];
 } bin_info_t;
 
-bin_info_t bin_info;
+static bin_info_t bin_info;
 
-unsigned char buffer[COMMAND_LEN + 1024]; /* buffer for response */
-command_t * response = (command_t *)buffer;
+static unsigned char buffer[COMMAND_LEN + 1024]; /* buffer for response */
+static command_t * response = (command_t *)buffer;
 
 void cmd_loadbin(ip_header_t * ip, udp_header_t * udp, command_t * command)
 {
     bin_info.load_address = ntohl(command->address);
     bin_info.load_size = ntohl(command->size);
-    memset(bin_info.map, 0, 16384);
+    //memset(bin_info.map, 0, 16384);
+    memset(bin_info.map, 0, (bin_info.load_size + 1023)/1024);
 
     our_ip = ntohl(ip->dest);
     
@@ -571,6 +607,12 @@ void cmd_retval(ip_header_t * ip, udp_header_t * udp, command_t * command)
 
   syscall_retval = ntohl(command->address);
   escape_loop = 1;
+  sem_signal(result_sema);
+  if (waiting_thd) {
+    thd_schedule_next(waiting_thd);
+    waiting_thd = NULL;
+  } else
+    thd_schedule(1, 0);
 }
 
 
@@ -719,9 +761,12 @@ void dcload_printk(const char *str) {
 
 static int printk_func(const uint8 *data, int len, int xlat)
 {
-  if (0 && tool_ip) {
+  if (tool_ip) {
     int oldirq = 0;
     int res;
+
+    if (irq_inside_int())
+      return 0;
 
     net_lock();
     STOPIRQ;
@@ -730,7 +775,10 @@ static int printk_func(const uint8 *data, int len, int xlat)
     net_unlock();
     return res;
   } else {
-    return real_old_printk_func(data, len, xlat);
+    if (real_old_printk_func)
+      return real_old_printk_func(data, len, xlat);
+    else
+      return len;
   }
 }
 
@@ -739,7 +787,9 @@ static char *dcload_path = NULL;
 
 uint32 dcload_open(vfs_handler_t * dummy, const char *fn, int mode)
 {
+#ifdef BENPATCH
   dcload_handler_t * hdl = 0;
+#endif
   int hnd = 0;
   int dcload_mode = 0;
   int oldirq = 0;
@@ -828,7 +878,12 @@ void dcload_close(uint32 hnd)
 #ifdef BENPATCH
 #define dcload_read_buffer sc_read
 #if 0
-#define FRAG 8*1024
+#endif
+
+#else
+
+//#define FRAG 5*1024
+#define FRAG 2048
 static ssize_t dcload_read_buffer(uint32 hnd, int8 *buf, size_t cnt)
 {
   const ssize_t frag = FRAG;
@@ -866,14 +921,15 @@ static ssize_t dcload_read_buffer(uint32 hnd, int8 *buf, size_t cnt)
 /* 	break; */
 /*       } */
     }
-    if (cnt && thd_enabled) {
-      thd_pass();
-    }
+/*     if (cnt && thd_enabled) { */
+/*       thd_pass(); */
+/*     } */
   }
 
   return ret;
 }
-#endif
+#define dcload_read_buffer sc_read
+
 #endif
 
 #ifdef BENPATCH
@@ -903,11 +959,17 @@ ssize_t dcload_read(uint32 hnd, void *buf, size_t cnt)
 
 #ifndef BENPATCH
   if (hnd)
-    ret = sc_read(hnd-1, buf, cnt);
+    ret = dcload_read_buffer(hnd-1, buf, cnt);
 #else
   if (hnd) {
     dcload_handler_t * dh = dcload_get_buffer_handler(hnd);
-    if (!dh) {
+    
+    if (!dh || cnt > dcload_buffering) {
+      if (dh) {
+	hnd = dh->hdl;
+	dh->cur = dh->cnt = 0;
+	dh->tell = -1;
+      }
       ret = dcload_read_buffer(hnd-1, buf, cnt);
     } else {
       int eof = 0;
@@ -1211,6 +1273,8 @@ int fs_init()
 
   init = 1;
 
+  result_sema = sem_create(0);
+
   real_old_printk_func = old_printk_func;
   old_printk_func = printk_func;
 
@@ -1234,14 +1298,14 @@ void fs_shutdown()
   init = 0;
   nmmgr_handler_remove(&vh);
 
-  if (real_old_printk_func) {
-    old_printk_func = real_old_printk_func;
-    real_old_printk_func = 0;
-  }
+  old_printk_func = real_old_printk_func;
 
   if (oldfs) {
     nmmgr_handler_add(oldfs);
     oldfs = NULL;
   }
+
+  sem_destroy(result_sema);
+  result_sema = NULL;
 }
 

@@ -9,7 +9,7 @@
  *
  * Modified by benjamin Gerard for dcplaya
  *
- * $Id: sndvorbisfile.c,v 1.3 2002-12-20 08:49:54 ben Exp $
+ * $Id: sndvorbisfile.c,v 1.4 2004-07-31 22:55:19 vincentp Exp $
  */
 
 #include <kos.h>
@@ -18,7 +18,7 @@
 #include "sndvorbisfile.h"
 #include "sysdebug.h"
 
-VorbisFile_handle_t fd;
+//VorbisFile_handle_t fd = -1;
 
 // Ogg/Vorbis relevant variables
 ogg_sync_state oy;
@@ -47,7 +47,7 @@ uint32 fw;
 #define VorbisFile_notplaying -1
 #define VorbisFile_playing  1
 
-VorbisFile_handle_t fd;
+VorbisFile_handle_t fd = -1;
 
 /* VorbisFile_isEOS()
  *
@@ -72,7 +72,7 @@ int VorbisFile_isEOS()
  */
 long VorbisFile_getBitrateNominal()
 {
-  if (fd == 0)
+  if (fd < 0)
     return (-1);
   else
     return (vi.bitrate_nominal);
@@ -90,7 +90,7 @@ long VorbisFile_getBitrateInstant()
 {
   long ret;
 
-  if (fd == 0)
+  if (fd < 0)
     return (-1);
   if (VorbisFile_sampletrack == 0)
     return (-1);                /* prevent division by zero */
@@ -118,7 +118,7 @@ char *VorbisFile_getCommentByName(char *commentfield)
   int i;
   int commentlength = strlen(commentfield);
 
-  if (fd == 0)
+  if (fd < 0)
     return (VorbisFile_NULL);
 
   //return(vorbis_comment_query(&vc, commentfield,1));
@@ -143,7 +143,7 @@ char *VorbisFile_getCommentByName(char *commentfield)
  */
 char *VorbisFile_getCommentByID(long commentid)
 {
-  if (fd == 0)
+  if (fd < 0)
     return (VorbisFile_NULL);
 
   /* Check if we have at least that much comments in our file ?! */
@@ -159,9 +159,9 @@ char *VorbisFile_getCommentByID(long commentid)
  */
 void VorbisFile_closeFile()
 {
-  if (fd != 0) {
+  if (fd >= 0) {
     fs_close(fd);
-    fd = 0;
+    fd = -1;
   }
 }
 
@@ -179,7 +179,7 @@ int VorbisFile_openFile(const char *filename, VorbisFile_headers_t * v_headers)
 
   fd = fs_open(filename, O_RDONLY);
 
-  if (fd == 0) {
+  if (fd < 0) {
     SDERROR("Liboggvorbis: cannot open file [%s]\n", filename);
     return (-1);
   }

@@ -8,12 +8,14 @@
    +2002/02/12 variable stream size modification by ben(jamin) gerard
 */
 
-/* static char id[] = "sndserver $Id: sndstream.c,v 1.5 2004-07-04 14:16:45 vincentp Exp $"; */
+/* static char id[] = "sndserver $Id: sndstream.c,v 1.6 2004-07-31 22:55:19 vincentp Exp $"; */
 
 #include <kos.h>
+#include <dc/g2bus.h>
 #include "dcplaya/config.h"
 #include "sndstream.h"
 #include "sysdebug.h"
+#include "dma.h"
 
 #include <arch/types.h>
 #include "arm/aica_cmd_iface.h"
@@ -22,7 +24,11 @@
 #error "BAD aica_cmd_iface.h"
 #endif
 
-#define SPU_SPL2_ADDR (SPU_SPL1_ADDR + (stream_bytes<<1))
+#define NUM_BUF 2
+#define SPU_SPL2_ADDR (SPU_SPL1_ADDR + (stream_bytes*NUM_BUF))
+
+#define G2_GET32(a) g2_read_32(&(a))
+#define G2_SET32(a, b) g2_write_32(&(a), b)
 
 /*
 
@@ -111,35 +117,39 @@ static void sep_data(void *buffer) {
   }
 }
 
+void stream_lock()
+{
+  spinlock_lock(&mutex);
+}
+
+void stream_unlock()
+{
+  spinlock_unlock(&mutex);
+}
+
 /* Prefill buffers -- do this before calling start() */
 void stream_prefill()
 {
   void *buf;
+  int i;
 
   if (!str_get_data) {
     spinlock_lock(&mutex);
-    spu_memset(SPU_SPL1_ADDR, 0, stream_bytes*2);
-    spu_memset(SPU_SPL2_ADDR, 0, stream_bytes*2);
+    spu_memset(SPU_SPL1_ADDR, 0, stream_bytes*NUM_BUF);
+    spu_memset(SPU_SPL2_ADDR, 0, stream_bytes*NUM_BUF);
     spinlock_unlock(&mutex);
     return;
   }
 
-  /* Load first buffer */
-  buf = str_get_data(stream_bytes << stereo);
-  sep_data(buf);
-
-  spinlock_lock(&mutex);
-  spu_memload(SPU_SPL1_ADDR + stream_bytes*0, (uint8*)sep_buffer[0], stream_bytes);
-  spu_memload(SPU_SPL2_ADDR + stream_bytes*0, (uint8*)sep_buffer[1], stream_bytes);
-  spinlock_unlock(&mutex);
-
-  /* Load second buffer */
-  buf = str_get_data(stream_bytes << stereo);
-  sep_data(buf);
-  spinlock_lock(&mutex);
-  spu_memload(SPU_SPL1_ADDR + stream_bytes*1, (uint8*)sep_buffer[0], stream_bytes);
-  spu_memload(SPU_SPL2_ADDR + stream_bytes*1, (uint8*)sep_buffer[1], stream_bytes);
-  spinlock_unlock(&mutex);
+  /* Load buffers */
+  for (i=0; i<NUM_BUF; i++) {
+    buf = str_get_data(stream_bytes << stereo);
+    sep_data(buf);
+    spinlock_lock(&mutex);
+    spu_memload(SPU_SPL1_ADDR + stream_bytes*i, (uint8*)sep_buffer[0], stream_bytes);
+    spu_memload(SPU_SPL2_ADDR + stream_bytes*i, (uint8*)sep_buffer[1], stream_bytes);
+    spinlock_unlock(&mutex);
+  }
 
   /* Start with playing on buffer 0 */
   curbuffer = 0;
@@ -148,7 +158,7 @@ void stream_prefill()
 /* Initialize stream system */
 int stream_init(void* (*callback)(int), int samples)
 {
-  uint32  hnd;
+  file_t  hnd;
   int bytes;
   char *streamdrv = 0;
 
@@ -156,7 +166,7 @@ int stream_init(void* (*callback)(int), int samples)
 
   /* Load the AICA driver. Do this once. */
   hnd = fs_open("/rd/stream.drv", O_RDONLY);
-  if (!hnd) {
+  if (hnd<0) {
     SDERROR("[%s] : can't open sound driver\n", __FUNCTION__);
     return -1;
   }
@@ -179,8 +189,12 @@ int stream_init(void* (*callback)(int), int samples)
   stream_bytes_max  = bytes;
 
   /* Create stereo seperation buffers */
-  sep_buffer[0] = realloc(sep_buffer[0], stream_bytes_max);
-  sep_buffer[1] = realloc(sep_buffer[1], stream_bytes_max);
+/*   sep_buffer[0] = realloc(sep_buffer[0], stream_bytes_max); */
+/*   sep_buffer[1] = realloc(sep_buffer[1], stream_bytes_max); */
+  if (sep_buffer[0]) free(sep_buffer[0]);
+  if (sep_buffer[1]) free(sep_buffer[1]);
+  sep_buffer[0] = memalign(32, stream_bytes_max);
+  sep_buffer[1] = memalign(32, stream_bytes_max);
 
   if (!sep_buffer[0] || !sep_buffer[1]) {
     SDERROR("[%s] : Separate buffer allocation failed\n",__FUNCTION__);
@@ -199,7 +213,7 @@ int stream_init(void* (*callback)(int), int samples)
   spu_enable();
   SDDEBUG("SPU enabled\n");
 
-  if (hnd) fs_close(hnd);
+  if (hnd>=0) fs_close(hnd);
 
   /* Setup a mem load mutex */
   spinlock_init(&mutex);
@@ -243,10 +257,14 @@ void stream_start(int samples, uint32 freq, int vol, int st)
   /* *chsel = 0; */
 
   samples <<= 1;
+
+  /* VP : for dma, must be multiple of 32 */
+  samples = (samples + 0x1f) & ~0x1f;
+
   if (samples < stream_bytes_min) {
     samples = stream_bytes_min;
-  } else if (samples > stream_bytes_max) {
-    samples = stream_bytes_max;
+  } else if (samples > stream_bytes_max/(NUM_BUF/2)) {
+    samples = stream_bytes_max/(NUM_BUF/2);
   }
   stream_bytes = samples;
   stereo = (st != 0);
@@ -257,7 +275,7 @@ void stream_start(int samples, uint32 freq, int vol, int st)
   /* Start streaming */
   chans[0].cmd    = AICA_CMD_START;
   chans[0].freq   = freq;
-  chans[0].length = stream_bytes;
+  chans[0].length = stream_bytes*(NUM_BUF/2);
   chans[0].vol    = vol&255;
   /* chans[0].pos    = SPU_SPL1_ADDR; */
   chn_kick(0);
@@ -269,7 +287,7 @@ void stream_stop() {
 
   stream_bytes = 0;
   /* Stop stream */
-  chans[0].cmd = AICA_CMD_STOP;
+  G2_SET32(chans[0].cmd, AICA_CMD_STOP);
   chn_kick(0);
 }
 
@@ -279,53 +297,62 @@ void stream_stop() {
 int stream_poll() {
   int realbuffer;
   uint32  val;
+  int res = 0;
   void  *data;
+  static dma_chain_t * chain1;
+  static dma_chain_t * chain2;
 
   if (!str_get_data) return -1;
 
   /* Get "real" buffer */
-  val = chans[0].pos;
+  //vid_border_color(255, 255, 0);
   spu_write_wait();
-  realbuffer = !(val < (stream_bytes>>1));
+  val = G2_GET32(chans[0].pos);
+  //realbuffer = !(val < (stream_bytes>>1));
+  realbuffer = val / (stream_bytes>>1);
 
   /* Has the channel moved on from the "current" buffer? */
-  if (curbuffer != realbuffer) {
+  //if (curbuffer != realbuffer) {
+  if (curbuffer == ((realbuffer+NUM_BUF/2)&(NUM_BUF-1))) {
     /* Yep, adjust "current" buffer and initiate a load */
 
     data = str_get_data(stream_bytes << stereo);
+    //vid_border_color(255, 0, 0);
     if (data == NULL) {
-      /* Fill the "other" buffer with zeros */
-      spinlock_lock(&mutex);
-      spu_memset(SPU_SPL1_ADDR + stream_bytes*curbuffer, 0, stream_bytes);
-      spu_memset(SPU_SPL2_ADDR + stream_bytes*curbuffer, 0, stream_bytes);
-      spinlock_unlock(&mutex);
-      return -1;
+      memset(sep_buffer[0], 0, stream_bytes);
+      memset(sep_buffer[1], 0, stream_bytes);
+      res = -1;
     } else {
       sep_data(data);
-      spinlock_lock(&mutex);
-      spu_memload(SPU_SPL1_ADDR + stream_bytes*curbuffer, (uint8*)sep_buffer[0], stream_bytes);
-      spu_memload(SPU_SPL2_ADDR + stream_bytes*curbuffer, (uint8*)sep_buffer[1], stream_bytes);
-      spinlock_unlock(&mutex);
-      curbuffer = realbuffer;
+      res = stream_bytes>>1;
     }
-    return stream_bytes>>1;
+    spinlock_lock(&mutex);
+    /*       spu_memload(SPU_SPL1_ADDR + stream_bytes*curbuffer, (uint8*)sep_buffer[0], stream_bytes); */
+    /*       spu_memload(SPU_SPL2_ADDR + stream_bytes*curbuffer, (uint8*)sep_buffer[1], stream_bytes); */
+    chain1 = dma_initiate((void *) SPU_SPL1_ADDR + stream_bytes*curbuffer, (uint8*)sep_buffer[0], stream_bytes, DMA_TYPE_SPU);
+    chain2 = dma_initiate((void *) SPU_SPL2_ADDR + stream_bytes*curbuffer, (uint8*)sep_buffer[1], stream_bytes, DMA_TYPE_SPU);
+    dma_wait(chain1);
+    dma_wait(chain2);
+    spinlock_unlock(&mutex);
+    curbuffer = (curbuffer+1)&(NUM_BUF-1);
   }
-  return 0;
+  //vid_border_color(0, 0, 0);
+  return res;
 }
 
 /* Set the volume on the streaming channels */
 void stream_volume(int vol) {
   spinlock_lock(&mutex);
-  chans[0].cmd = AICA_CMD_VOL;
-  chans[0].vol = vol;
+  G2_SET32(chans[0].cmd, AICA_CMD_VOL);
+  G2_SET32(chans[0].vol, vol);
   chn_kick(0);
   spinlock_unlock(&mutex);
 }
 
 void stream_frq(int frq) {
   spinlock_lock(&mutex);
-  chans[0].cmd = AICA_CMD_FRQ;
-  chans[0].freq = frq;
+  G2_SET32(chans[0].cmd, AICA_CMD_FRQ);
+  G2_SET32(chans[0].freq,  frq);
   chn_kick(0);
   spinlock_unlock(&mutex);
 }
@@ -333,7 +360,7 @@ void stream_frq(int frq) {
 /* 0:mono 1:stereo 2:invert-stereo */
 void stream_stereo(int stereo) {
   spinlock_lock(&mutex);
-  chans[0].cmd = AICA_CMD_MONO + stereo;
+  G2_SET32(chans[0].cmd, AICA_CMD_MONO + stereo);
   chn_kick(0);
   spinlock_unlock(&mutex);
 }

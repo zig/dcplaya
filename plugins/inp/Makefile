@@ -4,10 +4,10 @@
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sasahipa.com>
 #
 #
-# $Id: Makefile,v 1.14 2004-07-04 14:16:45 vincentp Exp $
+# $Id: Makefile,v 1.15 2004-07-31 22:55:18 vincentp Exp $
 #
 
-SUBDIRS = xing sidplay ogg mikmod sndtst sc68 spc nsf
+SUBDIRS = xing sidplay ogg mikmod sndtst sc68 spc nsf ffmpeg
 
 #SUBDIRS +=  cdda
 

@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile.inc.in,v 1.32 2004-07-04 14:16:44 vincentp Exp $
+# $Id: Makefile.inc.in,v 1.33 2004-07-31 22:55:17 vincentp Exp $
 #
 
 .SUFFIXES:
@@ -211,7 +211,7 @@ $(LIBNAME) : $(OBJS) $(LIB_EXTRA) $(LIB_TARGET_EXTRA_DEP)
 
 %.bin : %.elf $(BIN_TARGET_EXTRA_DEP)
 	@echo "Build [$@] from [$^] [`pwd`]"
-	@$(KOS_OBJCOPY) -O binary $< $@
+	@$(KOS_OBJCOPY) -O binary -R .stack $< $@
 
 
 subdirs: $(patsubst %, _dir_%, $(SUBDIRS))

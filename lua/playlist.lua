@@ -65,7 +65,7 @@ function playlist_save(fname, dir)
    if type(fname) ~= "string"  or type(dir) ~= "table" then return end
 
    unlink(fname)
-   local file = openfile(fname,"wt")
+   local file = openfile(fname,"w")
    if not file then return end
    
    print("Saving playlist ["..fname.."]")
@@ -117,6 +117,12 @@ function playlist_make_entry(path, entry)
    end
    local epath, eleaf = get_path_and_leaf(file,path)
    if not eleaf then return end
+
+   -- VP put back the trailing / if there was one
+--   if strsub(file, -1) == "/" then
+--      eleaf = eleaf.."/"
+--   end
+   print(epath, eleaf)
 
    return {
       file = eleaf,
@@ -178,7 +184,14 @@ function playlist_load_m3u_entry(file)
       if strlen(line) > 0 then
 	 if strsub(line,1,1) == "#" then
 	    start,stop,time,name = strfind(line,"^#EXTINF:([0-9]*),(.*)")
+	    print(start, stop, time, name)
 	 else
+	    if not name then
+	       start = strfind(line, "<endpath>")
+	       if start then
+		  name = strsub(line, 1, start-1)
+	       end
+	    end
 	    return { name = name, file = line, time = tonumber(time) }
 	 end
       end
@@ -209,13 +222,13 @@ function playlist_load_pls_entry(file)
       if strlen(line) > 0 then
 	 start,stop,label,id,value = strfind(line,"^(%a*)(%d*)=(.*)")
 	 if start then
-	    --			print("label:"..label.." id:"..id.." value:"..value)
+	    print("label:"..label.." id:"..id.." value:"..value)
 
 	    if not entry or not entry.id then
 	       entry = { id=id }
-	    elseif entry.id ~= id then
-	       if filepos then
-		  --				  print("rewind to ", filepos)
+	    elseif id and entry.id ~= id then
+	       if filepos and filepos >= 0 then
+		  print("rewind to ", filepos)
 		  seek(file, "set", filepos)
 	       end
 	       return entry
@@ -252,7 +265,7 @@ function playlist_load(fname)
       return
    end
 
-   local file = openfile(fname,"rt")
+   local file = openfile(fname,"r")
    if not file then
       print("playlist_load : open error ["..fname.."]")
       return

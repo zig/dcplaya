@@ -5,7 +5,7 @@
  * @date     2004/03/13
  * @brief    network extension plugin
  * 
- * $Id: net_driver.c,v 1.2 2004-07-04 14:16:45 vincentp Exp $
+ * $Id: net_driver.c,v 1.3 2004-07-31 22:55:18 vincentp Exp $
  */
 
 #include <stdlib.h>
@@ -36,6 +36,11 @@ net_input_func lwip_cb;
 void rx_callback(netif_t * netif, uint8 *pkt, int pktsize);
 
 netif_t * netif;
+
+
+/* from console.c */
+extern int (*old_printk_func)(const uint8 *data, int len, int xlat);
+
 
 /* Driver init : not much to do. */ 
 static int driver_init(any_driver_t *d)
@@ -101,6 +106,8 @@ static int lua_net_shutdown(lua_State * L)
     netinit = 0;
   }
 
+  dma_test(-1);
+
   init = 0;
   printf("net_driver LUA shutdown.\n");
  ok:
@@ -115,15 +122,29 @@ static int lua_net_connect(lua_State * L)
 {
   int res = -1;
   struct netif_list * listhead;
+  uint8 ip[4];
+  static int net_init_called;
 
   dbglog_set_level(7);
 
   if (netinit)
     return 0;
 
+  if (lua_tostring(L, 1) == NULL || dns(lua_tostring(L, 1), ip)) {
+    printf("Syntax error : try net_connect your.ip.add.ress\n");
+    return 0;
+  }
+
   printf("calling eth_init\n");
 
-  net_init();
+
+  old_printk_func = 0;
+
+
+  if (!net_init_called) {
+    net_init();
+    net_init_called = 1;
+  }
   netinit = 1;
   
   // Find a device for us
@@ -150,19 +171,14 @@ static int lua_net_connect(lua_State * L)
       printf("%x ", (int) eth_mac[i]);
     printf("\n");
 
-    printf("Set IP : %d.%d.%d.%d\n", (int) lua_tonumber(L, 1), 
-	   (int) lua_tonumber(L, 2), 
-	   (int) lua_tonumber(L, 3), 
-	   (int) lua_tonumber(L, 4));
-    eth_setip(lua_tonumber(L, 1), 
-	      lua_tonumber(L, 2), 
-	      lua_tonumber(L, 3), 
-	      lua_tonumber(L, 4));
+    
+    printf("Set IP : %d.%d.%d.%d\n", ip[0], ip[1], ip[2], ip[3]);
+    eth_setip(ip[0], ip[1], ip[2], ip[3]);
 
     net_input_set_target(rx_callback);
 
     if (!fs_init())
-      printf("NFS initialised succesfully\n");
+      printf("nfs, httpfs, tcpfs and udpfs initialized succesfully\n");
   }
 
   lua_pushnumber(L, res);
@@ -186,7 +202,7 @@ static int lua_net_print(lua_State * L)
 {
   const char * msg = lua_tostring(L, 1);
   net_lock();
-  sc_write(0, msg, strlen(msg));
+  sc_write(1, msg, strlen(msg));
   net_unlock();
 
   return 0;
@@ -197,13 +213,24 @@ static int lua_lwip_init(lua_State * L)
   struct ip_addr ip;
   struct ip_addr mask;
   struct ip_addr gw;
+  int res = -1;
 
-  IP4_ADDR(&ip, 192, 168, 1, 9);
-  IP4_ADDR(&mask, 255, 255, 255, 0);
-  IP4_ADDR(&gw, 192, 168, 1, 2);
+/*   IP4_ADDR(&ip, 192, 168, 1, 9); */
+/*   IP4_ADDR(&mask, 255, 255, 255, 0); */
+/*   IP4_ADDR(&gw, 192, 168, 1, 2); */
+
+  if (
+      lua_tostring(L, 1)==NULL || dns(lua_tostring(L, 1), &ip) ||
+      lua_tostring(L, 2)==NULL || dns(lua_tostring(L, 2), &mask) ||
+      lua_tostring(L, 3)==NULL || dns(lua_tostring(L, 3), &gw)
+      ) {
+
+    printf("Syntax error : try net_lwip_init your.ip.add.ress 255.255.255.0 your.gate.way.ip\n");
+    return 0;
+  }
 
   //lwip_init_mac();
-  lwip_init_all_static(&ip, &mask, &gw);
+  res = lwip_init_all_static(&ip, &mask, &gw);
   //lwip_init_common("test");
 
   //lwip_init_all();
@@ -213,7 +240,9 @@ static int lua_lwip_init(lua_State * L)
 
   lwipinit = 1;
 
-  return 0;
+  lua_pushnumber(L, res);
+
+  return 1;
 }
 
 #include "lwip/sockets.h"
@@ -222,21 +251,44 @@ static int lua_gethostbyname(lua_State * L)
   struct sockaddr_in dnssrv;
   uint8 ip[4];
   
-  dnssrv.sin_family = AF_INET;
-  dnssrv.sin_port = htons(53);
-  if (dns("212.198.2.51", &dnssrv.sin_addr.s_addr))
-    return 0;
-  //dnssrv.sin_addr.s_addr = ntohl(dnssrv.sin_addr.s_addr);
-  printf("server ip %x\n", dnssrv.sin_addr.s_addr);
+/*   dnssrv.sin_family = AF_INET; */
+/*   dnssrv.sin_port = htons(53); */
+/*   if (dns("212.198.2.51", &dnssrv.sin_addr.s_addr)) */
+/*     return 0; */
+/*   //dnssrv.sin_addr.s_addr = ntohl(dnssrv.sin_addr.s_addr); */
+/*   printf("server ip %x\n", dnssrv.sin_addr.s_addr); */
 
-  if (lwip_gethostbyname(&dnssrv, lua_tostring(L, 1), ip) < 0)
+  //if (lwip_gethostbyname(&dnssrv, lua_tostring(L, 1), ip) < 0)
   //if (lwip_gethostbyname2("212.198.2.51", lua_tostring(L, 1), ip) < 0)
+  if (dns(lua_tostring(L, 1), ip))
     printf("Can't look up name");
   else {
     printf("ip of '%s' is %d.%d.%d.%d\n", lua_tostring(L, 1),
 	   ip[0], ip[1], ip[2], ip[3]);
   }
 
+  return 0;
+}
+
+extern struct sockaddr_in dnssrv;
+static int lua_resolv(lua_State * L)
+{
+  dnssrv.sin_port = 0;
+  if (dns(lua_tostring(L, 1), &dnssrv.sin_addr.s_addr)) {
+    printf("Syntax error : try net_resolv your.dns.add.ress\n");
+    return 0;
+  }
+  dnssrv.sin_family = AF_INET;
+  dnssrv.sin_port = htons(53);
+
+  printf("DNS server address set to '%s'\n", lua_tostring(L, 1));
+
+  return 0;
+}
+
+static int lua_dma(lua_State * L)
+{
+  dma_test((int)lua_tonumber(L, 1));
   return 0;
 }
 
@@ -267,7 +319,7 @@ static luashell_command_description_t driver_commands[] = {
     /* long names, short names and topic */
     DRIVER_NAME"_lwip_init", 0, 0,
     /* usage */
-    DRIVER_NAME"_lwip().",
+    DRIVER_NAME"_lwip(). Initialize the tcp/ip stack.",
     /* function */
     SHELL_COMMAND_C, lua_lwip_init,
   },
@@ -276,8 +328,8 @@ static luashell_command_description_t driver_commands[] = {
     /* long names, short names and topic */
     DRIVER_NAME"_connect", 0, 0,
     /* usage */
-    DRIVER_NAME"_connect(ip0, ip1, ip2, ip3) : "
-    "Connect the BBA and set its ip (four parameters in order).",
+    DRIVER_NAME"_connect(ip) : "
+    "Connect the BBA and set its ip (string of the form '192.168.1.9').",
     /* function */
     SHELL_COMMAND_C, lua_net_connect
   },
@@ -297,7 +349,7 @@ static luashell_command_description_t driver_commands[] = {
     DRIVER_NAME"_print", 0, 0,
     /* usage */
     DRIVER_NAME"_print(message) : "
-    "Send a console message through the BBA.",
+    "Send a console message through the BBA. (just for testing)",
     /* function */
     SHELL_COMMAND_C, lua_net_print
   },
@@ -307,9 +359,29 @@ static luashell_command_description_t driver_commands[] = {
     DRIVER_NAME"_gethostbyname", 0, 0,
     /* usage */
     DRIVER_NAME"_gethostbyname(name) : "
-    "Query DNS for ip adress.",
+    "Query DNS for ip address.",
     /* function */
     SHELL_COMMAND_C, lua_gethostbyname
+  },
+
+  {
+    /* long names, short names and topic */
+    DRIVER_NAME"_resolv", 0, 0,
+    /* usage */
+    DRIVER_NAME"_resolv(addr) : "
+    "Set DNS server address.",
+    /* function */
+    SHELL_COMMAND_C, lua_resolv
+  },
+
+  {
+    /* long names, short names and topic */
+    DRIVER_NAME"_dma", 0, 0,
+    /* usage */
+    DRIVER_NAME"_dma() : "
+    "Test DMA.",
+    /* function */
+    SHELL_COMMAND_C, lua_dma
   },
 
 

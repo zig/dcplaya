@@ -13,7 +13,7 @@
 #include <dc/maple.h>
 #include <dc/maple/keyboard.h>
 
-CVSID("$Id: keyboard.c,v 1.8 2004-07-04 14:16:45 vincentp Exp $");
+CVSID("$Id: keyboard.c,v 1.9 2004-07-31 22:55:19 vincentp Exp $");
 
 /*
 
@@ -28,8 +28,16 @@ repeat handling.
 static int kbd_frame_matrix2[64] = {0};
 static int kbd_frame_matrix[256] = {0};
 static int kbd_matrix[256] = {0};
+static int matrix[256];
 
 int kbd_present = 2;
+
+
+# define STOPIRQ \
+ 	if (!irq_inside_int()) { oldirq = irq_disable(); } else
+
+# define STARTIRQ \
+	if (!irq_inside_int()) { irq_restore(oldirq); } else
 
 
 /* The keyboard queue (global for now) */
@@ -89,7 +97,8 @@ static int kbd_enqueue(kbd_state_t *state, uint8 keycode) {
 		return 0;
 
 	/* Figure out its key queue value */	
-	if (state) {
+	if (state && 
+	    keycode < sizeof(keymap_noshift)/sizeof(keymap_noshift[0])) {
 	  if (state->shift_keys & (KBD_MOD_LSHIFT|KBD_MOD_RSHIFT))
 	    ascii = keymap_shift[keycode];
 	  else
@@ -120,7 +129,7 @@ int dcp_kbd_get_key() {
 	
 	rv = kbd_queue[kbd_queue_tail];
 	kbd_queue_tail = (kbd_queue_tail + 1) & (KBD_QUEUE_SIZE - 1);
-	
+
 	return rv;
 }
 
@@ -138,13 +147,13 @@ static void kbd_check_poll(maple_frame_t *frm) {
 
 	/* Check the shift state */
 	state->shift_keys = cond->modifiers;
-	
+
     /* Process all pressed keys */
     for (i=0; i<6; i++) {
       int k = cond->keys[i];
       if (k != 0) {
-	int p = state->matrix[k];
-	state->matrix[k] = 2;	/* 2 == currently pressed */
+	int p = matrix[k];
+	matrix[k] = 2;	/* 2 == currently pressed */
 	if (!p || kbd_frame_matrix[k] <= 0) {
 	  kbd_enqueue(state, k);
 	  kbd_frame_matrix[k] = p ? kbd_frame_matrix[k]+3 : 20;
@@ -153,13 +162,13 @@ static void kbd_check_poll(maple_frame_t *frm) {
     }
 
   /* Now normalize the key matrix */
-  for (i=0; i<sizeof(kbd_frame_matrix)/sizeof(kbd_frame_matrix[0]); i++) {
-    if (state->matrix[i] == 1)
-      state->matrix[i] = 0;
-    else if (state->matrix[i] == 2) {
+  for (i=0; i<256; i++) {
+    if (matrix[i] == 1)
+      matrix[i] = 0;
+    else if (matrix[i] == 2) {
       if (kbd_frame_matrix[i] > 0)
 	kbd_frame_matrix[i] -= 1; //elapsed_frame;
-      state->matrix[i] = 1;
+      matrix[i] = 1;
     }
 
     /*		if (kbd_frame_matrix[i])
@@ -302,10 +311,11 @@ cont_cond_t * controler_get_cond(int idx);
    queueing keypresses for later usage. The key press queue uses 16-bit
    words so that we can store "special" keys as such. This needs to be called
    fairly periodically if you're expecting keyboard input. */
-int kbd_poll_repeat(uint8 addr, int elapsed_frame)
+int kbd_poll_repeat(int elapsed_frame)
 {
   kbd_cond_t cond;
   int i, j;
+  int oldirq;
 
 #if 0
 #ifdef NOTYET
@@ -345,6 +355,7 @@ int kbd_poll_repeat(uint8 addr, int elapsed_frame)
   /* Process all joystick */
 #define CONTROLER_JOY_DEAD          48
 #define CONTROLER_TRIG_DEAD         15
+  STOPIRQ;
   for (j=0; j<4; j++) {
     int bits;
     cont_cond_t * cond = controler_get_cond(j);
@@ -433,6 +444,7 @@ int kbd_poll_repeat(uint8 addr, int elapsed_frame)
       }
     }
   }
+  STARTIRQ;
 
 #if 1
   /* Now normalize the key matrix */

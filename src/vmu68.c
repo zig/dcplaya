@@ -1,5 +1,5 @@
 /**
- * $Id: vmu68.c,v 1.17 2004-07-04 14:16:45 vincentp Exp $
+ * $Id: vmu68.c,v 1.18 2004-07-31 22:55:19 vincentp Exp $
  */
 
 #include <dc/maple.h>
@@ -545,9 +545,15 @@ static int draw_bar(char *buf, int lvl, int h)
   }
 }
 
+#include "dc/ta.h"
 static void draw_lcd(void *a)
 {
+/*   static lastframe; */
   uint8 mlcd = maple_first_lcd();
+
+/*   if (ta_state.frame_counter - lastframe < 2) */
+/*     return; */
+/*   lastframe = ta_state.frame_counter; */
 
   if (a && mlcd) {
     maple_device_t * dev;

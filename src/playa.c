@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.26 2004-06-30 15:17:36 vincentp Exp $
+ * $Id: playa.c,v 1.27 2004-07-31 22:55:19 vincentp Exp $
  */
 
 #include <kos.h>
@@ -49,6 +49,8 @@ static volatile int streamstatus = PLAYA_STATUS_INIT;
 static int out_buffer[1<<14];
 static int out_samples;
 static int out_count;
+
+int playa_force_prio;
 
 int playa_get_frq(void)
 {
@@ -160,6 +162,10 @@ static void * sndstream_callback(int size)
     n = 0;
   } else {
 #ifdef PLAYA_THREAD
+
+    if (playa_force_prio) {
+      playa_thread->prio2 = playa_force_prio;
+    } else {
     int used = fifo_used();
     static int old_jiffies;
 
@@ -194,6 +200,8 @@ static void * sndstream_callback(int size)
 
     // VP : TEMPORARY TO TEST FFMPEG !!!!
     //playa_thread->prio2 = PLAYA_DECODER_THREAD_BOOST1_PRIORITY;
+
+    }
 #endif
 
     n = fifo_read(out_buffer, size);
@@ -239,6 +247,7 @@ void sndstream_thread(void *cookie)
 {
   SDDEBUG(">> %s()\n", __FUNCTION__);
 
+  thd_current->prio--;
   thd_current->prio2 = PLAYA_SNDSTREAM_THREAD_PRIORITY;
 
   stream_init(sndstream_callback, 1<<14);
@@ -253,7 +262,10 @@ void sndstream_thread(void *cookie)
     int e;
 
     e = stream_poll();
-    thd_pass();
+    //thd_pass();
+
+    //if (e <= 0)
+      usleep(1000000/60/4);
 
 #if 0
     if (!e) {
@@ -336,7 +348,8 @@ static void real_playa_update(void)
       }
 
       if (! (status & INP_DECODE_CONT)) {
-	thd_pass();
+	//thd_pass();
+	usleep(1000000/60/5);
       }
 
     } break;
@@ -369,7 +382,8 @@ void playa_update(void)
 
 static void wait_playastatus(const int status)
 {
-  const int retimeout = 5000;
+  /* VP : hum ... that would be better to use a real timer */
+  const int retimeout = 20000;
   int timeout = 1;
 
   while (playastatus != status) {
@@ -426,6 +440,15 @@ int playa_init()
 
   playa_haltsem = sem_create(0);
 
+#if 0
+  /* VP : use a timer interruption instead */
+  stream_init(sndstream_callback, 1<<14);
+  stream_start(1200, current_frq=44100, playavolume, current_stereo=1);
+
+  streamstatus = PLAYA_STATUS_PLAYING;
+  SDDEBUG("READY soundstream interrupt\n");
+  
+#else
   SDDEBUG("Create soundstream thread\n");
   streamstatus = PLAYA_STATUS_INIT;
   sndstream_thd = thd_create(sndstream_thread, 0);
@@ -437,6 +460,7 @@ int playa_init()
   while (streamstatus != PLAYA_STATUS_PLAYING)
     thd_pass();
   SDDEBUG("READY soundstream thread\n");
+#endif
 
   SDDEBUG("Create PLAYA decoder thread\n");
   playastatus = PLAYA_STATUS_INIT;
@@ -601,13 +625,6 @@ int playa_start(const char *fn, int track, int immediat) {
 
   /* $$$ Here, the previous play is not stopped. May be songmenu.c expects
      it is !!! */
-  if (!d) {
-    SDWARNING("No driver for this file !\n");
-    goto error;
-  } else {
-    SDDEBUG("Driver [%s] found\n", d->common.name);
-  }
-
   // Can't start again if already playing
   immediat |= playa_paused;
   playa_stop(immediat);
@@ -629,8 +646,37 @@ int playa_start(const char *fn, int track, int immediat) {
   }
   
   /* Start playa, get decoder info */
-  
-  e = d->start(fn, track, &info);
+
+  if (d)
+    e = d->start(fn, track, &info);
+  else {
+    /* VP : added support for multi driver */
+    driver_list_lock(&inp_drivers);
+
+    for (d=(inp_driver_t *)inp_drivers.drivers;
+	 d;
+	 d=(inp_driver_t *)d->common.nxt) {
+
+      if (d->extensions[0] == '*') {
+	e = d->start(fn, track, &info);
+	if (!e) {
+	  driver_reference(&d->common);
+	  break;
+	}
+      }
+    }
+
+    driver_list_unlock(&inp_drivers);
+  }
+
+  if (!d) {
+    SDWARNING("No driver for this file !\n");
+    goto error;
+  } else {
+    SDDEBUG("Driver [%s] found\n", d->common.name);
+  }
+
+
   if (e) {
     SDERROR("Driver [%s] error := [%d]\n", d->common.name, e);
     goto error;

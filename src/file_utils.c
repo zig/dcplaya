@@ -4,7 +4,7 @@
  * @date    2002/09/30
  * @brief   File manipulation utilities.
  *
- * $Id: file_utils.c,v 1.9 2003-03-11 13:32:10 ben Exp $
+ * $Id: file_utils.c,v 1.10 2004-07-31 22:55:19 vincentp Exp $
  */
 
 /*
@@ -39,9 +39,9 @@ int fu_open_test(const char *fname, int mode)
 {
   int fd, ret;
   
-  fd = (fname) ? fs_open(fname, mode) : 0;
-  ret = fd != 0;
-  if (fd) {
+  fd = (fname) ? fs_open(fname, mode) : -1;
+  ret = fd >= 0;
+  if (fd >= 0) {
     fs_close(fd);
   }
   return ret;
@@ -67,10 +67,10 @@ int fu_size(const char * fname)
   int fds, err;
 
   fds = fs_open(fname, O_RDONLY);
-  if (!fds) {
+  if (fds<0) {
     err = FU_OPEN_ERROR;
   } else {
-	err = fs_total(fds);
+    err = fs_total(fds);
     fs_close(fds);
   }
   return err;
@@ -94,7 +94,7 @@ static int filecopy(const char * dstname, const char * srcname,
 		    int force, int unlink)
 {
   char buf[2048];
-  int fds = 0, fdd = 0;
+  int fds = -1, fdd = -1;
   int err = 0, cnt = 0, n;
 
   /* Test parameters */
@@ -125,14 +125,14 @@ static int filecopy(const char * dstname, const char * srcname,
 
   /* Open source. */
   fds = fs_open(srcname, O_RDONLY);
-  if (!fds) {
+  if (fds<0) {
     err = FU_OPEN_ERROR;
     goto error;
   }
 
   /* Open destination. */
   fdd = fs_open(dstname, O_WRONLY);
-  if (!fdd) {
+  if (fdd<0) {
     err = FU_CREATE_ERROR;
     goto error;
   }
@@ -151,10 +151,10 @@ static int filecopy(const char * dstname, const char * srcname,
   } while (n > 0);
 
  error:
-  if (fds) {
+  if (fds>=0) {
     fs_close(fds);
   }
-  if (fdd) {
+  if (fdd>=0) {
     fs_close(fdd);
     if (err < 0) {
       /* On error, remove corrupt destination file. */
@@ -188,12 +188,12 @@ int fu_create_dir(const char *dirname)
   }
 
   fd  = fs_open(dirname, O_WRONLY | O_DIR);
-  if (fd) {
+  if (fd>=0) {
     fs_close(fd);
   } else {
     return FU_CREATE_ERROR;
   }
-  return fd ? 0 : FU_CREATE_ERROR;
+  return (fd>=0) ? 0 : FU_CREATE_ERROR;
 }
 
 typedef struct _fu_linkeddirentry_s
@@ -319,7 +319,7 @@ int fu_read_dir(const char *dirname, fu_dirent_t **res, fu_filter_f filter)
 
   *res = 0;
   fd = fs_open(dirname, O_RDONLY | O_DIR);
-  if (!fd) {
+  if (fd<0) {
     return FU_OPEN_ERROR;
   }
 
@@ -361,7 +361,7 @@ int fu_read_dir_cb(const char *dirname, fu_addentry_f addentry, void * cookie)
   }
 
   fd = fs_open(dirname, O_RDONLY | O_DIR);
-  if (!fd) {
+  if (fd<0) {
     return FU_OPEN_ERROR;
   }
 

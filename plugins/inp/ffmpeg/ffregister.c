@@ -17,11 +17,13 @@ void avcodec_register_all(void)
 #endif
 
     register_avcodec(&mp2_decoder); /* sha123 doesn't do mp2 */
-    //register_avcodec(&mp3_decoder);
     //register_avcodec(&shamp2_decoder);
-    register_avcodec(&shamp3_decoder);
 #ifndef OLDFF
+    register_avcodec(&shamp3_decoder);
     av_register_codec_parser(&mpegaudio_parser);
+#else
+    //register_avcodec(&mp3_decoder);
+    register_avcodec(&shamp3_decoder);
 #endif
 
 

@@ -3,7 +3,7 @@
 #
 # by Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.5 2003-08-01 11:11:20 benjihan Exp $
+# $Id: Makefile.in,v 1.6 2004-07-31 22:55:18 vincentp Exp $
 #
 
 CDRECORD	= @CDRECORD@ dev=$(cdr) $(CDRECORD_FLAGS)
@@ -21,6 +21,9 @@ DATE		:= $(shell date +%Y/%m/%d)
 VERSION         = @VERSION@
 ALL_MISSING	:= $(foreach missing,cdrecord makeip scramble dd mkisofs,\
 			$(missing)-is-missing)
+TMP_ISO		= tmp.iso
+DATA_RAW	= data.raw
+XA_OPT		= -xa1
 @SET_MAKE@
 
 ifeq '$(cdr)' ''
@@ -47,6 +50,18 @@ all help:
 	@echo "               e.g dev=1,0,0"
 	@echo " extra=dirs  : Add extra directories to CD (separator=':')."
 	@echo "               e.g. extra='\"dir 1\":dir-2:\"file to add\"'"
+	@echo " nodoc=1     : Do not rebuild documentation"
+	@echo "               (for faster iso generation)"
+	@echo " CDRECORD_FLAGS : additional cdrecord flags"
+	@echo " TMP_ISO     : Configurate an alternate tmp.iso path name,"
+	@echo "               useful if you lack disk space in the current dir"
+	@echo "               (default TMP_ISO=tmp.iso)"
+	@echo " DATA_RAW    : Configurate an alternate data.raw path name,"
+	@echo "               useful if you lack disk space in the current dir"
+	@echo "               (default DATA_RAW=data.raw)"
+	@echo " XA_OPT      : Set the data xa mode option. Default is -xa1,"
+	@echo "               but on newer version of cdrecord you may need"
+	@echo "               to set this to -xa instead."
 	@echo
 	@echo "TARGET:"
 	@echo
@@ -109,9 +124,9 @@ audio.raw:
 	@$(DD) if=/dev/zero of=audio.raw bs=2352 count=300
 endif
 
-data.raw: tmp.iso IP.BIN
+$(DATA_RAW): $(TMP_ISO) IP.BIN
 	@echo "[$@]"
-	@(cat IP.BIN; dd if=tmp.iso bs=2048 skip=16) > $@\
+	@(cat IP.BIN; dd if=$(TMP_ISO) bs=2048 skip=16) > $@\
 	 && rm -f $^
 
 .PHONY: burn-data
@@ -132,9 +147,9 @@ burn-audio: .cdrdev audio.raw
 	($(CDRECORD) -multi -audio audio.raw && \
 	($(CDRECORD) -msinfo > $@ || (rm -f $@; test -z 1)))
 
-burn-data: .cdrdev data.raw
+burn-data: .cdrdev $(DATA_RAW)
 	@echo "[$@]"
-	$(CDRECORD) -xa1 data.raw \
+	$(CDRECORD) $(XA_OPT) $(DATA_RAW) \
 	&& rm -f burn-audio
 
 endif
@@ -157,9 +172,9 @@ else
 endif
 
 ifeq 'x@MKISOFS@' 'xecho'
-tmp.iso test.iso: mkisofs-is-missing
+$(TMP_ISO) test.iso: mkisofs-is-missing
 else
-tmp.iso: burn-audio 1ST_READ.BIN iso
+$(TMP_ISO): burn-audio 1ST_READ.BIN iso
 	@echo "[ISO image]"
 	$(MKISOFS) -C `cat burn-audio` -o $@ $^\
 	&& rm -rf $^
@@ -180,15 +195,24 @@ test: test.iso
 .PHONY: dcplaya-docs
 dcplaya-docs :
 	@echo "[$@]"
+ifeq 'x$(nodoc)' 'x'
 	@$(MAKE) --quiet -C ../doc distrib
+endif
 
 extra-data:
 ifneq 'x$(extra)' 'x'
 	@mkdir -p iso
 	@for dir in $(subst :, ,$(extra)); do \
 		echo "[$@] from [$$dir]"; \
-		cp -RLv "$$dir" iso/ || break; \
+		ln -s "$$dir" iso/ || break; \
 	done
+
+# VP : previously used to do that instead of ln -s, but why losing disk 
+#      space during the iso generation ? 
+#      Of course the problem with ln is that you have to be careful with 
+#      relative paths
+#		cp -RLv "$$dir" iso/ || break; \
+
 endif
 
 # Copy lua files and resources
@@ -229,7 +253,7 @@ dynshell:
 	@cp -a ../dynshell/dynshell.lez iso/dcplaya/dynshell
 
 plugins: dynshell
-	@(cd ..; find plugins -type f -name '*.lez') \
+	@(cd ..; find plugins -type f -name '*.lez'; find plugins -type f -name '*.codez') \
 	| tar cf - -C .. -T - \
 	| tar xf - -C iso/dcplaya
 
@@ -279,7 +303,7 @@ clean_iso:
 .PHONY : clean_file
 clean_file:
 	@echo "[clean files]"
-	@rm -f *.iso *.txt $(1ST_READ) IP.BIN data.raw 1ST_READ.BIN dcplaya.bin dcplaya-*.tar.gz -r dcplaya-$(VERSION)
+	@rm -f *.iso *.txt $(1ST_READ) IP.BIN $(DATA_RAW) 1ST_READ.BIN dcplaya.bin dcplaya-*.tar.gz -r dcplaya-$(VERSION)
 
 .PHONY : clean
 clean: clean_audio clean_file clean_iso

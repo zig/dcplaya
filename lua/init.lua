@@ -4,7 +4,7 @@
 --- @author   benjamin gerard
 --- @brief    Fundamental lua stuff.
 ---
---- $Id: init.lua,v 1.25 2003-03-28 19:57:16 ben Exp $
+--- $Id: init.lua,v 1.26 2004-07-31 22:55:18 vincentp Exp $
 ---
 
 --- @defgroup  dcplaya_lua_basics_library  LUA libraries
@@ -533,6 +533,9 @@ function unregister_commands(driver, force)
 	 c.registered = 0
       end
    end
+
+   -- hopefully this may cause the driver to be released at once
+   collect(300000)
 end
 
 --- Update the driver list.

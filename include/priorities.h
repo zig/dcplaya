@@ -5,7 +5,7 @@
  * @date     2003/01/19
  * @brief    Thread priority settings.
  * 
- * $Id: priorities.h,v 1.3 2003-04-21 20:25:08 vincentp Exp $
+ * $Id: priorities.h,v 1.4 2004-07-31 22:55:18 vincentp Exp $
  */
 
 
@@ -51,7 +51,7 @@
 #define LUA_THREAD_PRIORITY 3
 
 /** Playa sndstream thread priority */
-#define PLAYA_SNDSTREAM_THREAD_PRIORITY 3
+#define PLAYA_SNDSTREAM_THREAD_PRIORITY 9
 
 /** Playa decoder thread normal state priority */
 #define PLAYA_DECODER_THREAD_PRIORITY 1

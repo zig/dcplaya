@@ -7,7 +7,7 @@
 
 #include "ffmpeg.h"
 
-#ifndef OLDFF
+#ifndef OLDFFx
 
 #define dbmsg (void)
 
@@ -118,6 +118,8 @@ static int decode_init(AVCodecContext * avctx)
 {
   context_t * ctx = (context_t *) avctx->priv_data;
 
+  memset(ctx, 0, sizeof(context_t));
+
   ctx->error = 0;
 
   ctx->total = 0;
@@ -164,7 +166,9 @@ static int decode_frame(AVCodecContext * avctx,
   ctx->pos = 0;
 
 #ifdef OLDFF
-  printf("frame size %d\n", buf_size);
+  if (buf_size <= 0)
+    return 0;
+  //printf("frame size %d\n", buf_size);
 #endif
 
   if (ctx->decoder == NULL && !ctx->error) {

@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.99 2004-07-04 14:16:44 vincentp Exp $
+ * @version    $Id: dynshell.c,v 1.100 2004-07-31 22:55:17 vincentp Exp $
  */
 
 #include "dcplaya/config.h"
@@ -647,7 +647,7 @@ static int r_path_load(lua_State * L, char *path, unsigned int level,
 		       const char * ext, int count)
 {
   dirent_t *de;
-  int fd = 0;
+  int fd = -1;
   char *path_end = 0;
   char dirs[MAX_DIR][32];
   int ndirs;
@@ -662,7 +662,7 @@ static int r_path_load(lua_State * L, char *path, unsigned int level,
 
 
   fd = fs_open(path, O_RDONLY | O_DIR);
-  if (!fd) {
+  if (fd<0) {
     count = -1;
     goto error;
   }
@@ -703,7 +703,7 @@ static int r_path_load(lua_State * L, char *path, unsigned int level,
   }
 
  error:
-  if (fd) {
+  if (fd>=0) {
     fs_close(fd);
   }
 
@@ -807,6 +807,15 @@ static int lua_thd_pass(lua_State * L)
   return 0;
 }
 
+
+extern void (* ta_scan_cb) ();
+static semaphore_t * framecounter_sema;
+void scan_cb()
+{
+  sem_signal(framecounter_sema);
+  ta_scan_cb = NULL;
+}
+
 static int lua_framecounter(lua_State * L)
 {
   int nparam = lua_gettop(L);
@@ -821,7 +830,9 @@ static int lua_framecounter(lua_State * L)
     if (fc)
       break;
 
-    thd_pass();
+    ta_scan_cb = scan_cb;
+    sem_wait(framecounter_sema);
+    //thd_pass();
   }
 
   if (nparam && !lua_isnil(L, 1)) {
@@ -2753,17 +2764,120 @@ static int lua_read_controler(lua_State * L)
   return lua_gettop(L);
 }
 
+/* VP : moved this from our custom kos 1.5, should we propose
+   these functions for kos 1.3 ? */
+#include <dc/cdrom.h>
+
+/* $$$ Drive status */
+#define CDROM_BUSY    0
+#define CDROM_PAUSED  1
+#define CDROM_STANDBY 2
+#define CDROM_PLAYING 3
+#define CDROM_SEEKING 4
+#define CDROM_SCANING 5
+#define CDROM_OPEN    6
+#define CDROM_NODISK  7
+#define CDROM_UNKNOWN 0xFF
+
+/* $$$ Disk type */
+#define CDROM_DISK_CDDA  0
+#define CDROM_DISK_CDROM 0x10
+#define CDROM_DISK_CDXA  0x20
+#define CDROM_DISK_CDI   0x30
+#define CDROM_DISK_GDROM 0x80
+
+
+static const char * cdrom_statusstr(int status)
+{
+  const char * str [] = {
+    "cdrom busy", "cdrom paused", "cdrom standby", "cdrom playing",
+    "cdrom seeking", "cdrom scaning", "cdrom open", "cdrom nodisk",
+    "cdrom error"
+  };
+
+  status &= 0xFF;
+  if (status > 7) {
+    status = 8;
+  }
+  return str[status];
+}
+
+static const char * cdrom_drivestr(int status)
+{
+  status = (status>>8) & 0xFF;
+  switch (status) {
+  case CDROM_DISK_CDDA:  return "CDDA";
+  case CDROM_DISK_CDROM: return "CDROM";
+  case CDROM_DISK_CDXA:  return "CDXA";
+  case CDROM_DISK_CDI:   return "CDI";
+  case CDROM_DISK_GDROM: return "GDROM";
+  }
+  return "UNKNOWN";
+}
+
+static int cd_status;
+static int cd_disc_type;
+static int cd_disc_id;
+static int cd_door_open;
+
+static int cdrom_status()
+{
+  return cd_status + (cd_disc_type<<8);
+}
+
+static int cdrom_check()
+{
+  int cd_open_change = 0, cd_open = 1;
+
+  cdrom_get_status(&cd_status, &cd_disc_type);
+
+  switch (cd_status & 0xff) {
+  case CDROM_PAUSED:
+  case CDROM_STANDBY:
+    if (!cd_disc_id) {
+      cdrom_reinit();
+      cd_disc_id++;
+    }
+  case CDROM_BUSY:
+  case CDROM_PLAYING:
+  case CDROM_SEEKING:
+  case CDROM_SCANING:
+  case CDROM_NODISK:
+    cd_open = 0;
+  case CDROM_OPEN:
+    cd_open_change = cd_open ^ cd_door_open;
+    cd_door_open = cd_open;
+  default:
+    /* Invalid status : don't know if door is open or closed. */
+    break;
+  }
+
+  if (cd_open_change) {
+    if (cd_open) {
+      cd_disc_id = 0;
+    }
+  }
+
+  return cd_status + (cd_disc_type<<8);
+}
+
 static int lua_cdrom_status(lua_State * L)
 {
-#ifdef NOTYET
+  static int lastcheck;
   int check = lua_gettop(L) >= 1 && lua_type(L,1) != LUA_TNIL;
 
   check = check ? cdrom_check() : cdrom_status();
+  if (lastcheck != check) {
+    lastcheck = check;
+  }
+
   lua_settop(L,0);
   lua_pushstring(L,cdrom_statusstr(check)+6);
   lua_pushstring(L,cdrom_drivestr(check));
-  lua_pushnumber(L,cdrom_disk_id);
-#endif
+  lua_pushnumber(L,cd_disc_id);
+/*   printf("check=%d, status='%s', type='%s', id=%d\n", check, */
+/* 	 cdrom_statusstr(check)+6, cdrom_drivestr(check),  */
+/* 	 cd_disc_id); */
   return 3;
 }
 
@@ -2951,13 +3065,42 @@ static int lua_thread_stats(lua_State * L)
     lua_settable(L, 3);
 
     lua_pushstring(L, "localtime");
-    lua_pushnumber(L, np->localtime);
+    lua_pushnumber(L, ((unsigned int)(np->localtime/1000)));
+    lua_settable(L, 3);
+
+    lua_pushstring(L, "prio");
+    lua_pushnumber(L, np->prio);
+    lua_settable(L, 3);
+
+    lua_pushstring(L, "prio2");
+    lua_pushnumber(L, np->prio2);
     lua_settable(L, 3);
 
     lua_settable(L, 1);
   }
 
   return 1;
+}
+
+static int lua_thread_prio2(lua_State * L)
+{
+  kthread_t *np;
+  int id, prio2;
+
+  id = lua_tonumber(L, 1);
+  prio2 = lua_tonumber(L, 2);
+
+  if (prio2 < 1 || prio2 > 64)
+    return 0;
+  
+  LIST_FOREACH(np, &thd_list, t_list) {
+    if (np->tid == id) {
+      np->prio2 = prio2;
+      break;
+    }
+  }
+
+  return 0;
 }
 
 #ifdef MALLOC_DEBUG
@@ -3552,6 +3695,14 @@ static luashell_command_description_t commands[] = {
   },
 
   {
+    "thread_prio2",0,"system",
+    "thread_prio2(tid, prio2) :\n"
+    " Set thread prio2 parameter. USE WITH CARE.\n"
+    ,
+    SHELL_COMMAND_C, lua_thread_prio2
+  },
+
+  {
     "thread_stats","ts","system",
     "thread_stats() :\n"
     " Return a list of threads with statistics.\n"
@@ -3597,6 +3748,8 @@ static void shell_register_lua_commands()
   printf("setting [home] to [%s]\n",home);
 
   fdynshell_command("home = [[%s]]", home);
+
+  //fdynshell_command("skip_home_userconf=1");
 
   //lua_dobuffer(L, shell_basic_lua_init, sizeof(shell_basic_lua_init) - 1, "init");
 
@@ -3660,6 +3813,7 @@ static void shutdown()
     if (cr[i])
       free(cr[i]);
 
+  sem_destroy(framecounter_sema);
 }
 
 shutdown_func_t lef_main()
@@ -3673,6 +3827,8 @@ shutdown_func_t lef_main()
     printf("shell: error initializing LUA state\n");
     return 0;
   }
+
+  framecounter_sema = sem_create(0);
 
   lua_baselibopen (shell_lua_state);
   lua_iolibopen (shell_lua_state);

@@ -4,7 +4,7 @@
  * @author  ben(jamin) gerard <ben@sashipa.com>
  * @date    2002/11/22
  *
- * $Id: box.c,v 1.6 2004-07-04 14:16:45 vincentp Exp $
+ * $Id: box.c,v 1.7 2004-07-31 22:55:18 vincentp Exp $
  */
 
 #include "draw/box.h"
@@ -97,6 +97,7 @@ void draw_box4(float x1, float y1, float x2, float y2, float z,
   HW_COL_VTX->r = r3;
   HW_COL_VTX->g = g3;
   HW_COL_VTX->b = b3;
+  ta_lock();
   ta_commit32_nocopy();
 
   HW_COL_VTX->y = y1;
@@ -121,7 +122,7 @@ void draw_box4(float x1, float y1, float x2, float y2, float z,
   HW_COL_VTX->g = g2;
   HW_COL_VTX->b = b2;
   ta_commit32_nocopy();
-
+  ta_unlock();
 }
 
 void draw_box1(float x1, float y1, float x2, float y2, float z,

@@ -3,7 +3,7 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: plugin.c,v 1.14 2003-03-10 22:55:35 ben Exp $
+ * $Id: plugin.c,v 1.15 2004-07-31 22:55:19 vincentp Exp $
  */
 #include <stdio.h>
 #include <string.h>
@@ -160,7 +160,7 @@ static int r_plugin_path_load(char *path, unsigned int level)
 {
   dirent_t *de;
   int count = 0;
-  int fd = 0;
+  int fd = -1;
   char *path_end = 0;
 
   SDDEBUG(">> %s(%2d,[%s])\n", __FUNCTION__, level, path);
@@ -171,7 +171,7 @@ static int r_plugin_path_load(char *path, unsigned int level)
   }
 
   fd = fs_open(path, O_RDONLY | O_DIR);
-  if (!fd) {
+  if (fd<0) {
     count = -1;
     goto error;
   }
@@ -203,7 +203,7 @@ static int r_plugin_path_load(char *path, unsigned int level)
   }
 
  error:
-  if (fd) {
+  if (fd>=0) {
     fs_close(fd);
   }
   if (path_end) {

@@ -5,7 +5,7 @@
  * @date     2002/11/22
  * @brief    draw tile accelarator interface
  *
- * $Id: ta.c,v 1.8 2004-07-04 14:16:45 vincentp Exp $
+ * $Id: ta.c,v 1.9 2004-07-31 22:55:18 vincentp Exp $
  */
 
 /* $$$ ben hacks :
@@ -104,7 +104,9 @@ void draw_set_flags(int flags)
 {
   if (flags != draw_current_flags) {
 	make_poly_hdr(&cur_poly, draw_current_flags = flags);
+	ta_lock();
 	ta_commit32_inline(&cur_poly);
+	ta_unlock();
   }
 }
 
@@ -112,13 +114,37 @@ enum { CLOSE, OPAQUE, TRANSLUCENT };
 
 static int draw_current_render_mode;
 
+#include "kos/sem.h"
+static semaphore_t * draw_sema;
+
 unsigned int draw_frame_counter;
+
+void draw_lock()
+{
+  sem_wait(draw_sema);
+}
+
+int draw_trylock()
+{
+  return sem_trywait(draw_sema);
+}
+
+void draw_unlock()
+{
+  sem_signal(draw_sema);
+}
 
 int draw_init_render(void)
 {
   ta_init(TA_LIST_OPAQUE_POLYS|TA_LIST_TRANS_POLYS, TA_POLYBUF_32, 1024*1024);
   draw_frame_counter = ta_state.frame_counter;
   draw_current_render_mode = CLOSE;
+
+
+  /* VP : added pvr dma init for now, that's all we use from kos' PVR code */
+  pvr_dma_init();
+
+  draw_sema = sem_create(1);
 
   return 0;
 }
@@ -133,6 +159,7 @@ unsigned int draw_open_render(void)
     draw_close_render();
   case CLOSE:
     ta_begin_render();
+    draw_lock();
     pvr_dummy_poly(TA_OPAQUE);
     draw_frame_counter = ta_state.frame_counter;
     /* Commit dummy polygon. */
@@ -168,6 +195,7 @@ void draw_close_render(void)
   case TRANSLUCENT:
     ta_commit_eol();
     ta_finish_frame();
+    draw_unlock();
     draw_current_render_mode = CLOSE;
   case CLOSE:
     break;

@@ -32,18 +32,19 @@
 #define URL_SIZE    256
 
 typedef struct {
-    uint32 hd;
-    int line_count;
-    int len;
-    int tread;
-    int http_code;
-    char location[URL_SIZE];
-    char hoststr[256];
-    char path[256];
-    int flags;
+  file_t hd;
+  int line_count;
+  int len;
+  int tread;
+  int bpos, bsz;
+  int http_code;
+  char location[URL_SIZE];
+  char hoststr[256];
+  char path[256];
+  int flags;
 } HTTPContext;
 
-static int http_connect(HTTPContext * h, const char *path, const char *hoststr, int flags);
+static int http_connect(HTTPContext * h, const char *path, const char *hoststr, int flags, int wait);
 static int http_write(uint32 h, uint8 *buf, int size);
 
 
@@ -132,82 +133,97 @@ void url_split(char *proto, int proto_size,
 /* return zero if error */
 static uint32 http_open(vfs_handler_t * dummy, const char *uri, int flags)
 {
-    const char *path, *proxy_path;
-    char hostname[128];
-    char path1[256];
-    int port, use_proxy, err;
-    HTTPContext *s;
-    uint32 hd = 0;
+  const char *path, *proxy_path;
+  char hostname[128];
+  char path1[256];
+  int port, use_proxy, err;
+  HTTPContext *s;
+  file_t hd = -1;
+  int wait = 0;
 
-    if (flags & O_DIR)
-      return 0;
-
-    //h->is_streamed = 1;
-
-    s = malloc(sizeof(HTTPContext));
-    if (!s) {
-        return 0;
-    }
-
-/*     proxy_path = getenv("http_proxy"); */
-/*     use_proxy = (proxy_path != NULL) && !getenv("no_proxy") &&  */
-/*         strstart(proxy_path, "http://", NULL); */
-    use_proxy = 0;
-
-    /* fill the dest addr */
- redo:
-    /* needed in any case to build the host string */
-    url_split(NULL, 0, hostname, sizeof(hostname), &port, 
-              path1, sizeof(path1), uri);
-    if (port > 0) {
-        snprintf(s->hoststr, sizeof(s->hoststr), "%s:%d", hostname, port);
-    } else {
-        pstrcpy(s->hoststr, sizeof(s->hoststr), hostname);
-    }
-
-    if (use_proxy) {
-        url_split(NULL, 0, hostname, sizeof(hostname), &port, 
-                  NULL, 0, proxy_path);
-        path = uri;
-    } else {
-        if (path1[0] == '\0')
-            path = "/";
-        else
-            path = path1;
-    }
-    if (port < 0)
-        port = 80;
-
-    snprintf(s->location, sizeof(s->location), "/tcp/%s:%d", hostname, port);
-
-    //printf("HTTPFS : opening '%s' '%s'\n", s->location, path);
-
-    hd = fs_open(s->location, O_RDWR);
-    err = hd > 0? 0:-1;
-    //    err = url_open(&hd, buf, URL_RDWR);
-    
-    if (err < 0)
-        goto fail;
-
-    s->hd = hd;
-    strcpy(s->path, path);
-    s->flags = flags;
-    if (http_connect(s, path, s->hoststr, flags) < 0)
-        goto fail;
-    if (s->http_code == 303 && s->location[0] != '\0') {
-        /* url moved, get next */
-      //printf("URL get next\n");
-        uri = s->location;
-        fs_close(hd);
-	hd = 0;
-        goto redo;
-    }
-    return (uint32) s;
- fail:
-    if (hd)
-        fs_close(hd);
-    free(s);
+  if (flags & O_DIR)
     return 0;
+
+  //h->is_streamed = 1;
+
+  s = malloc(sizeof(HTTPContext));
+  if (!s) {
+    return 0;
+  }
+
+  /*     proxy_path = getenv("http_proxy"); */
+  /*     use_proxy = (proxy_path != NULL) && !getenv("no_proxy") &&  */
+  /*         strstart(proxy_path, "http://", NULL); */
+  use_proxy = 0;
+
+  /* fill the dest addr */
+ redo:
+  /* needed in any case to build the host string */
+  url_split(NULL, 0, hostname, sizeof(hostname), &port, 
+	    path1, sizeof(path1), uri);
+  if (port > 0) {
+    snprintf(s->hoststr, sizeof(s->hoststr), "%s:%d", hostname, port);
+  } else {
+    pstrcpy(s->hoststr, sizeof(s->hoststr), hostname);
+  }
+
+  if (use_proxy) {
+    url_split(NULL, 0, hostname, sizeof(hostname), &port, 
+	      NULL, 0, proxy_path);
+    path = uri;
+  } else {
+    if (path1[0] == '\0')
+      path = "/";
+    else
+      path = path1;
+  }
+  if (port < 0)
+    port = 80;
+
+  snprintf(s->location, sizeof(s->location), "/tcp/%s:%d", hostname, port);
+
+  //printf("HTTPFS : opening '%s' '%s'\n", s->location, path);
+
+ redo2:
+  hd = fs_open(s->location, O_RDWR);
+  err = hd >= 0? 0:-1;
+  //    err = url_open(&hd, buf, URL_RDWR);
+    
+  if (err < 0)
+    goto fail;
+
+  s->hd = hd;
+  strcpy(s->path, path);
+  s->flags = flags;
+  if (http_connect(s, path, s->hoststr, flags, wait) < 0) {
+    if (0&&wait <= 2000) {
+      /* try again with a sleep */
+      wait += 1000;
+      fs_close(hd);
+      hd = -1;
+      goto redo2;
+    }
+    goto fail;
+  }
+  if ((s->http_code == 303 || s->http_code == 302) && s->location[0] != '\0') {
+    /* url moved, get next */
+    uri = s->location+6;
+#ifdef DEBUG
+    printf("URL moved get next '%s'\n", uri);
+#endif
+    fs_close(hd);
+    hd = -1;
+    //wait = 4000;
+    goto redo;
+  }
+  if (s->http_code != 200)
+    goto fail;
+  return (uint32) s;
+ fail:
+  if (hd>=0)
+    fs_close(hd);
+  free(s);
+  return 0;
 }
 
 static int http_getc(uint32 h)
@@ -215,10 +231,38 @@ static int http_getc(uint32 h)
   char c;
   int res;
   HTTPContext *s = (HTTPContext *)h;
+  int retry = 10;
+
+#if 0
+  if (s->bpos >= s->bsz) {
+    s->bsz = fs_read(s->hd, s->path, sizeof(s->path));    
+/*     while (s->bsz < 1 && retry > 0) { */
+/*       retry--; */
+/*       printf("http_getc failed. Retrying in 0.5 seconds ...\n"); */
+/*       thd_sleep(500); */
+/*       s->bsz = fs_read(s->hd, s->path, sizeof(s->path));     */
+/*     } */
+    s->bpos = 0;
+  }
+
+  if (s->bpos >= s->bsz)
+    return -1;
+
+  c = s->path[s->bpos++];
+
+#else
 
   res = fs_read(s->hd, &c, 1);
+/*   while (res < 1 && retry > 0) { */
+/*     retry--; */
+/*     printf("http_getc failed. Retrying in 0.5 seconds ...\n"); */
+/*     thd_sleep(500); */
+/*     res = fs_read(s->hd, &c, 1); */
+/*   } */
   if (res < 1)
     return -1;
+
+#endif
   
   return c;
 }
@@ -265,7 +309,7 @@ static int process_line(HTTPContext *s, char *line, int line_count)
     return 1;
 }
 
-static int http_connect(HTTPContext *s, const char *path, const char *hoststr, int flags)
+static int http_connect(HTTPContext *s, const char *path, const char *hoststr, int flags, int wait)
 {
     int post, err, ch;
     char line[512], *q;
@@ -276,20 +320,27 @@ static int http_connect(HTTPContext *s, const char *path, const char *hoststr, i
 
     s->len = 0;
     s->tread = 0;
+    s->bpos = 0; s->bsz = 0;
 
     snprintf(line, sizeof(line),
              "%s %s HTTP/1.0\r\n"
              "User-Agent: %s\r\n"
-             "Accept: */*\r\n"
              "Host: %s\r\n"
+             "Accept: */*\r\n"
+	     "Connection: keep-alive\r\n"
              "\r\n",
              post ? "POST" : "GET",
              path,
-             "dcplaya_net",
+             //"Wget/1.9",
+	     "dcplaya_net",
              hoststr);
     
     if (http_write((uint32) s, line, strlen(line)) < 0)
         return -1;
+
+#ifdef DEBUG
+    printf("http : sent header -->\n%s", line);
+#endif
         
     /* init input buffer */
     s->line_count = 0;
@@ -302,10 +353,19 @@ static int http_connect(HTTPContext *s, const char *path, const char *hoststr, i
     
     /* wait for header */
     q = line;
+    if (wait)
+      thd_sleep(wait);
     for(;;) {
         ch = http_getc((uint32) s);
-        if (ch < 0)
-            return -1;
+#ifdef DEBUG
+	printf("%c", ch);
+#endif
+        if (ch < 0) {
+#ifdef DEBUG
+	  printf("http header truncated\n");
+#endif
+	  return -1;
+	}
         if (ch == '\n') {
             /* process line */
             if (q > line && q[-1] == '\r')
@@ -338,14 +398,21 @@ static int http_read(uint32 h, uint8 *buf, int size)
     if (!s->hd)
       return -1;
 
+    while (size > 0 && s->bpos < s->bsz) {
+      *buf++ = s->path[s->bpos++];
+      size--;
+    }
+
     if (s->len && size > s->len - s->tread)
       size = s->len - s->tread;
-    if (size <= 0)
-      return 0;
+    if (size <= 0) {
+      //printf("http: reached end of file\n");
+      return 0;// -1;
+    }
 
     len = fs_read(s->hd, buf, size);
     if (len < 0)
-      return -1;
+      return 0;// -1;
     s->tread += len;
 
 /*     if (size > 10) { */
@@ -372,11 +439,17 @@ static int http_write(uint32 h, uint8 *buf, int size)
 static off_t http_seek(uint32 hnd, off_t offset, int whence)
 {
   HTTPContext *s = (HTTPContext *)hnd;
-  uint32 hd;
+  file_t hd;
 
   //printf("http_seek %d %d\n", offset, whence);
+  if (whence == SEEK_SET) {
+    whence = SEEK_CUR;
+    offset = offset - s->tread;
+  }
+  
   if (whence == SEEK_CUR) {
-    int res = fs_seek(s->hd, offset, SEEK_CUR);
+    int pos = fs_seek(s->hd, 0, SEEK_CUR);
+    int res = fs_seek(s->hd, offset, SEEK_CUR) - pos;
     //printf("http_seek res = %d\n", res);
     s->tread += res;
     return s->tread;
@@ -386,22 +459,23 @@ static off_t http_seek(uint32 hnd, off_t offset, int whence)
     return -1;
 
   fs_close(s->hd);
-  s->hd = 0;
+  s->hd = -1;
 
   //printf("location = '%s'\n", s->location);
   hd = fs_open(s->location, O_RDWR);
     
-  if (!hd) {
+  if (hd<0) {
     printf("http_seek : could not reconnect to '%s'\n", s->location);
     goto fail;
   }
 
   s->hd = hd;
-  if (http_connect(s, s->path, s->hoststr, s->flags) < 0)
+  if (http_connect(s, s->path, s->hoststr, s->flags, 0) < 0)
     goto fail;
 
   if (offset) {
-    s->tread = fs_seek(s->hd, offset, SEEK_CUR);
+    int pos = fs_seek(s->hd, 0, SEEK_CUR);
+    s->tread = fs_seek(s->hd, offset, SEEK_CUR) - pos;
     //printf("http_seek res = %d\n", s->tread);
     return s->tread;
   }
@@ -411,7 +485,7 @@ static off_t http_seek(uint32 hnd, off_t offset, int whence)
 
  fail:
   printf("http_seek : failed reopen\n");
-  if (s->hd)
+  if (s->hd >= 0)
     fs_close(s->hd);
   s->hd = 0;
 
@@ -422,7 +496,7 @@ static off_t http_seek(uint32 hnd, off_t offset, int whence)
 static int http_close(uint32 h)
 {
     HTTPContext *s = (HTTPContext *)h;
-    if (s->hd)
+    if (s->hd >= 0)
       fs_close(s->hd);
     free(s);
     return 0;

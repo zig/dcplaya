@@ -5,7 +5,7 @@
  * @date    2002/10/10
  * @brief   2D drawing primitives.
  *
- * $Id: primitives.c,v 1.3 2003-03-10 22:55:32 ben Exp $
+ * $Id: primitives.c,v 1.4 2004-07-31 22:55:18 vincentp Exp $
  */
 
 #include <stdarg.h>
@@ -54,6 +54,7 @@ void draw_triangle_no_clip(const draw_vertex_t *v1,
 	v->flags = TA_VERTEX_NORMAL;
 	v->x = v1->x; v->y = v1->y; v->z = v1->z;
 	v->a = v1->a; v->r = v1->r; v->g = v1->g; v->b = v1->b;
+	ta_lock();
 	ta_commit32_nocopy();
 
 	/* Vertex 2 */
@@ -76,6 +77,7 @@ void draw_triangle_no_clip(const draw_vertex_t *v1,
 	v->u = v1->u; v->v = v1->v;
 	v->col = argb255(v1);
 	v->addcol = 0;
+	ta_lock();
 	ta_commit32_nocopy();
 
 	/* Vertex 2 */
@@ -91,6 +93,7 @@ void draw_triangle_no_clip(const draw_vertex_t *v1,
 	v->col = argb255(v3);
 	ta_commit32_nocopy();
   }
+  ta_unlock();
 }
 
 void draw_strip_no_clip(const draw_vertex_t *vtx,
@@ -103,6 +106,7 @@ void draw_strip_no_clip(const draw_vertex_t *vtx,
 	/* No texture */
 	volatile ta_hw_col_vtx_t * const v = HW_COL_VTX;
 
+	ta_lock();
 	while (--n > 0) {
 	  v->flags = TA_VERTEX_NORMAL;
 	  v->x = vtx->x; v->y = vtx->y; v->z = vtx->z;
@@ -121,6 +125,7 @@ void draw_strip_no_clip(const draw_vertex_t *vtx,
 
 	v->flags = TA_VERTEX_NORMAL;
 	v->addcol = 0;
+	ta_lock();
 	while (--n > 0) {
 	  v->x = vtx->x; v->y = vtx->y; v->z = vtx->z;
 	  v->u = vtx->u; v->v = vtx->v;
@@ -135,6 +140,7 @@ void draw_strip_no_clip(const draw_vertex_t *vtx,
 	v->col = argb255(vtx);
 	ta_commit32_nocopy();
   }
+  ta_unlock();
 }
 
 /** Calculates clipping flags for a vertex. */

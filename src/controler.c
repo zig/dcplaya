@@ -158,7 +158,10 @@ static void controler_smooth(uint32 factor,
 }
 
 // defined in src/keyboard.c
-extern int kbd_poll_repeat(uint8 addr, int elapsed_frame);
+extern int kbd_poll_repeat(int elapsed_frame);
+
+// from dreamcast68.c 
+extern controler_state_t controler68;
 
 static void controler_thread(void * dummy)
 {
@@ -166,7 +169,6 @@ static void controler_thread(void * dummy)
 
     uint32 frame = ta_state.frame_counter;
     uint32 elapsed_frame = last_frame;
-    int keyboard_addr;
     controler_t * cont;
     uint32 factor = 65536;
 	
@@ -177,6 +179,12 @@ static void controler_thread(void * dummy)
       int oldfunc;
 
       spinlock_lock(&controler_mutex);
+
+
+      if ((controler68.buttons & (CONT_START|CONT_A|CONT_Y)) == 
+	  (CONT_START|CONT_A|CONT_Y))
+	panic("Quick exit (controler_thread) !\n");
+
 
 #ifdef NOTYET
       /* rescan one unit per frame */
@@ -218,19 +226,15 @@ static void controler_thread(void * dummy)
 	fill_controler_state(&cont->state, cont, elapsed_frame);
       }
 	  
-      /* keyboard */
-      keyboard_addr = maple_first_kb();
-      /* WARNING : kbd_poll_repeat does also poll pad controllers so it NEED
-	 to be called even when there are no keyboard connected ! */
-      /*if (keyboard_addr)*/ {
-	kbd_poll_repeat(keyboard_addr, ta_state.frame_counter - last_frame);
-      }
+      /* keyboard emulation */
+      kbd_poll_repeat(ta_state.frame_counter - last_frame);
 	  
       last_frame = frame;
       spinlock_unlock(&controler_mutex);
     }
 	
-    thd_pass();
+    //thd_pass();
+    usleep(1000000/60/2);
   }
   
   status = ZOMBIE;
@@ -351,9 +355,9 @@ int controler_getchar(void)
 int controler_peekchar(void)
 {
   int k;
-  spinlock_lock(&controler_mutex);
+  //spinlock_lock(&controler_mutex);
   k = dcp_kbd_get_key();
-  spinlock_unlock(&controler_mutex);
+  //spinlock_unlock(&controler_mutex);
   return k;
 }
 

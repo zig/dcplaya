@@ -218,13 +218,16 @@ int fifo_read(int *buf, int n)
   }
   
   /* Get pseudo-locked state */
-  fifo_state(&r,&w,&k);
+  //fifo_state(&r,&w,&k);
+  r = fifo_r;
+  w = fifo_w;
+  k = fifo_k;
   n = fifo_read_any(buf,r,w,n);
   if (n) {
     int bak_size;
 
     /* Advance read pointer */
-    spinlock_lock(&fifo_mutex);
+    //spinlock_lock(&fifo_mutex);
     fifo_r = (fifo_r + n) & fifo_s;
 
     bak_size = FIFO_USED2(fifo_k, fifo_r, fifo_s);
@@ -234,7 +237,7 @@ int fifo_read(int *buf, int n)
       fifo_k = (fifo_k + bak_size) & fifo_s;
     }
 
-    spinlock_unlock(&fifo_mutex);
+    //spinlock_unlock(&fifo_mutex);
   }
   
   return n;

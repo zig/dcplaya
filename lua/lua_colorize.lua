@@ -4,7 +4,7 @@
 --- @date    2003/03/20
 --- @brief   LUA source colorizer.
 ---
---- $Id: lua_colorize.lua,v 1.7 2003-03-27 05:48:05 ben Exp $
+--- $Id: lua_colorize.lua,v 1.8 2004-07-31 22:55:18 vincentp Exp $
 --
 
 --- @defgroup  dcplaya_lua_colorize  LUA source colorizer
@@ -377,7 +377,7 @@ end
 ---  @retval nil on error
 --
 function luacolor_file_wrap(fname)
-   local file = openfile(fname,"rt")
+   local file = openfile(fname,"r")
    if not file then return end
    local flow = { text = "", code = nil, line = 0 }
 
@@ -507,7 +507,7 @@ end
 function luacolor_file(fname)
    if type(dostring_print) ~= "function" then return end
    if not test("-f",fname) then return end
-   local file = openfile(fname,"rt")
+   local file = openfile(fname,"r")
    if not file then return end
    local len = seek(file,"end")
    closefile(file)
@@ -540,7 +540,7 @@ function luacolor_file(fname)
       -- < 128Kb is our maximum allowed, but who makes 128kb of source code
       -- in a single file ??
       -- Here, we just set the preformat to suit a tab-size of 8
-      file = openfile(fname,"rt")
+      file = openfile(fname,"r")
       local s =
 	 '<zml><font id="1" size="16"><pre id="1" tabsize="8" tabchar=" ">\n'
 	 .. (read(file,"*a") or "")

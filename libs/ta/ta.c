@@ -20,7 +20,7 @@ RENDER TO TEXTURE WILL NOT WORK ANYMORE FOR NOW, SORRY :((
 
 */
 
-static char id[] = "KOS $Id: ta.c,v 1.1 2004-07-04 14:16:45 vincentp Exp $";
+static char id[] = "KOS $Id: ta.c,v 1.2 2004-07-31 22:55:18 vincentp Exp $";
 
 #include <stdio.h>
 #include <arch/types.h>
@@ -30,6 +30,7 @@ static char id[] = "KOS $Id: ta.c,v 1.1 2004-07-04 14:16:45 vincentp Exp $";
 #include <dc/asic.h>
 #include <arch/irq.h>
 #include <kos/thread.h>
+#include <kos/sem.h>
 
 #define thd_enabled thd_mode
 
@@ -77,6 +78,13 @@ ta_bkg_poly *ta_bkg = &ta_bkg_internal;
 #define TA_POLYBUF_8		8
 #define TA_POLYBUF_16		16
 #define TA_POLYBUF_32		32
+
+uint32 render_counter;
+uint32 render_counter2;
+void (* ta_render_done_cb) ();
+int ta_block_render;
+
+void (* ta_scan_cb) ();
 
 /* TA state structure */
 ta_state_t ta_state;
@@ -153,6 +161,8 @@ static vuint32 render_complete;
 static kthread_t *waiting_thd;
 static uint32 to_texture, to_txr_addr, to_txr_rp;
 static void int_handler(uint32 type);
+
+static semaphore_t * render_sema;
 
 /* A macro for setting PVR registers so we can hook it for debug */
 #if 0
@@ -499,9 +509,20 @@ static void ta_render_target(int which) {
 	else
 		SETREG(0x804c, to_txr_rp);
 	SETREG(0x8048, 0x00000009);		/* Alpha mode */
-	SETREG(0x8014, 0xffffffff);		/* Start render */
-	
 }
+
+void ta_start_render()
+{
+
+ 	SETREG(0x8014, 0xffffffff);		/* Start render */
+}
+
+void ta_stop_render()
+{
+
+ 	SETREG(0x8014, 0);		/* Start render */
+}
+
 
 /* Set the active list mask and buffer sizes; note that this can ONLY be
    done before hdwr_init has been called, or AFTER hdwr_shutdown has
@@ -637,6 +658,8 @@ static void copy4(uint32 *dest, uint32 *src, int bytes) {
 void ta_send_queue(void *sql, int size) {
 	vuint32 *regs = (uint32*)0xff000038;
 
+	sq_lock();
+
 	/* Set store queue destination == tile accelerator */
 	regs[0] = regs[1] = 0x10;
 
@@ -655,6 +678,7 @@ void ta_send_queue(void *sql, int size) {
 		asm("or		#0x20,r0");
 		asm("pref	@r0");
 	}
+	sq_unlock();
 }
 
 /* Begin the rendering process for one frame */
@@ -666,12 +690,20 @@ void ta_begin_render() {
        TA list has been rendered, when this is done we
        can start to fill the next TA list. */
     waiting_thd = thd_current;
-    next_rendered_page = next_page; /* ask to render on next_page */
+    //next_rendered_page = next_page; /* ask to render on next_page */
+    {
+      static first;
+      if (!first) {
+	first = 1;
+	next_rendered_page = next_page; /* ask to render on next_page */
+      }
+    }
 
     //    printf("ta: %d %d %d %d %d %x %x\n", rendered_page, next_rendered_page, visible_page, next_visible_page, next_page, list_complete, render_complete);
 
-    ticks = jiffies + 50 * HZ / 100;
+    ticks = jiffies + 60 * HZ / 100;
     /* wait until render on next_page has started */
+#if 0
     while (next_rendered_page >= 0
 	   && (jiffies < ticks)) {
       /* thd_pass() is ok here now because if a flip_complete1
@@ -680,6 +712,10 @@ void ta_begin_render() {
       if (thd_enabled)
 	thd_pass();
     }
+#else
+    sem_wait_timed(render_sema, 500);
+#endif
+    
     next_page ^= 1; /* flip next_page for next time */
     if (jiffies >= ticks) {
       dbglog(DBG_WARNING, "ta: timeout waiting for list-complete\n");
@@ -690,7 +726,7 @@ void ta_begin_render() {
       
   }
 
-#if 1
+#if 0
   /* Clear all pending events */
   vuint32 *pvrevt = (vuint32*)0xa05f6900;
   *pvrevt = 0xffffffff;
@@ -767,6 +803,7 @@ void ta_finish_frame() {
     if (visible_page >= 0)
       ta_curpage = visible_page;
 
+    next_rendered_page = next_page; /* ask to render on next_page */
   } else {
     /* Wait for any current rendering process to complete */
     ticks = jiffies + 10 * HZ / 100;
@@ -861,6 +898,18 @@ void ta_poly_hdr_txr(poly_hdr_t *target, int translucent,
 	}
 }
 
+#if 0
+#include "controler.h"
+extern controler_state_t controler68;
+void dbp(const char * p)
+{
+  if (controler68.buttons & CONT_B)
+    printf(p);
+}
+#else
+#define dbp(...) (void)0
+#endif
+
 /* PVR interrupt handler; the way things are setup, we're gonna get
    one of these for each full vertical refresh and at the completion
    of TA data acceptance. The timing here is pretty critical. We need
@@ -871,27 +920,39 @@ static void int_handler(uint32 code) {
   switch(code) {
   case G2EVT_TA_OPAQUEDONE:
     list_complete |= TA_LIST_OPAQUE_POLYS;
+    dbp("1");
     return;
   case G2EVT_TA_TRANSDONE:
     list_complete |= TA_LIST_TRANS_POLYS;
+    dbp("2");
     return;
   case G2EVT_TA_OPAQUEMODDONE:
     list_complete |= TA_LIST_OPAQUE_MODS;
+    dbp("3");
     return;
   case G2EVT_TA_TRANSMODDONE:
     list_complete |= TA_LIST_TRANS_MODS;
+    dbp("4");
     return;
   case G2EVT_TA_PTDONE:
     list_complete |= TA_LIST_PUNCH_THRU;
+    dbp("5");
     break;
   case G2EVT_TA_RENDERDONE:	/* never gets called?! */
     render_complete = 1;
+    dbp("6");
+    //ta_stop_render();
     break;
   case G2EVT_TA_SCANINT1:
     ta_state.frame_counter++;
+    if (ta_scan_cb)
+      ta_scan_cb();
+
+    dbp("7");
     break;
   }
 
+  //static int next;
 
   /* All lists are complete, and render is done */
   /* Note: render-done doesn't seem to be reliable */
@@ -899,6 +960,21 @@ static void int_handler(uint32 code) {
      reliable ... */
   if (!to_texture) {
     int sc = 0;
+
+
+    if (list_complete == ta_state.lists && rendered_page >= 0) {
+      render_counter++;
+      dbp("L");
+
+      if (ta_render_done_cb)
+	ta_render_done_cb();
+    }
+
+    if (render_complete && rendered_page >= 0) {
+      render_counter2++;
+      dbp("R");
+
+    }
 
     /* Detect end of rendering. */
     if (
@@ -913,7 +989,10 @@ static void int_handler(uint32 code) {
 	render_complete = 0;
 
 	/* Now that render is finished, we can send this page on the screen. */
-	next_visible_page = rendered_page;
+	if (next_visible_page < 0 && visible_page != rendered_page) {
+	  next_visible_page = rendered_page;
+	  //next = ta_state.frame_counter+2;
+	}
 
 	/* Mark that no rendering is hapenning currently. */
 	rendered_page = -1;
@@ -923,11 +1002,13 @@ static void int_handler(uint32 code) {
     /* Handle visible page */
     if(code == G2EVT_TA_SCANINT1) {
       /* Any request for a new visible page ? */
-      if (next_visible_page >= 0) {
+      if (
+	  //ta_state.frame_counter >= next && 
+	  next_visible_page >= 0) {
 	visible_page = next_visible_page;
 	
 	/* Set visible page */
-	ta_set_view_target(visible_page ^ 1);
+	ta_set_view_target(visible_page^1);
 
 	/* Mark as done */
 	next_visible_page = -1;
@@ -935,7 +1016,7 @@ static void int_handler(uint32 code) {
     }
 
     /* A new render is requested ? */
-    if (next_rendered_page >= 0) {
+    if (!ta_block_render && next_rendered_page >= 0) {
       /* Some condition are requiered, check them */
       if (
 	  /* No rendering in progress already ? */
@@ -953,17 +1034,20 @@ static void int_handler(uint32 code) {
 	next_rendered_page = -1;
 
 	/* Switch hardware registration buffers */
-	ta_render_target(rendered_page ^ 1);
+	ta_render_target(rendered_page^1);
+	ta_start_render();
 	ta_set_reg_target(rendered_page);
       
 	/* Reschedule, probably ta_begin_render is waiting to hear
 	   about the good new :) */
 	sc = 1;
+
       }
     }
 
     /* Schedule any waiting thread next if necessary */
     if (sc && thd_enabled && waiting_thd != NULL) {
+      sem_signal(render_sema);
       thd_schedule_next(waiting_thd);
       waiting_thd = NULL;
     }
@@ -1004,6 +1088,8 @@ void ta_hw_shutdown() {
 
 /* Program init / shutdown */
 void ta_init(int lists, int binsize, int vertbuf) {
+  render_sema = sem_create(0);
+
 	/* Set a default buffer configuration */
 	ta_set_buffer_config(lists, binsize, vertbuf);
 
@@ -1018,8 +1104,5 @@ void ta_init_defaults() {
 
 void ta_shutdown() {
 	ta_hw_shutdown();
+	sem_destroy(render_sema);
 }
-
-
-
-

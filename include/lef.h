@@ -6,7 +6,7 @@
  * @author  dan potter
  * @brief   ELF library loader.
  *
- * $Id: lef.h,v 1.7 2003-03-26 23:02:47 ben Exp $
+ * $Id: lef.h,v 1.8 2004-07-31 22:55:18 vincentp Exp $
  */
 
 /*  Based on elf.c from KallistiOS 1.1.5 */
@@ -248,7 +248,15 @@ typedef struct lef_prog {
   uint32 size;		/**< Memory image size.                 */
   int	 (*main)();	/**< Program entry point.               */
   int    ref_count;     /**< Reference counter.                 */
+  symbol_t * symbols;   /**< Symbols table                      */
+  int    nb_symbols;    /**< Number of symbols in the table     */
+
+  CIRCLEQ_ENTRY(lef_prog) g_list;  /**< Linked list entry       */
+
 } lef_prog_t;
+
+
+typedef CIRCLEQ_HEAD(lef_prog_list, lef_prog) lef_prog_list_t;
 
 
 /** Load a LEF library.
@@ -262,11 +270,19 @@ lef_prog_t *lef_load(const char * fname);
 /** Free a loaded ELF libray.
  *
  *    The lef_free() function decrements the ref_count field of prog. If the
- *    value reaches zero, the library data and the prog will be release.
+ *    value reaches zero, the library data and the prog will be released.
  *
  * @param  prog  lef program structure returned by lef_load(). 
  */
 void lef_free(lef_prog_t *prog);
+
+/** Find a symbol into an ELF library */
+void * lef_find_symbol(lef_prog_t * p, const char * name);
+
+/** Find the closest symbol from given address, looking into the
+    main executable and all plugins */
+symbol_t * lef_closest_symbol(void * addr);
+
 
 /**@}*/
 

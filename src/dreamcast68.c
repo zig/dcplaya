@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.62 2004-07-04 14:16:45 vincentp Exp $
+ * @version   $Id: dreamcast68.c,v 1.63 2004-07-31 22:55:19 vincentp Exp $
  */
 
 //#define RELEASE
@@ -22,6 +22,8 @@
 #include <dc/maple.h> /* $$$ ben : hack for START short-cut vmu load */
 #include <dc/spu.h>
 #include <dc/cdrom.h>
+#include <dc/pvr.h>
+#include <arch/timer.h>
 
 #include "dcplaya/config.h"
 
@@ -827,6 +829,7 @@ void main_thread(void *cookie)
     //my_vid_border_color(255,0,0);
     /*     bkg_render(fade68, info_is_help() || !is_playing); */
 
+#if 1
     /* Visual opaque list */
     render_visual_opaque();
     
@@ -868,6 +871,7 @@ void main_thread(void *cookie)
 	  if (playa_thread)
 	  thd_set_prio(playa_thread, PRIO_DEFAULT-1);*/
     
+#endif
     draw_close_render();
     
     //    my_vid_border_color(0,0,0);    
@@ -970,9 +974,20 @@ static int vmu_load(void)
       goto finish;
     }
   } else {
-    SDDEBUG("[vmu_load] : [%s] already exists !! That ze hell ? .\n",
+    SDDEBUG("[vmu_load] : [%s] already exists (as expected).\n",
 	    path);
   }
+
+  /* VP : we sleep a bit to let VMU units to get detected 
+     Unfortunatly, usleep does not work here (altough we are already in
+     mt mode) */
+  {
+    int i, j;
+    for (i=0; i<10000000; i++)
+      for (j=0; j<50; j++)
+	*((int *)0);
+  }
+  //usleep(500);
 
   /* Read vmu dir : get plugged vmu */
   strcpy(tmp,"/vmu");
@@ -1059,7 +1074,6 @@ int dreammp3_main(int argc, char **argv)
   dcp_kbd_init();
   maple_init();
 
-
   curlogo = 0; //& mine_3;
   fade68 = 0.0f;
   fade_step = 0.01f;
@@ -1115,6 +1129,10 @@ int dreammp3_main(int argc, char **argv)
     skip = (addr = maple_first_controller(), addr)
       && !cont_get_cond(addr, &cond) && !(cond.buttons & CONT_START);
 
+#ifndef RELEASE
+    skip = !skip;
+#endif
+
     if (!skip) {
       /* load default (1st) dcplaya vmu file */
       vmu_load();
@@ -1129,7 +1147,7 @@ int dreammp3_main(int argc, char **argv)
 
   /* From this point the number of jiffies must be somewhat different...
      I hope so ! */
-  srand(jiffies);
+  srand((int)timer_ms_gettime64());
   if (shell_init()) {
     STHROW_ERROR(error);
   }

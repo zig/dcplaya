@@ -4,7 +4,7 @@
 --- @author  benjamin gerard
 --- @brief   tagged text aka zml
 ---
---- $Id: taggedtext.lua,v 1.35 2003-04-05 16:33:31 ben Exp $
+--- $Id: taggedtext.lua,v 1.36 2004-07-31 22:55:18 vincentp Exp $
 ---
 
 --- @defgroup dcplaya_lua_tt Tagged Text
@@ -307,7 +307,12 @@ function tt_button_draw(block)
    mode.box = box + { 4, 4, -4, -4 }
    dl_set_trans(mode.dl, mat_trans(0, 0, block.z))
    local name = mode.name or (papp.name and (papp.name .. "-button"))
-   local app = gui_new_button(papp, box, nil, nil, nil, name)
+   local app
+   if block.customcreate then
+      app = block.customcreate(papp, box, mode.label, nil, name)
+   else
+      app = gui_new_button(papp, box, nil, nil, nil, name)
+   end
    app.guis = mode.guis
    mode.app = app
    gui_label(app, mode)
@@ -336,6 +341,7 @@ function tt_button_cmd(mode, param)
    newmode.parent = mode
    newmode.parent_cmd = tt_end_button_cmd
    newmode.z = 20
+   newmode.customcreate = param.create and getglobal(param.create)
    newmode.box = {
       0, 0, 
       param.w or 640,
@@ -356,6 +362,7 @@ function tt_end_button_cmd(mode)
       fill_h = mode.fill_y,
       z = mode.z,
       tt = mode,
+      customcreate = mode.customcreate,
       draw = tt_button_draw,
    }
 

@@ -36,6 +36,20 @@ void net_unlock()
 }
 
 
+spinlock_t tx_mutex;
+
+void tx_lock()
+{
+  //spinlock_lock(&tx_mutex);
+}
+
+void tx_unlock()
+{
+  //spinlock_unlock(&tx_mutex);
+}
+
+
+
 unsigned short checksum(unsigned short *buf, int count)
 {
     unsigned long sum = 0;
@@ -105,7 +119,7 @@ void make_udp(unsigned short dest, unsigned short src, unsigned char * data, int
 
 
 
-void process_broadcast(unsigned char *pkt, int len)
+int process_broadcast(unsigned char *pkt, int len)
 {
     ether_header_t *ether_header = (ether_header_t *)pkt;
     arp_header_t *arp_header = (arp_header_t *)(pkt + ETHER_H_LEN);
@@ -114,30 +128,30 @@ void process_broadcast(unsigned char *pkt, int len)
 
     if (ether_header->type[1] != 0x06) /* ARP */
       {
-	return;    
+	return -1;
       }
 
     /* hardware address space = ethernet */
     if (arp_header->hw_addr_space != 0x0100)
-	return;
+	return -1;
 
     /* protocol address space = IP */
     if (arp_header->proto_addr_space != 0x0008)
-	return;
+	return -1;
 
     if (arp_header->opcode == 0x0100) { /* arp request */
 	if (our_ip == 0) /* return if we don't know our ip */
-	    return;
+	    return -1;
 
 	int i;
-	printf("ARP request : ");
-	for (i=0; i<4; i++)
-	  printf("%d ", arp_header->proto_target[i]);
-	printf("\n");
+/* 	printf("ARP request : "); */
+/* 	for (i=0; i<4; i++) */
+/* 	  printf("%d ", arp_header->proto_target[i]); */
+/* 	printf("\n"); */
 
 	if (!memcmp(arp_header->proto_target, &ip, 4)) { /* for us */
 	  
-	  printf("ARP our IP : %x\n", ip);
+/* 	  printf("ARP our IP : %x\n", ip); */
 
 	    /* put src hw address into dest hw address */
 	    memcpy(ether_header->dest, ether_header->src, 6);
@@ -154,6 +168,8 @@ void process_broadcast(unsigned char *pkt, int len)
 	    net_tx(pkt, ETHER_H_LEN + ARP_H_LEN, 1);
 	}
     }
+
+    return 0;
 }
 
 static unsigned char pkt_buf[1514];
@@ -194,14 +210,6 @@ void process_icmp(ether_header_t *ether, ip_header_t *ip, icmp_header_t *icmp)
   }
 }
 
-typedef struct {
-    unsigned int load_address;
-    unsigned int load_size;
-    unsigned char map[16384];
-} bin_info_t;
-
-bin_info_t bin_info;
-
 void cmd_retval(ip_header_t * ip, udp_header_t * udp, command_t * command);
 
 int process_udp(ether_header_t *ether, ip_header_t *ip, udp_header_t *udp)
@@ -210,7 +218,7 @@ int process_udp(ether_header_t *ether, ip_header_t *ip, udp_header_t *udp)
   unsigned short i;
   command_t *command;
 
-  if (tool_ip && tool_port != ntohs(udp->src))
+  if (tool_ip && (tool_port != ntohs(udp->src) || tool_ip != ntohl(ip->src)))
     return -1;
 
   pseudo = (ip_udp_pseudo_header_t *)pkt_buf;
@@ -241,10 +249,10 @@ int process_udp(ether_header_t *ether, ip_header_t *ip, udp_header_t *udp)
   }
 
   if (!tool_ip) {
+    printf("Set dc-tool IP to 0x%x, port %d\n", ntohl(ip->src), ntohs(udp->src));
     tool_ip = ntohl(ip->src);
     tool_port = ntohs(udp->src);
     memcpy(tool_mac, ether->src, 6);
-    //printf("Set dc-tool IP to 0x%x, port %d\n", tool_ip, tool_port);
   } else {
 /*     if (tool_ip != ntohs(ip->src)) */
 /*       return -1; */
@@ -317,7 +325,8 @@ int process_mine(unsigned char *pkt, int len)
     ip_header->checksum = 0;
     ip_header->checksum = checksum((unsigned short *)ip_header, 2*(ip_header->version_ihl & 0x0f));
     if (i != ip_header->checksum) {
-      ip_header->checksum = i; /* VP : put back the original checksum */
+      ip_header->checksum = i; /* VP : put back the original checksum so that we can forward
+				  this packet to lwip */
       return -1;
     }
 
@@ -343,10 +352,12 @@ void rx_callback(netif_t * netif, unsigned char *pkt, int len)
 {
   ether_header_t *ether_header = (ether_header_t *)pkt;
 
+  //vid_border_color(255, 255, 0);
+
   if (ether_header->type[0] == 0x08 &&
       !memcmp(ether_header->dest, eth_mac, 6)) {
     if (!process_mine(pkt, len))
-      return;
+      goto end;
   }
 
   if (lwip_cb) {
@@ -354,19 +365,20 @@ void rx_callback(netif_t * netif, unsigned char *pkt, int len)
     eth_interrupt = 1;
     lwip_cb(netif, pkt, len);
     eth_interrupt = 0;
-    return;
+    goto end;
   }
 
   if (ether_header->type[0] != 0x08)
-    return;
+    goto end;
 
-  if (!memcmp(ether_header->dest, broadcast, 6)) {
-    //net_lock();
-    process_broadcast(pkt, len);
-    //net_unlock();
-    return;
+  if (ether_header->type[0] == 0x08 &&
+      !memcmp(ether_header->dest, broadcast, 6)) {
+    if (process_broadcast(pkt, len))
+      goto end;
   }
   
+ end:
+  //vid_border_color(0, 0, 0);
 }
 
 void eth_setip(int a, int b, int c, int d)
