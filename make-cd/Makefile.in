@@ -3,7 +3,7 @@
 #
 # by Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.3 2003-07-30 19:04:43 vincentp Exp $
+# $Id: Makefile.in,v 1.4 2003-07-31 10:16:10 benjihan Exp $
 #
 
 CDRECORD	= @CDRECORD@ dev=$(cdr) $(CDRECORD_FLAGS)
@@ -50,9 +50,12 @@ all help:
 	@echo
 	@echo "TARGET:"
 	@echo
-	@echo " all-burn    :"
+	@echo " all-burn    : Build all and run burning process."
+	@echo " test-iso    : Build a test.iso for testing."
+	@echo "               You may try this iso by using loopback mount : "
+	@echo "               'mount -t iso9660 -o loopback test.iso some-dir'"
 	@echo " clean       : Clean"
-	@echo " force_clean : Like clean but don't care about unfinished"
+	@echo " force-clean : Like clean but don't care about unfinished"
 	@echo "               burning session."
 
 .PHONY: $(ALL_MISSING)
@@ -166,6 +169,8 @@ test.iso: 1ST_READ.BIN iso
 	&& rm -rf $^
 endif
 
+test-iso: test.iso
+
 .PHONY: test
 test: test.iso
 	@echo [$@]
@@ -190,7 +195,6 @@ endif
 lua-home:
 	@echo "[$@]"
 	@mkdir -p iso/dcplaya
-#	@cp -f ../autorun.lua ../dcplayarc.lua iso/dcplaya \
 	@cp -f ../dcplayarc.lua iso/dcplaya \
 	&& sed -e "s#@BUILT-DATE@#${DATE}#" ../userconf-release.lua \
 		> iso/dcplaya/userconf.lua
@@ -248,7 +252,7 @@ clean_audio:
 	@echo "[clean audio]"
 	@rm -f zero
 	@if [ -e burn-audio ]; \
-		then echo -e "Existing [burn-audio] file.\nPrevious burn has not been successfully completed.\nRun make force_clean to remove it."; test -z 1; \
+		then echo -e "Existing [burn-audio] file.\nPrevious burn has not been successfully completed.\nRun make force-clean to remove it."; test -z 1; \
 	else rm -f audio.raw; fi
 
 .PHONY : clean_iso
@@ -259,12 +263,12 @@ clean_iso:
 .PHONY : clean_file
 clean_file:
 	@echo "[clean files]"
-	@rm -f *.iso *.txt $(1ST_READ) IP.BIN data.raw 1ST_READ.BIN
+	@rm -f *.iso *.txt $(1ST_READ) IP.BIN data.raw 1ST_READ.BIN dcplaya.bin
 
 .PHONY : clean
 clean: clean_audio clean_file clean_iso
 
-.PHONY: force_clean
-force_clean: clean_file clean_iso
+.PHONY: force-clean
+force-clean: clean_file clean_iso
 	@echo "[force clean]"
 	@rm -f zero audio.raw burn-audio
