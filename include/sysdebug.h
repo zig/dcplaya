@@ -5,7 +5,7 @@
  * @date       2002/09/04
  * @brief      Debug fonctions.
  *
- * @version    $Id: sysdebug.h,v 1.3 2002-09-17 19:58:50 ben Exp $
+ * @version    $Id: sysdebug.h,v 1.4 2002-09-19 15:53:06 vincentp Exp $
  */
 
 #ifndef _SYSDEBUG_H_
@@ -127,7 +127,7 @@ void sysdbg_register_level(sysdgb_level_e level,
 #  define SDINDENT
 #  define SDUNINDENT
 # endif
-# define SDCRITICAL(...)   SDMSG(sysdbg_critical, __VA_ARGS)
+# define SDCRITICAL(...)   SDMSG(sysdbg_critical, __VA_ARGS__)
 # define SDERROR(...)      SDMSG(sysdbg_error, __VA_ARGS__)
 # define SDWARNING(...)    SDMSG(sysdbg_warning, __VA_ARGS__)
 # define SDNOTICE(...)     SDMSG(sysdbg_notice, __VA_ARGS__)

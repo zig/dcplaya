@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: shell.lua,v 1.2 2002-09-19 08:18:12 vincentp Exp $
+-- $Id: shell.lua,v 1.3 2002-09-19 15:53:06 vincentp Exp $
 --
 
 
@@ -80,7 +80,8 @@ end
 -- function to input a string on one line
 -- this handles command recall too
 shell_recalltable = {}
-shell_maxrecall = 20 -- maximum number of recallable commands
+shell_maxrecall = 20         -- maximum number of recallable commands
+shell_toggleconsolekey = 96  -- configurable ... ( currently = ` )
 function shell_input(string)
 
 	if not check_zed() then
@@ -151,7 +152,7 @@ function shell_input(string)
 			col = strlen(t[line])+1
 		elseif key == KBD_KEY_F2 then
 			dofile (home.."autorun.lua")
-		elseif key == KBD_KEY_F1 then
+		elseif key == shell_toggleconsolekey then
 			toggleconsole()
 		else
 			t[line], col = zed_edline(t[line], col, key)

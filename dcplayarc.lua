@@ -1,7 +1,9 @@
 -- This is main DCplaya lua script
 --
--- $Id: dcplayarc.lua,v 1.8 2002-09-19 08:18:05 vincentp Exp $
+-- $Id: dcplayarc.lua,v 1.9 2002-09-19 15:53:06 vincentp Exp $
 --
+
+showconsole()
 
 print ("Welcome to DCplaya !\n")
 

@@ -3,7 +3,7 @@
 --
 -- (C) 2002 Vincent Penne (aka Ziggy Stardust)
 --
--- $Id: zed.lua,v 1.6 2002-09-19 08:18:12 vincentp Exp $
+-- $Id: zed.lua,v 1.7 2002-09-19 15:53:06 vincentp Exp $
 --
 
 rp ("Initializing ZED ... ")
@@ -236,7 +236,7 @@ function zed(filename)
 	local	dir=""
 	local	file=""
 
-	if (filename) then
+	if filename then
 		zed_readfile(filename, buffer)
 		dir, file = zed_pathsplit(filename)
 	end
