@@ -1,5 +1,5 @@
 /**
- * $Id: draw_object.c,v 1.8 2002-11-25 16:46:48 ben Exp $
+ * $Id: draw_object.c,v 1.9 2002-12-19 18:43:20 ben Exp $
  */
 
 #include <stdio.h>
@@ -26,16 +26,21 @@ static ta_hw_tex_vtx_t * const hw = HW_TEX_VTX;
 static vtx_t * transform = 0;
 static int transform_sz = 0;
 
+#define U1 (02.0f/64.0f)
+#define U2 (30.0f/64.0f)
+#define U3 (34.0f/64.0f)
+#define U4 (62.0f/64.0f)
+
 static uv_t uvlinks[8][4] =
   {
-	/* 0 cba */  { {0.0f,0.5f},   {0.0f,0.0f},    {0.5f,0.0f},   {0,0} },
-	/* 1 cbA */  { {0.5f,0.0f},   {0.5f,0.5f},    {1.0f,0.0f},   {0,0} },
-	/* 2 cBa */  { {1.0f,0.1f},   {0.5f,0.5f},    {0.5f,0.1f},   {0,0} },
-	/* 3 cBA */  { {0.0f,1.0f},   {0.0f,0.5f},    {0.5f,0.5f},   {0,0} },
-	/* 4 Cba */  { {0.5f,0.1f},   {1.0f,0.1f},    {0.5f,0.5f},   {0,0} },
-	/* 5 CbA */  { {0.0f,0.5f},   {0.5f,0.5f},    {0.0f,1.0f},   {0,0} },
-	/* 6 CBa */  { {0.5f,0.5f},   {0.0f,1.0f},    {0.0f,0.5f},   {0,0} },
-	/* 7 CBA */  { {0.5f,1.0f},   {0.5f,0.5f},    {1.0f,0.5f},   {0,0} },
+	/* 0 cba */  { {U1,U2},   {U1,U1},    {U2,U1},   {0,0} },
+	/* 1 cbA */  { {U3,U1},   {U3,U2},    {U4,U1},   {0,0} },
+	/* 2 cBa */  { {U4,U1},   {U3,U2},    {U3,U1},   {0,0} },
+	/* 3 cBA */  { {U1,U4},   {U1,U3},    {U2,U3},   {0,0} },
+	/* 4 Cba */  { {U3,U1},   {U4,U1},    {U3,U2},   {0,0} },
+	/* 5 CbA */  { {U1,U3},   {U2,U3},    {U1,U4},   {0,0} },
+	/* 6 CBa */  { {U2,U3},   {U1,U4},    {U1,U3},   {0,0} },
+	/* 7 CBA */  { {U3,U4},   {U3,U3},    {U4,U3},   {0,0} },
   };
 
 static int sature(const float a)

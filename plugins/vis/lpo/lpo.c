@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.10 2002-12-18 18:11:07 ben Exp $
+ * $Id: lpo.c,v 1.11 2002-12-19 18:43:20 ben Exp $
  */
 
 #include <stdio.h>
@@ -401,7 +401,7 @@ static int init(any_driver_t *d)
   if (lpo_texid < 0) {
 	lpo_texid = texture_dup(texture_get("bordertile"), tname);
   }
-  border_get_def(borderdef, 2);
+  border_get_def(borderdef, 1);
   border_customize(lpo_texid, borderdef);
 
   return -(lpo_texid < 0);;

@@ -10,7 +10,7 @@
  *  An Ogg/Vorbis player library using sndstream and functions provided by
  *  sndvorbisfile.
  *
- * $Id: ogg_driver.c,v 1.5 2002-09-25 03:21:22 benjihan Exp $
+ * $Id: ogg_driver.c,v 1.6 2002-12-19 18:43:20 ben Exp $
  */
 
 #include <kos.h>
@@ -269,7 +269,7 @@ static int sndogg_decoder(playa_info_t * info)
   }
   tempcounter++;
 
-  /* No more pcm : decode next mp3 frame
+  /* No more pcm : decode next ogg frame
    * No more frame : it is the end
    */
   if (!pcm_count) {

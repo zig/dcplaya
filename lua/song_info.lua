@@ -4,7 +4,7 @@
 --- @date    2002/11/29
 --- @brief   Song info application.
 ---
---- $Id: song_info.lua,v 1.11 2002-12-18 02:27:04 ben Exp $
+--- $Id: song_info.lua,v 1.12 2002-12-19 18:43:20 ben Exp $
 
 song_info_loaded = nil
 
@@ -238,6 +238,22 @@ function song_info_create(owner, name, style)
 	  si.fade = -1;
    end
 
+   --- Default song-info minimize.
+   --- @internal
+   --
+   function song_info_minimize(si)
+	  si.minimized = 1
+	  si:draw()
+   end
+
+   --- Default song-info minimize.
+   --- @internal
+   --
+   function song_info_maximize(si)
+	  si.minimized = nil
+	  si:draw()
+   end
+
    --- Default song-info set color.
    --- @internal
    --
@@ -252,10 +268,15 @@ function song_info_create(owner, name, style)
    --
    function song_info_draw(si)
 	  dl_set_trans(si.dl,mat_trans(0,0,si.z))
-	  dl_set_trans(si.layer1_dl, mat_scale(16,16,1) * mat_trans(60,38,1))
---	  dl_set_trans(si.layer2_dl, mat_trans(45,300,1))
-
--- 	  dl_set_trans(si.icon_dl, )
+	  dl_set_active(si.layer2_dl, not si.minimized)
+	  local s,x,y
+	  if si.minimized then
+		 s,x,y = 8, 38, 12
+	  else
+		 s,x,y = 16, 60, 35
+	  end
+	  dl_set_trans(si.layer1_dl, mat_scale(s,s,1) * mat_trans(x,y,1))
+	  dl_set_active(si.layer1_dl,1)
    end
 
    --- Default song-info shutdown.
@@ -288,6 +309,8 @@ function song_info_create(owner, name, style)
 	  close = song_info_close,
 	  draw = song_info_draw,
 	  set_color = song_info_set_color,
+	  minimize = song_info_minimize,
+	  maximize = song_info_maximize,
 
 	  -- members
 	  time_elapsed = 0,
