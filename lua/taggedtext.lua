@@ -8,10 +8,16 @@ function tt_text_draw(block)
 end
 
 function tt_img_draw(block)
+   local lx, ly = block.spr.x, block.spr.y
+   local sx, sy = block.sx, block.sy
+   if sx then
+      lx = lx * sx
+      ly = ly * sy
+   end
    if block.spr.rotate then
-      sprite_draw(block.spr, block.dl, block.x+block.spr.y, block.y+block.spr.x, block.z)
+      sprite_draw(block.spr, block.dl, block.x+ly, block.y+lx, block.z, sx, sy)
    else
-      sprite_draw(block.spr, block.dl, block.x+block.spr.x, block.y+block.spr.y, block.z)
+      sprite_draw(block.spr, block.dl, block.x+lx, block.y+ly, block.z, sx, sy)
    end
 end
 
@@ -31,23 +37,31 @@ function tt_img_cmd(mode, param)
       if tex then
 	 local info = tex_info(tex)
 	 local w, h = info.w, info.h
-	 w = param.w or w
-	 h = param.h or h
 	 rotate = param.rotate
 	 spr = sprite(name, 0, 0, w, h, 0, 0, 1, 1, tex, rotate)
       end
    end
 
    if spr then
+      local sx, sy
+      sx = param.sx or param.scale
+      sy = param.sy or sx
       local block = {
 	 type = "img",
 	 spr = spr,
 	 w = spr.w,
 	 h = spr.h,
+	 sx = sx,
+	 sy = sy,
 	 dl = mode.dl,
 	 z = mode.z,
 	 draw = tt_img_draw
       }
+
+      if sx then
+	 block.w = block.w * sx
+	 block.h = block.h * sy
+      end
       return block
    end
 end
@@ -137,6 +151,15 @@ tt_commands = {
    right = function(mode)
 	      mode.align_line_h = tt_align_line_right
 	   end,
+   up = function(mode)
+	     mode.align_v = tt_align_up
+	  end,
+   vcenter = function(mode)
+	       mode.align_v = tt_align_vcenter
+	    end,
+   down = function(mode)
+	      mode.align_v = tt_align_down
+	   end,
    font = tt_font_cmd
 }
 
@@ -195,6 +218,7 @@ end
 
 function tt_copymode(mode)
    local copy, i, v
+   copy = { }
    for i, v in mode do
       copy[i] = v
    end
@@ -206,6 +230,14 @@ function tt_align_line_down(mode, h)
    local i
    for i=1, line.n, 1 do
       line[i].y = line[i].y - line[i].h + h
+   end
+end
+
+function tt_align_line_vcenter(mode, h)
+   local line = mode.curline
+   local i
+   for i=1, line.n, 1 do
+      line[i].y = line[i].y + ( h - line[i].h ) / 2
    end
 end
 
@@ -236,6 +268,58 @@ function tt_align_line_center(mode, h)
    end
 end
 
+function tt_align_up(mode)
+   local j
+   local lines = mode.lines
+
+   local y = mode.box[2]
+
+   for j=1, lines.n, 1 do
+
+      local line = lines[j]
+      local i
+      for i=1, line.n, 1 do
+	 line[i].y = line[i].y + y
+      end
+
+   end
+end
+
+function tt_align_vcenter(mode)
+   local j
+   local lines = mode.lines
+
+   local y = (mode.box[2] + mode.box[4] - mode.h)/2
+
+   for j=1, lines.n, 1 do
+
+      local line = lines[j]
+      local i
+      for i=1, line.n, 1 do
+	 line[i].y = line[i].y + y
+      end
+
+   end
+end
+
+function tt_align_down(mode)
+   local j
+   local lines = mode.lines
+
+   local y = mode.box[4] - mode.h
+
+   for j=1, lines.n, 1 do
+
+      local line = lines[j]
+      local i
+      for i=1, line.n, 1 do
+	 line[i].y = line[i].y + y
+      end
+
+   end
+end
+
+
 function tt_endline(mode)
    local h = 0
    local line = mode.curline
@@ -245,12 +329,17 @@ function tt_endline(mode)
       h = max(h, line[i].h)
    end
 
+   line.h = h
    mode:align_line_h(h)
    mode:align_line_v(h)
 
-   tinsert(mode.lines, mode.curline)
+   tinsert(mode.lines, line)
    mode.curline = { n = 0 }
    mode.h = mode.h + h
+
+   mode.total_w = max(mode.total_w, mode.w)
+   mode.total_h = mode.h
+
    mode.w = 0
 end
 
@@ -263,7 +352,7 @@ function tt_insert_block(mode, block)
    end
 
    block.x = w
-   block.y = mode.h + mode.box[2]
+   block.y = mode.h
    tinsert(mode.curline, block)
    mode.w = w + block.w
 end
@@ -287,8 +376,55 @@ function tt_build(text, mode)
    mode.bw = mode.box[3] - mode.box[1] -- box width
    mode.w = mode.w or 0
    mode.h = mode.h or 0
-   mode.align_line_v = mode.align_line or tt_align_line_down
-   mode.align_line_h = mode.align_line or tt_align_line_left
+   mode.border = mode.border or { 6, 6 }
+   mode.total_w = 0
+   mode.total_h = 0
+   
+   mode.box = tt_copymode(mode.box)
+
+   if mode.x == "left" then
+      mode.align_line_h = tt_align_line_left
+      mode.box[1] = mode.box[1] + mode.border[1]
+      mode.box[3] = mode.box[3] - mode.border[1]
+   elseif mode.x == "leftout" then
+      mode.align_line_h = tt_align_line_right
+      mode.box[3] = mode.box[1]
+      mode.box[1] = mode.outbox[1]
+   elseif mode.x == "right" then
+      mode.align_line_h = tt_align_line_right
+      mode.box[1] = mode.box[1] + mode.border[1]
+      mode.box[3] = mode.box[3] - mode.border[1]
+   elseif mode.x == "rightout" then
+      mode.align_line_h = tt_align_line_left
+      mode.box[1] = mode.box[3]
+      mode.box[3] = mode.outbox[3]
+   elseif mode.x == "center" then
+      mode.align_line_h = tt_align_line_center
+   end
+
+   if mode.y == "up" then
+      mode.align_v = tt_align_up
+      mode.box[2] = mode.box[2] + mode.border[2]
+      mode.box[4] = mode.box[4] - mode.border[2]
+   elseif mode.y == "upout" then
+      mode.align_v = tt_align_down
+      mode.box[4] = mode.box[2]
+      mode.box[2] = mode.outbox[2]
+   elseif mode.y == "down" then
+      mode.align_v = tt_align_down
+      mode.box[2] = mode.box[2] + mode.border[2]
+      mode.box[4] = mode.box[4] - mode.border[2]
+   elseif mode.y == "downout" then
+      mode.align_v = tt_align_up
+      mode.box[2] = mode.box[4]
+      mode.box[4] = mode.outbox[4]
+   elseif mode.y == "center" then
+      mode.align_v = tt_align_vcenter
+   end
+
+   mode.align_line_v = mode.align_line_v or tt_align_line_vcenter
+   mode.align_line_h = mode.align_line_h or tt_align_line_left
+   mode.align_v = mode.align_v or tt_align_up
 
    local blocks = { n = 0 }
    
@@ -376,6 +512,8 @@ function tt_build(text, mode)
       tt_endline(mode)
    end
 
+   mode:align_v()
+
    return mode
 end
 
@@ -389,18 +527,29 @@ function tt_draw(tt)
    end
 end
 
-tt = tt_build(
-	      [[
-Hello <img name="vmu"> World ! <br>
-<center> <font size="24" color="#00ffff"> Centered !! <br>
-<right> <font size="14" color="#ffffff"> right aligned <font size="48" color="#ffff00"> <img name="dcplaya" src="dcplaya.tga"> TITI <img name="colorpicker" src="colorpicker.tga"> TOTO
-]], 
-	      { 
-		 box = { 100, 100, 600, 200 },
-		 z = 200
-	      })
 
-tt_draw(tt)
+if not nil then
 
---print(tt.w, tt.h)
+   box = { 100, 100, 600, 400 }
+   tt = tt_build(
+		 [[
+		       Hello <img name="vmu" scale="0.5"> World ! <br>
+			  <center> <font size="24" color="#00ffff"> Centered !! <br>
+			  <right> <font size="14" color="#ffffff"> right aligned <font size="48" color="#ffff00"> <img name="dcplaya" src="dcplaya.tga"> TITI <img name="colorpicker" src="colorpicker.tga"> TOTO TUTU
+		 ]], 
+		 { 
+		    --		 x = "leftout",
+		    y = "down",
+		    box = box,
+		    z = 300
+		 })
 
+   gui_dialog_box_draw(tt.dl, box, tt.z-10, gui_box_color1, gui_box_color1)
+
+   tt_draw(tt)
+
+   --print(tt.total_w, tt.total_h)
+
+end
+
+taggedtext_loaded = 1

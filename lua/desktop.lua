@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.7 2002-12-18 02:27:04 ben Exp $
+--- $Id: desktop.lua,v 1.8 2002-12-19 10:59:48 zigziggy Exp $
 ---
 
 if not dolib("evt") then return end
@@ -46,6 +46,21 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
    function dskt_switcher_handle(dial, evt)
       local key = evt.key
 
+      if key == evt_shutdown_event then
+	 local dir = dial.dir
+--	 print("dir = ", dir)
+	 if dir then
+	    local a = dir[dial.vs.fl.pos+1].app
+	    if a ~= dial.next then
+	       gui_new_focus(evt_desktop_app, a)
+	    end
+	 end
+
+	 dl_set_active(dial.dl)
+
+	 return evt
+      end
+      
       if dskt_keytoggle[key] then
 	 evt_shutdown_app(dial)
 	 return
@@ -172,7 +187,7 @@ function dskt_handle(app, evt)
 	    i = i.next
 	 end
 
-	 app.switcher = dskt_switcher_create(app, "Application Switcher", dir)
+	 app.switcher = dskt_switcher_create(app, [[<font size="14"> Application Switcher]], dir)
 	 
       end
 

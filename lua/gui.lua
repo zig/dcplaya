@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.31 2002-12-16 21:37:07 zigziggy Exp $
+--- $Id: gui.lua,v 1.32 2002-12-19 10:59:48 zigziggy Exp $
 ---
 
 --
@@ -41,7 +41,7 @@
 --   individually with respect to its focused or active state ...
 --
 
-if not dolib "evt" or not dolib "box3d" then
+if not dolib "evt" or not dolib "box3d" or not dolib "taggedtext" then
    return
 end
 
@@ -436,7 +436,13 @@ function gui_dialog_box_draw(dl, box, z, bcolor, color)
       l[1] = bcolor[1]
       b[1] = bcolor[1]
       r[1] = bcolor[1]
-      local b3d = box3d(box, 6, color, t, l, b, r)
+
+      local b3d
+
+      b3d= box3d(box, 4, nil, t, l, b, r)
+      box3d_draw(b3d,dl, mat_trans(0, 0, z))
+
+      b3d= box3d(box + { 4, 4, -4, -4 }, 2, color, b, r, t, l)
       box3d_draw(b3d,dl, mat_trans(0, 0, z))
    else
       dl_draw_box(dl, box, z, gui_box_color1, gui_box_color2)
@@ -795,84 +801,22 @@ end
 
 -- display justified text into given box
 function gui_justify(dl, box, z, color, text, mode)
-   local w = 0
-   local h = 0
-   local list = { }
-   local wlist = { }
-   local hlist = { }
-   local bw = box[3] - box[1] -- box width
 
    if not mode then
       mode = { }
    end
+   if not mode.x then mode.x = "center" end
+   if not mode.y then mode.y = "center" end
+   mode.dl = dl
+   mode.box = box
+   mode.z = z
+   mode.color = color
    
-   -- split the text into portions that fits into the width of the box
-   -- TODO handle \n character
-   local start = 1
-   local len = strlen(text)
-   
-   while start <= len do
-      local e1, e2 = strfind(text, "[%s%p]+", start)
-      if not e2 then
-	 e2 = len
-      end
-      local last = e2
-      while dl_measure_text(dl, strsub(text, start, e2)) < bw do
-	 last = e2
-	 e1, e2 = strfind(text, "[%s%p]+", e2+1)
-	 if not e2 then
-	    last = len
-	    e2 = len
-	    break
-	 end
-      end
-      local s = strsub(text, start, last)
-      tinsert(list, strsub(text, start, last))
-      local cw, ch = dl_measure_text(dl, s)
-      tinsert(wlist, cw)
-      tinsert(hlist, ch)
-      w = max(w, cw)
-      h = h + ch
-      start = last+1
-   end
+   mode = tt_build(text, mode)
+   tt_draw(mode)
 
-   -- display the text
-   local x, y
-   if mode.y == "down" then
-      y = box[4] - h
-   elseif mode.y == "downout" then
-      y = box[4]
-   elseif mode.y == "up" then
-      y = box[2]
-   elseif mode.y == "upout" then
-      y = box[2] - h
-   else
-      y = (box[2] + box[4] - h) / 2
-   end
-   local i, n
-   n = list.n
-   for i=1, n, 1 do
-      local cw = wlist[i]
-      local s = list[i]
+   return mode.total_w, mode.total_h
 
-      if mode.x == "right" then
-	 x = box[3] - cw
-      elseif mode.x == "rightout" then
-	 x = box[3]
-      elseif mode.x == "left" then
-	 x = box[1]
-      elseif mode.x == "leftout" then
-	 x = box[1] - cw
-      else
-	 x = (box[1] + box[3] - cw) / 2
-      end
-
-      dl_draw_text(dl, x, y, z, color, s)
-
-      y = y + hlist[i]
-   end
-
-   -- TODO return bounding box of text
 end
 
 -- add a label to a gui item
@@ -936,7 +880,7 @@ function dialog_test(parent)
    local y = box[2] - 100
    
    -- create a few buttons with labels
-   but = gui_new_button(dial, { x + 150, y + 200, x + 200, y + 220 }, "OK")
+   but = gui_new_button(dial, { x + 150, y + 200, x + 240, y + 235 }, 'OK <img name="dcplaya" src="dcplaya.tga">')
    
    -- add a gui_press_event response
    but.event_table[gui_press_event] =
@@ -946,7 +890,7 @@ function dialog_test(parent)
 	 return nil -- block the event
       end
    
-   but = gui_new_button(dial, { x + 250, y + 200, x + 340, y + 220 }, "CANCEL")
+   but = gui_new_button(dial, { x + 250, y + 200, x + 360, y + 235 }, 'CANCEL <img name="colorpicker" src="colorpicker.tga">')
    but.event_table[gui_press_event] =
       function(but, evt)
 	 print [[CANCEL !!]]
