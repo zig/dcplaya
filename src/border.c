@@ -50,15 +50,18 @@ static void make_blk(uint16 *texture, int w, int h, uint8 *g, int ws)
       }*/
       
       if (c <= 0x30) {
-	c = 180; 
-	r = 0.4*255;
-	g = 0.4*240;
-	b = 0.4*75;
+	/* Not linked */
+	c = 200; 
+	r = g = b = 0x30;
       } else if (c <= 0x80) {
+	/* Fill color */
 	c = 140;
-	r = 255;
-	g = 240;
-	b = 75;
+	r = 230;
+	g = 230;
+	b = 230;
+      } else {
+	/* Border color */
+	c = r = g = b = 255;
       }
       
 

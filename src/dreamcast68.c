@@ -4,11 +4,11 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.3 2002-09-04 02:39:37 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.4 2002-09-04 18:54:11 ben Exp $
  */
 
 //#define RELEASE
-//#define SKIP_INTRO
+#define SKIP_INTRO
 
 
 #define CLIP(a, min, max) ((a)<(min)? (min) : ((a)>(max)? (max) : (a)))
@@ -439,8 +439,11 @@ static int driver_init(void)
   /* Load the default drivers from romdisk */
   {
     const char **p, *paths[] = {
-      "/pc" DREAMMP3_HOME "plugins/inp/ogg",
+      //      "/pc" DREAMMP3_HOME "plugins/inp/ogg",
+      "/pc" DREAMMP3_HOME "plugins/obj",
+      "/pc" DREAMMP3_HOME "plugins/vis/lpo",
       "/pc" DREAMMP3_HOME "plugins/inp/xing",
+      "/pc" DREAMMP3_HOME "plugins/inp/sc68",
       0
     };
 
@@ -466,6 +469,11 @@ static int no_mt_init(void)
 
   /* Viewport init */
   viewport_set(&viewport, 0, 0, SCREEN_W, SCREEN_H, 1.0f);
+
+  /* Projection init */
+  MtxProjection(projection, 70*2.0*3.14159/360,
+		0.01, (float)SCREEN_W/SCREEN_H,
+		1000);
 
   /* Driver list */
   if (driver_init() < 0) {
@@ -515,7 +523,7 @@ static int no_mt_init(void)
     goto error;
   }
   
-  /* Init option */
+  /* Init option (must be done after visual plugin load)  */
   if (option_setup() < 0) {
     err = __LINE__;
     goto error;
@@ -690,7 +698,7 @@ void main_thread(void *cookie)
 
     /* Translucent list ********************************/
 
-    pipo_poly(0);
+    pipo_poly(1);
 
     /* Visual translucent list */
     render_visual_translucent();
@@ -699,6 +707,7 @@ void main_thread(void *cookie)
     songmenu_render(elapsed_frames);
     option_render(elapsed_frames);
     my_vid_border_color(255,0,255);
+
     /* End of translucent list */
     ta_commit_eol();
 
@@ -720,7 +729,7 @@ void main_thread(void *cookie)
   dbglog(DBG_DEBUG, "** "  __FUNCTION__ " : Start exit procedure\n");
 
   /* Stop sc68 from playing */
-  dcplaya_loaddisk(0,0);
+  playa_loaddisk(0,0);
   vmu_lcd_title();
 
   /* */
@@ -790,13 +799,9 @@ int dreammp3_main(int argc, char **argv)
   dbglog( DBG_DEBUG, "** " __FUNCTION__ " : starting WARNING screen\n");
   warning_splash();
   dbglog( DBG_DEBUG, "** " __FUNCTION__ " : End of WARNING screen\n");
-  
 
   /* MAIN */
   main_thread(0);
-
-  //  return 0;
-
 
 error:
   dbglog_set_level(

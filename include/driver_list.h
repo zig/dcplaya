@@ -7,6 +7,7 @@
 /** Any driver list. */
 typedef struct
 {
+  const char *name;       /**< Name of driver list */
   int n;                  /**< Number of driver in list */
   any_driver_t * drivers; /**< First entry */
 } driver_list_t;
@@ -22,7 +23,7 @@ int driver_list_init_all();
 /** Shutddown all driver list */
 void driver_list_shutdown_all(void);
 
-int driver_list_init(driver_list_t * dl);
+int driver_list_init(driver_list_t * dl, const char *name);
 void driver_list_shutdown(driver_list_t * dl);
 
 int driver_list_register(driver_list_t * dl, any_driver_t * driver);

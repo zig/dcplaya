@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.2 2002-09-04 02:41:05 ben Exp $
+ * $Id: lpo.c,v 1.3 2002-09-04 18:54:11 ben Exp $
  */
 
 #include <stdio.h>
@@ -18,9 +18,9 @@ static viewport_t viewport;   /**< Current viewport */
 static matrix_t mtx;          /**< Current local matrix */
 static matrix_t projmtx;      /**< Current projection matrix */
 static vtx_t color;           /**< Final Color */
-static vtx_t base_color =      /**< Original color */
+static vtx_t base_color =     /**< Original color */
   {
-    0.8f, 0.8f, 0.2f, 0.5f
+    0.8f, 0.8f, 0.2f, 0.7f
   };
 static vtx_t flash_color =     /**< Flashing color */
   {
@@ -43,10 +43,10 @@ static float rps_max = 5.0f;   /**< Maximum rotation per second */
 static float rps_cur;          /**< Current rotation speed factor */
 static float rps_goal;         /**< Rotation to reach */
 static float rps_up = 0.25f;   /**< Smooth factor when rpsd_goal > rps_cur */
-static float rps_dw = 0.1f;    /**< Smooth factor when rpsd_goal < rps_cur */
+static float rps_dw = 0.10f;   /**< Smooth factor when rpsd_goal < rps_cur */
 
-static float zoom_min = 1.0f;
-static float zoom_max = 5.0f;
+static float zoom_min = 0.0f;
+static float zoom_max = 7.0f;
 
 /* Previous analysis parms */
 static float opeek_diff;
@@ -93,7 +93,7 @@ static int anim(unsigned int ms)
     diff_max = opeek_diff > peek_diff_max;
     if (diff_max) {
       peek_diff_max = opeek_diff;
-      flash = opeek_diff * 2.60f;
+      flash = (opeek_diff * 2.60f) + 1.0f;
     }
   }
 
@@ -115,15 +115,20 @@ static int anim(unsigned int ms)
 
     if (peek_avgdiff >= 0) {
       rps_goal = rps_min;
-      if (peek_diff_max > 1E-4) {
-	rps_goal += (rps_max - rps_min) * opeek_diff / peek_diff_max;
+      if (peek_max > 1E-4) {
+	rps_goal += (rps_max - rps_min) * peek / peek_max;
       }
     }
     r = rps_cur > rps_goal ? rps_up : rps_dw;
     rps_cur = rps_cur * r + rps_goal * (1.0f - r);
-  } 
+  }
+
+  {
+    const float r = 0.99f; 
+    rps_goal = rps_goal * r + rps_min * (1.0-r);
+  }
     
-  peek_max *= 0.99f;
+  peek_max *= 0.9999f;
   peek_diff_max *= 0.99f;
   flash *= 0.9f;
 
@@ -136,15 +141,18 @@ static int anim(unsigned int ms)
   angle.y += say * rps_cur;
   angle.z += saz * rps_cur;
 
+  // $$$
+  pos.z = zoom_max + 1.7;
+
   /* Build local matrix */
   MtxIdentity(mtx);
   MtxRotateX(mtx, angle.x);
   MtxRotateY(mtx, angle.y);
   MtxRotateZ(mtx, angle.z);
-  MtxScale(mtx, ozoom);
+  //  MtxScale(mtx, ozoom);
   mtx[3][0] = pos.x;
   mtx[3][1] = pos.y;
-  mtx[3][2] = pos.z;
+  mtx[3][2] = pos.z - ozoom;
   
   /* Build render color : blend base and flash color */
   color.x = base_color.x * (1.0f-flash) + flash_color.x * flash;
@@ -314,7 +322,7 @@ static vis_driver_t driver = {
   /* Any driver. */
   {
     NEXT_DRIVER,          /* Next driver (see any_driver.h) */
-    INP_DRIVER,           /* Driver type */      
+    VIS_DRIVER,           /* Driver type */      
     0x0100,               /* Driver version */
     "LPO",                /* Driver name */
     "Benjamin Gerard\0",  /* Driver authors */

@@ -6,7 +6,7 @@
    An MP3 player using sndstream and XingMP3
 */
 
-static char id[] = "TRYP $Id: xing_driver.c,v 1.1 2002-08-26 14:14:42 ben Exp $";
+static char id[] = "TRYP $Id: xing_driver.c,v 1.2 2002-09-04 18:54:11 ben Exp $";
 
 
 /* This library is designed to be called from another program in a thread. It
@@ -111,7 +111,7 @@ static int decode_frame()
     x = audio_decode(&mpeg, bs_ptr, (short *) pcm_buffer);
     if (x.in_bytes <= 0) {
       dbglog(DBG_DEBUG, "** " __FUNCTION__ " : Bad sync in MPEG file\n");
-      return 0;
+      return INP_DECODE_ERROR;
     }
     bs_ptr      += x.in_bytes;
     bs_count    -= x.in_bytes;
@@ -129,10 +129,10 @@ static int decode_frame()
     /* Pull in some more data (and check for EOF) */
     if (bs_fill() < 0 || bs_count < frame_bytes) {
       dbglog(DBG_DEBUG, "** " __FUNCTION__ " : Decode complete\n");
-      return 0;
+      return INP_DECODE_END;
     }
   }
-  return 1;
+  return 0;
 }
 
 
@@ -326,13 +326,19 @@ static int sndmp3_decoder()
 {
   int n = 0;
 	
-  if (!mp3_fd) return -1;
+  if (!mp3_fd) {
+    return INP_DECODE_ERROR;
+  }
   
   /* No more pcm : decode next mp3 frame
    * No more frame : it is the end
    */
-  if (!pcm_count && !decode_frame()) {
-    return -1;
+  if (!pcm_count) {
+    int status = decode_frame();
+    /* End or Error */
+    if (status & INP_DECODE_END) {
+      return status;
+    }
   }
 
   if (pcm_count > 0) {
@@ -346,10 +352,11 @@ static int sndmp3_decoder()
     if (n > 0) {
       pcm_ptr   += (n<<pcm_stereo);
       pcm_count -= n;
+    } else if (n < 0) {
+      return INP_DECODE_ERROR;
     }
   }
-
-  return n;
+  return -(n > 0) & INP_DECODE_CONT;
 }
 
 static int sndmp3_info(playa_info_t *info, const char *fname)

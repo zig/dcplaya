@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: sc68_driver.c,v 1.1 2002-09-02 19:37:51 ben Exp $
+ * @version   $Id: sc68_driver.c,v 1.2 2002-09-04 18:54:11 ben Exp $
  */
 
 /* generated config include */
@@ -45,6 +45,8 @@
 #define UPDATE_BROWSE_INFO 0
 
 SC68app_t app; /**< sc68 application context. */
+
+extern char * playa_make_time_str(unsigned int);
 
 /** Display to output debug statcked error messages.
  */
@@ -320,13 +322,30 @@ static driver_option_t * options(any_driver_t * d, int idx,
 
 static int disk_info(playa_info_t *info, disk68_t *d)
 {
-  char tmp[64];
+  char tmp[256];
+  music68_t *mus = 0;
 
   if (!d) {
-    return -1;
+    d = app.cur_disk;
+    mus = app.cur_mus;
+    if (!d) {
+      return -1;
+    }
   }
 
-  info->artist = strdup(d->mus[d->default_six].author);
+  if (!mus) {
+    mus = d->mus + d-> default_six;
+  }
+
+  sprintf(tmp, "%s - %s replay @ %d Hz",
+	  mus->flags.amiga
+	  ? "Amiga"
+	  : (mus->flags.ste ? "Atari STE" : "Atari STF"),
+	  mus->replay ? mus->replay : "internal",
+	  mus->frq);
+  info->time = playa_make_time_str(mus->time * 1000);
+  info->format = strdup(tmp);
+  info->artist = strdup(mus->author);
   info->album  = strdup(d->name);
   if (app.cur_track < 0) {
     sprintf(tmp,"%02d", d->nb_six);
@@ -334,7 +353,7 @@ static int disk_info(playa_info_t *info, disk68_t *d)
     sprintf(tmp,"%02d/%02d", app.cur_track+1, d->nb_six);
   }
   info->track  = strdup(tmp);
-  info->title = strdup(d->mus[d->default_six].name);
+  info->title = strdup(mus->name);
   info->year = 0;
   info->genre = strdup("chip-tune");
   info->comments = 0;
@@ -358,7 +377,7 @@ static int info(playa_info_t *info, const char *fname)
   if (fname) {
     return file_info(info, fname);
   } else {
-    return disk_info(info, app.cur_disk);
+    return disk_info(info, 0);
   }
 }
 

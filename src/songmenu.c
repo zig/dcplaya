@@ -51,8 +51,8 @@ char songmenu_selected[64];
 //static const inp_driver_list_t * drivers;
 
 /* From dreamcast68.c */
-extern int dreamcast68_loaddisk(const char *fn, int imm);
-extern int dreamcast68_isplaying(void);
+extern int playa_loaddisk(const char *fn, int imm);
+extern int playa_isplaying(void);
 extern controler_state_t controler68;
 extern float fade68;
 
@@ -414,7 +414,7 @@ static void load_song_list(int selected)
   }
 	
   clear_cache = 0;
-  if (!dreamcast68_isplaying()) {
+  if (!playa_isplaying()) {
     clear_cache   = !mystricmp(loaddir, "/cd");
     clear_cache  |= find_entry.fn[0]=='.' &&
       !find_entry.fn[1] &&
@@ -697,7 +697,7 @@ static void check_playlist(void)
   lst_entry *le;
 
   /* Exit if playlist is not active or music is playing */
-  if (playlist_start_idx < 0 || dreamcast68_isplaying()) {
+  if (playlist_start_idx < 0 || playa_isplaying()) {
     return;
   }
   
@@ -716,7 +716,7 @@ static void check_playlist(void)
     le = entrylist_addrof(&playlist, playwin->play);
     dbglog(DBG_DEBUG, "** " __FUNCTION__
 	   " : Playlist load #%d '%s'\n", playwin->play, le->fn);
-    if (!dreamcast68_loaddisk(le->fn, imm)) {
+    if (!playa_loaddisk(le->fn, imm)) {
       return;
     }
     dbglog(DBG_DEBUG, "** " __FUNCTION__
@@ -811,7 +811,7 @@ static int del_from_playlist(int idx)
     if (idx == playwin->play) {
 	    dbglog(DBG_DEBUG,"** " __FUNCTION__ " : delete current play : stop play list\n");
       playlist_start_idx = playwin->play = -1;
-      //dreamcast68_loaddisk(0,0);
+      //playa_loaddisk(0,0);
     }
     if (idx >= playlist.nb) {
       idx = playlist.nb - 1;
@@ -955,7 +955,7 @@ static void check_controller(entry_window_t * win)
   if (controler_released(&controler68, CONT_B) && selected >= 0) {
     if (win->list == &direntry) {
       /* Stop the playback */
-      dreamcast68_loaddisk(0, 1);
+      playa_loaddisk(0, 1);
       if (playwin->play >= 0) {
 	playwin->selected = playwin->play;
       }
@@ -1027,7 +1027,7 @@ static void check_controller(entry_window_t * win)
 	    strcat(tmpstr, e->fn);
 	    strcpy(playdir, curdir);
 	    dirwin->play =
-	      dreamcast68_loaddisk(tmpstr, 1) < 0 ? -1 : selected;
+	      playa_loaddisk(tmpstr, 1) < 0 ? -1 : selected;
 	  }
 	}
       } else if (e->type >= FILETYPE_PLAYLIST) {
@@ -1079,7 +1079,7 @@ static void check_controller(entry_window_t * win)
       }
     } else {
       /* A pressed in playlist : start/restart at index */
-      dreamcast68_loaddisk(0, 1);
+      playa_loaddisk(0, 1);
       dirwin->play = -1;
       playwin->play = -1;
       playlist_start_idx = selected;

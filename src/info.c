@@ -7,7 +7,7 @@
 #include "info.h"
 #include "controler.h"
 #include "songmenu.h"
-#include "playa_info.h"
+#include "playa.h"
 
 /* Help PAD button colors */
 #define A_BUTTON_COLOR fade_argb(0xFFFF6363)
@@ -27,8 +27,8 @@ static int help_close_frames;
 extern controler_state_t controler68;
 extern float fade68;
 
-extern spinlock_t app68mutex;
-extern volatile unsigned int play_status;
+//extern spinlock_t app68mutex;
+//extern volatile unsigned int play_status;
 
 static void info_controler(uint32 elapsed_frames)
 {
@@ -73,17 +73,14 @@ static void render_fps(uint32 elapsed_frames, const float x, const float y)
     
     sprintf(tmp,
 	    "%%cFPS %02u "
-	    "%%cAPP %s "
 	    "%%cSTATUS %s "
 	    "%%cfade=%3.2f",
 	    (unsigned int)elapsed_frames,
-	    app68mutex ? "Locked" : "Unlocked",
 	    playa_statusstr(playa_status()),
 	    fade68);
     draw_poly_text (x,y,100.0f,1.0f,1.0f,1.0f,1.0f,
                     tmp,
                     fade_argb(0xFFFFFF00),
-                    fade_argb(0xFF00c7ff),
                     fade_argb(0xFFFF00FF),
                     fade_argb(0xFF00FFc0),
                     fade_argb(0xFF7F7FFF)
@@ -189,7 +186,6 @@ void append(char * dest, char *what)
 
 static void render_diskinfo(const float xs, const float ys)
 {
-  const float xs2 = xs + 70;
   float x, y = ys, ystep = 0;
 
   static float title_color[4] = { 0,  1.0f, 1.0f, 1.0f };
@@ -197,7 +193,7 @@ static void render_diskinfo(const float xs, const float ys)
 	
   playa_info_t *info = playa_info_lock();
 	
-  static char tmp[2048], *s; 
+  static char tmp[2048]; 
 
   /* ID3 info */
   /*

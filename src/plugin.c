@@ -3,7 +3,7 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: plugin.c,v 1.1 2002-08-26 14:15:05 ben Exp $
+ * $Id: plugin.c,v 1.2 2002-09-04 18:54:11 ben Exp $
  */
 #include <stdio.h>
 #include <string.h>
@@ -147,11 +147,8 @@ static int r_plugin_path_load(char *path, unsigned int level)
 	dl = &vis_drivers;
 	break;
       case INP_DRIVER:
-	{
-	  inp_driver_t *d2 = (inp_driver_t *)d;
-	  dl = &inp_drivers;
-	  d2->common.init(&d2->common);
-	} break;
+	dl = &inp_drivers;
+	break;
       case EXE_DRIVER:
 	dl = &exe_drivers;
 	break;
@@ -161,14 +158,17 @@ static int r_plugin_path_load(char *path, unsigned int level)
       }
 
       if (!dl) {
-	/* Error !! Better go out. The rest should be corrupt too !! */
+	/* Error !! Let's run away !! */
 	break;
       }
 
-      if (driver_list_register(dl, d) < 0) {
-	/* If the registration failed, let's free the dll */
+      if (d->init(d) < 0 || driver_list_register(dl, d) < 0) {
+
+	dbglog(DBG_DEBUG, "++ [%s] INIT OR REGISTRATION FAILED\n", d->name);
+	/* If the registration failed, let's free the dll. */
 	lef_free((lef_prog_t *)d->dll);
       } else {
+	dbglog(DBG_DEBUG, "++ [%s] added to [%s]\n", d->name, dl->name);
 	++count;
       }
     }

@@ -3,7 +3,7 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: vis_driver.h,v 1.2 2002-09-02 16:05:38 ben Exp $
+ * $Id: vis_driver.h,v 1.3 2002-09-04 18:54:11 ben Exp $
  */
 
 
@@ -32,8 +32,8 @@ typedef struct
   /** Process TA opaque list. */
   int (*opaque_render)(void);
 
-  /** Process TA transparent list. */
-  int (*transparent_render)(void);
+  /** Process TA translucent list. */
+  int (*translucent_render)(void);
 
 } vis_driver_t;
 

@@ -15,10 +15,11 @@ driver_list_t vis_drivers;
 static int file_type;
 
 /** Initialize a driver list */
-int driver_list_init(driver_list_t *dl)
+int driver_list_init(driver_list_t *dl, const char *name)
 {
   dl->n = 0;
   dl->drivers = 0;
+  dl->name = name;
   return 0;
 }
 
@@ -26,10 +27,10 @@ int driver_list_init(driver_list_t *dl)
 int driver_list_init_all()
 {
   int err = 0;
-  err |= driver_list_init(&inp_drivers);
-  err |= driver_list_init(&obj_drivers);
-  err |= driver_list_init(&exe_drivers);
-  err |= driver_list_init(&vis_drivers);
+  err |= driver_list_init(&inp_drivers, "inp");
+  err |= driver_list_init(&obj_drivers, "obj");
+  err |= driver_list_init(&exe_drivers, "exe");
+  err |= driver_list_init(&vis_drivers, "vis");
   file_type = FILETYPE_PLAYABLE;
 
   return err;

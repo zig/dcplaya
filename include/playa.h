@@ -1,7 +1,7 @@
 /*
  *
  *
- * $Id: playa.h,v 1.2 2002-09-02 19:11:01 ben Exp $
+ * $Id: playa.h,v 1.3 2002-09-04 18:54:11 ben Exp $
  */
 
 #ifndef _PLAYA_H_
@@ -40,5 +40,7 @@ void playa_get_buffer(int **b, int *nbSamples, int *counter, int *frq);
 
 playa_info_t *playa_info_lock();
 void playa_info_release(playa_info_t *);
+
+char * playa_make_time_str(unsigned int ms);
 
 #endif

@@ -39,6 +39,7 @@ static volatile unsigned int play_samples;
 static volatile int streamstatus = PLAYA_STATUS_INIT;
 
 const char * playa_statusstr(int status);
+static void make_global_info(playa_info_t * info);
 
 /** INFO **/
 
@@ -181,6 +182,81 @@ void sndstream_thread(void *cookie)
 }
 
 
+static void real_playa_update(void)
+{
+
+  switch (playastatus) {
+
+  case PLAYA_STATUS_INIT:
+    playastatus = PLAYA_STATUS_READY;
+    break;
+
+  case PLAYA_STATUS_READY:
+    dbglog(DBG_DEBUG,
+	   "** " __FUNCTION__ " : sndserver: waiting on semaphore\r\n");
+#ifdef PLAYA_THREAD
+    sem_wait(playa_haltsem);
+#endif
+    dbglog(DBG_DEBUG,
+	   "** " __FUNCTION__
+	   " : sndserver: released from semaphore\r\n");
+    break;
+
+  case PLAYA_STATUS_STARTING:
+    playastatus = PLAYA_STATUS_PLAYING;
+    break;
+
+  case PLAYA_STATUS_REINIT:
+    /* Re-initialize streaming driver */
+    /* ??? */
+    playastatus = PLAYA_STATUS_READY;
+    break;
+
+  case PLAYA_STATUS_PLAYING:
+    {
+      int status;
+
+      status = driver ? driver->decode(&decinfo) : INP_DECODE_ERROR;
+      if (status & INP_DECODE_END) {
+	playastatus = PLAYA_STATUS_STOPPING;
+	break;
+      }
+
+      if (status & INP_DECODE_INFO) {
+	playa_info_t info;
+
+	if (!playa_info(&info, 0)) {
+	  make_global_info(&info);
+	  lockinfo();
+	  free_info(&curinfo);
+	  info.valid = curinfo.valid = 0;
+	  curinfo = info;
+	  curinfo.valid = ++info_id;
+	  unlockinfo();
+	}
+      }
+
+      if (! (status & INP_DECODE_CONT)) {
+	thd_pass();
+      }
+
+    } break;
+
+  case PLAYA_STATUS_QUIT:
+    break;
+
+  case PLAYA_STATUS_STOPPING:
+    if (driver) {
+      driver->stop();
+    }
+    lockinfo();
+    free_info(&curinfo);
+    unlockinfo();
+    playastatus = PLAYA_STATUS_READY;
+    break;
+  }
+}
+
 #ifdef PLAYA_THREAD
 static
 #endif
@@ -189,56 +265,7 @@ void playa_update(void)
 #ifdef PLAYA_THREAD
   thd_pass();
 #else
-  switch (playastatus) {
-
-    case PLAYA_STATUS_INIT:
-      playastatus = PLAYA_STATUS_READY;
-      break;
-
-    case PLAYA_STATUS_READY:
-      dbglog(DBG_DEBUG,
-	     "** " __FUNCTION__ " : sndserver: waiting on semaphore\r\n");
-      //sem_wait(playa_haltsem);
-      dbglog(DBG_DEBUG,
-	     "** " __FUNCTION__
-	     " : sndserver: released from semaphore\r\n");
-      break;
-
-    case PLAYA_STATUS_STARTING:
-      playastatus = PLAYA_STATUS_PLAYING;
-      break;
-
-    case PLAYA_STATUS_REINIT:
-      /* Re-initialize streaming driver */
-      /* ??? */
-      playastatus = PLAYA_STATUS_READY;
-      break;
-
-    case PLAYA_STATUS_PLAYING:
-      {
-	int sj;
-
-	sj = driver ? driver->decode(&decinfo) : -1;
-	if (!sj) {
-	  thd_pass();
-	} else if (sj < 0) {
-	  playastatus = PLAYA_STATUS_STOPPING;
-	}
-      } break;
-
-    case PLAYA_STATUS_QUIT:
-      break;
-
-    case PLAYA_STATUS_STOPPING:
-      if (driver) {
-	driver->stop();
-      }
-      lockinfo();
-      free_info(&curinfo);
-      unlockinfo();
-      playastatus = PLAYA_STATUS_READY;
-      break;
-    }
+  real_playa_update();
 #endif
 }
 
@@ -254,64 +281,13 @@ void playadecoder_thread(void *blagh)
   dbglog(DBG_DEBUG, ">> " __FUNCTION__ "\n");
 
   /* Main command loop */
-  while (!quit) {
+  while (playastatus != PLAYA_STATUS_QUIT) {
     if (playastatus != oldstatus) {
       dbglog(DBG_DEBUG, "** " __FUNCTION__ " : STATUS [%s] -> [%s]\r\n",
 	     playa_statusstr(oldstatus), playa_statusstr(playastatus));
       oldstatus = playastatus;
     }
-
-    switch (playastatus) {
-
-    case PLAYA_STATUS_INIT:
-      playastatus = PLAYA_STATUS_READY;
-      break;
-
-    case PLAYA_STATUS_READY:
-      dbglog(DBG_DEBUG,
-	     "** " __FUNCTION__ " : sndserver: waiting on semaphore\r\n");
-      sem_wait(playa_haltsem);
-      dbglog(DBG_DEBUG,
-	     "** " __FUNCTION__
-	     " : sndserver: released from semaphore\r\n");
-      break;
-
-    case PLAYA_STATUS_STARTING:
-      playastatus = PLAYA_STATUS_PLAYING;
-      break;
-
-    case PLAYA_STATUS_REINIT:
-      /* Re-initialize streaming driver */
-      /* ??? */
-      playastatus = PLAYA_STATUS_READY;
-      break;
-
-    case PLAYA_STATUS_PLAYING:
-      {
-	int sj;
-
-	sj = driver ? driver->decode(&decinfo) : -1;
-	if (!sj) {
-	  thd_pass();
-	} else if (sj < 0) {
-	  playastatus = PLAYA_STATUS_STOPPING;
-	}
-      } break;
-
-    case PLAYA_STATUS_QUIT:
-      quit = 1;
-      break;
-
-    case PLAYA_STATUS_STOPPING:
-      if (driver) {
-	driver->stop();
-      }
-      lockinfo();
-      free_info(&curinfo);
-      unlockinfo();
-      playastatus = PLAYA_STATUS_READY;
-      break;
-    }
+    real_playa_update();
   }
 
   /* Done: clean up */
@@ -493,7 +469,7 @@ int playa_stop(int flush)
   return 0;
 }
 
-static char * make_time_str(unsigned int ms)
+char * playa_make_time_str(unsigned int ms)
 {
   char time[16];
   unsigned int h,m,s;
@@ -522,7 +498,7 @@ static void make_decoder_info(playa_info_t * info,
   strcat(tmp, " ");
   strcat(tmp, frq_1000(decinfo->frq, "khz"));
   info->format = strdup(tmp);
-  info->time = make_time_str(decinfo->time);
+  info->time = playa_make_time_str(decinfo->time);
 }
 
 static void make_global_info(playa_info_t * info)
@@ -628,6 +604,16 @@ int playa_start(const char *fn, int immediat) {
   } else {
     stream_frq(current_frq = decinfo.frq);
   }
+
+
+  make_global_info(&info);
+
+  // Copy and valid new info when it is done.
+  lockinfo();
+  info.valid = curinfo.valid = 0;
+  curinfo = info;
+  curinfo.valid = ++info_id;
+  unlockinfo();
 
   make_global_info(&info);
 

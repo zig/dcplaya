@@ -5,7 +5,7 @@
  * @author  Vincent Penne
  * @author  Dan Potter
  *
- * $Id: lef.c,v 1.2 2002-09-04 02:39:37 ben Exp $
+ * $Id: lef.c,v 1.3 2002-09-04 18:54:11 ben Exp $
  */
 
 #include <malloc.h>
@@ -17,6 +17,8 @@
 
 extern symbol_t main_symtab[];
 extern int main_symtab_size;
+
+static int verbose = 0;
 
 static char * section_str(int type)
 {
@@ -244,7 +246,9 @@ lef_prog_t *lef_load(uint32 fd)
   }
 
   /* Display sections */
-  display_sections(hdr,shdrs,0);
+  if (verbose) {
+    display_sections(hdr,shdrs,0);
+  }
 
   /* Display string tables */
   /*
@@ -284,8 +288,10 @@ lef_prog_t *lef_load(uint32 fd)
     if (shdrs[i].type != SHT_SYMTAB && shdrs[i].type != SHT_DYNSYM) {
       continue;
     }
-    display_symbtable((struct lef_sym_t *)(img + shdrs[i].offset),
-		      shdrs+i, stringtab,0);
+    if (verbose) {
+      display_symbtable((struct lef_sym_t *)(img + shdrs[i].offset),
+			shdrs+i, stringtab,0);
+    }
   }
 
   /* Locate the symbol table */
@@ -390,8 +396,10 @@ lef_prog_t *lef_load(uint32 fd)
       symtab[i].value += shdrs[symtab[i].shndx].addr;
     }
   }
-  display_sections(hdr,shdrs,1);
-  display_symbtable(symtab, symtabhdr, 0, 1);
+  if (verbose) {
+    display_sections(hdr,shdrs,1);
+    display_symbtable(symtab, symtabhdr, 0, 1);
+  }
 
   /* Process the relocations */
   reltab = 0;
@@ -451,12 +459,14 @@ lef_prog_t *lef_load(uint32 fd)
 link = section header index of associated symbol table
 info = section header index of section to which reloc applies
     */
-    
-    dbglog(DBG_DEBUG, "------------------------------------------------\n");
-    dbglog(DBG_DEBUG, "RELOCATON "); display_section(i,shdrs+i,0); 
-    dbglog(DBG_DEBUG, "SECTION   "); display_section(info,shdrs+info,0); 
-    dbglog(DBG_DEBUG, "SYMBOL    "); display_section(link,shdrs+link,0); 
-    dbglog(DBG_DEBUG, "------------------------------------------------\n");
+   
+    if (verbose) {
+      dbglog(DBG_DEBUG, "------------------------------------------------\n");
+      dbglog(DBG_DEBUG, "RELOCATON "); display_section(i,shdrs+i,0); 
+      dbglog(DBG_DEBUG, "SECTION   "); display_section(info,shdrs+info,0); 
+      dbglog(DBG_DEBUG, "SYMBOL    "); display_section(link,shdrs+link,0); 
+      dbglog(DBG_DEBUG, "------------------------------------------------\n");
+    }
 
     for (j=0; j<reltabsize; j++) {
       int sym;
@@ -565,19 +575,20 @@ info = section header index of section to which reloc applies
 	}
 
 	/* Could named symbol have offset ??? */
-	if (*name && off) {
-	  dbglog(DBG_WARNING, "!! " __FUNCTION__
-		 " : Named symbol with offset\n");
-	  ++warnings;
-	}
+/* 	if (*name && off) { */
+/* 	  dbglog(DBG_WARNING, "!! " __FUNCTION__ */
+/* 		 " : Named symbol with offset\n"); */
+/* 	  ++warnings; */
+/* 	} */
 
-	// symbol found into main code
-	dbglog(DBG_DEBUG,"** " __FUNCTION__
-	       " : %c %c @%08x [=%08x] <= [%08x] [+%08x] [%s]\n" ,
-	       main_addr ? 'M' : 'L',
-	       bind_chr(ELF32_ST_BIND(symtab[sym].info)),
-	       addr, off, 
-	       rel, add,  name);
+	if (verbose) {
+	  dbglog(DBG_DEBUG,"** " __FUNCTION__
+		 " : %c %c @%08x [=%08x] <= [%08x] [+%08x] [%s]\n" ,
+		 main_addr ? 'M' : 'L',
+		 bind_chr(ELF32_ST_BIND(symtab[sym].info)),
+		 addr, off, 
+		 rel, add,  name);
+	}
 
 	*addr = rel;
 
@@ -590,8 +601,6 @@ info = section header index of section to which reloc applies
     ++warnings;
   }
   
-  dbglog(DBG_DEBUG,"** " __FUNCTION__ "  5 ...\n");
-
   /* Look for the kernel negotiation symbols and deal with that */
   {
     int mainsym /*, getsvcsym, notifysym*/;

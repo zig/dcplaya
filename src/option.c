@@ -59,7 +59,19 @@ int option_setup(void)
   volume = playa_volume(-1);
   filter = 1;
   shuffle = 0;
+
+  dbglog(DBG_DEBUG, "++ VISUALS = %d\n", vis_drivers.n);
+
   visual = (vis_driver_t *) vis_drivers.drivers;
+  if (visual) {
+    dbglog(DBG_DEBUG, "++ OPTION VISUAL = %s\n", visual->common.name);
+    if (visual->start() < 0) {
+      visual = 0;
+    }
+  } else {
+    dbglog(DBG_DEBUG, "++ NO OPTION VISUAL\n");
+  }
+
   lcd_visual = OPTION_LCD_VISUAL_FFT_FULL;
   track_offset = 0;
 /*   joyfx_onoff = -1; */
@@ -220,7 +232,6 @@ void option_render(unsigned int elapsed_frame)
     {
       vis_driver_t * save = visual;
       char tmp [256];
-      
       
       if (hmove > 0) {
 	/* Find next visual */
