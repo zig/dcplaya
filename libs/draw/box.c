@@ -4,7 +4,7 @@
  * @author  ben(jamin) gerard <ben@sashipa.com>
  * @date    2002/11/22
  *
- * $Id: box.c,v 1.4 2002-12-24 04:07:54 ben Exp $
+ * $Id: box.c,v 1.5 2002-12-30 20:08:32 ben Exp $
  */
 
 #include "draw/box.h"
@@ -38,6 +38,12 @@ void draw_box4(float x1, float y1, float x2, float y2, float z,
   }
 
 #define CLIPME(A,X,Y) A##X = A##Y * f1 + A##X * f2
+#define CLIPIT(X,Y) \
+ CLIPME(a,X,Y);\
+ CLIPME(r,X,Y);\
+ CLIPME(g,X,Y);\
+ CLIPME(b,X,Y)
+
   /* Left clip */
   if (x1 < current_gc->clipbox.x1) {
     float f1 = (current_gc->clipbox.x1 - x1) / w;
@@ -47,15 +53,8 @@ void draw_box4(float x1, float y1, float x2, float y2, float z,
     if (w < 1E-5) {
       return;
     }
-
-    CLIPME(a,1,2);
-    CLIPME(r,1,2);
-    CLIPME(g,1,2);
-    CLIPME(b,1,2);
-    CLIPME(a,3,4);
-    CLIPME(r,3,4);
-    CLIPME(g,3,4);
-    CLIPME(b,3,4);
+    CLIPIT(1,2);
+    CLIPIT(3,4);
   }
 
   /* Top clip */
@@ -67,44 +66,26 @@ void draw_box4(float x1, float y1, float x2, float y2, float z,
     if (h < 1E-5) {
       return;
     }
-
-    CLIPME(a,1,3);
-    CLIPME(r,1,3);
-    CLIPME(g,1,3);
-    CLIPME(b,1,3);
-    CLIPME(a,2,4);
-    CLIPME(r,2,4);
-    CLIPME(g,2,4);
-    CLIPME(g,2,4);
+    CLIPIT(1,3);
+    CLIPIT(2,4);
   }
 
   /* Right clip */
   if (x2 > current_gc->clipbox.x2) {
-    float f2 = (x2 - current_gc->clipbox.x2) / w;
-    float f1 = 1.0f - f2;
+    float f1 = (x2 - current_gc->clipbox.x2) / w;
+    float f2 = 1.0f - f1;
     x2 = current_gc->clipbox.x2;
-    CLIPME(a,2,1);
-    CLIPME(r,2,1);
-    CLIPME(g,2,1);
-    CLIPME(b,2,1);
-    CLIPME(a,4,3);
-    CLIPME(r,4,3);
-    CLIPME(g,4,3);
-    CLIPME(b,4,3);
+    CLIPIT(2,1);
+    CLIPIT(4,3);
   }
+
   /* Bottom clip */
   if (y2 > current_gc->clipbox.y2) {
-    float f2 = (y2 - current_gc->clipbox.y2) / h;
-    float f1 = 1.0f - f2;
+    float f1 = (y2 - current_gc->clipbox.y2) / h;
+    float f2 = 1.0f - f1;
     y2 = current_gc->clipbox.y2;
-    CLIPME(a,3,1);
-    CLIPME(r,3,1);
-    CLIPME(g,3,1);
-    CLIPME(b,3,1);
-    CLIPME(a,4,2);
-    CLIPME(r,4,2);
-    CLIPME(g,4,2);
-    CLIPME(b,4,2);
+    CLIPIT(3,1);
+    CLIPIT(4,2);
   }
 
   DRAW_SET_FLAGS(DRAW_NO_TEXTURE|DRAW_TRANSLUCENT|DRAW_NO_FILTER);

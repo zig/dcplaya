@@ -3,7 +3,7 @@
  * @file    fft.c
  * @author  benjamin gerard <ben@sashipa.com>
  * 
- * @version $Id: fft.c,v 1.9 2002-12-30 12:32:51 ben Exp $
+ * @version $Id: fft.c,v 1.10 2002-12-30 20:08:32 ben Exp $
  */
 
 #include <stdlib.h>
@@ -47,7 +47,7 @@ extern int playa_get_frq(void); /* playa.c */
 void fft_queue(void)
 {
   const int pcm_frq = playa_get_frq();
-  int j;
+  int j, scale;
 
   short * fft = fft_F[cur_fft_buf ^ 1];
   short * pcm0 = pcm_F[cur_fft_buf ^ 1];
@@ -55,8 +55,7 @@ void fft_queue(void)
 
   if (pcm_frq <= 0) {
     memset(pcm0, 0, sizeof(*pcm0) * FFT_SIZE);
-    /* Safety net : flush bak-buffer */
-    fifo_readbak(pcm_buf, PCM_SIZE);
+    fifo_readbak(pcm_buf, PCM_SIZE); /* Safety net : flush bak-buffer */
   } else {
     int pcm_off, read, inbuf, wanted_pcm, step;
 
@@ -108,6 +107,21 @@ void fft_queue(void)
     fft[j] = v;
   }
 
+#if 0
+  /* Inverse FFT */
+  scale = fix_fft(fft_R, fft_I, FFT_LOG_2, 1);
+  for (j=0; j<FFT_SIZE; ++j) {
+    int r = fft_R[j]<<scale;
+    int i = fft_I[j]<<scale;
+    int v = (r*r + i*i) >> 15;// << scale;
+/*     if (v<32768) v = 32768; */
+/*     else if (v>32767) { */
+/*       v = 32767; */
+/*     } */
+    pcm0[j] = v;
+  }
+#endif
+
   // Swap buffers
   cur_fft_buf ^= 1;
 }
@@ -135,11 +149,11 @@ void fft_fill_pcm(short * pcm, int n)
     if (ij == ik) {
       v = pcm_src[ij];
     } else {
-      v = pcm_src[ij++] * (0x1000 - (j&0xFFF));
+      v = (int)pcm_src[ij++] * (0x1000 - (j&0xFFF));
       while (ij<ik) {
-	v += pcm_src[ij++] << 12;
+	v += (int)pcm_src[ij++] << 12;
       }
-      v += pcm_src[ij] * (k&0xFFF);
+      v += (int)pcm_src[ij] * (k&0xFFF);
       v /= step;
     }
     pcm[i] = v;

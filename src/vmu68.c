@@ -1,5 +1,5 @@
 /**
- * $Id: vmu68.c,v 1.9 2002-12-30 12:32:51 ben Exp $
+ * $Id: vmu68.c,v 1.10 2002-12-30 20:08:32 ben Exp $
  */
 #include "config.h"
 
@@ -8,6 +8,8 @@
 
 #include <string.h>
 #include <stdio.h>
+
+#include "sysdebug.h"
 
 #include "playa_info.h"
 
@@ -19,6 +21,7 @@
 #include "vupeek.h"
 #include "option.h"
 #include "playa.h"
+#include "math_int.h"
 
 static fftbands_t * bands;
 static char vmu_text_str[256];
@@ -262,6 +265,8 @@ static int find_sign_change(int *spl, int n)
   return 0;
 }
 
+extern short int_decibel[];
+
 static void draw_samples(char *buf)
 {
   short spl[48];
@@ -278,8 +283,16 @@ static void draw_samples(char *buf)
     int xi = x >> 3;
     int xb = 0x80 >> (x & 7);
     int o1, o2;
-
-    h >>= 11; // -8 - 8
+    if (h<0) {
+      h = -int_sqrt(-(h+1) << 15);
+    } else {
+      h = int_sqrt(h << 15);
+    }
+    h = h >> 12; // -8 - 8
+    if (h<-8 || h>8) {
+      SDDEBUG("H:%d\n", h);
+      h = h < 0 ? -8 : 8;
+    }
     o1 = xi + (48 / 8) * (h + 8);
     o2 = xi + (48 / 8) * (8);
 		
@@ -305,7 +318,6 @@ static struct {
   int dummy;
 } fft_bar[48];
 
-extern short int_decibel[];
 
 static void draw_fft(unsigned char * buf)
 {
