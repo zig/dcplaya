@@ -3,6 +3,8 @@
  *  @author benjamin gerard <ben@sashipa.com>
  *  @date   2002/10/22
  *  @brief  Resizable array of indirect elements of any size.
+ *
+ *  $Id: iarray.c,v 1.2 2002-10-23 02:09:05 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -11,21 +13,22 @@
 
 void iarray_lock(iarray_t *a)
 {
-  spinlock_lock(&a->mutex);
+ mutex_lock(&a->mutex);
 }
 
 void iarray_unlock(iarray_t *a)
 {
-  spinlock_unlock(&a->mutex);
+  mutex_unlock(&a->mutex);
 }
 
-
+/* default alloc */
 static void * iarray_alloc(unsigned int size, void * cookie)
 {
   cookie = cookie;
   return malloc(size);
 }
 
+/* default free */
 static void iarray_free(void * addr, void * cookie)
 {
   cookie = cookie;
@@ -34,8 +37,8 @@ static void iarray_free(void * addr, void * cookie)
   }
 }
 
-int iarray_create(iarray_t *a,
-				  iarray_alloc_f alloc, iarray_free_f free, void *cookie)
+int iarray_create(iarray_t *a, iarray_alloc_f alloc, iarray_free_f free,
+				  void *cookie)
 {
   if (!a) {
 	return -1;
@@ -46,12 +49,13 @@ int iarray_create(iarray_t *a,
   a->alloc = alloc ? alloc : iarray_alloc;
   a->free  = free  ? free  : iarray_free;
   a->cookie = cookie;
-  spinlock_init(&a->mutex);
+  mutex_init(&a->mutex, 0);
   return 0;
 }
 
-void iarray_destroy(iarray_t *a)
+void iarray_destroy(iarray_t * a)
 {
+  iarray_lock(a);
   if (a->elt) {
 	int i;
 	for (i=0; i<a->n; ++i) {
@@ -65,6 +69,7 @@ void iarray_destroy(iarray_t *a)
 	a->elt = 0;
   }
   a->n = a->max = 0;
+  iarray_unlock(a);
 }
 
 void * iarray_addrof(iarray_t *a, int idx)
@@ -106,7 +111,7 @@ iarray_elt_t * iarray_dup(iarray_t *a, int idx, void * elt, int eltsize)
 	if (addr) {
 	  addr->size = e->size;
 	  addr->addr = addr+1;
-	  memcpy(addr+1,  e->addr, e->size);
+	  memcpy(addr+1, e->addr, e->size);
 	}
   }
   iarray_unlock(a);
@@ -155,7 +160,7 @@ int iarray_insert(iarray_t *a, int idx, void *elt, unsigned int eltsize)
   if (idx == a->max) {
 	resize(a, a->max ? a->max * 2 : 256);
   }
-  if ((unsigned int)idx >= a->n) {
+  if ((unsigned int)idx >= a->max) {
 	goto error;
   }
   memcpy(addr, elt, eltsize);
@@ -209,7 +214,7 @@ static void swap(iarray_elt_t * a, iarray_elt_t * b)
   *b = tmp;
 }
 
-extern unsigned int rand();
+extern unsigned int rand(void);
 
 void iarray_shuffle(iarray_t *a, int idx, int n)
 {
@@ -258,8 +263,8 @@ static void sort_part(iarray_t *a, int idx, int n, iarray_sort_f cmp)
 
   if (idx < 0) {
     idx = 0;
-  }  else if (idx > a->n) {
-    idx = a->n;
+  }  else if (idx >= a->n) {
+    return;
   }
   e = a->elt + idx;
 

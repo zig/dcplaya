@@ -187,16 +187,10 @@ void MtxLookAt(matrix_t row, const float x, const float y, const float z)
   }
 }
 
-void MtxProjection(matrix_t row, const float openAngle, const float fov, const float aspectRatio, const float zFar)
-{
-  const float halfFov = 0.5f * fov;
-  const float halfAngle = 0.5f * openAngle;
-  const float cosOverSin = Cos(halfAngle) / Sin(halfAngle);
-  const float zNear = halfFov * cosOverSin;
-  const float w = cosOverSin; //zNear / halfFov;
-  const float h = w * aspectRatio;
-  const float q = zFar / (zFar - zNear);
 
+static void SetProjection(matrix_t row, const float w, const float h,
+						  const float q, const float zNear)
+{
   row[0][0] = w;
   row[1][1] = h;
   row[2][2] = q;
@@ -206,6 +200,44 @@ void MtxProjection(matrix_t row, const float openAngle, const float fov, const f
     row[1][0] = row[1][2] = row[1][3] =
     row[2][0] = row[2][1] =
     row[3][0] = row[3][1] = row[3][3] = 0.0f;
+}
+
+void MtxProjection(matrix_t row, const float openAngle, const float fov,
+				   const float aspectRatio, const float zFar)
+{
+  const float halfFov = 0.5f * fov;
+  const float halfAngle = 0.5f * openAngle;
+  const float cosOverSin = Cos(halfAngle) / Sin(halfAngle);
+  const float zNear = halfFov * cosOverSin;
+  const float w = cosOverSin;
+  const float h = w * aspectRatio;
+  const float q = zFar / (zFar - zNear);
+
+  SetProjection(row, w, h, q, zNear);
+}
+
+void MtxProjection2(matrix_t row, const float openAngle,
+					const float aspectRatio,
+					const float zNear, const float zFar)
+{
+  const float halfAngle = 0.5f * openAngle;
+  const float cosOverSin = Cos(halfAngle) / Sin(halfAngle);
+  const float w = cosOverSin;
+  const float h = w * aspectRatio;
+  const float q = zFar / (zFar - zNear);
+
+/*   row[0][0] = w; */
+/*   row[1][1] = h; */
+/*   row[2][2] = (zFar+zNear)/(zNear-zFar); */
+/*   row[3][2] = 2*zFar*zNear/(zNear-zFar); */
+/*   row[2][3] = -1.0f; */
+/*   row[3][3] = 1.0f; */
+/*   row[0][1] = row[0][2] = row[0][3] = */
+/*     row[1][0] = row[1][2] = row[1][3] = */
+/*     row[2][0] = row[2][1] = */
+/*     row[3][0] = row[3][1] = 0.0f; */
+
+  SetProjection(row, w, h, q, zNear);
 }
 
 void MtxFrustum(matrix_t row, const float left, const float right,

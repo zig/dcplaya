@@ -52,7 +52,7 @@ static void mutex_init(mutex_t *mutex, int count)
  *          be locked beetween mutex_trylock() and mutex_lock() calls. Wise man
  *          use it with care.
  */
-static int mutex_trylock(mutex_t *mutex)
+static int mutex_trylock(mutex_t * mutex)
 {
   int ret = 1;
   if (thd_enabled) {

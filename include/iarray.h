@@ -3,12 +3,14 @@
  *  @author benjamin gerard <ben@sashipa.com>
  *  @date   2002/10/22
  *  @brief  Resizable array of indirect elements of any size.
+ *
+ *  $Id: iarray.h,v 1.2 2002-10-23 02:09:04 benjihan Exp $
  */
 
 #ifndef _IARRAY_H_
 #define _IARRAY_H_
 
-#include <arch/spinlock.h>
+#include "mutex.h"
 
 typedef void * (*iarray_alloc_f)(unsigned int size, void *cookie);
 typedef void (*iarray_free_f)(void * addr, void *cookie);
@@ -26,7 +28,7 @@ typedef struct {
   iarray_alloc_f alloc;
   iarray_free_f free;
   void * cookie;
-  spinlock_t mutex;
+  mutex_t mutex;
   int elt_default_size;
 } iarray_t;
 
@@ -36,6 +38,7 @@ void iarray_destroy(iarray_t *a);
 
 void * iarray_addrof(iarray_t *a, int idx);
 int iarray_get(iarray_t *a, int idx, void * elt, int eltsize);
+iarray_elt_t * iarray_dup(iarray_t *a, int idx, void * elt, int eltsize);
 int iarray_insert(iarray_t *a, int idx, void *elt, unsigned int eltsize);
 int iarray_remove(iarray_t *a, int idx);
 

@@ -4,7 +4,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.2 2002-10-22 10:35:47 benjihan Exp $
+ * $Id: texture.c,v 1.3 2002-10-23 02:09:05 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -420,6 +420,27 @@ texid_t texture_create_file(const char *fname, const char * formatstr)
 	free(img);
   }
   return texid;
+}
+
+int texture_destroy(texid_t texid, int force)
+{
+  int err = -1;
+  texture_t *t;
+  /* $$$ TODO : Free texture mem !!! */
+  allocator_lock(texture);
+  if (t=get_texture(texid), t) {
+	if (!force && t->lock) {
+	  err = -2;
+	} else if (!force && t->ref) {
+	  err = -3;
+	} else {
+	  texture_clean(t);
+	  allocator_free(texture,t);
+	  err = 0;
+	}
+  }
+  allocator_unlock(texture);
+  return err;
 }
 
 int texture_reference(texid_t texid, int count)
