@@ -8,16 +8,18 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.17 2002-11-14 23:40:28 benjihan Exp $
+ * $Id: fftvlr.c,v 1.18 2002-11-25 16:56:09 ben Exp $
  */
 
 #include <stdlib.h>
 #include <string.h>
-#include "gp.h"
+#include "draw/ta.h"
+#include "draw/vertex.h"
+#include "border.h"
 #include "fft.h"
 #include "vis_driver.h"
 #include "obj3d.h"
-#include "draw_vertex.h"
+//#include "draw_vertex.h"
 #include "draw_object.h"
 
 //#define BENSTYLE

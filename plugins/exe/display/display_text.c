@@ -5,10 +5,12 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, text interface
  * 
- * $Id: display_text.c,v 1.1 2002-10-18 11:42:07 benjihan Exp $
+ * $Id: display_text.c,v 1.2 2002-11-25 16:56:09 ben Exp $
  */
 
-#include "gp.h"
+#include <string.h>
+
+#include "draw/text.h"
 #include "display_driver.h"
 
 struct dl_draw_text_command {

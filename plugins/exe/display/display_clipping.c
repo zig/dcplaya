@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display_clipping.c,v 1.1 2002-10-18 11:42:07 benjihan Exp $
+ * $Id: display_clipping.c,v 1.2 2002-11-25 16:56:09 ben Exp $
  */
 
 #include "display_driver.h"
@@ -22,10 +22,10 @@ struct dl_clipping_command {
 DL_FUNCTION_START(set_clipping)
 {
   //  lock(dl);
-  dl->clip_box[0] = lua_tonumber(L, 2);  /* X1 */
-  dl->clip_box[1] = lua_tonumber(L, 3);  /* Y1 */
-  dl->clip_box[2] = lua_tonumber(L, 4);  /* X2 */
-  dl->clip_box[3] = lua_tonumber(L, 5);  /* Y2 */
+  dl->clip_box.x1 = lua_tonumber(L, 2);  /* X1 */
+  dl->clip_box.y1 = lua_tonumber(L, 3);  /* Y1 */
+  dl->clip_box.x2 = lua_tonumber(L, 4);  /* X2 */
+  dl->clip_box.y2 = lua_tonumber(L, 5);  /* Y2 */
   //  unlock(dl);
 
   return 0;
@@ -39,10 +39,14 @@ DL_FUNCTION_START(get_clipping)
   lua_settop(L,1);
   lua_newtable(L);
   //  lock(dl);
-  for (i=0; i<4; ++i) {
-    lua_pushnumber(L, dl->clip_box[i]);
-	lua_settable(L, 1);
-  }
+  lua_pushnumber(L, dl->clip_box.x1);
+  lua_settable(L, 1);
+  lua_pushnumber(L, dl->clip_box.y1);
+  lua_settable(L, 1);
+  lua_pushnumber(L, dl->clip_box.x2);
+  lua_settable(L, 1);
+  lua_pushnumber(L, dl->clip_box.y2);
+  lua_settable(L, 1);
   //  unlock(dl);
   return 1;
 }

@@ -5,10 +5,10 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, box functions
  * 
- * $Id: display_box.c,v 1.1 2002-10-18 11:42:07 benjihan Exp $
+ * $Id: display_box.c,v 1.2 2002-11-25 16:56:09 ben Exp $
  */
 
-#include "gp.h"
+#include "draw/box.h"
 #include "display_driver.h"
 
 struct dl_draw_box1_command {

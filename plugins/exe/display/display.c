@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.14 2002-11-14 23:40:27 benjihan Exp $
+ * $Id: display.c,v 1.15 2002-11-25 16:56:09 ben Exp $
  */
 
 #include <stdlib.h>
@@ -15,7 +15,7 @@
 #include "lef.h"
 #include "driver_list.h"
 #include "obj3d.h"
-#include "gp.h"
+#include "draw/gc.h"
 #include "draw_object.h"
 
 #include "display_driver.h"

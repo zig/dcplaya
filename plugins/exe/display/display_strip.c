@@ -5,10 +5,12 @@
  * @date     2002/10/17
  * @brief    graphics lua extension plugin, strip interface
  * 
- * $Id: display_strip.c,v 1.1 2002-11-18 23:25:11 ben Exp $
+ * $Id: display_strip.c,v 1.2 2002-11-25 16:56:09 ben Exp $
  */
 
-#include "gp.h"
+#include "draw/gc.h"
+#include "draw/primitives.h"
+
 #include "display_driver.h"
 #include "display_matrix.h"
 

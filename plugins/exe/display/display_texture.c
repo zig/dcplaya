@@ -5,14 +5,14 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, texture interface
  * 
- * $Id: display_texture.c,v 1.2 2002-10-23 02:07:44 benjihan Exp $
+ * $Id: display_texture.c,v 1.3 2002-11-25 16:56:09 ben Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include "display_driver.h"
 #include "driver_list.h"
-#include "texture.h"
+#include "draw/texture.h"
 #include "sysdebug.h"
 
 #define GET_TEXID(v,i) \
