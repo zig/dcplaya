@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.27 2003-01-25 17:26:03 ben Exp $
+--- $Id: song_browser.lua,v 1.28 2003-01-28 06:39:23 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -82,6 +82,7 @@ end
 ---
 function song_browser_create(owner, name)
    local sb
+   local z
 
    if not owner then
       owner = evt_desktop_app
@@ -493,8 +494,9 @@ function song_browser_create(owner, name)
       z = gui_guess_z(owner,z),
       fade = 0,
       dl = dl_new_list(1024, 1)
-      
    }
+
+   print("sb.z "..type(sb.z).." "..tostring(sb.z))
 
    local x,y,z
    local box = { 0, 0, 256, 210 }
