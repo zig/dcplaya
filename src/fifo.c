@@ -4,24 +4,30 @@
 #include "sysdebug.h"
 
 static spinlock_t fifo_mutex;
-static int *fifo_buffer; /* power of 2 */
-static int fifo_r;
-static int fifo_w;
-static int fifo_b;
-static int fifo_s;
+static int *fifo_buffer; /* FIFO buffer */
+static int fifo_r; /* FIFO read index   */
+static int fifo_w; /* FIFO write index  */
+static int fifo_s; /* FIFO size (power of 2) - 1 */
+static int fifo_k; /* FIFO bak-buffer index */
+
+#define FIFO_USED2(R,W,S) (((W)-(R))&(S))
+#define FIFO_FREE2(R,W,S) (((R)-(W)+(S))&(S))
+
+#define FIFO_USED FIFO_USED2(fifo_r,fifo_w,fifo_s)
+#define FIFO_FREE FIFO_FREE2(fifo_k,fifo_w,fifo_s)
 
 int fifo_init(int size)
 {
-  SDDEBUG("[%s] : size=%d\n", __FUNCTION__, size); 
+  SDDEBUG("[%s] : size=%d\n", __FUNCTION__, size);
   /* Create mutex object */
   spinlock_init(&fifo_mutex);
-  fifo_s = fifo_r = fifo_w = fifo_b = 0;
+  fifo_s = fifo_r = fifo_w = fifo_k = 0;
   fifo_buffer = (int *)malloc(size * sizeof(*fifo_buffer));
   if (fifo_buffer) {
-	fifo_s = size;
+    fifo_s = size - 1;
   }
   spinlock_unlock(&fifo_mutex);
-  return fifo_buffer ? fifo_s : -1;
+  return -!fifo_buffer;
 }
 
 int fifo_resize(int size)
@@ -31,11 +37,11 @@ int fifo_resize(int size)
   spinlock_lock(&fifo_mutex);
   b = (int *)realloc(fifo_buffer, size * sizeof(*fifo_buffer));
   if (b) {
-	fifo_buffer = b;
-	fifo_s = size;
-	fifo_b &= (fifo_s-1);
-	fifo_r &= (fifo_s-1);
-	fifo_w &= (fifo_s-1);
+    fifo_buffer = b;
+    fifo_s = size - 1;
+    fifo_r &= fifo_s;
+    fifo_w &= fifo_s;
+    fifo_k &= fifo_s;
   }
   spinlock_unlock(&fifo_mutex);
   SDDEBUG("[%s] := [%d]\n", __FUNCTION__, fifo_s); 
@@ -45,27 +51,45 @@ int fifo_resize(int size)
 int fifo_start(void)
 {
   spinlock_lock(&fifo_mutex);
-  fifo_r = fifo_w = fifo_b = 0;
+  fifo_r = fifo_w = fifo_k = 0;
   spinlock_unlock(&fifo_mutex);
   return 0;
 }
 
-void fifo_stop()
+void fifo_stop(void)
 {
   fifo_start();
 }
 
-int fifo_free()
+int fifo_free(void)
 {
-  return fifo_s - fifo_b;
+  int v;
+  spinlock_lock(&fifo_mutex);
+  v = FIFO_FREE;
+  spinlock_unlock(&fifo_mutex);
+  return v;
 }
 
-int fifo_used()
+int fifo_used(void)
 {
-  return fifo_b;
+  int v;
+  spinlock_lock(&fifo_mutex);
+  v = FIFO_USED;
+  spinlock_unlock(&fifo_mutex);
+  return v;
 }
 
-int fifo_size()
+int fifo_bak(void)
+{
+  int v;
+  spinlock_lock(&fifo_mutex);
+  v = FIFO_USED2(fifo_k, fifo_r, fifo_s);
+  spinlock_unlock(&fifo_mutex);
+  return v;
+}
+
+
+int fifo_size(void)
 {
   return fifo_s;
 }
@@ -73,18 +97,19 @@ int fifo_size()
 
 void fifo_read_lock(int *i1, int *n1, int *i2, int *n2)
 {
-  int n;
+  int n, fifo_u;
   
   spinlock_lock(&fifo_mutex);
 
+  fifo_u = FIFO_USED;
   *i1 = fifo_r;
   *i2 = 0;
-  n = fifo_s - fifo_r;
-  if (n > fifo_b) {
-    n = fifo_b;
+  n = fifo_s + 1 - fifo_r;
+  if (n > fifo_u) {
+    n = fifo_u;
   }
   *n1 = n;
-  *n2 = fifo_b - n;
+  *n2 = fifo_u - n;
 }
 
 void fifo_write_lock(int *i1, int *n1, int *i2, int *n2)
@@ -95,8 +120,8 @@ void fifo_write_lock(int *i1, int *n1, int *i2, int *n2)
   
   *i1 = fifo_w;
   *i2 = 0;
-  fifo_f = fifo_s - fifo_b;
-  n = fifo_s - fifo_w;
+  fifo_f = FIFO_FREE;
+  n = fifo_s + 1 - fifo_w;
   if (n > fifo_f) {
     n = fifo_f;
   }
@@ -109,149 +134,148 @@ void fifo_unlock()
   spinlock_unlock(&fifo_mutex);
 }
 
-/* Call it when PCM have been written into fifo (must be locked) */
-static void fifo_written(int n)
-{
-  fifo_b += n;
-  fifo_w = (fifo_w + n) & (fifo_s-1);
-}
-
-void fifo_state(int *r, int *w, int *b)
+void fifo_state(int *r, int *w, int *k)
 {
   spinlock_lock(&fifo_mutex);
   *r = fifo_r;
   *w = fifo_w;
-  *b = fifo_b;
+  *k = fifo_k;
   spinlock_unlock(&fifo_mutex);
 }
 
-int fifo_read(int *buf, int n)
+
+static int fifo_read_any(int * buf, int r, int w, int n)
 {
-  int r,w,b;
-  int m;
-
-//$$$
-//  return n;
-
-  if (n <= 0) {
-    return n;
+  int b, m;
+  b = FIFO_USED2(r,w,fifo_s);
+  if (!b) {
+    return 0;
   }
-  
-  /* Get pseudo-locked state */
-  fifo_state(&r,&w,&b);
   
   /* Max PCM to read */
   if (n > b) {
     n = b;
   }
   
-  m = fifo_s - r;
+  m = fifo_s + 1 - r;
   if (m > n) {
     m = n;
   }
-  memcpy(buf, fifo_buffer+r, m<<2);
-  buf += m;
-  m = n - m;
-  memcpy(buf, fifo_buffer, m<<2);
+  if (buf) {
+    memcpy(buf, fifo_buffer+r, m<<2);
+    buf += m;
+    m = n - m;
+    memcpy(buf, fifo_buffer, m<<2);
+  }
+  return n;
+}
 
-  /* Advance read pointer */
+int fifo_readbak(int *buf, int n)
+{
+  int r,w,k;
+
+  if (n <= 0) {
+    return n;
+  }
+  
+  /* Get pseudo-locked state */
+  fifo_state(&r,&w,&k);
+  n = fifo_read_any(buf,k,r,n);
+  if (n) {
+    /* Advance bak pointer */
+    spinlock_lock(&fifo_mutex);
+    fifo_k = (fifo_k + n) & fifo_s;
+    spinlock_unlock(&fifo_mutex);
+  }
+  
+  return n;
+}
+
+int fifo_read(int *buf, int n)
+{
+  int r,w,k;
+
+  if (n <= 0) {
+    return n;
+  }
+  
+  /* Get pseudo-locked state */
+  fifo_state(&r,&w,&k);
+  n = fifo_read_any(buf,r,w,n);
+  if (n) {
+    /* Advance read pointer */
+    spinlock_lock(&fifo_mutex);
+    fifo_r = (fifo_r + n) & fifo_s;
+    spinlock_unlock(&fifo_mutex);
+  }
+  
+  return n;
+}
+
+typedef const void * (*fifo_copy_f)(void *d, const void *v, int n);
+
+int fifo_write_any(const void * buf, int n, fifo_copy_f copy)
+{
+  int r,w,f,k;
+  int m;
+
+  if (n <= 0) {
+    return n;
+  }
+  
+  /* Get pseudo-locked state */
+  fifo_state(&r,&w,&k);
+  f = FIFO_FREE2(k,w,fifo_s);
+  if (!f) {
+    return 0;
+  }
+  
+  /* Max PCM to write */
+  if (n > f) {
+    n = f;
+  }
+  
+  m = fifo_s + 1 - w;
+  if (m > n) {
+    m = n;
+  }
+  
+  buf = copy(fifo_buffer+w, buf, m);
+  m = n - m;
+  copy(fifo_buffer, buf, m);
+
+  /* Advance write pointer */
   spinlock_lock(&fifo_mutex);
-  fifo_b -= n;
-  fifo_r = (fifo_r + n) & (fifo_s-1);
+  fifo_w = (fifo_w + n) & fifo_s;
   spinlock_unlock(&fifo_mutex);
   
   return n;
 }
 
-int fifo_write(const int *buf, int n)
-{
-  int r,w,b,f;
-  int m;
 
-//$$$
-//  return n;
-  
-  if (n <= 0) {
-    return n;
-  }
-  
-  /* Get pseudo-locked state */
-  fifo_state(&r,&w,&b);
-  f = fifo_s - b;
-  
-//  dbglog(DBG_DEBUG, "b=%d n=%d f=%d\n",b, n, f);
-  
-  /* Max PCM to write */
-  if (n > f) {
-    n = f;
-  }
-  
-  if (n) {
-    m = fifo_s - w;
-    if (m > n) {
-      m = n;
-    }
-  
-    memcpy(fifo_buffer+w, buf, m<<2);
-    buf += m;
-    m = n - m;
-    memcpy(fifo_buffer, buf, m<<2);
-
-    /* Advance read pointer */
-    spinlock_lock(&fifo_mutex);
-    fifo_b += n;
-    fifo_w = (fifo_w + n) & (fifo_s-1);
-    spinlock_unlock(&fifo_mutex);
-  }
-  
-  return n;
-}
-
-
-static void CopyMonoToStereo(int *d, const unsigned short *s, int n)
+static const void * copy_mono(int *d, const unsigned short *s, int n)
 {
   while (n--) {
     int v = *s++;
     *d++ = v | (v<<16);
   }
+  return s;
+}
+
+static const void * copy_stereo(int *d, const int *s, int n)
+{
+  while (n--) {
+    *d++ = *s++;
+  }
+  return s;
+}
+
+int fifo_write(const int *buf, int n)
+{
+  return fifo_write_any(buf,n,(fifo_copy_f)copy_stereo);
 }
 
 int fifo_write_mono(const short *buf, int n)
 {
-  int r,w,b,f;
-  int m;
-  
-  
-  if (n <= 0) {
-    return n;
-  }
-  
-  /* Get pseudo-locked state */
-  fifo_state(&r,&w,&b);
-  f = fifo_s - b;
-  
-  /* Max PCM to write */
-  if (n > f) {
-    n = f;
-  }
-  
-  if (n) {
-    m = fifo_s - w;
-    if (m > n) {
-      m = n;
-    }
-    CopyMonoToStereo(fifo_buffer+w, buf, m);
-    buf += m;
-    m = n - m;
-    CopyMonoToStereo(fifo_buffer, buf, m);
-
-    /* Advance read pointer */
-    spinlock_lock(&fifo_mutex);
-    fifo_b += n;
-    fifo_w = (fifo_w + n) & (fifo_s-1);
-    spinlock_unlock(&fifo_mutex);
-  }
-  
-  return n;
+  return fifo_write_any(buf,n,(fifo_copy_f)copy_mono);
 }
-

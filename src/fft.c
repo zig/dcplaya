@@ -1,294 +1,132 @@
 /**
- @ @ingroup dcplaya_devel
+ * @ingroup dcplaya_devel
  * @file    fft.c
  * @author  benjamin gerard <ben@sashipa.com>
  * 
- * @version $Id: fft.c,v 1.7 2002-11-28 04:22:44 ben Exp $
+ * @version $Id: fft.c,v 1.8 2002-12-30 06:28:18 ben Exp $
  */
 
 #include <stdlib.h>
+#include <arch/spinlock.h>
 #include "sysdebug.h"
 #include "fft.h"
+#include "int_fft.h"
+#include "fifo.h"
 #include "math_int.h"
 
-#define FFT_SIZE    (1 << FFT_LOG_2)
-#define FFT_OVERLAP 32
 
-#define USE_FLOAT
+#define FFT_SIZE (1 << FFT_LOG_2)
+#define FFT_FRQ  16000
+#define PCM_SIZE (FFT_SIZE * 50000 / FFT_FRQ)
 
-#ifdef USE_FLOAT
-# include <dc/fmath.h>
-# include "float_fft.h"
-typedef float fft_t;
-static fft_t fft_F[FFT_SIZE];
-#else
-# include "int_fft.h"
-typedef short fft_t;
-#endif
 
 extern short int_decibel[4096];
 
-static short fft_R[FFT_SIZE];
-static fft_t fft_I[FFT_SIZE];
+static int pcm_buf[PCM_SIZE];        /* PCM read buffer */
+static short pcm_F[2][FFT_SIZE];     /* PCM final       */
+static short fft_F[2][FFT_SIZE/2+1]; /* FFT final       */
+static short fft_R[FFT_SIZE];        /* FFT real        */
+static short fft_I[FFT_SIZE];        /* FFT imaginary   */
+static int cur_fft_buf;
 
-static int fft_idx, fft_max, fft_fill;
-static short * fft_buf = 0;
-static short * pcm_buf = 0;
+static spinlock_t mutex;
 
-static void fft_lock(void)
+int fft_init(void)
 {
-}
-
-static void fft_unlock(void)
-{
-}
-
-
-int fft_init(int nbuffer)
-{
-  int fft_size, pcm_size;
-  
-  if (nbuffer <= 0) {
-	nbuffer = 32;
-  }
-  SDDEBUG("[%s] (%d)\n", __FUNCTION__, nbuffer);
-
-#ifdef USE_FLOAT
-  float_fft_init();
-#endif
-
-  fft_idx    = 0;
-  fft_max    = nbuffer;
-  fft_fill   = 0;
-
-  fft_size = FFT_SIZE >> 1;
-  pcm_size = FFT_SIZE;
-
-  fft_buf = malloc(nbuffer * fft_size * sizeof(*fft_buf) +
-					  nbuffer * pcm_size * sizeof(*pcm_buf));
-  pcm_buf = (short *)(fft_buf + (nbuffer * fft_size)); 
-  return fft_buf ? 0 : -1;
+  cur_fft_buf = 0;
+  spinlock_init(&mutex);
+  return 0;
 }
 
 void fft_shutdown(void)
 {
-  if (fft_buf) {
-	free(fft_buf);
-  }
-  fft_buf = 0;
-  fft_max = 0;
-  fft_idx = 0;
 }
 
-static void fft_queue_buffer(int frq)
-{
-  int j;
-  short * fft;
-  short * pcm;
+extern int playa_get_frq(void); /* playa.c */
 
-  if (!fft_buf) {
-	return;
+void fft_queue(void)
+{
+  const int pcm_frq = playa_get_frq();
+  int j;
+
+  short * fft = fft_F[cur_fft_buf ^ 1];
+  short * pcm0 = pcm_F[cur_fft_buf ^ 1];
+  short * pcm1 = pcm_F[cur_fft_buf ^ 0];
+
+  if (pcm_frq <= 0) {
+    memset(pcm0, 0, sizeof(*pcm0) * FFT_SIZE);
+    /* Safety net : flush bak-buffer */
+    fifo_readbak(pcm_buf, PCM_SIZE);
+  } else {
+    int pcm_off, read, inbuf, wanted_pcm, step;
+
+    pcm_off = 0;
+    wanted_pcm = (FFT_SIZE * pcm_frq + FFT_FRQ - 1) / FFT_FRQ;
+    if (wanted_pcm > PCM_SIZE) {
+      SDWARNING("[%s] : to many wanted PCM (%d > %d)\n",
+		__FUNCTION__, wanted_pcm, PCM_SIZE);
+      wanted_pcm = PCM_SIZE;
+    }
+    read = fifo_readbak(pcm_buf, wanted_pcm);
+    inbuf = read * FFT_FRQ / pcm_frq;
+    if (inbuf < FFT_SIZE) {
+      pcm_off = FFT_SIZE - inbuf;
+      memcpy(pcm0, pcm1+FFT_SIZE-pcm_off, pcm_off * sizeof(*pcm0));
+    }
+    step = (pcm_frq << 12) / FFT_FRQ;
+    for (j=0; pcm_off<FFT_SIZE; ++pcm_off, j += step) {
+      int v = pcm_buf[j >> 12];
+      pcm0[pcm_off] = ((short)v + (v>>16)) >> 1;
+    }
+    if (j > (read<<12)) {
+      SDWARNING("[%s] : overflow %x > %x\n", __FUNCTION__, j, read<<12);
+    }
   }
 
-  /* Get a frag buffer. */
-  fft_lock();
-  fft_idx = (fft_idx + 1) % fft_max;
+  // Setup FFT data (real and imaginary).
+  memcpy(fft_R,pcm0,FFT_SIZE*sizeof(*fft_R));
+  memset(fft_I,0,FFT_SIZE*sizeof(*fft_I));
 
-  fft = fft_buf + ( fft_idx << (FFT_LOG_2-1) );
-  pcm = pcm_buf + ( fft_idx << (FFT_LOG_2) );
-  fft_unlock();
-
-  // Copy last sample into overlapping buffer. 
-  memcpy(pcm, fft_R, FFT_SIZE << 1);
-
-#ifndef USE_FLOAT
   // Apply Hanning window
   fix_window(fft_R, FFT_SIZE);
+
   // Forward FFT : Time -> Frq
   fix_fft(fft_R, fft_I, FFT_LOG_2, 0);
+
   // Copy to final buffer.
   fft_R[FFT_SIZE/2] >>= 1;
   fft_I[FFT_SIZE/2] = 0;
   fft_R[0] >>= 1;
   fft_I[0] = 0;
- 
-  for (j = 0;
-	   j < FFT_SIZE/2;
-	   j++) {
-	int rea, imm, v;
-	rea = (int)fft_R[j+1];
-	imm = (int)fft_I[j+1];
-	v = int_sqrt(rea*rea + imm*imm);
-	v  |= ((0x7FFF-v)>>31);
-	v  &= 0x7FFF;
-	fft[j] = v;
+  for (j = 0; j <= FFT_SIZE/2; ++j) {
+    int rea, imm, v;
+    rea = (int)fft_R[j];
+    imm = (int)fft_I[j];
+    v = int_sqrt((j+1) * (rea*rea + imm*imm));
+    v  |= ((0x7FFF-v)>>31);
+    v  &= 0x7FFF;
+    fft[j] = v;
   }
 
-#else
-  float_fft_set_short_data(fft_F, fft_I, fft_R, FFT_LOG_2);
-  float_fft(fft_F, fft_I, 0);
-
-/*   if (fft_R[0]) { */
-/* 	printf("%.03f %.03f %.03f\n", fft_F[1], fft_I[1], */
-/* 		   fsqrt(fft_F[1]*fft_F[1] + fft_I[1]*fft_I[1])); */
-/*   } */
-
-  for (j = 0;
-	   j < FFT_SIZE/2;
-	   j++) {
-	float rea, imm;
-	int v;
-	rea = fft_F[j+1];
-	imm = fft_I[j+1];
-	v = (int) ( 20.0f * fsqrt( (float)j * (rea*rea + imm*imm)));
-	v  |= ((0x7FFF-v)>>31);
-	v  &= 0x7FFF;
-	fft[j] = v;
-  }
-#endif
-
-  // Start new fft buffer 
-#if FFT_OVERLAP > 0
-  memcpy(fft_R, pcm + FFT_SIZE - FFT_OVERLAP, FFT_OVERLAP<<1);
-# ifndef USE_FLOAT
-  memset(fft_I, 0, FFT_OVERLAP<<1);
-#endif
-#endif
-
-
+  // Swap buffers
+  cur_fft_buf ^= 1;
 }
 
-int fft_frag_size(void)
+fftbands_t * fft_create_bands(int n, const fftband_limit_t * limits)
 {
-  return FFT_SIZE;
+  return fftband_create(n, FFT_SIZE, FFT_FRQ, limits);
 }
 
-int fft_frag_overlap(void)
+void fft_fill_bands(fftbands_t * bands)
 {
-  return FFT_OVERLAP;
+  fftband_update(bands, fft_F[cur_fft_buf]);
 }
 
-int fft_frags(void)
+void fft_fill_pcm(short * pcm, int n)
 {
-  return fft_max;
-}
-
-void fft_queue(int *spl, int nbSpl, int frq)
-{
-  int i;
-
-  // $$$
-  nbSpl >>= 2;
-
-  i = fft_fill;
-  while (nbSpl > 0) {
-	int n, rem;
-	n = nbSpl;
-	rem = FFT_SIZE - i;
-	if (rem < n) {
-	  n = rem;
-	}
-	nbSpl -= n;
-	while (n--) {
-	  int v;
-	  v = *spl++;
-
-	  // $$$
-	  spl += 3;
-
-	  fft_R[i] = ((v >> 16) + (short)v) >> 1;
-#ifndef USE_FLOAT
-	  fft_I[i] = 0;
-#endif
-	  ++i;
-;	}
-
-	if (i == FFT_SIZE) {
-	  fft_queue_buffer(frq);
-	  i = FFT_OVERLAP;
-	}
-	/*
-	 *   0       1     ...   255
-	 * 22050  22050/2       22050/256
-	*/
-	
-  }
-  fft_fill = i;
-}
-
-static void any_copy(short * dest, short * src, int m, int n)
-{
-  int i = 0;
-  int stp = (m << 8) / n;
-
-  // +.........+.........+.........+.........+ 
-  //        |      |
-
-#if 0
-  do {
-	*dest ++ = src[i>>8];
-	i += stp;
-  } while (--n);
-
-  return;
-#endif
-
-  do {
-	int j, jh, ih;
-
-	j = i + stp;
-	ih = (i >> 8);
-	jh = (j >> 8);
-	if (ih == jh) {
-	  * dest++ = src[ih];
-	} else {
-	  int v;
-	  v = src[ih] * (256 - (i&255));
-	  while (++ih < jh) {
-		v += src[ih] << 8;
-	  }
-	  v += src[ih] * (j&255); 
-	  *dest ++ = v / stp;
-	}
-	i = j;
-  } while (--n);
-}
-
-void fft_copy(short * fft, short * pcm, int n, int db)
-{
-  int idx;
-
-  if (n > 0) {
-	fft_lock();
-	idx = (fft_idx+1) % fft_max;
-	if (fft) {
-	  any_copy(fft, fft_buf + (idx << (FFT_LOG_2-1)), FFT_SIZE >> 1, n);
-	  if (db) {
-		int i;
-		const int sub = 0;//6 * 32768 / 36;
-
-		for (i=0; i<n; ++i) {
-		  int v = fft[i];
-		  if (v < 0 || v > 32767) {
-			printf("[!%d] ",v);
-		  }
-		  v = int_decibel [ (v>>3) & 4095 ];
-		  v -= sub;
-		  v &= ~(v>>31);
-
-		  //v = int_sqrt(v<<15);
-		  if (v < 0 || v > 32767) {
-			printf("[%d!] ",v);
-		  }
-
-		  fft[i] = v;
-
-		}
-	  }
-	}
-	if (pcm) {
-	  any_copy(pcm, pcm_buf + (idx << (FFT_LOG_2)), FFT_SIZE, n);
-	}
-	fft_unlock();
+  short * pcm_src = pcm_F[cur_fft_buf];
+  int i, j, step = (FFT_SIZE << 12) / n;
+  for (i=j=0; i<n; ++i, j += step) {
+    pcm[i] = pcm_src[j>>12];
   }
 }

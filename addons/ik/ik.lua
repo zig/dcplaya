@@ -283,48 +283,7 @@ function ik()
       while not key or key ~= 27 do
 	 local elapsed_time = frame_to_second(framecounter())
 
-	 --- Read controler
-	 player.cont = controler_read(player.id)
-	 if player.cont then
-
-	    if player.release_button and player.anim.wait
-	       and not player.cont.buttons[player.release_button] then
-	       player.release_button = nil
-	       player.anim.release = 1
-	    end
-
-	    if player.status == "idle" then
-	       if player.cont.buttons.a and player.cont.buttons.center then
-		  player.status = "barai"
-		  player.release_button = "a"
-		  player.anim = nil
-
-	       elseif player.cont.buttons.x then
-		  player.release_button = "x"
-		  player.anim = nil
-		  if player.cont.buttons.down then
-		     player.status = "mpunch"
-		  else
-		     player.status = "hpunch"
-		  end
-
-	       elseif player.cont.buttons.b then
-		  player.release_button = "b"
-		  player.anim = nil
-		  if player.cont.buttons.down then
-		     player.status = "lkick"
-		  elseif player.cont.buttons.up then
-		     player.status = "hkick"
-		  elseif player.cont.buttons.left then
-		     player.status = "backkick"
-		  else
-		     player.status = "mkick"
-		  end
-	       end
-
-	    end
-
-	 end
+	 Include controler move here !!!
 
 	 -- End of current anim : set "idle"
 	 if player.anim then
@@ -340,8 +299,6 @@ function ik()
 	    player.anim = ik_anim_start(%ik_anims[player.status], 0.1)
 	    print("starting ["..tostring(player.status).."]")
 	 end
-
-
 
 	 -- Generate new balls
 	 ball_generate_time = (ball_generate_time or 0) - elapsed_time

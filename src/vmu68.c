@@ -1,5 +1,5 @@
 /**
- * $Id: vmu68.c,v 1.7 2002-12-10 17:24:06 ben Exp $
+ * $Id: vmu68.c,v 1.8 2002-12-30 06:28:18 ben Exp $
  */
 #include "config.h"
 
@@ -20,6 +20,7 @@
 #include "option.h"
 #include "playa.h"
 
+static fftbands_t * bands;
 static char vmu_text_str[256];
 
 static const char vmu_scrolltext[] =
@@ -125,11 +126,11 @@ static void putchar(uint8 * dst, int x, int y, int c)
   if ((dstoff ^ srcoff) & 1) {
     if (srcoff & 1) {
       for (i = 0; i < 4; ++i, dst -= 6, src -= 8) {
-		*dst = (*dst & msk) | (*src << 4);
+	*dst = (*dst & msk) | (*src << 4);
       }
     } else {
       for (i = 0; i < 4; ++i, dst -= 6, src -= 8) {
-		*dst = (*dst & msk) | (*src >> 4);
+	*dst = (*dst & msk) | (*src >> 4);
       }
     }
   } else {
@@ -153,7 +154,7 @@ static void putstr(uint8 * dest, int x, int y, const char *s)
       x = 0;
       y += 5;
       if (y >= 6 * 5) {
-		break;
+	break;
       }
     }
     putchar(dest, x, y, c);
@@ -175,7 +176,7 @@ static void vmu_create_bitmap(uint8 * dest, char *src[], int w, int h)
       int xb = 0x80 >> (x & 7);
 
       if (src[h - y - 1][w - x - 1] != '.') {
-		dest[xi] |= xb;
+	dest[xi] |= xb;
       }
     }
   }
@@ -195,7 +196,7 @@ static void vmu_create_bitmap_2(uint8 * dest, char *src, int w, int h)
       int xb = 0x80 >> (x & 7);
 
       if (src[(h - y - 1) * w + w - x - 1] != '.') {
-		dest[xi] |= xb;
+	dest[xi] |= xb;
       }
     }
   }
@@ -214,6 +215,9 @@ int vmu68_init(void)
     vmu_create_bitmap(title[0], vmu_sc68, 48, 32);
     titleInit = 1;
   }
+
+  bands = fft_create_bands(48,0);
+
   memset(vmu_text_str,0,sizeof(vmu_text_str));
   vmu_visual = OPTION_LCD_VISUAL_FFT_FULL;
 
@@ -224,14 +228,14 @@ void vmu_set_text(const char *s)
 {
   vmu_text_str[0] = 0;
   if (s) {
-	const int max = sizeof(vmu_text_str) - 1;
-	int i;
-	for (i=0; i<max; ++i) {
-	  int c = s[i];
-	  if (!c) break;
-	  vmu_text_str[i+1] = 0;
-	  vmu_text_str[i] = c;
-	}
+    const int max = sizeof(vmu_text_str) - 1;
+    int i;
+    for (i=0; i<max; ++i) {
+      int c = s[i];
+      if (!c) break;
+      vmu_text_str[i+1] = 0;
+      vmu_text_str[i] = c;
+    }
   }  
 }
 
@@ -239,7 +243,7 @@ int vmu_set_visual(int visual)
 {
   int old = vmu_visual;
   if (visual >= 0) {
-	vmu_visual = visual;
+    vmu_visual = visual;
   }
   return old;
 }
@@ -263,7 +267,8 @@ static void draw_samples(char *buf)
   short spl[48];
   int x;
 
-  fft_copy(0, spl, 48, 0);
+  fft_fill_pcm(spl,48);
+
   for (x = 0; x < 48 / 8; ++x) {
     buf[48 + x] = 0xff;
   }
@@ -300,17 +305,17 @@ static struct {
   int dummy;
 } fft_bar[48];
 
-extern short int_decibel[4096];
-
 static void draw_fft(unsigned char * buf)
 {
   const int g = 27;
-  const int shift = 10;
+  const int shift = 9;
   int x;
-  unsigned short fft[48];
 
+  if (!bands) {
+    return;
+  }
 
-  fft_copy(fft, 0, 48, 1);
+  fft_fill_bands(bands);
 
   for (x = 47; x >= 0; --x) {
     int xi = x >> 3;
@@ -319,7 +324,7 @@ static void draw_fft(unsigned char * buf)
     int o1, hat;
 
     /* New entry */
-    v = fft[47-x];
+    v = bands->band[47-x].v;
 		
     /* Smoothing */
     if (v > fft_bar[x].v) {
@@ -331,64 +336,64 @@ static void draw_fft(unsigned char * buf)
     hat = fft_bar[x].hat;
     if (v >= hat) {
       if (0) {
-		fft_bar[x].cnt = 32;
-		fft_bar[x].fall = 0;
+	fft_bar[x].cnt = 32;
+	fft_bar[x].fall = 0;
       } else if (v > fft_bar[x].v) {
-		const int min = -g * 70;
+	const int min = -g * 70;
         int fall;
         const int method = 5;
 		  
-		fft_bar[x].cnt = 0;
-		fall = fft_bar[x].fall;
-		if (fall>0) fall = 0;
+	fft_bar[x].cnt = 0;
+	fall = fft_bar[x].fall;
+	if (fall>0) fall = 0;
 		    
-		// $$ hack !!! 
-		hat =  fft_bar[x].v;
+	// $$ hack !!! 
+	hat =  fft_bar[x].v;
 		    
-		switch (method) {
-		case 1: /* Trankil */
-		  fall = - ((v + (v - hat)) >> (shift>>1));
-		  break;
-		case 2: /* Dynamic mais pas trop  */
-		  fall = -(((v + (v - hat)) * g) >> (shift-1));
-		  break;
-		case 3: /* Ca monte haut ! */
-		  fall += -(((v + (v - hat)) * g) >> (shift+1));
-		  break;
-		case 4:
-		  fall += -((((v>>1) + (v - hat)) * g) >> shift);
-		  break;
-		case 5: /* Dynamic mais pas trop  */
-		  fall = -(((((v>>1) + (v - hat)) * g) * 3)  >> shift);
-		  break;
+	switch (method) {
+	case 1: /* Trankil */
+	  fall = - ((v + (v - hat)) >> (shift>>1));
+	  break;
+	case 2: /* Dynamic mais pas trop  */
+	  fall = -(((v + (v - hat)) * g) >> (shift-1));
+	  break;
+	case 3: /* Ca monte haut ! */
+	  fall += -(((v + (v - hat)) * g) >> (shift+1));
+	  break;
+	case 4:
+	  fall += -((((v>>1) + (v - hat)) * g) >> shift);
+	  break;
+	case 5: /* Dynamic mais pas trop  */
+	  fall = -(((((v>>1) + (v - hat)) * g) * 3)  >> shift);
+	  break;
 		      
-		default:
-		  fall = -g * 50;
-		}
-		if (fall < min) fall = min;
-		fft_bar[x].fall = fall;
+	default:
+	  fall = -g * 50;
+	}
+	if (fall < min) fall = min;
+	fft_bar[x].fall = fall;
       }
       hat = v;
     } else {
       if (fft_bar[x].cnt > 0) {
-		fft_bar[x].cnt--;
+	fft_bar[x].cnt--;
       }
       if (!fft_bar[x].cnt) {
-		//  		  const int fall_max = 1024;
-		//	  	  const int smooth = 240;
-		int fall;
+	//  		  const int fall_max = 1024;
+	//	  	  const int smooth = 240;
+	int fall;
 		    
-		//		    fall = ((fft_bar[x].fall * smooth) + (fall_max * (256-smooth))) >> 8;
-		//		    fall = ((fft_bar[x].fall * smooth) + (fall_max * (256-smooth))) >> 8;
+	//		    fall = ((fft_bar[x].fall * smooth) + (fall_max * (256-smooth))) >> 8;
+	//		    fall = ((fft_bar[x].fall * smooth) + (fall_max * (256-smooth))) >> 8;
         fall = fft_bar[x].fall + g;
-		fft_bar[x].fall = fall;
-		hat -= fall;
-		if (hat <= 0) {
-		  hat = 0;
-		  fall = 0;
-		} else if(hat > (28<<shift)) {
-		  hat = 28<<shift;
-		}
+	fft_bar[x].fall = fall;
+	hat -= fall;
+	if (hat <= 0) {
+	  hat = 0;
+	  fall = 0;
+	} else if(hat > (28<<shift)) {
+	  hat = 28<<shift;
+	}
       }
     }
     fft_bar[x].hat  =   hat;
@@ -402,8 +407,8 @@ static void draw_fft(unsigned char * buf)
     if (v>0) {
       if (v > 20) v = 20;
       do {
-		buf[o1] |= xb;
-		o1 += 48 / 8;
+	buf[o1] |= xb;
+	o1 += 48 / 8;
       } while (--v);
     }
   }
@@ -487,14 +492,14 @@ void vmu_lcd_update(/*int *spl, int nbSpl, int splFrame*/)
       put_byte_char(tmp, c, col, 4);
       x = 4 - col;
       while ((48 - x) >= 4 && (c = info_str[idx++])) {
-		put_byte_char(tmp + x, c, 0, 4);
-		x += 4;
+	put_byte_char(tmp + x, c, 0, 4);
+	x += 4;
       }
 
       rem = 48 - x;
       if (c && rem && (c = info_str[idx++])) {
-		put_byte_char(tmp + x, c, 0, rem);
-		x += rem;
+	put_byte_char(tmp + x, c, 0, rem);
+	x += rem;
       }
 
       ++scroll;
@@ -504,7 +509,7 @@ void vmu_lcd_update(/*int *spl, int nbSpl, int splFrame*/)
 
     while (x < 48) {
       tmp[x + 0 * 48] = tmp[x + 1 * 48] =
-		tmp[x + 2 * 48] = tmp[x + 3 * 48] = tmp[x + 4 * 48] = '.';
+	tmp[x + 2 * 48] = tmp[x + 3 * 48] = tmp[x + 4 * 48] = '.';
       ++x;
     }
     vmu_create_bitmap_2(vmutmp[31 - 3], tmp, 48, 4);
@@ -528,14 +533,14 @@ void vmu_lcd_update(/*int *spl, int nbSpl, int splFrame*/)
   }
 	
   if (1) {
-	switch (vmu_visual) {
-	case OPTION_LCD_VISUAL_SCOPE:
-	  draw_samples(vmutmp[0]);
-	  break;
-	case OPTION_LCD_VISUAL_FFT_FULL:
-	  draw_fft(vmutmp[0]);
-	  break;
-	}
+    switch (vmu_visual) {
+    case OPTION_LCD_VISUAL_SCOPE:
+      draw_samples(vmutmp[0]);
+      break;
+    case OPTION_LCD_VISUAL_FFT_FULL:
+      draw_fft(vmutmp[0]);
+      break;
+    }
   }
 	
   /* Finally copy temporary buffer to VMU LCD */

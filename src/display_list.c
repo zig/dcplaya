@@ -5,7 +5,7 @@
  * @author    benjamin gerard <ben@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.c,v 1.17 2002-12-27 04:11:49 zigziggy Exp $
+ * @version   $Id: display_list.c,v 1.18 2002-12-30 06:28:18 ben Exp $
  */
 
 #include <malloc.h>
@@ -112,7 +112,7 @@ int dl_shutdown(void)
     SDDEBUG("Destroying [%s-lists]\n", typestr[j]);
     SDINDENT;
     for (l=LIST_FIRST(&dl_lists[j]); l; l=next) {
-      SDDEBUG("destroying [%p,%d]\n", l, l->refcount);
+/*       SDDEBUG("destroying [%p,%d]\n", l, l->refcount); */
       next = LIST_NEXT(l,g_list);
       real_destroy(l,0);
     }

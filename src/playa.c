@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.14 2002-11-28 04:22:44 ben Exp $
+ * $Id: playa.c,v 1.15 2002-12-30 06:28:18 ben Exp $
  */
 
 #include <kos.h>
@@ -17,7 +17,7 @@
 #include "driver_list.h"
 #include "file_wrapper.h"
 #include "fifo.h"
-#include "fft.h"
+//#include "fft.h"
 
 #define PLAYA_THREAD
 
@@ -46,6 +46,11 @@ static volatile int streamstatus = PLAYA_STATUS_INIT;
 static int out_buffer[1<<14];
 static int out_samples;
 static int out_count;
+
+int playa_get_frq(void)
+{
+  return current_frq;
+}
 
 void playa_get_buffer(int **b, int *samples, int * counter, int * frq)
 {
@@ -185,7 +190,7 @@ static void * sndstream_callback(int size)
   }
   out_samples = size;
   out_count++;
-  fft_queue(out_buffer, size, current_frq);
+  //  fft_queue(out_buffer, size, current_frq);
   return out_buffer;
 }
 
@@ -372,7 +377,7 @@ int playa_init()
 
   playa_info_init();
   fifo_init(1024 * 256);
-  fft_init(4);
+  //  fft_init(4);
 
   playa_haltsem = sem_create(0);
 
@@ -507,11 +512,11 @@ int playa_stop(int flush)
 
   /* If flush or paused, clean PCM FIFO */
   if (flush || playa_paused) {
-	SDDEBUG("[%s] : Fush FIFO\n", __FUNCTION__);
-    fifo_start(0);
+    SDDEBUG("[%s] : Fush FIFO\n", __FUNCTION__);
+    fifo_start();
     play_samples = play_samples_start = 0;
-	fade_ms = 0;
-	fade_v  = 0;
+    fade_ms = 0;
+    fade_v  = 0;
   }
   driver = 0;
 

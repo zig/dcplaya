@@ -5,7 +5,7 @@
  * @date     2002/07/??
  * @brief    dcplaya FFT.
  *
- * @id $Id: fft.h,v 1.5 2002-11-14 23:40:27 benjihan Exp $
+ * @id $Id: fft.h,v 1.6 2002-12-30 06:28:18 ben Exp $
  *
  */
 
@@ -13,6 +13,7 @@
 #define _FFT_H_
 
 #include "extern_def.h"
+#include "fftband.h"
 
 DCPLAYA_EXTERN_C_START
 
@@ -27,41 +28,32 @@ DCPLAYA_EXTERN_C_START
 
 /** Init FFT.
  *
- *  The fft_init() function initializes FFT buffering system.
+ *  The fft_init() function initializes FFT system.
  *
- *  @param  nbuffer   Number of FFT buffers
  *  @return error-code
  *  @retval 0 Ok
  */
-int fft_init(int nbuffer);
+int fft_init(void);
 
 /** Shutdown FFT interface.
  */
 void fft_shutdown(void);
 
-/** Get FFT buffer size. */
-int fft_frag_size(void);
-/** Get FFT buffer overlapping size. */
-int fft_frag_overlap(void);
-/** Get number of FFT buffer. */
-int fft_frags(void);
-
 /** Calculate FFT from PCM.
- *
- *  The fft() function calculates FFT for a given 16 bit stereo PCM buffer.
- *  Left and right channels are mixed together.
- *
- *  @param  spl       16-bit-stereo-PCM buffer.
- *  @param  nbSPl     Number of sample in spl buffer.
- *  @param  splFrame  Spl buffer id. Avoid to calcul twice (or more) for the
- *                    same samples. @b Unused.
- *  @param  frq       Playback frequency (in Hz).
- *
  */
-void fft_queue(int * spl, int nbSpl, int frq);
+void fft_queue(void);
+
+/** Create a set of frequency band matching the fft. */
+fftbands_t * fft_create_bands(int n, const fftband_limit_t * limits);
+
+/** Fill a set of frequency band with the current fft data. */
+void fft_fill_bands(fftbands_t * bands);
+
+/** Fill a pcm buffer with current pcm data. */
+void fft_fill_pcm(short * pcm, int n);
 
 /** */
-void fft_copy(short * fft, short * pcm, int n, int db);
+/* void fft_copy(short * fft, short * pcm, int n, int db); */
 
 DCPLAYA_EXTERN_C_END
 

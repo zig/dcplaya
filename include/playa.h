@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.h,v 1.6 2002-10-10 06:07:39 benjihan Exp $
+ * $Id: playa.h,v 1.7 2002-12-30 06:28:18 ben Exp $
  */
 
 #ifndef _PLAYA_H_
@@ -49,6 +49,7 @@ int playa_info(playa_info_t * info, const char *fn);
 
 unsigned int playa_playtime();
 void playa_get_buffer(int **b, int *nbSamples, int *counter, int *frq);
+int playa_get_frq(void);
 
 DCPLAYA_EXTERN_C_END
 

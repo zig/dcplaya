@@ -8,7 +8,7 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.21 2002-12-18 18:11:07 ben Exp $
+ * $Id: fftvlr.c,v 1.22 2002-12-30 06:28:18 ben Exp $
  */
 
 #include <stdlib.h>
@@ -25,6 +25,7 @@
 //#define BENSTYLE
 
 static int db_scaling;
+static fftbands_t * bands;
 
 /* From obj3d.c */
 void FaceNormal(float *d, const vtx_t * v, const tri_t *t);
@@ -32,7 +33,7 @@ void FaceNormal(float *d, const vtx_t * v, const tri_t *t);
 /* Here are the constant (for now) parameters */
 #define VLR_X 0.5f
 #define VLR_Z 0.5f
-#define VLR_Y (1.5f)
+#define VLR_Y (0.5f)
 /*#define VLR_W 32
 #define VLR_H 96*/
 #define VLR_W 40
@@ -259,8 +260,6 @@ static void vlr_update(void)
   vtx_t *vy;
   int i;
 
-  short fft[VLR_W];
-
   /* Scroll FFT towards Z axis */
   for (i=0,vy=v; i<VLR_W*(VLR_H-1); ++i, ++vy) {
       vy->y = vy[VLR_W].y;
@@ -268,14 +267,16 @@ static void vlr_update(void)
   /* Scroll Normals and colors (norm.w) */
   memmove(nrm, nrm + VLR_TPL, sizeof(nrm[0]) * (VLR_T - VLR_TPL));
 
-  fft_copy(fft,0,VLR_W, db_scaling);
+  fft_fill_bands(bands);
 
   /* Update first VLR row with FFT data */
   vy = v + (VLR_H-1) * VLR_W;
+  
+
   for (i=0; i<VLR_W; ++i) {
     //    int w = fft_F[j>>12];
-    const float r = 0.45f;
-    float w = f0 * (float)fft[i];
+    const float r = 0;//0.45f;
+    float w = f0 * (float)bands->band[i].v; //  (float)fft[i];
     vy[i].y = (float)(w * (1.0f-r)) +  (vy[i-VLR_W].y * r);
   }
 
@@ -324,6 +325,8 @@ static int fftvlr_init(any_driver_t *d)
   nrm = 0;
   tlk = 0;
 
+  bands = fft_create_bands(VLR_W, 0);
+
   fftvlr_texid = texture_get(tname);
   if (fftvlr_texid < 0) {
 	fftvlr_texid = texture_dup(texture_get("bordertile"), tname);
@@ -340,6 +343,10 @@ static int fftvlr_shutdown(any_driver_t * d)
 {
   ready = 0;
   fftvlr_free();
+  if (bands) {
+    free(bands);
+    bands = 0;
+  }
   return 0;
 }
 

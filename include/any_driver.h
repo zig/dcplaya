@@ -1,9 +1,10 @@
 /**
+ * @ingroup dcplaya_devel
  * @file    any_driver.h
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   dcplaya plugin structure.
  *
- * $Id: any_driver.h,v 1.7 2002-12-14 16:15:36 ben Exp $ 
+ * $Id: any_driver.h,v 1.8 2002-12-30 06:28:18 ben Exp $ 
  */
  
 #ifndef _ANY_DRIVER_H_

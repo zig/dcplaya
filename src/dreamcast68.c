@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.38 2002-12-19 02:25:12 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.39 2002-12-30 06:28:18 ben Exp $
  */
 
 //#define RELEASE
@@ -50,7 +50,7 @@
 #include "plugin.h"
 #include "lef.h"
 
-//#include "fft.h"
+#include "fft.h"
 //#include "viewport.h"
 
 #include "fs_ramdisk.h"
@@ -62,6 +62,8 @@
 #include "shell.h"
 #include "display_list.h"
 //#include "texture.h"
+
+#include "fifo.h"
 
 #include "exceptions.h"
 
@@ -490,6 +492,13 @@ static int no_mt_init(void)
   int err = 0;
   SDDEBUG(">> %s\n", __FUNCTION__);
 
+  /* fft init */
+  if (fft_init() < 0) {
+    SDERROR("fft init failure");
+    err = __LINE__;
+    goto error;
+  }
+
   /* ramdisk init */
   if (fs_ramdisk_init(0) < 0) {
     SDERROR("ramdisk init failure");
@@ -591,6 +600,8 @@ static void update_lcd(void)
 
 static void update_fft(void)
 {
+  fft_queue();
+
 /*   int *buf, nb, cnt, frq; */
 /*   static int scnt = -1; */
 
@@ -713,6 +724,19 @@ void main_thread(void *cookie)
       controler68.buttons &= ~shot_buttons;
       screen_shot("shot/shot");
     }
+
+/*     { */
+/*       static unsigned int acu = 0, cnt = 0; */
+/*       int buffer[4096]; */
+/*       int n = fifo_readbak(buffer,4096); */
+/*       acu += n; */
+/*       cnt ++; */
+/*       if (cnt == 256) { */
+/* 	printf("RB:%.02f\n",(float)acu / cnt); */
+/* 	acu = 0; */
+/* 	cnt = 0; */
+/*       } */
+/*     } */
 
     //    my_vid_border_color(0,0,0);
     
