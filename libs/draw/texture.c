@@ -4,7 +4,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.6 2003-01-19 21:39:34 zigziggy Exp $
+ * $Id: texture.c,v 1.7 2003-01-20 12:03:16 zigziggy Exp $
  */
 
 #include <stdlib.h>
@@ -71,7 +71,7 @@ static int texture_enlarge(void)
 
 static eh_block_t * freeblock_alloc(eh_heap_t * heap)
 {
-  printf("freeblock_alloc %x\n", ta_txr_map(heap->current_offset));
+/*  printf("freeblock_alloc %x\n", ta_txr_map(heap->current_offset));*/
 
   /* use video memory to maintain free blocks structure */
   return ta_txr_map(heap->current_offset);
@@ -79,13 +79,13 @@ static eh_block_t * freeblock_alloc(eh_heap_t * heap)
 
 static void freeblock_free(eh_heap_t * heap, eh_block_t * b)
 {
-  printf("freeblock_free %x\n", b);
+/*  printf("freeblock_free %x\n", b);*/
 
 }
 
 static eh_block_t * usedblock_alloc(eh_heap_t * heap)
 {
-  printf("usedblock_alloc %x\n", heap->userdata);
+/*  printf("usedblock_alloc %x\n", heap->userdata);*/
 
   /* use texture structure ehb entry to store used block structure */
   return (eh_block_t *) heap->userdata;
@@ -93,16 +93,19 @@ static eh_block_t * usedblock_alloc(eh_heap_t * heap)
 
 static void usedblock_free(eh_heap_t * heap, eh_block_t * b)
 {
-  printf("usedblock_free %x\n", b);
+/*  printf("usedblock_free %x\n", b);*/
 
 }
 
 static size_t vid_sbrk(eh_heap_t * heap, size_t size)
 {
-  printf("sbrk %d\n", size);
+  size_t total = 8*1024*1024 - ta_state.texture_base;
+
+  SDDEBUG("vid_sbrk : asked %d, gives %d\n", size, total);
 
   /* return the maximum amount of memory */
-  return 3*1024*1024; /* TODO calculate the exact amount */
+/*  return 3*1024*1024; */
+  return total;
 }
 
 int texture_init(void)
@@ -219,6 +222,7 @@ texid_t texture_dup(texid_t texid, const char * name)
     goto error;
   }
   t->ta_tex = t->ehb.offset;
+  SDDEBUG("ta_tex = %x\n", t->ta_tex);
 /*  t->ta_tex = ta_txr_allocate(size<<1); */
   /* $$$ TODO check alloc error */ 
   t->addr = ta_txr_map(t->ta_tex);
@@ -298,6 +302,7 @@ texid_t texture_create(texture_create_t * creator)
     goto error;
   }
   t->ta_tex = t->ehb.offset;
+  SDDEBUG("ta_tex = %x\n", t->ta_tex);
 /*  t->ta_tex = ta_txr_allocate(size<<1);*/
   /* $$$ TODO check alloc error */ 
   addr = ta_txr_map(t->ta_tex);

@@ -4,7 +4,7 @@
  * @date     2003/01/19
  * @brief    External heap management.
  * 
- * $Id: exheap.c,v 1.3 2003-01-19 21:39:34 zigziggy Exp $
+ * $Id: exheap.c,v 1.4 2003-01-20 12:03:16 zigziggy Exp $
  */
 
 
@@ -19,6 +19,9 @@ searching, and may allow to choose free blocks that suit better.
 #include "exheap.h"
 #include "sysdebug.h"
 #include <malloc.h>
+
+
+/* #define EH_DEBUG */
 
 
 #define MARK_USED(b) ( (b)->g_freelist.cqe_next = NULL )
@@ -88,10 +91,11 @@ void eh_destroy_heap(eh_heap_t * heap)
 
 static void dump_freeblock(eh_heap_t * heap)
 {
+#ifdef EH_DEBUG
   eh_block_t * b;
   size_t sz, total = 0;
 
-  printf("Dumping video memory free texture areas :\n");
+  printf("Dumping free heap areas :\n");
 
   /* browse all free blocks */
   CIRCLEQ_FOREACH(b, &heap->freelist, g_freelist) {
@@ -103,11 +107,13 @@ static void dump_freeblock(eh_heap_t * heap)
       sz = heap->total_sz - b->offset;
     }
 
-    printf("block %gMb\n", sz/1024.0f);
+    printf("block %gKb (%x -- %x)\n", 
+	   sz/1024.0f, b->offset, b->offset + sz - 1);
     total += sz;
   }
 
-  printf("total %gMb\n", total/1024.0f);
+  printf("total %gKb\n", total/1024.0f);
+#endif
 }
 
 
@@ -164,7 +170,6 @@ static eh_block_t * do_alloc(eh_heap_t * heap, eh_block_t * b, size_t bsz, size_
 
   if (heap->usedblock_alloc == heap->freeblock_alloc && bsz == size) {
     /* used block totally replace free block */
-    printf("1\n");
     CIRCLEQ_REMOVE(&heap->freelist, b, g_freelist);
     MARK_USED(b);
     dump_freeblock(heap);
@@ -177,26 +182,23 @@ static eh_block_t * do_alloc(eh_heap_t * heap, eh_block_t * b, size_t bsz, size_
     return NULL;
 
   if (bsz == size) {
-    printf("2\n");
     /* used block totally replace free block */
     CIRCLEQ_INSERT_BEFORE(&heap->list, b, a, g_list);
 
     free_freeblock(heap, b);
   } else
     if (size < heap->small_threshold) {
-      printf("3\n");
       CIRCLEQ_INSERT_AFTER(&heap->list, b, a, g_list);
     } else {
       eh_block_t * nb;
       eh_block_t * prev;
-
-      printf("4\n");
+      size_t offset = b->offset;
 
       CIRCLEQ_INSERT_BEFORE(&heap->list, b, a, g_list);
       prev = CIRCLEQ_PREV(b, g_freelist);
       free_freeblock(heap, b);
 
-      nb = new_freeblock(heap, b->offset + size);
+      nb = new_freeblock(heap, offset + size);
       if (nb == NULL) {
 	/* PROBLEM HERE !! in this case, what's happening is exactly the same
 	   as if we allocated the entire free block ... */
@@ -324,16 +326,25 @@ void eh_free(eh_heap_t * heap, eh_block_t * b)
 	   block is freed. */
       } else {
 	if (prev == (void *)&heap->list) {
-	  printf("toto\n");
-
-	  CIRCLEQ_INSERT_HEAD(&heap->freelist, b, g_freelist);
 	  CIRCLEQ_INSERT_HEAD(&heap->list, b, g_list);
+	  CIRCLEQ_INSERT_HEAD(&heap->freelist, b, g_freelist);
 	} else {
-	  printf("tutu\n");
-
-	  CIRCLEQ_INSERT_AFTER(&heap->freelist, prev, b, g_freelist);
 	  CIRCLEQ_INSERT_AFTER(&heap->list, prev, b, g_list);
+
+	  /* find first previous free block */
+	  for ( ; ; ) {
+	    prev = CIRCLEQ_PREV(prev, g_list);
+	    if (prev == (void *)&heap->list) {
+	      CIRCLEQ_INSERT_HEAD(&heap->freelist, b, g_freelist);
+	      break;
+	    } else if (IS_FREE(prev)) {
+	      CIRCLEQ_INSERT_AFTER(&heap->freelist, prev, b, g_freelist);
+	      break;
+	    }
+	  }
+	  
 	}
+
       }
     }
   }

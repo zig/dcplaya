@@ -4,7 +4,7 @@
  * @date     2003/01/19
  * @brief    External heap management.
  * 
- * $Id: exheap.h,v 1.2 2003-01-19 21:39:34 zigziggy Exp $
+ * $Id: exheap.h,v 1.3 2003-01-20 12:03:16 zigziggy Exp $
  */
 
 #ifndef EXHEAP_H
@@ -13,23 +13,15 @@
 #include <stddef.h>
 #include <sys/queue.h>
 
-enum {
-  EH_BLOCK_FREE,
-  EH_BLOCK_USED
-};
-
-
 typedef struct eh_block eh_block_t;
 
-/* currently 24 bytes */
+/* currently 20 bytes, it would be very nice to have only 16 :)) */
 /** Block structure. User should only use the <offset> field which indicate the
     offset of the memory chunk into the external heap */
 struct eh_block {
 
   CIRCLEQ_ENTRY(eh_block) g_list;  /**< global linked list entry */
   CIRCLEQ_ENTRY(eh_block) g_freelist;  /**< linked list of free block entry */
-
-  int flags; /* maybe we won't need this */
 
   size_t offset; /**< start offset of the heap chunk */
 
@@ -70,7 +62,7 @@ struct eh_heap {
   /** contains the offset that will have the block. */
   /** This can be used by the alloc function to */
   /** actually allocate the block into the external */
-  /** memory (if it is accessible as a normal pointer) */
+  /** memory (if it is accessible via normal pointers) */
   size_t current_offset; 
 
 
