@@ -1,5 +1,5 @@
 
-$Id: TODO,v 1.4 2002-09-20 13:42:28 benjihan Exp $
+$Id: TODO,v 1.5 2002-09-20 17:14:59 benjihan Exp $
 
 ** TODO :
 
@@ -23,7 +23,14 @@ $Id: TODO,v 1.4 2002-09-20 13:42:28 benjihan Exp $
 
 - Fix stereo bugs
 
-- Load playlist
++ Load playlist
+  (2002/09/20 ben)
 
 - Save playlist
+
+- cd() command should verify if the path exist and is a dir.
+
+- md() command can't handle relatif path, can it ?
+
+- Look at the face-border rendering. Sometime some borders seem to be shifted.
 

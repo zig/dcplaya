@@ -4,11 +4,12 @@
  * @date    2002/02/10
  * @brief   file and playlist browser
  * 
- * $Id: songmenu.c,v 1.3 2002-09-20 13:42:41 benjihan Exp $
+ * $Id: songmenu.c,v 1.4 2002-09-20 17:15:08 benjihan Exp $
  */
 
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include "gp.h"
 
 #include "songmenu.h"
@@ -29,7 +30,7 @@
 typedef struct {
   int  type;      /* File Type */ 
   int  size;      /* Size of entry in bytes (-1 for dir) */
-  char name[60];  /* Name (displayed) */  
+  char name[60];  /* Name (displayed) */
   char fn[60];    /* Filename (leaf only) */
 } entry;
 
@@ -97,7 +98,7 @@ static void myfree(void * cookie, void * data)
 
 static int myread(void * cookie, char *data, int max)
 {
-  return fs_read(*(int*)cookie, data, max);
+  return fs_read(*(int *)cookie, data, max);
 }
 
 static M3Udriver_t driver = {
@@ -184,6 +185,10 @@ static int cmp_entry_fn(const entry *a, const entry *b)
   return mystricmp(a->fn, b->fn);
 }
 
+static const char *nullstr(const char *s) {
+  return s ? s : "<null>";
+}
+
 static int file_type_inp(const char *name)
 {
   const char *e;
@@ -223,8 +228,33 @@ static int direntry_filetype(const dirent_t *de)
   return type;
 }
 
+static int make_full_path_name(char *d, const char *path, const char *leaf,
+			       int max)
+{
+  int len1, len2;
+  
+  len1 = strlen(path);
+  len2 = strlen(leaf);
+  if (len1 + len2 + 1 < max) {
+    strcpy(d, path);
+    if (len1 > 0 && d[len1-1] != '/') {
+      strcat(d, "/");
+    }
+    strcat(d, leaf);
+    return 0;
+  }
+  return -1;
+}
+
 static void make_mp3_name(char *dst, const char * src, int max)
 {
+  const char * s;
+
+  /* Get leaf name */
+  s = strrchr(src,'/');
+  if (s) {
+    src = s;
+  }
   
   if (option_filter()) {
     int i, ext;
@@ -755,48 +785,119 @@ static int add_entry_to_playlist(lst_entry * le, int insert)
   return idx;
 }
 
-static int m3u_make_filepath(char *path, int maxpath, const char *fname)
+static int m3u_make_filepath(char *path, int max,
+			     const char *fname, const char * m3upath)
 {
+  int i = 0;
+  int c;
+
+  c = mytoupper(fname[0]); 
+  if (c>='A' && c<='Z'  && fname[1] == ':') {
+    /* Looks like a DOS path ! Assume it was a CDROM device !!! */
+    fname += 2;
+    if (fname[0] == '/') {
+      strncpy(path, "/cd", max);
+      i = 3;
+    }
+  }
+
+  if (fname[0] != '/') {
+    /* Relatif path : add m3u path. */
+    while (i<max && *m3upath) {
+      path[i++] = *m3upath++;
+    }
+    /* Append missing '/' */
+    if (i>0 && i<max && path[i-1] != '/') {
+      path[i++] = '/';
+    }
+  }
+
+  /* Append leaf name */
+  while (i<max && *fname) {
+    path[i++] = *fname++;
+  }
+
+  if (i<max) {
+    path[i] = 0;
+    return 0;
+  }
+
   return -1;
 }
 
 static int m3u_make_listentry(lst_entry *le, const char *m3upath,
 			  const M3Uentry_t * e)
 {
-  return -1;
+  SDDEBUG("%s([%s] [[%s] [%s]])\n", __FUNCTION__, m3upath,
+	  nullstr(e->path) , nullstr(e->name));
+
+  /* Verify */
+  if (!e->path || !e->path[0]) {
+    SDERROR("Invalid m3u entry path\n");
+    return -1;
+  }
+
+  /* Build size */
+  le->size = 0; /* $$$ Don't known real size, but it should be ok */
+
+  /* Build type */
+  le->type = file_type_inp(e->path);
+  if (le->type == FILETYPE_UNKNOWN) {
+    /* $$$ Ben: Here entry should not be remove. We could let it a last
+       chance when playing starts. */
+    SDERROR("Unknown filetype.\n");
+    return -1;
+  }
+
+  /* Build name */
+  if (e->name && e->name[0]) {
+    /* m3u has an extended name info. */
+    strncpy(le->name, e->name, sizeof(le->name));
+  } else {
+    /* use path to build name */
+    make_mp3_name(le->name, e->path, sizeof(le->name));
+  }
+  le->name[sizeof(le->name)-1] = 0; /* safety net. */
+
+  /* Build path */
+  if (m3u_make_filepath(le->fn, sizeof(le->fn), e->path, m3upath)) {
+    SDERROR("Can't build m3u entry path.\n");
+    return -1;
+  }
+  SDDEBUG("-->[%s]\n", le->fn);
+  
+  return 0;
 }
 
-static int add_m3u_to_playlist(const char *m3ufile, int insert)
+static int add_m3u_to_playlist(char *m3ufile, int insert)
 {
   int fd = 0;
   M3Ulist_t * m3u = 0; 
   int err = -1;
-  char m3upath[1024];
+  char *s;
   int i;
     
-  SDDEBUG(">> %s(%s,%s)\n", m3ufile, insert ? "INSERT" : "ENQUEUE");
+  SDDEBUG(">> %s([%s],[%s])\n", __FUNCTION__, m3ufile,
+	  insert ? "INSERT" : "ENQUEUE");
   SDINDENT;
 
-  fd = fs_open(m3ufile, O_RDONLY);
+  mycookie = fd = fs_open(m3ufile, O_RDONLY);
   if (!fd) {
     SDERROR("open error\n");
     goto error;
   }
-  driver.cookie = (void *)fd;
   
   m3u = M3Uprocess();
-  if (m3u) {
+  if (!m3u) {
     SDERROR("load error\n");
     goto error;
   }
 
   SDDEBUG("m3u list loaded : %d entries\n", m3u->n);
 
-  err = m3u_make_filepath(m3upath, sizeof(m3upath), m3ufile);
-  if (err) {
-    SDERROR("m3u path failed.\n");
-    goto error;
-  }
+  /* Get m3u file path. */
+  s = strrchr(m3ufile,'/');
+  if (s) *s = 0;
 
   err = 0;
   for (i=0; i<m3u->n; ++i) {
@@ -804,10 +905,11 @@ static int add_m3u_to_playlist(const char *m3ufile, int insert)
     lst_entry le;
     int err2;
 
-    SDDEBUG("#%02d [%s] [%s] [%d]\n", i+1, e->path, e->name, e->time);
-    err2 = m3u_make_listentry(&le, m3upath, e);
+    SDDEBUG("#%02d [%s] [%s] [%d]\n", i+1,
+	    nullstr(e->path), nullstr(e->name), e->time);
+    err2 = m3u_make_listentry(&le, m3ufile, e);
     err -= err2<0;
-    if (err2) {
+    if (err2<0) {
       continue;
     }
     SDDEBUG("-> [%s]\n", le.fn);
@@ -823,14 +925,13 @@ static int add_m3u_to_playlist(const char *m3ufile, int insert)
   if (m3u) {
     M3Ukill(m3u);
   }
-  driver.cookie = 0;
+  mycookie = 0;
   return err;
 }
 
 static int add_to_playlist(int selected, int insert)
 {
   const entry * e = (const entry *)entrylist_addrof(&direntry, selected);
-  int len1, len2;
   lst_entry le;
   
   /* Directory : recursive load */
@@ -846,12 +947,7 @@ static int add_to_playlist(int selected, int insert)
 
   /* Playable file : Enqueue/Insert file */
   if (e->type >= FILETYPE_PLAYABLE) {
-    len1 = strlen(curdir);
-    len2 = strlen(e->fn);
-    if (len1 + len2 + 1 < sizeof(le.fn)) {
-      strcpy(le.fn, curdir);
-      strcat(le.fn, "/");
-      strcat(le.fn, e->fn);
+    if (!make_full_path_name(le.fn, curdir, e->fn, sizeof(le.fn))) {
       strcpy(le.name, e->name);
       le.size = e->size;
       le.pos = selected;
@@ -864,8 +960,15 @@ static int add_to_playlist(int selected, int insert)
 
   /* Playlist file : $$$ TODO */
   if (e->type >= FILETYPE_PLAYLIST) {
-    SDDEBUG("%s playlist [%s]\n", insert?"Insert":"Enqueue", e->fn); 
-    return add_m3u_to_playlist(e->fn, insert);
+    if (!make_full_path_name(le.fn, curdir, e->fn, sizeof(le.fn))) {
+      SDDEBUG("%s playlist [%s]\n", insert?"Insert":"Enqueue", le.fn); 
+      return add_m3u_to_playlist(le.fn, insert);
+      
+    } else {
+      SDWARNING("Skipped (filename too long) '%s/%s'\n", curdir, e->fn);
+      return -1;
+    }
+
   }
 
   SDWARNING("Nothing to do with %s\n", e->fn); 
@@ -1268,6 +1371,7 @@ int songmenu_init(void)
   
   /* Set M3U driver */
   M3Udriver(&driver);
+  mycookie = 0;
 
   /* Browser entries */
   SDDEBUG("Init browser entries\n");

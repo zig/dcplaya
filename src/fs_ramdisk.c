@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   RAM disk for KOS file system
  * 
- * $Id: fs_ramdisk.c,v 1.5 2002-09-20 06:08:58 vincentp Exp $
+ * $Id: fs_ramdisk.c,v 1.6 2002-09-20 17:15:08 benjihan Exp $
  */
 
 #ifdef VPSPECIAL
@@ -544,7 +544,7 @@ static char * valid_filename(char * fname, int max,
     --i;
   }
   fname[i] = 0;
-  SDDEBUG("copied string [%s]\n", fname);
+  SDDEBUG("copied string [%s] (slashended:%d)\n", fname, *endslash);
 
   /* If leaf separator has been found, to first char of leafname. */
   if (fname[leaf] == '/') {
@@ -878,13 +878,14 @@ static int unlink(const char *fn)
   }
 
   /* Find a regular file or a directory */
-  node = find_node(root, fname, 3 - ((!slash_end)<<1));
+  node = find_node(root, fname, 3 - slash_end);
   if (!node) {
     return -1;
   }
 
   if (is_dir(node) && node->son) {
     /* Can't unlink non empty dir. */
+    SDERROR("Directory not empty.\n");
     return -1;
   }
 
@@ -958,7 +959,7 @@ int fs_ramdisk_init(int max_size)
   fh_mask = 0;
   root = &root_node;
 
-#if DEBUG
+#if DEBUG && 0
   test();
 #endif
 
@@ -981,6 +982,7 @@ int fs_ramdisk_shutdown(void)
 
   return fs_handler_remove(&vh);
 }
+
 
 #if DEBUG
 

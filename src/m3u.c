@@ -212,7 +212,11 @@ static M3Ulist_t * process_r(char *line, int max, int n)
         int i;
 
         for (i = 0; i < l; ++i) {
-          e.path[i] = line[i];
+	  int c = line[i];
+	  if (c == '\\') {
+	    c = '/';
+	  }
+          e.path[i] = c;
         }
         e.path[i] = 0;
       }

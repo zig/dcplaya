@@ -5,7 +5,7 @@
  * @author  Dan Potter
  * @brief   ELF library loader - Based on elf.c from KallistiOS 1.1.5 
  *
- * @version $Id: lef.c,v 1.11 2002-09-20 00:22:15 benjihan Exp $
+ * @version $Id: lef.c,v 1.12 2002-09-20 17:15:08 benjihan Exp $
  */
 
 #include <malloc.h>
@@ -18,7 +18,7 @@
 #include "gzip.h"
 
 // VP : define this to have full debug logging informations
-#define FULL_DEBUG
+//#define FULL_DEBUG
 
 extern symbol_t main_symtab[];
 extern int main_symtab_size;
