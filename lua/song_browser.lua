@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.31 2003-01-31 14:48:30 ben Exp $
+--- $Id: song_browser.lua,v 1.32 2003-02-01 20:07:05 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -675,10 +675,53 @@ function song_browser_create(owner, name)
    end
    
    function sbfl_select_playlist(fl, sb, action, entry_path)
-      local dir = playlist_load(entry_path)
-      if not dir then return end
-      sb.pl:change_dir(dir)
-      return 1
+      local path,leaf = get_path_and_leaf(entry_path)
+      if not leaf then return end
+      
+      local def = {
+	 root = ":"..leaf..":load{load},insert{load},append{load}",
+	 cb = {
+	    load = function (menu, idx)
+		      local root_menu = menu.root_menu
+		      local sb = root_menu.target
+		      local entry_path = root_menu.__entry_path or ""
+		      local dir = playlist_load(entry_path)
+		      local odir = sb.pl.dir
+		      if not dir then return end
+		      if idx == 1 then
+			 sb.pl:change_dir(dir)
+			 return 1
+		      elseif idx == 2 and odir then
+			 pos = (sb.pl:get_pos() or 0) + 1
+			 local i,v
+			 for i,v in dir do
+			    if type(v) == "table" then
+			       tinsert(odir, pos, v)
+			       pos = pos+1
+			    end
+			 end
+			 sb.pl:change_dir(odir)
+			 return 1
+		      elseif idx == 3 and odir then
+			 local i,v
+			 for i,v in dir do
+			    if type(v) == "table" then
+			       tinsert(odir,v)
+			    end
+			 end
+			 sb.pl:change_dir(odir)
+			 return 1
+		      end
+		   end,
+	 },
+      }
+      local menudef = menu_create_defs(def, sb)
+      fl.menu = menu_create(sb, "filelist-menu", menudef)
+      if tag(fl.menu) == menu_tag then
+	 fl.menu.target = sb
+	 fl.menu.target_pos = fl.pos + 1
+	 fl.menu.__entry_path = entry_path
+      end
    end
 
    function sbfl_select_image(fl, sb, action, entry_path)

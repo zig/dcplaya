@@ -1,5 +1,5 @@
 /**
- * $Id: draw_object.c,v 1.18 2003-01-28 22:58:18 ben Exp $
+ * $Id: draw_object.c,v 1.19 2003-02-01 20:07:05 ben Exp $
  */
 
 #include <stdio.h>
@@ -764,8 +764,6 @@ static void draw_tri_single(const tri_t * f, /* triangle to draw */
   lflags |= (1&t[l->c].flags) << 2;
   lflags |= strong_mask & l->flags;
 
-  lflags = 7;
-
   uvl = uvlinks[lflags];
 
   hw->flags = TA_VERTEX_NORMAL;
@@ -818,19 +816,25 @@ static void draw_clip_znear_tri(const tri_t * f, /* triangle to draw */
 				const viewport_t * vp)
 {
   const tvtx_t *va, *vb, *vc;
+  int la,lb,lc;
   int flags;
 
   static tvtx_t cvtx[4];
 
-  static const tri_t ctri[] = {
+  static tri_t ctri[] = {
     { 0,0,0,1 }, /* 0: Invisible */
     { 0,1,2,0 }, /* 1: 1st build triangle, case 1 out/in */
-    { 0,2,3,0 }, /* 2: 2st build triangle, case 1 out */
-    { 1,0,2,0 }, /* 3: back-side, 1st build triangle, case 1 out/in */
-    { 2,0,3,0 }, /* 4: back-side, 2st build triangle, case 1 out */
+    { 0,2,3,0 }, /* 2: 2nd build triangle, case 1 out */
+
+    { 0,0,0,0 }, /* 3: Supplemental link triangle */
+    { 0,0,0,0 }, /* 4: Supplemental link triangle */
   };
 
-  static tlk_t ctlk[1] = {
+  static tlk_t ctlk[] = {
+    { 0,0,0,0 }, /* 0 : link for invisible face */ 
+    { 3,0,4,0 }, /* 1 : link for 1st build triangle (case 1 in) */
+    { 3,4,1,0 }, /* 2 : link for 1st build triangle (case 1 out) */
+    { 2,3,0,0 }, /* 3 : link for 2nd build triangle (case 1 out) */
   };
 
   static struct {
@@ -869,8 +873,11 @@ static void draw_clip_znear_tri(const tri_t * f, /* triangle to draw */
 
   ci = clipinfo + flags;
   va = transform + ((int*)&f->a)[ci->va];
+  la = ((int*)&l->a)[ci->va];
   vb = transform + ((int*)&f->a)[ci->vb];
+  lb = ((int*)&l->a)[ci->vb];
   vc = transform + ((int*)&f->a)[ci->vc];
+  lc = ((int*)&l->a)[ci->vc];
 
   switch (flags) {
   case 1: case 2: case 4:
@@ -881,10 +888,13 @@ static void draw_clip_znear_tri(const tri_t * f, /* triangle to draw */
       clip_znear_vtx(&cvtx[3], &va->v, &vc->v, vp);
 
       if (!test_visible(&cvtx[0].p,&cvtx[1].p,&cvtx[2].p)) {
-	draw_tri_single(ctri+1,ctlk,ctri,cvtx);
+	ctri[3].flags = f[la].flags & 1;
+	ctri[4].flags = f[lb].flags & 1;
+	draw_tri_single(ctri+1,ctlk+2,ctri,cvtx);
       }
       if (!test_visible(&cvtx[0].p,&cvtx[2].p,&cvtx[3].p)) {
-	draw_tri_single(ctri+2,ctlk,ctri,cvtx);
+	ctri[3].flags = f[lc].flags & 1;
+	draw_tri_single(ctri+2,ctlk+3,ctri,cvtx);
       }
     } break;
 
@@ -894,7 +904,9 @@ static void draw_clip_znear_tri(const tri_t * f, /* triangle to draw */
       clip_znear_vtx(&cvtx[1], &vb->v, &va->v, vp);
       clip_znear_vtx(&cvtx[2], &vc->v, &va->v, vp);
       if (!test_visible(&cvtx[0].p,&cvtx[1].p,&cvtx[2].p)) {
-	draw_tri_single(ctri+1,ctlk,ctri,cvtx);
+	ctri[3].flags = f[((int*)&l->a)[ci->va]].flags & 1;
+	ctri[4].flags = f[((int*)&l->a)[ci->vc]].flags & 1;
+	draw_tri_single(ctri+1,ctlk+1,ctri,cvtx);
       }
     } break;
   default:

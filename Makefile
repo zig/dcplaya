@@ -3,11 +3,9 @@
 #
 # (C) COPYRIGHT 2002 benjamin gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.20 2002-12-15 16:15:03 ben Exp $ 
+# $Id: Makefile,v 1.21 2003-02-01 20:07:05 ben Exp $ 
 #
 TARGETS=dreammp3.elf
-
-SH_LDFLAGS=-ml -m4-single-only -nostartfiles -nostdlib -static  -Wl,-Ttext=0x8c010000
 
 SUBDIRS = arm plugins src data libs dynshell
 

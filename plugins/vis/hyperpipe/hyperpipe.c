@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/14
  *
- *  $Id: hyperpipe.c,v 1.11 2003-01-25 11:37:44 ben Exp $
+ *  $Id: hyperpipe.c,v 1.12 2003-02-01 20:07:05 ben Exp $
  */ 
 
 #include <stdio.h>
@@ -662,7 +662,7 @@ static int anim(const float seconds)
 static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
 {
   const float seconds = elapsed_ms * (1/1000.0f);
-  static int mode_latch = 0;
+  static int mode_latch = 0, mode_acu;
 
   if (!ready) {
     return -1;
@@ -682,7 +682,10 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
 
     if (mode_latch) --mode_latch;
 
-    if ( !mode_latch && (result & 1) && (change_mode & CHANGE_MODE)) {
+    if (result & 1) {
+      mode_acu = (mode_acu+1) & 7;
+    }
+    if ( !mode_latch && !mode_acu && (change_mode & CHANGE_MODE)) {
       mode_latch = 30;
       mode = rand() % nfct;
     }
