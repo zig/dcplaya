@@ -1,15 +1,17 @@
--- implement directory support
---
--- authors : vincent penne <ziggy@sashipa.com>
---           benjamin gerard <ben@sashipa.com>
---
--- $Id: dirfunc.lua,v 1.9 2002-10-09 00:51:17 benjihan Exp $
+--- @file   dirfunc.lua
+--- @brief  implement directory support
+--- @author vincent penne <ziggy@sashipa.com>
+--- @author benjamin gerard <ben@sashipa.com>
+---
+--- $Id: dirfunc.lua,v 1.10 2002-10-30 19:59:30 benjihan Exp $
 ---
 
 PWD=home
 
--- return path,leaf
--- 
+--- Get path and leaf from a filename.
+--- @param pathname full 
+--- @return path,leaf
+--- 
 function get_path_and_leaf(pathname)
 	if not pathname then return end
 	local start,stop,path,leaf
@@ -24,7 +26,8 @@ function get_path_and_leaf(pathname)
 	return path,leaf
 end
 
--- return fullpath of given filename
+--- Create a full path name.
+--- @return fullpath of given filename
 function fullpath(name)
 
 	if not name then

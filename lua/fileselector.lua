@@ -3,7 +3,7 @@
 --- @date   2002/10/04
 --- @brief  fileselector gui
 ---
---- $Id: fileselector.lua,v 1.12 2002-10-27 18:39:46 benjihan Exp $
+--- $Id: fileselector.lua,v 1.13 2002-10-30 19:59:30 benjihan Exp $
 --
 -- TODO : select item with space 
 --        completion with tab        
@@ -15,16 +15,16 @@ fileselector_loaded=nil
 -- Load required libraries
 --
 dolib("gui")
-dolib("textlist") -- Bug when nested !!
 dolib("filelist")
 
+--- fileselector GUI object.
+--- struct fileselector{
+
 --- Create a fileselector GUI application.
----
---- @param  name      Fileselector label.
---- @param  path      Fileselector current path. nil for current.
---- @param  filename  Default input filename.
----
---- @return gui application handle
+---  @param name Fileselector label.
+---  @param path Fileselector current path. nil for current.
+---  @param filename Default input filename.
+---  @return gui application
 function fileselector(name,path,filename)
 	local dial,but,input
 
@@ -66,117 +66,81 @@ function fileselector(name,path,filename)
 -- ------------------------
 -- BUTTONS' EVENT HANDLERS
 -- ------------------------
-	function but_cancel_handle(but,evt)
---		print("BUTTON CANCEL")
+	local but_cancel_handle = function (but,evt)
 		local dial = but.owner 
-		local com = get_command(dial)
+		local com = fileselector_get_command(dial)
 		if not com then
 			evt_shutdown_app(dial)
 		else
-			status(dial,com.." cancelled")
-			set_command(dial,nil)
+			fileselector_status(dial,com.." cancelled")
+			fileselector_set_command(dial,nil)
 		end
 		return nil
 	end
 
-	function but_mkdir_handle(but,evt)
---		print("BUTTON MKDIR")
+	local but_mkdir_handle = function (but,evt)
 		local dial = but.owner
-		set_command(dial,[[mkdir("-v")]])
-		gui_new_focus(dial,dial.input)
-
---		local dial,fl
---		dial = but.owner
---		fl = dial.flist.fl
---		if strlen(dial.input.input) > 0 then
---			mkdir("-v",dial.input.input)
---			status(dial,"Loading "..fl.pwd)
---			filelist_path(fl) -- Update 
---			status(dial,dial.input.input.." created")
---			change(dial)
---		end
-	end
-
-	function but_copy_handle(but,evt)
---		print("BUTTON COPY")
-		local dial = but.owner
-		set_command(dial,[[copy()]])
+		fileselector_set_command(dial,[[mkdir("-v")]])
 		gui_new_focus(dial,dial.input)
 	end
 
-	function but_move_handle(but,evt)
---		print("BUTTON MOVE")
+	local but_copy_handle = function (but,evt)
 		local dial = but.owner
-		set_command(dial,[[copy("-u")]])
+		fileselector_set_command(dial,[[copy()]])
 		gui_new_focus(dial,dial.input)
 	end
 
-	function but_delete_handle(but,evt)
---		print("BUTTON DELETE")
+	local but_move_handle = function (but,evt)
 		local dial = but.owner
-		set_command(dial,[[unlink()]])
+		fileselector_set_command(dial,[[copy("-u")]])
 		gui_new_focus(dial,dial.input)
-
---		fl = dial.flist.fl
---		if strlen(dial.input.input) > 0 then
---			unlink("-v",dial.input.input)
---			status(dial,"Loading "..fl.pwd)
---			filelist_path(fl) -- Update
---			status(dial,dial.input.input.." removed")
---			change(dial)
---		end
-		return
 	end
 
-	function wildcard_to_regexpr(wc)
-		if not wc then return end
-		local res = wc
-		res = gsub(res,"%%","%%")
-		res = gsub(res,"%.","\%.")
-		res = gsub(res,"%*",".*")
-		res = gsub(res,"?",".")
-		res = "^"..res.."$"
---		print("wildcard:"..wc.."->"..res)
-		return res
+	local but_delete_handle = function (but,evt)
+		local dial = but.owner
+		fileselector_set_command(dial,[[unlink()]])
+		gui_new_focus(dial,dial.input)
 	end
 
-	function locate(dial,text)
+
+	function fileselector_locate(dial,text)
 		local path,leaf,fl
 		if not dial then return end
 		fl = dial.flist.fl
 		path,leaf = get_path_and_leaf(text)
 		if path then
---			print("path="..path.."  "..fl.pwd="..fl.pwd)
 			if path ~= fl.pwd then
 				-- Not same path, try to load new one
-				status(dial,"Loading "..path)
-				if not filelist_path(fl,path) then
-					status(dial,"Error loading "..path)
+				fileselector_status(dial,"Loading "..path)
+				if not fl:set_path(path) then
+					fileselector_status(dial,"Error loading "..path)
 					return
 				end
-				status(dial,path.." loaded")
+				fileselector_status(dial,path.." loaded")
 			end
 		end
-
+		
 		if leaf then
---			print(format("try to locate '%s' in '%s'",leaf, fl.pwd))
-			if textlist_find_entry_expr(fl,wildcard_to_regexpr(leaf)) then
-				status(dial,fl.pwd..leaf.." found")
+			local res = leaf
+			res = gsub(res,"%%","%%")
+			res = gsub(res,"%.","\%.")
+			res = gsub(res,"%*",".*")
+			res = gsub(res,"?",".")
+			res = "^"..res.."$"
+			if fl:locate_entry_expr(res) then
+				fileselector_status(dial,fl.pwd..leaf.." found")
 			else
-				status(dial,fl.pwd..leaf.." not found")
+				fileselector_status(dial,fl.pwd..leaf.." not found")
 			end
-			return
 		end
-		return
 	end
 
 
-	function but_locate_handle(but,evt)
---		print("BUTTON LOCATE")
+	local but_locate_handle = function (but,evt)
 		local dial,fl
 		dial = but.owner
 		fl = dial.flist.fl
-		locate(dial,dial.input.input)
+		fileselector_locate(dial,dial.input.input)
 	end
 
 -- --- --- --- -
@@ -232,14 +196,14 @@ function fileselector(name,path,filename)
 -- --- --- ----
 
 	-- Set status text
-	function status(dial,text)
+	function fileselector_status(dial,text)
 		if dial.status then
 			gui_text_set(dial.status,text)
 		end
 	end
 	
 	-- Get command name from command input
-	function get_command(dial)
+	function fileselector_get_command(dial)
 		local start,stop,com
 		com = nil
 		if dial.command then
@@ -250,64 +214,56 @@ function fileselector(name,path,filename)
 	end
 
 	-- Set command input text
-	function set_command(dial,com)
+	function fileselector_set_command(dial,com)
 		if not dial.command then return end
 		local start, stop
 		if com then
---			print("SET-COMMAND:"..com)
 			start,stop = strfind(com,")",1,1)
---			if start then print("POS:"..start) end
 			gui_input_set(dial.command, com, start)
-			local c = get_command(dial)
+			local c = fileselector_get_command(dial)
 			if c then
-				status(dial,"Editing '"..c.."' command")
+				fileselector_status(dial,"Editing '"..c.."' command")
 			else
-				status(dial, format("Wrong command syntax '%s'",com))
+				fileselector_status(dial,
+					format("Wrong command syntax '%s'",com))
 				gui_input_set(dial.command)
 			end
 		else
---			print("CLR-COMMAND")
 			gui_input_set(dial.command)
 		end
 	end
 
 	-- Set file input text form current filelist entry
-	function change(dial)
-		local entry = filelist_get_entry(dial.flist.fl)
+	function fileselector_change(dial)
+		local entry = dial.flist.fl:get_entry()
 		if entry then
 			gui_input_set(dial.input, entry.full)
 		end
 	end
 
 	-- Get name of  current filelist entry
-	function current(dial)
-		local entry = textlist_get_entry(dial.flist.fl)
+	function fileselector_current(dial)
+		local entry = dial.flist.fl:get_entry()
 		if not entry then return "" end
 		return entry.name
 	end
 
 	-- Main dialog event handle function
-	function dial_handle(dial,evt)
+	function fileselector_handle(dial,evt)
 		local key = evt.key
+
 		if key == gui_item_confirm_event then
---			print("FL-CONFIRM")
 			gui_new_focus(dial, dial.input)
 			return
 		elseif key == gui_item_cancel_event then
---			print("FL-CANCEL")
 			gui_new_focus(dial, dial.input)
 			return
 		elseif key == gui_item_change_event then
---			print("FL-CHANGE")
-			change(dial)
+			fileselector_change(dial)
 			return
 		elseif key == gui_input_confirm_event then
---			print("FL-INPUT-CONF")
-			local com = get_command(dial)
-
 			if evt.input == dial.input then
---				print("-->INPUT")
-				local com = get_command(dial)
+				local com = fileselector_get_command(dial)
 				if not com then
 					print("-->INPUT SELECTED:"..dial.input.input)
 				else
@@ -317,7 +273,6 @@ function fileselector(name,path,filename)
 					local col = command.input_col-1
 					local f = "%q"
 					local c = strsub(command.input, col, col)
-					print("char:"..c)
 					if c == [["]] then
 						f = ",%q"
 					end
@@ -329,25 +284,23 @@ function fileselector(name,path,filename)
 				end
 				return
 			elseif evt.input == dial.command then
---				print("-->COMMAND")
 				if com then
 					local result,fl
-					status(dial,format("Execute '%s'",dial.command.input))
+					fileselector_status(dial,
+						format("Execute '%s'",dial.command.input))
 					result = dostring(dial.command.input)
 					fl = dial.flist.fl
-					status(dial,format("Loading '%s'",fl.pwd))
-					filelist_path(dial.flist.fl)
+					fileselector_status(dial,format("Loading '%s'",fl.pwd))
+					dial.flist.fl:set_path()
 					if result then
-						status(dial, com.." success")
+						fileselector_status(dial, com.." success")
 					else
-						status(dial, com.." failure")
+						fileselector_status(dial, com.." failure")
 					end
-					set_command(dial,nil)
+					fileselector_set_command(dial,nil)
 				end
 				return
 			end
-			print("-->???")
-			return evt
 		end
 		return evt
 	end
@@ -357,30 +310,28 @@ function fileselector(name,path,filename)
 	dial = gui_new_dialog(evt_desktop_app,
 		{x, y, x2, y2 }, nil, nil, name, { x = "left", y = "up" } )
 	dial.event_table = {
-		[gui_item_confirm_event]	= dial_handle,
-		[gui_item_cancel_event]		= dial_handle,
-		[gui_item_change_event]		= dial_handle,
-		[gui_input_confirm_event]	= dial_handle
+		[gui_item_confirm_event]	= fileselector_handle,
+		[gui_item_cancel_event]		= fileselector_handle,
+		[gui_item_change_event]		= fileselector_handle,
+		[gui_input_confirm_event]	= fileselector_handle
 	}
-
-	function mkbutton(p)
-		local but
-		but = gui_new_button(%dial, p.box, p.name)
-	  	but.event_table[gui_press_event] = p.handle
-	end
 
 -- --- --- ----
 -- ALL BUTTONS
 -- --- --- ----
-	dial.buttons = {}
+	local mkbutton = function(p)
+		local but
+		but = gui_new_button(%dial, p.box, p.name)
+	  	but.event_table[gui_press_event] = p.handle
+	end
 	local i, b, yb
 	i = 1
 	yb = y1
-	while butdef[i] do
-		butdef[i].box = {x4,yb,x3,yb+bh}
-		dial.buttons[i] = mkbutton(butdef[i])
+	dial.buttons = {}
+	for i,b in butdef do
+		b.box = {x4,yb,x3,yb+bh}
+		dial.buttons[i] = mkbutton(b)
 		yb = yb + bh + spany;
-		i = i + 1
 	end
 
 -- --- --- ---
@@ -406,15 +357,13 @@ function fileselector(name,path,filename)
 -- FILELIST
 -- --- --- -
 
-	function confirm(fl)
---		print("FILESELECTOR-CONFIRM")
-		if not fl or not fl.dir or fl.n < 1 then return end
+	function fileselector_confirm(fl)
+		if fl.dir.n < 1 then return end
 		local entry = fl.dir[fl.pos+1]
 		if not entry then return end
 		if entry.size and entry.size==-1 then
 			local action
-			
-			action = filelist_path(fl,entry.name)
+			action = fl:set_path(entry.name)
 			if not action then
 				return
 			end
@@ -427,17 +376,20 @@ function fileselector(name,path,filename)
 	dial.flist = gui_filelist(dial,
 		{	pos={x1,y1},
 			pwd=path,
-			confirm=confirm,
+			confirm=fileselector_confirm,
 			box={x5-x1, y5-y1, x5-x1, y5-y1}
 		})
+
+--	dump(dial.flist)
 
 	return dial
 end
 
-fileselector_loaded = 1
+--- };
 
-dial = nil
-if not nil then
+
+if nil then
+	dial = nil
 	print("Run test (y/n) ?")
 	c = getchar()
 	if c == 121 then
@@ -445,4 +397,5 @@ if not nil then
 	end
 end
 
+fileselector_loaded = 1
 return fileselector_loaded

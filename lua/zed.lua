@@ -1,9 +1,11 @@
---
--- this is ZED : The Ziggy's Editor
+--- @file   zed.lua
+--- @author vincent penne <ziggy@sashipa.com>
+--- @brief  ZED : The Ziggy's Editor
+---
+--- $Id: zed.lua,v 1.11 2002-10-30 19:59:30 benjihan Exp $
 --
 -- (C) 2002 Vincent Penne (aka Ziggy Stardust)
 --
--- $Id: zed.lua,v 1.10 2002-10-14 19:10:07 benjihan Exp $
 --
 
 rp ("Initializing ZED ... ")
@@ -17,13 +19,15 @@ if not dolib("keydefs",1) then return end
 
 zed_w, zed_h	=	consolesize()
 
--- put cursor at x y in console
+--- put cursor at x y in console.
+--- @internal
 function zed_gotoxy(x, y)
 --	rp (MT_POS..format("%c%c", 32+y, 32+x))
 	rp (MT_POS..strchar(32+y, 32+x))
 end
 
--- clear screen
+--- clear screen.
+--- @internal
 function zed_cls()
 	local	i
 	for i=0, zed_h-1, 1 do	
@@ -32,20 +36,23 @@ function zed_cls()
 	end
 end
 
--- clear current line
+--- clear current line.
+--- @internal
 function zed_cll()
 	rp (MT_CLRLINE)
 end
 
 zed_print=rp
 
--- print at specified position
+--- print at specified position.
+--- @internal
 function zed_printat(x, y, ...)
 	zed_gotoxy(x, y)
 	call(zed_print, arg)
 end
 
--- print at specified line, erasing it before
+--- print at specified line, erasing it before.
+--- @internal
 function zed_pline(y, ...)
 	zed_gotoxy(0, y)
 	zed_cll()
@@ -53,19 +60,22 @@ function zed_pline(y, ...)
 end
 
 
--- save cursor position
+--- save cursor position.
+--- @internal
 function zed_savecursorpos()
 	rp(MT_CURSAVE)
 end
 
 
--- restore cursor position
+--- restore cursor position.
+--- @internal
 function zed_restorecursorpos()
 	rp(MT_CURREST)
 end
 
 
--- initialize console (clear screen, wrap off)
+--- initialize console (clear screen, wrap off).
+--- @internal
 function zed_initconsole()
 	rp(MT_WRAPOFF)
 	zed_cls()
@@ -75,7 +85,8 @@ function zed_initconsole()
 end
 
 
--- desinitialize console (clear screen, wrap on)
+--- desinitialize console (clear screen, wrap on).
+--- @internal
 function zed_desinitconsole()
 	rp(MT_WRAPON)
 	zed_cls()
@@ -89,15 +100,15 @@ function zed_desinitconsole()
 end
 
 
--- function to edit a line
---
--- string : buffer to edit
--- col    : position of the cursor in the line
--- key    : input key event to handle
---
--- return : string, col 
--- (modified string taking in account key event, modified cursor position)
---
+--- Edit a line.
+---
+--- @param string  string ///< buffer to edit
+--- @param number  col    ///< position of the cursor in the line
+--- @param keycode key    ///< input key event to handle
+---
+--- @return string,col 
+--- (modified string taking in account key event, modified cursor position)
+---
 function zed_edline(string, col, key)
 
 	if key == KBD_KEY_LEFT then
@@ -121,7 +132,7 @@ function zed_edline(string, col, key)
 end
 
 
--- function to input a string on one line
+--- function to input a string on one line.
 function zed_input(string, y)
 
 	if not string then
@@ -167,7 +178,7 @@ function zed_input(string, y)
 
 end
 
-
+--- Read a file.
 function zed_readfile(filename, buffer)
 
 	local handle = readfrom(filename)
@@ -193,6 +204,7 @@ function zed_readfile(filename, buffer)
 end
 
 
+--- Write a file.
 function zed_writefile(filename, buffer)
 
 	local handle = writeto(filename)
@@ -237,7 +249,9 @@ function zed_pathsplit(filename)
 end
 
 
--- this is ZED editor, call it with an optional filename
+--- ZED editor.
+--- @param string filename ///< optional filename
+---
 function zed(filename)
 
 	local	line=1
@@ -296,9 +310,9 @@ function zed(filename)
 			oldscrollx = scrollx
 		end
 
-		-----------------
+		-- -------------
 		-- update screen
-		-----------------
+		-- -------------
 
 		-- update text lines
 		if update_to >= update_from then
@@ -324,9 +338,9 @@ function zed(filename)
 		zed_gotoxy(col-scrollx, line-scroll)
 	
 
-		---------------------
+		-- ------------------
 		-- handle user event
-		---------------------
+		-- -------------------
 
 		-- get next key event
 		local key

@@ -1,25 +1,30 @@
--- basic things used into other library (evt, keyboard_emu, gui)
---
--- author : vincent penne <ziggy@sashipa.com>
---
--- $Id: basic.lua,v 1.9 2002-10-21 14:57:00 benjihan Exp $
+--- @file    basic.lua
+--- @ingroup dcplaya_lua_basics
+--- @author  vincent penne <ziggy@sashipa.com>
+--- @author  benjamin gerard <ben@sashipa.com>
+--- @brief   basic things used into other library (evt, keyboard_emu, gui)
+---
+--- $Id: basic.lua,v 1.10 2002-10-30 19:59:30 benjihan Exp $
 ---
 
 -- Unload library
 basic_loaded=nil
 
--- doubly linked list support
+--- @defgroup dcplaya_lua_basics_linklist doubly linked list support.
+--- @ingroup dcplaya_lua_basics
 
--- insert a new element in list as first element (or as last simply by swaping
--- ofirst and olast, iprev and inext)
--- 
--- o      : owner
--- ofirst : index in the owner pointing to first element of list
--- olast  : index in the owner pointing to last element of list
--- i      : item to insert
--- iprev  : index in the item of prev element
--- inext  : index in the item of next element
--- iowner : index in the item of owner element
+--- insert a new element in list as first element (or as last simply by swaping
+--- ofirst and olast, iprev and inext).
+--- @ingroup dcplaya_lua_basics_linklist
+--- 
+--- @param o       owner
+--- @param ofirst  index in the owner pointing to first element of list
+--- @param olast   index in the owner pointing to last element of list
+--- @param i       item to insert
+--- @param iprev   index in the item of prev element
+--- @param inext   index in the item of next element
+--- @param iowner  index in the item of owner element
+---
 function dlist_insert(o, ofirst, olast, i, iprev, inext, iowner)
 	local f = o[ofirst]
 	i[iprev] = nil
@@ -34,14 +39,16 @@ function dlist_insert(o, ofirst, olast, i, iprev, inext, iowner)
 	i[iowner] = o
 end
 
--- remove an element from a list
--- 
--- ofirst : index in the owner pointing to first element of list
--- olast  : index in the owner pointing to last element of list
--- i      : item to insert
--- iprev  : index in the item of prev element
--- inext  : index in the item of next element
--- iowner : index in the item of owner element
+--- remove an element from a list.
+--- @ingroup dcplaya_lua_basics_linklist
+---
+--- @param ofirst  index in the owner pointing to first element of list
+--- @param olast   index in the owner pointing to last element of list
+--- @param i       item to insert
+--- @param iprev   index in the item of prev element
+--- @param inext   index in the item of next element
+--- @param iowner  index in the item of owner element
+---
 function dlist_remove(ofirst, olast, i, iprev, inext, iowner)
 	local o = i[iowner]
 	if not o then
@@ -66,86 +73,147 @@ function dlist_remove(ofirst, olast, i, iprev, inext, iowner)
 end
 
 
--- define +, -, * and ^ operators for tables
--- this is not complete ...
--- the ^ operator calculate the square distances between two tables
+--- @defgroup dcplaya_lua_basics_table table operators.
+--- @ingroup dcplaya_lua_basics
+--- @warning this is not complete ...
 
-function table_sqrdist(t1, t2)
+--- the ^ operator calculate the square distances between two tables.
+--- @ingroup dcplaya_lua_basics_table
+---
+--- @param   a  table
+--- @param   b  table
+---
+function table_sqrdist(a, b)
 	local sum = 0
 	local i, v
-	for i, v in t1 do
-		local d = v - t2[i]
+	for i, v in a do
+		local d = v - b[i]
 		sum = sum + d*d
 	end
-	
 	return sum
 end
 
-function table_add(t1, t2)
+--- the + operator.
+--- @ingroup dcplaya_lua_basics_table
+---
+--- @param   a  table or any type that support '+' operator
+--- @param   b  table or any type that support '+' operator
+--- @return table
+--- @warning At least one of the parameters must be a table
+---
+function table_add(a, b)
 	local r = {}
 	local i, v
-	for i, v in t1 do
-		r[i] = v + t2[i]
+	if type(b) == "table" then
+		a, b = b, a
 	end
-	
+	if type(b) == "table" then
+		for i, v in a do
+			r[i] = v + b[i]
+		end
+	else
+		for i, v in a do
+			r[i] = v + b
+		end
+	end
 	return r
 end
 
-function table_sub(t1, t2)
+--- the - operator.
+--- @ingroup dcplaya_lua_basics_table
+---
+--- @param   a  table or any type that support '-' operator
+--- @param   b  table or any type that support '-' operator
+--- @return table
+--- @warning At least one of the parameters must be a table
+---
+function table_sub(a, b)
 	local r = {}
 	local i, v
-	for i, v in t1 do
-		r[i] = v - t2[i]
+	if type(a) == "table" then
+		if type(b) == "table" then
+			for i, v in a do
+				r[i] = v - b[i]
+			end
+		else
+			for i, v in a do
+				r[i] = v - b
+			end
+		end
+	else
+		for i, v in b do
+			r[i] = a - v
+		end
 	end
-	
 	return r
 end
 
-function table_mul(a, t)
+--- the * operator.
+--- @ingroup dcplaya_lua_basics_table
+---
+--- @param   a  table or any type that support '*' operator
+--- @param   b  table or any type that support '*' operator
+--- @return table
+--- @warning At least one of the parameters must be a table
+---
+function table_mul(a, b)
 	local r = {}
 	local i, v
-	if type(a) == "table" then
-		a, t = t, a
+	if type(b) == "table" then
+		a, b = b, a
 	end
-	if type(a) == "table" then
+	if type(b) == "table" then
 		-- two tables case
 		for i, v in a do
-			r[i] = v * t[i]
+			r[i] = v * b[i]
 		end
 	else
 		-- number * table case
-		for i, v in t do
-			r[i] = v * a
+		for i, v in a do
+			r[i] = v * b
 		end
 	end
-	
 	return r
 end
 
-function table_div(a, t)
+--- the / operator.
+--- @ingroup dcplaya_lua_basics_table
+---
+--- @param   a  table or any type that support '/' operator
+--- @param   b  table or any type that support '/' operator
+--- @return table
+--- @warning At least one of the parameters must be a table
+---
+function table_div(a, b)
 	local r = {}
 	local i, v
 	if type(a) == "table" then
-		if type(t) == "table" then
+		if type(b) == "table" then
 			-- two tables case
 			for i, v in a do
-				r[i] = v / t[i]
+				r[i] = v / b[i]
 			end
 		else 
 		-- tables / number
 			for i, v in a do
-				r[i] = v / t
+				r[i] = v / b
 			end
 		end
 	else
 		-- number / table case
-		for i, v in t do
+		for i, v in b do
 			r[i] = a / v
 		end
 	end
 	return r
 end
 
+--- the unary - operator.
+--- @ingroup dcplaya_lua_basics_table
+---
+--- @param   a  table
+--- @return table
+---
 function table_minus(a)
 	local r = nil
 	local i, v
@@ -159,6 +227,13 @@ function table_minus(a)
 	return r
 end
 
+--- Get maximum value of a table.
+--- @ingroup dcplaya_lua_basics_table
+---
+--- @param   a  table
+--- @return table element
+--- @warning table elements must support the '>' operator.
+---
 function table_max(a)
 	local imax = nil
 	if type(a) == "table" and getn(a) > 0 then
@@ -175,6 +250,13 @@ function table_max(a)
 	return imax
 end
 
+--- Get minimum value of a table.
+--- @ingroup dcplaya_lua_basics_table
+---
+--- @param   a  table
+--- @return table element
+--- @warning table elements must support the '<' operator.
+---
 function table_min(a)
 	local imin = nil
 	if type(a) == "table" and getn(a) > 0 then
@@ -191,8 +273,12 @@ function table_min(a)
 	return imin
 end
 
--- Duplicate data 
---
+--- Duplicate any type.
+--- @ingroup dcplaya_lua_basics
+---
+--- @param  v  anything to duplicate
+--- @return duplication of v
+---
 function dup(v)
 	local t = type(v)
 
@@ -209,8 +295,15 @@ function dup(v)
 	end
 end
 
--- Get a lua compatible string describing this object.
---
+--- Get a lua compatible string describing this object.
+--- @ingroup dcplaya_lua_basics
+---
+--- @param   v       Object to dump
+--- @param   name    Optional name of v
+--- @param   indent  Indent level
+--- @return  string
+--- @warning This is a recursive "dangerous" function.
+---
 function type_dump(v, name, indent)
 	if not indent then indent = 0 end
 	local t = type(v)
@@ -240,11 +333,23 @@ function type_dump(v, name, indent)
 	return s
 end
 
+--- Print a lua compatible string describing this object.
+--- @ingroup dcplaya_lua_basics
+--- @see type_dump()
+---
 function dump(v, name, indent)
 	print(type_dump(v,name,indent))
 end
 
-
+--- Clip a value.
+--- @ingroup dcplaya_lua_basics
+---
+--- @param  v  Value to clip
+--- @param  min  Optional minimum clip value.
+--- @param  max  Optional maximum clip value.
+--- @return clipped value
+--- @warning if respectively min / max is not nil, v<min / v>max must be a
+---          valid operation
 function clip_value(v,min,max)
 	if min and v < min then v = min end
 	if max and v > max then v = max end

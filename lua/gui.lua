@@ -1,10 +1,9 @@
---
--- gui lua library on top of evt system
---
--- author : Vincent Penne
---
--- $Id: gui.lua,v 1.15 2002-10-28 18:53:40 benjihan Exp $
---
+--- @file   gui.lua
+--- @author Vincent Penne <ziggy@sashipa.com>
+--- @brief  gui lua library on top of evt system
+---
+--- $Id: gui.lua,v 1.16 2002-10-30 19:59:30 benjihan Exp $
+---
 
 --
 -- a gui item is an application (see in evt.lua for the definition) with
@@ -319,7 +318,7 @@ end
 function gui_new_dialog(owner, box, z, dlsize, text, mode)
 	local dial
 
---- $$$ ben : default owner is desktop
+--  $$$ ben : default owner is desktop
 	if not owner then owner = evt_desktop_app end
 	if not owner then print("gui_new_dialog : no desktop") return nil end
 
@@ -747,8 +746,8 @@ gui_init()
 
 gui_loaded = 1
 
-----------------------------------------------------------------------
-----------------------------------------------------------------------
+-- --------------------------------------------------------------------
+-- --------------------------------------------------------------------
 -- SAMPLE TEST CODE
 
 function dialog_test()

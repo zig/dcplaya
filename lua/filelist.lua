@@ -1,10 +1,10 @@
---- filelist.lua
--- 
--- author : benjamin gerard <ben@sashipa.com>
--- date   : 2002/10/04
---
--- $Id: filelist.lua,v 1.7 2002-10-27 18:39:46 benjihan Exp $
---
+--- @file   filelist.lua
+--- @author benjamin gerard <ben@sashipa.com>
+--- @date   2002/10/04
+--- @brief  Manage and display a list of file.
+---
+--- $Id: filelist.lua,v 1.8 2002-10-30 19:59:30 benjihan Exp $
+---
 
 --- filelist object - Extends textlist
 --
@@ -18,33 +18,59 @@ filelist_loaded = nil
 -- Load required libraries
 --
 if not dolib("textlist") then return end
-
-function filelist_dump(fl)
-	textlist_dump(fl)
-	if not fl then return end
-	if fl.pwd then
-		print(format("pwd='%s'", fl.pwd))
-	else
-		print("pwd=nil")
-	end
-end
-
-function filelist_default_confirm(fl)
-	if not fl or not fl.dir or not fl.n then return end
-	local entry = fl.dir[fl.pos+1]
-	if entry.size and entry.size==-1 then
-		local action = filelist_path(fl,entry.name)
-		if not action then return end
-		return 2
-	else
-		return 3
-	end
-end
 	
 function filelist_create(flparm)
---	print("filelist_create...")
+
+	function filelist_confirm(fl)
+		if fl.dir.n < 1 then return end
+		local entry = fl.dir[fl.pos+1]
+		if entry.size and entry.size==-1 then
+			local action = fl:set_path(entry.name)
+			if not action then return end
+			return 2
+		else
+			return 3
+		end
+	end
+
+	function filelist_get_entry(fl)
+		if fl.dir.n < 1 then return end
+		local e = textlist_get_entry(fl)
+		e.full = fl.pwd..e.name
+		return e
+	end
+
+	-- Filelist change current path: 
+	--
+	function filelist_set_path(fl,path)
+		if not path then
+			path = fl.pwd
+		else
+			if strsub(path,1,1) ~= "/" then
+				path = fl.pwd..path
+			end
+			path = fullpath(path)
+		end
+		local len = strlen(path)
+		if strsub(path,len,len) ~= "/" then
+			path = path.."/"
+		end
+
+		local start,stop
+
+		-- Load new path --
+		-- $$$ missing filter
+		local dir=dirlist("-n", path)
+		if not dir then
+			print(format("filelist: failed to load '%s'",path))
+			return
+		end
+		fl.pwd = path
+		return fl:change_dir(dir)
+	end
+
 	if not flparm then flparm = {} end
-	if not flparm.confirm then flparm.confirm = filelist_default_confirm end
+	if not flparm.confirm then flparm.confirm = filelist_confirm end
 	fl = textlist_create(flparm)
 	if not fl then return end
 	if not flparm.pwd then
@@ -52,63 +78,11 @@ function filelist_create(flparm)
 	else
 		fl.pwd = fullpath(flparm.pwd)
 	end
-	filelist_path(fl,fl.pwd)
 
---	filelist_dump(fl)
---	print("...filelist_create")
+	fl.get_entry = filelist_get_entry
+	fl.set_path = filelist_set_path
+	fl:set_path()
 	return fl
-end
-
-function filelist_get_entry(fl)
-	local entry = textlist_get_entry(fl)
-	if not entry then return end
-	entry.full = fl.pwd..entry.name
-	return entry
-end
-
--- Filelist change current path: 
---
-function filelist_path(fl,path)
-	if not fl then return end
-	if not path then
-		path = fl.pwd
-	else
-		if strsub(path,1,1) ~= "/" then
-			path = fl.pwd..path
-		end
-		path = fullpath(path)
-	end
-	local len = strlen(path)
-	if strsub(path,len,len) ~= "/" then
-		path = path.."/"
-	end
-
-	local start,stop
---	start,stop,path=strfind(path,"^(.*)/*")
-
---	print(format("filelist_path(%s)",path))
-
-	-- Load new path --
-	-- $$$ missing filter
-	local dir=dirlist("-n", path)
-	if not dir then
-		print(format("filelist: failed to load '%s'",path))
-		return
-	end
-	fl.dir = dir
-	fl.n = getn(fl.dir)
-	fl.pwd = path
---	print(format("filelist: pwd '%s' ,%d",fl.pwd, fl.n))
-
-	local dim = textlist_measure(fl)
-	textlist_set_box(fl,nil,nil,
-						2*fl.border + dim[1],
-						2*fl.border + (fl.font_h+2*fl.span)*fl.n, nil)
-
-	-- Set invalid top and pos will force update for both dl --
-	fl.top = 1
-	fl.pos = 1
-	return textlist_movecursor(fl,-1)
 end
 
 --- Create textlist gui application.
@@ -120,17 +94,16 @@ function gui_filelist(owner, flparm)
 	return textlist_create_gui(fl, owner)
 end
 
-filelist_loaded = 1
-
 if nil then
-print("Run test (y/n) ?")
-c = getchar()
-if c == 121 then
-	print ("Create file list")
-	fl = filelist_create( { pwd="/pc/t" } )
-	print (fl)
-	textlist_standalone_run(fl)
-end
+	print("Run test (y/n) ?")
+	c = getchar()
+	if c == 121 then
+		print ("Create file list")
+		fl = gui_filelist(evt_desktop_app, { pwd="/pc/t" } )
+		getchar()
+		evt_shutdown_app(fl)
+	end
 end
 
+filelist_loaded = 1
 return filelist_loaded

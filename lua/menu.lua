@@ -11,13 +11,13 @@ if not menu_tag then
 	menu_tag = newtag()
 end
 
---- @defgroup dcplaya_lua_gui Menu GUI
+--- @defgroup dcplaya_lua_menu_gui Menu GUI
 --- @ingroup  dcplaya_lua_gui
 --- 
 
 --- Menu definition object.
 --- @ingroup dcplaya_lua_menu_gui
---- struct menudef {
+--- struct menudef : applcation {
 ---   string     name;    ///< Menu name.
 ---   number     n;       ///< Number of menu entry.
 ---   string     title;   ///< Menu title (or nil is none).
@@ -34,7 +34,21 @@ end
 
 --- Menu object.
 --- @ingroup dcplaya_lua_menu_gui
---- struct menu {
+---
+--- struct menu : application {
+---   open();	           ///< Show/active menu
+---	  close();             ///< Hide/desactive menu
+---	  set_color();         ///< Set global color
+---	  draw();              ///< Build display lists
+---	  confirm();           ///< Menu confirm callback
+---   shutdown();          ///< Shutdown menu
+---   create();            ///< Create a new menu
+---
+---   style        style;      ///< Menu style
+---   display_list dl;         ///< Menu display list
+---   menudef      def;        ///< menu definition
+---   menu         sub_menu[]; ///< Created sub-menu (indexed by name)
+---   number       fade;       ///< Current fade step.
 --- };
 
 --- Create a menu application.
@@ -84,7 +98,7 @@ function menu_create(owner, name, def, box)
 
 	-- Menu update (handles fade in / fade out)
 	-- -----------
-	function update(menu, frametime)
+	function menu_update(menu, frametime)
 		if menu.fade == 0 then return end
 		local a,r,g,b
 		a, r, g, b = dl_get_color(menu.dl)
@@ -97,12 +111,12 @@ function menu_create(owner, name, def, box)
 			menu.fade  = 0
 			dl_set_active(menu.dl, 0)
 		end
-		menu:setcolor(a, r, g, b)
+		menu:set_color(a, r, g, b)
 	end
 
 	-- Menu handle
 	-- -----------
-	function handle(menu, evt)
+	function menu_handle(menu, evt)
 		local key = evt.key
 
 		if key == evt_shutdown_event then
@@ -122,10 +136,10 @@ function menu_create(owner, name, def, box)
 		elseif key == gui_item_change_event then
 			return
 		elseif gui_keyup[key] then
-			textlist_movecursor(menu.fl,-1)
+			menu.fl:move_cursor(-1)
 			return
 		elseif gui_keydown[key] then
-			textlist_movecursor(menu.fl,1)
+			menu.fl:move_cursor(1)
 			return
 		elseif gui_keyleft[key] then
 			if tag(menu.owner) == menu_tag then
@@ -144,7 +158,7 @@ function menu_create(owner, name, def, box)
 
 	-- Menu open
 	-- ---------
-	function open(menu)
+	function menu_open(menu)
 		menu.fade = 4
 		menu.closed = nil
 		dl_set_active(menu.dl,1)
@@ -152,22 +166,21 @@ function menu_create(owner, name, def, box)
 
 	-- Menu close
 	-- ----------
-	function close(menu)
+	function menu_close(menu)
 		menu.closed = 1
 		menu.fade = -4;
 	end
 
-	-- Menu setcolor
-	-- -------------
-	function setcolor(menu, a, r, g, b)
+	-- Menu set color
+	-- --------------
+	function menu_set_color(menu, a, r, g, b)
 		dl_set_color(menu.dl,a,r,g,b)
-		if menu.fl.dl then dl_set_color(menu.fl.dl,a,r,g,b) end
-		if menu.fl.cdl then dl_set_color(menu.fl.cdl,a,r,g,b) end
+		menu.fl:set_color(a,r,g,b)
 	end
 
 	-- Menu draw
 	-- ---------
-	function draw(menu)
+	function menu_draw(menu)
 		local dl  = menu.dl
 		local fl  = menu.fl
 		local def = menu.def
@@ -205,7 +218,7 @@ function menu_create(owner, name, def, box)
 			local bkgtype = style.bkg_type
 			local i,max
 			max=fl.top+fl.lines
-			if max > fl.n then max = fl.n end
+			if max > fl.dir.n then max = fl.dir.n end
 			for i=fl.top+1, max do
 				local e = fl.dir[i]
 				dl_draw_box(dl, 0, e.y, w, e.y+e.h, -0.1,
@@ -221,7 +234,7 @@ function menu_create(owner, name, def, box)
 
 	-- Menu confirm
 	-- ------------
-	function confirm(menu)
+	function menu_confirm(menu)
 		local fl = menu.fl
 		local idx = fl.pos+1
 		local entry = fl.dir[idx]
@@ -252,14 +265,14 @@ function menu_create(owner, name, def, box)
 
 	-- Menu shutdown
 	-- -------------
-	function shutdown(menu)
+	function menu_shutdown(menu)
 		if not menu then return end
 
 		local owner = menu.owner
 		if tag(owner) == menu_tag then
 			owner.sub_menu[menu.name] = nil
 		end
-		textlist_shutdown(menu.fl)
+		menu.fl:shutdown()
 		dl_destroy_list(menu.dl)
 		local i,v
 		for i,v in menu do
@@ -271,16 +284,16 @@ function menu_create(owner, name, def, box)
 		-- Application
 		name = name,
 		version = 1.0,
-		handle = handle,
-		update = update,
+		handle = menu_handle,
+		update = menu_update,
 
 		-- Methods
-		open = open,
-		close = close,
-		setcolor = setcolor,
-		draw = draw,
-		confirm = confirm,
-		shutdown = shutdown,
+		open = menu_open,
+		close = menu_close,
+		set_color = menu_set_color,
+		draw = menu_draw,
+		confirm = menu_confirm,
+		shutdown = menu_shutdown,
 		create = menu_create,
 
 		-- Members
@@ -309,7 +322,7 @@ function menu_create(owner, name, def, box)
 		textlist_center(menu.fl, 0, 0, 320, 240)
 	end
 
-	menu:setcolor(0, 1, 1, 1)
+	menu:set_color(0, 1, 1, 1)
 	menu:draw()
 
 	if tag(owner) == menu_tag then
@@ -442,7 +455,7 @@ if not nil then
 		}
 		dial = gui_menu(nil,"menu1", menu_create_defs(def))
 	end
-	function k() if dial then menu_shutdown(dial) end end
+	function k() if dial then dial:shutdown() end end
 --	k()
 end
 
