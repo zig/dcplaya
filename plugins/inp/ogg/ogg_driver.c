@@ -10,7 +10,7 @@
  *  An Ogg/Vorbis player library using sndstream and functions provided by
  *  sndvorbisfile.
  *
- * $Id: ogg_driver.c,v 1.6 2002-12-19 18:43:20 ben Exp $
+ * $Id: ogg_driver.c,v 1.7 2002-12-20 08:49:54 ben Exp $
  */
 
 #include <kos.h>
@@ -35,7 +35,7 @@ static int pcm_stereo;
 static int tempcounter =0;
 
 /* liboggvorbis Related Variables */
-VorbisFile_headers_t	v_headers;
+VorbisFile_headers_t v_headers;
 
 static int sndogg_info(playa_info_t *info, const char *fname);
 
@@ -143,7 +143,7 @@ static int decode_frame(void)
   int pcm_decoded;
   pcm_ptr = pcm_buffer;
 
-  if (VorbisFile_isEOS()==1) {
+  if (VorbisFile_isEOS()) {
     SDDEBUG("%s() : Decode complete\n", __FUNCTION__);
     return INP_DECODE_END;
   }
@@ -248,6 +248,7 @@ static int sndogg_stop(void)
 static int sndogg_shutdown(any_driver_t * d)
 {
   SDDEBUG("%s(%s) := [0]\n", __FUNCTION__, d->name);
+  sndogg_stop();
   return 0;
 }
 
@@ -268,6 +269,10 @@ static int sndogg_decoder(playa_info_t * info)
     tempcounter = 0;
   }
   tempcounter++;
+
+  if (VorbisFile_isEOS()) {
+	SDDEBUG("flushing [%d] samples\n", pcm_count);
+  }
 
   /* No more pcm : decode next ogg frame
    * No more frame : it is the end

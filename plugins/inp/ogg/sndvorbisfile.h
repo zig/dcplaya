@@ -70,7 +70,8 @@ typedef uint32		VorbisFile_handle_t;
 /* Static String that is used in case a comment is not
  * set in a Stream
  */
-static char VorbisFile_NULL[]="N/A";
+//static char VorbisFile_NULL[]="N/A";
+#define VorbisFile_NULL 0
 
 /* Public Function Declarations
  */

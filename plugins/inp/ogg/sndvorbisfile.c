@@ -7,7 +7,9 @@
  * libsndoggvorbis. May also be used directly for playback without
  * threading.
  *
- * $Id: sndvorbisfile.c,v 1.2 2002-09-23 03:25:01 benjihan Exp $
+ * Modified by benjamin Gerard for dcplaya
+ *
+ * $Id: sndvorbisfile.c,v 1.3 2002-12-20 08:49:54 ben Exp $
  */
 
 #include <kos.h>
@@ -30,6 +32,7 @@ vorbis_block vb;
 
 int VorbisFile_convbufferlength = 4096;
 int VorbisFile_EOS;
+static int vd_samples;
 
 /* Variables for calculation of actual bitrate */
 double VorbisFile_sampletrack;
@@ -56,10 +59,7 @@ VorbisFile_handle_t fd;
  */
 int VorbisFile_isEOS()
 {
-  if (VorbisFile_EOS == 1)
-    return (1);
-  else
-    return (0);
+  return VorbisFile_EOS != 0;
 }
 
 /* VorbisFile_getBitrateNominal()
@@ -144,10 +144,10 @@ char *VorbisFile_getCommentByName(char *commentfield)
 char *VorbisFile_getCommentByID(long commentid)
 {
   if (fd == 0)
-    return (NULL);
+    return (VorbisFile_NULL);
 
   /* Check if we have at least that much comments in our file ?! */
-  if (vc.comments > 0) {
+  if (vc.comments > 0 && commentid < vc.comments) {
     return vc.user_comments[commentid];
   }
   return (VorbisFile_NULL);
@@ -175,6 +175,7 @@ int VorbisFile_openFile(const char *filename, VorbisFile_headers_t * v_headers)
 {
   int i;
   VorbisFile_EOS = 0;
+  vd_samples = 0;
 
   fd = fs_open(filename, O_RDONLY);
 
@@ -215,7 +216,7 @@ int VorbisFile_openFile(const char *filename, VorbisFile_headers_t * v_headers)
 
   if (vorbis_synthesis_headerin(&vi, &vc, &op) < 0) {
     SDWARNING("libvorbis: Ogg bitstream does not contain "
-	      "Vorbis encoded date\n");
+			  "Vorbis encoded date\n");
   }
 
   i = 0;
@@ -247,11 +248,11 @@ int VorbisFile_openFile(const char *filename, VorbisFile_headers_t * v_headers)
   }
 
   SDDEBUG("libvorbis: Bitstream is %d channel, %ld Hz, %ld bit/s\n",
-         vi.channels, vi.rate, vi.bitrate_nominal);
+		  vi.channels, vi.rate, vi.bitrate_nominal);
   SDDEBUG("Libvorbis: Encoded by: %s\n",
-	  vc.vendor);
+		  vc.vendor);
   SDDEBUG("Libvorbis: Found %d additional comment fields\n",
-	  vc.comments);
+		  vc.comments);
 
   /* Todo:
    * Reading of additional comment fields and putting in v_headers
@@ -341,51 +342,52 @@ static void conv_stereo(ogg_int32_t *d, const float *l, const float *r, int n)
  * not in a 8 bit byte buffer.
  */
 int VorbisFile_decodePCM(VorbisFile_headers_t vhd,
-			   ogg_int16_t * target,
-			   int req_pcm)
+						 ogg_int16_t * target,
+						 int req_pcm)
 {
   int convsize = vhd.convsize;
-  int n = req_pcm;
+  int n = req_pcm, bout;
 
   if (n <= 0) {
     return n;
   }
 
   do {
-    float **pcm;
-    int samples;
+    static float **pcm;
 
     // first we have to try to get some data out of the current stream
 
-    while (n > 0 && (samples = vorbis_synthesis_pcmout(&vd, &pcm)) > 0) {
-      // int clipflag=0;
+	/* Finish with current dsp block. */
+	if (!vd_samples) {
+	  vd_samples = vorbis_synthesis_pcmout(&vd, &pcm);
+	  if (vd_samples > convsize) {
+		SDWARNING("%d > %d\n",vd_samples, convsize);
+	  }
+      vorbis_synthesis_read(&vd, vd_samples);
+	}
 
-      // the "bout" variable holds the number of PCM samples we got. but this
-      // only counts how many stereo-16bit samples we have.
-      //
-      // so to get the number of 16-bit samples we have to multiply by 2
-      // and to get the number of bytes at all we have to multiply by 4
-      int bout = (samples < convsize ? samples : convsize);
+	bout = (vd_samples > n) ? n : vd_samples;
 
-      // pcm contains both (left and right) decoded pcm values
-      switch(vi.channels) {
-      case 1:
-	conv_mono(target, pcm[0], bout);
-	break;
-      case 2:
-	conv_stereo((ogg_int32_t *)target, pcm[0], pcm[1], bout);
-	break;
-      default:
-	SDERROR("Bad number of channel : %d\n", vi.channels);
-	return -1;
-      }
-      target += bout << (vi.channels-1);
-      n -= bout;
-
-      vorbis_synthesis_read(&vd, bout);
-    }
+	// pcm contains both (left and right) decoded pcm values
+	switch(vi.channels) {
+	case 1:
+	  conv_mono(target, pcm[0], bout);
+	  pcm[0] += bout;
+	  break;
+	case 2:
+	  conv_stereo((ogg_int32_t *)target , pcm[0], pcm[1], bout);
+	  pcm[0] += bout;
+	  pcm[1] += bout;
+	  break;
+	default:
+	  SDERROR("Bad number of channel : %d\n", vi.channels);
+	  return -1;
+	}
+	target += bout << (vi.channels-1);
+	n -= bout;
+	vd_samples -= bout;
     
-    if (n > 0) {
+    if (!vd_samples) {
       while (ogg_stream_packetout(&os, &op) == 0) {
         while (ogg_sync_pageout(&oy, &og) == 0) {
           iVorbisFile_grabData();
@@ -393,7 +395,7 @@ int VorbisFile_decodePCM(VorbisFile_headers_t vhd,
         if (ogg_page_eos(&og)) {
           VorbisFile_EOS = 1;
           SDDEBUG("Liboggvorbis: reached the end of the stream\n");
-	  break;
+		  goto end;
         }
         ogg_stream_pagein(&os, &og);
       }
@@ -402,9 +404,10 @@ int VorbisFile_decodePCM(VorbisFile_headers_t vhd,
       }
     }
   } while (n > 0);
-/*   if (req_pcm - n < 0) { */
-/*     SDWARNING("%d ", req_pcm - n); */
-/*   } */
+ end:
+  /*   if (req_pcm - n < 0) { */
+  /*     SDWARNING("%d ", req_pcm - n); */
+  /*   } */
   return req_pcm - n;
 }
 
