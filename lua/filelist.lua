@@ -3,7 +3,7 @@
 -- author : benjamin gerard <ben@sashipa.com>
 -- date   : 2002/10/04
 --
--- $Id: filelist.lua,v 1.1 2002-10-07 15:19:39 benjihan Exp $
+-- $Id: filelist.lua,v 1.2 2002-10-07 23:54:58 benjihan Exp $
 --
 
 --- filelist object - Extends textlist
@@ -65,16 +65,20 @@ function gui_filelist(owner, flparm)
 end
 
 
--- Filelist change current path:
+-- Filelist change current path: 
 --
 function filelist_path(fl,path)
 	print("filelist_path...")
 
-	if not fl or type(path) ~= "string" then return end
-	if strsub(path,1,1) ~= "/" then
-		path = fl.pwd.."/"..path
+	if not fl then return end
+	if not path then
+		path = fl.pwd
+	else
+		if strsub(path,1,1) ~= "/" then
+			path = fl.pwd.."/"..path
+		end
+		path = fullpath(path)
 	end
-	path = fullpath(path)
 
 	-- Load new path --
 	-- $$$ missing filter

@@ -3,7 +3,7 @@
 -- author : benjamin gerard <ben@sashipa.com>
 -- date   : 2002/10/04
 --
--- $Id: fileselector.lua,v 1.5 2002-10-07 23:28:02 vincentp Exp $
+-- $Id: fileselector.lua,v 1.6 2002-10-07 23:54:58 benjihan Exp $
 --
 
 if not filelist_loaded then
@@ -74,10 +74,41 @@ function fileselector(name,path,filename)
 ----------------
 -- MAIN DIALOG
 ----------------
+	function fs_change_mode(dial,mode)
+		if mode == dial.mode then return end
+		print(format("Changing mode %d->%d",dial.mode,mode))
+		dial.mode = mode
+	end
+
+	function dial_handle(dial,evt)
+		local key = evt.key
+		if key == gui_item_confirm_event then
+			print("FL-CONFIRM")
+			gui_input_set(dial.input, dial.flist.fl.pwd)
+			gui_new_focus(dial, dial.input)
+			return
+		elseif key == gui_item_cancel_event then
+			print("FL-CANCEL")
+			fs_change_mode(dial,0)
+			gui_new_focus(dial, dial.input)
+			return
+		elseif key == gui_item_change_event then
+			print("FL-CHANGE")
+			return
+		end
+		return evt
+	end
+
 	if not name then name="File Selector" end
 	if not path then path=PWD end
 	dial = gui_new_dialog(evt_desktop_app,
 		{x, y, x2, y2 }, nil, nil, name, { x = "left", y = "up" } )
+	dial.event_table = {
+		[gui_item_confirm_event]	= dial_handle,
+		[gui_item_cancel_event]		= dial_handle,
+		[gui_item_change_event]		= dial_handle
+	}
+	dial.mode = 0
 
 	function mkbutton(p)
 		local but
@@ -92,7 +123,11 @@ function fileselector(name,path,filename)
 	end
 
 	function but_mkdir_handle(but,evt)
-		print("MKDIR")
+		local dial = but.owner
+		if strlen(dial.input.input) > 0 then
+			mkdir("-v",dial.input.input)
+			filelist_path(dial.fl) -- Update 
+		end
 		return
 	end
 

@@ -3,7 +3,7 @@
 -- author : benjamin gerard <ben@sashipa.com>
 -- date   : 2002/10/04
 --
--- $Id: textlist.lua,v 1.1 2002-10-07 15:19:40 benjihan Exp $
+-- $Id: textlist.lua,v 1.2 2002-10-07 23:54:58 benjihan Exp $
 --
 
 --- textlist object - Display a textlist from a given dir
@@ -388,7 +388,8 @@ end
 --
 function textlist_movecursor(fl,mov)
 	if not fl then return end
-	local top,pos
+	local top,pos,action
+	action=0
 	top = fl.top
 	pos = fl.pos + mov
 	if pos >= fl.entries then pos = fl.entries-1 end
@@ -407,13 +408,17 @@ function textlist_movecursor(fl,mov)
 		fl.cmtx = mat_trans(0,y,0.1)
 		fl.pos = pos
 		textlist_updatecursor(fl)
+		action = 1
 	end
 
 	if top ~= fl.top then
 --		print(format("textlist : top '%d'",top))
 		fl.top = top
 		textlist_update(fl)
+		action = action + 2
 	end
+--	print(format("action:%d",action))
+	return action
 end
 
 -- textlist application event handler
