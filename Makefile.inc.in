@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile.inc.in,v 1.16 2002-09-21 05:15:42 benjihan Exp $
+# $Id: Makefile.inc.in,v 1.17 2002-09-21 09:58:28 benjihan Exp $
 #
 
 TOP_DIR="@TOP_DIR@"
@@ -88,13 +88,15 @@ endif
 ifeq '$(LEZ)' 'yes'
 ifndef LEFS
 LEFS := $(shell basename `pwd`).lez
-.PRECIOUS: $(LEFS:%.lez=%.lef)
+ILEFS := $(LEFS:%.lez=%.lef)
+.PRECIOUS: $(ILEFS)
 endif
 endif
 
 ifeq '$(LEF)' 'yes'
 ifndef LEFS
 LEFS := $(shell basename `pwd`).lef
+ILEFS := $(LEFS:%.lef=%.lez)
 endif
 endif
 
@@ -149,7 +151,7 @@ $(LIBNAME) : $(OBJS) $(LIB_EXTRA)
 
 %.lez : %.lef
 	@echo "Build [$@] from [$^]"
-	@gzip --best -n -c $< >$@
+	@gzip --best -n -c -v $< >$@
 %.lef : $(OBJS) $(filter %.a %.o %.elf %.lef, $(LEF_EXTRA))
 	@echo "Build [$@] from [$^]"
 	@$(KOS_LD) -b elf32-shl -d -O 3 -EL -r --cref -M -Map $*.map -x -O -S $^ $(LEF_EXTRA) -o $@
@@ -179,12 +181,12 @@ clean: clean_subdirs clean_local
 
 clean_local:
 	@echo "[$@ (`pwd`)]"
-	@rm -f $(LEFS) $(OBJS) $(CLEAN_LOCAL) $(LIBNAME) $(TARGETS) *.map
+	@rm -f $(LEFS) $(ILEFS) $(OBJS) $(CLEAN_LOCAL) $(LIBNAME) $(TARGETS) *.map
 
 distclean: depend-clean clean
 	@echo "[$@ (`pwd`)]"
 	@rm -f TAGS ID
-	@rm -f include/config.h Makefile.inc doc/Makefile#
+	@rm -f include/config.h Makefile.inc doc/Makefile
 	@rm -f config.cache config.log stamp-h stamp-h[0-9]*
 	@find . -type f -name '*~' -o -name Makefile.dep -exec rm -f '{}' \;
 	@rm -rf `find . -type d -name '\.deps'`

@@ -4,7 +4,7 @@
  * @date    2002/02/10
  * @brief   file and playlist browser
  * 
- * $Id: songmenu.c,v 1.5 2002-09-21 05:15:47 benjihan Exp $
+ * $Id: songmenu.c,v 1.6 2002-09-21 09:58:30 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -191,17 +191,21 @@ static const char *nullstr(const char *s) {
 
 static int file_type_inp(const char *name)
 {
-  const char *e;
+  //  const char *e;
   int type = FILETYPE_UNKNOWN;
 
+  /* $$$ ben : don't use this becoz it does not handle .gz correctly. */
+  /*
   e = filetype_ext(name);
   if (e[0]) {
-    inp_driver_t *d = inp_driver_list_search_by_extension(e);
+  */
 
-    if (d) {
-      type = d->id;
-    }
+  inp_driver_t *d = inp_driver_list_search_by_extension(name);
+
+  if (d) {
+    type = d->id;
   }
+/*   } */
   return type;  
 }
 
@@ -257,18 +261,27 @@ static void make_mp3_name(char *dst, const char * src, int max)
   }
   
   if (option_filter()) {
-    int i, ext;
+    int i, ext, ext2;
+    int lim = 5;
     
     --max;
-    for (i=0, ext=-1; i<max; ++i) {
+    for (i=0, ext=ext2=-1; i<max; ++i) {
       int c = src[i];
       if (!c) break;
-      if (c == '.') ext = i;
+      if (c == '.') ext2 = ext, ext = i;
       else if (c == '_') c = ' ';
       dst[i] = c;
     }
     dst[i] = 0;
-    if (ext>0 && i-ext <= 5) dst[ext] = 0;
+    if (ext2 > 0) {
+      if (!stricmp(src+ext, ".gz")) {
+	dst[ext] = 0;
+	ext = ext2;
+	lim += 3;
+      }
+    }
+    if (ext>0 && i-ext <= lim) dst[ext] = 0;
+
   } else {
     strncpy(dst, src, max);
     dst[max-1] = 0;

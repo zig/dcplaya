@@ -24,7 +24,8 @@ void aica_init(void);
 void aica_play(int ch, unsigned long smpptr, int mode,
                int loopst, int loopend,
 		           int freq, int vol, int pan, int loopflag);
-void aica_stream_start(unsigned long smpptr, int mode);
+void aica_stream_start(unsigned long smpptr0, unsigned long smpptr1,
+		       int chan_mask, int mode);
 void aica_stop(int ch);
 void aica_vol(int ch, int vol);
 void aica_pan(int ch, int pan);

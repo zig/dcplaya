@@ -8,6 +8,7 @@ typedef struct {
 } _ext_list_t;
 
 /* Get filename extension. */
+/* $$$ Does not handle .gz */
 const char *filetype_ext(const char *fname)
 {
   const char * e = strrchr(fname,'.');

@@ -75,7 +75,7 @@ int driver_list_register(driver_list_t *dl, any_driver_t * driver)
     ((inp_driver_t *)driver)->id = file_type++;
   }
 
-  SDDEBUG("List [%s] : added #%d [%s]\n", dl->name, dl->n, dl->drivers->name);
+/*   SDDEBUG("List [%s] : added #%d [%s]\n", dl->name, dl->n, dl->drivers->name); */
 
   return 0;
 }
@@ -128,8 +128,11 @@ int driver_list_unregister(driver_list_t *dl, any_driver_t * driver)
     }
     --dl->n;
   }
-  SDDEBUG("%s([%s], [%s]) : %s\n", __FUNCTION__, dl->name, driver->name,
-	  d ? "success" : "failure");
+  if (!d) {
+    SDERROR("Failed to unregister [%s] from [%s].\n", driver->name, dl->name);
+  } else {
+    SDDEBUG("Unregister [%s] from [%s] failed\n", driver->name, dl->name);
+  }
 
   return d ? 0 : -1;
 }
@@ -193,8 +196,23 @@ static const char * get_ext(const char *name)
   }
   e = strrchr(name,'.');
   p = strrchr(name,'/');
+  if (e<p) {
+    e = 0;
+  } else if (ToUpper(e[1]) == 'G' && ToUpper(e[2]) == 'Z' && !e[3]) {
+    /* .gz found, try to find secondary extension. */
+    const char *e2;
 
-  return (e>p) ? e : 0;
+    for (e2=e-1; e2 >= name && *e2 != '/'; --e2) {
+      if (*e2 == '.') {
+	e = e2;
+	break;
+      }
+    }
+  }
+
+/*   SDDEBUG("%s([%s] := [%s]\n", __FUNCTION__, name, e); */
+
+  return e;
 }
 
 inp_driver_t * inp_driver_list_search_by_extension(const char *ext)

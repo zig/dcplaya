@@ -1,5 +1,5 @@
 
-$Id: TODO,v 1.6 2002-09-21 05:15:42 benjihan Exp $
+$Id: TODO,v 1.7 2002-09-21 09:58:28 benjihan Exp $
 
 ** TODO :
 
@@ -21,10 +21,15 @@ $Id: TODO,v 1.6 2002-09-21 05:15:42 benjihan Exp $
 
 - add BUGS to cvs
 
-- Fix stereo bugs
++ Fix stereo bugs
+  (2002/09/21 ben) I was probably really tired when I wrote this code. It seems
+  to be fixed right now. Since I don't have a stereo output here, I can't
+  really test it !!!
 
 + Load playlist
-  (2002/09/20 ben)
+  (2002/09/20 ben) For m3u only.
+
+- Load .pls playlist
 
 - Save playlist
 
@@ -36,6 +41,17 @@ $Id: TODO,v 1.6 2002-09-21 05:15:42 benjihan Exp $
 
 - Japanese support (encoding / display)
 
-- Remove .gz for file detection
++ Remove .gz for file detection
+  (2002/09/21 ben) Extensions are properly discard in songmenu.c. It removes
+  double extension `.xxx.gz' when building a music name.
+  Input drivers that handle gzip loading, must add a new `.xxx.gz' extension
+  for each `.xxx' handled. This could make the extension list a little longer
+  specially for mikmod which handles lotsa.
+  The inp_driver_list_search_by_extension() function must not be given an
+  extension from filetype_ext() function because it does not handle properly
+  .gz extension.
 
 - Just a idea for later : Karaoke mode with jumping ball...
+
+- Change info in inp plugin API. It is such a mess.
+

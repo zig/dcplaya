@@ -1,9 +1,9 @@
-/** 
- * dreammp3 - File type
+/**
+ * @file    filetype.h
+ * @author  ben(jamin) gerard <ben@sashipa.com> 
+ * @brief   Deal with file types and extensions.
  *
- * (c) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
- *
- * $Id: filetype.h,v 1.2 2002-09-06 23:16:09 ben Exp $
+ * $Id: filetype.h,v 1.3 2002-09-21 09:58:30 benjihan Exp $
  */
 
 #ifndef _FILETYPE_H_
@@ -14,27 +14,34 @@
 
 DCPLAYA_EXTERN_C_START
 
+/** @name File type definitions.
+ *  @{
+ */
 
-#define FILETYPE_ERROR    0
-#define FILETYPE_ROOT     1
-#define FILETYPE_SELF     2
-#define FILETYPE_PARENT   3
-#define FILETYPE_DIR      16
-#define FILETYPE_LINK     64
+#define FILETYPE_ERROR    0   /**< Reserved for error-code returns   */
+#define FILETYPE_ROOT     1   /**< File is root directory            */
+#define FILETYPE_SELF     2   /**< File is current directory (.)     */
+#define FILETYPE_PARENT   3   /**< File os parent directory (..)     */
+#define FILETYPE_DIR      16  /**< File is a directory               */
+#define FILETYPE_LINK     64  /**< File is a symbolic links. Unused! */
 
-#define FILETYPE_FILE     (256*1)
-#define FILETYPE_UNKNOWN  FILETYPE_FILE
+#define FILETYPE_FILE     (256*1)   /**< First available regular filetype */
+#define FILETYPE_UNKNOWN  FILETYPE_FILE /**< Unknown filetype. */
 
-#define FILETYPE_EXE      (256*2)
-#define FILETYPE_ELF      (FILETYPE_EXE+1)
-#define FILETYPE_LEF      (FILETYPE_EXE+2)
+#define FILETYPE_EXE      (256*2)          /**< Executable file */
+#define FILETYPE_ELF      (FILETYPE_EXE+1) /**< elf file */
+#define FILETYPE_LEF      (FILETYPE_EXE+2) /**< lef file */
 
+/** First available playlist filetype. */
 #define FILETYPE_PLAYLIST (256*3)
-#define FILETYPE_M3U      (FILETYPE_PLAYLIST+0)
-#define FILETYPE_PLS      (FILETYPE_PLAYLIST+1)
+#define FILETYPE_M3U      (FILETYPE_PLAYLIST+0) /**< mu3 playlist */
+#define FILETYPE_PLS      (FILETYPE_PLAYLIST+1) /**< pls playlist */
 
+/** First available playable (music) filetype. */
 #define FILETYPE_PLAYABLE (256*4)
-#define FILETYPE_MP3      (FILETYPE_PLAYABLE+0) 
+//#define FILETYPE_MP3      (FILETYPE_PLAYABLE+0) 
+
+/*@}*/
 
 /** Get file type from filename extension and size.
  *
@@ -42,6 +49,10 @@ DCPLAYA_EXTERN_C_START
  * @param  size   Size of file in bytes. Must be set to -1 for directories.
  *
  * @return FILETYPE
+ *
+ * @warning This function handles .gz extension as is. It does not suit some
+ *          others functions which need .gz to be ignored as an extension if
+ *          there is a secondary extension in filename. e.g. .sid.gz
  */
 int filetype_get(const char * fname, int size);
 
@@ -65,9 +76,9 @@ int filetype_dir(const char * fname);
  *
  * @param  fname  Complete path, base-name of directory.
  *
- * @return Pointer to extension in fname.
- * @retval [0]=='.'  Extension found.
- + @retval [0]==0    Extension not found.
+ * @return Pointer to extension in fname. Address of `.' char.
+ * @retval !0  Extension found.
+ * @retval  0  Extension not found.
  */
 const char *filetype_ext(const char *fname);
 
