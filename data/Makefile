@@ -1,10 +1,12 @@
 # Makefile - dcplaya - data
 #
-# $Id: Makefile,v 1.1 2002-09-02 19:53:47 ben Exp $
+# $Id: Makefile,v 1.2 2002-09-02 20:01:28 ben Exp $
 #
 
 TARGETS=
 CLEAN_LOCAL=tmp/* romdisk/* romdisk.*
+
+REQUIRED_LOCAL=req_local
 
 my_all: vmuimg romdisk
 
@@ -55,6 +57,10 @@ romdisk.img: romdisk_data romimg romdisk/stream.drv
 
 .PHONY: romdisk
 romdisk: romdisk.o
+
+.PHONY: req_local
+req_local:
+	mkdir -p tmp romdisk romdisk_data
 
 # ----------------------------------------------------------------------
 
