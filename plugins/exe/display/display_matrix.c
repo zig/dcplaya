@@ -6,7 +6,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, matrix interface
  * 
- * $Id: display_matrix.c,v 1.1 2002-10-18 11:42:07 benjihan Exp $
+ * $Id: display_matrix.c,v 1.2 2002-10-18 23:16:22 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -99,9 +99,21 @@ DL_FUNCTION_DECLARE(mat_gc)
 {
   lua_matrix_t * mat;
   lua_matrix_def_t * md;
+#ifdef DEBUG
+  int refcount;
+  int log2;
+#endif
+
 
   CHECK_MATRIX(1);
   GET_MATRIX_OR_VECTOR(mat,md,1,0);
+
+#ifdef DEBUG
+  refcount = md->refcount;
+  log2     = md->log2;
+#endif
+
+
   if (--md->refcount<=0) {
 	if (md->refcount < 0) {
 	  SDCRITICAL("%s : [%p] refcount=%d !!!\n",
@@ -111,7 +123,13 @@ DL_FUNCTION_DECLARE(mat_gc)
 	allocator_free(matrixdef_allocator, md);
 	driver_dereference(&display_driver);
   }
-/*   printf("%s : destroy matrix %p\n", __FUNCTION__, mat); */
+#if defined DEBUG && 0
+  if (mat->li) {
+	printf("%s : [m:%p c:%d li:%d]\n", __FUNCTION__,
+		   mat, refcount, ((mat->li - md->v)>>log2)+1);
+  }
+#endif
+
   allocator_free(matrixref_allocator, mat);
   return 0;
 }
@@ -145,20 +163,20 @@ DL_FUNCTION_DECLARE(mat_gettable)
 	lua_pushnumber(L, li[c]);
 	return 1;
   } else {
-	//	lua_matrix_t * r;
+	lua_matrix_t * r;
 
 	l = lua_tonumber(L,2) - 1;
 /* 	printf("%s(%d) : m:%p d:%p c:%d\n", __FUNCTION__, l+1, m,md,md->refcount);  */
-
 	if (l >= md->l) {
 	  printf("%s : line index %d out of range\n", __FUNCTION__, l+1);
 	  return 0;
 	}
-	//	REF_MATRIX(r, md, &md->v[l<<md->log2]);
-	m->li = &md->v[l<<md->log2];
-	lua_settop(L, 1);
-	//	lua_pushusertag(L, r, matrix_tag);
-	return 1;
+	REF_MATRIX(r, md, &md->v[l<<md->log2]);
+	lua_settop(L, 0);
+	lua_pushusertag(L, r, matrix_tag);
+/* 	m->li = &md->v[l<<md->log2]; */
+/* 	lua_settop(L, 1); */
+ 	return 1;
   }
   return 0;
 }
@@ -215,6 +233,8 @@ DL_FUNCTION_DECLARE(mat_settable)
   return 0;
 }
 
+#if 0
+
 DL_FUNCTION_DECLARE(mat_getglobal)
 {
   lua_matrix_t * mat, * r;
@@ -231,7 +251,7 @@ DL_FUNCTION_DECLARE(mat_getglobal)
   return 1;
 }
 
-#if 0
+
 DL_FUNCTION_DECLARE(mat_setglobal)
 {
   lua_matrix_t * mat;
@@ -344,8 +364,8 @@ DL_FUNCTION_DECLARE(init_matrix_type)
   lua_pushcfunction(L, lua_mat_settable);
   lua_settagmethod(L, matrix_tag, "settable");
 
-  lua_pushcfunction(L, lua_mat_getglobal);
-  lua_settagmethod(L, matrix_tag, "getglobal");
+/*   lua_pushcfunction(L, lua_mat_getglobal); */
+/*   lua_settagmethod(L, matrix_tag, "getglobal"); */
 
 /*   lua_pushcfunction(L, lua_mat_setglobal); */
 /*   lua_settagmethod(L, matrix_tag, "setglobal"); */
@@ -613,6 +633,115 @@ DL_FUNCTION_DECLARE(mat_dim)
   return lua_gettop(L);
 }
 
+static void dump_matrix_def(const lua_matrix_def_t *def, int idx, int level,
+							const char *indent)
+{
+  if (!indent) {
+	indent = "";
+  }
+  if (level > 0) {
+	printf("%s#%04d  %p[%dx%d] refcount:%d\n", indent, idx,
+		   def, def->l, def->c, def->refcount);
+  }
+  if (level > 1) {
+	int j;
+	printf("%s [\n",indent);
+	for (j=0; j<def->l; ++j) {
+	  int k;
+	  printf("%s  [ ", indent);
+	  for (k=0; k<def->c; ++k) {
+		printf("%-5.2f ", def->v[k + (j<<def->log2)]);
+	  }
+	  printf("]\n");
+	}
+	printf("%s  ] \n", indent);
+  }
+}
+
+static void dump_matrix_ref(const lua_matrix_t *m, int idx, int level,
+							const char *indent)
+{
+  if (level > 0) {
+	 printf("%s#%4d  %p",indent, idx, m->md);
+	 if (m->li) {
+	   printf("[%d]", ((m->li - m->md->v)>>m->md->log2) + 1);
+	 }
+	 printf("\n");
+  }
+}
+
+DL_FUNCTION_DECLARE(mat_dump)
+{
+  lua_matrix_t * m;
+  lua_matrix_def_t * md;
+  int level;
+  CHECK_MATRIX(1);
+  GET_MATRIX_OR_VECTOR(m,md,1,0);
+  level = lua_tonumber(L,2) + 1;
+  dump_matrix_def(md, 0, level, "");
+  dump_matrix_ref(m, 0, level, "");
+  lua_settop(L,0);
+  return 0;
+}
+
+
+DL_FUNCTION_DECLARE(mat_stat)
+{
+  int i, level = lua_tonumber(L, 1);
+  allocator_elt_t * e;
+
+  printf("\n"
+		 "Matrix statistics :\n");
+
+  printf("\n"
+		 " Matrix definitions : ");
+  if (!matrixdef_allocator) {
+	printf("[NONE]!\n");
+  } else {
+	int f,u;
+	allocator_t * a = matrixdef_allocator;
+	allocator_lock(a);
+	for (f=0, e = a->free; e; e = e->next, ++f)
+	  ;
+	for (u=0, e = a->used; e; e = e->next, ++u)
+	  ;
+
+	printf("[e-size:%d  size:%d  free:%d  used:%d]\n",
+		   a->elt_size, f+u, f, u);
+	if (level > 0) {
+	  for (i=0, e = a->used; e; e = e->next, ++i) {
+		lua_matrix_def_t *def = (lua_matrix_def_t *)(e+1);
+		dump_matrix_def(def, i, level, "  ");
+	  }
+	}
+	allocator_unlock(a);
+  }
+
+  printf("\n"
+		 " Matrix reference : ");
+  if (!matrixref_allocator) {
+	printf("[NONE]!\n");
+  } else {
+	int f,u;
+	allocator_t * a = matrixref_allocator;
+	allocator_lock(a);
+	for (f=0, e = a->free; e; e = e->next, ++f)
+	  ;
+	for (u=0, e = a->used; e; e = e->next, ++u)
+	  ;
+	printf("[e-size:%d  size:%d  free:%d  used:%d]\n",
+		   a->elt_size, f+u, f, u);
+	if (level > 0) {
+	  for (i=0, e = a->used; e; e = e->next, ++i) {
+		lua_matrix_t * m = (lua_matrix_t *)(e+1);
+		dump_matrix_ref(m, i, level, "  ");
+	  }
+	}
+	allocator_unlock(a);
+  }
+
+  return 0;
+}
 
 int display_matrix_shutdown(void)
 {

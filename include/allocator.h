@@ -4,7 +4,7 @@
  * @date     2002/10/18
  * @brief    fast allocator for fixed size small buffer.
  * 
- * $Id: allocator.h,v 1.1 2002-10-18 11:39:21 benjihan Exp $
+ * $Id: allocator.h,v 1.2 2002-10-18 23:16:22 benjihan Exp $
  */
 
 #ifndef _ALLOCATOR_H_
@@ -110,5 +110,38 @@ void * allocator_alloc(allocator_t * a, int size);
  *    The allocator_free() function is thread safe.
  */
 void allocator_free(allocator_t * a, void * data);
+
+/** Count number of allocated (used) block in the allocator internal heap.
+ *
+ * @see allocator_count_free()
+ */
+int allocator_count_used(allocator_t * a);
+
+/** Count number of free block in the allocator internal heap.
+ *
+ * @see allocator_count_used()
+ */
+int allocator_count_free(allocator_t * a);
+
+/** Lock the allocator. 
+ *
+ *    The allocator_lock() function locks the allocator list mutex.
+ *
+ *    This function does not need to be call before allocator_alloc() and 
+ *    allocator_free() which are thread-safe. 
+ *
+ *    You may want call it to perform some statistics on the list or to stop
+ *    any other thread that use this allcocator or whatever you want. It is
+ *    given for allocator management purpose.
+ *
+ * @see allocator_unlock()
+ */
+void  allocator_lock(allocator_t * a);
+
+/** Unlock the allocator. 
+ *
+ * @see allocator_lock()
+ */
+void allocator_unlock(allocator_t * a);
 
 #endif /* #define _ALLOCATOR_H_ */

@@ -4,7 +4,7 @@
  * @date     2002/10/18
  * @brief    fast allocator for fixed size small buffer.
  * 
- * $Id: allocator.c,v 1.1 2002-10-18 11:39:21 benjihan Exp $
+ * $Id: allocator.c,v 1.2 2002-10-18 23:16:22 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -87,6 +87,28 @@ void * allocator_alloc(allocator_t * a, int size)
   return &e[1];
 }
 
+static int allocator_count(allocator_t * a, const allocator_elt_t * e)
+{
+  int i;
+
+  for (i=0 ; e; e=e->next, ++i)
+	;
+  spinlock_unlock(&a->mutex);
+  return i;
+}
+
+int allocator_count_used(allocator_t * a)
+{
+  spinlock_lock(&a->mutex);
+  return allocator_count(a, a->used);
+}
+
+int allocator_count_free(allocator_t * a)
+{
+  spinlock_lock(&a->mutex);
+  return allocator_count(a, a->free);
+}
+
 static int allocator_is_room(const allocator_t * a, const void * data)
 {
   const allocator_elt_t *me = (const allocator_elt_t *)data - 1;
@@ -97,7 +119,6 @@ static int allocator_search(allocator_t * a, const allocator_elt_t * e,
 							const void * data)
 {
   allocator_elt_t *me = (allocator_elt_t *)data - 1;
-  spinlock_lock(&a->mutex);
   for ( ; e && e != me; e=e->next)
 	;
   spinlock_unlock(&a->mutex);
@@ -109,6 +130,7 @@ static int allocator_is_used(allocator_t * a, const void * data)
   if (!allocator_is_room(a,data)) {
 	return 0;
   }
+  spinlock_lock(&a->mutex);
   return allocator_search(a, a->used, data);
 }
 
@@ -117,6 +139,7 @@ static int allocator_is_free(allocator_t * a, const void * data)
   if (!allocator_is_room(a,data)) {
 	return 0;
   }
+  spinlock_lock(&a->mutex);
   return allocator_search(a, a->free, data);
 }
 
@@ -168,3 +191,12 @@ void allocator_free(allocator_t * a, void * data)
   spinlock_unlock(&a->mutex);
 }
 
+void allocator_lock(allocator_t * a)
+{
+  spinlock_lock(&a->mutex);
+}
+
+void allocator_unlock(allocator_t * a)
+{
+  spinlock_unlock(&a->mutex);
+}

@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.10 2002-10-18 11:39:21 benjihan Exp $
+ * $Id: display.c,v 1.11 2002-10-18 23:16:22 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -38,6 +38,8 @@ DL_FUNCTION_DECLARE(mat_li);
 DL_FUNCTION_DECLARE(mat_co);
 DL_FUNCTION_DECLARE(mat_el);
 DL_FUNCTION_DECLARE(mat_dim);
+DL_FUNCTION_DECLARE(mat_stat);
+DL_FUNCTION_DECLARE(mat_dump);
 
 /* display_text.c */
 DL_FUNCTION_DECLARE(draw_text);
@@ -564,6 +566,23 @@ static luashell_command_description_t display_commands[] = {
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_mat_dim         /* function */
   },
+
+  {
+    "mat_stat", 0,                         /* long and short names */
+    "print [["
+	"mat_stat([level]) : Display matrices debug info."	
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_mat_stat        /* function */
+  },
+
+  {
+    "mat_dump", 0,                         /* long and short names */
+    "print [["
+	"mat_dump(mat,[level]) : Display matrix mat debug info."	
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_mat_dump        /* function */
+  },
+
 
   {0},                                   /* end of the command list */
 };
