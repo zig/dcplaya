@@ -39,6 +39,29 @@ static viewport_t viewport;  /* Graphic viewport */
 static matrix_t fftvlr_proj; /* Projection matrix */
 static matrix_t fftvlr_mtx;  /* Local matrix */
 
+static vtx_t light_normal = { 
+  0.8,
+  0.4,
+  0.5
+};
+
+static vtx_t tlight_normal;
+static vtx_t light_color = {
+  0.9,
+  0.90,
+  0.9,
+  0.5
+};
+
+static vtx_t ambient_color = {
+  0.5,
+  0.3,
+  0.1,
+  0.5
+};
+
+
+
 /* The 3D-object */
 static obj_t fftvlr_obj =
 {
@@ -217,6 +240,7 @@ static int fftvlr_shutdown(any_driver_t * d)
 static int fftvlr_process(viewport_t * vp, matrix_t projection, int elapsed_ms)
 {
   if (ready) {
+    matrix_t tmp;
     static float ay;
     
     viewport = *vp;
@@ -226,8 +250,17 @@ static int fftvlr_process(viewport_t * vp, matrix_t projection, int elapsed_ms)
     MtxIdentity(fftvlr_mtx);
     MtxRotateZ(fftvlr_mtx, 3.14159);
     MtxRotateY(fftvlr_mtx, ay += 0.014);
-    MtxRotateX(fftvlr_mtx, 0.6f);
-    fftvlr_mtx[3][2] = 0.8;
+    MtxRotateX(fftvlr_mtx, 0.3f);
+    fftvlr_mtx[3][2] = 0.6;
+
+
+    MtxIdentity(tmp);
+    MtxRotateZ(tmp, 3.14159);
+    MtxRotateY(tmp, -0.33468713*ay);
+    MtxRotateX(tmp, 0.4);
+    MtxTranspose(tmp);
+    MtxVectMult(&tlight_normal, &light_normal, tmp);
+
 
     return 0;
   }
@@ -242,7 +275,7 @@ static int fftvlr_opaque(void)
 static int fftvlr_transparent(void)
 {
   static vtx_t color = {
-    1.0, 1.0, 1.0, 1.0
+    80.0f, 0.90f, 0.0f, 0.4f
   };
   if (ready) {
     DrawObjectSingleColor(&viewport, fftvlr_mtx, fftvlr_proj,
