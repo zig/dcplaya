@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.29 2002-12-15 22:48:04 zigziggy Exp $
+--- $Id: gui.lua,v 1.30 2002-12-15 23:24:19 zigziggy Exp $
 ---
 
 --
@@ -437,7 +437,7 @@ function gui_dialog_box_draw(dl, box, z, bcolor, color)
       b[1] = bcolor[1]
       r[1] = bcolor[1]
       local b3d = box3d(box, 6, color, t, l, b, r)
-      box3d_draw(b3d,dl)
+      box3d_draw(b3d,dl, mat_trans(0, 0, z))
    else
       dl_draw_box(dl, box, z, gui_box_color1, gui_box_color2)
    end
@@ -451,7 +451,7 @@ function gui_button_box_draw(dl, box, z, bcolor, color)
       b[1] = bcolor[1]
       r[1] = bcolor[1]
       local b3d = box3d(box, 2, color, t, l, b, r)
-      box3d_draw(b3d,dl)
+      box3d_draw(b3d,dl, mat_trans(0, 0, z))
    else
       dl_draw_box(dl, box, z, gui_button_color1, gui_button_color2)
    end

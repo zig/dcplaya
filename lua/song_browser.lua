@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.11 2002-12-15 22:43:08 zigziggy Exp $
+--- $Id: song_browser.lua,v 1.12 2002-12-15 23:24:19 zigziggy Exp $
 ---
 
 song_browser_loaded = nil
@@ -238,6 +238,7 @@ function song_browser_create(owner, name)
 		if not sb then return end
 		sb.fl:shutdown()
 		sb.pl:shutdown()
+		dl_set_active(sb.dl, nil)
 		sb.dl = nil;
 		vmu_set_text("dcplaya")
 	end

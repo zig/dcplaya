@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.2 2002-12-15 22:43:08 zigziggy Exp $
+--- $Id: desktop.lua,v 1.3 2002-12-15 23:24:19 zigziggy Exp $
 ---
 
 if not dolib("evt") then return end
@@ -46,6 +46,11 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
    function dskt_switcher_handle(dial, evt)
       local key = evt.key
 
+      if dskt_keytoggle[key] then
+	 evt_shutdown_app(dial)
+	 return
+      end
+
       if key == gui_item_confirm_event then
 	 local result =  dial.vs.fl:get_entry()
 	 evt_shutdown_app(dial)
@@ -69,7 +74,7 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 	 end
       end
 
-      return evt
+      return gui_dialog_handle(dial, evt)
    end
 
    -- Create sprite
@@ -95,12 +100,7 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
    dial = gui_new_dialog(owner,
 			 { x, y, x2, y2 }, z, nil, name,
 			 { x = "left", y = "up" }, "app_switcher" )
-   dial.event_table = {
-      [gui_item_change_event]	= dskt_switcher_handle,
-      [gui_item_confirm_event]	= dskt_switcher_handle,
-      [gui_item_cancel_event]	= dskt_switcher_handle,
-      [gui_item_change_event]	= dskt_switcher_handle,
-   }
+   dial.handle = dskt_switcher_handle
 
    box = box + { x+border, y+16+border, x-border, y-border }
    local w,h = box[3]-box[1], box[4]-box[2]
