@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.30 2003-01-28 22:58:18 ben Exp $
+--- $Id: textlist.lua,v 1.31 2003-02-27 10:05:26 ben Exp $
 ---
 
 -- Unload the library
@@ -448,6 +448,15 @@ function textlist_create(flparm)
 		  fl.curcolor[1],fl.curcolor[2],fl.curcolor[3],fl.curcolor[4],
 		  fl.curcolor[5],fl.curcolor[6],fl.curcolor[7],fl.curcolor[8])
       fl:draw_entry(dl, i, 0, y+fl.span, 0.1)
+      -- $$$ display to vmu
+      local entry = fl.dir[i]
+      local tt = entry.tt
+      if tt and tt.mode and tt.mode.text_nude then
+	 vmu_set_text(tt.mode.text_nude)
+      else
+	 vmu_set_text(entry.name or entry.file)
+      end
+
       dl_set_active(dl,1)
    end
 

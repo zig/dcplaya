@@ -1,5 +1,5 @@
 /**
- * $Id: vmu68.c,v 1.12 2003-01-25 17:26:03 ben Exp $
+ * $Id: vmu68.c,v 1.13 2003-02-27 10:05:26 ben Exp $
  */
 #include "config.h"
 
@@ -24,7 +24,8 @@
 #include "math_int.h"
 
 static fftbands_t * bands, * bands6;
-static char vmu_text_str[256];
+static char vmu_text_str[256] =
+"dcplaya " DCPLAYA_VERSION_STR " is loading...";
 
 static const char vmu_scrolltext[] =
 "            "

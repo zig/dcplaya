@@ -1,7 +1,7 @@
 --- @date 2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  LUA script to initialize dcplaya VMU backup.
---- $Id: vmu_init.lua,v 1.9 2003-02-04 18:03:03 ben Exp $
+--- $Id: vmu_init.lua,v 1.10 2003-02-27 10:05:26 ben Exp $
 ---
 
 -- Unload library
@@ -169,14 +169,21 @@ function vmu_init()
 		  local plugins_text = rscpath .. "plugins.txt"
 		  local welcome_text = rscpath .. "welcome.txt"
 		  local warning_text = rscpath .. "warning.txt"
+		  local greetings_text = rscpath .. "greetings.txt"
+		  local authors_text = rscpath .. "authors.txt"
 		  local tv = gui_text_viewer(nil,
 					     {
-						newbie  = newbie_text,
-						welcome = welcome_text,
-						warning = warning_text,
-						plugins = plugins_text,
+						newbie    = newbie_text,
+						welcome   = welcome_text,
+						warning   = warning_text,
+						plugins   = plugins_text,
+						greetings = greetings_text,
+						authors   = authors_text,
 					     } , nil, "Welcome", nil)
-		  evt_run_standalone(tv);
+		  if (tv) then
+		     gui_text_viewer_set_tt(tv,"welcome");
+		     evt_run_standalone(tv);
+		  end
 		  tv = nil
 	       elseif result == 2 then
 		  ok = 1

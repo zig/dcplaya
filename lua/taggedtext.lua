@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  sgml text and gui element formater
 ---
---- $Id: taggedtext.lua,v 1.15 2003-01-13 14:02:36 zigziggy Exp $
+--- $Id: taggedtext.lua,v 1.16 2003-02-27 10:05:26 ben Exp $
 ---
 
 if not dolib("sprite") then return end
@@ -249,7 +249,7 @@ end
 
 function tt_a_name_draw(block)
    local tt = block.tt
-   print("New anchor", block.name)
+--   print("New anchor", block.name)
    tt.anchors[block.name] = {
       x=block.x,
       y=block.y,
@@ -346,13 +346,13 @@ tt_commands = {
 	      local name = param["macro-name"]
 	      local cmd = param["macro-cmd"]
 	      if name and cmd and tt_commands[cmd] then
-		 print("macro", name, cmd)
+--		 print("macro", name, cmd)
 		 local fcmd = tt_commands[cmd]
 		 local mp = tt_copymode(param)
 		 tt_commands[name] = function(mode, param)
 					local i, v
 					for i,v in %mp do
-					   print("macro param", i, v, param[i])
+--					   print("macro param", i, v, param[i])
 					   param[i] = param[i] or v
 					end
 					return %fcmd(mode, param)
@@ -432,6 +432,10 @@ function tt_copymode(mode)
       copy[i] = v
    end
    return copy
+end
+
+-- $$$ Added by ben. Don't really know what I do here, but it seems ok.
+function tt_align_line_up(mode, line, h)
 end
 
 function tt_align_line_down(mode, line, h)
@@ -664,9 +668,12 @@ function tt_build(text, mode)
    mode.align_v = mode.align_v or tt_align_up
 
    local blocks = { n = 0 }
-   
+ 
    local start = 1
    local len = strlen(text)
+
+   -- $$$ added by ben : text without tags
+   local text_nude = ""
 
    if mode.font_h ~= 16 then
       tt_insert_block(mode, tt_font_cmd(mode, { size = mode.font_h }))
@@ -710,6 +717,7 @@ function tt_build(text, mode)
 	    color = mode.color,
 	    
 	 }
+	 text_nude = text_nude .. block.text
 --	 print("text", block.text)
 	 block.w, block.h = dl_measure_text(block.dl, block.text, block.font_id, block.font_h, block.font_aspect)
 
@@ -761,6 +769,10 @@ function tt_build(text, mode)
    mode = tt_endgroup(mode)
 
    tt_endline(mode)
+
+   mode.text_nude = text_nude
+
+--   print("tt_text_nude:".. mode.text_nude)
 
    return mode
 end

@@ -11,6 +11,7 @@ AC_PROG_MAKE_SET
 
 PACKAGE=dcplaya
 VERSION=1.0
+VERSION_STAT=" alpha"
 DREAMMP3_URL="http://sashipa.ben.free.fr/dcplaya"
 TOP_DIR="`pwd`"
 
@@ -38,7 +39,7 @@ fi
 # Configure include/config.h
 [
 PACKAGE_STR="\"$PACKAGE\""
-VERSION_STR="\"$VERSION\""
+VERSION_STR="\"${VERSION}${VERSION_STAT}\""
 VERSION_MAJOR=`expr "$VERSION" : '\([0-9]*\).*' \| 1`
 VERSION_MINOR=`expr "$VERSION" : '[0-9]*\.\([0-9]*\)' \| 0`]
 VERSION_NUM=0x`printf "%d%02d" $VERSION_MAJOR $VERSION_MINOR`
@@ -296,5 +297,5 @@ AC_MSG_RESULT([*   doxygen             : $DOXYGEN])
 AC_MSG_RESULT([**************************************])
 
 dnl#
-dnl# End of "$Id: configure.in,v 1.10 2003-02-12 12:31:55 ben Exp $".
+dnl# End of "$Id: configure.in,v 1.11 2003-02-27 10:05:25 ben Exp $".
 dnl#

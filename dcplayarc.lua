@@ -1,12 +1,17 @@
 --
 -- This is main DCplaya lua script
 --
--- $Id: dcplayarc.lua,v 1.26 2003-02-12 12:31:55 ben Exp $
+-- $Id: dcplayarc.lua,v 1.27 2003-02-27 10:05:25 ben Exp $
 --
 
 showconsole()
 
-print ("Welcome to DCplaya !\n")
+-- Display some welcome text
+print ("dcplaya version : " .. (__VERSION or "unknown"))
+if (__DEBUG) then print ("dcplaya debug level: " .. __DEBUG) end
+if (__RELEASE) then print ("dcplaya release mode activated") end
+
+print ("Welcome to dcplaya !\n")
 print (format("Home is set to '%s'", home))
 
 -- standard stuffs

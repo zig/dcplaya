@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     shell support for dcplaya
- * @version   $Id: shell.c,v 1.13 2003-02-12 12:31:57 ben Exp $
+ * @version   $Id: shell.c,v 1.14 2003-02-27 10:05:26 ben Exp $
  */
 
 #include "config.h"
@@ -182,6 +182,7 @@ static void shell_thread(void * param)
 
 int shell_init()
 {
+  char tmp[256];
   uint32 old = thd_default_stack_size;
   thd_default_stack_size = 1024*1024;
 
@@ -192,6 +193,17 @@ int shell_init()
   thd_default_stack_size = old;
 
   shell_load(shell_lef_fname);
+
+  // Setup some environmental variables
+  shell_command("setglobal([[__VERSION]],[[" DCPLAYA_VERSION_STR "]])");
+#ifdef DEBUG
+  sprintf(tmp,"setglobal([[__DEBUG]],%d)",DEBUG_LEVEL);
+  shell_command(tmp);
+#endif
+
+#ifdef RELEASE
+  shell_command("setglobal([[__RELEASE]],1)");
+#endif
 
   SDDEBUG("[shell_init] := [0]\n");
   

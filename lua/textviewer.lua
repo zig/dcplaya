@@ -3,7 +3,7 @@
 --- @date   2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  hyper text viwer gui
---- $Id: textviewer.lua,v 1.4 2003-02-04 18:03:03 ben Exp $
+--- $Id: textviewer.lua,v 1.5 2003-02-27 10:05:26 ben Exp $
 ---
 
 if not dolib("taggedtext") then return end
@@ -342,6 +342,17 @@ function gui_text_viewer(owner, texts, box, label, mode)
       function(app, evt)
 	 gui_new_focus(app.owner, app.owner.button)
       end
+   dial.viewer.event_table[gui_select_event] = 
+      function(app, evt)
+	 local dial = app.owner
+	 if not dial then return end
+	 local name = (dial.name or "textviewer") .. "-menu"
+	 local def = menu_create_defs(gui_text_viewer_menucreator, dial)
+	 dial.menu = gui_menu(dial, name, def)
+	 if tag(dial.menu) == menu_tag then
+	    dial.menu.target = dial
+	 end
+      end
 
    function gui_text_viewer_menucreator(target)
       local dial = target;
@@ -445,7 +456,6 @@ function gui_text_viewer(owner, texts, box, label, mode)
 
 
       function gui_text_viewer_up_evt(app, evt)
-
 	 print(app.owner.name, app.name, "up")
       end
 

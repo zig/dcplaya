@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.67 2003-02-12 12:31:55 ben Exp $
+ * @version    $Id: dynshell.c,v 1.68 2003-02-27 10:05:25 ben Exp $
  */
 
 #include "config.h"
@@ -2752,8 +2752,6 @@ static void shell_register_lua_commands()
   /* New garbage collection threshold adaptative behaviour */
 /*  lua_pushcfunction(L, setgcthreshold);
   lua_settagmethod(L, LUA_TNIL, "gc");*/
-  
-
 
   lua_dostring(L, 
 	       "\n function doshellcommand(string)"

@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.33 2003-02-12 12:31:56 ben Exp $
+--- $Id: song_browser.lua,v 1.34 2003-02-27 10:05:26 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -290,13 +290,10 @@ function song_browser_create(owner, name)
 	 return evt
       end
 
-      if action and action >= 2 then
-	 local entry = sb.cl:get_entry()
-	 vmu_set_text(entry and entry.name)
--- 	 if tag(sb.cl.menu) == menu_tag then
--- 	    sb.cl:open_menu(sb)
--- 	 end
-      end
+--       if action and action >= 2 then
+-- 	 local entry = sb.cl:get_entry()
+-- 	 vmu_set_text(entry and entry.name)
+--       end
       sb:open()
    end
 
