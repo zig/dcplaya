@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.19 2003-03-03 18:11:45 ben Exp $
+--- $Id: desktop.lua,v 1.20 2003-03-04 15:21:17 zigziggy Exp $
 ---
 
 if not dolib("evt") then return end
@@ -21,6 +21,13 @@ dskt_keytoggle = {
 }
 
 dskt_keyswitchto = { 
+   [KBD_CONT1_A] = 1, 
+   [KBD_CONT2_A] = 1, 
+   [KBD_CONT3_A] = 1, 
+   [KBD_CONT4_A] = 1
+}
+
+dskt_keymenu = { 
    [KBD_CONT1_X] = 1, 
    [KBD_CONT2_X] = 1, 
    [KBD_CONT3_X] = 1, 
@@ -99,8 +106,8 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
    local text = '<dialog guiref="dialog" label="Desktop" name="desktop dialog">'
 
    text = text..'<linecenter>Running application ('..
-      strchar(16)..' menu,'..strchar(18)..
-      ' switch to) :<br><vspace h="8"><hspace w="16"><linedown>'
+      strchar(16)..' switch to,'..strchar(18)..
+      ' menu) :<br><vspace h="8"><hspace w="16"><linedown>'
    local i
    for i=1,dir.n, 1 do
       local app = dir[i].app
@@ -117,9 +124,12 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
       text = text..'</button><hspace w="16">'
    end
 
+--   text = text..'<br><vspace h="16"><left><linecenter>'..
+--      'Launchable application ('..strchar(16)..' launch,'..strchar(18)..
+--      ' info) :<br><vspace h="8"><hspace w="16"><linedown>'
+
    text = text..'<br><vspace h="16"><left><linecenter>'..
-      'Launchable application ('..strchar(16)..' launch,'..strchar(18)..
-      ' info) :<br><vspace h="8"><hspace w="16"><linedown>'
+      strchar(19)..' Close this dialog<linedown>'
 
    text = text..'</dialog>'
 
@@ -151,7 +161,13 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 		  end
 	       end
 	       
-	       if dskt_keyswitchto[key] then
+	       if dskt_keymenu[key] then
+		  dskt_openmenu(app.owner, app.target,
+				app.box[3], (app.box[2] + app.box[4]) / 2)
+		  return
+	       end
+	       
+	       if key == gui_press_event then
 		  if app.owner then
 		     local owner = app.owner.owner
 		     evt_shutdown_app(app.owner)
@@ -160,12 +176,6 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 		     end
 		     return
 		  end
-	       end
-	       
-	       if key == gui_press_event then
-		  dskt_openmenu(app.owner, app.target,
-				app.box[3], (app.box[2] + app.box[4]) / 2)
-		  return
 	       end
 
 	       if key == gui_menu_close_event then
