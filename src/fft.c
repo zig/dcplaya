@@ -2,7 +2,7 @@
  * @file    fft.c
  * @author  benjamin gerard <ben@sashipa.com>
  * 
- * @version $Id: fft.c,v 1.3 2002-09-13 00:27:11 ben Exp $
+ * @version $Id: fft.c,v 1.4 2002-09-14 19:48:47 zig Exp $
  */
 #include "sysdebug.h"
 
@@ -25,6 +25,7 @@ void fft(int *spl, int nbSpl, int splFrame, int frq)
 #endif
 
   stp = (nbSpl << 12) >> FFT_LOG_2;
+  stp *= 2;
 
   // Copy sample to complex buffer / resampling !
   for (j = i = 0; i<(1<<FFT_LOG_2) ; ++i, j+=stp) {
@@ -44,7 +45,7 @@ void fft(int *spl, int nbSpl, int splFrame, int frq)
   // $$$ Here we need to rescale for each frequency.
   for (j = 0, scale = (1<<12), stp = (re_frq >> (FFT_LOG_2+FFT_LOG_2-12));
        j<(1<<(FFT_LOG_2-1));
-       j++, scale += stp) {
+       j++, scale += stp / 16) {
     int rea, imm, v;
     rea = (int)fft_R[j];
     imm = (int)fft_I[j];
@@ -75,7 +76,7 @@ void fft(int *spl, int nbSpl, int splFrame, int frq)
 #endif
     fft_F[j] = v;
 
-    v -= 256;
+    //v -= 256;
     if (v<0) v = 0;
 
     /*  Db calculation */

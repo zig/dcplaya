@@ -87,10 +87,11 @@ void shell_load(const char * fname)
 {
   int fd;
 
+  /* make sure all commands are finished */
+  shell_wait();
 
   /* Shutdown previously opened shell */
   if (shell_lef) {
-    shell_command_func = 0;
     if (shell_lef_shutdown_func) {
       shell_lef_shutdown_func();
       shell_lef_shutdown_func = 0;

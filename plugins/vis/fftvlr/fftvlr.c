@@ -8,7 +8,7 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.7 2002-09-13 14:44:54 ben Exp $
+ * $Id: fftvlr.c,v 1.8 2002-09-14 19:48:47 zig Exp $
  */
 
 #include <stdlib.h>
@@ -26,9 +26,11 @@ void FaceNormal(float *d, const vtx_t * v, const tri_t *t);
 /* Here are the constant (for now) parameters */
 #define VLR_X 0.5f
 #define VLR_Z 0.5f
-#define VLR_Y 0.2f
+#define VLR_Y (4.5f)
 #define VLR_W 32
 #define VLR_H 48
+/*#define VLR_W 32
+#define VLR_H 96*/
 
 /* Resulting number of triangles */
 #define VLR_TPL ((VLR_W-1)*2)
@@ -189,7 +191,7 @@ static void vlr_update(void)
 {
   const float f0 = VLR_Y / 32768.0f;
   vtx_t *vy;
-  int i,j,stp;
+  int i,j,k,stp, ow;
 
   /* Scroll FFT towards Z axis */
   for (i=0,vy=v; i<VLR_W*(VLR_H-1); ++i, ++vy) {
@@ -200,9 +202,23 @@ static void vlr_update(void)
 
   /* Update first VLR row with FFT data */
   vy = v + (VLR_H-1) * VLR_W;
-  for (i=j=0, stp=(1<<(FFT_LOG_2-1+12))/VLR_W; i<VLR_W; ++i, j += stp) {
-    int w = fft_F[j>>12];
+  for (ow=i=j=k=0, stp=(1<<(FFT_LOG_2-1+12))/VLR_W; i<VLR_W; ++i, j += stp) {
+    //    int w = fft_F[j>>12];
     const float r = 0.45f;
+    //const float r = 0.25f;
+    int w = 0;
+    int n = 0;
+    int l = (j>>12);
+    while (k<l) {
+      w += fft_F[k];
+      k++;
+      n++;
+    }
+    if (n) {
+      w /= n;
+      ow = w;
+    } else
+      w = ow;
 
     vy[i].y = (float)(w * f0 * (1.0f-r)) +  (vy[i-VLR_W].y * r);
   }

@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.7 2002-09-14 04:02:03 zig Exp $
+ * @version    $Id: dynshell.c,v 1.8 2002-09-14 19:48:47 zig Exp $
  */
 
 #include <stdio.h>
@@ -67,8 +67,8 @@ static int dynshell_command(const char * fmt, ...)
 
   EXPT_GUARD_CATCH;
 
-  printf("CATCHING EXCEPTION IN SHELL !\n");
-  irq_dump_regs(0, 0);
+/*  printf("CATCHING EXCEPTION IN SHELL !\n");
+  irq_dump_regs(0, 0); */
 
   EXPT_GUARD_END;
 
