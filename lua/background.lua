@@ -106,7 +106,8 @@ end
 background = background_create()
 if background then
    background_dl = dl_new_list(128,1)
-   background:set_texture("/rd/dcpbkg.jpg", "scale")
+   background:set_texture("/rd/dcpbkg2.jpg", "scale")
+--   background:set_texture(home.."data/img/dcpbkg2.jpg", "scale")
 --   background:set_texture("/pc/ptest.jpg","tile")
 --   background:set_texture(home.."lua/rsc/icons/dcplaya.jpg","tile")
 --   background:set_color( {1,1,0,0}, {1,0.5,0.5,0.5}, nil,  {1,0,1,1} )

@@ -1,6 +1,6 @@
 # Makefile - dcplaya - data
 #
-# $Id: Makefile,v 1.6 2002-12-16 23:39:35 ben Exp $
+# $Id: Makefile,v 1.7 2002-12-17 05:12:52 ben Exp $
 #
 
 TARGETS=
@@ -12,7 +12,7 @@ my_all: vmuimg romdisk
 
 # Images
 fntimg : romdisk/font16x16.tga romdisk/font8x14.tga
-bdrimg : romdisk/bordertile.tga romdisk/dcpsprites.tga romdisk/dcpbkg.jpg
+bdrimg : romdisk/bordertile.tga romdisk/dcpsprites.tga romdisk/dcpbkg.jpg romdisk/dcpbkg2.jpg
 
 vmuimg : ../include/vmu_sc68.h ../include/vmu_font.h
 	@echo "Build [$@]"

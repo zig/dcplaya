@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.13 2002-12-16 23:39:36 ben Exp $
+--- $Id: song_browser.lua,v 1.14 2002-12-17 05:12:53 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -89,12 +89,12 @@ function song_browser_create(owner, name)
 	-- Song-Browser default style
 	-- --------------------------
 	local style = {
-		bkg_color		= { 0.8, 0.7, 0.7, 0.7,  0.8, 0.3, 0.3, 0.3 },
-		border			= 12,
+		bkg_color		= { 0.8, 0.4, 0.0, 0.0,  0.8, 0.3, 0.3, 0.3 },
+		border			= 5,
 		span            = 1,
-		file_color		= { 1, 0, 0, 0 },
-		dir_color		= { 1, 0, 0, .4 },
-		cur_color		= { 1, 1, 1, 1,  1, 0.1, 0.4, 0.5 },
+		file_color		= { 1, 1, 0.8, 0 },
+		dir_color		= { 1, 1, 1, 0 },
+		cur_color		= { 1, 0.5, 0, 0,  0.5, 1, 0.7, 0 },
 		text            = {font=0, size=16, aspect=1}
 	}
 
@@ -263,8 +263,8 @@ function song_browser_create(owner, name)
 	   y4 = fl.bo2[2]
 	   y3 = y4 - border
 
-	   local a1,r1,g1,b1 = 1.0, 0.2, 0.8, 1.0
-	   local a2,r2,g2,b2 = 1.0, 0.8, 0.5, 0.8
+	   local a1,r1,g1,b1 = 1.0, 1.0, 0.0, 0.0
+	   local a2,r2,g2,b2 = 1.0, 1.0, 1.0, 0.0
 
 	   local w = {
 		  {x1, y1, 0.1, 1.0,  a1, r1, g1, b1 }, -- 1
