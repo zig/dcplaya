@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.1 2003-03-01 14:33:54 ben Exp $
+--- $Id: control_center.lua,v 1.2 2003-03-01 15:15:15 zigziggy Exp $
 ---
 
 control_center_loaded = nil
@@ -70,7 +70,7 @@ function control_center_create(owner, name)
       mainmenu_def = control_center_menucreator
    }
 
-   evt_app_insert_first(owner, cc)
+   evt_app_insert_last(owner, cc)
    return cc
 end
 

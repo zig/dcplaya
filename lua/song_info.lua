@@ -4,7 +4,7 @@
 --- @date    2002/11/29
 --- @brief   Song info application.
 ---
---- $Id: song_info.lua,v 1.16 2003-01-25 17:26:03 ben Exp $
+--- $Id: song_info.lua,v 1.17 2003-03-01 15:15:15 zigziggy Exp $
 
 song_info_loaded = nil
 
@@ -617,7 +617,7 @@ function song_info_create(owner, name, style)
    si:draw()
    si:open()
 
-   evt_app_insert_first(owner, si)
+   evt_app_insert_last(owner, si)
 
    return si
 end
