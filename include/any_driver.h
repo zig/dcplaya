@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   dcplaya plugin structure.
  *
- * $Id: any_driver.h,v 1.6 2002-09-27 02:01:37 vincentp Exp $ 
+ * $Id: any_driver.h,v 1.7 2002-12-14 16:15:36 ben Exp $ 
  */
  
 #ifndef _ANY_DRIVER_H_
@@ -20,6 +20,7 @@ DCPLAYA_EXTERN_C_START
 #define VIS_DRIVER  'SIV' /**< Visual plugin     */
 #define INP_DRIVER  'PNI' /**< Input plugin      */
 #define EXE_DRIVER  'EXE' /**< Executable plugin */
+#define IMG_DRIVER  'GMI' /**< Image plugin      */
 /**@}*/
 
 #include "driver_option.h"

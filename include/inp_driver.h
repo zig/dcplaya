@@ -1,13 +1,21 @@
 /**
- * Dreammp3 - input driver
+ * @ingroup dcplaya_plugin_inp
+ * @file    inp_driver.h
+ * @author  benjamin gerard <ben@sahipa.com>
+ * @date    2002
+ * @brief   dcplaya input plugin.
  *
- * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
- *
- * $Id: inp_driver.h,v 1.4 2002-09-25 03:21:21 benjihan Exp $
+ * $Id: inp_driver.h,v 1.5 2002-12-14 16:15:36 ben Exp $
  */
 
 #ifndef _INP_DRIVER_H_
 #define _INP_DRIVER_H_
+
+/** @defgroup dcplaya_plugin_inp Input driver API
+ *  @ingroup  dcplaya_plugin_devel
+ *
+ *  Input plugins are dcplaya music drivers.
+ */
 
 #include "extern_def.h"
 
@@ -17,15 +25,23 @@ DCPLAYA_EXTERN_C_START
 #include "playa_info.h"
 #include "any_driver.h"
 
-/* Return bits code for decode() handler */
+/** @name Input plugin decoding return codes.
+ *  @ingroup dcplaya_plugin_inp
+ *
+ *   Return bits code for decode() handler.
+ *  @{
+ */
 #define INP_DECODE_ERROR -1 /**< Decoder reach end because of error */
 #define INP_DECODE_CONT   1 /**< Decoder has decode some sample     */
 #define INP_DECODE_END    2 /**< Decoder has reach end of track     */
 #define INP_DECODE_INFO   4 /**< Decoder has detect some info
-			          change. Call info() handler to
-				  retrieve them.                   */      
+							     change. Call info() handler to
+								 retrieve them.                   */      
+/**@}*/
 
-/** Input driver */
+/** Input driver structure.
+ *  @ingroup dcplaya_plugin_inp
+ */
 typedef struct
 {
   /** Any driver common structure :  {nxt, id, name} */ 

@@ -1,10 +1,18 @@
-/*
-*/
+/**
+ * @ingroup dcplaya_devel
+ * @file    driver_list.c
+ * @author  benjamin gerard <ben@sashipa.com>
+ * @date    2002
+ * @brief   Registered driver list.
+ *
+ * $Id: driver_list.c,v 1.11 2002-12-14 16:15:36 ben Exp $
+ */
 
 #include <string.h>
 
 #include "driver_list.h"
 #include "inp_driver.h"
+#include "img_driver.h"
 #include "filename.h"
 #include "filetype.h"
 #include "sysdebug.h"
@@ -14,6 +22,7 @@ driver_list_t inp_drivers;
 driver_list_t obj_drivers;
 driver_list_t exe_drivers;
 driver_list_t vis_drivers;
+driver_list_t img_drivers;
 
 /** Initialize a driver list */
 int driver_list_init(driver_list_t *dl, const char *name)
@@ -33,6 +42,7 @@ int driver_list_init_all()
   err |= driver_list_init(&obj_drivers, "obj");
   err |= driver_list_init(&exe_drivers, "exe");
   err |= driver_list_init(&vis_drivers, "vis");
+  err |= driver_list_init(&img_drivers, "img");
 
   return err;
 }
@@ -70,11 +80,22 @@ int driver_list_register(driver_list_t *dl, any_driver_t * driver)
 
   /* $$$ This test should not be here. Drivers have nothing to do with
      file type. */
-  if (driver->type == INP_DRIVER) {
-	inp_driver_t * d = (inp_driver_t *) driver;
-	d->id = filetype_add(filetype_major_add("music"),
-						 driver->name, d->extensions);
-    SDDEBUG("Driver '%s' : filetype %d\n", driver->name, d->id);
+  switch(driver->type) {
+  case INP_DRIVER:
+	{
+	  inp_driver_t * d = (inp_driver_t *) driver;
+	  d->id = filetype_add(filetype_major_add("music"),
+						   driver->name, d->extensions);
+	  SDDEBUG("Driver '%s' : filetype %d\n", driver->name, d->id);
+	} break;
+	
+  case IMG_DRIVER:
+	{
+	  img_driver_t * d = (img_driver_t *) driver;
+	  d->id = filetype_add(filetype_major_add("image"),
+						   driver->name, d->extensions);
+	  SDDEBUG("Driver '%s' : filetype %d\n", driver->name, d->id);
+	} break;
   }
 
   return 0;
@@ -94,6 +115,8 @@ driver_list_t * driver_list_which(any_driver_t *driver)
     return &inp_drivers;
   case EXE_DRIVER:
     return &exe_drivers;
+  case IMG_DRIVER:
+    return &img_drivers;
   default:
     return 0;
   }
@@ -118,8 +141,14 @@ int driver_list_unregister(driver_list_t *dl, any_driver_t * driver)
     return -1;
   }
 
-  if (dl == &inp_drivers) {
+  /* driver type specific */
+  switch(driver->type) {
+  case INP_DRIVER:
 	filetype_del(((inp_driver_t *)driver)->id);
+	break;
+  case IMG_DRIVER:
+	filetype_del(((img_driver_t *)driver)->id);
+	break;
   }
 
   for (p=0, d=dl->drivers; d && d != driver; p=d, d=d->nxt)
@@ -167,7 +196,6 @@ static int extfind(const char * extlist, const char * ext)
   }
   return 0;
 }
-
 
 inp_driver_t * inp_driver_list_search_by_extension(const char *ext)
 {
