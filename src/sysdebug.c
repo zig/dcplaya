@@ -5,15 +5,19 @@
  * @date       2002/09/04
  * @brief      Debug fonctions.
  *
- * @version    $Id: sysdebug.c,v 1.7 2002-09-13 14:48:25 ben Exp $
+ * @version    $Id: sysdebug.c,v 1.8 2002-09-27 16:49:41 benjihan Exp $
  */
 
 #include <stdarg.h>
 #include <stdio.h>
 #include "sysdebug.h"
 
+#include <arch/spinlock.h>
+
 /* From modified kos 1.1.5 */
 extern void dbglogv(int level, const char *fmt, va_list args);
+
+static spinlock_t mutex;
 
 /** Default user message level mask (accept all messages) */
 #define SD_DEFAULT_LEVEL -1
@@ -109,6 +113,8 @@ void sysdbg_vprintf(const char * file, int line, int level,
     return;
   }
 
+  spinlock_lock(&mutex);
+
   /* Count, skip and print '\n' at start of format string. */
   for (nl_cnt = 0; *fmt == '\n'; ++nl_cnt, ++fmt) {
     sd_current(sd_cookie, "\n", list);
@@ -149,6 +155,8 @@ void sysdbg_vprintf(const char * file, int line, int level,
   if (len > 0 && fmt[len-1]=='\n') {
     sd_col = 0;
   }
+
+  spinlock_unlock(&mutex);
 
 }
 
