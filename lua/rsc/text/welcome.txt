@@ -1,0 +1,11 @@
+<font size="14">
+<center><font color="#90FF00">Greetings
+<vspace h="4"><p><left><font color="#909090">
+<hspace w="4">The dcplaya team wants to greet people that make this project
+possible.
+<vspace h="6"><p><center>
+GNU [http://www.gnu.org]<br>
+The Free Software Foundation<br>
+KOS developpers. Particulary Dan Potter & Jordan DeLong of Cryptic Allusion<br>
+andrewk for its dcload program.<br>
+<left>

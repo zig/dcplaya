@@ -1,0 +1,5 @@
+dcplaya est un programme pour ecouter de la musique avec votre DreamCast.
+dcplaya permet de jouer la plupard des formats de musique populaire.
+Chacun de ces formats fait l'objet d'un plugin, c'est a dire un programme
+exterieur qui peut etre charger a tout moment. Cela permet d'ajouter de
+nouveau format sans avoir a changer de version de dcplaya.

@@ -1,0 +1,7 @@
+<font size="14">
+<center><font color="#9090FF">Bienvenue
+<vspace h="4"><p><left><font color="#909090">
+<hspace w="8">
+
+If is this the first time you launch dcplaya, you should read this lines.
+It contains a <button guiref="toto">TOTO</button>titi<br>Button

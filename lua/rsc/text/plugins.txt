@@ -1,0 +1,77 @@
+<macro macro-name="title-font" macro-cmd="font" color="#FFe00a" size="18">
+<macro macro-name="chapter-font" macro-cmd="font" color="#a0e0FF" size="16">
+<macro macro-name="body-font" macro-cmd="font" color="#A0A080" size="14">
+<macro macro-name="avant" macro-cmd="vspace" h="10">
+<macro macro-name="apres" macro-cmd="vspace" h="6">
+
+<p vspace="2">
+<center>
+<title-font>
+plugins
+<avant>
+
+<left><body-font>
+Les plugins sont des programmes exterieur qui permettent d'ajouter des
+fonctionnalites a dcplaya sans changer de version. Ils sont disponibles
+sous forme de fichier qui portent generalement l'extension ".lef" ou ".lez".
+Les fichiers ".lez" sont des fichiers ".lef" compresses en format gzip (.gz).
+<apres>
+Les plugins sont classes par categorie.
+<apres><center>
+<a href="#input">input</a> - 
+<a href="#visual">visual</a> - 
+<a href="#object">object</a> - 
+<a href="#image">image</a> - 
+<a href="#executable">executable</a>
+
+<avant><center><chapter-font>
+<a name="input">input</a>
+<apres>
+
+<left><body-font>
+Les plugins input permettent d'ajouter de nouveau format de musiques
+dans dcplaya. Un plugin cree un nouveau type de fichier musique, et
+fournit et a la charge de charger et de decoder ces fichiers ainsi
+que de fournir un certain nombre d'information sur la musique comme
+par exemple l'artiste, le titre ou la duree.
+
+<avant><center><chapter-font>
+<a name="visual">visual</a>
+<apres>
+
+<left><body-font>
+Les plugins visual permettent d'ajouter des effets visuels a dcplaya.
+
+
+<avant><center><chapter-font>
+<a name="image">image</a>
+<apres>
+
+<left><body-font>
+Les plugins image sont utilises par dcplaya pour charger des images. Ces
+images pourront ensuite etre utiliser de maniere transparente par dcplaya
+pour charger des images en fond d'ecran ou pour comme texture pour les
+fonctions graphiques. Les plugins images creent un nouveau type de fichier
+image associe a des extensions (per exemple .jpg) et fournissent les
+methodes pour charger une image ainsi qu'une methode pour recuperer des
+infomations sur une image comme sa resolution ou le nombre de couleur.
+
+
+<avant><center><chapter-font>
+<a name="object">object</a>
+<apres>
+
+<left><body-font>
+les plugins object permettent d'ajouter des objets 3D qui pourront
+etre utiliser par la suite par d'autre plugin (notament les visual)
+
+
+<avant><center><chapter-font>
+<a name="executable">executable</a>
+<apres>
+
+<left><body-font>
+Les plugins executables ont pour principale utilite d'ajouter des
+fonctinnalites a l'interpreteur LUA de dcplaya. Mais ils peuvent servir
+en fait a un peu pres n'importe quoi dans la mesure ou il s'agit d'un
+programme. Ils peuvent par exemple etre utiliser pour patcher dcplaya.
