@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.76 2003-03-10 22:55:32 ben Exp $
+ * @version    $Id: dynshell.c,v 1.77 2003-03-11 13:34:43 ben Exp $
  */
 
 #include "dcplaya/config.h"
@@ -366,7 +366,7 @@ static int lua_malloc_stats(lua_State * L)
    Each list has been sorted according to sortdir function.
 */
 static int push_dir_as_2_tables(lua_State * L, fu_dirent_t * dir, int count,
-				fu_sortdir_f sortdir)
+				fu_sortdir_f sortdir, int parent)
 {
   int k,j,i;
 
@@ -380,10 +380,17 @@ static int push_dir_as_2_tables(lua_State * L, fu_dirent_t * dir, int count,
 
   for (k=0; k<2; ++k) {
     lua_newtable(L);
-    for (j=0, i=0; i<count; ++i) {
-      if ( !(k ^ (dir[i].size==-1)) ) continue;
+    for (j=i=0; i<count; ++i) {
+      fu_dirent_t * d = dir+i;
+
+      int isdir = d->size == -1;
+      /* check for suitable list. */
+      if ( !(k ^ (isdir)) ) continue;
+      /* check for '.' and '..' */
+      if (isdir && !parent && d->name[0] == '.' &&
+	  (!d->name[1] || (d->name[1] == '.' && !d->name[2]))) continue;
       lua_pushnumber(L, ++j);
-      lua_pushstring(L, dir[i].name);
+      lua_pushstring(L, d->name);
       lua_rawset(L, k+1);
     }
     lua_pushstring(L, "n");
@@ -396,9 +403,9 @@ static int push_dir_as_2_tables(lua_State * L, fu_dirent_t * dir, int count,
 /* Return a list of struct {name, size} sorted according to the sortdir
    function. */
 static int push_dir_as_struct(lua_State * L, fu_dirent_t * dir, int count,
-			      fu_sortdir_f sortdir)
+			      fu_sortdir_f sortdir, int parent)
 {
-  int i, table;
+  int i, j, table;
 
   lua_settop(L,0);
   /*   if (!dir) { */
@@ -412,10 +419,17 @@ static int push_dir_as_struct(lua_State * L, fu_dirent_t * dir, int count,
   table = lua_gettop(L);
 
 
-  for (i=0; i<count; ++i) {
+  for (i=j=0; i<count; ++i) {
+    fu_dirent_t * d = dir+i;
     int entry;
 
-    lua_pushnumber(L, i+1);
+    if (!parent && d->size < 0 && d->name[0] == '.' &&
+	(!d->name[1] || (d->name[1] == '.' && !d->name[2]))) {
+      /* Don't want self to be listed ! */
+      continue;
+    }
+
+    lua_pushnumber(L, ++j);
     lua_newtable(L);
     entry=lua_gettop(L);
 
@@ -429,7 +443,7 @@ static int push_dir_as_struct(lua_State * L, fu_dirent_t * dir, int count,
     lua_rawset(L, table);
   }
   lua_pushstring(L, "n");
-  lua_pushnumber(L, i);
+  lua_pushnumber(L, j);
   lua_settable(L, table);
   return lua_gettop(L);
 }
@@ -451,6 +465,7 @@ static int push_dir_as_struct(lua_State * L, fu_dirent_t * dir, int count,
  *  -S : sort by descending size
  *  -s : sort by ascending size
  *  -n : sort by name
+ *  -h : hide parent and root entry.
  */
 static int lua_dirlist(lua_State * L)
 {
@@ -459,7 +474,7 @@ static int lua_dirlist(lua_State * L)
   int nparam = lua_gettop(L);
   int count, i;
   fu_dirent_t * dir;
-  int two = 0, sort = 0;
+  int two = 0, sort = 0, parent = 1;
   fu_sortdir_f sortdir;
 
   /* Get parameters */
@@ -484,6 +499,9 @@ static int lua_dirlist(lua_State * L)
 		   s[j], sort);
 	    return -1;
 	  }
+	  break;
+	case 'h':
+	  parent = 0;
 	  break;
 	default:
 	  printf("dirlist : invalid switch '%c'.\n", s[j]);
@@ -536,10 +554,15 @@ static int lua_dirlist(lua_State * L)
 
   if (two) {
     /* 	printf("Get 2 lists [%d]\n", count); */
-    count = push_dir_as_2_tables(L, dir, count, sortdir);
+    count = push_dir_as_2_tables(L, dir, count, sortdir, parent);
   } else {
     /* 	printf("Get 1 list [%d]\n", count); */
-    count = push_dir_as_struct(L, dir, count, sortdir);
+    count = push_dir_as_struct(L, dir, count, sortdir, parent);
+    if (count == 1) {
+      lua_pushstring(L,"path");
+      lua_pushstring(L,rpath);
+      lua_settable(L,1);
+    }
   }
   /*   printf("->%d\n", count); */
 
@@ -551,7 +574,8 @@ static int lua_dirlist(lua_State * L)
 
 extern int filetype_lef;
 
-static int r_path_load(lua_State * L, char *path, unsigned int level, const char * ext, int count)
+static int r_path_load(lua_State * L, char *path, unsigned int level,
+		       const char * ext, int count)
 {
   dirent_t *de;
   int fd = 0;
@@ -2561,6 +2585,7 @@ static luashell_command_description_t commands[] = {
     "  -S : sort by descending size\n"
     "  -s : sort by ascending size\n"
     "  -n : sort by name\n"
+    "  -h : hide '.' and '..'\n"
     "\n"
     "Get sorted listing of a directory. There is to possible output depending "
     "on the '-2' switch.\n"
