@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile.inc.in,v 1.23 2003-02-01 20:07:05 ben Exp $
+# $Id: Makefile.inc.in,v 1.24 2003-03-09 01:00:15 ben Exp $
 #
 
 .SUFFIXES:
@@ -12,6 +12,11 @@ UTILS_DIR=$(TOP_DIR)/utils
 DOC_DIR=@DOC_DIR@
 DCPLAYA_VERSION=@VERSION_STR@
 export TOP_DIR UTILS_DIR DOC_DIR DCPLAYA_VERSION
+
+MASTER=@MASTER@
+RELEASE=@RELEASE@
+DEBUG=@DEBUG@
+export MASTER RELEASE DEBUG
 
 # ----------------------------------------------------------------------
 # Setup for KOS

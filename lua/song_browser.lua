@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.38 2003-03-08 13:54:25 ben Exp $
+--- $Id: song_browser.lua,v 1.39 2003-03-09 01:00:15 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song browser application
@@ -131,14 +131,14 @@ function song_browser_create(owner, name)
 	 local path = (sb.fl.dir and sb.fl.dir.path) or "/"
 	 local incd = strsub(path,1,3) == "/cd"
 	 if id == 0 and incd and st == "nodisk" then
-	    print("Drive empty")
+--	    print("Drive empty")
 	    song_browser_loaddir(sb,"/")
 	 elseif id ~= sb.cdrom_id then
 	    if id ~= 0 then
-	       print(format("New CD detected #%X", id))
+--	       print(format("New CD detected #%X", id))
 	       if incd then song_browser_loaddir(sb,"/cd") end
 	    else
-	       print("No more CD in drive")
+--	       print("No more CD in drive")
 	    end
 	 end
       end
@@ -265,7 +265,11 @@ function song_browser_create(owner, name)
       if key == evt_shutdown_event then
 	 sb:shutdown()
 	 return evt
+      elseif key == ioctrl_cdrom_event then
+	 song_browser_update_cdrom(sb, evt)
+	 return
       end
+
       if sb.closed then
 	 return evt
       end
@@ -286,11 +290,6 @@ function song_browser_create(owner, name)
 	       sb.key_time = 0
 	    end
 	 end
-      elseif key == ioctrl_cdrom_event then
---	 print ("SB : ioctrl_cdrom_event")
-	 dump(evt,"ioctrl_cdrom_event")
-	 song_browser_update_cdrom(sb, evt)
-	 return
       elseif key == gui_focus_event then
 	 -- nothing to do, this will awake song-browser
       elseif key == gui_unfocus_event then
@@ -528,8 +527,6 @@ function song_browser_create(owner, name)
       dl = dl_new_list(1024, 1)
    }
 
-   print("sb.z "..type(sb.z).." "..tostring(sb.z))
-
    local x,y,z
    local box = { 0, 0, 256, 210 }
    local minmax = { box[3], box[4], box[3], box[4] }
@@ -628,7 +625,6 @@ function song_browser_create(owner, name)
    --    *     - @b 2    if entry is "not confirmed" but change occurs
    --    *     - @b 3    if entry is "confirmed" and change occurs
    function sbfl_confirm(fl, sb)
-      print("sbfl_confirm")
       return songbrowser_any_action(sb, "confirm", fl)
    end
 
@@ -1291,7 +1287,7 @@ end
 
 song_browser = song_browser_create()
 if song_browser then
-   print("song-browser running")
+   print("song-browser is running")
 end
 
 --

@@ -4,7 +4,7 @@
 --- @author   benjamin gerard <ben@sashipa.com>
 --- @brief    Fundamental lua stuff.
 ---
---- $Id: init.lua,v 1.16 2003-03-03 17:32:51 zigziggy Exp $
+--- $Id: init.lua,v 1.17 2003-03-09 01:00:15 ben Exp $
 ---
 
 -- do this file only once !
@@ -156,7 +156,7 @@ if not init_lua then
 	    print("Warning : replacing driver '", d.name, "' in list")
 	    new = 1
 	 end
-	 print (d.name, force, new)
+--	 print (d.name, force, new)
 	 driver_list[d.name] = d
 	 --		print (d.name)
 

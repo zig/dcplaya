@@ -184,7 +184,7 @@ function menu_create(owner, name, def, box, x1, y1)
       end
 
       if key == gui_focus_event then
-	 print("MENU handle [gui_focus_event (1)] : " .. tostring(menu.name))
+--	 print("MENU handle [gui_focus_event (1)] : " .. tostring(menu.name))
 	 menu:open()
       end
 
@@ -227,11 +227,11 @@ function menu_create(owner, name, def, box, x1, y1)
 	 menu:close()
 	 return
       elseif key == gui_focus_event then
-	 print("MENU handle [gui_focus_event] : " .. tostring(menu.name))
+--	 print("MENU handle [gui_focus_event] : " .. tostring(menu.name))
 --	 vmu_set_text(menu.fl:get_text())
 	 return
       elseif key == gui_unfocus_event then
-	 print("MENU handle [gui_unfocus_event] : " .. tostring(menu.name))
+--	 print("MENU handle [gui_unfocus_event] : " .. tostring(menu.name))
 --	 vmu_set_text(nil)
 	 return
       end
@@ -243,7 +243,7 @@ function menu_create(owner, name, def, box, x1, y1)
    function menu_move(menu,movx,movy,movz,move_sub)
 
       -- $$$
-      print("MENU move:"..tostring(menu.name))
+--      print("MENU move:"..tostring(menu.name))
 
       if tag(menu) ~= menu_tag or not menu.fl then return end
       local box,z = menu.fl.box, menu.fl.bo2 and menu.fl.bo2[3]
@@ -263,7 +263,7 @@ function menu_create(owner, name, def, box, x1, y1)
    -- ---------
    function menu_open(menu)
 
-      print("MENU open:" .. tostring(menu.name))
+--      print("MENU open:" .. tostring(menu.name))
 
       menu.closed = nil
       local fl = menu.fl
@@ -289,7 +289,7 @@ function menu_create(owner, name, def, box, x1, y1)
    -- Menu close
    -- ----------
    function menu_close(menu, close_sub)
-      print("MENU close:" .. tostring(menu.name))
+--      print("MENU close:" .. tostring(menu.name))
 
       if close_sub then
 	 local i,v
@@ -402,7 +402,7 @@ function menu_create(owner, name, def, box, x1, y1)
    function menu_confirm(menu)
 
       -- $$$
-      print("MENU confirm:"..tostring(menu.name))
+--      print("MENU confirm:"..tostring(menu.name))
 
       local fl = menu.fl
       if not fl then return end
@@ -457,7 +457,7 @@ function menu_create(owner, name, def, box, x1, y1)
       if not menu then return end
 
       -- $$$
-      print("MENU shutdown:"..tostring(menu.name))
+--      print("MENU shutdown:"..tostring(menu.name))
 
 
       local owner = menu.owner
@@ -610,7 +610,7 @@ function menu_merge_def(def1,def2)
 	    end
 	 else
 	    if def[i] and def[i] ~= v then
-	       print("menu_merge_def : lost ["..i.." := "..tostring(v).."]")
+--	       print("menu_merge_def : lost ["..i.." := "..tostring(v).."]")
 	    else
 	       def[i] = v
 	    end
@@ -644,7 +644,7 @@ function menu_create_def(menustr)
 
    if tag(menustr) == menudef_tag then
       -- $$$
-      print("menu_create_def : already a menudef")
+--      print("menu_create_def : already a menudef")
       return menustr
    elseif type(menustr) ~= "string" then
       return

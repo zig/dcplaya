@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/14
  *
- *  $Id: hyperpipe.c,v 1.12 2003-02-01 20:07:05 ben Exp $
+ *  $Id: hyperpipe.c,v 1.13 2003-03-09 01:00:15 ben Exp $
  */ 
 
 #include <stdio.h>
@@ -1056,7 +1056,7 @@ static luashell_command_description_t commands[] = {
     SHELL_COMMAND_C, lua_setopaque    /* function */
   },
   {
-    "hyperpipe__setlighting", "hp_light",  /* long and short names */
+    "hyperpipe_setlighting", "hp_light",  /* long and short names */
     "print [["
     "hp_setlighting([boolean]) : Set/Get lighting process."
     "Return old values."

@@ -1,7 +1,7 @@
 --- @date 2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  LUA script to initialize dcplaya VMU backup.
---- $Id: vmu_init.lua,v 1.16 2003-03-08 18:41:02 ben Exp $
+--- $Id: vmu_init.lua,v 1.17 2003-03-09 01:00:15 ben Exp $
 ---
 
 -- Unload library
@@ -209,7 +209,7 @@ function vmu_init(force_choice)
 	    return
 	 end
       else
-	 if not force_choice and found.n and found.n == 1 then
+	 if not force_choice and found and found.n and found.n == 1 then
 	    choice = "/vmu/" .. found[1].path .. "/" .. found[1].name
 	    printf("CHOICE UNIC %q",choice)
 	 else

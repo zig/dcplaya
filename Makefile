@@ -3,7 +3,7 @@
 #
 # (C) COPYRIGHT 2002 benjamin gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.21 2003-02-01 20:07:05 ben Exp $ 
+# $Id: Makefile,v 1.22 2003-03-09 01:00:14 ben Exp $ 
 #
 TARGETS=dreammp3.elf
 
@@ -23,6 +23,7 @@ KOS_INCS+= -I. -Iinclude
 ALL_INCS= -I$(KOS_INCS) -I$(KOS_BASE)/kernel/arch/$(KOS_ARCH)/include
 
 CLEAN_LOCAL=symtab.h tmp_symtab.h full-symb-dreammp3.elf debug.log
+
 
 my_all: all TODO
 
@@ -62,6 +63,7 @@ $(TARGETS): force_$(TARGETS) $(OBJS)
 	@$(KOS_STRIP) -v $@		
 
 send:
+	$(MAKEDATA)
 #	@clear
 	@dc-tool -x $(TARGETS) | tee debug.log
 
@@ -98,3 +100,9 @@ depend_extra:
 # ----------------------------------------------------------------------
 
 include Makefile.inc
+
+ifeq '$(MASTER)' '1'
+MAKEDATA=$(MAKE) -C make-cd dcplaya-data
+else
+MAKEDATA=@echo "NO make data"
+endif

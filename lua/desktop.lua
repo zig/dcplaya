@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.23 2003-03-07 10:11:15 ben Exp $
+--- $Id: desktop.lua,v 1.24 2003-03-09 01:00:15 ben Exp $
 ---
 
 if not dolib("evt") then return end
@@ -188,11 +188,11 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 	       end
 
 	       if key == gui_menu_close_event then
-		  print("RECEIVE MENU-CLOSE")
+--		  print("RECEIVE MENU-CLOSE")
 		  dskt_killmenu(app.owner)
 		  return
 	       elseif key == gui_item_confirm_event then
-		  print("RECEIVE MENU-CONFIRM")
+--		  print("RECEIVE MENU-CONFIRM")
 --		  evt_send(app, { key = rawget(dskt_keytoggle,1) })
 -- 		  local owner = app.owner.owner
 -- 		  evt_shutdown_app(app.owner)

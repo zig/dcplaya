@@ -15,15 +15,19 @@ VERSION_STAT=" alpha"
 DREAMMP3_URL="http://sashipa.ben.free.fr/dcplaya"
 TOP_DIR="`pwd`"
 
+echo "0DEBUG = $DEBUG"
+
 # ENABLE OPTIONS
-AC_ARG_ENABLE(debug,    [  --enable-debug          Compile with debug facilities [default=no]], DEBUG="yes", DEBUG="no")
-AC_ARG_ENABLE(release,  [  --enable-release        Compile for release version [default=no]], RELEASE="yes", RELEASE="no")
-AC_ARG_ENABLE(master,  [  --enable-master          Compile for master test emulation [default=no]], MASTER="yes", MASTER="no")
+AC_ARG_ENABLE(debug,    [  --enable-debug          compile with debug facilities [[default=no]]], DEBUG="yes", DEBUG="no")
+AC_ARG_ENABLE(release,  [  --enable-release        compile for release version [[default=no]]], RELEASE="yes", RELEASE="no")
+AC_ARG_ENABLE(master,   [  --enable-master         compile for master test emulation [[default=no]]], MASTER="yes", MASTER="no")
+
+echo "DEBUG = $DEBUG"
 
 # WITH OPTIONS
-AC_ARG_WITH(sh-prefix,  [  --with-sh-prefix        Specify sh tools prefix [default=]],  SHPREFIX="$with_sh_prefix", SHPREFIX="")
-AC_ARG_WITH(arm-prefix, [  --with-arm-prefix       Specify arm tools prefix [default=]],  ARMPREFIX="$with_arm_prefix", ARMPREFIX="")
-AC_ARG_WITH(kos,        [  --with-kos              Specify kos [default=kos]], KOS_BASE="$with_kos", KOS_BASE="kos")
+AC_ARG_WITH(sh-prefix,  [  --with-sh-prefix        Specify sh tools prefix [[default=]]],  SHPREFIX="$with_sh_prefix", SHPREFIX="")
+AC_ARG_WITH(arm-prefix, [  --with-arm-prefix       Specify arm tools prefix [[default=]]],  ARMPREFIX="$with_arm_prefix", ARMPREFIX="")
+AC_ARG_WITH(kos,        [  --with-kos              Specify kos [[default=kos]]], KOS_BASE="$with_kos", KOS_BASE="kos")
 
 # Display a warning message if target specific prefix nor specific target
 # compiler have been setted.
@@ -41,11 +45,12 @@ fi
 PACKAGE_STR="\"$PACKAGE\""
 VERSION_STR="\"${VERSION}${VERSION_STAT}\""
 VERSION_MAJOR=`expr "$VERSION" : '\([0-9]*\).*' \| 1`
-VERSION_MINOR=`expr "$VERSION" : '[0-9]*\.\([0-9]*\)' \| 0`]
+VERSION_MINOR=`expr "$VERSION" : '[0-9]*\.\([0-9]*\)' \| 0`
 VERSION_NUM=0x`printf "%d%02d" $VERSION_MAJOR $VERSION_MINOR`
-BREAKPOINT="[if (1) {*(int *)1 = (N);} else  ]"
+BREAKPOINT="if (1) {*(int *)1 = (N);} else  "
 DREAMMP3_URL_STR="\"$DREAMMP3_URL\""
 ]
+
 AC_SUBST(PACKAGE)
 AC_SUBST(PACKAGE_STR)
 AC_SUBST(VERSION)
@@ -53,6 +58,8 @@ AC_SUBST(VERSION_STR)
 AC_SUBST(VERSION_NUM)
 AC_SUBST(BREAKPOINT)
 AC_SUBST(DREAMMP3_URL_STR)
+
+
 test $DEBUG != "yes"
 DEBUG=$?
 AC_SUBST(DEBUG)
@@ -297,5 +304,5 @@ AC_MSG_RESULT([*   doxygen             : $DOXYGEN])
 AC_MSG_RESULT([**************************************])
 
 dnl#
-dnl# End of "$Id: configure.in,v 1.11 2003-02-27 10:05:25 ben Exp $".
+dnl# End of "$Id: configure.in,v 1.12 2003-03-09 01:00:15 ben Exp $".
 dnl#
