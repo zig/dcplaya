@@ -113,7 +113,7 @@ if background then
    --   background:set_texture("/pc/ptest.jpg","tile")
    --   background:set_texture(home.."lua/rsc/icons/dcplaya.jpg","tile")
    --   background:set_color( {1,1,0,0}, {1,0.5,0.5,0.5}, nil,  {1,0,1,1} )
-   dl_set_trans(background.dl, mat_scale(640,480,1))
+--   dl_set_trans(background.dl, mat_scale(640,480,1))
    dl_set_trans(background_dl, mat_trans(0,0,0.0001))
    background:draw(background_dl)
    dl_set_active(background_dl,1)

@@ -1,7 +1,7 @@
 --- @date 2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  LUA script to initialize dcplaya VMU backup.
---- $Id: vmu_init.lua,v 1.21 2003-03-13 23:11:43 ben Exp $
+--- $Id: vmu_init.lua,v 1.22 2003-03-14 18:51:04 ben Exp $
 ---
 
 -- Unload library
@@ -228,6 +228,7 @@ function vmu_init(not_load, force_choice)
       local choice = nil
       local found = force_choice == 0 and vmu_find_files()
       local count = (found and found.n) or 0
+      local tmp_not_load = not_load
 
       --- Must select a file if more than one was found
       if count > 1 then
@@ -288,6 +289,11 @@ function vmu_init(not_load, force_choice)
 	    -- Now we have choosen a vmu, we must choose a file
 	    local fs = fileselector("Choose VMU file",choice,"dcplaya.01")
 	    choice = fs and evt_run_standalone(fs)
+	    if choice and not test("-f", choice) then
+	       -- User choose a non-existing file. This is for creation only
+	       -- disable loading for this loop.
+	       tmp_not_load = 1
+	    end
 	 end
 
 	 if not choice then
@@ -299,7 +305,7 @@ function vmu_init(not_load, force_choice)
       if choice then
 	 -- Now we have a choice, try to do it !
 	 local done
-	 if not_load then
+	 if tmp_not_load then
 	    done = vmu_set_file(choice)
 	 else
 	    done = vmu_load_file(choice)

@@ -1,16 +1,20 @@
---- @ingroup  dcplaya_lua_basics
+--- @ingroup  dcplaya_lua_shell
 --- @file     dirfunc.lua
 --- @author   vincent penne <ziggy@sashipa.com>
 --- @author   benjamin gerard <ben@sashipa.com>
 --- @brief    Directory and filename support.
 ---
---- $Id: dirfunc.lua,v 1.14 2003-03-03 08:35:24 ben Exp $
+--- $Id: dirfunc.lua,v 1.15 2003-03-14 18:51:03 ben Exp $
 ---
 
-PWD=home
+PWD = PWD or home or "/"
+
+--- @name Directory and file functions.
+--- @ingroup dcplaya_lua_shell
+--- @{
+--
 
 --- Get path and leaf from a filename.
---- @ingroup  dcplaya_lua_basics
 --- @param    pathname  full path
 --- @param    pwd       optionnal pwd, if omitted PWD global is used.
 --- @return   path,leaf
@@ -34,7 +38,6 @@ addhelp(get_path_and_leaf,
 	[[print[[get_path_and_leaf(pathname[,pwd]): return path,leaf from given filename. pwd is an optionnal pwd. See fullpath.]]]])
 
 --- Get nude name (remove path and extension).
---- @ingroup  dcplaya_lua_basics
 --- @param    pathname full 
 --- @return   path,leaf
 function get_nude_name(pathname)
@@ -51,7 +54,6 @@ addhelp(get_nude_name,
 	[[print[[get_nude_name(pathname): return nude filename (without path nor extension).]]]])
 
 --- Create a full path name.
---- @ingroup  dcplaya_lua_basics
 --- @return   fullpath of given filename
 function fullpath(name, pwd)
    pwd = pwd or PWD
@@ -68,7 +70,6 @@ addhelp(fullpath,
 	[[print[[fullpath(filename[,pwd]): return fullpath of given filename. Optionnal pwd will be prefixed instead of defaut PWD global variable.]]]])
 
 --- Change current directory.
---- @ingroup  dcplaya_lua_basics
 --- @warning  No check for new path validity.
 function cd(path)
 	PWD = fullpath(path)
@@ -79,8 +80,6 @@ function cd(path)
 end
 addhelp(cd, [[print[[cd(path) : set current directory]]]])
 
--- Load the new ls() command
-dolib("ls")
 
 --
 -- reimplement basic io function with relative path support
@@ -119,18 +118,21 @@ function fullpath_convert(name, arglist)
 end
 
 --- Recursively delete a directory and its files.
---- @ingroup  dcplaya_lua_basics
 --- @param    path  Directory to delete
 ---
 function deltree(path)
-   path = fullpath(path)
-
+   path = canonical_path(path)
+   if type(path) ~= "string" then
+      print("deltree : bad argument")
+      return
+   end
+   print("deltree "..path)
    if not test("-d",path) then
       print("deltree : [".. tostring(path) .. "] is not a directory.")
       return
    end
 
-   local d,f = dirlist("-2",path)
+   local d,f = dirlist("-2h",path)
    local i,v
 
    -- Unlink files
@@ -152,6 +154,79 @@ function deltree(path)
    return
 end
 
+if not dolib("ls") then return end
+
+--- Directory listing.
+---
+--- Display directory listing. If no path is given, @b PWD is used instead.
+--- If the listing is longer than console height, ls wait a key strike.
+--- If more than one path is found, detail [-d] is automatically set.
+---
+--- @par Syntax
+--- @code
+--- ls [-switch] [path1 ..]
+--- @endcode
+---
+--- @par Switch
+---
+--- Valid switch are :
+---   - @b -l : long listing.
+---   - @b -s : sort by size. 
+---   - @b -d : detail, display directory information summary.
+---
+--- Switch can be concatenate.
+--- @code
+--- ls -ld /ram /vmu
+--- @endcode
+--- 
+function ls(...)
+   local is_long, sort_by_size, found, detail, i
+
+   -- Get options
+   --
+   for i=1, arg.n, 1 do
+      if type(arg[i]) ~= "string" then
+	 print("ls : invalid parameter")
+	 return
+      elseif strsub(arg[i],1,1) == "-" then
+	 local j, l
+	 l=strlen(arg[i])
+	 for j=2, l, 1 do
+	    local p = strsub(arg[i],j,j)
+	    if p == "l" then
+	       is_long = 1
+	    elseif p == "s" then
+	       sort_by_size = 1
+	    elseif p == "d" then
+	       detail = 1
+	    else
+	       print("ls : invalid switch -"..p)
+	       return
+	    end
+	 end
+      else
+	 if (found) then found=found+1 else found=1 end
+      end
+   end
+
+   -- Some directory path found, list them 
+   if found then
+      for i=1, arg.n, 1 do
+	 if strsub(arg[i],1,1) ~= "-" then
+	    if found>1 then detail = 1 end
+	    ls_core(fullpath(arg[i]), is_long, sort_by_size, detail)
+	 end
+      end
+      -- No directory found, list PWD
+   else
+      ls_core(PWD, is_long, sort_by_size, detail)
+   end
+end
+
+--
+--- @}
+--
+
 addhelp("deltree", [[
 print[[deltree(path) : Recursively delete a directory and its files
 ]]]])
@@ -165,6 +240,15 @@ Reimplement given function with relative path support by converting its input pa
 - arglist is the list of index of argument to convert or nil to convert all arguments
 ]]]])
 
+addhelp(
+	ls,
+	[[
+	      print[[ls(...) : file listing]]
+	      print[[switches (can be concatenate e.g -ld)]]
+	      print[[ -l : display one file per line is its size.]]
+	      print[[ -s : sort by size instead of name.]]
+	      print[[ -d : display for each directory a content summary. This option is autimatically set if more than one directory is given.]]
+	]])
 
 fullpath_convert( "openfile", { 1 } )
 fullpath_convert( "readfrom", { 1 } )

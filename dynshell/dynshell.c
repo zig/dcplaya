@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.79 2003-03-13 23:15:27 ben Exp $
+ * @version    $Id: dynshell.c,v 1.80 2003-03-14 18:51:03 ben Exp $
  */
 
 #include "dcplaya/config.h"
@@ -1040,7 +1040,7 @@ static int lua_copy(lua_State * L)
 	continue;
       }
       if (!fn_add_path(fulldest, enddest, fn_basename(fname), max)) {
-	printf("copy : [filename too long].\n");
+	printf("copy : [%s] [filename too long].\n",fname);
 	err = -1;
       } else {
 	err |= copyfile(fulldest, fname, force, 0, verbose);

@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.55 2003-03-14 17:08:20 zigziggy Exp $
+--- $Id: gui.lua,v 1.56 2003-03-14 18:51:03 ben Exp $
 ---
 
 --
@@ -154,6 +154,7 @@ end
 -- compute an automatic guess if none is given, using parent's z
 function gui_guess_z(owner, z)
    if not z then
+      -- $$$ ben : +10 ???
       z = gui_orphanguess_z(owner.z) + 10
    end
    return z
@@ -188,6 +189,7 @@ function gui_child_autoplacement(app)
       i = i.next
    end
 
+   -- $$$ ben : +1 ???
    n = n+1
    local scale = 1/n
    i = app.sub
@@ -196,7 +198,9 @@ function gui_child_autoplacement(app)
       n = n - 1
 
       if i._dl then
-	 dl_set_trans(i._dl, mat_trans(0, 0, 100/scale + 100*n) * mat_scale(1, 1, scale/2))
+	 dl_set_trans(i._dl,
+		      mat_trans(0, 0, 100/scale + 100*n) *
+			 mat_scale(1, 1, scale/2))
 	 dl_sublist(app._dl1, i._dl)
       end
       

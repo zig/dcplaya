@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.28 2003-03-13 04:21:46 zigziggy Exp $
+--- $Id: desktop.lua,v 1.29 2003-03-14 18:51:03 ben Exp $
 ---
 
 if not dolib("evt") then return end
@@ -458,6 +458,30 @@ function dskt_handle(app, evt)
       end
 
       gui_child_autoplacement(app)
+
+      -- $$$ test debug
+      local i,a
+      for i,a in { app, evt.app } do
+	 print("autoplace "..a.name)
+	 if not a._dl then
+	    print(a.name..": no _dl !!")
+	 else
+	    local mat = dl_get_trans(a._dl)
+	    local vtx = mat_new(5,4)
+	    vtx[1][3] = 0
+	    vtx[1][4] = 1
+	    vtx[2][3] = 50
+	    vtx[2][4] = 1
+	    vtx[3][3] = 100
+	    vtx[3][4] = 1
+	    vtx[4][3] = 150
+	    vtx[4][4] = 1
+	    vtx[5][3] = 200
+	    vtx[5][4] = 1
+	    mat_dump(vtx * mat,1)
+	 end
+      end
+
       return
    end
 

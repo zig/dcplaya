@@ -4,10 +4,10 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.19 2003-03-13 23:12:55 ben Exp $
+--- $Id: control_center.lua,v 1.20 2003-03-14 18:51:03 ben Exp $
 ---
 
---- @defgroup dcplaya_lua_cc_app Control center application
+--- @defgroup dcplaya_lua_cc_app Control Center
 --- @ingroup dcplaya_lua_app
 ---
 ---  @par Control Center introduction
@@ -176,6 +176,20 @@ function control_center_menucreator(target)
    local root = ":" .. target.name .. ":" .. 
       '{cc_dcp}about{about},{cc_vol}volume{volume},{cc_vmu}vmu >vmu,plugins >plugins'
 
+   function cc_yesno_image(menu, idx, flag, label)
+      menu.fl.dir[idx].name =
+	 '<img name="cc_'
+	 .. ((flag and 'yes') or 'no')
+	 .. '">' .. label
+      menu:draw()
+   end
+
+   function cc_yesno_menu(flag,label)
+      return '{cc_' .. ((flag and 'yes}') or 'no}')
+	 .. label
+   end
+
+
    local cb = {
       about = control_center_about,
       volume = control_center_volume,
@@ -207,7 +221,18 @@ function control_center_menucreator(target)
 		   end,
 
       vmu_load  = function (menu)
-
+		     if not ram_path then ramdisk_init() end
+		     if not ram_path then return end
+		     local vmufile = vmu_file()
+		     local result
+		     if vmufile then
+			--- @TODO Check ramdisk modified here before to
+			--- commando it !!
+			deltree(ram_path) -- $$$ !! Outch !!
+			result = vmu_load_file(vmufile,ram_path)
+		     else
+			result = vmu_init()
+		     end
 		  end,
 
       vmu_save  = function (menu)
@@ -221,12 +246,21 @@ function control_center_menucreator(target)
       vmu_autosave = function (menu, idx)
 			local cc = menu.root_menu.target
 			cc.vmu_auto_save = not cc.vmu_auto_save
-			menu.fl.dir[idx].name =
-			    '<img name="cc_'
-			   .. ((cc.vmu_auto_save and 'yes') or 'no')
-			   .. '">autosave'
-			menu:draw()
+			cc_yesno_image(menu, idx, cc.vmu_auto_save,
+				       'auto-save')
 		    end,
+
+      vmu_deffile = function (menu, idx)
+			vmu_no_default_file = not vmu_no_default_file
+			cc_yesno_image(menu, idx, not vmu_no_default_file,
+				       'use default')
+		     end,
+
+      vmu_confwrite = function (menu, idx)
+			 vmu_never_confirm_write = not vmu_never_confirm_write
+			 cc_yesno_image(menu, idx, not vmu_never_confirm_write,
+					'confirm')
+		      end,
    }
 
    -- Read available driver type
@@ -286,16 +320,22 @@ function control_center_menucreator(target)
       end
    end
 
+
    local def = {
       root=root,
       cb = cb,
       sub = {
 	 vmu = {
-	    root = ':vmu:visual >vmu_visual,'
-	       .. '{cc_' .. ((cc.vmu_auto_save and 'yes') or 'no')
-	       .. '}autosave{vmu_autosave},load{vmu_load},merge{vmu_merge},save{vmu_save},save as{vmu_saveas}',
+	    root = ':vmu:visual >vmu_visual,options >vmu_option,load{vmu_load},merge{vmu_merge},save{vmu_save},save as{vmu_saveas}',
 	    sub = {
-	       vmu_visual = ":visual:none{setvmuvis},scope{setvmuvis},fft{setvmuvis},band{setvmuvis}"
+	       vmu_visual = ':visual:none{setvmuvis},scope{setvmuvis},fft{setvmuvis},band{setvmuvis}',
+	       vmu_option = ':option:'
+		  .. cc_yesno_menu(cc.vmu_auto_save,'auto-save')
+		  .. '{vmu_autosave},'
+		  .. cc_yesno_menu(not vmu_no_default_file,'use default')
+		  .. '{vmu_deffile},'
+		  .. cc_yesno_menu(not vmu_never_confirm_write,'confirm')
+		  .. '{vmu_confwrite}',
 	    }
 	 },
 	 plugins = plugins,

@@ -1,10 +1,16 @@
 /**
+ * @ingroup dcplaya_devel
  * @file    playa_info.h
  * @author  benjamin gerard <ben@sashipa.com>
  * @date    2002/09/23
  * @brief   Music informations
  *
- * $Id: playa_info.h,v 1.4 2002-11-29 08:29:41 ben Exp $
+ * $Id: playa_info.h,v 1.5 2003-03-14 18:51:03 ben Exp $
+ */
+
+/** @defgroup dcplaya_playainfo_devel playa info
+ *  @ingroup dcplaya_devel
+ *  @brief Music information.
  */
 
 #ifndef _PLAYA_INFO_H_
@@ -14,12 +20,14 @@
 
 DCPLAYA_EXTERN_C_START
 
-/**
- * @warning  Do not change order : hardcode
+/** Player info fields enumeration. 
+ *  @ingroup dcplaya_playainfo_devel
+ *  @warning  Do not change order : hardcode
  */
 typedef enum {
 
-  /** @name  Numeric info.
+  /* @name  Numeric info.
+   *  @ingroup dcplaya_playainfo_devel
    *  @{
    */
   PLAYA_INFO_BITS = 0, /**< 0:8 1:16                        */
@@ -32,7 +40,8 @@ typedef enum {
 
   PLAYA_INFO_DESC,     /**< Music format e.g "mpeg Layer III mono" */
 
-  /** @name  Auto build info.
+  /* @name  Auto build info.
+   *  @ingroup dcplaya_playainfo_devel
    *  @{
    */
   PLAYA_INFO_VMU,      /**< VMU scroll text                        */
@@ -40,39 +49,57 @@ typedef enum {
   PLAYA_INFO_TIMESTR,  /**< Time string [hh:]mm:ss                 */
   /*@}*/
 
-  /** @name  ID3 like info.
+  /* @name  ID3 like info.
+   *  @ingroup dcplaya_playainfo_devel
    *  @{
    */
-  PLAYA_INFO_ARTIST,
-  PLAYA_INFO_ALBUM,
-  PLAYA_INFO_TRACK,
-  PLAYA_INFO_TITLE,
-  PLAYA_INFO_YEAR,
-  PLAYA_INFO_GENRE,
-  PLAYA_INFO_COMMENTS,
+  PLAYA_INFO_ARTIST,   /**< Artist name              */
+  PLAYA_INFO_ALBUM,    /**< Album name               */
+  PLAYA_INFO_TRACK,    /**< Track description string */
+  PLAYA_INFO_TITLE,    /**< Track title              */
+  PLAYA_INFO_YEAR,     /**< Track/album year         */
+  PLAYA_INFO_GENRE,    /**< Musical genre            */
+  PLAYA_INFO_COMMENTS, /**< Additinnal comment       */
   /*@}*/
 
-  PLAYA_INFO_SIZE
+  PLAYA_INFO_SIZE      /**< Number of fields in playa_info_t::info */
 } playa_info_e;
 
+/** Player info field union.
+ *  @ingroup dcplaya_playainfo_devel
+ */
 typedef union {
-  char * s;
-  unsigned int v;
+  char * s;        /**< String value. */
+  unsigned int v;  /**< Numeric value. */
 } playa_info_u;
 
-/** */
+/** Player info structure.
+ *  @ingroup dcplaya_playainfo_devel
+ *  @see playa_info_e
+ */
 typedef struct {
   int valid;       /**< Are the following fields valids.
 		      Used as a counter for modification notify. */ 
 
   int update_mask; /**< Bit mask of modified info field */ 
 
-  playa_info_u info[PLAYA_INFO_SIZE];
+  playa_info_u info[PLAYA_INFO_SIZE]; /**< Info fields. */
 
 } playa_info_t;
 
+/** @name player info initialization
+ *  @ingroup dcplaya_playainfo_devel
+ *
+ */
+
+/** Init the player information module. */
 int playa_info_init(void);
+
+/** Shutdown  the player information module. */
 void playa_info_shutdown(void);
+
+/**@}*/
+
 
 char * playa_info_make_timestr(char * time, unsigned int ms);
 
@@ -87,6 +114,7 @@ int playa_info_update(playa_info_t *info);
 void playa_info_dump(playa_info_t * info);
 
 /** @name Numeric information accessor.
+ *  @ingroup dcplaya_playainfo_devel
  *  @{
  */
 
@@ -105,6 +133,7 @@ int playa_info_bytes(playa_info_t * info, int v);
 /**@}*/
 
 /** @name String information accessor.
+ *  @ingroup dcplaya_playainfo_devel
  *  @{
  */
 char * playa_info_desc(playa_info_t * info, char * v);

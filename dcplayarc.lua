@@ -4,7 +4,7 @@
 --- @author   Penne Vincent <ziggy@sashipa.com>
 --- @date     2002
 --- @brief    Main dcplaya lua script.
---- $Id: dcplayarc.lua,v 1.34 2003-03-13 23:03:37 ben Exp $
+--- $Id: dcplayarc.lua,v 1.35 2003-03-14 18:51:03 ben Exp $
 ---
 ---   The @b home..dcplayarc.lua file is dcplaya main script. It is executed
 ---   after the dynshell has been loaded.
@@ -151,9 +151,10 @@ if type(vmu_file) == "function" then
       printf("Default VMU file is %q.",defvmu)
    else
       print("No default VMU file.")
+      local result
       if type(vmu_init) == "function" then
 	 hideconsole()
-	 vmu_init()
+	 result = vmu_init(1) -- Select only 
 	 showconsole()
       end
    end
@@ -168,12 +169,8 @@ if not skip_vmu_userconf and test("-f","/ram/dcplaya/userconf.lua") then
 end
 
 if not skip_home_userconf then
+   printf("Running [%suserconf.lua]",home)
    dofile (home.."userconf.lua")
-end
-
-if test("-f","/ram/dcplaya/userconf.lua") then
-   print("Running [/ram/dcplaya/userconf.lua]")
-   dofile ("/ram/dcplaya/userconf.lua")
 end
 
 --

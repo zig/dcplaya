@@ -723,10 +723,10 @@ function menu_create_def(menustr)
 	    if not menu.separator then menu.separator = {} end
 	    tinsert(menu.separator, getn(menu))
 	 else
-	    local mf = [[%w%s_.;@~#/\!*]]
+	    local mf = [[%w%s_.;@~#/\!*-]]
 	    local size, sub, cb, main, icon, substart,subend
 	    substart,subend,main,sub =
-	       strfind(name,"(["..mf.."{}]*)(>?["..mf.."]*)")
+	       strfind(name,"([{}"..mf.."]*)(>?["..mf.."]*)")
 
 --	    printf("main:[%s] sub:[%s]",tostring(main),tostring(sub))
 
