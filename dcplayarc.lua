@@ -5,7 +5,7 @@
 --- @date     2002
 --- @brief    Main dcplaya lua script.
 ---
---- $Id: dcplayarc.lua,v 1.36 2003-03-19 05:16:15 ben Exp $
+--- $Id: dcplayarc.lua,v 1.37 2003-03-20 01:46:54 zigziggy Exp $
 ---
 ---   The @b home..dcplayarc.lua file is dcplaya main script. It is executed
 ---   after the dynshell has been loaded.
@@ -89,9 +89,16 @@ plug_el         = home.."plugins/exe/entrylist/entrylist.lez"
 plug_jpeg       = home.."plugins/img/jpeg/jpeg.lez"
 
 -- Execute user dcplayarc (extracted from vmu into ramdisk)
-if type(test) == "function" and test("-f","/ram/dcplaya/dcplayarc.lua") then
+if not dcplayarc_vmu_loading and
+   type(test) == "function" and test("-f","/ram/dcplaya/dcplayarc.lua") then
+
+   -- to avoid infinite loop if this file launched from /ram already
+   dcplayarc_vmu_loading = 1
+
    print("Running [/ram/dcplaya/dcplayarc.lua]")
    dofile("/ram/dcplaya/dcplayarc.lua")
+
+   return
 end
 
 -- Add filetype some useful filetypes.
@@ -162,16 +169,16 @@ if type(vmu_file) == "function" then
 end
 
 -- reading user config
-print ("Reading user config file 'userconf.lua'")
-
-if not skip_vmu_userconf and test("-f","/ram/dcplaya/userconf.lua") then
-   print("Running [/ram/dcplaya/userconf.lua]")
-   dofile ("/ram/dcplaya/userconf.lua")
-end
+print ("Reading user config files ...")
 
 if not skip_home_userconf then
    printf("Running [%suserconf.lua]",home)
    dofile (home.."userconf.lua")
+end
+
+if not skip_vmu_userconf and test("-f","/ram/dcplaya/userconf.lua") then
+   print("Running [/ram/dcplaya/userconf.lua]")
+   dofile ("/ram/dcplaya/userconf.lua")
 end
 
 --
