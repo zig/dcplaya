@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.60 2003-01-14 10:54:50 ben Exp $
+ * @version    $Id: dynshell.c,v 1.61 2003-01-19 21:44:50 ben Exp $
  */
 
 #include <stdio.h>
@@ -27,6 +27,7 @@
 #include "file_utils.h"
 #include "filename.h"
 #include "plugin.h"
+#include "option.h"
 #include "dcar.h"
 #include "gzip.h"
 #include "playa.h"
@@ -1590,6 +1591,25 @@ static int lua_vmu_set_db(lua_State * L)
   return 1;
 }
 
+static int lua_set_visual(lua_State * L)
+{
+  vis_driver_t * vis = 0;
+
+  if (lua_gettop(L) >= 1) {
+    if (lua_type(L,1) == LUA_TNIL) {
+      option_no_visual();
+    } else {
+      option_set_visual(lua_tostring(L,1));
+    }
+  }
+  vis = option_visual();
+  lua_settop(L,0);
+  if (vis) {
+    lua_pushstring(L,vis->common.name);
+  }
+  return lua_gettop(L);
+}
+
 static int lua_filetype(lua_State * L)
 {
   const char * major_name, * minor_name;
@@ -2395,6 +2415,14 @@ static luashell_command_description_t commands[] = {
     SHELL_COMMAND_C, lua_vmu_set_db
   },
 
+  { 
+    "set_visual",
+    0,
+    "print([["
+    "set_visual([name]) : set/get visual plugin name.\n"
+    "]])",
+    SHELL_COMMAND_C, lua_set_visual
+  },
 
   {
     "filetype",

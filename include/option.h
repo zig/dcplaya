@@ -21,6 +21,7 @@ int option_volume();
 int option_filter();
 vis_driver_t * option_visual();
 void option_no_visual();
+int option_set_visual(const char * name);
 int option_lcd_visual();
 int option_shuffle();
 

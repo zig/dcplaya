@@ -34,6 +34,7 @@ typedef enum {
 
 #define OPTION_AT_INIT OPTION_VOLUME
 
+static spinlock_t visual_mutex;
 static int latch_counter;
 static int latch_frames;
 static option_e cur_option;
@@ -65,6 +66,7 @@ int option_setup(void)
   filter = 1;
   shuffle = 0;
 
+  spinlock_init(&visual_mutex);
   driver_list_lock(&vis_drivers);
 
   SDDEBUG("++ VISUALS = %d\n", vis_drivers.n);
@@ -104,13 +106,62 @@ int option_shuffle()
 
 vis_driver_t * option_visual()
 {
-  return visual;
+  vis_driver_t *d;
+
+  spinlock_lock(&visual_mutex);
+  d = visual;
+  driver_reference(&visual->common);
+  spinlock_unlock(&visual_mutex);
+  return d;
 }
+
+static int set_visual(vis_driver_t * d)
+{
+  if (d && d != visual && d->start()) {
+    driver_dereference(&d->common);
+    return -1;
+  } else {
+    if (visual) {
+      SDDEBUG("Stop visual [%s]\n",visual->common.name);
+
+      if (d != visual) {
+	visual->stop();
+      }
+      driver_dereference(&visual->common);
+    }
+    visual = d;
+    if (visual) {
+      SDDEBUG("Start visual [%s]\n",visual->common.name);
+    }
+  }
+  return 0;
+}
+
 
 void option_no_visual()
 {
-  driver_dereference(&visual->common);
-  visual = 0;
+  spinlock_lock(&visual_mutex);
+  set_visual(0);
+  spinlock_unlock(&visual_mutex);
+}
+
+
+int option_set_visual(const char * name)
+{
+  int err;
+  vis_driver_t * d;
+  if (!name) {
+    return -1;
+  }
+
+  d = (vis_driver_t *)driver_list_search(&vis_drivers, name);
+  if (!d) {
+    return -1;
+  }
+  spinlock_lock(&visual_mutex);
+  err = set_visual(d);
+  spinlock_unlock(&visual_mutex);
+  return err;
 }
 
 int option_lcd_visual()
@@ -250,16 +301,18 @@ void option_render(unsigned int elapsed_frame)
 
   case OPTION_VISUAL:
     {
-      vis_driver_t * save = visual;
+      vis_driver_t * newvis;
       char tmp [256];
       
       driver_list_lock(&vis_drivers);
+      spinlock_lock(&visual_mutex);
+
       if (hmove > 0) {
 	/* Find next visual */
 	if (!visual) {
-	  visual = (vis_driver_t *)vis_drivers.drivers;
+	  newvis = (vis_driver_t *)vis_drivers.drivers;
 	} else {
-	  visual = (vis_driver_t *) visual->common.nxt;
+	  newvis = (vis_driver_t *) visual->common.nxt;
 	}
       } else if (hmove < 0) {
 	/* Find previous visual */
@@ -269,29 +322,17 @@ void option_render(unsigned int elapsed_frame)
 	     v && v != &visual->common;
 	     p=v, v=v->nxt)
 	  ;
-	visual = (vis_driver_t *)p;
+	newvis = (vis_driver_t *)p;
+      } else {
+	newvis = visual;
       }
-      driver_reference(&visual->common);
+      driver_reference(&newvis->common);
       driver_list_unlock(&vis_drivers);
 
-      /* Do plugin stop/start op */
-      if (visual != save) {
-	/* Only if visual changes */
-	if (save) {
-	  /* Stop previous ... if any */
-	  save->stop();
-	}
-	if (visual) {
-	  /* Start new one ... if any */
-	  if (visual->start()) {
-	    driver_dereference(&visual->common);
-	    visual = 0;
-	  }
-	}
-      }
-      driver_dereference(&save->common);
-	  
+      set_visual(newvis);
       sprintf(tmp,"Visual %s", !visual ? "OFF" : visual->common.name);
+      spinlock_unlock(&visual_mutex);
+
       option_str[sizeof(option_str)-1] = 0;
       strcpy(option_str, tmp);
       text_draw_str_inside(x1, y1, x2, y2, z, option_str);
