@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.12 2003-03-08 13:54:25 ben Exp $
+--- $Id: control_center.lua,v 1.13 2003-03-08 18:30:44 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_cc_app Control center application
@@ -29,6 +29,10 @@ if not dolib("gui") then return end
 if not dolib("menu") then return end
 if not dolib("volume_control") then return end
 if not dolib("plugin_info") then return end
+if not dolib("vmu_init") then return end
+if not dolib("fileselector") then return end
+
+control_center_close_button = '<center><img name="stock_button_cancel" src="stock_button_cancel.tga ">close'
 
 --
 --- Volume menu callback.
@@ -91,7 +95,7 @@ function control_center_about(menu)
    -- 	       end
 
    gui_ask(text,
-	   {'<center><img name="stock_button_cancel" src="stock_button_cancel.tga ">close'},
+	   {control_center_close_button},
 	   400,'About dcplaya')
 end
 
@@ -154,6 +158,54 @@ function control_center_create_sprites(cc)
    --				   24, 24) --, 0 , 0, 8/64, 48/64)
 end
 
+function vmu_save_confirm(vmu)
+   if type(vmu) ~= "string" then return end
+   local r = vmu_confirm_write(vmu)
+   if r and r == 1 then
+      if not vmu_save_file(vmu, "/ram/dcplaya") then
+	 gui_ask('<img name="vmu" w="48">Failed to write dcplaya file to VMU<br><p><vspace h="8"><font color="#00FF00">'..vmu, { control_center_close_button }, 400, "Write failure")
+      else
+	 return 1
+      end
+   end
+end
+
+function vmu_save_as(vmu)
+   if type(vmu) ~= "string" then vmu = nil end
+   local dir = vmu_list()
+   if not dir then return end
+
+   local path, leaf
+   if vmu then
+      if strsub(vmu,1,1) == "/" then
+	 path,leaf = get_path_and_leaf(vmu)
+      else
+	 path,leaf = get_path_and_leaf(vmu)
+	 path = nil
+      end
+   end
+   path = path or "/vmu"
+
+   local choice
+   local fs = fileselector("Choose save file", path, leaf)
+   choice = fs and evt_run_standalone(fs)
+   printf("SAVE AS %q", tostring(choice))
+   if choice then
+      return vmu_save_confirm(choice)
+   end
+end   
+
+function vmu_save(vmu, alternate)
+   vmu = (type(vmu) == "string" and vmu) or vmu_file()
+   if not vmu then
+      vmu = vmu_choose_file(files, dir, expr)
+      if not vmu and alternate then
+	 return vmu_save_as(type(alternate) == "string" and alternate)
+      end
+   end
+   return vmu_save_confirm(vmu)
+end
+
 --
 --- Menu creator.
 ---
@@ -196,6 +248,19 @@ function control_center_menucreator(target)
 			 plugin_viewer(nil,title.."/"..name)
 		      end
 		   end,
+
+      vmu_load  = function (menu)
+
+		  end,
+
+      vmu_save  = function (menu)
+		     vmu_save(nil,1)
+		  end,
+
+      vmu_saveas  = function (menu)
+		       vmu_save_as()
+		    end,
+
    }
 
    -- Read available driver type
@@ -260,7 +325,7 @@ function control_center_menucreator(target)
       cb = cb,
       sub = {
 	 vmu = {
-	    root = ":vmu:visual >vmu_visual,save",
+	    root = ":vmu:visual >vmu_visual,load{vmu_load},merge{vmu_merge},save{vmu_save},save as{vmu_saveas}",
 	    sub = {
 	       vmu_visual = ":visual:none{setvmuvis},scope{setvmuvis},fft{setvmuvis},band{setvmuvis}"
 	    }

@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.74 2003-03-06 16:59:42 zigziggy Exp $
+ * @version    $Id: dynshell.c,v 1.75 2003-03-08 18:30:44 ben Exp $
  */
 
 #include "config.h"
@@ -1634,6 +1634,15 @@ static int lua_vmu_set_db(lua_State * L)
   return 1;
 }
 
+/* defined in vmu.c (KOS) */
+extern volatile int vmu_io_state;
+static int lua_vmu_state(lua_State * L)
+{
+  lua_settop(L,0);
+  lua_pushnumber(L, vmu_io_state);
+  return 1;
+}
+
 /* defined in dreamcat68.c */
 extern int dcplaya_set_visual(const char * name);
 
@@ -3011,6 +3020,17 @@ static luashell_command_description_t commands[] = {
     " Compare two driver, return non-nil if they are the same.\n"
     "]])",
     SHELL_COMMAND_C, lua_driver_is_same
+  },
+
+  {
+    "vmu_state",
+    0,
+    "print([["
+    "vmu_state() : returns vmu IO access state.\n"
+    " bit 0 : set if currently reading on vmu.\n"
+    " bit 1 : set if currently writing on vmu.\n"
+    "]])",
+    SHELL_COMMAND_C, lua_vmu_state
   },
 
   {0},

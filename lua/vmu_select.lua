@@ -29,8 +29,8 @@ function vmu_select_create(owner, name, dir, x, y, z)
       bkg_color	= { 0.8, 0.7, 0.7, 0.7,  0.8, 0.3, 0.3, 0.3 },
       border	= 8,
       span      = 1,
-      file_color= { 1, 0, 0, 0 },
-      dir_color	= { 1, 0, 0, .4 },
+      file_color= { 1, 1, 1, 0 },
+      dir_color	= { 1, 1, .7, 0 },
       cur_color	= { 1, 1, 1, 1,  1, 0.1, 0.4, 0.5 },
       text      = {font=0, size=16, aspect=1}
    }
@@ -41,7 +41,8 @@ function vmu_select_create(owner, name, dir, x, y, z)
       local key = evt.key
 
       if key == gui_item_confirm_event then
-	 local result =  dial.vs.fl:get_entry()
+	 local fl=dial.vs.fl
+	 local result = fl:fullpath(fl:get_entry())
 	 evt_shutdown_app(dial)
 	 dial._done = 1
 	 dial._result = result
@@ -109,23 +110,33 @@ function vmu_select_create(owner, name, dir, x, y, z)
    local fl = dial.vs.fl
    fl.vmusprite = vmusprite
    fl.measure_text = function(fl, entry)
-						local w, h = dl_measure_text(fl.cdl,entry.name)
-						return max(w,fl.vmusprite.w),
-						h+fl.vmusprite.h+2*fl.span
-					 end
+			local w, h = dl_measure_text(fl.cdl,fl:fullpath(entry))
+			return max(w,fl.vmusprite.w),
+			h+fl.vmusprite.h+2*fl.span
+		     end
+
+   fl.fullpath =  function (fl, entry)
+		     if not entry then 
+			entry = fl and fl.dir and fl.dir[(fl.pos or 0)+1]
+			if not entry then return end
+		     end
+		     return ((entry.path and (entry.path.."/")) or "")
+			.. entry.name
+		  end
 
    fl.draw_entry = function (fl, dl, idx, x , y, z)
-					  local entry = fl.dir[idx]
-					  local color = fl.dircolor
-					  local wt,ht = dl_measure_text(dl,entry.name)
-					  x = fl.bo2[1] * 0.5 - fl.border
-					  local xt = x - wt * 0.5
-					  dl_draw_text(dl,
-								   xt, y, z+0.1,
-								   color[1],color[2],color[3],color[4],
-								   entry.name)
-					  fl.vmusprite:draw(dl, x, y + ht, z)
-				   end
+		      local entry = fl.dir[idx]
+		      local name = fl:fullpath(entry)
+		      local color = fl.dircolor
+		      local wt,ht = dl_measure_text(dl,name)
+		      x = fl.bo2[1] * 0.5 - fl.border
+		      local xt = x - wt * 0.5
+		      dl_draw_text(dl,
+				   xt, y, z+0.1,
+				   color[1],color[2],color[3],color[4],
+				   name)
+		      fl.vmusprite:draw(dl, x, y + ht, z)
+		   end
 
    fl.draw_cursor = function () end
    

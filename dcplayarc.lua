@@ -1,7 +1,7 @@
 --
 -- This is main DCplaya lua script
 --
--- $Id: dcplayarc.lua,v 1.30 2003-03-08 13:54:52 ben Exp $
+-- $Id: dcplayarc.lua,v 1.31 2003-03-08 18:30:44 ben Exp $
 --
 
 showconsole()
@@ -43,14 +43,18 @@ plug_fime	= home.."plugins/vis/fime/fime.lez"
 plug_el         = home.."plugins/exe/entrylist/entrylist.lez"
 plug_jpeg       = home.."plugins/img/jpeg/jpeg.lez"
 
-
-
--- vmu initialisation
+-- vmu initialisation.
 hideconsole()
 dl(plug_jpeg)
 dolib ("vmu_init")
-showconsole()
+if type(ramdisk_init) == "function" then
+   ramdisk_init()
+end
+if type(vmu_init) == "function" then
+   vmu_init()
+end
 
+showconsole()
 
 -- reading user config
 print ("Reading user config file 'userconf.lua'")

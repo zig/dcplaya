@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.48 2003-03-07 15:36:28 ben Exp $
+--- $Id: gui.lua,v 1.49 2003-03-08 18:30:44 ben Exp $
 ---
 
 --
@@ -67,18 +67,18 @@ if not dolib "evt" or not dolib "box3d" or not dolib "taggedtext" then
    return
 end
 
-gui_box_bcolor = { 0.8, 0.2, 0.3, 0.3 }
-gui_box_color1 = { 0.8, 0.2, 0.3, 0.3 }
-gui_box_color2 = { 0.8, 0.1, 0.15, 0.15 }
-gui_button_bcolor = { 0.8, 0.5, 0.7, 0.5 }
-gui_button_color1 = { 0.8, 0.5, 0.7, 0.5 }
-gui_button_color2 = { 0.8, 0.2, 0.4, 0.4 }
-gui_text_color = { 0.9, 1.0, 1.0, 0.7 }
-gui_text_shiftbox = { 5, 5, -5, -5 }
-gui_input_color1 = { 0.8, 0.2, 0.3, 0.3 }
-gui_input_color2 = { 0.8, 0.1, 0.1, 0.1 }
-gui_input_cursor_color1 = { 1, 1, 0.5, 0 }
-gui_input_cursor_color2 = { 1, 0.5, 1.0, 0 }
+gui_box_bcolor    = color_new({ 0.8, 0.2, 0.3, 0.3 })
+gui_box_color1    = color_new({ 0.8, 0.2, 0.3, 0.3 })
+gui_box_color2    = color_new({ 0.8, 0.1, 0.15, 0.15 })
+gui_button_bcolor = color_new({ 0.8, 0.5, 0.7, 0.5 })
+gui_button_color1 = color_new({ 0.8, 0.5, 0.7, 0.5 })
+gui_button_color2 = color_new({ 0.8, 0.2, 0.4, 0.4 })
+gui_text_color    = color_new({ 0.9, 1.0, 1.0, 0.7 })
+gui_text_shiftbox = color_new({ 5, 5, -5, -5 })
+gui_input_color1  = color_new({ 0.8, 0.2, 0.3, 0.3 })
+gui_input_color2  = color_new({ 0.8, 0.1, 0.1, 0.1 })
+gui_input_cursor_color1 = color_new({ 1, 1, 0.5, 0 })
+gui_input_cursor_color2 = color_new({ 1, 0.5, 1.0, 0 })
 gui_focus_border_width = 2
 gui_focus_border_height = 2
 
@@ -773,10 +773,10 @@ function gui_input_display_text(app)
    local prefix = strsub(app.input, 1, app.input_col-1)
    local suffix = strsub(app.input, app.input_col)
 
-   print("input app:"..app.name)
-   print("input owner:" .. tostring( app.owner and app.owner,anme))
-   print("input prefix:" .. prefix)
-   print("input suffix:" .. suffix)
+--    print("input app:"..app.name)
+--    print("input owner:" .. tostring( app.owner and app.owner,anme))
+--    print("input prefix:" .. prefix)
+--    print("input suffix:" .. suffix)
 
    if not app.owner or gui_is_focus(app) then
       if ke_set_active then

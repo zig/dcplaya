@@ -6,7 +6,7 @@
 ---
 ---   A color is table. Color operators use table' ones.
 ---
---- $Id: color.lua,v 1.6 2003-01-10 13:00:15 ben Exp $
+--- $Id: color.lua,v 1.7 2003-03-08 18:30:44 ben Exp $
 ---
 
 color_loaded = nil
@@ -22,7 +22,7 @@ if not color_tag then color_tag = newtag() end
 -- Create name to index table for .a .r .g .b access
 --
 if not color_name_to_index then
-	color_name_to_index = { ["a"]=1, ["r"]=2, ["g"]=3, ["b"]=4 }
+   color_name_to_index = { ["a"]=1, ["r"]=2, ["g"]=3, ["b"]=4 }
 end
 
 --- @defgroup dcplaya_lua_colors Color operations
@@ -101,24 +101,24 @@ end
 --- @return c or a new color table.
 ---
 function color_copy(c,s,noalpha)
-	if not c then
-		-- no alpha does not make sense in that case
-		return color_new(s)
-	end
-	if tag(c) == color_tag then
-		local v
-		if not noalpha then
-			v = rawget(s,1)
-			if v then rawset(c,1,v) end
-		end
-		v = rawget(s,2)
-		if v then rawset(c,2,v) end
-		v = rawget(s,3)
-		if v then rawset(c,3,v) end
-		v = rawget(s,4)
-		if v then rawset(c,4,v) end
-		return c
-	end
+   if not c then
+      -- no alpha does not make sense in that case
+      return color_new(s)
+   end
+   if tag(c) == color_tag then
+      local v
+      if not noalpha then
+	 v = rawget(s,1)
+	 if v then rawset(c,1,v) end
+      end
+      v = rawget(s,2)
+      if v then rawset(c,2,v) end
+      v = rawget(s,3)
+      if v then rawset(c,3,v) end
+      v = rawget(s,4)
+      if v then rawset(c,4,v) end
+      return c
+   end
 end
 
 --- Clip color components.
@@ -130,13 +130,13 @@ end
 --- @return c
 ---
 function color_clip(c, min, max)
-	if tag(c) == color_tag then
-		rawset(c,1,clip_value(rawget(c,1),min,max))
-		rawset(c,2,clip_value(rawget(c,2),min,max))
-		rawset(c,3,clip_value(rawget(c,3),min,max))
-		rawset(c,4,clip_value(rawget(c,4),min,max))
-		return c
-	end
+   if tag(c) == color_tag then
+      rawset(c,1,clip_value(rawget(c,1),min,max))
+      rawset(c,2,clip_value(rawget(c,2),min,max))
+      rawset(c,3,clip_value(rawget(c,3),min,max))
+      rawset(c,4,clip_value(rawget(c,4),min,max))
+      return c
+   end
 end
 
 --- Get color luminosity.
@@ -146,9 +146,9 @@ end
 --- @return number
 ---
 function color_lum(c)
-	if tag(c) == color_tag then
-		return getraw(c,2)*0.5 + getraw(c,3)*0.3 + getraw(c,4)*0.2
-	end
+   if tag(c) == color_tag then
+      return getraw(c,2)*0.5 + getraw(c,3)*0.3 + getraw(c,4)*0.2
+   end
 end
 
 --- Get index of first hightest component.
@@ -158,9 +158,9 @@ end
 --- @return index
 ---
 function color_max(c)
-	if tag(c) == color_tag then
-		return table_max(c)
-	end
+   if tag(c) == color_tag then
+      return table_max(c)
+   end
 end
 
 --- Get index of first lowest component.
@@ -170,9 +170,9 @@ end
 --- @return index
 ---
 function color_min(color)
-	if tag(color) == color_tag then
-		return table_min(color)
-	end
+   if tag(color) == color_tag then
+      return table_min(color)
+   end
 end
 
 --- Scale color to have the highest component equal to 1.
@@ -182,34 +182,49 @@ end
 --- @return c
 ---
 function color_maximize(c)
-	local max = color_max(c)
-	if max and rawget(c,max) > 0.0001 then
-		local scale=rawget(c,max)
-		rawset(c,1,rawget(c,1)/scale)
-		rawset(c,2,rawget(c,2)/scale)
-		rawset(c,3,rawget(c,3)/scale)
-		rawset(c,4,rawget(c,4)/scale)
-	else
-		rawset(c,1,1)
-		rawset(c,2,1)
-		rawset(c,3,1)
-		rawset(c,4,1)
-	end
-	return c
+   local max = color_max(c)
+   if max and rawget(c,max) > 0.0001 then
+      local scale=rawget(c,max)
+      rawset(c,1,rawget(c,1)/scale)
+      rawset(c,2,rawget(c,2)/scale)
+      rawset(c,3,rawget(c,3)/scale)
+      rawset(c,4,rawget(c,4)/scale)
+   else
+      rawset(c,1,1)
+      rawset(c,2,1)
+      rawset(c,3,1)
+      rawset(c,4,1)
+   end
+   return c
 end
 
---- Transform color to string.
+--- Transform color to string (#AARRBBGG).
 --- @ingroup dcplaya_lua_colors
---- @overload standard tostring() function
 ---
 --- @param   c  Color.
 --- @return string
 ---
 function color_tostring(c)
-	if tag(c) == color_tag then
-		return format("{ %5.4f, %5.4f, %5.4f, %5.4f }",
-			rawget(c,1),rawget(c,2),rawget(c,3),rawget(c,4))
-	end
+   if tag(c) == color_tag then
+      return format("#%02X%02X%02X%02X",
+		    clip_value(rawget(c,1)*255,0,255),
+		    clip_value(rawget(c,2)*255,0,255),
+		    clip_value(rawget(c,3)*255,0,255),
+		    clip_value(rawget(c,4)*255,0,255))
+   end
+end
+
+--- Transform color to string (#AARRBBGG).
+--- @ingroup dcplaya_lua_colors
+---
+---  This function works kike color_tostring() except it always return
+---  a string. The default value is "#00000000".
+---
+--- @param   c  Color.
+--- @return string
+---
+function color_tohexa(c)
+   return color_tostring(c) or "#00000000"
 end
 
 --- color "concat" tag method.
@@ -220,10 +235,10 @@ end
 --- @return string
 ---
 function color_concat(a,b)
-	local s1,s2
-	s1 = color_tostring(a) or tostring(a)
-	s2 = color_tostring(b) or tostring(b)
-	return s1..s2
+   local s1,s2
+   s1 = color_tostring(a) or tostring(a)
+   s2 = color_tostring(b) or tostring(b)
+   return s1..s2
 end
 
 
@@ -236,10 +251,10 @@ end
 --- @return color component
 ---
 function color_index(c,i)
-	if tag(c) == color_tag then
-		local idx = color_name_to_index[i]
-		if idx then	return c[idx] end
-	end
+   if tag(c) == color_tag then
+      local idx = color_name_to_index[i]
+      if idx then	return c[idx] end
+   end
 end
 
 --- color "settable" tag method.
@@ -250,19 +265,19 @@ end
 --- @param   v  component new value
 ---
 function color_settable(c,i,v)
-	if tag(c) == color_tag then
-		if type(i) == "string" then
-			i = color_name_to_index[i]
-		end
-		if type(i) == "number" and i>=1 and i<=4 then
-			rawset(c,i,v)
-		end
-	end
+   if tag(c) == color_tag then
+      if type(i) == "string" then
+	 i = color_name_to_index[i]
+      end
+      if type(i) == "number" and i>=1 and i<=4 then
+	 rawset(c,i,v)
+      end
+   end
 end
 
 -- Overload standard tostring() function.
 function tostring(c)
-	return color_tostring(c) or %tostring(c)
+   return color_tostring(c) or %tostring(c)
 end
 
 --- color "add" tag method; "+" operator.
@@ -275,11 +290,11 @@ end
 --- @see table_add()
 ---
 function color_add(a,b)
-	local r=table_add(a,b)
-	if type(r) == "table" then
-		settag(r,color_tag)
-		return r
-	end
+   local r=table_add(a,b)
+   if type(r) == "table" then
+      settag(r,color_tag)
+      return r
+   end
 end
 
 --- color "sub" tag method; "-" operator.
@@ -292,11 +307,11 @@ end
 --- @see table_sub()
 ---
 function color_sub(a,b)
-	local r=table_sub(a,b)
-	if type(r) == "table" then
-		settag(r,color_tag)
-		return r
-	end
+   local r=table_sub(a,b)
+   if type(r) == "table" then
+      settag(r,color_tag)
+      return r
+   end
 end
 
 --- color "mul" tag method; "*" operator.
@@ -309,11 +324,11 @@ end
 --- @see table_mul()
 ---
 function color_mul(a,b)
-	local r=table_mul(a,b)
-	if type(r) == "table" then
-		settag(r,color_tag)
-		return r
-	end
+   local r=table_mul(a,b)
+   if type(r) == "table" then
+      settag(r,color_tag)
+      return r
+   end
 end
 
 --- color "div" tag method; "/" operator.
@@ -326,11 +341,11 @@ end
 --- @see table_div()
 ---
 function color_div(a,b)
-	local r=table_div(a,b)
-	if type(r) == "table" then
-		settag(r,color_tag)
-		return r
-	end
+   local r=table_div(a,b)
+   if type(r) == "table" then
+      settag(r,color_tag)
+      return r
+   end
 end
 
 --- color "minus" tag method; unary "-" operator.
@@ -343,11 +358,11 @@ end
 --- @see table_minus()
 ---
 function color_minus(a,b)
-	local r=table_minus(a,b)
-	if type(r) == "table" then
-		settag(r,color_tag)
-		return r
-	end
+   local r=table_minus(a,b)
+   if type(r) == "table" then
+      settag(r,color_tag)
+      return r
+   end
 end
 
 --- Absolutes color components.
@@ -357,12 +372,12 @@ end
 --- @return c with each component as the absolute value of its former value.
 ---
 function color_abs(c)
-	if tag(c) == color_tag then
-		rawset(c,1,abs(rawget(c,1)))
-		rawset(c,2,abs(rawget(c,2)))
-		rawset(c,3,abs(rawget(c,3)))
-		rawset(c,4,abs(rawget(c,4)))
-	end
+   if tag(c) == color_tag then
+      rawset(c,1,abs(rawget(c,1)))
+      rawset(c,2,abs(rawget(c,2)))
+      rawset(c,3,abs(rawget(c,3)))
+      rawset(c,4,abs(rawget(c,4)))
+   end
 end
 
 --- Get a distant color
@@ -374,17 +389,17 @@ end
 --- @return color which should be distant from the colorc.
 ---
 function color_distant(c, alt)
-	if tag(c) ~= color_tag then return end
-	local t = 0.5
-	local r = color_new(1,1,1,1) - c
-	local d = c ^ r
-	if d < t then
-		if tag(alt) ~= color_tag then alt = color_new(alt) end
-		if tag(alt) ~= color_tag then alt = color_new(1,1,1,1) end
-		d = d / t
-		r = r * d + alt * (1-d)
-	end
-	return r
+   if tag(c) ~= color_tag then return end
+   local t = 0.5
+   local r = color_new(1,1,1,1) - c
+   local d = c ^ r
+   if d < t then
+      if tag(alt) ~= color_tag then alt = color_new(alt) end
+      if tag(alt) ~= color_tag then alt = color_new(1,1,1,1) end
+      d = d / t
+      r = r * d + alt * (1-d)
+   end
+   return r
 end
 
 --- Descending sort R,G,B components.
@@ -396,17 +411,17 @@ end
 --- e.g { 0.3, 0.1, 0.8, 0.2 } => { 3, 1, 4, 2 }
 ---
 function color_sort(c)
-	if tag(c) ~= color_tag then return end
-	local order = { 2, 3, 4 }
-	local i,j
-	for i=1, 2, 1 do
-		for j=i+1, 3, 1 do
-			if rawget(c,order[j]) > rawget(c,order[i]) then
-				order[i], order[j] = order[j], order[i]
-			end
-		end
-	end
-	return order[1],order[2],order[3]
+   if tag(c) ~= color_tag then return end
+   local order = { 2, 3, 4 }
+   local i,j
+   for i=1, 2, 1 do
+      for j=i+1, 3, 1 do
+	 if rawget(c,order[j]) > rawget(c,order[i]) then
+	    order[i], order[j] = order[j], order[i]
+	 end
+      end
+   end
+   return order[1],order[2],order[3]
 end
 
 
