@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.10 2003-03-05 17:48:29 ben Exp $
+--- $Id: control_center.lua,v 1.11 2003-03-05 19:43:06 ben Exp $
 ---
 
 control_center_loaded = nil
@@ -12,6 +12,7 @@ control_center_loaded = nil
 if not dolib("gui") then return end
 if not dolib("menu") then return end
 if not dolib("volume_control") then return end
+if not dolib("plugin_info") then return end
 
 function control_center_create(owner, name)
    owner = owner or evt_desktop_app
