@@ -2,10 +2,10 @@
 <macro macro-name="title-font" macro-cmd="font" color="#90FF00" size="20">
 <macro macro-name="title-spam" macro-cmd="vspace" h="8">
 
-<macro macro-name="chap-font" macro-cmd="font" color="#a0a0a0" size="16">
+<macro macro-name="chap-font" macro-cmd="font" color="LightSkyBlue" size="16">
 <macro macro-name="chap-spam" macro-cmd="vspace" h="12">
 
-<macro macro-name="list-font" macro-cmd="font" color="#d0d0d0" size="14">
+<macro macro-name="list-font" macro-cmd="font" color="text_color" size="14">
 <macro macro-name="list-spam" macro-cmd="vspace" h="4">
 
 
@@ -19,7 +19,7 @@ possible.
 <p><center><list-font><list-spam>
 GNU [http://www.gnu.org]<br>
 The Free Software Foundation<br>
-KOS developpers. Particulary Dan Potter & Jordan DeLong of Cryptic Allusion<br>
+KOS developers. Particularly Dan Potter & Jordan DeLong of Cryptic Allusion<br>
 andrewk for its dcload program.<br>
 LUA team [http://www.lua.org]<br>
 gzip developers<br>
@@ -28,8 +28,8 @@ mikmod developers<br>
 all the people that have sent e-mail 
 
 <p><left><chap-font><chap-spam>
-Here comes sme personnal greetings :
+Some personnal greetings :
 
 <p><center><list-font><list-spam>
-sashipa people.<br>
-alex for earning me her dreamcast<br>
+All sashipa crew.<br>
+Alex who lend me her dreamcast when mine was crashed !<br>

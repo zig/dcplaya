@@ -1,4 +1,0 @@
-<zml>
-<font size="14">
-<center><font color="#90FF00">
-<vspace h="8">Welcome to dcplaya

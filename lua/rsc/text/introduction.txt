@@ -1,17 +1,26 @@
 <zml>
-dcplaya is a free music player for the dreamcast.
-<p>
-It can play most popular music file formats such as mp3, ogg-vorbis, most
-tracker file formats (xm,mod,s3m...) and some old school soundchip formats
-like sc68 and sid.
-<p>
-Other formats can be easily added by third party developper without changing
-dcplaya version.  
-<p>
-dcplaya has many other features such as image file handling,
-visual effects ...<b>
-Read the <a href="">features</a> for more info.
+<macro macro-name="title-font" macro-cmd="font" color="#F09090" size="24">
+<macro macro-name="body-font" macro-cmd="font" color="text_color" size="14">
+<macro macro-name="apres" macro-cmd="vspace" h="12">
 
-<b>
-Cheers,<br>
-Benjamin Gerard.
+<p><center><title-font>Introduction
+
+<p><apres><left><body-font>
+dcplaya is a free music player for the dreamcast.
+
+<p><apres>
+It can play most popular music file formats such as mp3, ogg-vorbis, most
+tracker file formats (xm,mod,s3m...) and some old school sound-chip formats
+like sc68 and sid.
+
+<p><apres>
+Other formats can be easily added by third party developer without changing
+dcplaya version.  
+
+<p><apres>
+dcplaya has many other features such as image file handling,
+visual effects ... The list is far too long.
+
+<p><apres><font size="16">
+Enjoy,<br>
+<hspace w="20">Benjamin Gerard.

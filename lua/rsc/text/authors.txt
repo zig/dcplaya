@@ -13,7 +13,7 @@
 <center><title-font><title-spam>
 Horror Picture Show
 
-<p vspace="2"><vspace h="12"><left><font color="#e0e0a0" size="14">
+<p vspace="2"><vspace h="12"><left><font color="text_color" size="14">
 You are going to see dcplaya developer team faces. If you think you can not stand seeing it you shall switch back to another page.
 
 <p><left><chap-font><chap-spam><lineup><a name="ben">
