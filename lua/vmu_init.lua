@@ -1,7 +1,7 @@
 --- @date 2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  LUA script to initialize dcplaya VMU backup.
---- $Id: vmu_init.lua,v 1.3 2003-01-10 13:00:15 ben Exp $
+--- $Id: vmu_init.lua,v 1.4 2003-01-10 18:03:20 ben Exp $
 ---
 
 -- Unload library
@@ -83,76 +83,221 @@ function vmu_load_file(fname,path)
 end
 
 -- $$$ To be move 
-function gui_text_viewer(text, label)
-   local header, footer
-   header = '<dialog guiref="dialog"'
-   header = header .. ' x="center"'
-   header = header .. ' name="gui_viewer"'
-   header = header .. ' hint_w="500"'
-   header = header .. '>'
+function gui_text_viewer(owner, texts, box, label, mode)
+   local border = 8
+   local dial
+   local buttext = "close"
 
-   footer = '<p><center><button guiref="close">close</button></dialog>'
+   -- Button size
+   local butw,buth = dl_measure_text(nil,buttext)
+   butw = butw + 12
+   buth = buth + 8
 
-   text = '<dialog guiref="text" x="center" name="gui_viewer_text">' ..
-      text .. '</dialog>'
-
-   text = header..text..footer
-
-   local tt = tt_build(text, {
-			  x = "center",
-			  y = "center",
-			  box = { 0, 0, 640, 400 },
-		       }
-		    )
-   tt_draw(tt)
-   tt.guis.dialog.event_table[evt_shutdown_event] =
-      function(app)
-	 app.answer = "shutdown"
-      end
-
-   local i,v 
-   for i,v in tt.guis.dialog.guis do
-      print (i,tostring(v))
+   if not box then
+      box = { 0,0,320,200 }
+      local x,y = (640 - box[3]) * 0.5, (480 - box[4]) * 0.5
+      box = box + { x, y, x, y }
    end
 
-   tt.guis.dialog.guis["close"].event_table[gui_press_event] =
-      function(app, evt)
-	 evt_shutdown_app(app.owner)
-	 app.owner.answer = "close"
-	 return evt
+   local tbox
+   tbox = box + { border, border,-border, -(2*border+buth) }
+
+   local minx,miny = 32,32
+   local tx,ty, tw, th = tbox[1], tbox[2], tbox[3]-tbox[1], tbox[4]-tbox[2]
+   local x,y
+   x = (tw < minx and (minx-tw)/2) or 0
+   y = (th < miny and (miny-th)/2) or 0
+
+   box = box + { -x, -y, x, y }
+   tbox = tbox + { -x, -y, x, y }
+
+   -- Get final text box dim
+   tw = tbox[3]-tbox[1]
+   th = tbox[4]-tbox[2]
+
+   -- Creates tagged text
+   local tts = {}
+
+   local ttbox0 = { 0,0,tw,th }
+
+   if type(texts) == "string" then
+      tts[1] = tt_build(texts, { dl = dl_new_list(1024,1,1) } )
+   elseif type(texts) == "table" then
+      local i,v
+      for i,v in texts do
+	 if type(v) == "string" then
+	    tts[i] = tt_build(v, { box = ttbox0, dl = dl_new_list(1024,1,1) } )
+	 elseif tag(v) == tt_tag then
+	    tts[i] = v
+	 end
       end
-
-   tt.guis.dialog.guis["text"].event_table[gui_press_event] =
-      function(app, evt)
-	 print("press")
-	 return
-      end
-
-
-   function gui_text_viewer_up_evt(app, evt)
-
-      print(app.owner.name, app.name, "up")
    end
 
-   function gui_text_viewer_down_evt(app, evt)
-      print("down")
+   for i,v in tts do
+      print(i)
    end
 
-   local i,v
+   -- Create dialog
+   dial = gui_new_dialog(owner, box, nil, nil, label, mode, "gui_viewer")
+   if not dial then return end
+
+   dial.tbox = ttbox0
+
+   -- Create button
+   local bbox = {( box[1] + box[3] - butw) * 0.5, (box[4]-buth-border) }
+   bbox[3] = bbox[1] + butw
+   bbox[4] = bbox[2] + buth
+   dial.button = gui_new_button(dial, bbox, buttext , mode)
+   if not dial.button then return end
+   dial.button.event_table[gui_press_event] =
+	 function(app, evt)
+	    evt_shutdown_app(app.owner)
+	    app.owner.answer = "close"
+	 end
+
+   -- Display tagged-texts
+   local tt_dl = dl_new_list(256,1,1)
+   dl_set_clipping(tt_dl, 0, 0, tw, th)
+   dl_set_trans(tt_dl, mat_trans(tx,ty,10))
+   local tt_dl2 = dl_new_list(256,1,1)
+   dl_sublist(tt_dl, tt_dl2)
+   for i,v in tts do
+      if tag(v) == tt_tag then
+	 dial.cur_tt = dial.cur_tt or v
+	 dl_set_active(v.dl, v == dial.cur_tt)
+	 dl_sublist(tt_dl2, v.dl)
+	 tt_draw(v)
+      end
+   end
+   dl_sublist(dial.dl,tt_dl)
+   dial.tt_dl = tt_dl2
+
+
+   function gui_text_viewer_set_scroll(dial, x, y, z)
+      local mat
+      local tt = dial.cur_tt
+      if tag(tt) ~= tt_tag or not dial.tbox then return end
+      local tw,th = dial.tbox[3], dial.tbox[4]
+      local ttw,tth = tt.total_w, tt.total_h
+
+      local xmin,xmax,ymin,ymax
+
+      if tw > ttw then
+	 xmin, xmax = 0, 0
+      else
+	 xmin, xmax = tw-ttw, 0
+      end
+
+      if th > tth then
+	 ymin, ymax = 0
+      else
+	 ymin, ymax = th-tth, 0
+      end
+ 
+      x = (x < xmin and xmin) or (x > xmax and xmax) or x
+      y = (y < ymin and ymin) or (y > ymax and ymax) or y
+      
+      if dial.tt_dl then
+	 dl_set_trans(dial.tt_dl, mat_trans(x,y,z))
+      end
+   end
+
+   -- Patch dialog event
+   function gui_text_viewer_up(dial, evt)
+      local mat = dl_get_trans(dial.tt_dl)
+      if mat then
+	 gui_text_viewer_set_scroll(dial, mat[4][1], mat[4][2] + 1, mat[4][3])
+      end
+   end
+
+   function gui_text_viewer_dw(dial, evt)
+      local mat = dl_get_trans(dial.tt_dl)
+      if mat then
+	 gui_text_viewer_set_scroll(dial, mat[4][1], mat[4][2] - 1, mat[4][3])
+      end
+   end
+
    for i,v in gui_keyup do
-      tt.guis.dialog.guis["text"].event_table[i] = gui_text_viewer_up_evt
+      dial.event_table[i] = gui_text_viewer_up
    end
+
    for i,v in gui_keydown do
-      tt.guis.dialog.guis["text"].event_table[i] = gui_text_viewer_down_evt
+      dial.event_table[i] = gui_text_viewer_dw
    end
 
-   while not tt.guis.dialog.answer do
-      evt_peek()
+   if nil then
+      local header,footer
+
+      header = '<dialog guiref="dialog"'
+      header = header .. ' x="center"'
+      header = header .. ' name="gui_viewer"'
+      header = header .. ' hint_w="500"'
+      header = header .. '>'
+
+      footer = '<p><center><button guiref="close">close</button></dialog>'
+
+      text = '<dialog guiref="text" x="center" name="gui_viewer_text">' ..
+	 text .. '</dialog>'
+
+      text = header..text..footer
+
+      local tt = tt_build(text, {
+			     x = "center",
+			     y = "center",
+			     box = { 0, 0, 640, 400 },
+			  }
+		       )
+      tt_draw(tt)
+      tt.guis.dialog.event_table[evt_shutdown_event] =
+	 function(app)
+	    app.answer = "shutdown"
+	 end
+
+      local i,v 
+      for i,v in tt.guis.dialog.guis do
+	 print (i,tostring(v))
+      end
+
+      tt.guis.dialog.guis["close"].event_table[gui_press_event] =
+	 function(app, evt)
+	    evt_shutdown_app(app.owner)
+	    app.owner.answer = "close"
+	    return evt
+	 end
+
+      tt.guis.dialog.guis["text"].event_table[gui_press_event] =
+	 function(app, evt)
+	    print("press")
+	    return
+	 end
+
+
+      function gui_text_viewer_up_evt(app, evt)
+
+	 print(app.owner.name, app.name, "up")
+      end
+
+      function gui_text_viewer_down_evt(app, evt)
+	 print("down")
+      end
+
+      local i,v
+      for i,v in gui_keyup do
+	 tt.guis.dialog.guis["text"].event_table[i] = gui_text_viewer_up_evt
+      end
+      for i,v in gui_keydown do
+	 tt.guis.dialog.guis["text"].event_table[i] = gui_text_viewer_down_evt
+      end
+
+      while not tt.guis.dialog.answer do
+	 evt_peek()
+      end
+
+      print("answer="..tt.guis.dialog.answer)
+
+      return tt.guis.dialog.answer
+      
    end
-
-   print("answer="..tt.guis.dialog.answer)
-
-   return tt.guis.dialog.answer
 end
 
 function gui_file_viewer(fname)
@@ -304,7 +449,6 @@ andrewk for its dcload program.<br>
 -- <p><center>
 -- ]]
 
-
-gui_text_viewer(welcome_text, "Welcome")
+gui_text_viewer(nil, { welcome = welcome_text } , nil, "Welcome", nil)
 
 --vmu_init()
