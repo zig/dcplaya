@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.78 2003-03-11 21:32:16 ben Exp $
+ * @version    $Id: dynshell.c,v 1.79 2003-03-13 23:15:27 ben Exp $
  */
 
 #include "dcplaya/config.h"
@@ -2426,7 +2426,7 @@ static int lua_vmu_file_load(lua_State * L)
     return 0;
   }
 
-  hdl = vmu_file_load(fname, path);
+  hdl = vmu_file_load(fname, path, lua_tonumber(L,3));
   status = vmu_file_status(hdl);
 
 #if DEBUG
@@ -2457,7 +2457,7 @@ static int lua_vmu_file_save(lua_State * L)
     return 0;
   }
 
-  hdl = vmu_file_save(fname, path);
+  hdl = vmu_file_save(fname, path, lua_tonumber(L,3));
   status = vmu_file_status(hdl);
 
 #if DEBUG
@@ -2481,6 +2481,23 @@ static int lua_vmu_file_stat(lua_State * L)
   }
   return lua_gettop(L);
 }
+
+static int lua_vmu_file_default(lua_State * L)
+{
+  const char * s;
+  if (lua_gettop(L) < 1) {
+    lua_getglobal(L,"vmu_no_default_file");
+    s = (lua_type(L,1) == LUA_TNIL) ? vmu_file_get_default() : 0;
+  } else {
+    s = vmu_file_set_default(lua_type(L,1) == LUA_TNIL
+			     ? 0
+			     : lua_tostring(L,1));
+  }
+  lua_settop(L,0);
+  if (s) lua_pushstring(L,s);
+  return lua_gettop(L);
+}
+
 
 static int lua_ramdisk_modified(lua_State * L)
 {
@@ -3155,8 +3172,9 @@ static luashell_command_description_t commands[] = {
     "vmu_file_load",
     0,
     "print([["
-    "vmu_file_load(fname,path) : Load a vmu archive.\n"
-    " return vmu_transfert_handle."
+    "vmu_file_load(fname, path [,default]) : Load a vmu archive. Optionnaly"
+    " set this file as default vmu file.\n"
+    "Returns vmu_transfert_handle."
     "]])",
     SHELL_COMMAND_C, lua_vmu_file_load
   },
@@ -3165,8 +3183,9 @@ static luashell_command_description_t commands[] = {
     "vmu_file_save",
     0,
     "print([["
-    "vmu_file_save(fname,path) : Save a vmu archive.\n"
-    " return vmu_transfert_handle."
+    "vmu_file_save(fname, path [,default]) : Save a vmu archive. Optionnaly"
+    " set this file as default vmu file.\n"
+    "Returns vmu_transfert_handle."
     "]])",
     SHELL_COMMAND_C, lua_vmu_file_save
   },
@@ -3180,6 +3199,20 @@ static luashell_command_description_t commands[] = {
     "]])",
     SHELL_COMMAND_C, lua_vmu_file_stat
   },
+
+  {
+    "vmu_file_default",
+    0,
+    "print([["
+    "vmu_file_default([path|nil]) : "
+    "Get/Set vmu default file path. Returns path or nil.\n"
+    "!!! CAUTION !!! This function respects the vmu_no_default_file"
+    " behaviours. If vmu_no_default_file is set vmu_file_default() always"
+    " returns nil."
+    "]])",
+    SHELL_COMMAND_C, lua_vmu_file_default
+  },
+
 
   {
     "ramdisk_is_modified",

@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.54 2003-03-11 21:32:16 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.55 2003-03-13 23:15:27 ben Exp $
  */
 
 //#define RELEASE
@@ -992,7 +992,7 @@ static int vmu_load(void)
       strcpy(tmp+8,dir2[file].name);
 
       SDDEBUG("[vmu_load] : try our candidat [%s].\n", tmp);
-      hdl = vmu_file_load(tmp,path);
+      hdl = vmu_file_load(tmp,path,1);
       status = vmu_file_status(hdl);
       if (status == VMU_TRANSFERT_SUCCESS) {
 	ret = 0;

@@ -4,19 +4,23 @@
  * @date    2003/03/10
  * @brief   VMU file load and save function.
  *
- * $Id: vmu_file.c,v 1.2 2003-03-11 13:37:16 ben Exp $
+ * $Id: vmu_file.c,v 1.3 2003-03-13 23:15:28 ben Exp $
  */
 
 #include <kos/thread.h>
 #include <arch/spinlock.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "dcplaya/config.h"
 #include "sysdebug.h"
 #include "vmu_file.h"
 #include "dcar.h"
 #include "file_utils.h"
+
+#define VMUFILE_PATH_MIN (8+1)  /* "/vmu/??/" + leaf-min [1]  */
+#define VMUFILE_PATH_MAX (8+11) /* "/vmu/??/" + leaf-max [11] */
 
 static volatile vmu_trans_hdl_t hdl, next_hdl;
 static spinlock_t mutex;
@@ -25,12 +29,48 @@ static volatile vmu_trans_status_e cur_status = VMU_TRANSFERT_INIT_ERROR;
 static int header_size;
 static const char header_name[] = "/rd/vmu_header.bin";
 static volatile int init = 0;
-
+static char vmu_file_default_path[VMUFILE_PATH_MAX+1]; /* +1 for '\0' */
 extern volatile int vmu_access_right;
 
 int vmu_file_header_size(void)
 {
   return (!init) ? -1 : header_size;
+}
+
+const char * vmu_file_get_default(void)
+{
+  return vmu_file_default_path[0] ? vmu_file_default_path : 0;
+}
+
+const char * vmu_file_set_default(const char * default_path)
+{
+  if  (default_path) {
+    int len = strlen(default_path);
+    /*           012345678 */
+    /* At least "/vmu/??/? */
+    if (len < VMUFILE_PATH_MIN || len > VMUFILE_PATH_MAX) {
+      return 0;
+    }
+    /* Must begin by "/vmu/" */
+    if (strstr(default_path,"/vmu/") != default_path) {
+      return 0;
+    }
+    /* Must be a valid vmu unit/port */
+    if (default_path[5] < 'a'
+	|| default_path[5] > 'd'
+	|| default_path[6] < '1'
+	|| default_path[6] > '4'
+	|| default_path[7] != '/') {
+      return 0;
+    }
+    /* Desative path for the time of the copy. */
+    vmu_file_default_path[0] = 0;
+    /* Copy '\0' but forget first char */
+    memcpy(vmu_file_default_path+1, default_path+1, len); 
+    /* Set first char (active new path) (atomik !) */
+    vmu_file_default_path[0] = '/';
+  }
+  return vmu_file_default_path;
 }
 
 int vmu_file_init(void)
@@ -43,6 +83,7 @@ int vmu_file_init(void)
   thd = 0;
   cur_status = VMU_TRANSFERT_INIT_ERROR;
   header_size = 0;
+  vmu_file_default_path[0] = 0;
   err = fu_size(header_name);
   if (err < 0) {
     SDERROR("[vmu_file_init] : [%s] [%s]\n",
@@ -70,12 +111,14 @@ void vmu_file_shutdown(void)
   spinlock_lock(&mutex);
   if (thd) {
   }
+  vmu_file_default_path[0] = 0;
   cur_status = VMU_TRANSFERT_ERROR;
   thd = 0;
   init = 0;
 }
 
-vmu_trans_hdl_t vmu_file_save(const char * fname, const char * path)
+vmu_trans_hdl_t vmu_file_save(const char * fname, const char * path,
+			      int set_default)
 {
   vmu_trans_hdl_t ret = 0;
   dcar_option_t opt;
@@ -144,6 +187,10 @@ vmu_trans_hdl_t vmu_file_save(const char * fname, const char * path)
 
   ret = hdl;
   cur_status = VMU_TRANSFERT_SUCCESS;
+  if (set_default) {
+    vmu_file_set_default(fname);
+  }
+
 
  error_free_handle:
   spinlock_lock(&mutex);
@@ -155,7 +202,8 @@ vmu_trans_hdl_t vmu_file_save(const char * fname, const char * path)
   return ret;
 }
 
-vmu_trans_hdl_t vmu_file_load(const char * fname, const char * path)
+vmu_trans_hdl_t vmu_file_load(const char * fname, const char * path,
+			      int set_default)
 {
   vmu_trans_hdl_t ret = 0;
   dcar_option_t opt;
@@ -186,6 +234,9 @@ vmu_trans_hdl_t vmu_file_load(const char * fname, const char * path)
   }
   ret = hdl;
   cur_status = VMU_TRANSFERT_SUCCESS;
+  if (set_default) {
+    vmu_file_set_default(fname);
+  }
 
  error_free_handle:
   spinlock_lock(&mutex);
