@@ -4,11 +4,16 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.32 2003-03-03 01:59:30 ben Exp $
+--- $Id: textlist.lua,v 1.33 2003-03-09 02:00:36 zigziggy Exp $
 ---
 
 -- Unload the library
 textlist_loaded = nil
+
+
+-- z shift of textlist entry text
+textlist_entry_z = 25
+
 
 -- Load required libraries
 if not dolib("basic") then return end
@@ -447,7 +452,7 @@ function textlist_create(flparm)
 		  0, y, w, y+h, 0,
 		  fl.curcolor[1],fl.curcolor[2],fl.curcolor[3],fl.curcolor[4],
 		  fl.curcolor[5],fl.curcolor[6],fl.curcolor[7],fl.curcolor[8])
-      fl:draw_entry(dl, i, 0, y+fl.span, 0.1)
+      fl:draw_entry(dl, i, 0, y+fl.span, textlist_entry_z)
       -- display to vmu
       vmu_set_text(fl:get_text(i))
       dl_set_active(dl,1)
@@ -463,7 +468,7 @@ function textlist_create(flparm)
       textlist_measure(fl)
       local max = getn(fl.dirinfo)
       for i=1, max, 1 do
-	 fl:draw_entry(dl, i, 0, fl.dirinfo[i].y+fl.span, 0)
+	 fl:draw_entry(dl, i, 0, fl.dirinfo[i].y+fl.span, textlist_entry_z)
       end
    end
 

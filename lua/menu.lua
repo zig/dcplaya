@@ -366,12 +366,13 @@ function menu_create(owner, name, def, box, x1, y1)
       -- Draw title 
       col = style.titlebar_textcolor
       if col then
-	 dl_draw_text(dl, (w-w2)*0.5, yt+(h-h2)*0.5 , 0.1,
+	 dl_draw_text(dl, (w-w2)*0.5, yt+(h-h2)*0.5 , 25,
 		      col[1],col[2],col[3],col[4], def.title)
       end
 
       -- Create a new box to include title box.
-      menu.box = fl.box + {0, -h, 0, 0 }
+      menu.box[2] = menu.box[2] - h
+      --menu.box = fl.box + {0, -h, 0, 0 }
    end
 
    function menu_draw_background(menu, dl)
@@ -435,11 +436,13 @@ function menu_create(owner, name, def, box, x1, y1)
 	 if tag(submenu) == menu_tag then
 	    submenu:open()
 	    evt_app_insert_first(menu, submenu)
+	    --gui_child_autoplacement(menu);
 	 else
 	    local y = (xentry and xentry.y) or 0
 	    if not menu.def.sub then return end
 	    submenu = menu:create(subname, menu.def.sub[subname],
 				  { m[4][1]+fl.bo2[1], m[4][2]+y})
+	    gui_child_autoplacement(menu);
 	    if (submenu) then
 	       -- $$$
 	    end
@@ -497,7 +500,7 @@ function menu_create(owner, name, def, box, x1, y1)
       -- Members
       style = style,
       dl = dl_new_list(),
-      z = 0, --gui_guess_z(owner,z),
+      z = gui_guess_z(owner,z),
       def	= def,
       sub_menu = {},
 --      fade = 0,
