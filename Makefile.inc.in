@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile.inc.in,v 1.27 2003-03-26 23:02:46 ben Exp $
+# $Id: Makefile.inc.in,v 1.28 2003-04-09 14:49:46 ben Exp $
 #
 
 .SUFFIXES:
@@ -150,26 +150,26 @@ all : subdirs $(TARGETS)
 	@echo "Target project [$(TARGETS)] has been build"
 endif
 
-$(LIBNAME) : $(OBJS) $(LIB_EXTRA)
+$(LIBNAME) : $(OBJS) $(LIB_EXTRA) $(LIB_TARGET_EXTRA_DEP)
 	@echo "Build library [$@]"
 	@rm -f $@
 	@$(KOS_AR) crs $@ $^ 
 	@$(KOS_RANLIB) $@
 
-%.elf : $(OBJS)
+%.elf : $(OBJS) $(ELF_TARGET_EXTRA_DEP)
 	@echo "Build [$@] from [$^]"
 	$(KOS_LD) -b elf32-shl -EL -r -x -O -S $^ $(ELF_EXTRA) -o $@
 
 %.lez : %.lef
 	@echo "Build [$@] from [$^]"
 	@gzip --best -n -c -v $< >$@
-%.lef : $(OBJS) $(filter %.a %.o %.elf %.lef, $(LEF_EXTRA))
+%.lef : $(OBJS) $(filter %.a %.o %.elf %.lef, $(LEF_EXTRA)) $(LEF_TARGET_EXTRA_DEP)
 	@echo "Build [$@] from [$^]"
 	@$(KOS_LD) -b elf32-shl -d -O 3 -EL -r --cref -M -Map $*.map -x -O -S $^ $(LEF_EXTRA) -o $@
 	@$(KOS_STRIP) --strip-unneeded $@
 	@$(KOS_OBJDUMP) -t $@ | grep '*COM*' || echo ":_) No *COM* found."
 
-%.bin : %.elf
+%.bin : %.elf $(BIN_TARGET_EXTRA_DEP)
 	@echo "Build [$@] from [$^] [`pwd`]"
 	@$(KOS_OBJCOPY) -O binary $< $@
 
@@ -196,7 +196,7 @@ clean_local:
 
 distclean: depend-clean clean
 	@echo "[$@ (`pwd`)]"
-	@rm -f TAGS ID
+	@rm -f TAGS ID VERSION
 	@rm -f include/dcplaya/config.h Makefile.inc doc/Makefile
 	@rm -f cvs.log config.cache config.log stamp-h stamp-h[0-9]*
 	@find . -type f -name '*~' -exec rm -f '{}' \;
