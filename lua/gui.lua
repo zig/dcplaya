@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.34 2002-12-21 06:02:23 zigziggy Exp $
+--- $Id: gui.lua,v 1.35 2002-12-21 06:18:46 zigziggy Exp $
 ---
 
 --
@@ -849,7 +849,8 @@ end
 
 
 --- ask a question (given as a tagged text) and propose given answers
---- (array of tagged text), with given optional box width (default to 300)
+--- (array of tagged text), with given optional box width (default to 300) and
+--- dialog box label
 function gui_ask(question, answers, width, label)
 
    width = width or 300

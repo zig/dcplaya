@@ -1,3 +1,9 @@
+--- @file   taggedtext.lua
+--- @author Vincent Penne <ziggy@sashipa.com>
+--- @brief  sgml text and gui element formater
+---
+--- $Id: taggedtext.lua,v 1.7 2002-12-21 06:18:46 zigziggy Exp $
+---
 
 if not dolib("sprite") then return end
 
@@ -522,7 +528,7 @@ function tt_endgroup(mode, cur)
    return mode
 end
 
--- process a tagged text
+--- process a tagged text
 function tt_build(text, mode)
    if not tt_tag then
       tt_tag = newtag()
@@ -698,6 +704,8 @@ function tt_build(text, mode)
    return mode
 end
 
+
+--- draw a tagged text (must be previously build with tt_build)
 function tt_draw(tt)
    local i, j
 
