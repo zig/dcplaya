@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.40 2003-01-03 19:05:39 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.41 2003-01-14 10:54:50 ben Exp $
  */
 
 //#define RELEASE
@@ -616,21 +616,36 @@ static void process_visual(unsigned int elapsed_frames)
 
   curvis = option_visual();
   if (curvis) {
+    EXPT_GUARD_BEGIN;
     curvis->process(&draw_viewport, draw_projection, ms);
+    EXPT_GUARD_CATCH;
+    option_no_visual();
+    curvis = 0;
+    EXPT_GUARD_END;
   }
 }
 
 static void render_visual_opaque(void)
 {
   if (curvis) {
+    EXPT_GUARD_BEGIN;
     curvis->opaque_render();
+    EXPT_GUARD_CATCH;
+    option_no_visual();
+    curvis = 0;
+    EXPT_GUARD_END;
   }
 }
 
 static void render_visual_translucent(void)
 {
   if (curvis) {
+    EXPT_GUARD_BEGIN;
     curvis->translucent_render();
+    EXPT_GUARD_CATCH;
+    option_no_visual();
+    curvis = 0;
+    EXPT_GUARD_END;
   }
 }
 

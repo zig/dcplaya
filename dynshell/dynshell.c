@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.59 2003-01-11 07:44:59 zigziggy Exp $
+ * @version    $Id: dynshell.c,v 1.60 2003-01-14 10:54:50 ben Exp $
  */
 
 #include <stdio.h>
@@ -1169,7 +1169,7 @@ static int lua_pause(lua_State * L)
 {
   int pause;
 
-  if (lua_type(L, 1) != LUA_TNUMBER) {
+  if (lua_gettop(L) < 1 || lua_type(L, 1) == LUA_TNIL) {
     pause = playa_ispaused();
   } else {
     pause = playa_pause(lua_tonumber(L, 1) != 0);

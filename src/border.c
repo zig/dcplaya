@@ -20,6 +20,9 @@ static const uint16 mode_colors[][3] = {
   {0xFFFF, 0x8DDD, 0xE333},
   {0xFFFF, 0x0000, 0x0000},
   {0xFFFF, 0x0000, 0xF000},
+  {0xFFFF, 0xF000, 0xF000},
+  {0xFFFF, 0x5000, 0x8000},
+  {0xFFFF, 0x0000, 0xAFFF},
 };
 
 #define N_BORDER (sizeof(mode_colors) / sizeof(*mode_colors))
@@ -29,29 +32,30 @@ static texid_t bordertex_org;
 static const unsigned int border_max = N_BORDER;
 
 static void convert_blk(uint16 * dst, uint16 *src, int w, int h, int ws,
-						const uint16 colors[])
+			const uint16 colors[])
 {
-  int y = 0;
+  int y;
+  uint16 convert[16];
 
+  for (y=0; y<3; ++y) {
+    convert[y] = colors[2];
+  }
+  for (; y<8; ++y) {
+    convert[y] = colors[1];
+  }
+  for (; y<16; ++y) {
+    convert[y] = colors[0];
+  }
+
+  ws -= w;
   for (y=0; y<h; ++y) {
     int x;
     
     for (x=0; x<w; ++x) {
-	  int i;
-      uint16 c;
-
-	  c = *src++ & 15;
-	  if (c < 3) {
-		i = 2;
-	  }	else if (c<8) {
-		i = 1;
-	  } else {
-		i = 0;
-	  }
-	  *dst++ = colors[i];
+      *dst++ = convert[*src++ & 15];
     }
-    src += ws-w;
-    dst += ws-w;
+    src += ws;
+    dst += ws;
   }
 }
 
@@ -70,21 +74,21 @@ int border_customize(texid_t texid, border_def_t def)
 
   /* Convert colors to ARGB4444. */
   for (i=0;i<3;++i) {
-	draw_argb_t tmp;
-	tmp = draw_color_float_to_argb(def+i);
-	ARGB32toARGB4444(color16+i, &tmp, 1);
+    draw_argb_t tmp;
+    tmp = draw_color_float_to_argb(def+i);
+    ARGB32toARGB4444(color16+i, &tmp, 1);
   }
 
-/*   SDDEBUG("[%f]:\n" */
-/* 		  "%08x -> %04x\n" */
-/* 		  "%08x -> %04x\n" */
-/* 		  "%08x -> %04x\n", */
-/* 		  border, color16[0], fill, color16[1], link, color16[2]); */
+  /*   SDDEBUG("[%f]:\n" */
+  /* 		  "%08x -> %04x\n" */
+  /* 		  "%08x -> %04x\n" */
+  /* 		  "%08x -> %04x\n", */
+  /* 		  border, color16[0], fill, color16[1], link, color16[2]); */
 
   /* Lock the original border texture the time to get its properties. */
   torg = texture_lock(bordertex_org);
   if (!torg) {
-	return -1;
+    return -1;
   }
   worg = torg->width;
   horg = torg->height;
@@ -95,8 +99,8 @@ int border_customize(texid_t texid, border_def_t def)
   /* Lock the custom border texture ...  */
   t = texture_lock(texid);
   if (!t || t->width != worg || t->height != horg || (1<<t->wlog2) != lorg) {
-	err = -1;
-	goto error;
+    err = -1;
+    goto error;
   }
   dst = t->addr;
   texture_release(t);
@@ -105,7 +109,7 @@ int border_customize(texid_t texid, border_def_t def)
 
  error:
   if (t) {
-	texture_release(t);
+    texture_release(t);
   }
   return err;
 }
@@ -116,10 +120,10 @@ void border_get_def(border_def_t def, int n)
   int i;
   color = mode_colors[n %= border_max];
   for (i=0; i<3; ++i) {
-	def[i].a = ((color[i] >> 12) & 15) / 15.0f;
-	def[i].r = ((color[i] >>  8) & 15) / 15.0f;
-	def[i].g = ((color[i] >>  4) & 15) / 15.0f;
-	def[i].b = ((color[i] >>  0) & 15) / 15.0f;
+    def[i].a = ((color[i] >> 12) & 15) / 15.0f;
+    def[i].r = ((color[i] >>  8) & 15) / 15.0f;
+    def[i].g = ((color[i] >>  4) & 15) / 15.0f;
+    def[i].b = ((color[i] >>  0) & 15) / 15.0f;
   }
 }
 
@@ -136,8 +140,8 @@ int border_init(void)
   /* Apply texture conversion (+1 for custom). */
   t = texture_lock(bordertex);
   if (t) {
-	make_blk(t->addr, t->width, t->height, 1 << t->wlog2, 2);
-	texture_release(t);
+    make_blk(t->addr, t->width, t->height, 1 << t->wlog2, 2);
+    texture_release(t);
   }
 
   return -(!t);

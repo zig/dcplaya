@@ -65,8 +65,9 @@ int option_setup(void)
   filter = 1;
   shuffle = 0;
 
-  SDDEBUG("++ VISUALS = %d\n", vis_drivers.n);
+  driver_list_lock(&vis_drivers);
 
+  SDDEBUG("++ VISUALS = %d\n", vis_drivers.n);
   visual = (vis_driver_t *) vis_drivers.drivers;
   driver_reference(&visual->common);
   if (visual) {
@@ -78,6 +79,7 @@ int option_setup(void)
   } else {
     SDDEBUG("++ NO OPTION VISUAL\n");
   }
+  driver_list_unlock(&vis_drivers);
 
   lcd_visual = OPTION_LCD_VISUAL_FFT;
   track_offset = 0;
@@ -103,6 +105,12 @@ int option_shuffle()
 vis_driver_t * option_visual()
 {
   return visual;
+}
+
+void option_no_visual()
+{
+  driver_dereference(&visual->common);
+  visual = 0;
 }
 
 int option_lcd_visual()

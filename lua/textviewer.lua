@@ -3,7 +3,7 @@
 --- @date   2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  hyper text viwer gui
---- $Id: textviewer.lua,v 1.2 2003-01-13 04:09:52 ben Exp $
+--- $Id: textviewer.lua,v 1.3 2003-01-14 10:54:50 ben Exp $
 ---
 
 if not dolib("taggedtext") then return end
@@ -496,53 +496,56 @@ nouveau format sans avoir a changer de version de dcplaya.
 -- Plugins
 local plugins_text = 
 [[
-<center><font size="18" color="#FFFFFF">plugins<br>
+<macro macro-name="title-font" macro-cmd="font" color="#FFe00a" size="18">
+<macro macro-name="chapter-font" macro-cmd="font" color="#a0e0FF" size="16">
+<macro macro-name="body-font" macro-cmd="font" color="#A0A080" size="14">
+<macro macro-name="avant" macro-cmd="vspace" h="10">
+<macro macro-name="apres" macro-cmd="vspace" h="6">
 
-<p><left><vspace h="10">
-<font color="#909090" size="14">
+<p vspace="2">
+<center>
+<title-font>
+plugins
+<avant>
+
+<left><body-font>
 Les plugins sont des programmes exterieur qui permettent d'ajouter des
 fonctionnalites a dcplaya sans changer de version. Ils sont disponibles
 sous forme de fichier qui portent generalement l'extension ".lef" ou ".lez".
 Les fichiers ".lez" sont des fichiers ".lef" compresses en format gzip (.gz).
-
-<p>Les plugins sont classes par categorie.<br>
-<center>
+<apres>
+Les plugins sont classes par categorie.
+<apres><center>
 <a href="#input">input</a> - 
 <a href="#visual">visual</a> - 
 <a href="#object">object</a> - 
 <a href="#image">image</a> - 
 <a href="#executable">executable</a>
 
-<a name="input">
-<p><center><font color="#FFFFFF" size="16">
-input
-</a>
+<avant><center><chapter-font>
+<a name="input">input</a>
+<apres>
 
-<p><left>
-<font color="#909090" size="14">
+<left><body-font>
 Les plugins input permettent d'ajouter de nouveau format de musiques
 dans dcplaya. Un plugin cree un nouveau type de fichier musique, et
 fournit et a la charge de charger et de decoder ces fichiers ainsi
 que de fournir un certain nombre d'information sur la musique comme
 par exemple l'artiste, le titre ou la duree.
 
-<a name="visual">
-<p><center><font color="#FFFFFF" size="16">
-visual
-<vspace h="8"></a>
+<avant><center><chapter-font>
+<a name="visual">visual</a>
+<apres>
 
-<p><left><vspace h="6"><br>
-<font color="#909090" size="14">
+<left><body-font>
 Les plugins visual permettent d'ajouter des effets visuels a dcplaya.
 
-<vspace h="8"><br>
-<a name="image">
-<p><center><font color="#FFFFFF" size="16">
-image
-</a><br>
 
+<avant><center><chapter-font>
+<a name="image">image</a>
+<apres>
 
-<font color="#909090" size="14">
+<left><body-font>
 Les plugins image sont utilises par dcplaya pour charger des images. Ces
 images pourront ensuite etre utiliser de maniere transparente par dcplaya
 pour charger des images en fond d'ecran ou pour comme texture pour les
@@ -551,23 +554,21 @@ image associe a des extensions (per exemple .jpg) et fournissent les
 methodes pour charger une image ainsi qu'une methode pour recuperer des
 infomations sur une image comme sa resolution ou le nombre de couleur.
 
-<a name="object">
-<p><center><font color="#FFFFFF" size="16">
-object
-<vspace h="8"></a>
 
-<p><left><vspace h="6"><br>
-<font color="#909090" size="14">
+<avant><center><chapter-font>
+<a name="object">object</a>
+<apres>
+
+<left><body-font>
 les plugins object permettent d'ajouter des objets 3D qui pourront
 etre utiliser par la suite par d'autre plugin (notament les visual)
 
-<a name="executable">
-<p><center><font color="#FFFFFF" size="16">
-executable
-<vspace h="8"></a>
 
-<p><left><vspace h="6"><br>
-<font color="#909090" size="14">
+<avant><center><chapter-font>
+<a name="executable">executable</a>
+<apres>
+
+<left><body-font>
 Les plugins executables ont pour principale utilite d'ajouter des
 fonctinnalites a l'interpreteur LUA de dcplaya. Mais ils peuvent servir
 en fait a un peu pres n'importe quoi dans la mesure ou il s'agit d'un
