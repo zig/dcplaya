@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.35 2002-10-08 20:51:25 benjihan Exp $
+ * @version    $Id: dynshell.c,v 1.36 2002-10-10 06:08:40 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -860,8 +860,14 @@ static int lua_mkdir(lua_State * L)
       printf("mkdir : [%s] created\n", fname);
     }
   }
-  
-  return err ? -1 : 0;
+
+  lua_settop(L,0);
+  if (!err) {
+	lua_settop(L,0);
+	lua_pushnumber(L,1);
+	return 1;
+  }
+  return 0;
 }
 
 static int lua_unlink(lua_State * L)
@@ -971,6 +977,7 @@ static int lua_copy(lua_State * L)
     }
   }
   if (!err) {
+	lua_settop(L,0);
 	lua_pushnumber(L,1);
 	return 1;
   }
@@ -1081,6 +1088,7 @@ static int lua_dcar(lua_State * L)
       printf(" compression  : %d\n",opt.out.cbytes*100/opt.out.ubytes);
     }
   }
+  lua_settop(L,0);
   lua_pushnumber(L,count);
   return 1;
 }
@@ -1117,7 +1125,46 @@ static int lua_play(lua_State * L)
     printf("play : %s\n", error);
     return 0;
   }
+  lua_settop(L,0);
   lua_pushnumber(L,1);
+  return 1;
+}
+
+static int lua_pause(lua_State * L)
+{
+  int nparam = lua_gettop(L);
+  unsigned int pause = 1;
+
+  if (!nparam) {
+	pause = playa_ispaused();
+  } else {
+	int p;
+    p = lua_tonumber(L, 1);
+	pause = playa_pause(p);
+/* 	if (p!=pause) { */
+/* 	  if (p) { */
+/* 		print("Music paused\n"); */
+/* 	  } else { */
+/* 		print("Music resumed\n"); */
+/* 	  } */
+/* 	} */
+  }
+  lua_settop(L,0);
+  lua_pushnumber(L,pause);
+  return 1;
+}
+
+static int lua_fade(lua_State * L)
+{
+  int nparam = lua_gettop(L);
+  int ms = 0;
+
+  if (nparam>=1) {
+	ms = 1024.0f * lua_tonumber(L, 1);
+  }
+  ms = playa_fade(ms);
+  lua_settop(L,0);
+  lua_pushnumber(L, (float)ms * (1.0f/1024.0f));
   return 1;
 }
 
@@ -1142,6 +1189,7 @@ static int lua_stop(lua_State * L)
     printf("stop : %s\n", error);
     return 0;
   }
+  lua_settop(L,0);
   lua_pushnumber(L,1);
   return 1;
 }
@@ -1499,8 +1547,7 @@ static luashell_command_description_t commands[] = {
 
   {
     "play",
-    "pl",
-
+    0,
     "print([["
     "play(music-file [,track, [,immediat] ]) : play a music file\n"
     "]])",
@@ -1510,14 +1557,35 @@ static luashell_command_description_t commands[] = {
 
   {
     "stop",
-    "st",
-
+    0,
     "print([["
     "stop([immediat]) : stop current music\n"
     "]])",
 
     SHELL_COMMAND_C, lua_stop
   },
+  {
+    "pause",
+    0,
+    "print([["
+    "pause([pause_status]) : pause or resume current music or read status\n"
+    "]])",
+    SHELL_COMMAND_C, lua_pause
+  },
+  {
+    "fade",
+    0,
+    "print([["
+    "fade([seconds]) : Music fade-in / fade-out.\n"
+	" If seconds = 0 or no seconds is missing read current fade status.\n"
+	" If seconds > 0 starts a fade-in.\n"
+	" If seconds < 0 starts a fade-out.\n"
+    "]])",
+    SHELL_COMMAND_C, lua_fade
+  },
+
+
+
   { 
     "cond_connect",
     0,
