@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/17
  *  @brief   FIME : bees 
- *  $Id: fime_bees.c,v 1.8 2003-01-28 06:36:58 ben Exp $
+ *  $Id: fime_bees.c,v 1.9 2003-02-03 19:37:14 ben Exp $
  */ 
 
 #include <stdlib.h>
@@ -117,8 +117,15 @@ static void update_target(matrix_t mtx)
   MtxRotateX(mtx, target_angle.x);
   MtxRotateY(mtx, target_angle.y);
   vtx_mul3(&pos, (vtx_t *)mtx[2], &target_pos_scale);
+  pos.y -= target_pos_scale.y;
+  pos.z += target_pos_scale.z;
   MtxIdentity(mtx);
   vtx_add3((vtx_t *)mtx[3], &pos, &target_pos);
+}
+
+void fime_bees_set_target(const vtx_t * pos)
+{
+  target_pos = * pos;
 }
 
 static void reset_target(matrix_t mtx,
@@ -538,7 +545,7 @@ int fime_bees_init(void)
   }
 
   bees = create_bee(4);
-  bee_dump(bees,0);
+/*   bee_dump(bees,0); */
   {
     reset_target(target_mtx, 0, 0, 3);
     fime_bee_reset_position(bees, target_mtx);

@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/17
  *  @brief   Fly Into a Musical Environment
- *  $Id: fime.c,v 1.6 2003-01-25 11:37:44 ben Exp $
+ *  $Id: fime.c,v 1.7 2003-02-03 19:37:13 ben Exp $
  */ 
 
 #include <stdio.h>
@@ -29,6 +29,7 @@
 #include "fime_bordertex.h"
 #include "fime_ship.h"
 #include "fime_bees.h"
+#include "fime_ground.h"
 
 #ifndef PI
 # define PI 3.14159265359
@@ -76,6 +77,7 @@ static int stop(void)
 {
   ready = 0;
 
+  fime_ground_shutdown();
   fime_bees_shutdown();
   fime_ship_shutdown();
   fime_beatdetect_shutdown();
@@ -98,9 +100,10 @@ static int start(void)
 
   err = err || fime_pcm_init();
   err = err || fime_analysis_init();
-  err = err | fime_beatdetect_init();
+  err = err || fime_beatdetect_init();
   err = err || fime_ship_init();
   err = err || fime_bees_init();
+  err = err || fime_ground_init(4,20,6,20);
 
   ready = !err;
 
@@ -108,6 +111,8 @@ static int start(void)
 
   return -!ready;
 }
+
+void fime_bees_set_target(const vtx_t * pos);
 
 static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
 {
@@ -122,26 +127,29 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
     return 0;
   }
 
-  vid_border_color(0,255,0);
+/*   vid_border_color(0,255,0); */
   viewport = *vp;
   MtxCopy(proj, projection);
 
   fime_pcm_update();
   fime_analysis_update();
   fime_beatdetect_update();
-  fime_bees_update();
-
   shipmtx = fime_ship_update(seconds);
+  fime_bees_set_target((const vtx_t *)shipmtx[3]);
+  fime_bees_update();
+  fime_ground_update(seconds);
 
   {
-    const float s = 0.95, o = 1.0 - s;
+    const float s = 0.7, o = 1.0 - s;
     float x = (*shipmtx)[3][0];
     float y = (*shipmtx)[3][1];
     float z = (*shipmtx)[3][2];
 
     float cam_x = x; 
-    float cam_y = y + 1.3;
+    float cam_y = y - 1.1/2;
     float cam_z = z - 1.5;
+    z += 3;
+    x = 0;
 
     camera_pos.x = camera_pos.x * s + cam_x * o;
     camera_pos.y = camera_pos.y * s + cam_y * o;
@@ -151,8 +159,8 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
   }
 
   /* $$$ For test : */
-  MtxIdentity(camera);
-  camera[3][2] = -2;
+/*   MtxIdentity(camera); */
+/*   camera[3][2] = -2; */
 
 /*   SDDEBUG("[%f %f %f] [%f %f %f]\n", */
 /* 	  camera_pos.x, camera_pos.y, camera_pos.z, */
@@ -161,7 +169,7 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
 /* 	  camera[3][2] */
 /* 	  ); */
 
-  vid_border_color(0,0,0);
+/*   vid_border_color(0,0,0); */
 
   return 0;
 }
@@ -173,13 +181,11 @@ static int opaque_render(void)
     return -1;
   }
 
-  fime_bees_render(&viewport, camera, proj);
+  err = err || fime_bees_render(&viewport, camera, proj);
+  err = err || fime_ship_render(&viewport, camera, proj,
+				0, 0, 0, 1);
+  err = err || fime_ground_render(&viewport, camera, proj, 1);
 
-  //$$$
-/*   fime_beatdetect_render(); */
-
-/*   err = err || fime_ship_render(&viewport, camera, proj, */
-/* 				0, 0, 0, 1); */
   return -(!!err);
 }
 

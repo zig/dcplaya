@@ -2,8 +2,8 @@
  *  @file    fime_ship.c
  *  @author  benjamin gerard 
  *  @date    2003/01/17
- *  @brief   FIME : spac ship
- *  $Id: fime_ship.c,v 1.2 2003-01-20 14:23:09 ben Exp $
+ *  @brief   FIME : space ship
+ *  $Id: fime_ship.c,v 1.3 2003-02-03 19:37:14 ben Exp $
  */ 
 
 #include <stdlib.h>
@@ -92,11 +92,11 @@ int fime_ship_render(viewport_t *vp,
 				 &ship_obj->obj, color);
 
 
-    MtxIdentity(tmp);
-    tmp[3][2] = mtx[3][2];
-    MtxMult(tmp, camera);
-    err =  DrawObjectSingleColor(vp, tmp, proj,
-				 &ship_obj->obj, color);
+/*     MtxIdentity(tmp); */
+/*     tmp[3][2] = mtx[3][2]; */
+/*     MtxMult(tmp, camera); */
+/*     err =  DrawObjectSingleColor(vp, tmp, proj, */
+/* 				 &ship_obj->obj, color); */
   }
 
   return err;
@@ -107,24 +107,28 @@ matrix_t * fime_ship_update(const float seconds)
   static float ax;
   static float ay;
   matrix_t tmp;
-  float z;
+  float x,y,z;
+  vtx_t oldpos = *(vtx_t *)mtx[3];
+    
 
   MtxIdentity(tmp);
-  MtxRotateX(tmp, ax += 0.01f );
-  MtxRotateY(tmp, ay += 0.031f);
 
-  //  angle.z += 0.041f;
+  x = fsin(ax += 0.015f) * 1.5;
+  y = (fsin(ay += 0.008f) + 1) * -0.5;
+  z = 0; //mtx[3][2] + 0.00;
 
-  z = mtx[3][2];
+  angle.z = (x - oldpos.x) * 40;
+  angle.x = (y - oldpos.y) * -20;
+/*   angle.z = angle.z < 0 ? -3.1 : 3.1; */
 
   MtxIdentity(mtx);
   MtxRotateZ(mtx, angle.z);
   MtxRotateX(mtx, angle.x);
   MtxRotateY(mtx, angle.y);
 
-  mtx[3][0] = tmp[0][0] * 1.4;
-  mtx[3][1] = tmp[1][0] * 1.0;
-  mtx[3][2] = z;// + 0.1;
+  mtx[3][0] = x;
+  mtx[3][1] = y;
+  mtx[3][2] = z;
   
   return &mtx;
 }
