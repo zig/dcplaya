@@ -3,7 +3,7 @@
 #
 # by Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.4 2003-02-12 18:06:00 ben Exp $
+# $Id: Makefile,v 1.5 2003-02-12 18:46:51 ben Exp $
 #
 
 CDRECORD	= cdrecord dev=0,0,0 speed=4
@@ -80,10 +80,19 @@ data.raw: tmp.iso IP.BIN
 tmp.iso: dcplaya-data
 	@echo "[ISO image]"
 #	$(MKISOFS) -C `$(CDRECORD) -msinfo` -l -iso-level 2 -r -o tmp.iso iso
-	$(MKISOFS) -C `$(CDRECORD) -msinfo` -o tmp.iso 1ST_READ.BIN iso
+	$(MKISOFS) -C `$(CDRECORD) -msinfo` -o $@ 1ST_READ.BIN iso
+
+test.iso: dcplaya-data
+	@echo "[ISO test-image]"
+	@$(MKISOFS) -o $@ 1ST_READ.BIN iso
+	@rm -rf mnt
+	@mkdir mnt
+	@mount $@ mnt -o loop
+	@echo "CD image mounted on ./mnt"
+	@echo "type `umount mnt' to unmount"
 
 .PHONY: burn-data
-burn-data:  burn-audio data.raw
+burn-data: data.raw burn-audio 
 	@echo "[$@]"
 	$(CDRECORD) -xa1 $< && rm -f audio.raw data.raw burn-audio tmp.iso
 
