@@ -2,14 +2,20 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.3 2002-09-20 00:22:14 benjihan Exp $
+# $Id: Makefile.in,v 1.4 2002-10-25 21:06:24 benjihan Exp $
 #
 
 VERSION = @VERSION@
 DOXYGEN = "@DOXYGEN@"
 
 DEVDOCDIR  	:= . .. ../include
-DEVDOCFILES 	:= doc.h ../BUGS
+DEVDOCFILES	:= doc.h ../BUGS
+
+LUADOCDIR   := lua
+LUASRCDIR   := ../lua
+LUASRCFILES	:= $(wildcard $(LUASRCDIR)/*.lua)
+LUADOCFILES := $(LUASRCFILES:$(LUASRCDIR)/%=$(LUADOCDIR)/%)
+
 
 SHASUBST=../utils/shasubst.sh
 
@@ -31,7 +37,7 @@ DOXALL  += -D dox-javadoc_autobrief=yes
 DOXALL  += -D distribute_group_doc=yes
 DOXALL  += -D optimize_output_for_c=yes
 DOXALL	+= -D dox-tab-size=12
-DOXALL	+= -D dox-file-patterns='*.h'
+DOXALL	+= -D dox-file-patterns='*.h *.lua'
 DOXALL	+= -D dox-destination=.
 DOXALL	+= -D dox-preprocessing=YES
 DOXALL	+= -D dox-macro_expansion=YES
@@ -39,7 +45,6 @@ DOXALL	+= -D dox-sort-member-docs=NO
 DOXALL	+= -D dox-recursive=NO
 DOXALL	+= -D dox-alphabetical-index=NO
 DOXALL	+= -D dox-internal-docs=YES
-DOXALL	+=
 
 # DEVELOPER DOCUMENTATION
 ###################################################
@@ -65,7 +70,12 @@ DOXDEV	+= -D dox-generate-latex=NO
 
 all: devdoc
 
-devdoc: devdoc.dox $(DEVDOCFILES)
+$(LUADOCDIR)/%.lua : $(LUASRCDIR)/%.lua Makefile
+	$(LUA2DOX) < $< > $@
+
+luadoc: $(LUADOCFILES)
+
+devdoc: devdoc.dox luadoc  $(DEVDOCFILES)
 	$(DOXYGEN) $<
 
 devdoc.dox: generic.doxin Makefile
@@ -77,12 +87,16 @@ doc.h : doc.hin
 	cat $< > $@
 
 clean_local:
-	@rm -f *.dox *.h
+	@rm -f *.dox *.h $
 
 clean: clean_local
-	@rm -rf html latex man
+	@rm -rf html latex man $(LUADOCDIR)/*
 
 distclean: clean
 	@rm -f Makefile *~
 
-dep depend depend-clean required :
+dep depend depend-clean:
+
+required:
+	@mkdir -p "$(LUADOCDIR)"
+
