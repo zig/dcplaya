@@ -3,10 +3,10 @@
 #
 # by Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.1 2003-02-01 20:03:01 ben Exp $
+# $Id: Makefile,v 1.2 2003-02-12 12:26:41 ben Exp $
 #
 
-CDRECORD	= echo #cdrecord dev=0,0,0 speed=4
+CDRECORD	= cdrecord dev=0,0,0 speed=4
 MAKEIP		= /opt/sh-elf/bin/makeip
 SCRAMBLE	= /opt/sh-elf/bin/scramble
 DD		= dd
@@ -36,7 +36,7 @@ id.txt:
 
 .PHONY: RELEASE
 RELEASE.txt:
-	date > $@
+	@(echo "dcplaya alpha version"; date) > $@
 
 README.txt: ../README
 	cp $< $@
@@ -45,37 +45,62 @@ $(ELF_TARGET):
 	@make --quiet -C .. all
 
 $(1ST_READ): $(ELF_TARGET)
-	$(OBJCOPY) -R .stack -S -O binary $< $@ || ( rm -f $(1ST_READ) && test -z 1 )
+	@echo "[$@]"
+	$(OBJCOPY) -R .stack -S -O binary $< $@ \
+	|| ( rm -f $(1ST_READ) && test -z 1 )
 
 audio.raw:
-	$(DD) if=/dev/zero of=audio.raw bs=2352 count=300
+	@echo "[$@]"
+	@$(DD) if=/dev/zero of=audio.raw bs=2352 count=300
 
 burn-audio: audio.raw
-	@echo "CDRECORD audio"
+	@echo "[$@]"
 	@$(CDRECORD) -multi -audio audio.raw && touch burn-audio
 
 .PHONY: IP.txt
 IP.txt: IP.m4
+	@echo "[$@]"
 	@m4 -DVERSION=$(DCPLAYA_VERSION) $< > $@
 
 IP.BIN: IP.txt
-	@$(MAKEIP) IP.txt IP.BIN
+	@echo "[$@]"
+# This one seems to be ok !
+	cp IP-dcload.bin $@
+# Does not work :`(
+#	$(MAKEIP) $< $@ 
 
-1st_read.bin: $(1ST_READ)
-	$(SCRAMBLE) $(1ST_READ) 1st_read.bin
+1ST_READ.BIN: $(1ST_READ)
+	@echo "[$@]"
+	$(SCRAMBLE) $< $@
 
 data.raw: tmp.iso IP.BIN
 	@echo "[$@]"
-	( cat IP.BIN ; dd if=tmp.iso bs=2048 skip=16 ) > data.raw
+	( cat IP.BIN ; dd if=tmp.iso bs=2048 skip=16 ) > $@
 
-tmp.iso: id.txt RELEASE.txt README.txt 1st_read.bin burn-audio
+tmp.iso: dcplaya-data
 	@echo "[ISO image]"
-#	$(MKISOFS) -C `$(CDRECORD) -msinfo` -o tmp.iso 1st_read.bin README.txt id.txt RELEASE.txt
+#	$(MKISOFS) -C `$(CDRECORD) -msinfo` -l -iso-level 2 -r -o tmp.iso iso
+	$(MKISOFS) -C `$(CDRECORD) -msinfo` -o tmp.iso 1ST_READ.BIN iso
 
 .PHONY: burn-data
 burn-data: data.raw
-	@echo "CDRECORD data"
-	@$(CDRECORD) -xa1 data.raw && rm -f audio.raw data.raw burn-audio tmp.iso
+	@echo "[$@]"
+	$(CDRECORD) -xa1 $< && rm -f audio.raw data.raw burn-audio tmp.iso
+
+.PHONY: dcplaya-data
+dcplaya-data: id.txt RELEASE.txt README.txt 1ST_READ.BIN burn-audio
+	@echo "[$@]"
+	@rm -rf dcplaya iso
+	@mkdir -p iso dcplaya/dynshell
+	@cp -a ../autorun.lua ../dcplayarc.lua ../userconf.lua dcplaya
+	@cp -a ../dynshell/dynshell.lez dcplaya/dynshell
+	@cp -a ../lua dcplaya
+	@(cd ..; find plugins -type f -name '*.lez') \
+	| tar cf - -C .. -T - \
+	| tar xf - -C dcplaya
+	@rm -rf `find dcplaya/ -name CVS -o -name '*~' -o -name '.#*'`
+	@cp -a README.txt id.txt RELEASE.txt jess-lysen/* iso/
+	@mv dcplaya iso
 
 .PHONY : clean
 
@@ -85,22 +110,22 @@ clean_audio:
 		then echo -e "Existing [burn-audio] file.\nPrevious burn has not been successfully complete.\nRun make force_clean to remove it."; test -z 1; \
 	else rm -f audio.raw; fi
 
+.PHONY : clean_dir
+clean_dir:
+	@echo "[clean dirs]"
+	@rm -rf  dcplaya/ iso/
+
 .PHONY : clean_file
 clean_file:
 	@echo "[clean files]"
-	@rm -f tmp.iso *.txt $(1ST_READ) IP.BIN data.raw 1st_read.bin
+	@rm -f tmp.iso *.txt $(1ST_READ) IP.BIN data.raw 1ST_READ.BIN
 
 .PHONY : clean
-clean: clean_audio clean_file
+clean: clean_audio clean_file clean_dir
 
 .PHONY: force_clean
 force_clean: clean_file
 	@echo "[force clean]"
 	@rm -f audio.raw burn-audio
-
-# .PHONY: distclean
-# distclean: clean
-# 	@echo "[distclean]"
-# 	@rm -f *~
 
 include ../Makefile.inc
