@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/14
  *
- *  $Id: hyperpipe.c,v 1.4 2003-01-17 22:39:23 ben Exp $
+ *  $Id: hyperpipe.c,v 1.5 2003-01-18 14:22:17 ben Exp $
  */ 
 
 #include <stdio.h>
@@ -68,7 +68,7 @@ static vtx_t ambient = {
 };
 
 static vtx_t pos;     /**< Object position */
-static texid_t texid;
+static texid_t texid, texid2;
 static fftbands_t * allbands;
 static fftbands_t * bands3;
 
@@ -169,8 +169,8 @@ static int hyperpipe_alloc(void)
   hyperpipe_free(); /* Safety net */
   v   = (vtx_t *)malloc(sizeof(vtx_t) * hyperpipe_obj.nbv);
   nrm = (vtx_t *)malloc(sizeof(vtx_t) * hyperpipe_obj.nbf);
-  tri = (tri_t *)malloc(sizeof(tri_t) * (hyperpipe_obj.nbf+1));
-  tlk = (tlk_t *)malloc(sizeof(tlk_t) * hyperpipe_obj.nbf);
+  tri = (tri_t *)malloc(sizeof(tri_t) * (hyperpipe_obj.nbf+2));
+  tlk = (tlk_t *)malloc(sizeof(tlk_t) * hyperpipe_obj.nbf+2);
   if (!v || !nrm || !tri || !tlk) {
     hyperpipe_free();
     return -1;
@@ -215,10 +215,9 @@ static int tesselate(tri_t * tri, tlk_t * tlk, int base, int n)
       tri[i].b = i+1;
       tri[i].c = i+2;
 
-      tlk[i].a = !i ? T : i-1;
+      tlk[i].a = !i ? T : T+1;
       tlk[i].b = T;
-      tlk[i].c = (i == n-3) ? T : i+1;
-
+      tlk[i].c = (i == n-3) ? T : T+1;
     }
   } else {
     int m = n-2;
@@ -230,8 +229,8 @@ static int tesselate(tri_t * tri, tlk_t * tlk, int base, int n)
       tri[i].c = base+i+1;
       tri[i].b = base+i+2;
 
-      tlk[i].c = T-1;
-      tlk[i].a = tlk[i].b = T-1;
+      tlk[i].c = T+1;
+      tlk[i].a = T+1;
       tlk[i].b = T;
     }
   }
@@ -309,8 +308,12 @@ static int start(void)
 
   k += tesselate(tri+k,tlk+k,V,N);
 
-  tri[T].a = tri[T].b = tri[T].c = 0;
-  tri[T].flags = 1; /* Setup invisible face */
+  //$$$ MUST BE CHECKED ! NOT SURE THAT IS CORRECT !
+  for (j=T; j<T+2; ++j) {
+    tri[j].a = tri[j].b = tri[j].c = 0;
+    tlk[j].a = tlk[j].b = tlk[j].c = j;
+    tri[T].flags = j==T;
+  }
 
   build_normals();
 
@@ -446,11 +449,16 @@ static void anim_fft(const float seconds)
     fft_fill_bands(allbands);
     for (i=0, vy=v; i<W; ++i) {
       int j;
-      float w = int_decibel[allbands->band[i].v>>3] * (1.0/32768.0);
-      const float v = MIN_RAY + w * s;
-      for (j=0; j<N; ++j, ++vy) {
-	vy->y = ring[j].x * v;
-	vy->z = ring[j].y * v;
+      int d = allbands->band[i].v - 150;
+      float w;
+      d &= ~(d>>31);
+      w = int_decibel[d>>3] * (1.0/32768.0);
+      {
+	const float v = MIN_RAY + w * s;
+	for (j=0; j<N; ++j, ++vy) {
+	  vy->y = ring[j].x * v;
+	  vy->z = ring[j].y * v;
+	}
       }
     }
   }
@@ -697,7 +705,7 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
   }
 
   if (!light_object) {
-    light_object = (obj_driver_t *)driver_list_search(&obj_drivers,"benright");
+    light_object = (obj_driver_t *)driver_list_search(&obj_drivers,"spaceship1");
   }
 
   pos.z = X * 0.5 + 1.00;
@@ -710,51 +718,58 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
 
 static int opaque_render(void)
 {
+  if (!ready) {
+    return -1;
+  }
+  
+  if (0 && light_object) {
+    vtx_t di;
+    matrix_t tmp;
+
+    float lx,ly,lz;
+    lx = light_vtx.x + pos.x;
+    ly = light_vtx.y + pos.y;
+    lz = light_vtx.z + pos.z;
+
+    di.x = color.x; di.y = color.y; di.z = color.z; di.w = 0.9;
+    MtxLookAt2(light_mtx, lx,ly,lz, pos.x,pos.y,pos.z);
+    MtxScale(light_mtx,0.43);
+    light_mtx[3][0] += pos.x;
+    light_mtx[3][1] += pos.y;
+    light_mtx[3][2] += pos.z;
+    
+    light_object->obj.flags = 0
+      | DRAW_NO_FILTER
+      | DRAW_OPAQUE
+      | (texid2 << DRAW_TEXTURE_BIT);
+
+    DrawObjectSingleColor(&viewport, light_mtx, proj,
+			   &light_object->obj, &di);
+  }
+
   return 0;
 }
 
 static int transparent_render(void)
 {
-  float lx,ly,lz;
+
   if (!ready) {
     return -1;
   }
 
-  lx = light_vtx.x;
-  ly = light_vtx.y;
-  lz = light_vtx.z;
-
-  {
-    matrix_t tmp;
-
-    MtxCopy(tmp,mtx);
-    tmp[3][0] = tmp[3][1] = tmp[3][2] = 0;
-    MtxTranspose(tmp);
-    MtxVectMult(&light_vtx.x,&light_vtx.x,tmp);
-/*     DrawObjectLighted(&viewport, mtx, proj, */
-/* 		      &hyperpipe_obj, */
-/* 		      &ambient, &light_vtx, &color); */
-
-    DrawObjectFrontLighted(&viewport, mtx, proj,
+  if (1) {
+    vtx_t light_dir;
+    light_dir.x = -light_vtx.x;
+    light_dir.y = -light_vtx.y;
+    light_dir.z = -light_vtx.z;
+    light_dir.w = 1;
+    DrawObjectLighted(&viewport, mtx, proj,
 		      &hyperpipe_obj,
-		      &ambient, &color);
-
-  }
-
-  if (light_object) {
-    vtx_t di;
-
-    di.x = color.x; di.y = color.y; di.z = color.z; di.w = 0.9;
-
-    MtxLookAt(light_mtx, -lx, -ly, -lz);
-    MtxScale(light_mtx,0.33);
-    light_mtx[3][0] = pos.x + lx;
-    light_mtx[3][1] = pos.y + ly;
-    light_mtx[3][2] = pos.z + lz;
-
-    light_object->obj.flags = hyperpipe_obj.flags;
-    DrawObjectSingleColor(&viewport, light_mtx, proj,
-			   &light_object->obj, &di);
+		      &ambient, &light_dir, &color);
+  } else {
+    DrawObjectFrontLighted(&viewport, mtx, proj,
+			   &hyperpipe_obj,
+			   &ambient, &color);
   }
 
   return 0;
@@ -763,7 +778,8 @@ static int transparent_render(void)
 
 static int init(any_driver_t *d)
 {
-  const char * tname = "pipe_bordertile";
+  const char * tname = "hp_bordertile";
+  const char * tname2 = "hp_light";
   border_def_t borderdef;
 
   static fftband_limit_t limits[] = {
@@ -788,14 +804,20 @@ static int init(any_driver_t *d)
 
   texid = texture_get(tname);
   if (texid < 0) {
-    texid = texture_dup(texture_get("bordertile"), tname);
+    texid  = texture_dup(texture_get("bordertile"), tname);
   }
+  texid2 = texture_get(tname2);
+  if (texid2 < 2) {
+    texid2 = texture_dup(texture_get("bordertile"), tname2);
+  }
+
   border_get_def(borderdef, 1);
   border_customize(texid, borderdef);
+  border_customize(texid2, borderdef);
   allbands = fft_create_bands(W,0);
   bands3 = fft_create_bands(2,limits);
 
-  return -(texid < 0); // || !bands);;
+  return -(texid < 0 || texid2 < 0);
 }
 
 static int shutdown(any_driver_t *d)
