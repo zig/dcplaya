@@ -4,10 +4,11 @@
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sasahipa.com>
 #
 #
-# $Id: Makefile,v 1.2 2002-08-26 20:12:22 ben Exp $
+# $Id: Makefile,v 1.3 2002-09-06 01:14:45 zig Exp $
 #
 
-SUBDIRS = ogg xing
+#SUBDIRS = ogg xing
+SUBDIRS = xing
 
 include ../../Makefile.inc
 # DO NOT DELETE
