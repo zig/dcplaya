@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  sgml text and gui element formater
 ---
---- $Id: taggedtext.lua,v 1.7 2002-12-21 06:18:46 zigziggy Exp $
+--- $Id: taggedtext.lua,v 1.8 2002-12-23 14:07:38 zigziggy Exp $
 ---
 
 if not dolib("sprite") then return end
@@ -170,11 +170,14 @@ function tt_dialog_cmd(mode, param)
    param.border = { 0, 0 }
    param.box = {
       0, 0, 
-      param.w or 640,
-      param.h or 480
+      param.hint_w or param.total_w or mode.box[3] - mode.box[1],
+      param.hint_h or param.total_h or mode.box[4] - mode.box[2]
    }
-   param.w = nil
-   param.h = nil
+   if param.color then
+      param.color = tt_tocolor(param.color)
+   else
+      param.color = gui_text_color
+   end
    local newmode = tt_build("", param)
    
    newmode.parent = mode
@@ -191,6 +194,8 @@ function tt_end_dialog_cmd(mode)
       type = "dialog",
       w = mode.total_w + 20,
       h = mode.total_h + 20,
+      fill_w = mode.fill_x,
+      fill_h = mode.fill_y,
       z = mode.z,
       tt = mode,
       draw = tt_dialog_draw,
@@ -226,11 +231,14 @@ function tt_button_cmd(mode, param)
    param.border = { 0, 0 }
    param.box = {
       0, 0, 
-      param.w or 640,
-      param.h or 480
+      param.hint_w or param.total_w or mode.box[3] - mode.box[1],
+      param.hint_h or param.total_h or mode.box[4] - mode.box[2]
    }
-   param.w = nil
-   param.h = nil
+   if param.color then
+      param.color = tt_tocolor(param.color)
+   else
+      param.color = gui_text_color
+   end
    local newmode = tt_build("", param)
    
    newmode.parent = mode
@@ -250,8 +258,10 @@ function tt_end_button_cmd(mode)
 
    local block = {
       type = "button",
-      w = mode.total_w + 20,
-      h = mode.total_h + 20,
+      w = mode.total_w + 12,
+      h = mode.total_h + 12,
+      fill_w = mode.fill_x,
+      fill_h = mode.fill_y,
       z = mode.z,
       tt = mode,
       draw = tt_button_draw,
@@ -481,10 +491,12 @@ function tt_endline(mode)
    local line = mode.curline
    local i
 
-   for i=1, line.n, 1 do
-      h = max(h, line[i].h)
+   for i=1, line.n, 1 do 
+      local block = line[i]
+      h = max(h, block.h)
    end
 
+   line.fill_totalw = mode.fill_totalw
    line.h = h
    line.w = mode.w
    line.align_line_h = mode.align_line_h
@@ -495,9 +507,10 @@ function tt_endline(mode)
    mode.h = mode.h + h
 
    mode.total_w = max(mode.total_w, mode.w)
-   mode.total_h = mode.h
+   mode.total_h = max(mode.total_h, mode.h)
 
    mode.w = 0
+   mode.fill_totalw = 0
 end
 
 function tt_insert_block(mode, block)
@@ -506,12 +519,16 @@ function tt_insert_block(mode, block)
    if w + block.w > mode.bw then
       tt_endline(mode)
       w = 0
+      mode.fill_totalw = 0
    end
 
-   block.x = w
    block.y = mode.h
+
    tinsert(mode.curline, block)
    mode.w = w + block.w
+   if block.fill_w then
+      mode.fill_totalw = mode.fill_totalw + block.fill_w
+   end
 end
 
 
@@ -549,11 +566,12 @@ function tt_build(text, mode)
    mode.curline = { n = 0 }
    mode.lines = { n = 0 }
    mode.bw = mode.box[3] - mode.box[1] -- box width
-   mode.w = mode.w or 0
-   mode.h = mode.h or 0
+   mode.w = 0
+   mode.h = 0
    mode.border = mode.border or { 8, 8 }
-   mode.total_w = 0
-   mode.total_h = 0
+   mode.total_w = mode.total_w or 0
+   mode.total_h = mode.total_h or 0
+   mode.fill_totalw = 0
    mode.guis = { }
    
    mode.box = tt_copymode(mode.box)
@@ -715,11 +733,30 @@ function tt_draw(tt)
       local line = tt.lines[i]
 
       local h = line.h
+
+      local w = 0
+
+      local fill = tt.total_w - line.w
+      local totalw = line.fill_totalw
+
+      for j=1, line.n, 1 do
+	 local block = line[j]
+	 block.x = w
+
+	 if block.fill_w then
+--	    print(block.fill_w)
+	    block.w = block.w + fill * block.fill_w / totalw
+	    line.align_line_h = tt_align_line_left
+	 end
+	 w = w + block.w
+      end
+
       line.align_line_h(tt, line, h)
       line.align_line_v(tt, line, h)
 
       for j=1, line.n, 1 do
-	 line[j]:draw()
+	 local block = line[j]
+	 block:draw()
       end
    end
 end
