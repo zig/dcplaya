@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.46 2003-02-12 12:31:57 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.47 2003-03-01 14:33:49 zigziggy Exp $
  */
 
 //#define RELEASE
@@ -82,7 +82,6 @@ extern int vmu_lcd_title();
 
 static int warning_splash(void);
 extern void warning_render();
-
 
 #define ANIM_CONT   0
 #define ANIM_CYCLE  1

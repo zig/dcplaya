@@ -189,6 +189,7 @@ static void controler_thread(void * dummy)
       oldfunc = maple_device_func(report, 0);
       /* first unit of given port */
       maple_rescan_unit(0, report, 0);
+      //printf("func %d = %d\n", report, oldfunc);
       if (maple_device_func(report, 0) != oldfunc) {
 	int unit;
 	/* rescan also other units of same port if some change happened */
@@ -224,7 +225,7 @@ static void controler_thread(void * dummy)
 	  
       /* keyboard */
       keyboard_addr = maple_first_kb();
-      if (keyboard_addr) {
+      if (1 || keyboard_addr) {
 	kbd_poll_repeat(keyboard_addr, ta_state.frame_counter - last_frame);
       }
 	  
@@ -371,5 +372,6 @@ int controler_binding(int clear, int modify)
 {
   int old = cond_connected_mask;
   cond_connected_mask = (cond_connected_mask & ~clear) ^ modify;
+  SDDEBUG("[%s] : clear = [%d], modify = [%d], old = [%d]\n", __FUNCTION__, clear, modify, old);
   return old;
 }

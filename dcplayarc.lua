@@ -1,7 +1,7 @@
 --
 -- This is main DCplaya lua script
 --
--- $Id: dcplayarc.lua,v 1.27 2003-02-27 10:05:25 ben Exp $
+-- $Id: dcplayarc.lua,v 1.28 2003-03-01 14:33:49 zigziggy Exp $
 --
 
 showconsole()
@@ -22,9 +22,6 @@ dolib ("shell")
 dolib ("zed")
 dolib ("keyboard_emu")
 dolib ("gui")
-hideconsole()
-dolib ("vmu_init")
-showconsole()
 
 -- reading directory on PC is slow through serial port, 
 -- so we precalculate available plugins instead of doing a dir_load command
@@ -44,6 +41,15 @@ plug_hyperpipe	= home.."plugins/vis/hyperpipe/hyperpipe.lez"
 plug_fime	= home.."plugins/vis/fime/fime.lez"
 plug_el         = home.."plugins/exe/entrylist/entrylist.lez"
 plug_jpeg       = home.."plugins/img/jpeg/jpeg.lez"
+
+
+
+-- vmu initialisation
+hideconsole()
+dl(plug_jpeg)
+dolib ("vmu_init")
+showconsole()
+
 
 -- reading user config
 print ("Reading user config file 'userconf.lua'")
