@@ -1,7 +1,7 @@
 --- @date 2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  LUA script to initialize dcplaya VMU backup.
---- $Id: vmu_init.lua,v 1.15 2003-03-08 18:30:44 ben Exp $
+--- $Id: vmu_init.lua,v 1.16 2003-03-08 18:41:02 ben Exp $
 ---
 
 -- Unload library
@@ -196,7 +196,7 @@ function vmu_init(force_choice)
       local found = vmu_find_files()
 
       --- Must select a file if more than one was found
-      if found.n and found.n > 1 then
+      if found and found.n and found.n > 1 then
 	 local result
 	 result = gui_ask('More than one dcplaya save file has been found. You are going to select the one you want to use.',
 			  { "select file","cancel" },
@@ -274,7 +274,7 @@ function vmu_init(force_choice)
 	    end
 
 	    -- avoid looping
-	    force_choice = found.n and found.n == 1
+	    force_choice = found and found.n and found.n == 1
 
 	 end
       end
