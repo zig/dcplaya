@@ -211,7 +211,7 @@ req required: required_subdirs $(REQUIRED_LOCAL)
 # ----------------------------------------------------------------------
 
 # Remove standard includes, assumes local includes are "" and kos are <>
-KOS_INC_RULES=$(KOS_LOCAL_INCS) -I- -I. $(KOS_INCS) -I$(KOS_BASE)/kernel/arch/$(KOS_ARCH)/include
+KOS_INC_RULES=$(KOS_LOCAL_INCS) -I- -I$(KOS_INCS) -I$(KOS_BASE)/kernel/arch/$(KOS_ARCH)/include
 
 # Build rules
 %.o: %.c

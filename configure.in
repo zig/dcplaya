@@ -63,62 +63,62 @@ AC_MSG_RESULT([***                           *])
 AC_MSG_RESULT([*******************************])
 
 if test -z "$SH_CC"; then
-    AC_PATH_PROG(SH_CC,       ${SHPREFIX}gcc,      echo, [$PATH])
+    AC_PATH_PROG(SH_CC,       ${SHPREFIX}gcc,       ${SHPREFIX}gcc,      echo, [$PATH])
 fi
 if test -z "$SH_CXX"; then
-    AC_PATH_PROG(SH_CXX,      ${SHPREFIX}g++,      echo, [$PATH])
+    AC_PATH_PROG(SH_CXX,      ${SHPREFIX}g++,      ${SHPREFIX}g++,      echo, [$PATH])
 fi
 if test -z "$SH_AS"; then
-    AC_PATH_PROG(SH_AS,       ${SHPREFIX}as,       echo, [$PATH])
+    AC_PATH_PROG(SH_AS,       ${SHPREFIX}as,       ${SHPREFIX}as,       echo, [$PATH])
 fi
 if test -z "$SH_AR"; then
-    AC_PATH_PROG(SH_AR,       ${SHPREFIX}ar,       echo, [$PATH])
+    AC_PATH_PROG(SH_AR,       ${SHPREFIX}ar,       ${SHPREFIX}ar,       echo, [$PATH])
 fi
 if test -z "$SH_RANLIB"; then
-    AC_PATH_PROG(SH_RANLIB,   ${SHPREFIX}ranlib,   echo, [$PATH])
+    AC_PATH_PROG(SH_RANLIB,   ${SHPREFIX}ranlib,   ${SHPREFIX}ranlib,   echo, [$PATH])
 fi
 if test -z "$SH_OBJCOPY"; then
-    AC_PATH_PROG(SH_OBJCOPY,  ${SHPREFIX}objcopy,  echo, [$PATH])
+    AC_PATH_PROG(SH_OBJCOPY,  ${SHPREFIX}objcopy,  ${SHPREFIX}objcopy,  echo, [$PATH])
 fi
 if test -z "$SH_OBJDUMP"; then
-    AC_PATH_PROG(SH_OBJDUMP,  ${SHPREFIX}objdump,  echo, [$PATH])
+    AC_PATH_PROG(SH_OBJDUMP,  ${SHPREFIX}objdump,  ${SHPREFIX}objdump,  echo, [$PATH])
 fi
 if test -z "$SH_LD"; then
-    AC_PATH_PROG(SH_LD,       ${SHPREFIX}ld,       echo, [$PATH])
+    AC_PATH_PROG(SH_LD,       ${SHPREFIX}ld,       ${SHPREFIX}ld,       echo, [$PATH])
 fi
 if test -z "$SH_NM"; then
-    AC_PATH_PROG(SH_NM,       ${SHPREFIX}nm,       echo, [$PATH])
+    AC_PATH_PROG(SH_NM,       ${SHPREFIX}nm,       ${SHPREFIX}nm,       echo, [$PATH])
 fi
 if test -z "$SH_STRIP"; then
-    AC_PATH_PROG(SH_STRIP,    ${SHPREFIX}strip,    echo, [$PATH])
+    AC_PATH_PROG(SH_STRIP,       ${SHPREFIX}strip,       ${SHPREFIX}strip,       echo, [$PATH])
 fi
 REQUIRED_SH_TOOLS="$SH_AS $SH_CC $SH_LD"
 REQUIRED_SH_TOOLS="$REQUIRED_SH_TOOLS $SH_AR $SH_RANLIB"
 REQUIRED_SH_TOOLS="$REQUIRED_SH_TOOLS $SH_NM $SH_OBJCOPY $SH_OBJDUMP $SH_STRIP"
 
 if test -z "$ARM_CC"; then
-    AC_PATH_PROG(ARM_CC,       ${ARMPREFIX}gcc,      echo, [$PATH])
+    AC_PATH_PROG(ARM_CC,       ${ARMPREFIX}gcc,       ${ARMPREFIX}gcc,      echo, [$PATH])
 fi
 if test -z "$ARM_CXX"; then
-    AC_PATH_PROG(ARM_CXX,      ${ARMPREFIX}g++,      echo, [$PATH])
+    AC_PATH_PROG(ARM_CXX,      ${ARMPREFIX}g++,      ${ARMPREFIX}g++,      echo, [$PATH])
 fi
 if test -z "$ARM_AS"; then
-    AC_PATH_PROG(ARM_AS,       ${ARMPREFIX}as,       echo, [$PATH])
+    AC_PATH_PROG(ARM_AS,       ${ARMPREFIX}as,       ${ARMPREFIX}as,       echo, [$PATH])
 fi
 if test -z "$ARM_AR"; then
-    AC_PATH_PROG(ARM_AR,       ${ARMPREFIX}ar,       echo, [$PATH])
+    AC_PATH_PROG(ARM_AR,       ${ARMPREFIX}ar,       ${ARMPREFIX}ar,       echo, [$PATH])
 fi
 if test -z "$ARM_RANLIB"; then
-    AC_PATH_PROG(ARM_RANLIB,   ${ARMPREFIX}ranlib,   echo, [$PATH])
+    AC_PATH_PROG(ARM_RANLIB,   ${ARMPREFIX}ranlib,   ${ARMPREFIX}ranlib,   echo, [$PATH])
 fi
 if test -z "$ARM_OBJCOPY"; then
-    AC_PATH_PROG(ARM_OBJCOPY,  ${ARMPREFIX}objcopy,  echo, [$PATH])
+    AC_PATH_PROG(ARM_OBJCOPY,  ${ARMPREFIX}objcopy,  ${ARMPREFIX}objcopy,  echo, [$PATH])
 fi
 if test -z "$ARM_LD"; then
-    AC_PATH_PROG(ARM_LD,       ${ARMPREFIX}ld,       echo, [$PATH])
+    AC_PATH_PROG(ARM_LD,       ${ARMPREFIX}ld,       ${ARMPREFIX}ld,       echo, [$PATH])
 fi
 if test -z "$ARM_NM"; then
-    AC_PATH_PROG(ARM_NM,       ${ARMPREFIX}nm,       echo, [$PATH])
+    AC_PATH_PROG(ARM_NM,       ${ARMPREFIX}nm,       ${ARMPREFIX}nm,       echo, [$PATH])
 fi
 REQUIRED_ARM_TOOLS="$ARM_CC $ARM_AS $ARM_AR $ARM_RANLIB $ARM_LD $ARM_NM $ARM_OBJCOPY"
 
@@ -165,12 +165,12 @@ else
 fi
 SH_LDFLAGS="$SH_LDFLAGS -L$KOS_BASE"
 
-AC_PATH_PROG(KOS_GENROMFS, genromfs, no, $PATH:$KOS_BASE/utils/genromfs)
+AC_PATH_PROG(KOS_GENROMFS, $KOS_BASE/utils/genromfs/genromfs, $KOS_BASE/utils/genromfs/genromfs, no, $PATH:$KOS_BASE/utils/genromfs)
 if test "x$KOS_GENROMFS" = "xno"; then
     AC_MSG_ERROR([Could not find kos gemromfs program.])
 fi
 
-AC_PATH_PROG(KOS_BIN2O, bin2o, no, $PATH:$KOS_BASE/utils/bin2o)
+AC_PATH_PROG(KOS_BIN2O, $KOS_BASE/utils/bin2o/bin2o, $KOS_BASE/utils/bin2o/bin2o, no, $PATH:$KOS_BASE/utils/bin2o)
 if test "x$KOS_BIN2O" = "xno"; then
     AC_MSG_ERROR([Could not find kos bin2o program.])
 fi
@@ -191,8 +191,8 @@ LD="$SH_LD"
 LDFLAGS="$SH_LDFLAGS"
 OBJCOPY="$SH_OBJCOPY"
 
-AC_PROG_CC
-AC_PROG_RANLIB
+#AC_PROG_CC
+#AC_PROG_RANLIB
 AC_PROG_MAKE_SET
 
 AC_SUBST(DREAMMP3URL)
@@ -260,5 +260,5 @@ AC_MSG_RESULT([*   kos                 : $KOS_BASE])
 AC_MSG_RESULT([**************************************])
 
 dnl#
-dnl# End of "$Id: configure.in,v 1.4 2002-09-03 02:56:30 ben Exp $".
+dnl# End of "$Id: configure.in,v 1.5 2002-09-06 01:14:28 zig Exp $".
 dnl#

@@ -53,7 +53,7 @@ $(TARGETS): force_$(TARGETS) $(OBJS)
 		rm -f tmp_$@; \
 	)
 	cp -fv $@ full-symb-$@
-	@sh-elf-strip -v $@		
+	@$(KOS_STRIP) -v $@		
 
 send:
 	@clear
