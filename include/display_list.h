@@ -5,14 +5,15 @@
  * @author    benjamin gerard <ben@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.h,v 1.7 2002-11-28 04:22:44 ben Exp $
+ * @version   $Id: display_list.h,v 1.8 2002-11-28 20:15:11 ben Exp $
  */
 
 #ifndef _DISPLAY_LIST_H_
 #define _DISPLAY_LIST_H_
 
-/** @defgroup dcplaya_display_list Display list system.
+/** @defgroup  dcplaya_display_list  Display list system.
  *  @ingroup   dcplaya_devel
+ *  @author    Ben(jamin) Gerard <ben@sashipa.com>
  *
  *  A display list is a list that contains commands to be executed every frame.
  *  Commands in a list are execurted sequentially in the order of insertion.
@@ -99,8 +100,7 @@ typedef struct {
  *  its argument is the pointer on the command that contained it.
  *  @ingroup dcplaya_display_list
  */
-typedef dl_code_e (*dl_command_func_t)(void *,
-									   dl_context_t *);
+typedef dl_code_e (*dl_command_func_t)(void *, dl_context_t *);
 
 /** Display list command identifier.
  *  @ingroup dcplaya_display_list
