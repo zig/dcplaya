@@ -1,5 +1,5 @@
 /*
- * $Id: spc_driver.c,v 1.10 2003-04-20 04:43:02 vincentp Exp $
+ * $Id: spc_driver.c,v 1.11 2003-04-21 04:32:48 vincentp Exp $
  */
 
 #include "dcplaya/config.h"
@@ -24,13 +24,13 @@ volatile static int ready; /**< Ready flag : 1 when music is playing */
 
 /** SPC config */
 static SPC_Config spc_config = {
-  //26800,
-  16000,
+  32000, /* frequency (SPC hardware frequency is 32Khz) */
+  //16000,
   //44100,
-  16,
-  2,
-  0,
-  0
+  16,    /* bits per sample */
+  2,     /* number of channels */
+  1,     /* is interpolation ? */
+  1,     /* is echo ? */
 };
 
 /** Current SPC info */
@@ -121,6 +121,7 @@ static int start(const char *fn, int track, playa_info_t *info)
   playa_info_bits   (info, spc_config.resolution);
   playa_info_stereo (info, spc_config.channels-1);
   playa_info_time   (info, spcinfo.playtime * 1000);
+  //  spc_config.is_interpolation = 1;
 
   buf_cnt = buf_size;
   ready = 1;
@@ -250,6 +251,106 @@ static int info(playa_info_t *info, const char *fname)
 }
 
 
+/* LUA interface */
+
+#include "luashell.h"
+
+static int lua_profile(lua_State * L)
+{
+  int old = SPC_debugcolor;
+  SPC_debugcolor = lua_tonumber(L, 1);
+  lua_settop(L, 0);
+  lua_pushnumber(L, old);
+  vid_border_color(0, 0, 0);
+  return 1;
+}
+
+static int lua_echo(lua_State * L)
+{
+  int old = spc_config.is_echo;
+  spc_config.is_echo = lua_tonumber(L, 1);
+  lua_settop(L, 0);
+  lua_pushnumber(L, old);
+  vid_border_color(0, 0, 0);
+  return 1;
+}
+
+static int lua_interpolation(lua_State * L)
+{
+  int old = spc_config.is_interpolation;
+  spc_config.is_interpolation = lua_tonumber(L, 1);
+  lua_settop(L, 0);
+  lua_pushnumber(L, old);
+  vid_border_color(0, 0, 0);
+  return 1;
+}
+
+static int lua_frequency(lua_State * L)
+{
+  int nparam = lua_gettop(L);
+  int old = spc_config.sampling_rate;
+  if (nparam >= 1) {
+    float new  = lua_tonumber(L, 1);
+    if (new < 8) new = 8;
+    if (new > 50) new = 50;
+    spc_config.sampling_rate = new*1000;
+    playa_info_frq    (info, spc_config.sampling_rate);
+  }
+  lua_settop(L, 0);
+  lua_pushnumber(L, old/1000);
+  return 1;
+}
+
+static int lua_slowdown(lua_State * L)
+{
+  int nparam = lua_gettop(L);
+
+  int old1 = SPC_slowdown_cycle_shift;
+  int old2 = SPC_slowdown_instructions;
+  if (nparam >= 2) {
+    SPC_slowdown_cycle_shift = lua_tonumber(L, 1);
+    SPC_slowdown_instructions = lua_tonumber(L, 2);
+  }
+  lua_settop(L, 0);
+  lua_pushnumber(L, old1);
+  lua_pushnumber(L, old2);
+  return 2;
+}
+
+static luashell_command_description_t commands[] = {
+  {
+    "spc_profile", 0, "spc",     /* long name, short name, topic */
+    "spc_profile(mode) : set profile mode on or off",  /* usage */
+    SHELL_COMMAND_C, lua_profile      /* function */
+  },
+  {
+    "spc_slowdown", 0, 0, /* long name, short name, topic */
+    "spc_slowdown([cycle_shift, instructions]) :"
+    " set or return SPC_slowdown_cycle_shift"
+    " and SPC_slowdown_instructions",               /* usage */
+    SHELL_COMMAND_C, lua_slowdown /* function */
+  },
+  {
+    "spc_frequency", "spc_frq", "spc",     /* long name, short name, topic */
+    "spc_frequency(frq) : set or return replay frequency in Khz",  /* usage */
+    SHELL_COMMAND_C, lua_frequency      /* function */
+  },
+  {
+    "spc_echo", 0, "spc",     /* long name, short name, topic */
+    "spc_echo(status) : set or return echo status",  /* usage */
+    SHELL_COMMAND_C, lua_echo      /* function */
+  },
+  {
+    "spc_interpolation", 0, "spc",     /* long name, short name, topic */
+    "spc_interpolation(status) : set or return interpolation status",  /* usage */
+    SHELL_COMMAND_C, lua_echo      /* function */
+  },
+
+  /* end of the command list */
+  {0},
+};
+
+
 static inp_driver_t spc_driver =
 {
 
@@ -259,7 +360,8 @@ static inp_driver_t spc_driver =
     INP_DRIVER,           /**< Driver type */      
     0x0100,               /**< Driver version */
     "spc",                /**< Driver name */
-    "Benjamin Gerard, "   /**< Driver authors */
+    "Vincent Penne, "     /**< Driver authors */
+    "Benjamin Gerard, "
     "Gary Henderson, "
     "Jerremy Koot",
     "SNES music player",  /**< Description */
@@ -267,6 +369,7 @@ static inp_driver_t spc_driver =
     init,                 /**< Driver init */
     shutdown,             /**< Driver shutdown */
     options,              /**< Driver options */
+    commands,             /**< Lua shell commands */
   },
   
   /* Input driver specific */

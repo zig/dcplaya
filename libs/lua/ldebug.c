@@ -1,5 +1,5 @@
 /*
-** $Id: ldebug.c,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
+** $Id: ldebug.c,v 1.3 2003-04-21 04:32:48 vincentp Exp $
 ** Debug Interface
 ** See Copyright Notice in lua.h
 */
@@ -421,7 +421,7 @@ static const char *getfuncname (lua_State *L, StkId f, const char **name) {
     Proto *p = infovalue(func)->func->f.l;
     int pc = currentpc(func);
     Instruction i;
-    if (pc == -1) return NULL;  /* function is not activated */
+    if (pc == -1 || p->code == NULL) return NULL; /* function is not activated */
     i = p->code[pc];
     switch (GET_OPCODE(i)) {
       case OP_CALL: case OP_TAILCALL:

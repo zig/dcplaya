@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.95 2003-04-05 16:33:30 ben Exp $
+ * @version    $Id: dynshell.c,v 1.96 2003-04-21 04:32:48 vincentp Exp $
  */
 
 #include "dcplaya/config.h"
@@ -2838,6 +2838,19 @@ static int lua_collect(lua_State * L)
   return 0;
 }
 
+#include "fifo.h"
+static int lua_fifo_used(lua_State * L)
+{
+  lua_pushnumber(L, fifo_used());
+  return 1;
+}
+
+static int lua_fifo_size(lua_State * L)
+{
+  lua_pushnumber(L, fifo_size());
+  return 1;
+}
+
 static luashell_command_description_t commands[] = {
 
   /* system commands */
@@ -3386,8 +3399,20 @@ static luashell_command_description_t commands[] = {
     ,
     SHELL_COMMAND_C, lua_driver_is_same
   },
-
-
+  {
+    "fifo_used",0,"fifo",
+    "fifo_used() :\n"
+    " Return used samples in the fifo.\n"
+    ,
+    SHELL_COMMAND_C, lua_fifo_used
+  },
+  {
+    "fifo_size",0,"fifo",
+    "fifo_size() :\n"
+    " Return size of the fifo.\n"
+    ,
+    SHELL_COMMAND_C, lua_fifo_size
+  },
 
   {0},
 };

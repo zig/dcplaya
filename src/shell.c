@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     shell support for dcplaya
- * @version   $Id: shell.c,v 1.17 2003-03-18 14:53:27 ben Exp $
+ * @version   $Id: shell.c,v 1.18 2003-04-21 04:32:48 vincentp Exp $
  */
 
 #include <kos.h>
@@ -15,6 +15,8 @@
 
 #include "lef.h"
 #include "sysdebug.h"
+
+#include "priorities.h"
 
 static char input[256];
 static int input_pos;
@@ -28,6 +30,7 @@ lef_prog_t * shell_lef;
 shell_shutdown_func_t shell_lef_shutdown_func;
 
 
+char * shell_user_lef_fname = "/ram/dcplaya/dynshell.lez";
 char * shell_lef_fname = DCPLAYA_HOME "/dynshell/dynshell.lez";
 
 static shell_command_func_t shell_command_func;
@@ -64,7 +67,11 @@ static void shell_update_keyboard()
     return;
 
   case KBD_KEY_F1<<8: // F1
-    shell_load(shell_lef_fname);
+    /* first try the user shell */
+    shell_load(shell_user_lef_fname);
+    /* if fail, load the standard shell */
+    if (!shell_lef)
+      shell_load(shell_lef_fname);
     break;
 
   case KBD_KEY_F2<<8: // F2
@@ -149,6 +156,10 @@ void shell_load(const char * fname)
 
 static void shell_thread(void * param)
 {
+  /* VP : set the prio2 to 2 for the shell, so that lua will not get too 
+     slow */
+  thd_current->prio2 = LUA_THREAD_PRIORITY;
+
   for (;;) {
     char * com;
 
@@ -193,7 +204,11 @@ int shell_init()
 
   thd_default_stack_size = old;
 
-  shell_load(shell_lef_fname);
+  /* first try the user shell */
+  shell_load(shell_user_lef_fname);
+  /* if fail, load the standard shell */
+  if (!shell_lef)
+    shell_load(shell_lef_fname);
 
   // Setup some environmental variables
   shell_command("setglobal([[__VERSION]],[[" DCPLAYA_VERSION_STR "]])");

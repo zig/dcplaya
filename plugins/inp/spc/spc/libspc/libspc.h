@@ -1,4 +1,4 @@
-/* $Id: libspc.h,v 1.1 2003-04-19 23:49:42 vincentp Exp $ */
+/* $Id: libspc.h,v 1.2 2003-04-21 04:32:48 vincentp Exp $ */
 
 /*
  * SPC library
@@ -63,6 +63,25 @@ int SPC_load(const char *fname, SPC_ID666 * id);
 void SPC_update(unsigned char *buf);
 int SPC_get_id666 (const char *filename, SPC_ID666 * id);
 int SPC_write_id666(SPC_ID666 *id, const char *filename);
+
+
+/*
+ * VP : each time a timer is read, the SPC is slowdowned for 
+ * SPC_slowdown_instructions instructions.
+ * This should leverage host CPU usage without noticeable effect.
+ * (the SPC get exactly 2^SPC_slowdown_cycle_shift times slower, 
+ *  thus 2^SPC_slowdown_cycle_shift times faster to emulate in slowdown mode)
+ * Usually, when the CPU tries to read the timer, it is in a loop  
+ * for synchronisation with real world time, thus it should not need to consume
+ * too much time to emulate at this moment ...
+ *
+ */
+extern int SPC_debugcolor; /* Set this to one to display profiling border 
+			      colors */
+extern int SPC_slowdown_cycle_shift;  /* Default value : 5 */
+extern int SPC_slowdown_instructions; /* Default value : 8 */
+
+
 
 #ifdef __cplusplus
 }

@@ -84,11 +84,16 @@ if __RELEASE then
       end
    end
 
-   -- Real start dcplaya applications now !
+   -- Really start dcplaya applications now !
    dolib("background")
    dolib("control_center")
    dolib("song_info")
    dolib("song_browser")
+   dolib("fifo_tracker")
+
+   if fifo_tracker_create then
+      fifo_tracker_create()
+   end
 
    -- Currently vmu visual are not plugins, just hard the list
    vmu_set_visual(random(3))

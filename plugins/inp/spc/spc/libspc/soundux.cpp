@@ -114,6 +114,23 @@ extern int NoiseFreq [32];
 #define LAST_SAMPLE 0xffffff
 #define JUST_PLAYED_LAST_SAMPLE(c) ((c)->sample_pointer >= LAST_SAMPLE)
 
+
+#ifdef DCPLAYA
+extern "C" {
+# include <kos.h>
+}
+#endif
+
+extern int SPC_debugcolor;
+inline void BCOLOR(int r, int g, int b)
+{
+#ifdef DCPLAYA
+  if (SPC_debugcolor)
+    vid_border_color(r, g, b);
+#endif
+}
+
+
 STATIC inline uint8 *S9xGetSampleAddress (int sample_number)
 {
     uint32 addr = (((APU.DSP[APU_DIR] << 8) + (sample_number << 2)) & 0xffff);
@@ -455,6 +472,8 @@ void DecodeBlock (Channel *ch)
     }
     signed char *compressed = (signed char *) &IAPU.RAM [ch->block_pointer];
 
+    BCOLOR(0, 255, 255);
+
     filter = *compressed;
     if ((ch->last_block = filter & 1))
 	ch->loop = (filter & 2) != 0;
@@ -536,6 +555,9 @@ void DecodeBlock (Channel *ch)
 	ch->loop = FALSE;
 	ch->block_pointer -= 0x10000 - 9;
     }
+
+    BCOLOR(255, 255, 0);
+
 }
 
 void MixStereo (int sample_count)
@@ -587,6 +609,7 @@ void MixStereo (int sample_count)
 	    ch->env_error += ch->erate;
 	    if (ch->env_error >= FIXED_POINT) 
 	    {
+	        BCOLOR(0, 0, 255);
 		uint32 step = ch->env_error >> FIXED_POINT_SHIFT;
 
 		switch (ch->state)
@@ -735,6 +758,8 @@ void MixStereo (int sample_count)
 		ch->right_vol_level = (ch->envx * ch->volume_right) / 128;
 		VL = (ch->sample * ch-> left_vol_level) / 128;
 		VR = (ch->sample * ch->right_vol_level) / 128;
+
+	        BCOLOR(255, 255, 0);
 	    }
 
 	    ch->count += freq;
@@ -1171,6 +1196,7 @@ void S9xMixSamplesO (uint8 *buffer, int sample_count, int byte_offset)
 	    MixMono (sample_count);
     }
 
+    BCOLOR(255, 0, 255);
     /* Mix and convert waveforms */
     if (so.sixteen_bit)
     {
@@ -1463,6 +1489,7 @@ void S9xMixSamplesO (uint8 *buffer, int sample_count, int byte_offset)
 	    }
 	}
     }
+    BCOLOR(255, 255, 0);
 }
 
 #ifdef __DJGPP

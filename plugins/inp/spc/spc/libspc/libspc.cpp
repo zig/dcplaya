@@ -7,7 +7,7 @@
 #include "soundux.h"
 #include "libspc.h"
 
-#define RATE 100
+#define RATE 400
 
 SAPURegisters BackupAPURegisters;
 unsigned char BackupAPURAM[65536];
@@ -100,6 +100,7 @@ int SPC_set_state(SPC_Config *cfg)
 {
     int i;
 
+    Settings.DisableSampleCaching = FALSE;
     Settings.APUEnabled = TRUE;
     Settings.InterpolatedSound = (cfg->is_interpolation) ? TRUE : FALSE;
     Settings.SoundEnvelopeHeightReading = TRUE;
@@ -128,10 +129,32 @@ int SPC_set_state(SPC_Config *cfg)
     return so.buffer_size;
 }
 
-//#define BCOLOR vid_border_color
-#define BCOLOR
 
-#include <kos.h>
+
+/*
+ * VP : each time a timer is read, the SPC is slowdowned for 8 instructions.
+ * This should leverage host CPU usage without noticeable effect.
+ * (the SPC get exactly 16 times slower, thus 16 times faster to emulate in
+ *  slowdown mode)
+ *
+ */
+
+int SPC_debugcolor = 0;
+int SPC_slowdown_cycle_shift = 6;
+int SPC_slowdown_instructions = 2;
+
+
+#ifdef DCPLAYA
+# include <kos.h>
+#endif
+
+inline void BCOLOR(int r, int g, int b)
+{
+#ifdef DCPLAYA
+  if (SPC_debugcolor)
+    vid_border_color(r, g, b);
+#endif
+}
 
 /* get samples
    ---------------------------------------------------------------- */
@@ -152,7 +175,7 @@ void SPC_update(unsigned char *buf)
 
       if (IAPU.Slowdown > 0) {
 	/* VP : in slowdown mode, SPC executes x times slower */
-	c += 16 * cycles;
+	c += cycles << SPC_slowdown_cycle_shift;
 	IAPU.Slowdown --;
       } else {
 	/* VP : no slowdown, normal speed of the SPC */
@@ -160,7 +183,7 @@ void SPC_update(unsigned char *buf)
       }
     }
 
-    /* VP : Execute timer required number of time */
+    /* VP : Execute timer required number of times */
     for (ic = 0; ic < (c / 32) - (oc / 32) ; ic++) {
       IAPU.TimerErrorCounter ++;
       DoTimer();
@@ -345,7 +368,9 @@ int SPC_load (const char *fname, SPC_ID666 * id)
     return FALSE;
 
   read_id666(fp, id);
-  
+
+  IAPU.OneCycle = ONE_APU_CYCLE; /* VP : moved this before call to S9xResetAPU !! */
+
   S9xInitAPU();
   S9xResetAPU();
 
@@ -366,7 +391,6 @@ int SPC_load (const char *fname, SPC_ID666 * id)
   fclose(fp);
 
   RestoreSPC();
-  IAPU.OneCycle = ONE_APU_CYCLE;
 
   return TRUE;
 }

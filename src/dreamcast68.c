@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.59 2003-03-26 23:02:51 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.60 2003-04-21 04:32:48 vincentp Exp $
  */
 
 //#define RELEASE
@@ -69,6 +69,8 @@
 //#include "texture.h"
 
 #include "fifo.h"
+
+#include "priorities.h"
 
 #include "exceptions.h"
 
@@ -713,6 +715,13 @@ void main_thread(void *cookie)
   //  playa_start("/rd/01 Intro.spc", -1, 1);
   thd_pass(); // $$$ Don't ask me why !!! It removes a bug in intro sound !!!
 
+
+
+  /* VP : change prio2 of main thread so that it gets more CPU time in average
+     than other threads */
+  thd_current->prio2 = MAIN_THREAD_PRIORITY;
+
+
   fade68    = 0.0f;
   fade_step = 0.02f;
 #ifdef SKIP_INTRO
@@ -1149,7 +1158,7 @@ int dreammp3_main(int argc, char **argv)
     SDDEBUG("Clean exit\n");
   }
 
-  BREAKPOINT(0x00DEAD00);
+  /* BREAKPOINT(0x00DEAD00); */
 
   /* Shutting down exceptions handling */
   expt_shutdown();

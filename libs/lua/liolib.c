@@ -1,5 +1,5 @@
 /*
-** $Id: liolib.c,v 1.3 2003-01-05 18:08:39 zigziggy Exp $
+** $Id: liolib.c,v 1.4 2003-04-21 04:32:48 vincentp Exp $
 ** Standard I/O (and system) library
 ** See Copyright Notice in lua.h
 */
@@ -160,8 +160,10 @@ static int io_close (lua_State *L) {
 
 static int file_collect (lua_State *L) {
   IOCtrl *ctrl = (IOCtrl *)lua_touserdata(L, -1);
-  FILE *f = getnonullfile(L, ctrl, 1);
-  if (f != stdin && f != stdout && f != stderr)
+  FILE *f = gethandle(L, ctrl, 1); /* VP : fixed a bug, do not used 
+				      getnonullfile here since it may
+				      cause a breakpoint ! */
+  if (f != NULL && f != stdin && f != stdout && f != stderr)
     CLOSEFILE(L, f);
   return 0;
 }

@@ -44,6 +44,9 @@ extern uint8 W4;
 extern uint8 APUROM[64];
 END_EXTERN_C
 
+/* VP : defined in libspc.cpp */
+extern int SPC_slowdown_instructions;
+
 INLINE uint8 S9xAPUGetByteZ (uint8 Address)
 {
     if (Address >= 0xf0 && IAPU.DirectPage == IAPU.RAM)
@@ -54,7 +57,7 @@ INLINE uint8 S9xAPUGetByteZ (uint8 Address)
 	    IAPU.WaitAddress2 = IAPU.WaitAddress1;
 	    IAPU.WaitAddress1 = IAPU.PC;
 #endif	    
-	    IAPU.Slowdown = TIMER_SLOWDOWN; /* VP : start a slowdown of given number of cycle */
+	    IAPU.Slowdown = SPC_slowdown_instructions; /* VP : start a slowdown of given number of instructions */
 	    return (IAPU.RAM [Address]);
 	}
 	if (Address >= 0xfd)
@@ -63,7 +66,7 @@ INLINE uint8 S9xAPUGetByteZ (uint8 Address)
 	    IAPU.WaitAddress2 = IAPU.WaitAddress1;
 	    IAPU.WaitAddress1 = IAPU.PC;
 #endif	    
-	    IAPU.Slowdown = TIMER_SLOWDOWN; /* VP : start a slowdown of given number of cycle */
+	    IAPU.Slowdown = SPC_slowdown_instructions; /* VP : start a slowdown of given number of instructions */
 	    uint8 t = IAPU.RAM [Address];
 	    IAPU.RAM [Address] = 0;
 	    return (t);
@@ -119,7 +122,7 @@ INLINE uint8 S9xAPUGetByte (uint32 Address)
 	    IAPU.WaitAddress2 = IAPU.WaitAddress1;
 	    IAPU.WaitAddress1 = IAPU.PC;
 #endif	    
-	    IAPU.Slowdown = TIMER_SLOWDOWN; /* VP : start a slowdown of given number of cycle */
+	    IAPU.Slowdown = SPC_slowdown_instructions; /* VP : start a slowdown of given number of instructions */
 	    return (IAPU.RAM [Address]);
 	}
 	else
@@ -131,7 +134,7 @@ INLINE uint8 S9xAPUGetByte (uint32 Address)
 	    IAPU.WaitAddress2 = IAPU.WaitAddress1;
 	    IAPU.WaitAddress1 = IAPU.PC;
 #endif
-	    IAPU.Slowdown = TIMER_SLOWDOWN; /* VP : start a slowdown of given number of cycle */
+	    IAPU.Slowdown = SPC_slowdown_instructions; /* VP : start a slowdown of given number of instructions */
 	    uint8 t = IAPU.RAM [Address];
 	    IAPU.RAM [Address] = 0;
 	    return (t);

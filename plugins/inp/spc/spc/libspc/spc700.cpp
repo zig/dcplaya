@@ -49,15 +49,6 @@ extern "C" {
 
 // SPC700/Sound DSP chips have a 24.57MHz crystal on their PCB.
 
-/*
- * VP : each time a timer is read, the SPC is slowdowned for 16 instructions.
- * This should leverage host CPU usage without noticeable effect.
- * (the SPC get exactly 8 times slower, thus 8 times faster to emulate in
- *  slowdown mode)
- *
- */
-#define TIMER_SLOWDOWN 8
-
 #ifdef NO_INLINE_SET_GET
 uint8 S9xAPUGetByteZ (uint8 address);
 uint8 S9xAPUGetByte (uint32 address);

@@ -14,6 +14,9 @@ static int fifo_s; /* FIFO size (power of 2) - 1 */
 static int fifo_k; /* FIFO bak-buffer index */
 static int fifo_m; /* FIFO bak-buffer threshold */
 
+/* used by playa.c to evaluate how many samples have been written */
+int fifo_written = 0;
+
 #define FIFO_BAK_MAX (1<<14)
 
 #define FIFO_USED2(R,W,S) (((W)-(R))&(S))
@@ -88,9 +91,9 @@ int fifo_free(void)
 int fifo_used(void)
 {
   int v;
-  spinlock_lock(&fifo_mutex);
+/*  spinlock_lock(&fifo_mutex); */
   v = FIFO_USED;
-  spinlock_unlock(&fifo_mutex);
+/*  spinlock_unlock(&fifo_mutex); */
   return v;
 }
 
@@ -280,6 +283,8 @@ int fifo_write_any(const void * buf, int n, fifo_copy_f copy)
 
 static const void * copy_mono(int *d, const unsigned short *s, int n)
 {
+  fifo_written += n;
+
   while (n--) {
     int v = *s++;
     *d++ = v | (v<<16);
@@ -289,6 +294,8 @@ static const void * copy_mono(int *d, const unsigned short *s, int n)
 
 static const void * copy_stereo(int *d, const int *s, int n)
 {
+  fifo_written += n;
+
   while (n--) {
     *d++ = *s++;
   }

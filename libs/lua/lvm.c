@@ -1,5 +1,5 @@
 /*
-** $Id: lvm.c,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
+** $Id: lvm.c,v 1.3 2003-04-21 04:32:48 vincentp Exp $
 ** Lua virtual machine
 ** See Copyright Notice in lua.h
 */
@@ -371,6 +371,14 @@ StkId luaV_execute (lua_State *L, const Closure *cl, StkId base) {
   const Instruction *pc = tf->code;
   TString **const kstr = tf->kstr;
   const lua_Hook linehook = L->linehook;
+
+#if 0
+  if (pc == NULL) { /* Added by VP, is this necessary ?? */
+    printf("WARNING !! PC = NULL at luaV_execute\n");
+    return base;
+  }
+#endif
+
   infovalue(base-1)->pc = &pc;
   luaD_checkstack(L, tf->maxstacksize+EXTRA_STACK);
   if (tf->is_vararg)  /* varargs? */

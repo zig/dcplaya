@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.22 2003-03-28 14:01:45 ben Exp $
+ * $Id: playa.c,v 1.23 2003-04-21 04:32:48 vincentp Exp $
  */
 
 #include <kos.h>
@@ -19,6 +19,8 @@
 #include "file_wrapper.h"
 #include "fifo.h"
 //#include "fft.h"
+
+#include "priorities.h"
 
 #define PLAYA_THREAD
 
@@ -152,6 +154,19 @@ static void * sndstream_callback(int size)
   int n;
   //  VCOLOR(255,0,0);
 
+
+#ifdef PLAYA_THREAD
+  /* VP : change priority of the decoder thread with respect to the
+     filled ratio of the fifo */
+  int ratio = fifo_used() * 1000 / fifo_size();
+  if (ratio > 20) {
+    playa_thread->prio2 = PLAYA_DECODER_THREAD_PRIORITY;
+  } else {
+    playa_thread->prio2 = PLAYA_DECODER_THREAD_BOOST_PRIORITY;
+  }
+#endif
+
+
   size >>= 2;
   if (playa_paused && !fade_v) {
     n = 0;
@@ -199,6 +214,8 @@ void sndstream_thread(void *cookie)
 {
   SDDEBUG(">> %s()\n", __FUNCTION__);
 
+  thd_current->prio2 = PLAYA_SNDSTREAM_THREAD_PRIORITY;
+
   stream_init(sndstream_callback, 1<<14);
   stream_start(1200, current_frq=44100, playavolume, current_stereo=1);
 
@@ -238,7 +255,6 @@ void sndstream_thread(void *cookie)
 
 static void real_playa_update(void)
 {
-
   switch (playastatus) {
 
   case PLAYA_STATUS_INIT:

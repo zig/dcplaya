@@ -8,6 +8,8 @@
 #include "controler.h"
 #include "sysdebug.h"
 
+#include "priorities.h"
+
 #define CONTROLER_NO_SMOOTH_FRAMES  50      /* > 2 */
 #define CONTROLER_SMOOTH_FACTOR     0x6000  /* [0..65536] */
 #define CONTROLER_JOY_DEAD          15
@@ -252,6 +254,7 @@ int controler_init(void)
 
   status = RUNNING;
   controler_thd = thd_create(controler_thread, 0);
+  controler_thd->prio2 = MAPLE_THREAD_PRIORITY;
   if (controler_thd) {
     thd_set_label(controler_thd, "Controler-thd");
   }
