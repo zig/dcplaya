@@ -129,7 +129,7 @@ $(LIBNAME) : $(OBJS)
 	@echo "Build [$@] from [$^]"
 	$(KOS_LD) -b elf32-shl -EL -r -x -O -S $^ $(ELF_EXTRA) -o $@
 
-%.lef : $(OBJS) #lib%.a
+%.lef : $(OBJS) $(filter %.a %.o %.elf %.lef, $(LEF_EXTRA))
 	@echo "Build [$@] from [$^]"
 	@$(KOS_LD) -b elf32-shl -d -O 3 -EL -r --cref -M -Map $*.map -x -O -S $^ $(LEF_EXTRA) -o $@
 	@$(KOS_STRIP) --strip-unneeded $@
