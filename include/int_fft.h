@@ -3,6 +3,11 @@
 #ifndef _INT_FFT_H_
 #define _INT_FFT_H_
 
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
+
 #ifndef fixed
 #define fixed short
 #endif
@@ -14,5 +19,7 @@ int fix_loud(fixed loud[], fixed fr[], fixed fi[], int n, int scale_shift);
 int db_from_ampl(fixed re, fixed im);
 int fix_iscale(int value, int numer, int denom);
 
-#endif
+DCPLAYA_EXTERN_C_END
+
+#endif /* #ifndef _INT_FFT_H_ */
 

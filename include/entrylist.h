@@ -4,6 +4,12 @@
 #ifndef _ENTRYLIST_H_
 #define _ENTRYLIST_H_
 
+
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
+
 #include <kos/thread.h>
 #include <kos/sem.h>
 
@@ -41,5 +47,7 @@ void entrylist_lock(entrylist_t *list);
 void entrylist_unlock(entrylist_t *list);
 */
 void entrylist_sync(entrylist_t *list, int sync);
+
+DCPLAYA_EXTERN_C_END
 
 #endif /* #ifndef _ENTRYLIST_H_ */

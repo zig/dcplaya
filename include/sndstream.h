@@ -3,11 +3,16 @@
  *
  * (C) 2000 Dan Potter
  *
- * $Id: sndstream.h,v 1.1 2002-08-26 14:15:00 ben Exp $
+ * $Id: sndstream.h,v 1.2 2002-09-06 23:16:09 ben Exp $
  */
 
 #ifndef __SNDSTREAM_H
 #define __SNDSTREAM_H
+
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
 
 /* Load sample data from SH-4 ram into SPU ram (auto-allocate RAM) */
 uint32 stream_load_sample(const uint16 *src, uint32 len);
@@ -52,6 +57,7 @@ void stream_frq(int frq);
 /* 0:mono 1:stereo 2:invert-stereo */
 void stream_stereo(int stereo);
 
+DCPLAYA_EXTERN_C_END
 
 #endif	/* __SNDSTREAM_H */
 

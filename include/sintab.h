@@ -1,6 +1,11 @@
 #ifndef __SINTAB_H
 #define __SINTAB_H
 
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
+
 #if 0
 float sintab[] = {
 0.000000, 0.024541, 0.049068, 0.073565, 0.098017, 0.122411, 0.146730,
@@ -45,6 +50,7 @@ float sintab[] = {
 -0.073565, -0.049068, -0.024541 };
 #endif
 
+DCPLAYA_EXTERN_C_END
 
 #endif	/* __SINTAB_H */
 

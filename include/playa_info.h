@@ -1,6 +1,11 @@
 #ifndef _PLAYA_INFO_H_
 #define _PLAYA_INFO_H_
 
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
+
 /** */
 typedef struct {
   int valid;      /**< Are the following fields valids.
@@ -35,5 +40,7 @@ typedef struct
   unsigned int time;  /**< Duration in ms */
   
 } decoder_info_t;
+
+DCPLAYA_EXTERN_C_END
 
 #endif

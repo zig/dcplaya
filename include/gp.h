@@ -1,7 +1,15 @@
-#ifndef __GP_H
-#define __GP_H
+/* $Id */
+
+#ifndef _GP_H_
+#define _GP_H_
 
 #include <kos.h>
+
+
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
 
 /* Floating-point Sin/Cos; 256 angles, -1.0 to 1.0 */
 extern float sintab[];
@@ -51,4 +59,7 @@ int border_setup();
 extern borderuv_t borderuv[];
 extern uint32 bordertex;
 
-#endif	/* __GP_H */
+DCPLAYA_EXTERN_C_END
+
+#endif	/* #ifndef _GP_H_ */
+

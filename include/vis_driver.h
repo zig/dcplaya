@@ -3,12 +3,17 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: vis_driver.h,v 1.3 2002-09-04 18:54:11 ben Exp $
+ * $Id: vis_driver.h,v 1.4 2002-09-06 23:16:09 ben Exp $
  */
 
 
 #ifndef _VIS_DRIVER_H_
 #define _VIS_DRIVER_H_
+
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
 
 #include "any_driver.h"
 #include "viewport.h"
@@ -36,5 +41,7 @@ typedef struct
   int (*translucent_render)(void);
 
 } vis_driver_t;
+
+DCPLAYA_EXTERN_C_END
 
 #endif

@@ -1,11 +1,16 @@
 /*
  *
  *
- * $Id: playa.h,v 1.3 2002-09-04 18:54:11 ben Exp $
+ * $Id: playa.h,v 1.4 2002-09-06 23:16:09 ben Exp $
  */
 
 #ifndef _PLAYA_H_
 #define _PLAYA_H_
+
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
 
 /* Main decoder thread status */
 #define PLAYA_STATUS_INIT	    0
@@ -42,5 +47,7 @@ playa_info_t *playa_info_lock();
 void playa_info_release(playa_info_t *);
 
 char * playa_make_time_str(unsigned int ms);
+
+DCPLAYA_EXTERN_C_END
 
 #endif

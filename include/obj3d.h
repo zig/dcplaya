@@ -4,13 +4,18 @@
  * @author    Ben(jamin) Gerard <ben@sashipa.com>
  * @date      20/10/2001
  * @brief     Simple 3D objects defintions for 3D-object plugins
- * @version   $Id: obj3d.h,v 1.1 2002-08-26 14:15:00 ben Exp $
+ * @version   $Id: obj3d.h,v 1.2 2002-09-06 23:16:09 ben Exp $
  */
 
 /* Copyright (C) 1998-2001 Ben(jamin) Gerard */
 
 #ifndef _OBJ3D_H_
 #define _OBJ3D_H_
+
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
 
 /* #include "any_driver.h" */
 
@@ -53,5 +58,7 @@ typedef struct {
   tlk_t *tlk;       /**< Pointer to linked face buffer */
   vtx_t *nvx;       /**< Pointer to face normal */
 } obj_t;
+
+DCPLAYA_EXTERN_C_END
 
 #endif

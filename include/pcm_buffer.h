@@ -1,6 +1,11 @@
 #ifndef _PCM_BUFFER_H_
 #define _PCM_BUFFER_H_
 
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
+
 #define PCM_BUFFER_SIZE pcm_buffer_size
 #define BS_SIZE         bs_buffer_size
 
@@ -11,5 +16,7 @@ extern char  * bs_buffer;
 extern int bs_buffer_size;
 
 int pcm_buffer_init(int pcm_size, int bs_size);
+
+DCPLAYA_EXTERN_C_END
 
 #endif

@@ -1,6 +1,11 @@
 #ifndef _M3U_H_
 #define _M3U_H_
 
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
+
 /** Driver */
 typedef void *  (*M3Umalloc_f)(void *cookie, int bytes);
 typedef void    (*M3Ufree_f)(void *cookie, void *data);
@@ -31,5 +36,7 @@ typedef struct
 int M3Udriver(M3Udriver_t * p_driver);
 M3Ulist_t * M3Uprocess(void);
 void M3Ukill(M3Ulist_t * l);
+
+DCPLAYA_EXTERN_C_END
 
 #endif /* #define _M3U_H_ */

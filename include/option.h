@@ -3,6 +3,11 @@
 #ifndef _OPTION_H_
 #define _OPTION_H_
 
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
+
 #include "vis_driver.h"
 
 typedef enum {
@@ -21,5 +26,7 @@ int option_shuffle();
 int option_setup(void);
 
 void option_render(unsigned int elapsed_frame);
+
+DCPLAYA_EXTERN_C_END
 
 #endif /* #ifndef _OPTION_H_ */

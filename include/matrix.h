@@ -3,6 +3,11 @@
 #ifndef _MATRIX_H_
 #define _MATRIX_H_
 
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
+
 #ifndef __MATRIX_H
 typedef float matrix_t[4][4];
 #endif
@@ -23,5 +28,7 @@ void MtxFrustum(matrix_t row, const float left, const float right,
                               const float top, const float bottom,
                               const float zNear, const float zFar);
 void CrossProduct(float *d, const float *v, const float * w);
+
+DCPLAYA_EXTERN_C_END
 
 #endif /* #ifndef _MATRIX_H_ */

@@ -3,11 +3,16 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: inp_driver.h,v 1.2 2002-09-02 16:05:38 ben Exp $
+ * $Id: inp_driver.h,v 1.3 2002-09-06 23:16:09 ben Exp $
  */
 
 #ifndef _INP_DRIVER_H_
 #define _INP_DRIVER_H_
+
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
 
 #include "playa_info.h"
 #include "any_driver.h"
@@ -45,4 +50,6 @@ typedef struct
 
 } inp_driver_t;
 
-#endif
+DCPLAYA_EXTERN_C_END
+
+#endif /* #ifndef _INP_DRIVER_H_ */

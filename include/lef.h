@@ -3,15 +3,21 @@
 os/elf.h
 (c)2000-2001 Dan Potter
 
-$Id: lef.h,v 1.1 2002-08-26 14:15:00 ben Exp $
+$Id: lef.h,v 1.2 2002-09-06 23:16:09 ben Exp $
 
 */
 
-#ifndef __LEF_H
-#define __LEF_H
+#ifndef _LEF_H_
+#define _LEF_H_
+
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
 
 #include <arch/types.h>
 #include <sys/queue.h>
+
 
   typedef struct {
 
@@ -224,5 +230,7 @@ lef_prog_t *lef_load(uint32 fd);
 /* Free a loaded ELF program */
 void lef_free(lef_prog_t *prog);
 
-#endif	/* __LEF_H */
+DCPLAYA_EXTERN_C_END
+
+#endif	/* #ifndef _LEF_H_ */
 

@@ -3,6 +3,11 @@
 #ifndef _REMANENS_H_
 #define _REMANENS_H_
 
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
+
 #include "matrix.h"
 #include "obj3d.h"
 
@@ -19,5 +24,7 @@ void remanens_push(obj_t *o, matrix_t mtx, unsigned int frame);
 void remanens_remove_old(unsigned int threshold_frame);
 int remanens_nb();
 remanens_t *remanens_get(int id);
+
+DCPLAYA_EXTERN_C_END
 
 #endif /* #define _REMANENS_H_ */

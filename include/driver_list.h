@@ -1,5 +1,13 @@
+/* $Id: driver_list.h,v 1.4 2002-09-06 23:16:09 ben Exp $ */
+
 #ifndef _DRIVER_LIST_H_
 #define _DRIVER_LIST_H_
+
+
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
 
 #include "any_driver.h"
 #include "inp_driver.h"
@@ -37,4 +45,6 @@ any_driver_t * driver_list_search(driver_list_t * dl, const char *name);
 inp_driver_t * inp_driver_list_search_by_extension(const char *ext);
 inp_driver_t * inp_driver_list_search_by_id(int id);
 
-#endif
+DCPLAYA_EXTERN_C_END
+
+#endif /* #ifndef _DRIVER_LIST_H_ */

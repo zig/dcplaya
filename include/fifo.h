@@ -1,5 +1,13 @@
+/* $Id: fifo.h,v 1.2 2002-09-06 23:16:09 ben Exp $ */
+
 #ifndef _FIFO_H_
 #define _FIFO_H_
+
+
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
 
 void fifo_init();
 int fifo_start();
@@ -19,4 +27,6 @@ int fifo_read(int *buf, int n);
 int fifo_write(const int *buf, int n);
 int fifo_write_mono(const short *buf, int n);
 
-#endif
+DCPLAYA_EXTERN_C_END
+
+#endif /* #ifndef _FIFO_H_ */

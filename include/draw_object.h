@@ -1,7 +1,13 @@
-/** $Id: draw_object.h,v 1.2 2002-09-04 18:54:11 ben Exp $ */
+/** $Id: draw_object.h,v 1.3 2002-09-06 23:16:09 ben Exp $ */
 
 #ifndef _DRAW_OBJECT_H_
-#define  _DRAW_OBJECT_H_
+#define _DRAW_OBJECT_H_
+
+
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
 
 #include "viewport.h"
 #include "obj3d.h"
@@ -18,4 +24,6 @@ int DrawObjectLighted(viewport_t * vp, matrix_t local, matrix_t proj,
 int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
 			 obj_t *o);
 
-#endif
+DCPLAYA_EXTERN_C_END
+
+#endif /* #ifndef _DRAW_OBJECT_H_ */

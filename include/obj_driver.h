@@ -4,6 +4,11 @@
 #include "any_driver.h"
 #include "obj3d.h"
 
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
+
 /** 3D-Object driver */
 typedef struct {
   any_driver_t common; /**< All driver common structure */
@@ -16,5 +21,6 @@ extern int obj3d_shutdown(any_driver_t *);
 extern driver_option_t * obj3d_options(any_driver_t * driver, int idx,
                                        driver_option_t * opt);
 
+DCPLAYA_EXTERN_C_END
 
 #endif

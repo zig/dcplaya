@@ -1,6 +1,10 @@
 #ifndef _VUPEEK_H_
 #define _VUPEEK_H_
 
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
 typedef struct
 {
   unsigned int grp;       /* size of group for 44100 hz */
@@ -26,5 +30,7 @@ typedef struct
 
 extern vupeek_t peek1, peek2, peek3;
 void vupeek_adddata(int *spl, int n, int id, int frq);
+
+DCPLAYA_EXTERN_C_END
 
 #endif

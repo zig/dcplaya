@@ -1,10 +1,14 @@
 /*
  *
- * $Id: any_driver.h,v 1.1 2002-08-26 14:15:00 ben Exp $ 
+ * $Id: any_driver.h,v 1.2 2002-09-06 23:16:09 ben Exp $ 
  */
  
 #ifndef _ANY_DRIVER_H_
 #define _ANY_DRIVER_H_
+
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
 
 /* Driver types */
 #define OBJ_DRIVER  'JBO' /**< 3D object         */
@@ -72,4 +76,7 @@ typedef struct _any_driver_s
   extern any_driver_t NXT_DRIVER; 
 #endif
 
+DCPLAYA_EXTERN_C_END
+
 #endif
+

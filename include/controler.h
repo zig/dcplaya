@@ -1,7 +1,14 @@
+/* $Id: controler.h,v 1.2 2002-09-06 23:16:09 ben Exp $ */
 /* 2002/02/13 */
 
 #ifndef _CONTROLER_H_
 #define _CONTROLER_H_
+
+
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
 
 #include <dc/controller.h>
 
@@ -24,6 +31,8 @@ int controler_pressed(const controler_state_t * state, uint32 mask);
 int controler_released(const controler_state_t * state, uint32 mask);
 
 void controler_print(void);
+
+DCPLAYA_EXTERN_C_END
 
 #endif /* #ifndef _CONTROLER_H_ */
 

@@ -2,11 +2,16 @@
  *
  * 2002/02/21
  *
- * $Id: viewport.h,v 1.3 2002-09-02 19:11:01 ben Exp $
+ * $Id: viewport.h,v 1.4 2002-09-06 23:16:09 ben Exp $
  */
 
 #ifndef _VIEWPORT_H_
 #define _VIEWPORT_H_
+
+#include "extern_def.h"
+
+DCPLAYA_EXTERN_C_START
+
 
 /** 3D viewport */
 typedef struct
@@ -31,6 +36,8 @@ void viewport_apply(viewport_t *v,
 		    float *d, int dbytes,
 		    const float *s, int sbytes,
 		    int nb);
+
+DCPLAYA_EXTERN_C_END
 
 #endif /* #ifndef _VIEWPORT_H_ */
 
