@@ -2,14 +2,14 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile,v 1.3 2002-09-12 18:18:46 zig Exp $
+# $Id: Makefile,v 1.1 2002-09-13 16:02:36 zig Exp $
 
-LIBRARY=yes
+LIBNAME=liblua.a
 OPTIMIZE = $(OPTIMIZE_FOR_SPEED)
 
 TOPDIR:=$(dir $(shell pwd))
 
-KOS_LOCAL_INCS := -I../include -I.. -I.
+KOS_LOCAL_INCS := -I../include -I..
 
 KOS_LOCAL_CFLAGS += -DDREAMMP3_HOME="\"$(TOPDIR)\""
 
