@@ -1,0 +1,11 @@
+<zml>
+<macro macro-name="title-color" macro-cmd="font" id="0" color="red" size="24">
+
+<macro macro-name="chapter" macro-cmd="vspace" h="16">
+<macro macro-name="chapter-color" macro-cmd="font" id="0" color="green" size="20">
+
+<macro macro-name="section" macro-cmd="vspace" h="10">
+<macro macro-name="section-color" macro-cmd="font" id="0" color="blue" size="18">
+
+<macro macro-name="body" macro-cmd="vspace" h="8">
+<macro macro-name="body-color" macro-cmd="font" size="16" color="text_color">

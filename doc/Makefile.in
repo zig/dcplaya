@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.17 2003-03-27 05:48:05 ben Exp $
+# $Id: Makefile.in,v 1.18 2003-03-31 16:51:00 ben Exp $
 #
 
 VERSION = @VERSION@
@@ -53,6 +53,8 @@ SHASUBST=../utils/shasubst.sh
 #LUA2DOX=sed --silent -f ../utils/lua2dox.sed $<
 # Awk version
 LUA2DOX=awk -f ../utils/lua2dox.awk $<
+#TXT2ZML=sed --silent -f ../utils/txt2zml.sed
+TXT2ZML=lua -f ../utils/txt2zml.lua
 
 DOXYGENERIC=../utils/doxygeneric.sh
 
@@ -154,12 +156,23 @@ DOXDEV	+= -D GENERATE_LATEX=NO
 all: Makefile devdoc
 xml: all
 txt: all txt_only
+zml: txt zml_only
+
+zml_only:
+	@mkdir -p $(DOC_DIR)/zml
+	@for i in `find $(DOC_DIR)/text -type f -name '*.txt'`; do\
+	echo "[`basename "$$i"`]";\
+	cat zmlheader.zml > $(DOC_DIR)/zml/`basename "$$i" .txt`.zml; \
+	$(TXT2ZML) "$$i" >> $(DOC_DIR)/zml/`basename "$$i" .txt`.zml;\
+	done
 
 txt_only:
 	@mkdir -p $(DOC_DIR)/text
 	@for i in `find $(DOC_DIR)/html -type f -name '*.html'`; do\
 	lynx -width=64 -dump $$i > $(DOC_DIR)/text/`basename $$i .html`.txt;\
 	done
+
+
 
 Makefile : Makefile.in
 	(cd ..; ./config.status) 
@@ -215,7 +228,7 @@ clean_local:
 	@find $(LUADOCDIR) -name '*.lua' -type f -exec rm "{}" \;
 
 clean: clean_local
-	@rm -rf $(foreach i, html xml man text latex,$(DOC_DIR)/$(i)) 
+	@rm -rf $(foreach i, html xml zml man text latex,$(DOC_DIR)/$(i)) 
 
 distclean: clean
 	@rm -rf Makefile *~ $(LUADOCDIR)
