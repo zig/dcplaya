@@ -3,7 +3,7 @@
 #
 # by Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.10 2003-03-20 06:05:35 ben Exp $
+# $Id: Makefile,v 1.11 2003-03-23 23:59:08 ben Exp $
 #
 
 CDRECORD	= cdrecord dev=0,0,0 speed=4
@@ -109,7 +109,8 @@ dcplaya-data: id.txt RELEASE.txt README.txt 1ST_READ.BIN dclpaya_docs
 	@echo "[$@]"
 	@rm -rf dcplaya iso
 	@mkdir -p iso dcplaya/dynshell
-	@cp -a ../autorun.lua ../dcplayarc.lua ../userconf.lua dcplaya
+	@cp -a ../autorun.lua ../dcplayarc.lua dcplaya
+	@cp -a ../userconf-release.lua dcplaya/userconf.lua
 	@cp -a ../dynshell/dynshell.lez dcplaya/dynshell
 	@cp -a ../lua dcplaya
 	@cp -a ../doc/doc dcplaya
