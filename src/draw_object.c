@@ -1,5 +1,5 @@
 /**
- * $Id: draw_object.c,v 1.5 2002-09-27 03:20:20 benjihan Exp $
+ * $Id: draw_object.c,v 1.6 2002-10-10 06:05:37 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -153,6 +153,31 @@ static void TestVisibleFace(const obj_t * o)
   } while(--n);
 }
 
+typedef int cl_t;
+
+static void set_clipping(cl_t xmin, cl_t ymin, cl_t xmax, cl_t ymax)
+{
+  struct {
+	uint32 com;
+	uint32 r0,r1,r2;
+	cl_t xmin;
+	cl_t ymin;
+	cl_t xmax;
+	cl_t ymax;
+  } c;
+  c.com = 0x1<<29; // USER CLIP
+  c.xmin = xmin;
+  c.ymin = ymin;
+  c.xmax = xmax;
+  c.ymax = ymax;
+  c.r0 = c.r1 = c.r2 = 0;
+  ta_commit32_inline(&c);
+}
+
+#include "controler.h"
+
+extern controler_state_t controler68;
+
 int DrawObjectPostProcess(viewport_t * vp, matrix_t local, matrix_t proj,
 			  obj_t *o)
 {
@@ -175,6 +200,33 @@ int DrawObjectPostProcess(viewport_t * vp, matrix_t local, matrix_t proj,
   TransformVtx(transform, o, vp, mtx);
   TestVisibleFace(o);
 
+  // $$$ TEST
+/*   { */
+/* 	static int which; */
+/* 	static union { */
+/* 	  int   i; */
+/* 	  float f; */
+/* 	} v[4] = {{70},{295},{ 75}, {135}}; */
+
+/* 	if (controler_pressed(&controler68, CONT_Y)) { */
+/* 	  which = (which+1)&3; */
+/* 	} */
+	
+/* 	if (controler_pressed(&controler68,CONT_DPAD_LEFT)) { */
+/* 	  v[which].i -= 1; */
+/* 	  printf("[%d %d %d %d] [%.3f %.3f %.3f %.3f]\n", */
+/* 			 v[0].i,v[1].i,v[2].i,v[3].i,v[0].f,v[1].f,v[2].f,v[3].f); */
+/* 	} else if (controler_pressed(&controler68,CONT_DPAD_RIGHT)) { */
+/* 	  v[which].i += 1; */
+/* 	  printf("[%d %d %d %d] [%.3f %.3f %.3f %.3f]\n", */
+/* 			 v[0].i,v[1].i,v[2].i,v[3].i,v[0].f,v[1].f,v[2].f,v[3].f); */
+/* 	} */
+/* 	set_clipping(v[0].i, v[1].i, v[2].i, v[3].i); */
+/*   } */
+
+  //[75 295 75 140]
+
+
   return 0;
 }
 
@@ -195,11 +247,17 @@ int DrawObjectSingleColor(viewport_t * vp, matrix_t local, matrix_t proj,
     tlk_t * l = o->tlk;
     vtx_t * nrm = o->nvx;
     int     n = o->nbf;
+
     
     ta_poly_hdr_txr(&poly, TA_TRANSLUCENT, TA_ARGB4444, 64, 64, o->flags,
 		    TA_NO_FILTER);
 
     poly.flags1 &= ~(3<<4);
+
+	// $$$ Test clipping
+/* 	poly.flags1 &= ~(3<<16); */
+/* 	poly.flags1 |=  (3<<16); */
+
     ta_commit_poly_hdr(&poly);
 
     hw->addcol = 0;
@@ -293,6 +351,11 @@ int DrawObjectLighted(viewport_t * vp, matrix_t local, matrix_t proj,
 		  TA_NO_FILTER);
 
     poly.flags1 &= ~(3<<4);
+
+	// $$$ Test clipping
+/* 	poly.flags1 &= ~(3<<16); */
+/* 	poly.flags1 |=  (3<<16); */
+
     ta_commit_poly_hdr(&poly);
 
     hw->addcol = 0;
@@ -395,6 +458,11 @@ int DrawObjectFrontLighted(viewport_t * vp, matrix_t local, matrix_t proj,
 		  TA_NO_FILTER);
 
     poly.flags1 &= ~(3<<4);
+
+	// $$$ Test clipping
+/* 	poly.flags1 &= ~(3<<16); */
+/* 	poly.flags1 |=  (3<<16); */
+
     ta_commit_poly_hdr(&poly);
 
     hw->addcol = 0;
@@ -477,6 +545,15 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
 		  TA_NO_FILTER);
 
     poly.flags1 &= ~(3<<4);
+
+	// $$$ Test clipping
+/* 	{ */
+/* 	  static int toto = 3; */
+/* 	  poly.flags1 &= ~(3<<16); */
+/* 	  poly.flags1 |=  (3<<16); */
+/* 	  toto ^= 1; */
+/* 	} */
+
     ta_commit_poly_hdr(&poly);
 
     hw->addcol = 0;

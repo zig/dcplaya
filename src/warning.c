@@ -65,7 +65,9 @@ void warning_render(void)
     }
   
     text_set_font_size(s->size);
-    y1 += spaces + draw_poly_center_text(y1, z, fade68, 1.0f, color, color, s->s, fade_argb(s->argb));
+	text_set_color(fade68, 1.0f, color, color);
+    y1 += spaces + draw_poly_center_text(0,y1,640,y1, z,s->s,
+										 fade_argb(s->argb));
     
     color += step;
     ++s;    
@@ -76,7 +78,9 @@ void warning_render(void)
       unsigned int color1 = fade_argb(s->argb);
       
       text_set_font_size(s->size);
-      y1 += spaces + draw_poly_center_text(y1, z, fade68, 1.0f, 1.0f, 1.0f, s->s, color1, author_color, color1);
+	  text_set_color(fade68, 1.0f, 1.0f, 1.0f);
+      y1 += spaces + draw_poly_center_text(0,y1,640,y1,z, s->s, color1,
+										   author_color, color1);
     } else {
       y1 += 1.5f * spaces;
     }

@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.11 2002-09-19 08:18:12 vincentp Exp $
+ * @version   $Id: console.c,v 1.12 2002-10-10 06:05:37 benjihan Exp $
  */
 
 
@@ -248,10 +248,9 @@ void csl_window_transparent_render(csl_console_t * c)
     }
 
     if (*p) {
+	  text_set_color(c->window.ta, c->window.tr, c->window.tg, c->window.tb);
       draw_poly_text(c->window.x, c->window.y + y*16*c->window.scaley, 
-		     205.0f,
-		     c->window.ta, c->window.tr, c->window.tg, c->window.tb,
-		     p);
+		     205.0f, p);
       //      printf(p);
     }
 

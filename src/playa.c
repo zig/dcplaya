@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.8 2002-09-27 03:20:20 benjihan Exp $
+ * $Id: playa.c,v 1.9 2002-10-10 06:05:37 benjihan Exp $
  */
 
 #include <kos.h>
@@ -36,6 +36,7 @@ const char * playa_statusstr(int status);
 kthread_t * playa_thread;
 static semaphore_t *playa_haltsem;
 static int playavolume = 255;
+static int playa_paused;
 static volatile int playastatus = PLAYA_STATUS_INIT;
 static volatile unsigned int play_samples_start;
 static volatile unsigned int play_samples;
@@ -54,10 +55,74 @@ void playa_get_buffer(int **b, int *samples, int * counter, int * frq)
 }
 
 
+static int fade_v, fade_ms;
+static const int fade_max = (1<<(16+9))-1;
+
+static void fade(int *d, int n)
+{
+  int fade_step, ms, v;
+  const int signbit = (sizeof(int)<<3)-1;
+
+  if (!current_frq || n <= 0) {
+	return;
+  }
+
+  ms = fade_ms;
+  if (!ms) {
+	/* Fade is finished just apply it */
+	if (!fade_v) {
+	  /* Fade-out clears buffer */
+	  do{
+		*d++ = 0;
+	  } while (--n);
+	}
+	/* Fade-in does nothing. */
+	return;
+  }
+
+  v = fade_v;
+  fade_step = (1<<(16+14)) / (current_frq * ms >> 5);
+
+  if (fade_step < 0) {
+	do {
+	  int l,r,m,v2;
+	  l = *d;
+	  r = l>>16;
+	  l = (short)l;
+	  v2 = v>>9;
+	  *d++ = ((r * v2) & 0xFFFF0000) | ((unsigned int)(l*v2) >> 16);
+	  v += fade_step;
+	  m = ~(v>>signbit);
+	  v &= m;
+	  fade_step &= m;
+	} while (--n);
+  } else {
+	do {
+	  const int maxv = fade_max;
+	  int l,r,m,v2;
+	  l = *d;
+	  r = l>>16;
+	  l = (short)l;
+	  v2 = v>>9;
+	  *d++ = ((r * v2) & 0xFFFF0000) | ((unsigned int)(l*v2) >> 16);
+	  v += fade_step;
+	  m = (maxv-v) >> signbit;
+	  v |= m;
+	  v &= maxv;
+	  fade_step &= ~m;
+	} while (--n);
+  }
+  fade_v = v;
+  if (!fade_step) {
+	SDDEBUG("Fade %d stop\n", fade_ms);
+	fade_ms = 0;
+  }
+}
+
+/* Anti click fade out */
 static unsigned int fade_out(int *d, int n, int last)
 {
   if (n<=0) return last;
-
   if (!last) {
     do{
       *d++ = 0;
@@ -78,18 +143,22 @@ static unsigned int fade_out(int *d, int n, int last)
 static void * sndstream_callback(int size)
 {
   int last_sample = 0;
-
   int n;
   //  VCOLOR(255,0,0);
 
   size >>= 2;
-  n = fifo_read(out_buffer, size);
+  if (playa_paused) {
+	n = 0;
+  } else {
+	n = fifo_read(out_buffer, size);
+  }
 
   //  VCOLOR(0,0,0);
   if (n < 0) {
     return 0;
   } else {
     int pbs = play_samples_start;
+
     if (pbs) {
       pbs -= n;
       if (pbs < 0) {
@@ -110,6 +179,7 @@ static void * sndstream_callback(int size)
       last_sample = out_buffer[n-1];
     }
     last_sample = fade_out(out_buffer+n, size-n, last_sample);
+	fade(out_buffer,size);
   }
   out_samples = size;
   out_count++;
@@ -119,8 +189,6 @@ static void * sndstream_callback(int size)
 void sndstream_thread(void *cookie)
 {
   SDDEBUG(">> %s()\n", __FUNCTION__);
-
-  streamstatus = PLAYA_STATUS_STARTING;
 
   stream_init(sndstream_callback, 1<<14);
   stream_start(1200, current_frq=44100, playavolume, current_stereo=1);
@@ -157,7 +225,6 @@ void sndstream_thread(void *cookie)
   streamstatus = PLAYA_STATUS_ZOMBIE;
   SDDEBUG("<< %s()\n", __FUNCTION__);
 }
-
 
 static void real_playa_update(void)
 {
@@ -295,6 +362,9 @@ int playa_init()
   SDINDENT;
 
   pcm_buffer_init(0,0);
+  fade_v = 0;
+  fade_ms = 0;
+  playa_paused = 0;
 
   playa_info_init();
   fifo_init();
@@ -422,10 +492,12 @@ int playa_stop(int flush)
   playastatus = PLAYA_STATUS_STOPPING;
   wait_playastatus(PLAYA_STATUS_READY);
 
-  /* If flush : clean PCM FIFO */
-  if (flush) {
+  /* If flush or paused, clean PCM FIFO */
+  if (flush || playa_paused) {
     fifo_start(0);
     play_samples = play_samples_start = 0;
+	fade_ms = 0;
+	fade_v  = 0;
   }
   driver = 0;
 
@@ -467,21 +539,24 @@ int playa_start(const char *fn, int track, int immediat) {
   }
 
   // Can't start again if already playing
+  immediat |= playa_paused;
   playa_stop(immediat);
 
   //$$$
   if (!immediat) {
     int pbs = fifo_used();
-
     if (pbs < 0) {
       SDWARNING("fifo used : %d !!!\n", pbs);
       pbs = 0;
     }
     play_samples_start = pbs;
   } else {
+	/* */
     play_samples = play_samples_start = 0;
+	fade_ms = 128;
+	fade_v = 0;
   }
-
+  
   /* Start playa, get decoder info */
   driver = d;
   e = driver->start(fn, track, &info);
@@ -513,9 +588,10 @@ int playa_start(const char *fn, int track, int immediat) {
   wait_playastatus(PLAYA_STATUS_READY);
 
   /* Tell it to start */
-  playastatus = PLAYA_STATUS_STARTING;
+  //  playastatus = PLAYA_STATUS_STARTING;
+  playastatus = PLAYA_STATUS_PLAYING;
   sem_signal(playa_haltsem);
-  wait_playastatus(PLAYA_STATUS_STARTING);
+  //  wait_playastatus(PLAYA_STATUS_STARTING);
   playa_info_dump(&info);
 
  error:
@@ -528,6 +604,31 @@ int playa_start(const char *fn, int track, int immediat) {
 int playa_volume(int volume) {
   int old = playavolume;
   if (volume >= 0) stream_volume(playavolume = volume);
+  return old;
+}
+
+int playa_ispaused(void)
+{
+  return playa_paused;
+}
+
+int playa_pause(int v)
+{
+  int old = playa_paused;
+  playa_paused = !!v;
+  if (playa_paused != old) {
+	SDDEBUG("%s playa\n", playa_paused ? "Pause" : "Resume");
+  }
+  return old;
+}
+
+int playa_fade(int ms)
+{
+  int old = fade_ms;
+  if (ms) {
+	fade_ms = ms;
+	SDDEBUG("Start fade [v:%d ms:%d]\n", fade_v, fade_ms);
+  }
   return old;
 }
 

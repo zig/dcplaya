@@ -80,7 +80,8 @@ static void render_fps(uint32 elapsed_frames, const float x, const float y)
 	    (unsigned int)elapsed_frames,
 	    playa_statusstr(playa_status()),
 	    (double)fade68);
-    draw_poly_text (x,y,100.0f,1.0f,1.0f,1.0f,1.0f,
+	text_set_color(1.0f,1.0f,1.0f,1.0f);
+    draw_poly_text (x,y,100.0f,
                     tmp,
                     fade_argb(0xFFFFFF00),
                     fade_argb(0xFFFF00FF),
@@ -115,21 +116,24 @@ static void render_help(const float xs, const float ys)
   x = WIN68_DIR_X;
   y = ys;
 
-  y += space + draw_poly_text(x, y, 100.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+  text_set_color(1.0f, 1.0f, 1.0f, 1.0f);
+  y += space + draw_poly_text(x, y, 100.0f, 
 			      "%c%A  %cPlay%c or %cEnqueue",
 			      fade_any_argb(A_BUTTON_COLOR, fade1),
 			      fade_any_argb(hi, fade1),
 			      fade_any_argb(argb, fade1),
 			      fade_any_argb(hi, fade1));
 
-  y += space + draw_poly_text(x, y, 100.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+  text_set_color(1.0f, 1.0f, 1.0f, 1.0f);
+  y += space + draw_poly_text(x, y, 100.0f,
 			      "%c%B  %cStop%c. Reset play-list cursor",
 			      fade_any_argb(B_BUTTON_COLOR, fade1),
 			      fade_any_argb(hi,fade1),
 			      fade_any_argb(argb,fade1),
 			      fade_any_argb(hi,fade1));
 
-  y += space + draw_poly_text(x, y, 100.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+  text_set_color(1.0f, 1.0f, 1.0f, 1.0f);
+  y += space + draw_poly_text(x, y, 100.0f,
 			      "%c%X  %cInsert%c after cursor",
 			      fade_any_argb(X_BUTTON_COLOR,fade1),
 			      fade_any_argb(hi,fade1),
@@ -140,13 +144,15 @@ static void render_help(const float xs, const float ys)
   x = WIN68_PLAYLIST_X;
   y = ys;
 
-  y += space + draw_poly_text(x, y, 100.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+  text_set_color(1.0f, 1.0f, 1.0f, 1.0f);
+  y += space + draw_poly_text(x, y, 100.0f,
 			      "%c%A  %cRun%c play-list at cursor",
 			      fade_any_argb(A_BUTTON_COLOR,fade2),
 			      fade_any_argb(hi,fade2),
 			      fade_any_argb(argb,fade2));
 
-  y += space + draw_poly_text(x, y, 100.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+  text_set_color(1.0f, 1.0f, 1.0f, 1.0f);
+  y += space + draw_poly_text(x, y, 100.0f,
 			      "%c%B  %cRemove%c & %cStop%c if playing location",
 			      fade_any_argb(B_BUTTON_COLOR,fade2),
 			      fade_any_argb(hi,fade2),
@@ -154,14 +160,16 @@ static void render_help(const float xs, const float ys)
 			      fade_any_argb(hi,fade2),
 			      fade_any_argb(argb,fade2));
 
-  y += space + draw_poly_text(x, y, 100.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+  text_set_color(1.0f, 1.0f, 1.0f, 1.0f);
+  y += space + draw_poly_text(x, y, 100.0f,
 			      "%c%X  %cLocate%c file",
 			      fade_any_argb(X_BUTTON_COLOR,fade2),
 			      fade_any_argb(hi,fade2),
 			      fade_any_argb(argb,fade2));
 
   y += space;
-  y += space + draw_poly_center_text(y, 100.0f, 1.0f, 1.0f, 1.0f,1.0f,
+  text_set_color(1.0f, 1.0f, 1.0f, 1.0f);
+  y += space + draw_poly_center_text(0,y,640,y,100.0f,
 				     "%cKeep %c%Y%c pressed for %coptions",
 				     fade_any_argb(argb,fade0),
 				     fade_any_argb(Y_BUTTON_COLOR,fade0),
@@ -169,7 +177,8 @@ static void render_help(const float xs, const float ys)
 				     fade_any_argb(hi,fade0));
 	  
   y += 7;
-  draw_poly_center_text(y, 100.0f, 1.0f, 1.0f, 1.0f,1.0f,
+  text_set_color(1.0f, 1.0f, 1.0f, 1.0f);
+  draw_poly_center_text(0,y,640,y, 100.0f,
 			"%c%+%c & %c%o%c move%c cursor, window focus & options",
 			fade_any_argb(DPAD_COLOR,fade0),
 			fade_any_argb(argb,fade0),
@@ -240,8 +249,9 @@ static void render_diskinfo(const float xs, const float ys)
     const char * timestr = info->info[PLAYA_INFO_TIMESTR].s;
     x = 600.0f;
     draw_poly_get_text_size(timestr, &tw, &th);
-    x -= tw; 
-    draw_poly_text(x, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3], timestr);
+    x -= tw;
+	text_set_color(rgb[0], rgb[1], rgb[2], rgb[3]);
+    draw_poly_text(x, y, 100.0f, timestr);
   }
 	
   /* Playing time */
@@ -250,7 +260,8 @@ static void render_diskinfo(const float xs, const float ys)
     x = 525;
     draw_poly_get_text_size(tmp, &tw, &th);
     x -= tw;
-    draw_poly_text(x, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3], tmp);
+	text_set_color(rgb[0], rgb[1], rgb[2], rgb[3]);
+    draw_poly_text(x, y, 100.0f, tmp);
   }
 	
   /* Track */
@@ -260,7 +271,8 @@ static void render_diskinfo(const float xs, const float ys)
     x = 451;
     draw_poly_get_text_size(trkstr, &tw, &th);
     x -= tw;
-    draw_poly_text(x, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3], trkstr);
+	text_set_color(rgb[0], rgb[1], rgb[2], rgb[3]);
+    draw_poly_text(x, y, 100.0f, trkstr);
   }
 	
 
@@ -269,42 +281,44 @@ static void render_diskinfo(const float xs, const float ys)
 
   /* Format */	
   if (info->valid && info->info[PLAYA_INFO_FORMAT].s) {
-    draw_poly_text(x, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3],
-		   info->info[PLAYA_INFO_FORMAT].s);
+	text_set_clipping(x,y,x+313,y+16);
+	text_set_color(rgb[0], rgb[1], rgb[2], rgb[3]);
+    draw_poly_text(x, y, 100.0f, info->info[PLAYA_INFO_FORMAT].s);
+	text_set_clipping(0,0,640,480);
   }
 
   y = 363;
   /* Album */
   if (info->valid && info->info[PLAYA_INFO_ALBUM].s) {
-    draw_poly_text(x, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3],
-		   info->info[PLAYA_INFO_ALBUM].s);
+	text_set_color(rgb[0], rgb[1], rgb[2], rgb[3]);
+    draw_poly_text(x, y, 100.0f, info->info[PLAYA_INFO_ALBUM].s);
   }
 	
   /* Genre */
   if (info->valid && info->info[PLAYA_INFO_GENRE].s) {
-    draw_poly_text(413, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3],
-		   info->info[PLAYA_INFO_GENRE].s);
+	text_set_color(rgb[0], rgb[1], rgb[2], rgb[3]);
+    draw_poly_text(413, y, 100.0f, info->info[PLAYA_INFO_GENRE].s);
     
   }
   
   /* Year */
   if (info->valid && info->info[PLAYA_INFO_YEAR].s) {
-    draw_poly_text(560, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3],
-		   info->info[PLAYA_INFO_YEAR].s);
+	text_set_color(rgb[0], rgb[1], rgb[2], rgb[3]);
+    draw_poly_text(560, y, 100.0f, info->info[PLAYA_INFO_YEAR].s);
   }
 	
   /* Artist */
   if (info->valid && info->info[PLAYA_INFO_ARTIST].s) {
     y = 386;
-    ystep = draw_poly_text(x, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3], 
-			   info->info[PLAYA_INFO_ARTIST].s);
+	text_set_color(rgb[0], rgb[1], rgb[2], rgb[3]);
+    ystep = draw_poly_text(x, y, 100.0f, info->info[PLAYA_INFO_ARTIST].s);
   }
 
   /* Title */
   if (info->valid && info->info[PLAYA_INFO_TITLE].s) {
     y = 409;
-    ystep = draw_poly_text(x, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3],
-			   info->info[PLAYA_INFO_TITLE].s);
+	text_set_color(rgb[0], rgb[1], rgb[2], rgb[3]);
+    ystep = draw_poly_text(x, y, 100.0f, info->info[PLAYA_INFO_TITLE].s);
   }
 	
   rgb = title_color;
@@ -312,8 +326,8 @@ static void render_diskinfo(const float xs, const float ys)
     y = 434;
     x = xs+4;
     rgb = info_color;
-    ystep = draw_poly_text(x, y, 100.0f, rgb[0], 0,0, 0,
-			   info->info[PLAYA_INFO_COMMENTS].s);
+	text_set_color(rgb[0], 0, 0, 0);
+    ystep = draw_poly_text(x, y, 100.0f, info->info[PLAYA_INFO_COMMENTS].s);
   }
 
   playa_info_release(info);

@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.27 2002-09-30 20:06:50 benjihan Exp $
+ * @version   $Id: dreamcast68.c,v 1.28 2002-10-10 06:05:37 benjihan Exp $
  */
 
 //#define RELEASE
@@ -823,6 +823,7 @@ int dreammp3_main(int argc, char **argv)
   dbglog_set_level(DBG_DEBUG);
 #endif
 
+
   /* Do basic setup */
 
   kos_init_all(IRQ_ENABLE | THD_ENABLE, romdisk);
@@ -830,7 +831,6 @@ int dreammp3_main(int argc, char **argv)
 
   /* Initialize exceptions handling */
   expt_init();
-
 
   /* Initialize shell and LUA */
   SDDEBUG("SHELL init\n");
