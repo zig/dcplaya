@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile.inc.in,v 1.21 2003-01-21 02:38:16 ben Exp $
+# $Id: Makefile.inc.in,v 1.22 2003-02-01 17:44:12 zigziggy Exp $
 #
 
 .SUFFIXES:
@@ -62,7 +62,7 @@ export KOS_AR KOS_RANLIB KOS_OBJCOPY KOS_OBJDUMP KOS_NM KOS_STRIP
 KOS_CFLAGS=@SH_CFLAGS@
 KOS_CXXFLAGS=@SH_CXXFLAGS@
 KOS_AFLAGS=-little
-KOS_LDFLAGS=-ml -m4-single-only -nostartfiles -nostdlib -Wl,-Ttext=0x8c010000
+KOS_LDFLAGS=-ml -m4-single-only -nostartfiles -nostdlib -Wl,-Tdc.x # -Wl,-Ttext=0x8c010000
 export KOS_CFLAGS KOS_CPPFLAGS KOS_AFLAGS KOS_LDFLAGS
 
 ifndef OBJS
