@@ -3,7 +3,7 @@
 --- @date   2002/10/04
 --- @brief  fileselector gui
 ---
---- $Id: fileselector.lua,v 1.11 2002-10-25 21:07:43 benjihan Exp $
+--- $Id: fileselector.lua,v 1.12 2002-10-27 18:39:46 benjihan Exp $
 --
 -- TODO : select item with space 
 --        completion with tab        
@@ -408,7 +408,7 @@ function fileselector(name,path,filename)
 
 	function confirm(fl)
 --		print("FILESELECTOR-CONFIRM")
-		if not fl or not fl.dir or fl.entries < 1 then return end
+		if not fl or not fl.dir or fl.n < 1 then return end
 		local entry = fl.dir[fl.pos+1]
 		if not entry then return end
 		if entry.size and entry.size==-1 then

@@ -3,7 +3,7 @@
 -- author : benjamin gerard <ben@sashipa.com>
 -- date   : 2002/10/04
 --
--- $Id: filelist.lua,v 1.6 2002-10-14 19:10:06 benjihan Exp $
+-- $Id: filelist.lua,v 1.7 2002-10-27 18:39:46 benjihan Exp $
 --
 
 --- filelist object - Extends textlist
@@ -30,7 +30,7 @@ function filelist_dump(fl)
 end
 
 function filelist_default_confirm(fl)
-	if not fl or not fl.dir or not fl.entries then return end
+	if not fl or not fl.dir or not fl.n then return end
 	local entry = fl.dir[fl.pos+1]
 	if entry.size and entry.size==-1 then
 		local action = filelist_path(fl,entry.name)
@@ -96,14 +96,14 @@ function filelist_path(fl,path)
 		return
 	end
 	fl.dir = dir
-	fl.entries = getn(fl.dir)
+	fl.n = getn(fl.dir)
 	fl.pwd = path
---	print(format("filelist: pwd '%s' ,%d",fl.pwd, fl.entries))
+--	print(format("filelist: pwd '%s' ,%d",fl.pwd, fl.n))
 
 	local dim = textlist_measure(fl)
 	textlist_set_box(fl,nil,nil,
 						2*fl.border + dim[1],
-						2*fl.border + (fl.font_h+2*fl.span)*fl.entries, nil)
+						2*fl.border + (fl.font_h+2*fl.span)*fl.n, nil)
 
 	-- Set invalid top and pos will force update for both dl --
 	fl.top = 1
