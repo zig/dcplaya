@@ -4,7 +4,7 @@
  * @author   ben(jamin) gerard <ben@sashipa.com>
  * @brief    drawing text interface
  *
- * $Id: text.h,v 1.3 2002-12-12 00:08:04 ben Exp $
+ * $Id: text.h,v 1.4 2002-12-17 23:31:07 ben Exp $
  */
 
 #ifndef _TEXT_H_
@@ -139,6 +139,10 @@ float text_measure_strf(const char * s, ...);
 
 /** Measure text string width and height. */
 void text_size_str(const char * s, float * w, float * h);
+
+/** Measure text string with given properties. */
+void text_size_str_prop(const char * s, float * w, float * h,
+						fontid_t n, const float size, const float aspect);
 
 /** Measure charactere width and height. */
 void text_size_char(char c, float * w, float * h);

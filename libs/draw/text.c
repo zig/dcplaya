@@ -5,11 +5,12 @@
  * @date    2002/02/11
  * @brief   drawing and formating text primitives
  *
- * $Id: text.c,v 1.5 2002-12-12 00:08:04 ben Exp $
+ * $Id: text.c,v 1.6 2002-12-17 23:31:07 ben Exp $
  */
 
 #include <stdarg.h>
 #include <stdlib.h>
+#include <arch/spinlock.h>
 
 #include "sysdebug.h"
 #include "draw/gc.h"
@@ -39,6 +40,9 @@ static font_t dummyfont = {
   0, 16, 16, 1, 1, 1, { { 16, 16, 0, 1, 0, 1 } }
 };
 
+static spinlock_t mutex;
+#define LOCK() spinlock_lock(&mutex)
+#define UNLOCK() spinlock_unlock(&mutex)
 static fontid_t nfont;
 static font_t * fonts[8];
 
@@ -60,6 +64,8 @@ static font_t * fonts[8];
 //static int escape_char = '%';
 
 static int do_escape(int c, va_list * list);
+static void set_properties(fontid_t n, const float size, const float aspect,
+					  int filter);
 
 static void bounding(uint16 * img, int w, int h, int bpl, int *box)
 {
@@ -216,6 +222,8 @@ int text_init(void)
   SDDEBUG("[%s]\n", __FUNCTION__);
   SDINDENT;
   
+  spinlock_init(&mutex);
+
   if (!current_gc) {
 	SDERROR("No GC.\n");
 	err = -1;
@@ -278,15 +286,20 @@ static float size_of_char(float * h, int c)
 
 float text_measure_char(int c)
 {
-  return (size_of_char(0, c));
+  float r;
+  LOCK();
+  r = (size_of_char(0, c));
+  UNLOCK();
+  return r;
 }
 
 void text_size_char(char c, float * w, float * h)
 {
   float w2;
-
+  LOCK();
   w2 = size_of_char(h, c);
   if (w) *w = w2;
+  UNLOCK();
 }
 
 static float size_of_str(float * h, const char *s)
@@ -348,12 +361,20 @@ static float size_of_strf(float *h, const char *s, va_list list)
 
 float text_measure_str(const char * s)
 {
-  return size_of_str(0, s);
+  float r;
+  LOCK();
+  r = size_of_str(0, s);
+  UNLOCK();
+  return r;
 }
 
 float text_measure_vstrf(const char * s, va_list list)
 {
-  return size_of_strf(0, s, list);
+  float r;
+  LOCK();
+  r = size_of_strf(0, s, list);
+  UNLOCK();
+  return r;
 }
 
 float text_measure_strf(const char * s, ...)
@@ -361,16 +382,34 @@ float text_measure_strf(const char * s, ...)
   float h;
   va_list list;
   va_start(list,s);
+  LOCK();
   h = size_of_strf(0, s, list);
+  UNLOCK();
   va_end(list);
-
   return h;
 }
 
 void text_size_str(const char * s, float * w, float * h)
 {
   float w2;
+
+  LOCK();
   w2 =  size_of_str(h, s);
+  UNLOCK();
+  if (w) *w = w2;
+}
+
+void text_size_str_prop(const char * s, float * w, float * h,
+						fontid_t n, const float size, const float aspect)
+{
+  float w2;
+  gc_text_t save;
+  LOCK();
+  save = current_gc->text;
+  set_properties(n, size, aspect, -1);
+  w2 =  size_of_str(h, s);
+  current_gc->text = save;
+  UNLOCK();
   if (w) *w = w2;
 }
 
@@ -697,34 +736,44 @@ float text_draw_str_inside(float x1, float y1, float x2, float y2, float z1,
 
 float text_set_font_size(const float size)
 {
-  const float old = current_gc->text.size;
+  float old;
+
+  LOCK();
+  old = current_gc->text.size;
   if (size >= 0) {
 	current_gc->text.size = size;
   }
+  UNLOCK();
   return old;
 }
 
 float text_set_font_aspect(const float aspect)
 {
-  const float old = current_gc->text.aspect;
+  float old;
+  LOCK();
+  old = current_gc->text.aspect;
   if (aspect >= 0) {
 	current_gc->text.aspect = aspect;
   }
+  UNLOCK();
   return old;
 }
 
 fontid_t text_set_font(fontid_t n)
 {
-  int old = current_gc->text.fontid;
+  int old;
+  LOCK();
+  old = current_gc->text.fontid;
 
   if (n < nfont) {
 	current_gc->text.fontid = n;
   }
+  UNLOCK();
   return old;
 }
 
-void text_set_properties(fontid_t n, const float size, const float aspect,
-						 int filter)
+static void set_properties(fontid_t n, const float size, const float aspect,
+						   int filter)
 {
   if (n < nfont) {
 	current_gc->text.fontid = n;
@@ -739,11 +788,22 @@ void text_set_properties(fontid_t n, const float size, const float aspect,
 	current_gc->text.filter = !!filter;
   }
 }
+ 
+void text_set_properties(fontid_t n, const float size, const float aspect,
+						 int filter)
+{
+  LOCK();
+  set_properties(n, size, aspect, filter);
+  UNLOCK();
+}
 
 int text_set_escape(int n)
 {
-  int old = current_gc->text.escape;
+  int old;
+  LOCK();
+  old = current_gc->text.escape;
   current_gc->text.escape = n;
+  UNLOCK();
   return old;
 }
 

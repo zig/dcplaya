@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, text interface
  * 
- * $Id: display_text.c,v 1.5 2002-12-12 00:08:04 ben Exp $
+ * $Id: display_text.c,v 1.6 2002-12-17 23:31:07 ben Exp $
  */
 
 #include <string.h>
@@ -124,18 +124,34 @@ DL_FUNCTION_START(draw_text)
 DL_FUNCTION_END()
 
 
-DL_FUNCTION_START(measure_text)
+DL_FUNCTION_DECLARE(measure_text)
 {
   float w,h;
-  ///$$$
-  text_set_properties(0,16,1,-1);
+  const char * s;
+  fontid_t font = 0;
+  float size = 16;
+  float aspect = 1;
 
-  text_size_str(lua_tostring(L, 2), & w, & h);
+  /* $$$ Ignore first parameters, since we don't need display list for
+	 measuring text. */
+  s = lua_tostring(L,2);
+  if (!s) {
+	return 0;
+  }
+  if (lua_type(L,3) == LUA_TNUMBER) {
+	font = lua_tonumber(L,3);
+  } 
+  if (lua_type(L,4) == LUA_TNUMBER) {
+	size = lua_tonumber(L,4);
+  } 
+  if (lua_type(L,5) == LUA_TNUMBER) {
+	aspect = lua_tonumber(L,5);
+  } 
+  text_size_str_prop(s, &w, &h, font, size, aspect);
   lua_pushnumber(L, w);
   lua_pushnumber(L, h);
   return 2;
 }
-DL_FUNCTION_END()
 
 DL_FUNCTION_START(text_prop)
 {

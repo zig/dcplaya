@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.23 2002-12-16 23:39:36 ben Exp $
+ * $Id: display.c,v 1.24 2002-12-17 23:31:07 ben Exp $
  */
 
 #include <stdlib.h>
@@ -490,7 +490,8 @@ static luashell_command_description_t display_commands[] = {
   {
     "dl_measure_text", 0,                /* long and short names */
     "print [["
-      "dl_measure_text(list, string) : measure text"
+      "dl_measure_text(list | nil, string [,fontid [,size [,aspect ] ] ] ) :"
+	" measure text. Default properties 0, 16, 1."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_measure_text    /* function */
   },
