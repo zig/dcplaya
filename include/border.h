@@ -22,6 +22,7 @@ int border_setup(void);
 
 extern borderuv_t borderuv[];
 extern texid_t bordertex[];
+extern const unsigned int border_max;
 
 int border_setup(void);
 

@@ -8,7 +8,7 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.18 2002-11-25 16:56:09 ben Exp $
+ * $Id: fftvlr.c,v 1.19 2002-12-18 06:30:30 ben Exp $
  */
 
 #include <stdlib.h>
@@ -23,9 +23,6 @@
 #include "draw_object.h"
 
 //#define BENSTYLE
-
-/* from border.c */
-//extern int bordertex, bordertex2, bordertex3;
 
 static int db_scaling;
 static int curbordertex;
@@ -327,7 +324,7 @@ static int fftvlr_init(any_driver_t *d)
 
   db_scaling = 0;
 #ifdef BENSTYLE
-  curbordertex = 0;
+  curbordertex = 1;
 #else
   curbordertex = 2;
 #endif
@@ -367,7 +364,7 @@ static int fftvlr_process(viewport_t * vp, matrix_t projection, int elapsed_ms)
     vlr_update();
 
     fftvlr_obj.flags = 0
-	  | DRAW_BILINEAR
+	  | DRAW_NO_FILTER
 	  | DRAW_TRANSLUCENT
 	  | (bordertex[curbordertex] << DRAW_TEXTURE_BIT);
     return 0;
@@ -447,7 +444,7 @@ static int lua_setdb(lua_State * L)
 static int lua_setbordertex(lua_State * L)
 {
   if (lua_type(L,1) == LUA_TNUMBER) {
-	curbordertex = (unsigned int)lua_tonumber(L, 1) % 3u;
+	curbordertex = (unsigned int)lua_tonumber(L, 1) % border_max;
   }
   return 0;
 }
@@ -472,7 +469,7 @@ static luashell_command_description_t fftvlr_commands[] = {
   {
     "fftvlr_setbordertex", 0,            /* long and short names */
     "print [["
-      "fftvlr_setbordertex(num) : set border texture type (ranging 0..2)"
+      "fftvlr_setbordertex(num) : set border texture type."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_setbordertex    /* function */
   },

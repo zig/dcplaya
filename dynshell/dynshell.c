@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.50 2002-12-16 23:39:35 ben Exp $
+ * @version    $Id: dynshell.c,v 1.51 2002-12-18 06:30:30 ben Exp $
  */
 
 #include <stdio.h>
@@ -1708,6 +1708,7 @@ static int lua_load_background(lua_State * L)
 	  tmp.addr = img->data;
 	  stexture = &tmp;
 	  ARGB32toRGB565(tmp.addr, tmp.addr, tmp.width * tmp.height);
+	  stexture->format = texture_strtoformat("0565");
 	}
 	break;
   }
@@ -1745,18 +1746,19 @@ static int lua_load_background(lua_State * L)
   btexture->height = dh;
   btexture->wlog2  = greaterlog2(btexture->width);
   btexture->hlog2  = greaterlog2(btexture->height);
+  btexture->format = stexture->format;
   finalRatio = dh / dw;
 
-  printf("type:[%s]\n", !type ? "scale" : (type==1?"center":"tile"));
-  printf("src : [%dx%d] [%dx%d] , modulo:%d, ratio:%0.2f\n",
-		 stexture->width,stexture->height,
-		 1<<stexture->wlog2, 1<<stexture->hlog2,
-		 smodulo, orgRatio);
+/*   printf("type:[%s]\n", !type ? "scale" : (type==1?"center":"tile")); */
+/*   printf("src : [%dx%d] [%dx%d] , modulo:%d, ratio:%0.2f\n", */
+/* 		 stexture->width,stexture->height, */
+/* 		 1<<stexture->wlog2, 1<<stexture->hlog2, */
+/* 		 smodulo, orgRatio); */
 
-  printf("bkg : [%dx%d] [%dx%d], modulo:%d\n",
-		 btexture->width,btexture->height,
-		 1<<btexture->wlog2,  1<<btexture->hlog2,
-		 (1<<btexture->wlog2) - btexture->width);
+/*   printf("bkg : [%dx%d] [%dx%d], modulo:%d\n", */
+/* 		 btexture->width,btexture->height, */
+/* 		 1<<btexture->wlog2,  1<<btexture->hlog2, */
+/* 		 (1<<btexture->wlog2) - btexture->width); */
 
   /* $$$ Currently all texture are 16bit. Since blitz don't care about exact
      pixel format blitz is done with ARGB565 format. */
