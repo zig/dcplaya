@@ -4,12 +4,12 @@
  * @brief   new ans delete operators
  * @date    2002/09/27
  *
- * $Id: new.cxx,v 1.2 2002-09-27 16:49:41 benjihan Exp $
+ * $Id: new.cxx,v 1.3 2003-03-10 22:55:35 ben Exp $
  */
 
 extern "C" {
 #include <malloc.h>
-#include "config.h"
+#include "dcplaya/config.h"
 #include "sysdebug.h"
 }
 

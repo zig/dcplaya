@@ -4,11 +4,13 @@
  * @date    2002/02/12
  * @brief   Very simple 3D API.
  *
- * @version $Id: obj3d.c,v 1.10 2003-02-03 19:38:23 ben Exp $
+ * @version $Id: obj3d.c,v 1.11 2003-03-10 22:55:35 ben Exp $
  */
 
 #include <stdio.h>
 #include <malloc.h>
+
+#include "dcplaya/config.h"
 #include "math_float.h"
 #include "sysdebug.h"
 #include "obj_driver.h"

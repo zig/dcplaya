@@ -4,7 +4,7 @@
 --- @author  benjamin gerard <ben@sashipa.com>
 --- @brief   basic things used into other library (evt, keyboard_emu, gui)
 ---
---- $Id: basic.lua,v 1.14 2003-01-28 22:58:18 ben Exp $
+--- $Id: basic.lua,v 1.15 2003-03-10 22:55:32 ben Exp $
 ---
 
 -- Unload library
@@ -31,11 +31,11 @@ function dlist_insert(o, ofirst, olast, i, iprev, inext, iowner)
    i[inext] = f
    o[ofirst] = i
    if f then
-	  f[iprev] = i
-	  -- 	end
-	  -- 	if not o[olast] then
+      f[iprev] = i
+      -- 	end
+      -- 	if not o[olast] then
    else
-	  o[olast] = i
+      o[olast] = i
    end
    i[iowner] = o
 end
@@ -53,19 +53,19 @@ end
 function dlist_remove(ofirst, olast, i, iprev, inext, iowner)
    local o = i[iowner]
    if not o then
-	  return
+      return
    end
    local p = i[iprev]
    local n = i[inext]
    if p then
-	  p[inext] = n
+      p[inext] = n
    else
-	  o[ofirst] = n
+      o[ofirst] = n
    end
    if n then
-	  n[iprev] = p
+      n[iprev] = p
    else
-	  o[olast] = p
+      o[olast] = p
    end
 
    i[iowner] = nil
@@ -88,8 +88,8 @@ function table_sqrdist(a, b)
    local sum = 0
    local i, v
    for i, v in a do
-	  local d = v - b[i]
-	  sum = sum + d*d
+      local d = v - b[i]
+      sum = sum + d*d
    end
    return sum
 end
@@ -106,16 +106,16 @@ function table_add(a, b)
    local r = {}
    local i, v
    if type(b) == "table" then
-	  a, b = b, a
+      a, b = b, a
    end
    if type(b) == "table" then
-	  for i, v in a do
-		 r[i] = v + b[i]
-	  end
+      for i, v in a do
+	 r[i] = v + b[i]
+      end
    else
-	  for i, v in a do
-		 r[i] = v + b
-	  end
+      for i, v in a do
+	 r[i] = v + b
+      end
    end
    return r
 end
@@ -132,19 +132,19 @@ function table_sub(a, b)
    local r = {}
    local i, v
    if type(a) == "table" then
-	  if type(b) == "table" then
-		 for i, v in a do
-			r[i] = v - b[i]
-		 end
-	  else
-		 for i, v in a do
-			r[i] = v - b
-		 end
-	  end
+      if type(b) == "table" then
+	 for i, v in a do
+	    r[i] = v - b[i]
+	 end
+      else
+	 for i, v in a do
+	    r[i] = v - b
+	 end
+      end
    else
-	  for i, v in b do
-		 r[i] = a - v
-	  end
+      for i, v in b do
+	 r[i] = a - v
+      end
    end
    return r
 end
@@ -161,18 +161,18 @@ function table_mul(a, b)
    local r = {}
    local i, v
    if type(b) == "table" then
-	  a, b = b, a
+      a, b = b, a
    end
    if type(b) == "table" then
-	  -- two tables case
-	  for i, v in a do
-		 r[i] = v * b[i]
-	  end
+      -- two tables case
+      for i, v in a do
+	 r[i] = v * b[i]
+      end
    else
-	  -- number * table case
-	  for i, v in a do
-		 r[i] = v * b
-	  end
+      -- number * table case
+      for i, v in a do
+	 r[i] = v * b
+      end
    end
    return r
 end
@@ -189,22 +189,22 @@ function table_div(a, b)
    local r = {}
    local i, v
    if type(a) == "table" then
-	  if type(b) == "table" then
-		 -- two tables case
-		 for i, v in a do
-			r[i] = v / b[i]
-		 end
-	  else 
-		 -- tables / number
-		 for i, v in a do
-			r[i] = v / b
-		 end
-	  end
+      if type(b) == "table" then
+	 -- two tables case
+	 for i, v in a do
+	    r[i] = v / b[i]
+	 end
+      else 
+	 -- tables / number
+	 for i, v in a do
+	    r[i] = v / b
+	 end
+      end
    else
-	  -- number / table case
-	  for i, v in b do
-		 r[i] = a / v
-	  end
+      -- number / table case
+      for i, v in b do
+	 r[i] = a / v
+      end
    end
    return r
 end
@@ -220,10 +220,10 @@ function table_minus(a)
    local i, v
    
    if type(a) == "table" then
-	  r = {}
-	  for i, v in a do
-		 r[i] = -v
-	  end
+      r = {}
+      for i, v in a do
+	 r[i] = -v
+      end
    end
    return r
 end
@@ -238,15 +238,15 @@ end
 function table_max(a)
    local imax = nil
    if type(a) == "table" and getn(a) > 0 then
-	  local i, v, max
-	  imax = 1
-	  max = a[1]
-	  for i, v in a do
-		 if (v > max) then
-			imax = i
-			max = v
-		 end
-	  end
+      local i, v, max
+      imax = 1
+      max = a[1]
+      for i, v in a do
+	 if (v > max) then
+	    imax = i
+	    max = v
+	 end
+      end
    end
    return imax
 end
@@ -261,15 +261,15 @@ end
 function table_min(a)
    local imin = nil
    if type(a) == "table" and getn(a) > 0 then
-	  local i, v, min
-	  imin = 1
-	  min = a[1]
-	  for i, v in a do
-		 if (v < min) then
-			imin = i
-			min = v
-		 end
-	  end
+      local i, v, min
+      imin = 1
+      min = a[1]
+      for i, v in a do
+	 if (v < min) then
+	    imin = i
+	    min = v
+	 end
+      end
    end
    return imin
 end
@@ -284,15 +284,15 @@ function dup(v)
    local t = type(v)
    
    if t == "table" then
-	  local tbl = {}
-	  local i,w
-	  for i,w in v do
-		 rawset(tbl,i,dup(w))
-	  end
-	  if tag(tbl) ~= tag(v) then settag(tbl,tag(v)) end
-	  return tbl
+      local tbl = {}
+      local i,w
+      for i,w in v do
+	 rawset(tbl,i,dup(w))
+      end
+      if tag(tbl) ~= tag(v) then settag(tbl,tag(v)) end
+      return tbl
    else
-	  return v
+      return v
    end
 end
 
@@ -311,25 +311,25 @@ function type_dump(v, name, indent)
    local istr = strrep(" ",indent*2)
    local s = istr
    if type(name) == "string" then
-	  s = s..format("[%q]=",name)
+      s = s..format("[%q]=",name)
    end
    
    if t == "number" then
-	  s=s..v
+      s=s..v
    elseif t == "string" then
-	  s=s..format("%q",v)
+      s=s..format("%q",v)
    elseif t == "table" then
-	  s=s.."{\n"
-	  local i,w
-	  for i,w in v do
-		 s=s..type_dump(w,i,indent+1)..",\n"
-	  end
-	  s=s..istr.."}"
+      s=s.."{\n"
+      local i,w
+      for i,w in v do
+	 s=s..type_dump(w,i,indent+1)..",\n"
+      end
+      s=s..istr.."}"
    elseif t == "function" then
-	  s=s..tostring(nil) -- getinfo(v).name
+      s=s..tostring(nil) -- getinfo(v).name
    else
-	  local a = tostring(v)
-	  if type(a) == "string"  then s=s..a else s=s.."???" end
+      local a = tostring(v)
+      if type(a) == "string"  then s=s..a else s=s.."???" end
    end
    return s
 end
@@ -365,7 +365,7 @@ end
 function set_vertex(vect, from)
    local i,v
    for i,v in from do
-	  if v then vect[i]=v end
+      if v then vect[i]=v end
    end
 end
 

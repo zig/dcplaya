@@ -4,9 +4,10 @@
  * @author   ben(jamin) gerard <ben@sashipa.com>
  * @brief    graphic context interface.
  *
- * $Id: gc.c,v 1.9 2003-03-09 11:09:25 ben Exp $
+ * $Id: gc.c,v 1.10 2003-03-10 22:55:32 ben Exp $
  */
 
+#include "dcplaya/config.h"
 #include "draw/gc.h"
 #include "draw/draw.h"
 #include "sysdebug.h"

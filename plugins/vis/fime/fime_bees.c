@@ -3,11 +3,12 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/17
  *  @brief   FIME : bees 
- *  $Id: fime_bees.c,v 1.9 2003-02-03 19:37:14 ben Exp $
+ *  $Id: fime_bees.c,v 1.10 2003-03-10 22:55:34 ben Exp $
  */ 
 
 #include <stdlib.h>
-#include "config.h"
+
+#include "dcplaya/config.h"
 #include "math_float.h"
 
 #include "fime_bees.h"

@@ -5,13 +5,16 @@
  * @date       2002/09/04
  * @brief      Debug fonctions.
  *
- * @version    $Id: sysdebug.h,v 1.4 2002-09-19 15:53:06 vincentp Exp $
+ * @version    $Id: sysdebug.h,v 1.5 2003-03-10 22:55:32 ben Exp $
  */
 
 #ifndef _SYSDEBUG_H_
 #define _SYSDEBUG_H_
 
-#include "config.h"
+#ifndef _DCPLAYA_CONFIG_H_
+# warning "config.h not included : including it now"
+# include "dcplaya/config.h"
+#endif
 
 # if defined(DEBUG) && !defined(DEBUG_LOG) 
 #  define DEBUG_LOG

@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  sgml text and gui element formater.
 ---
---- $Id: taggedtext.lua,v 1.24 2003-03-09 11:16:36 ben Exp $
+--- $Id: taggedtext.lua,v 1.25 2003-03-10 22:55:33 ben Exp $
 ---
 
 if not dolib("dirfunc") then return end
@@ -845,6 +845,11 @@ Hello <img name="vmu" scale="0.5"> World ! <br>
 
    --print(tt.total_w, tt.total_h)
 
+end
+
+-- Add filetype for text and zml (Ziggy Markup Language)
+if type(filetype_add) == "function" then
+   filetype_add("text", nil, ".zml\0")
 end
 
 return 1

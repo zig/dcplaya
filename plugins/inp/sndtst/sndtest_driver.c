@@ -2,6 +2,7 @@
 #include <kos.h>
 #include <math.h>
 
+#include "dcplaya/config.h"
 #include "inp_driver.h"
 #include "pcm_buffer.h"
 #include "fifo.h"

@@ -4,10 +4,10 @@
  * @date    2002/02/21
  * @brief   Remanence FX.
  *
- * @version $Id: remanens.c,v 1.2 2002-09-13 14:48:25 ben Exp $
+ * @version $Id: remanens.c,v 1.3 2003-03-10 22:55:35 ben Exp $
  */
 
-#include "config.h"
+#include "dcplaya/config.h"
 #include "remanens.h"
 
 #define REMANENS_MAX 128

@@ -1,6 +1,8 @@
 /* FIFO */
 
-#include <kos.h>
+#include <arch/spinlock.h>
+
+#include "dcplaya/config.h"
 #include "sysdebug.h"
 
 static spinlock_t fifo_mutex;

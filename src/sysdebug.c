@@ -5,14 +5,15 @@
  * @date       2002/09/04
  * @brief      Debug fonctions.
  *
- * @version    $Id: sysdebug.c,v 1.8 2002-09-27 16:49:41 benjihan Exp $
+ * @version    $Id: sysdebug.c,v 1.9 2003-03-10 22:55:35 ben Exp $
  */
 
 #include <stdarg.h>
 #include <stdio.h>
-#include "sysdebug.h"
-
 #include <arch/spinlock.h>
+
+#include "dcplaya/config.h"
+#include "sysdebug.h"
 
 /* From modified kos 1.1.5 */
 extern void dbglogv(int level, const char *fmt, va_list args);

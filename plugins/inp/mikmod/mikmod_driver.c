@@ -4,13 +4,14 @@
  * @date      2002/09/20
  * @brief     mikmod input plugin for dcplaya
  *
- * $Id: mikmod_driver.c,v 1.5 2003-01-25 17:26:03 ben Exp $
+ * $Id: mikmod_driver.c,v 1.6 2003-03-10 22:55:33 ben Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "dcplaya/config.h"
 #include "inp_driver.h"
 #include "fifo.h"
 #include "playa.h"

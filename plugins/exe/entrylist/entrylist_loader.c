@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist_loader.c,v 1.8 2003-03-09 08:59:46 ben Exp $
+ * $Id: entrylist_loader.c,v 1.9 2003-03-10 22:55:33 ben Exp $
  */
 
 #include <stdio.h>
@@ -13,12 +13,12 @@
 #include <string.h>
 #include <kos/thread.h>
 #include <kos/sem.h>
+
+#include "dcplaya/config.h"
 #include "entrylist.h"
 #include "entrylist_loader.h"
-
 #include "file_utils.h"
 #include "filetype.h"
-
 #include "sysdebug.h"
 
 #ifdef RELEASE

@@ -4,7 +4,7 @@
  * @date     2003/01/19
  * @brief    External heap management.
  * 
- * $Id: exheap.c,v 1.7 2003-03-06 16:59:43 zigziggy Exp $
+ * $Id: exheap.c,v 1.8 2003-03-10 22:55:35 ben Exp $
  */
 
 
@@ -17,6 +17,7 @@
 */
 
 
+#include "dcplaya/config.h"
 #include "exheap.h"
 #include "sysdebug.h"
 #include <malloc.h>

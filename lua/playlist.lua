@@ -250,7 +250,7 @@ end
 --- @}
 --
 
-if filetype_add then
+if type(filetype_add) == "function" then
    filetype_add("playlist")
    filetype_add("playlist", nil, ".m3u\0")
    filetype_add("playlist", nil, ".pls\0")

@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "dcplaya/config.h"
 #include "math_float.h"
-
 #include "fftband.h"
-
 #include "sysdebug.h"
 
 #define FFT_BAND_FIX 8

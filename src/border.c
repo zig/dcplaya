@@ -8,6 +8,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include "dcplaya/config.h"
 #include "border.h"
 #include "syserror.h"
 #include "draw/color.h"

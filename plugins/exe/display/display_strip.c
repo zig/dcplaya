@@ -5,8 +5,10 @@
  * @date     2002/10/17
  * @brief    graphics lua extension plugin, strip interface
  * 
- * $Id: display_strip.c,v 1.4 2002-11-29 08:29:42 ben Exp $
+ * $Id: display_strip.c,v 1.5 2003-03-10 22:55:33 ben Exp $
  */
+
+#include "dcplaya/config.h"
 
 #include "draw/gc.h"
 #include "draw/primitives.h"

@@ -5,13 +5,14 @@
  * @date    2002/11/22
  * @brief   drawing system
  *
- * $Id: draw.c,v 1.6 2003-01-28 22:58:18 ben Exp $
+ * $Id: draw.c,v 1.7 2003-03-10 22:55:32 ben Exp $
  */
 
 #include "draw/draw.h"
 #include "draw/gc.h"
 #include "draw/ta.h"
 
+#include "dcplaya/config.h"
 #include "sysdebug.h"
 
 viewport_t draw_viewport; 

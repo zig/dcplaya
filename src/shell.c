@@ -3,14 +3,13 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     shell support for dcplaya
- * @version   $Id: shell.c,v 1.15 2003-03-03 16:32:17 ben Exp $
+ * @version   $Id: shell.c,v 1.16 2003-03-10 22:55:35 ben Exp $
  */
 
-#include "config.h"
 #include <kos.h>
-
 #include <ctype.h>
 
+#include "dcplaya/config.h"
 #include "shell.h"
 #include "console.h"
 

@@ -4,9 +4,10 @@
  * @date    2002/09/20
  * @brief   Memory file reader for dcplaya mikmod input plugin.
  *
- * $Id: reader.c,v 1.1 2002-09-21 09:53:40 benjihan Exp $
+ * $Id: reader.c,v 1.2 2003-03-10 22:55:33 ben Exp $
  */
 
+#include "dcplaya/config.h"
 #include "reader.h"
 #include "sysdebug.h"
 

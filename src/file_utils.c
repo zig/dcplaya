@@ -4,10 +4,13 @@
  * @date    2002/09/30
  * @brief   File manipulation utilities.
  *
- * $Id: file_utils.c,v 1.7 2003-01-24 04:28:13 ben Exp $
+ * $Id: file_utils.c,v 1.8 2003-03-10 22:55:35 ben Exp $
  */
 
-/* #include "sysdebug.h" */
+/*
+#include "dcplaya/config.h"
+#include "sysdebug.h"
+*/
 
 #include "file_utils.h"
 #include <kos/fs.h>

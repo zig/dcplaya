@@ -3,14 +3,15 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/17
  *  @brief   Fly Into a Musical Environment
- *  $Id: fime.c,v 1.8 2003-02-04 15:07:34 ben Exp $
+ *  $Id: fime.c,v 1.9 2003-03-10 22:55:34 ben Exp $
  */ 
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "math_float.h"
 
+#include "dcplaya/config.h"
+#include "math_float.h"
 #include "matrix.h"
 #include "driver_list.h"
 #include "vis_driver.h"

@@ -4,13 +4,14 @@
  * @date      2002/09/21
  * @brief     dcplaya archive.
  *
- * $Id: dcar.c,v 1.7 2003-03-07 21:06:03 ben Exp $
+ * $Id: dcar.c,v 1.8 2003-03-10 22:55:34 ben Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "dcplaya/config.h"
 #include "sysdebug.h"
 #include "dcar.h"
 #include "filetype.h"

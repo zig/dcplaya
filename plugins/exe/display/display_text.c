@@ -5,11 +5,12 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, text interface
  * 
- * $Id: display_text.c,v 1.6 2002-12-17 23:31:07 ben Exp $
+ * $Id: display_text.c,v 1.7 2003-03-10 22:55:33 ben Exp $
  */
 
 #include <string.h>
 
+#include "dcplaya/config.h"
 #include "draw/text.h"
 #include "display_driver.h"
 

@@ -4,7 +4,7 @@
  * @date    2002/09/14
  * @brief   Takes TGA screen shot.
  * 
- * $Id: screen_shot.c,v 1.4 2003-02-12 12:31:57 ben Exp $
+ * $Id: screen_shot.c,v 1.5 2003-03-10 22:55:35 ben Exp $
  */
 
 //#include <kos/fs.h>
@@ -12,8 +12,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "dcplaya/config.h"
 #include "zlib.h"
-#include "config.h"
 #include "sysdebug.h"
 
 const char screen_shot_id[] = "dcplaya " DCPLAYA_VERSION_STR " - " DCPLAYA_URL;

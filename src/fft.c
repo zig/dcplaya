@@ -3,11 +3,13 @@
  * @file    fft.c
  * @author  benjamin gerard <ben@sashipa.com>
  * 
- * @version $Id: fft.c,v 1.13 2003-01-17 13:23:28 ben Exp $
+ * @version $Id: fft.c,v 1.14 2003-03-10 22:55:35 ben Exp $
  */
 
 #include <stdlib.h>
 #include <arch/spinlock.h>
+
+#include "dcplaya/config.h"
 #include "sysdebug.h"
 #include "fft.h"
 #include "int_fft.h"

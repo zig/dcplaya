@@ -6,7 +6,7 @@
  * @brief   4x4 matrix support.
  */
 
-#include "config.h"
+#include "dcplaya/config.h"
 #include "math_float.h"
 #include "matrix.h"
 

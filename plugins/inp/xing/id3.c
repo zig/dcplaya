@@ -1,5 +1,6 @@
 #include <kos.h>
 
+#include "dcplaya/config.h"
 #include "id3.h"
 #include "sysdebug.h"
 

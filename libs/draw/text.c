@@ -5,13 +5,14 @@
  * @date    2002/02/11
  * @brief   drawing and formating text primitives
  *
- * $Id: text.c,v 1.8 2003-03-07 20:56:39 zigziggy Exp $
+ * $Id: text.c,v 1.9 2003-03-10 22:55:32 ben Exp $
  */
 
 #include <stdarg.h>
 #include <stdlib.h>
 #include <arch/spinlock.h>
 
+#include "dcplaya/config.h"
 #include "sysdebug.h"
 #include "draw/gc.h"
 #include "draw/ta.h"

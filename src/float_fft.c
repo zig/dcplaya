@@ -11,9 +11,10 @@
  */
 
 #include <stdlib.h>
+#include "dcplaya/config.h"
+#include "sysdebug.h"
 #include "math_float.h"
 #include "float_fft.h"
-#include "sysdebug.h"
 
 static int * reverseBits;   /* Bit reversing table                         */
 static float * sinCosTable; /* Precalculated sin/cos table                 */

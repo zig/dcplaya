@@ -3,12 +3,11 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.51 2003-03-06 16:59:43 zigziggy Exp $
+ * @version   $Id: dreamcast68.c,v 1.52 2003-03-10 22:55:34 ben Exp $
  */
 
 //#define RELEASE
 #define SKIP_INTRO
-
 
 #define CLIP(a, min, max) ((a)<(min)? (min) : ((a)>(max)? (max) : (a)))
 
@@ -16,10 +15,13 @@
 #define SCREEN_H 480
 
 /* generated config include */
-#include "config.h"
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+
+#include "dcplaya/config.h"
+
 #include "math_float.h"
 #include "filetype.h"
 #include "sndstream.h"
@@ -47,6 +49,8 @@
 #include "playa.h"
 #include "plugin.h"
 #include "lef.h"
+#include "vmu_file.h"
+#include "file_utils.h"
 
 #include "fft.h"
 //#include "viewport.h"
@@ -501,13 +505,6 @@ static int no_mt_init(void)
     goto error;
   }
 
-  /* ramdisk init */
-  if (fs_ramdisk_init(0) < 0) {
-    SDERROR("ramdisk init failure");
-    err = __LINE__;
-    goto error;
-  }
-
   /* Driver list */
   if (driver_init() < 0) {
     err = __LINE__;
@@ -900,6 +897,117 @@ void main_thread(void *cookie)
 
 extern uint8 romdisk[];
 
+/* Load first vmu file. */
+/* 012345678        */
+/* /vmu/a1/dcplaya* */
+
+static int vmu_load(void)
+{
+  int ret = -1, best;
+  int err, vmu, n_vmu;
+  fu_dirent_t * dir = 0, * dir2 = 0;
+  char tmp[64];
+  const char * path = "/ram/dcplaya";
+
+  SDDEBUG("[vmu_load] : creating [%s] dir.\n", path);
+  SDINDENT;
+
+  /* Create default ram disk directory */
+  if (!fu_is_dir(path)) {
+    SDDEBUG("[vmu_load] : creating [%s] dir.\n", path);
+    err = fu_create_dir(path);
+    if (err) {
+      SDERROR("[vmu_load] : [%s] : [%s].\n", path, fu_strerr(err));
+      goto finish;
+    }
+  } else {
+    SDDEBUG("[vmu_load] : [%s] already exists !! That ze hell ? .\n",
+	    path);
+  }
+
+  /* Read vmu dir : get plugged vmu */
+  strcpy(tmp,"/vmu");
+  SDDEBUG("[vmu_load] : opening [%s].\n", tmp);
+  err = fu_read_dir(tmp, &dir, 0);
+  if (err < 0) {
+    SDERROR("[vmu_load] : [%s] : [%s].\n", tmp, fu_strerr(err));
+    goto finish;
+  }
+
+  /* For each vmu unit */
+  n_vmu = err;
+  tmp[4] = '/';
+  for (vmu=0; ret && vmu < n_vmu; ++vmu) {
+    int file, nfile;
+    if (dir[vmu].size >= 0) continue; /* skip file safety net */
+    tmp[5] = dir[vmu].name[0];
+    tmp[6] = dir[vmu].name[1];
+    tmp[7] = 0;
+
+    SDDEBUG("[vmu_load] : opening %d/%d [%s].\n", vmu+1, n_vmu, tmp);
+
+    err = fu_read_dir(tmp, &dir2, 0);
+    if (err < 0) {
+      SDERROR("[vmu_load] : [%s] : [%s].\n", tmp, fu_strerr(err));
+      continue;
+    }
+
+    /* For each file in this unit */
+    nfile = err;
+    best = -1;
+    do {
+      for (file = 0; file < nfile; ++file) {
+	if (dir2[file].size > 0) {
+	  SDDEBUG("[vmu_load] : scanning %d/%d [%s].\n",
+		  file+1, nfile, dir2[file].name);
+	  if (!strnicmp(dir2[file].name,"dcplaya",7)) {
+	    SDDEBUG("[vmu_load] : candidat [%s].\n", dir2[file].name);
+	    if (best < 0 || strcmp(dir2[file].name, dir2[best].name) < 0) {
+	      SDDEBUG("[vmu_load] : new one [%s].\n", dir2[file].name);
+	      best = file;
+	    }
+	  }
+	}
+      }
+      if (best >= 0) {
+	vmu_trans_hdl_t hdl;
+	vmu_trans_status_e status;
+
+	tmp[7] = '/';
+	strcpy(tmp+8,dir2[best].name);
+
+	SDDEBUG("[vmu_load] : try our candidat [%s].\n", tmp);
+	hdl = vmu_file_load(tmp,path);
+	status = vmu_file_status(hdl);
+	if (status == VMU_TRANSFERT_SUCCESS) {
+	  ret = 0;
+	  /* Found : go to outter loop */
+	  break;
+	} else {
+	  SDERROR("[vmu_load] : load best [%s] failure : [%s]\n",
+		  tmp,vmu_file_statusstr(status));
+	  dir2[best].size = -1; /* desacive this errneous file ! */
+	  best = -1;
+	}
+      } else {
+	/* No file : go to outter loop */
+	break;
+      }
+    } while (1);
+    free(dir2);
+    dir2 = 0;
+  }
+
+ finish:
+  if (dir) {
+    free(dir);
+  }
+
+  SDUNINDENT;
+  SDDEBUG("[vmu_load] : [%d]\n", ret);
+
+  return ret;
+}
 
 /* Program entry :
  *
@@ -911,31 +1019,46 @@ extern uint8 romdisk[];
 int dreammp3_main(int argc, char **argv)
 {
   int err = 0;
+  int debug_level = DBG_KDEBUG;
 
   curlogo = 0; //& mine_3;
   fade68 = 0.0f;
   fade_step = 0.01f;
   memset(&animdata,0,sizeof(animdata));
 
-#ifndef DEBUG_LOG
-  dbglog_set_level(DBG_NOTICE); /* VP : changed 0 to something a bit more talkative */
-#elif DEBUG_LEVEL > 1
-  dbglog_set_level(DBG_KDEBUG);
+#ifdef DEBUG_LOG
+# if DEBUG_LEVEL > 1
+  debug_level = DBG_KDEBUG;
+# else
+  debug_level = DBG_DEBUG;
+# endif
 #else
-  dbglog_set_level(DBG_DEBUG);
+  debug_level = DBG_NOTICE;
 #endif
 
+  dbglog_set_level(debug_level);
   /* Do basic setup */
-
   kos_init_all(IRQ_ENABLE | THD_ENABLE, romdisk);
-  //  vid_border_color(0,0,0);
 
   /* Initialize exceptions handling */
   expt_init();
 
+  dbglog_set_level(debug_level);
+
+  /* $$$ Becoz of a bug sometine cdron is not detected, force detextio here */
+  cdrom_reinit();
+
+  /* Initialize the vmu file module as sson as possible... */
+  vmu_file_init();
+
+  /* ramdisk init : needed by vmu_load() */
+  fs_ramdisk_init(0);
+
+  /* load default (1st) dcplaya vmu file */
+  vmu_load();
+
   /* Initialize shell and LUA */
   SDDEBUG("SHELL init\n");
-  cdrom_reinit();
 
   /* From this point the number of jiffies must be some what different...
      I hope so ! */

@@ -5,11 +5,12 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, texture interface
  * 
- * $Id: display_texture.c,v 1.7 2003-03-09 11:12:19 ben Exp $
+ * $Id: display_texture.c,v 1.8 2003-03-10 22:55:33 ben Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "dcplaya/config.h"
 #include "display_driver.h"
 #include "driver_list.h"
 #include "draw/texture.h"

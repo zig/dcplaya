@@ -5,12 +5,13 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.28 2003-03-09 11:12:19 ben Exp $
+ * $Id: display.c,v 1.29 2003-03-10 22:55:33 ben Exp $
  */
 
 #include <stdlib.h>
 #include <string.h>
 
+#include "dcplaya/config.h"
 #include "luashell.h"
 #include "lef.h"
 #include "driver_list.h"

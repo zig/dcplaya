@@ -5,10 +5,11 @@
  * @author    benjamin gerard <ben@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.c,v 1.18 2002-12-30 06:28:18 ben Exp $
+ * @version   $Id: display_list.c,v 1.19 2003-03-10 22:55:34 ben Exp $
  */
 
 #include <malloc.h>
+#include "sysdebug.h"
 #include "display_list.h"
 #include "draw/draw.h"
 #include "draw/gc.h"

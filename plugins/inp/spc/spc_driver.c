@@ -1,8 +1,8 @@
 /*
- * $Id: spc_driver.c,v 1.5 2002-09-24 18:29:42 vincentp Exp $
+ * $Id: spc_driver.c,v 1.6 2003-03-10 22:55:34 ben Exp $
  */
 
-#include "config.h"
+#include "dcplaya/config.h"
 #include "extern_def.h"
 
 DCPLAYA_EXTERN_C_START

@@ -4,7 +4,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.14 2003-03-06 16:59:43 zigziggy Exp $
+ * $Id: texture.c,v 1.15 2003-03-10 22:55:32 ben Exp $
  */
 
 #include <stdlib.h>
@@ -13,6 +13,7 @@
 #include <arch/spinlock.h>
 #include <dc/ta.h>
 
+#include "dcplaya/config.h"
 #include "draw/texture.h"
 #include "translator/translator.h"
 #include "translator/SHAtranslator/SHAtranslatorBlitter.h"

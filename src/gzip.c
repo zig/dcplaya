@@ -5,13 +5,14 @@
  * @date     2002/09/20
  * @brief    Simple gzipped file access.
  *
- * $Id: gzip.c,v 1.3 2002-12-09 16:26:49 ben Exp $
+ * $Id: gzip.c,v 1.4 2003-03-10 22:55:35 ben Exp $
  */
 
 #include <kos/fs.h>
 #include <string.h>
 #include <stdlib.h>
 
+#include "dcplaya/config.h"
 #include "zlib.h"
 #include "sysdebug.h"
 #include "gzip.h"

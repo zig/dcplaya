@@ -3,11 +3,12 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.19 2003-01-25 17:26:03 ben Exp $
+ * $Id: playa.c,v 1.20 2003-03-10 22:55:35 ben Exp $
  */
 
 #include <kos.h>
 
+#include "dcplaya/config.h"
 #include "sysdebug.h"
 #include "playa.h"
 #include "inp_driver.h"

@@ -5,9 +5,10 @@
  * @date     2002/10/17
  * @brief    graphics lua extension plugin, triangle interface
  * 
- * $Id: display_triangle.c,v 1.5 2002-11-27 09:58:09 ben Exp $
+ * $Id: display_triangle.c,v 1.6 2003-03-10 22:55:33 ben Exp $
  */
 
+#include "dcplaya/config.h"
 #include "draw/primitives.h"
 #include "display_driver.h"
 #include "display_matrix.h"

@@ -5,7 +5,7 @@
  * @author  Dan Potter
  * @brief   ELF library loader - Based on elf.c from KallistiOS 1.1.5 
  *
- * @version $Id: lef.c,v 1.14 2003-01-03 19:05:39 ben Exp $
+ * @version $Id: lef.c,v 1.15 2003-03-10 22:55:35 ben Exp $
  */
 
 #include <malloc.h>
@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <kos/fs.h>
 
+#include "dcplaya/config.h"
 #include "lef.h"
 #include "sysdebug.h"
 #include "gzip.h"

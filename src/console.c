@@ -4,13 +4,14 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.19 2003-01-21 05:44:06 ben Exp $
+ * @version   $Id: console.c,v 1.20 2003-03-10 22:55:34 ben Exp $
  */
 
 
 #include <kos.h>
 #include <malloc.h>
 
+#include "dcplaya/config.h"
 #include "console.h"
 
 #include "sysdebug.h"

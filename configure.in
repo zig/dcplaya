@@ -280,7 +280,7 @@ AC_OUTPUT(
  [Makefile.inc]
  [arm/Makefile]
  [doc/Makefile]
- [include/config.h:config.h.in])
+ [include/dcplaya/config.h:config.h.in])
 
 echo -n "making required files... " >&6
 reply="success"
@@ -304,5 +304,5 @@ AC_MSG_RESULT([*   doxygen             : $DOXYGEN])
 AC_MSG_RESULT([**************************************])
 
 dnl#
-dnl# End of "$Id: configure.in,v 1.12 2003-03-09 01:00:15 ben Exp $".
+dnl# End of "$Id: configure.in,v 1.13 2003-03-10 22:55:31 ben Exp $".
 dnl#

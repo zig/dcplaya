@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.40 2003-03-09 11:16:36 ben Exp $
+--- $Id: song_browser.lua,v 1.41 2003-03-10 22:55:33 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song browser application
@@ -167,6 +167,7 @@ function song_browser_create(owner, name)
    function song_browser_update_recloader(sb, frametime)
       if sb.recloader then
 	 local dir,i = sb.recloader.dir, sb.recloader.cur
+	 local filter = sb.recloader.el_filter or sb.el_filter or "DM"
 
 	 if not dir.loading and i >= dir.n then
 	    i = sb.recloader.cur2
@@ -180,13 +181,14 @@ function song_browser_create(owner, name)
 		  if subel then
 		     entrylist_load(subel,
 				    canonical(dir.path.."/"..entry.file),
-				    sb.el_filter)
+				    filter)
 		     sb.recloader.cur2 = i
 		     sb.recloader = {
 			parent = sb.recloader,
 			dir = subel,
 			cur = 0,
-			cur2 = 0
+			cur2 = 0,
+			el_filter = filter,
 		     }
 		     return 1
 		  end
@@ -856,8 +858,9 @@ function song_browser_create(owner, name)
 	    dir = dir,
 	    cur = 0,
 	    cur2 = 0,
+	    el_filter = "DM"  -- Only insert music in playlist
 	 }
-	 entrylist_load(dir,path,sb.el_filter,"DM")
+	 entrylist_load(dir,path,sb.el_filter)
       end
    end
 
@@ -938,27 +941,14 @@ function song_browser_create(owner, name)
       if pos then dir[pos].__sortpos = 1 end
       
       if type(cmp) == "function" then
--- 	 print("sorting with function")
 	 xsort(dir,cmp,sb)
       elseif type(cmp) == "table" then
--- 	 printf("sorting with table of functions (%d)", getn(cmp))
--- 	 local i,v
--- 	 for i,v in cmp do
--- 	    printf("%q=%q",i,tostring(v))
--- 	    if type(v) == "function" then v() end
--- 	 end
 	 xsort(dir, sbpl_cmp_any, cmp)
       else
 	 print("[song_browser] : invalid sort parameter")
 	 return
       end
    
---       local i
---       -- $$$
---       for i=1,n do
--- 	 dump(dir[i],tostring(i))
---       end
-
       for i=1,n do
 	 if dir[i].__sortpos then
 	    dir[i].__sortpos = nil
@@ -1259,7 +1249,7 @@ function song_browser_create(owner, name)
 --   sb.cdrom_check_timeout = 0
 
    -- filer
-   sb.el_filter = "DXIMP"
+   sb.el_filter = "DXIMPT"
 
    -- Menu
    sb.mainmenu_def = songbrowser_menucreator

@@ -3,13 +3,13 @@
  *  @author  benjamin gerard 
  *  @date    2003/02/04
  *  @brief   FIME star field 
- *  $Id: fime_star.c,v 1.1 2003-02-04 15:07:34 ben Exp $
+ *  $Id: fime_star.c,v 1.2 2003-03-10 22:55:34 ben Exp $
  */ 
 
 #include <stdlib.h>
 
+#include "dcplaya/config.h"
 #include "fime_star.h"
-
 #include "fime_analysis.h"
 #include "obj3d.h"
 #include "driver_list.h"

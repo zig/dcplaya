@@ -5,7 +5,7 @@
  * @date      2002/09/21
  * @brief     dcplaya archive.
  *
- * $Id: dcar.h,v 1.3 2002-12-09 16:26:49 ben Exp $
+ * $Id: dcar.h,v 1.4 2003-03-10 22:55:32 ben Exp $
  *
  * @warning   Architecture dependent code.
  */
@@ -67,7 +67,7 @@ typedef struct {
     int verbose;            /**< Display archive entry while processing.    */
     dcar_filter_f filter;   /**< Filter function to use. 0 for default.     */
     int compress;           /**< Compress level [0..9].                     */
-	int skip;               /**< Number of byte to skip at start of file.   */
+    int skip;               /**< Number of byte to skip at start of file.   */
   } in;
 
   /** dcplaya archive returned info. */

@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/14
  *
- *  $Id: hyperpipe.c,v 1.13 2003-03-09 01:00:15 ben Exp $
+ *  $Id: hyperpipe.c,v 1.14 2003-03-10 22:55:34 ben Exp $
  */ 
 
 #include <stdio.h>
@@ -11,6 +11,7 @@
 #include <string.h>
 #include "math_float.h"
 
+#include "dcplaya/config.h"
 #include "matrix.h"
 #include "driver_list.h"
 #include "vis_driver.h"

@@ -5,11 +5,12 @@
  * @date       2002/11/09
  * @brief      Exceptions and guardians handling
  *
- * @version    $Id: exceptions.c,v 1.3 2002-09-14 07:22:42 zig Exp $
+ * @version    $Id: exceptions.c,v 1.4 2003-03-10 22:55:35 ben Exp $
  */
 
 #include <kos.h>
 
+#include "dcplaya/config.h"
 #include "exceptions.h"
 #include "setjmp.h"
 

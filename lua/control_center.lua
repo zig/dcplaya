@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.14 2003-03-09 11:16:36 ben Exp $
+--- $Id: control_center.lua,v 1.15 2003-03-10 22:55:32 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_cc_app Control center application
@@ -163,8 +163,9 @@ function vmu_save_confirm(vmu)
    local r = vmu_confirm_write(vmu)
    if r and r == 1 then
       if not vmu_save_file(vmu, "/ram/dcplaya") then
-	 gui_ask('<img name="vmu" w="48">Failed to write dcplaya file to VMU<br><p><vspace h="8"><font color="#00FF00">'..vmu, { control_center_close_button }, 400, "Write failure")
+	 gui_ask('<img name="vmu" w="48">Failed to write dcplaya file : <br><p><vspace h="8"><font color="#FF0000">'..vmu, { control_center_close_button }, 400, "Write failure")
       else
+	 gui_ask('<img name="vmu" w="48">Successfully write dcplaya file : <br><p><vspace h="8"><font color="#00FF00">'..vmu, { control_center_close_button }, 400, "Write success")
 	 return 1
       end
    end
@@ -350,8 +351,6 @@ function control_center_create(owner, name)
    name = name or "control center"
    local z
 
-
-
    local cc = {
       -- Application
       name = name,
@@ -372,12 +371,6 @@ function control_center_create(owner, name)
    return cc
 end
 
-if control_center then
-   evt_shutdown_app(control_center)
-end
-
-control_center = control_center_create()
-
 --
 --- Kill a control center application.
 ---
@@ -391,10 +384,19 @@ control_center = control_center_create()
 --
 function control_center_kill(cc)
    cc = cc or control_center
-   if cc then
+   if type(cc) == "table" then
       evt_shutdown_app(cc)
-      if cc == control_center then control_center = nil end
+      if cc == control_center then
+	 control_center = nil
+	 print("control-center shutdowed")
+      end
    end
+end
+
+control_center_kill()
+control_center = control_center_create()
+if control_center then
+   print("control-center running")
 end
 
 -- Load application icon

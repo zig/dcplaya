@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.23 2003-01-28 06:36:58 ben Exp $
+ * $Id: lpo.c,v 1.24 2003-03-10 22:55:34 ben Exp $
  */
 
 #include <stdio.h>
@@ -7,8 +7,9 @@
 #include <string.h>
 
 #include <dc/controller.h>
-#include "math_float.h"
 
+#include "dcplaya/config.h"
+#include "math_float.h"
 #include "matrix.h"
 #include "driver_list.h"
 #include "vis_driver.h"

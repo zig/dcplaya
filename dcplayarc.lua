@@ -1,7 +1,7 @@
 --
 -- This is main DCplaya lua script
 --
--- $Id: dcplayarc.lua,v 1.31 2003-03-08 18:30:44 ben Exp $
+-- $Id: dcplayarc.lua,v 1.32 2003-03-10 22:55:32 ben Exp $
 --
 
 showconsole()
@@ -10,19 +10,8 @@ showconsole()
 print ("dcplaya version : " .. (__VERSION or "unknown"))
 if (__DEBUG) then print ("dcplaya debug level: " .. __DEBUG) end
 if (__RELEASE) then print ("dcplaya release mode activated") end
-
 print ("Welcome to dcplaya !\n")
 print (format("Home is set to '%s'", home))
-
--- standard stuffs
-dolib ("basic")
-dolib ("evt")
-dolib ("dirfunc")
-dolib ("shell")
-dolib ("zed")
-dolib ("keyboard_emu")
-dolib ("io_control")
-dolib ("gui")
 
 -- reading directory on PC is slow through serial port, 
 -- so we precalculate available plugins instead of doing a dir_load command
@@ -43,6 +32,30 @@ plug_fime	= home.."plugins/vis/fime/fime.lez"
 plug_el         = home.."plugins/exe/entrylist/entrylist.lez"
 plug_jpeg       = home.."plugins/img/jpeg/jpeg.lez"
 
+-- Execute user dcplayarc (extracted from vmu into ramdisk)
+if type(test) == "function" and test("-f","/ram/dcplaya/dcplayarc.lua") then
+   print("Running [/ram/dcplaya/dcplayarc.lua]")
+   dofile("/ram/dcplaya/dcplayarc.lua")
+end
+
+-- Add filetype some useful filetypes.
+if type(filetype_add) == "function" then
+   filetype_add("lua")
+   filetype_add("lua", nil, ".lua\0")
+   filetype_add("text")
+   filetype_add("text", nil, ".txt\0.doc")
+end
+
+-- Standard stuffs
+dolib ("basic")
+dolib ("evt")
+dolib ("dirfunc")
+dolib ("shell")
+dolib ("zed")
+dolib ("keyboard_emu")
+dolib ("io_control")
+dolib ("gui")
+
 -- vmu initialisation.
 hideconsole()
 dl(plug_jpeg)
@@ -60,7 +73,7 @@ showconsole()
 print ("Reading user config file 'userconf.lua'")
 dofile (home.."userconf.lua")
 if test("-f","/ram/dcplaya/userconf.lua") then
-   print("Executing local 'userconf.lua'")
+   print("Running [/ram/dcplaya/userconf.lua]")
    dofile ("/ram/dcplaya/userconf.lua")
 end
 
@@ -76,8 +89,6 @@ end
 --    call(driver_load, list)
 --
 
--- FINAL STEPS :
--- print available commands
-help()
--- launch the enhanced shell
-shell()
+-- Final steps :
+help()  -- print available commands
+shell() -- launch the enhanced shell

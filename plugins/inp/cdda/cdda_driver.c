@@ -3,13 +3,14 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/01 
  *
- *  $Id: cdda_driver.c,v 1.4 2003-02-12 12:31:57 ben Exp $
+ *  $Id: cdda_driver.c,v 1.5 2003-03-10 22:55:33 ben Exp $
  */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <dc/cdrom.h>
 
+#include "dcplaya/config.h"
 #include "inp_driver.h"
 #include "fifo.h"
 #include "sysdebug.h"

@@ -4,12 +4,13 @@
  * @date     2002/10/18
  * @brief    fast allocator for fixed size small buffer.
  * 
- * $Id: allocator.c,v 1.6 2003-01-24 04:28:13 ben Exp $
+ * $Id: allocator.c,v 1.7 2003-03-10 22:55:34 ben Exp $
  */
 
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "dcplaya/config.h"
 #include "allocator.h"
 #include "sysdebug.h"
 

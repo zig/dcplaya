@@ -5,11 +5,13 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist.c,v 1.10 2003-01-25 11:37:44 ben Exp $
+ * $Id: entrylist.c,v 1.11 2003-03-10 22:55:33 ben Exp $
  */
 
 #include <stdlib.h>
 #include <string.h>
+
+#include "dcplaya/config.h"
 #include "driver_list.h"
 #include "entrylist_driver.h"
 #include "entrylist_loader.h"
@@ -223,7 +225,7 @@ EL_FUNCTION_END()
 }
 EL_FUNCTION_END()
 
-     EL_FUNCTION_START(settable)
+EL_FUNCTION_START(settable)
 {
   char tmp[1024];
   int type2 = lua_type(L,2);
@@ -361,7 +363,7 @@ EL_FUNCTION_END()
 }
 EL_FUNCTION_END()
 
-     EL_FUNCTION_START(gc)
+EL_FUNCTION_START(gc)
 {
   int n;
 
@@ -372,16 +374,17 @@ EL_FUNCTION_END()
   entrylist_destroy(el);
   return 0;
 }
+
 EL_FUNCTION_END()
 
-     EL_FUNCTION_START(clear)
+EL_FUNCTION_START(clear)
 {
   entrylist_clear(el);
   return 0;
 }
 EL_FUNCTION_END()
 
-     EL_FUNCTION_START(load)
+EL_FUNCTION_START(load)
 {
   const char * path, * filterstr;
   int type, filter ,i, c;
@@ -398,6 +401,7 @@ EL_FUNCTION_END()
     { 'm', "music" },
     { 'p', "playlist" },
     { 'l', "lua" },
+    { 't', "text" },
     { 0,0 }
   };
 
@@ -429,7 +433,8 @@ EL_FUNCTION_END()
     SDDEBUG("filter : [%s]\n", filterstr ? filterstr : "???");
   }
   if (!filterstr) {
-    filterstr = "DPM";
+    /* Default filter to all files */
+    filterstr = "A";
   }
 
   filter = 0;
@@ -457,7 +462,7 @@ EL_FUNCTION_END()
     }
   }
 
-  if (el_loader_loaddir(el,  path, filter) < 0) {
+  if (el_loader_loaddir(el, path, filter) < 0) {
     printf("%s : failed\n", __FUNCTION__);
     return 0;
   }

@@ -3,10 +3,12 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/19
  *  @brief   FIME : beat detection
- *  $Id: fime_beatdetect.c,v 1.2 2003-01-22 02:08:54 ben Exp $
+ *  $Id: fime_beatdetect.c,v 1.3 2003-03-10 22:55:34 ben Exp $
  */ 
 
 #include <stdlib.h>
+
+#include "dcplaya/config.h"
 #include "fime_beatdetect.h"
 #include "fime_analysis.h"
 #include "fft.h"

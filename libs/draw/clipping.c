@@ -4,9 +4,10 @@
  *  @date    2002/10/15
  *  @brief   draw primitive vertex definition.
  *
- * $Id: clipping.c,v 1.3 2003-01-03 06:47:18 zigziggy Exp $
+ * $Id: clipping.c,v 1.4 2003-03-10 22:55:32 ben Exp $
  */
 
+#include "dcplaya/config.h"
 #include "draw/gc.h"
 #include "sysdebug.h"
 

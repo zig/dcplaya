@@ -1,4 +1,5 @@
 /*  #include <kos.h> //$$$ for debug */
+#include "dcplaya/config.h"
 #include "vupeek.h"
 #include "math_int.h"
 #include "sysdebug.h"

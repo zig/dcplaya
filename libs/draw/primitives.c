@@ -5,12 +5,13 @@
  * @date    2002/10/10
  * @brief   2D drawing primitives.
  *
- * $Id: primitives.c,v 1.2 2002-11-29 08:29:41 ben Exp $
+ * $Id: primitives.c,v 1.3 2003-03-10 22:55:32 ben Exp $
  */
 
 #include <stdarg.h>
 #include <stdio.h>
 
+#include "dcplaya/config.h"
 #include "draw/primitives.h"
 #include "draw/ta.h"
 #include "draw/gc.h"

@@ -3,19 +3,10 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: sc68_driver.c,v 1.6 2003-03-08 09:55:24 ben Exp $
+ * @version   $Id: sc68_driver.c,v 1.7 2003-03-10 22:55:33 ben Exp $
  */
 
-/* generated config include */
-#include "config.h"
-
-/* $$$ Outch ! */
-#ifdef DEBUG
-# undef DEBUG
-#endif
-
-/* $$$ hack becoz sc68 has its own config.h */
-#include "../include/config.h"
+#include "dcplaya/config.h"
 
 #include <kos/fs.h>
 #include "fs_rz.h"

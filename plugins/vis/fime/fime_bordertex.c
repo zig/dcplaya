@@ -3,11 +3,11 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/17
  *  @brief   FIME : border texture
- *  $Id: fime_bordertex.c,v 1.2 2003-01-20 20:44:09 ben Exp $
+ *  $Id: fime_bordertex.c,v 1.3 2003-03-10 22:55:34 ben Exp $
  */ 
 
+#include "dcplaya/config.h"
 #include "fime_bordertex.h"
-
 #include "border.h"
 #include "sysdebug.h"
 

@@ -1,7 +1,7 @@
 --- @date 2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  LUA script to initialize dcplaya VMU backup.
---- $Id: vmu_init.lua,v 1.17 2003-03-09 01:00:15 ben Exp $
+--- $Id: vmu_init.lua,v 1.18 2003-03-10 22:55:33 ben Exp $
 ---
 
 -- Unload library
@@ -62,35 +62,23 @@ if not dolib("textviewer") then return nil end
 --- @retval nil failure
 ---
 function vmu_save_file(fname, path)
-   local errstr
-
-   if type(ram_path) ~= "string" then
-      errstr = "no ramdisk found. Can't create temporary file."
-   else
-      local tmpfile = ram_path .. "/tmp/backup.dcar"
-      local headerfile = "/rd/vmu_header.bin"
-      fname = canonical_path(fname)
-      path = canonical_path(path)
-
-      if type(fname) ~= "string" or type(path)  ~= "string" then
-	 errstr = "bad parameter"
-      else
-	 -- Create temporary backup file
-	 unlink(tmpfile)
-	 if not copy("-fv", headerfile, tmpfile) then
-	    errstr = "error copying header file"
-	 elseif not dcar("av9", tmpfile, path) then
-	    errstr = "error creating temporary archive [" 
-	       .. tmpfile .. "] from [" .. tostring(path) .. "]"
-	 elseif not copy("-fv", tmpfile, fname) then
-	    errstr = "error copying [" .. tmpfile ..
-	       "] to [" .. tostring(fname) .. "]"
-	 end
-	 unlink(tmpfile)
-      end
+   if type(vmu_file_save) ~= "function" or
+      type(vmu_file_stat) ~= "function" then
+      return
    end
-   print("vmu_save_file : " .. (errstr or "success"))
-   return errstr == nil
+
+   fname = canonical_path(fname)
+   path = canonical_path(path)
+
+   local hdl = vmu_file_save(fname,path)
+   if hdl then
+      local status = vmu_file_stat(hdl)
+      printf("vmu_save_file [%s] : [%s]", fname, status)
+      return status == "success"
+   else
+      printf("vmu_save_file [%s] : failed", fname)
+   end
+
 end
 
 --- Read and extract save file.
@@ -103,13 +91,22 @@ end
 --- @retval nil failure
 ---
 function vmu_load_file(fname,path)
-   if not dcar("xv1664",fname,path) then
-      print("vmu_load_file : failed")
+   if type(vmu_file_load) ~= "function" or
+      type(vmu_file_stat) ~= "function" then
       return
-   else
-      print("vmu_load_file : success")
    end
-   return 1
+
+   fname = canonical_path(fname)
+   path = canonical_path(path)
+
+   local hdl = vmu_file_load(fname,path)
+   if hdl then
+      local status = vmu_file_stat(hdl)
+      printf("vmu_load_file [%s] : [%s]", fname, status)
+      return status == "success"
+   else
+      printf("vmu_load_file [%s] : failed", fname)
+   end
 end
 
 function dcplaya_welcome()

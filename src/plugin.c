@@ -3,12 +3,13 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: plugin.c,v 1.13 2003-01-20 20:44:09 ben Exp $
+ * $Id: plugin.c,v 1.14 2003-03-10 22:55:35 ben Exp $
  */
 #include <stdio.h>
 #include <string.h>
 #include <kos/fs.h>
 
+#include "dcplaya/config.h"
 #include "plugin.h"
 
 #include "any_driver.h"

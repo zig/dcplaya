@@ -4,14 +4,15 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   Deal with file types and extensions.
  *
- * $Id: filetype.c,v 1.10 2002-12-15 16:15:03 ben Exp $
+ * $Id: filetype.c,v 1.11 2003-03-10 22:55:35 ben Exp $
  */
 
 #include <stdlib.h>
 #include <string.h>
+
+#include "dcplaya/config.h"
 #include "filetype.h"
 #include "filename.h"
-
 #include "sysdebug.h"
 
 typedef struct minor_type_s {

@@ -1,11 +1,12 @@
 /**
- * $Id: draw_object.c,v 1.19 2003-02-01 20:07:05 ben Exp $
+ * $Id: draw_object.c,v 1.20 2003-03-10 22:55:34 ben Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <dc/ta.h>
 
+#include "dcplaya/config.h"
 #include "math_float.h"
 #include "draw/ta.h"
 #include "sysdebug.h"

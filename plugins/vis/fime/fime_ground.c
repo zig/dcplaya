@@ -1,4 +1,6 @@
 #include <stdlib.h>
+
+#include "dcplaya/config.h"
 #include "fime_ground.h"
 #include "draw_object.h"
 #include "draw/vertex.h"

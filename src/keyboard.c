@@ -10,8 +10,8 @@ keyboard.c
 #include <dc/keyboard.h>
 #include <string.h>
 
+#include "dcplaya/config.h"
 #include "controler.h"
-
 #include "sysdebug.h"
 
 /* in controler.c */

@@ -1,14 +1,13 @@
 /**
- * $Id: vmu68.c,v 1.14 2003-03-01 14:53:43 ben Exp $
+ * $Id: vmu68.c,v 1.15 2003-03-10 22:55:35 ben Exp $
  */
-#include "config.h"
 
 #include <dc/vmu.h>
 #include <dc/maple.h>
-
 #include <string.h>
 #include <stdio.h>
 
+#include "dcplaya/config.h"
 #include "sysdebug.h"
 
 #include "playa_info.h"

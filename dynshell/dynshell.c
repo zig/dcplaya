@@ -6,10 +6,10 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.75 2003-03-08 18:30:44 ben Exp $
+ * @version    $Id: dynshell.c,v 1.76 2003-03-10 22:55:32 ben Exp $
  */
 
-#include "config.h"
+#include "dcplaya/config.h"
 
 #include <stdio.h>
 #include <kos.h>
@@ -33,6 +33,7 @@
 #include "dcar.h"
 #include "gzip.h"
 #include "playa.h"
+#include "vmu_file.h"
 #include "draw/texture.h"
 #include "translator/translator.h"
 #include "translator/SHAtranslator/SHAtranslatorBlitter.h"
@@ -2382,6 +2383,80 @@ static int lua_cdrom_status(lua_State * L)
   return 3;
 }
 
+static int lua_vmu_file_load(lua_State * L)
+{
+  int n = lua_gettop(L);
+  vmu_trans_hdl_t hdl;
+  vmu_trans_status_e status;
+  const char * fname, * path;
+
+  if (n != 2) {
+    printf("[vmu_file_load] : invalid number of arguments.\n");
+    return 0;
+  }
+  fname = lua_tostring(L,1);
+  path = lua_tostring(L,2);
+  if (!fname || !fname[0] || !path || !path[0]) {
+    printf("[vmu_file_load] : invalid argument.\n");
+    return 0;
+  }
+
+  hdl = vmu_file_load(fname, path);
+  status = vmu_file_status(hdl);
+
+#if DEBUG
+  printf("[vmu_file_load] : status : %d\n",status);
+#endif
+  lua_settop(L,0);
+  if (hdl) {
+    lua_pushnumber(L,hdl);
+  }
+  return lua_gettop(L);
+}
+
+static int lua_vmu_file_save(lua_State * L)
+{
+  int n = lua_gettop(L);
+  vmu_trans_hdl_t hdl;
+  vmu_trans_status_e status;
+  const char * fname, * path;
+
+  if (n != 2) {
+    printf("[vmu_file_save] : invalid number of arguments.\n");
+    return 0;
+  }
+  fname = lua_tostring(L,1);
+  path = lua_tostring(L,2);
+  if (!fname || !fname[0] || !path || !path[0]) {
+    printf("[vmu_file_save] : invalid argument.\n");
+    return 0;
+  }
+
+  hdl = vmu_file_save(fname, path);
+  status = vmu_file_status(hdl);
+
+#if DEBUG
+  printf("[vmu_file_save] : status : %d\n", status);
+#endif
+  lua_settop(L,0);
+  if (hdl) {
+    lua_pushnumber(L,hdl);
+  }
+  return lua_gettop(L);
+}
+
+static int lua_vmu_file_stat(lua_State * L)
+{
+  const char * s;
+
+  s = vmu_file_statusstr(vmu_file_status(lua_tonumber(L,1 )));
+  lua_settop(L,0);
+  if (s) {
+    lua_pushstring(L,s);
+  }
+  return lua_gettop(L);
+}
+
 static int LUA_setgcthreshold(lua_State * L)
 {
   lua_setgcthreshold(L, lua_tonumber(L, 1));
@@ -3033,16 +3108,45 @@ static luashell_command_description_t commands[] = {
     SHELL_COMMAND_C, lua_vmu_state
   },
 
+  {
+    "vmu_file_load",
+    0,
+    "print([["
+    "vmu_file_load(fname,path) : Load a vmu archive.\n"
+    " return vmu_transfert_handle."
+    "]])",
+    SHELL_COMMAND_C, lua_vmu_file_load
+  },
+
+  {
+    "vmu_file_save",
+    0,
+    "print([["
+    "vmu_file_save(fname,path) : Save a vmu archive.\n"
+    " return vmu_transfert_handle."
+    "]])",
+    SHELL_COMMAND_C, lua_vmu_file_save
+  },
+
+  {
+    "vmu_file_stat",
+    0,
+    "print([["
+    "vmu_file_stat(vmu_transfert_handle) : "
+    "Get status string of vmu transfert."
+    "]])",
+    SHELL_COMMAND_C, lua_vmu_file_stat
+  },
+
   {0},
 };
-
 
 static int setgcthreshold(lua_State * L)
 {
   int v = lua_getgccount(L);
-
+#ifdef DEBUG
   printf("GCCOUNT = %d\n", v);
-
+#endif
 /*  lua_setgcthreshold(L, v + 100);*/
   lua_setgcthreshold(L, 4000);
 }

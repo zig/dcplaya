@@ -5,11 +5,12 @@
  * @date    2002
  * @brief   Registered driver list.
  *
- * $Id: driver_list.c,v 1.17 2003-03-04 15:26:52 ben Exp $
+ * $Id: driver_list.c,v 1.18 2003-03-10 22:55:35 ben Exp $
  */
 
 #include <string.h>
 
+#include "dcplaya/config.h"
 #include "driver_list.h"
 #include "inp_driver.h"
 #include "img_driver.h"

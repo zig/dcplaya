@@ -4,9 +4,9 @@
 #include <dc/maple.h>
 #include <dc/cdrom.h>
 
+#include "dcplaya/config.h"
 #include "controler.h"
 #include "sysdebug.h"
-
 
 #define CONTROLER_NO_SMOOTH_FRAMES  50      /* > 2 */
 #define CONTROLER_SMOOTH_FACTOR     0x6000  /* [0..65536] */
@@ -158,7 +158,6 @@ extern int kbd_poll_repeat(uint8 addr, int elapsed_frame);
 
 static void controler_thread(void * dummy)
 {
-  static int check_cdrom = 0;
   while (status != QUIT) {
 
     uint32 frame = ta_state.frame_counter;
@@ -172,16 +171,6 @@ static void controler_thread(void * dummy)
     if (elapsed_frame) {
       static int report = 0;
       int oldfunc;
-
-      /* $$$ ben : Try to add this code in lua ... */
-#if 0
-      /* $$$ ben : add this here because I am too lazy for creating another
-	 thread. */
-      if ((check_cdrom+=elapsed_frame) > 10) {
-	check_cdrom = 0;
-	cdrom_check();
-      }
-#endif
 
       spinlock_lock(&controler_mutex);
 

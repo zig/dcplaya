@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @author  Dan Potter
  *
- *  $Id: xing_driver.c,v 1.6 2002-12-23 09:01:36 ben Exp $
+ *  $Id: xing_driver.c,v 1.7 2003-03-10 22:55:34 ben Exp $
  */ 
 
  /* Based on :
@@ -27,6 +27,7 @@
 
 //#include "sndstream.h"
 //#include "sndmp3.h"
+#include "dcplaya/config.h"
 #include "inp_driver.h"
 #include "pcm_buffer.h"
 #include "fifo.h"

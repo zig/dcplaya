@@ -3,16 +3,15 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/17
  *  @brief   FIME : space ship
- *  $Id: fime_ship.c,v 1.3 2003-02-03 19:37:14 ben Exp $
+ *  $Id: fime_ship.c,v 1.4 2003-03-10 22:55:34 ben Exp $
  */ 
 
 #include <stdlib.h>
 
+#include "dcplaya/config.h"
 #include "fime_ship.h"
-
 #include "draw/texture.h"
 #include "draw/vertex.h"
-
 #include "driver_list.h"
 #include "obj_driver.h"
 #include "sysdebug.h"

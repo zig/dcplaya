@@ -6,10 +6,12 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, matrix interface
  * 
- * $Id: display_matrix.c,v 1.7 2003-01-24 04:28:13 ben Exp $
+ * $Id: display_matrix.c,v 1.8 2003-03-10 22:55:33 ben Exp $
  */
 
 #include <stdlib.h>
+
+#include "dcplaya/config.h"
 #include "math_float.h"
 #include "driver_list.h"
 #include "display_matrix.h"

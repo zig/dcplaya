@@ -5,12 +5,13 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist_driver.c,v 1.7 2003-01-25 11:37:44 ben Exp $
+ * $Id: entrylist_driver.c,v 1.8 2003-03-10 22:55:33 ben Exp $
  */
 
 #include <stdlib.h>
 #include <string.h>
 
+#include "dcplaya/config.h"
 #include "luashell.h"
 #include "lef.h"
 #include "driver_list.h"
@@ -252,6 +253,7 @@ static luashell_command_description_t driver_commands[] = {
     " <m> music\n"
     " <p> playlist\n"
     " <l> lua\n"
+    " <t> text\n"
     " <a> all types\n"
     "]]",                                 /* usage */
     SHELL_COMMAND_C, lua_entrylist_load   /* function */

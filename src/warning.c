@@ -1,5 +1,5 @@
 /* 2002/02/23 */
-#include "config.h"
+#include "dcplaya/config.h"
 
 #include "draw/text.h"
 

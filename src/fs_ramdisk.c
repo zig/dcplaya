@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   RAM disk for KOS file system
  * 
- * $Id: fs_ramdisk.c,v 1.11 2002-10-18 00:06:49 benjihan Exp $
+ * $Id: fs_ramdisk.c,v 1.12 2003-03-10 22:55:35 ben Exp $
  */
 
 #ifdef VPSPECIAL
@@ -19,6 +19,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "dcplaya/config.h"
 #include "sysdebug.h"
 #include "fs_ramdisk.h"
 

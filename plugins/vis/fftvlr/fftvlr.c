@@ -8,11 +8,13 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.26 2003-02-03 19:38:23 ben Exp $
+ * $Id: fftvlr.c,v 1.27 2003-03-10 22:55:34 ben Exp $
  */
 
 #include <stdlib.h>
 #include <string.h>
+
+#include "dcplaya/config.h"
 #include "draw/ta.h"
 #include "draw/vertex.h"
 #include "border.h"

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "config.h"
+#include "dcplaya/config.h"
 
 #include "draw/text.h"
 #include "option.h"

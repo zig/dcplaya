@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   Gzipped compressed rom disk for KOS file system
  * 
- * $Id: fs_rz.c,v 1.2 2003-03-08 09:55:23 ben Exp $
+ * $Id: fs_rz.c,v 1.3 2003-03-10 22:55:33 ben Exp $
  */
 
 #include <arch/types.h>
@@ -15,8 +15,7 @@
 #include <stdio.h>
 #include "zlib.h"
 
-/* $$$ hack becoz sc68 has its own config.h */
-#include "../include/config.h"
+#include "dcplaya/config.h"
 #include "sysdebug.h"
 #include "fs_rz.h"
 
