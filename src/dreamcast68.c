@@ -4,7 +4,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.6 2002-09-06 07:17:52 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.7 2002-09-06 09:46:10 ben Exp $
  */
 
 //#define RELEASE
@@ -408,10 +408,12 @@ static int same_sign(float a, float b) {
   return (a>=0 && b>=0) || (a<0 && b<0);
 }
 
+/* extern inp_driver_t sidplay_driver; */
 
 static int load_builtin_driver(void)
 {
   any_driver_t **d, *list[] = {
+/*     &sidplay_driver.common, */
     0
   };
   for (d=list; *d; ++d) {
@@ -445,6 +447,7 @@ static int driver_init(void)
       "/pc" DREAMMP3_HOME "plugins/inp/xing",
       "/pc" DREAMMP3_HOME "plugins/inp/ogg",
       "/pc" DREAMMP3_HOME "plugins/inp/sc68",
+      "/pc" DREAMMP3_HOME "plugins/inp/sidplay",
       0
     };
 

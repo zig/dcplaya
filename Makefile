@@ -5,7 +5,7 @@ SH_LDFLAGS=-ml -m4-single-only -nostartfiles -nostdlib -static  -Wl,-Ttext=0x8c0
 SUBDIRS += arm plugins src data
 
 WHOLE_LIBS=-ldreammp3,-ldcutils,-lkallisti
-OPT_LIBS= -los -lgcc -lm 
+OPT_LIBS= -los -lgcc -lm
 ELF_EXTRA += -L./src -L$(KOS_BASE)/lib\
  -Wl,--whole-archive,$(WHOLE_LIBS),--no-whole-archive\
  $(OPT_LIBS)
