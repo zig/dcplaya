@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: keyboard_emu.lua,v 1.5 2002-09-28 05:41:19 vincentp Exp $
+-- $Id: keyboard_emu.lua,v 1.6 2002-09-29 00:49:14 vincentp Exp $
 --
 
 
@@ -428,6 +428,8 @@ function ke_update(app, frametime)
 --	collectgarbage()
 
 	-- update active array position and color
+
+	-- need to check this because of the infamouse FPU exception !!
 	if abs(ke_array.ypos) < 0.001 then
 		ke_array.ypos = 0
 		ke_array.alpha = 1
@@ -442,8 +444,11 @@ function ke_update(app, frametime)
 	ke_cursorbox = ke_cursorbox + 
 			20 * frametime * (ke_key.box - ke_cursorbox)
 
---	dl_set_trans(ke_cursor_dl, mat_scale(ke_cursorbox[3] - ke_cursorbox[1], ke_cursorbox[4] - ke_cursorbox[2], 1) * mat_trans(ke_cursorbox[1], ke_cursorbox[2] + ke_array.ypos, 0))
-	dl_set_trans(ke_cursor_dl, mat_scale(ke_cursorbox[3] - ke_cursorbox[1], ke_cursorbox[4] - ke_cursorbox[2], 1) * mat_trans(ke_cursorbox[1], ke_cursorbox[2], 0))
+	dl_set_trans(ke_cursor_dl, 
+		mat_scale(ke_cursorbox[3] - ke_cursorbox[1], 
+			  ke_cursorbox[4] - ke_cursorbox[2], 1) *
+		mat_trans(ke_cursorbox[1], ke_cursorbox[2], 0))
+
 	local ci = 0.5+0.5*cos(360*ke_time*2)
 	dl_set_color(ke_cursor_dl, ci, 1, ci, ci)
 

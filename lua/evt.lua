@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.1 2002-09-28 05:41:19 vincentp Exp $
+-- $Id: evt.lua,v 1.2 2002-09-29 00:49:14 vincentp Exp $
 --
 
 
@@ -56,6 +56,7 @@ if not init_display_driver then
 end
 
 
+-- INTERNAL
 function evt_send(app, evt)
 	
 	local sub = app.sub
@@ -77,6 +78,7 @@ function evt_send(app, evt)
 	return evt
 end
 
+-- INTERNAL
 function evt_update(app, frametime)
 	
 	local sub = app.sub
@@ -94,6 +96,7 @@ function evt_update(app, frametime)
 
 end
 
+-- INTERNAL
 function evt_do_commands()
 	-- perform all queued commands
 	local q = evt_command_queue
@@ -129,10 +132,11 @@ function evt_peek()
 		end
 	until not key
 
-	evt_curframecounter = evt_origframecounter(1)
-
 	-- calculate frame time
+	evt_curframecounter = evt_origframecounter(1)
 	local frametime = evt_curframecounter/60
+
+	-- call update method of applications
 	evt_update(evt_root_app, frametime)
 
 end
@@ -253,7 +257,7 @@ function evt_init()
 
 	if not evt_origgetchar then
 		-- get original getchar and peekchar
-		-- the keyboard emulator will replace these two variables later
+		-- the event system will replace these two variables later
 		evt_origgetchar = getchar
 		evt_origpeekchar = peekchar
 		evt_origframecounter = framecounter
