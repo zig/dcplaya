@@ -2,14 +2,15 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.22 2003-07-30 00:29:56 benjihan Exp $
+# $Id: Makefile.in,v 1.23 2003-07-30 09:30:11 benjihan Exp $
 #
 
 VERSION = @VERSION@
-DOXYGEN = "@DOXYGEN@"
+DOXYGEN = @DOXYGEN@
 AWK=@AWK@
 LUA=@LUA@
 LYNX=@LYNX@
+DOC_TOOLS=@DOC_TOOLS@
 
 PLG_HEADERS	 := $(shell find ../plugins -maxdepth 3 -type f -name '*.h')
 PLG_HEADERS_PATH := $(sort . $(dir $(PLG_HEADERS)))
@@ -46,9 +47,40 @@ DOC_DIR 	:= doc
 LUADOCDIR	:= lua_doc
 LUASRCDIR	:= ..
 
-LUAALLFILES  :=\
+
+# Select targets that could be build with current configuration.
+#
+# if doxygen is not configured :
+#  - all will generate an error message.
+#  - distrib will do nothing.
+# if lynx is not configured :
+#  - both txt and zml project are removed. Only devdoc will be generated.
+# if lua is not configured :
+#  - zml project is removed.
+# if awk is not configured :
+#  - .lua files are removed from devdoc.
+#
+ALL_TARGETS	:= doxygen-is-missing
+DISTRIB_TARGETS	:=
+ifneq 'x$(DOXYGEN)' 'xecho'
+ALL_TARGETS := Makefile devdoc
+ifeq 'x$(LYNX)' 'xecho'
+DISTRIB_TARGETS := Makefile devdoc
+else
+DISTRIB_TARGETS := Makefile txt
+ifneq 'x$(LUA)' 'xecho'
+DISTRIB_TARGETS += zml
+endif
+endif
+endif
+
+ifeq 'x$(AWK)' 'xecho'
+LUAALLFILES	:=
+else
+LUAALLFILES	:=\
  $(wildcard $(LUASRCDIR)/*.lua)\
  $(wildcard $(LUASRCDIR)/lua/*.lua)
+endif
 LUASRCFILES:=$(LUAALLFILES:$(LUASRCDIR)/%=%)
 LUADOCFILES:=$(addprefix $(LUADOCDIR)/,$(LUASRCFILES:%.lua=%.lua)\
  userconf.lua\
@@ -189,7 +221,9 @@ DOXDEV	+= -D GENERATE_LATEX=NO
 ## Make rules
 #
 
-all: Makefile devdoc
+all: $(ALL_TARGETS)
+distrib: $(DISTRIB_TARGETS)
+	@echo "Documentation distribution has been builded from [$^]"
 
 .PHONY: lynx-is-missing lua-is-missing awk-is-missing doxygen-is-missing
 lynx-is-missing lua-is-missing awk-is-missing doxygen-is-missing:
@@ -246,15 +280,6 @@ endif
 Makefile : Makefile.in
 	(cd ..; ./config.status) 
 
-# $(LUADOCDIR)/doc.lua : luadoc.h
-# 	cp -f $< $@
-
-ifeq 'x$(AWK)' 'xecho'
-
-$(LUADOCDIR)/%.lua : awk-is-missing
-	@mkdir -p $(dir $@)
-else
-
 $(LUADOCDIR)/userconf.lua : $(LUASRCDIR)/userconf-release.lua # Makefile
 	@echo "make [$@] from [$<]"
 	@mkdir -p $(dir $@)
@@ -264,8 +289,6 @@ $(LUADOCDIR)/%.lua : %.lua  # Makefile
 	@mkdir -p $(dir $@)
 	@echo "make [$@] from [$<]"
 	@$(LUA2DOX) > $@
-
-endif
 
 $(DOC_DIR) $(LUADOCDIR) $(DOC_DIR)/html:
 	@echo "Create directory [$@]"
