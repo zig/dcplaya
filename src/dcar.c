@@ -4,7 +4,7 @@
  * @date      2002/09/21
  * @brief     dcplaya archive.
  *
- * $Id: dcar.c,v 1.6 2002-12-13 17:06:53 ben Exp $
+ * $Id: dcar.c,v 1.7 2003-03-07 21:06:03 ben Exp $
  */
 
 #include <stdio.h>
@@ -173,10 +173,10 @@ static int make_dir_index(aentry_t * aentry, int base)
       int newbase;
       newbase = make_dir_index(e->son, base);
       if (newbase) {
-		e->te.attr.size = base;
-		base = newbase;
+	e->te.attr.size = base;
+	base = newbase;
       } else {
-		e->te.attr.size = 0;
+	e->te.attr.size = 0;
       }
     }
   }
@@ -194,7 +194,7 @@ static int r_gzwrite_aentries(gzFile zf, aentry_t * aentry)
   /* 1st : This level */
   for (e=aentry; e; e=e->nxt) {
     if (gzwrite(zf, &e->te, sizeof(e->te)) <= 0) {
-/*       SDERROR("Writing directory entry [%s]\n", e->te.name); */
+      /*       SDERROR("Writing directory entry [%s]\n", e->te.name); */
       return -1;
     }
   }
@@ -203,7 +203,7 @@ static int r_gzwrite_aentries(gzFile zf, aentry_t * aentry)
   for (e=aentry; e; e=e->nxt) {
     if (e->te.attr.dir) {
       if ( r_gzwrite_aentries(zf, e->son) < 0) {
-		return -1;
+	return -1;
       }
     }
   }
@@ -241,23 +241,23 @@ static int gzcopy(gzFile zf, dcar_option_t * opt)
   len = fs_total(fd);
   if (len < 0) {
     len = -1;
-/*     SDWARNING("[%s] : Could not get total, trying to copy anyway\n", */
-/* 			  opt->internal.path); */
+    /*     SDWARNING("[%s] : Could not get total, trying to copy anyway\n", */
+    /* 			  opt->internal.path); */
   }
 
   r = w = 0;
   do {
     n = fs_read(fd, opt->internal.tmp, opt->internal.max);
     if (n < 0) {
-	  opt->errstr = "read error";
+      opt->errstr = "read error";
       n = -2;
       goto error;
     } else if (n > 0) {
       r += n;
       if (gzwrite(zf, opt->internal.tmp, n) != n) {
-		opt->errstr = "gzip write error";
-		n = -3;
-		goto error;
+	opt->errstr = "gzip write error";
+	n = -3;
+	goto error;
       }
       w += n;
       opt->out.bytes += n;
@@ -267,7 +267,7 @@ static int gzcopy(gzFile zf, dcar_option_t * opt)
   /* Check ... */
   if (r != w || (len != -1 && r != len)) {
     n = -4;
-	opt->errstr = "check error";
+    opt->errstr = "check error";
     goto error;
   }
 
@@ -278,14 +278,14 @@ static int gzcopy(gzFile zf, dcar_option_t * opt)
   // Zero pad for alignment requirement.
   if (z >= dcar_align) {
     n = -5;
-	opt->errstr = "alignment error";
+    opt->errstr = "alignment error";
     goto error;
   }
 
   if (z) {
     memset(opt->internal.tmp, 0, z);
     if (gzwrite(zf, opt->internal.tmp, z) != z) {
-	  opt->errstr = "gzip padding write error";
+      opt->errstr = "gzip padding write error";
       n = -3;
       goto error;
     }
@@ -325,20 +325,20 @@ static int r_gzwrite_data(gzFile zf, aentry_t * aentry, dcar_option_t * opt)
       n = gzcopy(zf, opt);
       *pathend = 0;
       if (n < 0) {
-		switch(n) {
-		case -1:
-/* 		  SDERROR("[%s] : open error.\n", e->te.name); */
-		  return -1;
-		case -2:
-/* 		  SDERROR("[%s] : read error.\n", e->te.name); */
-		  return -1;
-		case -3:
-/* 		  SDERROR("Write error. Current out bytes [%d]\n", opt->out.bytes); */
-		  return -1;
-		default:
-/* 		  SDERROR("[%s] : unexpected  error.\n", e->te.name); */
-		  return -1;
-		}
+	switch(n) {
+	case -1:
+	  /* 		  SDERROR("[%s] : open error.\n", e->te.name); */
+	  return -1;
+	case -2:
+	  /* 		  SDERROR("[%s] : read error.\n", e->te.name); */
+	  return -1;
+	case -3:
+	  /* 		  SDERROR("Write error. Current out bytes [%d]\n", opt->out.bytes); */
+	  return -1;
+	default:
+	  /* 		  SDERROR("[%s] : unexpected  error.\n", e->te.name); */
+	  return -1;
+	}
       }
     }
   }
@@ -352,7 +352,7 @@ static int r_gzwrite_data(gzFile zf, aentry_t * aentry, dcar_option_t * opt)
       n = r_gzwrite_data(zf, e->son, opt);
       *pathend = 0;
       if (n < 0) {
-		return -1;
+	return -1;
       }
     }
   }
@@ -388,10 +388,10 @@ static void dump(aentry_t * aentry)
   /* Count entries in this level */
   for (e=aentry; e; e=e->nxt) {
     SDDEBUG("[%s]%s%s [%d]\n",
-			e->te.name,
-			e->te.attr.dir ? "*":"",
-			e->te.attr.end ? ".":"",
-			e->te.attr.size);
+	    e->te.name,
+	    e->te.attr.dir ? "*":"",
+	    e->te.attr.end ? ".":"",
+	    e->te.attr.size);
     if (e->son && !e->te.attr.dir) {
       SDCRITICAL("Missing dir flag\n");
     }
@@ -417,7 +417,7 @@ static int r_add(dcar_option_t *opt, aentry_t * parent)
 
   fd = fs_open(opt->internal.path, O_RDONLY|O_DIR);
   if (!fd) {
-	opt->errstr = "open error";
+    opt->errstr = "open error";
     count = -1;
     goto error;
   }
@@ -434,13 +434,13 @@ static int r_add(dcar_option_t *opt, aentry_t * parent)
       aentry_t * aentry_here = calloc(1, sizeof(aentry_t));
       
       if (!aentry_here) {
-		opt->errstr = "aentry_t malloc error";
-		count = -1;
-		goto error;
+	opt->errstr = "aentry_t malloc error";
+	count = -1;
+	goto error;
       }
       aentry_here->nxt = aentry;
       if (!aentry) {
-		parent->son = aentry_here;
+	parent->son = aentry_here;
       }
       aentry = aentry_here;
       
@@ -457,7 +457,7 @@ static int r_add(dcar_option_t *opt, aentry_t * parent)
 
     case DCAR_FILTER_ERROR:
     default:
-	  opt->errstr = "filter error";
+      opt->errstr = "filter error";
       count = -1;
       goto error;
     }
@@ -490,10 +490,10 @@ static int r_add(dcar_option_t *opt, aentry_t * parent)
       --opt->internal.level;
       *pathend=0;
       if (more < 0) {
-		count = more;
-		break;
+	count = more;
+	break;
       } else {
-		count += more;
+	count += more;
       }
     }
   }
@@ -538,7 +538,7 @@ int dcar_archive(const char *name, const char *path, dcar_option_t *opt)
   save_verbose = opt->in.verbose;
 
   if (!name || !path) {
-	opt->errstr = "invalid parameter";
+    opt->errstr = "invalid parameter";
     return -1;
   }
 
@@ -569,23 +569,23 @@ int dcar_archive(const char *name, const char *path, dcar_option_t *opt)
   /* Write archive */
   // $$$ ben : Could unlink empty-dir !!!
   if (!opt->in.skip) {
-	fs_unlink(name);
-	fd = fs_open(name, O_WRONLY);
+    fs_unlink(name);
+    fd = fs_open(name, O_WRONLY);
   } else {
-	fd = fs_open(name, O_APPEND);
-	opt->in.skip = fs_tell(fd);
-/* 	SDDEBUG("[%s] : skipping %d bytes\n",__FUNCTION__, opt->in.skip); */
+    fd = fs_open(name, O_APPEND);
+    opt->in.skip = fs_tell(fd);
+    /* 	SDDEBUG("[%s] : skipping %d bytes\n",__FUNCTION__, opt->in.skip); */
   }
   fd2 = fd;
   if (!fd) {
-	opt->errstr = "create error";
+    opt->errstr = "create error";
     count = -1;
     goto error;
   }
 
   zf = gzdopen(fd, mode);
   if (!zf) {
-	opt->errstr = "gzip reopen error";
+    opt->errstr = "gzip reopen error";
     count = -1;
     goto error;
   }
@@ -596,14 +596,14 @@ int dcar_archive(const char *name, const char *path, dcar_option_t *opt)
 
   /* Write archive headers */
   if (gzwrite(zf, &dt, 8) <= 0) {
-	opt->errstr = "gzip write archive header error";
+    opt->errstr = "gzip write archive header error";
     count = -1;
     goto error;
   }
 
   /* Write directory */
   if (r_gzwrite_aentries(zf, root.son) < 0) {
-	opt->errstr = "gzip write dir entries error";
+    opt->errstr = "gzip write dir entries error";
     count = -1;
     goto error;
   }
@@ -644,7 +644,7 @@ int dcar_simulate(const char *path, dcar_option_t * opt)
   opt = setup_option(opt, &option);
 
   if (!path) {
-	opt->errstr = "invalid parameter";
+    opt->errstr = "invalid parameter";
     return -1;
   }
   strncpy(cpath, path, sizeof(cpath)-1);
@@ -661,7 +661,7 @@ int dcar_simulate(const char *path, dcar_option_t * opt)
 int dcar_test(const char *name, dcar_option_t * opt)
 {
   if (opt) {
-	opt->errstr = "not implemented";
+    opt->errstr = "not implemented";
   }
   return -1;
 }
@@ -675,7 +675,7 @@ static int exist_dir(const char *fname)
 static int create_dir(const char *fname)
 {
   if (!exist_dir(fname)) {
-	return fu_create_dir(fname);
+    return fu_create_dir(fname);
   }
   return 0;
 }
@@ -686,7 +686,7 @@ static int gzextract(int fd, gzFile zf, dcar_option_t * opt, int len)
   //  unsigned int crc = 0;
 
   if (len < 0) {
-	opt->errstr = "extract invalid file size";
+    opt->errstr = "extract invalid file size";
     return -1;
   }
 
@@ -700,13 +700,13 @@ static int gzextract(int fd, gzFile zf, dcar_option_t * opt, int len)
     rem -= n;
 
     if (gzread(zf, opt->internal.tmp, n) != n) {
-	  opt->errstr = "extract gzip read error";
+      opt->errstr = "extract gzip read error";
       return -1;
     }
     r += n;
 
     if (fs_write(fd, opt->internal.tmp, n) != n) {
-	  opt->errstr = "extract write error";
+      opt->errstr = "extract write error";
       return -1;
     }
     w += n;
@@ -716,7 +716,7 @@ static int gzextract(int fd, gzFile zf, dcar_option_t * opt, int len)
   }
 
   if (rem != 0 || r != w || w != len) {
-	opt->errstr = "extract check error";
+    opt->errstr = "extract check error";
     n = -1;
   } else {
     int z;
@@ -727,13 +727,13 @@ static int gzextract(int fd, gzFile zf, dcar_option_t * opt, int len)
 
     // Zero pad for alignment requirement.
     if (z >= dcar_align) {
-	  opt->errstr = "extract alignment error";
+      opt->errstr = "extract alignment error";
       return -1;
     }
     if (z) {
       if (gzread(zf, opt->internal.tmp, z) != z) {
-		opt->errstr = "extract gzip padding read error";
-		return -1;
+	opt->errstr = "extract gzip padding read error";
+	return -1;
       }
     }
   }
@@ -743,7 +743,7 @@ static int gzextract(int fd, gzFile zf, dcar_option_t * opt, int len)
 
 
 static int extract_file(gzFile zf, dcar_option_t * opt,
-						int bytes)
+			int bytes)
 {
   int fd;
   char * fname = opt->internal.path;
@@ -753,14 +753,14 @@ static int extract_file(gzFile zf, dcar_option_t * opt,
   }
   
   if (exist_dir(fname)) {
-	opt->errstr = "extract file exists as a directory";
+    opt->errstr = "extract file exists as a directory";
     return -1;
   }
   fs_unlink(fname);
 
   fd = fs_open(fname, O_WRONLY);
   if (!fd) {
-	opt->errstr = "extract create error";
+    opt->errstr = "extract create error";
     return -1;
   }
   bytes = gzextract(fd, zf, opt, bytes);
@@ -770,7 +770,7 @@ static int extract_file(gzFile zf, dcar_option_t * opt,
 }
 
 static int r_extract_dtree(gzFile zf, dcar_tree_t * dt, dcar_option_t * opt,
-						   int n)
+			   int n)
 {
   char * pathend;
   int count;
@@ -794,13 +794,13 @@ static int r_extract_dtree(gzFile zf, dcar_tree_t * dt, dcar_option_t * opt,
     if (e->attr.dir) {
       /* Create directory */
       if (create_dir(opt->internal.path) < 0) {
-		opt->errstr = "extract directory creation error";
-		goto error;
+	opt->errstr = "extract directory creation error";
+	goto error;
       }
     } else {
       /* Extract regular file */
       if (extract_file(zf, opt, e->attr.size) < 0) {
-		goto error;
+	goto error;
       }
     }
 
@@ -811,7 +811,7 @@ static int r_extract_dtree(gzFile zf, dcar_tree_t * dt, dcar_option_t * opt,
   }
 
   if (n >= dt->n) {
-	opt->errstr = "extract check entries error";
+    opt->errstr = "extract check entries error";
     goto error;
   }
 
@@ -825,13 +825,13 @@ static int r_extract_dtree(gzFile zf, dcar_tree_t * dt, dcar_option_t * opt,
       strcpy(pathend, e->name);
       opt->internal.level++;
       if (opt->internal.level > opt->out.level) {
-		opt->out.level = opt->internal.level;
+	opt->out.level = opt->internal.level;
       }
       cnt = 0;
       if (e->attr.size) {
-		if (cnt = r_extract_dtree(zf, dt, opt, e->attr.size), cnt < 0) {
-		  goto error;
-		}
+	if (cnt = r_extract_dtree(zf, dt, opt, e->attr.size), cnt < 0) {
+	  goto error;
+	}
       }
       opt->internal.level--;
       count += cnt;
@@ -853,22 +853,22 @@ static int extract_dtree(gzFile zf, dcar_tree_t * dt, dcar_option_t * opt)
 {
   int count = -1;
 
-/*   SDDEBUG("%s('%s')\n", __FUNCTION__, opt->internal.path); */
-/*   SDINDENT; */
+  /*   SDDEBUG("%s('%s')\n", __FUNCTION__, opt->internal.path); */
+  /*   SDINDENT; */
 
   /* Create path extract path. */
   if (opt->in.verbose) {
     printf("%s\n", opt->internal.path);
   }
   if (create_dir(opt->internal.path) < 0) {
-	opt->errstr = "extract directory creation error";
+    opt->errstr = "extract directory creation error";
     goto error;
   }
   count = r_extract_dtree(zf, dt, opt, 0);
 
  error:
-/*   SDUNINDENT; */
-/*   SDDEBUG("%s('%s') := [%d]\n", __FUNCTION__, opt->internal.path, count); */
+  /*   SDUNINDENT; */
+  /*   SDDEBUG("%s('%s') := [%d]\n", __FUNCTION__, opt->internal.path, count); */
   return count;
 }
 
@@ -883,8 +883,8 @@ int dcar_extract(const char *name, const char *path, dcar_option_t *opt)
   int err = -1;
   gzFile zf = 0;
 
-/*   SDDEBUG("%s('%s','%s',%p)\n", __FUNCTION__, name, path, opt); */
-/*   SDINDENT; */
+  /*   SDDEBUG("%s('%s','%s',%p)\n", __FUNCTION__, name, path, opt); */
+  /*   SDINDENT; */
 
   if (!name || !path)  {
     return -1;
@@ -896,7 +896,7 @@ int dcar_extract(const char *name, const char *path, dcar_option_t *opt)
   cpath[sizeof(cpath)-1] = 0;
   strncpy(cpath, path, sizeof(cpath)-1);
   if (cpath[sizeof(cpath)-1]) {
-	opt->errstr = "path too long";
+    opt->errstr = "path too long";
     return -1;
   }
   cpath[sizeof(cpath)-1] = 0;
@@ -904,24 +904,24 @@ int dcar_extract(const char *name, const char *path, dcar_option_t *opt)
 
   fd = fs_open(name, O_RDONLY);
   if (!fd) {
-	opt->errstr = "open error";
+    opt->errstr = "open error";
     goto error;
   }
   if (opt->in.skip && fs_seek(fd, opt->in.skip, SEEK_SET) != opt->in.skip) {
-	opt->errstr = "seek error";
-	goto error;
+    opt->errstr = "seek error";
+    goto error;
   }
   opt->out.cbytes = fs_total(fd) - opt->in.skip;
 
   zf = gzdopen(fd, "rb");
   if (!zf) {
-	opt->errstr = "reopen error";
+    opt->errstr = "reopen error";
     goto error;
   }
   fd = 0;
 
   if (gzread(zf, tmp, 8) != 8) {
-	opt->errstr = "header read error";
+    opt->errstr = "header read error";
     goto error;
   }
 
@@ -951,7 +951,7 @@ int dcar_extract(const char *name, const char *path, dcar_option_t *opt)
     if (n >= 0) {
       opt->errstr = "bad number of entry";
     } else {
-/*       SDERROR("[%s] : extract failure [%d].\n", name, n); */
+      /*       SDERROR("[%s] : extract failure [%d].\n", name, n); */
     }
     err = -1;
   } else {
@@ -960,12 +960,12 @@ int dcar_extract(const char *name, const char *path, dcar_option_t *opt)
 
  error:
   if (err < 0) {
-	if (!opt->errstr) {
-	  opt->errstr = "unexpected error";
-	}
-	SDERROR("[%s] : %s.\n", __FUNCTION__, opt->errstr);
+    if (!opt->errstr) {
+      opt->errstr = "unexpected error";
+    }
+    SDERROR("[%s] : %s.\n", __FUNCTION__, opt->errstr);
   } else {
-	opt->errstr = "success";
+    opt->errstr = "success";
   }
 
   if (dt) {
@@ -978,9 +978,9 @@ int dcar_extract(const char *name, const char *path, dcar_option_t *opt)
     gzclose(zf);
   }
 
-/*   SDUNINDENT; */
-/*   SDDEBUG("%s('%s','%s') := [%d,%s]\n", __FUNCTION__, */
-/* 		  name, path, err, opt->errstr); */
+  /*   SDUNINDENT; */
+  /*   SDDEBUG("%s('%s','%s') := [%d,%s]\n", __FUNCTION__, */
+  /* 		  name, path, err, opt->errstr); */
 
   return err;
 }
