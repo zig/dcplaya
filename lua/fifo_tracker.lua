@@ -4,7 +4,7 @@
 --- @date     2003
 --- @brief    fifo tracker application.
 ---
---- $Id: fifo_tracker.lua,v 1.3 2003-04-21 20:25:08 vincentp Exp $
+--- $Id: fifo_tracker.lua,v 1.4 2003-05-01 06:37:04 vincentp Exp $
 ---
 
 fifo_tracker_loaded = nil
@@ -23,24 +23,24 @@ function fifo_tracker_create(owner, name)
    name = name or "fifo tracker"
 
    --- volume control application avent handler.
-   function fifo_tracker_handle(vc, evt)
+   function fifo_tracker_handle(ft, evt)
       local key = evt.key
 
       if key == evt_shutdown_event then
 	 local k,dl
-	 for k,dl in { vc.dl_full, vc.dl_empty, vc.dl } do
+	 for k,dl in { ft.dl_full, ft.dl_empty, ft.dl } do
 	    dl_set_active(dl,0)
 	    dl_clear(dl)
 	 end
-	 vc.dl_full = nil
-	 vc.dl_empty = nil
+	 ft.dl_full = nil
+	 ft.dl_empty = nil
 	 return evt
       end
 
       return evt
    end
 
-   function fifo_tracker_update(vc, frametime)
+   function fifo_tracker_update(ft, frametime)
       local total = fifo_size()
       local a = fifo_used()
       local percent = a*1000/total
@@ -51,79 +51,79 @@ function fifo_tracker_create(owner, name)
 
       
       if percent > 900 or percent == 0 then
-	 vc.time_full = vc.time_full + frametime
+	 ft.time_full = ft.time_full + frametime
       else
-	 vc.time_full = 0
+	 ft.time_full = 0
       end
 
       if percent < 100 then
-	 vc.time_empty = vc.time_empty + frametime
+	 ft.time_empty = ft.time_empty + frametime
       else
-	 vc.time_empty = 0
+	 ft.time_empty = 0
       end
 
       local color = { 1, 1, 1, 1 }
-      if vc.time_full > 0.5 then
-	 if vc.alpha < 0.1 then
-	    vc.alpha = 0
-	    dl_set_active(vc.dl, 0)
+      if ft.time_full > 0.5 then
+	 if ft.alpha < 0.1 then
+	    ft.alpha = 0
+	    dl_set_active(ft.dl, 0)
 	    return
 	 else
-	    vc.alpha = vc.alpha + (0 - vc.alpha) * frametime * 4
+	    ft.alpha = ft.alpha + (0 - ft.alpha) * frametime * 4
 	 end
       else
-	 if vc.alpha > 0.9 then
-	    vc.alpha = 1
+	 if ft.alpha > 0.9 then
+	    ft.alpha = 1
 	 else
-	    vc.alpha = vc.alpha + (1 - vc.alpha) * frametime * 8
+	    ft.alpha = ft.alpha + (1 - ft.alpha) * frametime * 8
 	 end
       end
 
-      if vc.time_empty > 1 then
-	 local a = (vc.time_empty - 1) * 60 * 4
+      if ft.time_empty > 1 then
+	 local a = (ft.time_empty - 1) * 60 * 4
 	 a = cos(a)*0.25 + 0.75
 	 color[1] = a
 	 color[3] = a
       end
 
-      --      dl_set_color(vc.dl, color)
---      dl_set_color(vc.dl_full, color * fifo_tracker_full_color)
---      dl_set_color(vc.dl_empty, color * fifo_tracker_empty_color)
---      dl_set_color(vc.dl_text, color)
-      dl_set_color(vc.dl, 
-		   vc.alpha,
+      --      dl_set_color(ft.dl, color)
+--      dl_set_color(ft.dl_full, color * fifo_tracker_full_color)
+--      dl_set_color(ft.dl_empty, color * fifo_tracker_empty_color)
+--      dl_set_color(ft.dl_text, color)
+      dl_set_color(ft.dl, 
+		   ft.alpha,
 		   color[2],
 		   color[3],
 		   color[4]
 		)
-      dl_set_active(vc.dl, 1)
+      dl_set_active(ft.dl, 1)
 
       local w = 200
       local x = 200 * a / total
-      dl_set_trans(vc.dl_full, 
+      dl_set_trans(ft.dl_full, 
 		   mat_scale(x, 30, 1)
 		   *
 		   mat_trans(320-w/2, 5, 0)
 	     )
 
       local x = 200
-      dl_set_trans(vc.dl_empty, 
+      dl_set_trans(ft.dl_empty, 
 		   mat_scale(x, 30, 1)
 		   *
 		   mat_trans(320-w/2, 5, 0)
 	     )
 
-      dl_clear(vc.dl_text)
+      dl_clear(ft.dl_text)
       
-      dl_text_prop(vc.dl_text,1,16)
-      dl_draw_text(vc.dl_text, 320-w/2 + 40, 14, 3, 1, 1, 1, 1, 
+      dl_text_prop(ft.dl_text,1,16)
+      dl_draw_text(ft.dl_text, 320-w/2 + 40, 14, 3, 1, 1, 1, 1, 
 		   format("%4d", percent))
 
       --print(x)
    end
 
    --- Draw volume bar at a given volume
-   local vc = {
+   local ft = {
       -- Application
       name = name,
       version = 1.0,
@@ -145,50 +145,50 @@ function fifo_tracker_create(owner, name)
    }
 
    -- Main display list
-   dl_clear(vc.dl)
+   dl_clear(ft.dl)
    local tw = 16
-   dl_text_prop(vc.dl,0,tw)
+   dl_text_prop(ft.dl,0,tw)
    local title = "sound buffer"
-   local w,h = dl_measure_text(vc.dl,title, 0, tw)
+   local w,h = dl_measure_text(ft.dl,title, 0, tw)
 
-   dl_draw_text(vc.dl, (640-w)*0.5,-h,0, 1,1,1,1, title);
-   dl_sublist(vc.dl, vc.dl_full)
-   dl_sublist(vc.dl, vc.dl_empty)
-   dl_sublist(vc.dl, vc.dl_text)
-   dl_set_trans(vc.dl, mat_trans(200,40,0))
-   dl_set_color(vc.dl, 0.5,1,1,1)
+   dl_draw_text(ft.dl, (640-w)*0.5,-h,0, 1,1,1,1, title);
+   dl_sublist(ft.dl, ft.dl_full)
+   dl_sublist(ft.dl, ft.dl_empty)
+   dl_sublist(ft.dl, ft.dl_text)
+   dl_set_trans(ft.dl, mat_trans(200,40,0))
+   dl_set_color(ft.dl, 0.5,1,1,1)
 
-   dl_set_color(vc.dl_text, 1, 0, 0, 0)
+   dl_set_color(ft.dl_text, 1, 0, 0, 0)
 
 
    -- build bar
-   dl_set_color(vc.dl_full, 
+   dl_set_color(ft.dl_full, 
 		fifo_tracker_full_color[1],
 		fifo_tracker_full_color[2],
 		fifo_tracker_full_color[3],
 		fifo_tracker_full_color[4]
 	     )
-   dl_draw_box(vc.dl_full, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+   dl_draw_box(ft.dl_full, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
-   dl_set_color(vc.dl_empty, 
+   dl_set_color(ft.dl_empty, 
 		fifo_tracker_empty_color[1],
 		fifo_tracker_empty_color[2],
 		fifo_tracker_empty_color[3],
 		fifo_tracker_empty_color[4]
 	     )
-   dl_draw_box(vc.dl_empty, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1)
+   dl_draw_box(ft.dl_empty, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1)
 
 
-   dl_set_active(vc.dl, 1)
+   dl_set_active(ft.dl, 1)
       
-   evt_app_insert_last(owner, vc)
+   evt_app_insert_last(owner, ft)
 
    if fifo_tracker then
       evt_shutdown_app(fifo_tracker)
    end
-   fifo_tracker = vc
+   fifo_tracker = ft
 
-   return vc
+   return ft
 end
 
 -- Load application icon

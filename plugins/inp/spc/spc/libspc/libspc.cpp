@@ -132,9 +132,11 @@ int SPC_set_state(SPC_Config *cfg)
 
 
 /*
- * VP : each time a timer is read, the SPC is slowdowned for 8 instructions.
+ * VP : each time a timer is read, the SPC is slowdowned for 
+ * SPC_slowdown_instructions instructions.
  * This should leverage host CPU usage without noticeable effect.
- * (the SPC get exactly 16 times slower, thus 16 times faster to emulate in
+ * (the SPC get exactly 2^SPC_slowdown_cycle_shift times slower, 
+ *  thus 2^SPC_slowdown_cycle_shift times faster to emulate in
  *  slowdown mode)
  *
  */
@@ -164,7 +166,9 @@ void SPC_update(unsigned char *buf)
   int c, ic, oc;
 
   BCOLOR(255, 0, 0);
-#if 1
+
+  /* VP : rewrote this loop, it was completely wrong in original
+     spcxmms-0.2.1 */
   for (c = 0; c < 2048000 / RATE; ) {
     oc = c;
     for (ic = c + 256; c < ic; ) {
@@ -174,7 +178,8 @@ void SPC_update(unsigned char *buf)
       //APU_EXECUTE1();
 
       if (IAPU.Slowdown > 0) {
-	/* VP : in slowdown mode, SPC executes x times slower */
+	/* VP : in slowdown mode, SPC executes 2^SPC_slowdown_cycle_shift 
+	   times slower */
 	c += cycles << SPC_slowdown_cycle_shift;
 	IAPU.Slowdown --;
       } else {
@@ -190,16 +195,6 @@ void SPC_update(unsigned char *buf)
     }
 
   }
-#else
-  for (APU.Cycles = 0; APU.Cycles < 204800 * 5 / 2 / RATE; APU.Cycles ++) {
-    APU_EXECUTE1();
-    ++ IAPU.TimerErrorCounter;
-    if ((IAPU.TimerErrorCounter & 31) == 0)
-      DoTimer();
-    APURegisters.PC = IAPU.PC - IAPU.RAM;
-    S9xAPUPackStatus();
-  }
-#endif
 
   BCOLOR(255, 255, 0);
   S9xMixSamples ((unsigned char *)buf, samples_per_mix);

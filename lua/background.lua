@@ -52,7 +52,13 @@ function background_set_texture(bkg, texture, type)
       set_vertex(bkg.vtx[4],{ 1, 1, 0, 1 })
       vtx = 1
    else
+      -- VP hide the background during loading to avoid locking rendering
+      dl_set_active(bkg.dl, nil)
+
       vtx = load_background(texture, type)
+
+      dl_set_active(bkg.dl, 1)
+
       if vtx then
 	 for i,v in vtx do
 	    set_vertex(bkg.vtx[i],

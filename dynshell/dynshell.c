@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.96 2003-04-21 04:32:48 vincentp Exp $
+ * @version    $Id: dynshell.c,v 1.97 2003-05-01 06:37:04 vincentp Exp $
  */
 
 #include "dcplaya/config.h"
@@ -2498,14 +2498,15 @@ static int lua_load_background(lua_State * L)
     */
     /* VP : don't call twiddle on a texture, it is done automatically at
        rendering time IF necessary */
-/*    texture_twiddle(stexture,1);*/
+    /*texture_twiddle(stexture, 1); */
     texture_release(stexture);
   }
 
   /* Twiddle the texture :) */
   /* VP : don't call twiddle on a texture, it is done automatically at
      rendering time IF necessary */
-/*  texture_twiddle(btexture,1); */
+  /* Ok actually it was a good idea, in this way we don't lock rendering :) */
+  texture_twiddle(btexture,1);
   /* Finally unlock the background texture */
   texture_release(btexture);
 
