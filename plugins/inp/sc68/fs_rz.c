@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   Gzipped compressed rom disk for KOS file system
  * 
- * $Id: fs_rz.c,v 1.1 2003-03-07 20:50:33 ben Exp $
+ * $Id: fs_rz.c,v 1.2 2003-03-08 09:55:23 ben Exp $
  */
 
 #include <arch/types.h>
@@ -30,6 +30,14 @@ typedef struct {
   int   uptr;
   int   cptr;
 } rdfh_t;
+
+typedef struct {
+  int cnt;
+  const uint8 *e;
+  dirent_t dir;
+} rddh_t;
+
+static rddh_t mydh, * cur_dh = 0;
 
 static const uint8 * root = 0;
 static rdfh_t myrd, * cur_rd = 0;
@@ -164,6 +172,37 @@ static ssize_t read(file_t fd, void * buffer, size_t size)
   return err;
 }
 
+
+static dirent_t * readdir(file_t fd)
+{
+  rddh_t *dh = (rddh_t *)fd;
+  int nlen,clen,ulen;
+  const char * name;
+
+  if (!dh || dh != cur_dh) {
+    return 0;
+  }
+
+  if (dh->cnt >= root_entries) {
+    return 0;
+  }
+
+  nlen = dh->e[0];
+  ulen = dh->e[1] + (dh->e[2]<<8) + (dh->e[3]<<16);
+  clen = dh->e[4] + (dh->e[5]<<8) + (dh->e[6]<<16);
+  name = dh->e + 7;
+  dh->e += 7 + nlen + clen;
+  ++dh->cnt;
+
+  /* Fill dir */
+  strcpy(dh->dir.name, name);
+  dh->dir.size = ulen;
+  dh->dir.attr = 0;
+
+  return &dh->dir;
+}
+
+
 /* Open a file or directory */
 static file_t open(const char *fn, int mode)
 {
@@ -173,6 +212,23 @@ static file_t open(const char *fn, int mode)
     SDERROR("[rz] : invalid filename [%s]\n",fn);
     return 0;
   }
+
+  if (!fn[0] || (fn[0] == '.' && !fn[1])) {
+    if (mode != (O_RDONLY | O_DIR)) {
+      SDERROR("[rz] : invalid open mode for root\n");
+      return 0;
+    }
+    if (cur_dh) {
+      SDERROR("[rz] : too many open dir\n");
+      return 0;
+    }
+    cur_dh = (rddh_t *)1;
+    mydh.cnt = 0;
+    mydh.e   = root + 8;
+    memset(&mydh.dir,0,sizeof(mydh.dir));
+    return (uint32) (cur_dh = &mydh);
+  }
+
   name = strrchr(fn,'/');
   name = name ? name+1 : fn;
 
@@ -230,12 +286,21 @@ static file_t open(const char *fn, int mode)
 /* Close a file or directory */
 static void close(uint32 fd)
 {
-  rdfh_t * rd = (rdfh_t *)fd;
+  rdfh_t * rd;
+  rddh_t * dh;
 
-  if (rd && rd == cur_rd) {
-    /* do not free : keep cached data !!! */
-    memset(rd,0,sizeof(*rd));
-    cur_rd = 0;
+  if (fd) {
+    rd = (rdfh_t *)fd;
+    dh = (rddh_t *)fd;
+
+    if (rd == cur_rd) {
+      /* do not free : keep cached data !!! */
+      memset(rd,0,sizeof(*rd));
+      cur_rd = 0;
+    } else if (dh == cur_dh) {
+      memset(dh,0,sizeof(*dh));
+      cur_dh = 0;
+    }
   }
 }
 
@@ -303,7 +368,7 @@ static vfs_handler vh = {
   seek, //only for total !!
   tell,
   total,
-  0,
+  readdir,
   0,
   0,
   0,
@@ -344,6 +409,8 @@ int fs_rz_init(const unsigned char * romdisk)
   cached_addr = 0;
   cached_shadow = 0;
   memset(&myrd,0,sizeof(myrd));
+  memset(&mydh,0,sizeof(mydh));
+  cur_dh = 0;
 
   return 0;
 }
@@ -361,5 +428,8 @@ int fs_rz_shutdown(void)
   cached_addr = 0;
   cached_shadow = 0;
   memset(&myrd,0,sizeof(myrd));
+  memset(&mydh,0,sizeof(mydh));
+  cur_dh = 0;
+
   return fs_handler_remove(&vh);
 }

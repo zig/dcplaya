@@ -3,23 +3,22 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: sc68_driver.c,v 1.5 2003-03-07 20:50:33 ben Exp $
+ * @version   $Id: sc68_driver.c,v 1.6 2003-03-08 09:55:24 ben Exp $
  */
-
-#define USE_RZ 1
 
 /* generated config include */
 #include "config.h"
+
+/* $$$ Outch ! */
+#ifdef DEBUG
+# undef DEBUG
+#endif
+
 /* $$$ hack becoz sc68 has its own config.h */
 #include "../include/config.h"
 
 #include <kos/fs.h>
-
-#ifndef USE_RZ
-# include <kos/fs_romdisk.h>
-#else
-# include "fs_rz.h"
-#endif
+#include "fs_rz.h"
 
 //#include <dc/fmath.h>
 #include <stdio.h>
@@ -48,15 +47,6 @@
 
 #include "sysdebug.h"
 
-#undef DEBUG
-#define DEBUG 1
-
-#undef DEBUG_LOG
-#define DEBUG_LOG 1
-
-#include "sysdebug.h"
-
-
 /* 512 Kb 68K memory buffer */
 #define MEMORY68 (1<<19)
 
@@ -65,13 +55,7 @@
 
 SC68app_t app; /**< sc68 application context. */
 
-
-extern uint8 romdisk[];
-#ifndef USE_RZ
-extern uint8 sc68disk[];
-#else
 extern uint8 sc68newdisk[];
-#endif
 
 static int disk_info(playa_info_t *info, disk68_t *d);
 
@@ -112,6 +96,11 @@ static int init_68K(reg68_t * r, u32 sz)
   return 0;
 }
 
+static void shutdown_68K()
+{
+  EMU68_kill();
+}
+
 /** Set sc68 application to default values. */
 static void set_sc68app_default(SC68app_t * app)
 {
@@ -126,11 +115,6 @@ static int init(any_driver_t *d)
   int frq;
 
 /*   SDDEBUG("sc68 : Init [%s]\n", d->name); */
-
-#ifdef USE_RZ
-  SDDEBUG("[sc68] : create sc68 romdisk\n");
-  fs_rz_init(sc68newdisk);
-#endif
 
   /* check whether EMU68 is compiled without debug option */
   if (EMU68_sizeof_reg68() != sizeof(reg68_t)) {
@@ -162,16 +146,22 @@ static int init(any_driver_t *d)
   PL_set_replay_frq((int) app.mix.real_frq);
   app.mix.buf = YM_get_buffer();
 
+  SDDEBUG("[sc68] : create sc68 romdisk\n");
+  fs_rz_init(sc68newdisk);
+
  error:
-  spool_error_message();
-  SDERROR("[%s] : error line [%d]\n", __FUNCTION__ , err);
+  if (err) {
+    spool_error_message();
+    SDERROR("[%s] : error line [%d]\n", __FUNCTION__ , err);
+    shutdown_68K();
+  }
+
   return -!!err;
 }
 
 static int stop(void)
 {
 /*   dbglog(DBG_DEBUG, "sc68: STOP, Eject disk\n"); */
-
   SC68stop(&app);
   SC68eject(&app);
   return 0;
@@ -180,11 +170,10 @@ static int stop(void)
 static int shutdown(any_driver_t *d)
 {
   stop();
-#ifdef USE_RZ
+  SDDEBUG("[sc68] : shutdown 68k\n");
+  shutdown_68K();
   SDDEBUG("[sc68] : removing sc68 romdisk\n");
   fs_rz_shutdown();
-#endif
-
   return 0;
 }
 
@@ -194,11 +183,6 @@ static int start(const char *fn, int track, playa_info_t *info)
   disk68_t *disk = 0;
 
 /*   SDDEBUG("%s(%s)\n", __FUNCTION__, fn); */
-  /* $$$ Hack romdisk */
-#ifndef USE_RZ
-  fs_romdisk_shutdown();
-  fs_romdisk_init(sc68disk);
-#endif
   
   disk = SC68app_load_diskfile((char *)fn, 0);
   if (!disk) {
@@ -246,10 +230,6 @@ static int start(const char *fn, int track, playa_info_t *info)
   }
   disk_info(info, app.cur_disk);
   spool_error_message();
-#ifndef USE_RZ
-  fs_romdisk_shutdown();
-  fs_romdisk_init(romdisk);
-#endif
   
   return err;
 }
