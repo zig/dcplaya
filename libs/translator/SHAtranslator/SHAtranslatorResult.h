@@ -1,10 +1,10 @@
 /**
- * @ingroup   SHAtranslator
+ * @ingroup   dcplaya_devel
  * @file      SHAtranslatorResult.h
  * @brief     Translator result class definition.
  * @date      2001/07/11
  * @author    BeN(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAtranslatorResult.h,v 1.2 2002-10-05 09:43:58 benjihan Exp $
+ * @version   $Id: SHAtranslatorResult.h,v 1.3 2002-12-15 16:13:36 ben Exp $
  */
 
 #ifndef _SHATRANSLATORRESULT_H_
@@ -12,24 +12,27 @@
 
 #include "SHAR/SHARimg.h"
 
+/** Translator result class.
+ *  @ingroup   dcplaya_devel
+ */
 class SHAtranslatorResult
 {
 public:
 
   SHAtranslatorResult();
 
+  /// Clean result.
   void Clean(void);
 
-  //SHAtranslatorFamily Family(void) const;
-  //void Family(SHAtranslatorFamily newFamily);
-  //void Family(SHAtranslatorFamily::Type_e newFamilyType);
-
+  /// Get error code.
   inline int Error(void) const {
     return errorNo;
   }
+  /// Get error string.
   inline const char * ErrorStr(void) const {
     return errorStr;
   }
+  /// Set error string and code.
   int Error(const char *str, int no = -1);
 
 protected:

@@ -4,7 +4,8 @@
  * @brief     Image translator base class implementation
  * @date      2001/07/19
  * @author    BeN(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAtranslatorImage.cxx,v 1.3 2002-10-21 14:56:59 benjihan Exp $
+ *
+ * $Id: SHAtranslatorImage.cxx,v 1.4 2002-12-15 16:13:36 ben Exp $
  */
 
 
@@ -26,7 +27,7 @@ int SHAtranslatorImage::WriteHeader(SHAtranslatorResult *result,
   SHAwrapperImage_t v;
   int err;
 
-  v.type    = result->data.image.type;
+  v.type    = (SHAwrapperImageFormat_e)result->data.image.type;
   v.width   = result->data.image.width;
   v.height  = result->data.image.height;
   v.lutSize = result->data.image.lutSize;
