@@ -1,3 +1,13 @@
+/****************************************************************************
+ * $PROJECT_NAME$ documentation version $PROJECT_NUMBER$ style-sheet
+ *
+ * Generated on $DATE$
+ *
+ * (c) 2003 benjamin gerard
+ *
+ * $Id: dcplaya_doc.cssin,v 1.2 2003-03-23 23:53:24 ben Exp $
+ ****************************************************************************/
+
 BODY {
 	background:	$background$;
 	color:		$text$;
@@ -60,10 +70,9 @@ A:visited A:link {
 }
 
 A:hover {
-	text-decoration:	underline;
-        color:			$hi-color$;
+	text-decoration	: underline;
+        color		: $hi-color$;
 }
-
 
 A.mail A.mailto {
 	text-decoration:	underline;
@@ -71,11 +80,21 @@ A.mail A.mailto {
 }
 
 A.qindex {
-	 background	: $barcolor$;
-	 color		: $bartext$;
-	 border		: $barborder$ $barbordercolor$;
-	 padding	: 2px;
-	 margin		: 1px 1px 1px 1px;
+	background	: $barcolor$;
+	color		: $bartext$;
+	border		: $barborder$ $barbordercolor$;
+	padding		: 1px 1px 1px 1px;
+	margin		: 1px 1px 1px 1px;
+	font-weight	: bolder;
+}
+
+A.qindex:hover {
+	background	: $barcolorlight$;
+	color		: $bartext$;
+	border		: 2px inset $barbordercolor$;
+	padding		: 1px 1px 1px 1px;
+	margin		: 0px 0px 0px 0px;
+	text-decoration	: underline;
 }
 
 P {
@@ -84,12 +103,12 @@ P {
 	text-align:	justify;
 }
 
-//A.qindexRef {}
+/* A.qindexRef {} */
 A.el { font-weight: bold }
 A.elRef { font-weight: bold }
-//A.code { text-decoration: none; font-weight: normal; color: $anchor-color$ }
-//A.code : hover { text-decoration: underline; color: $hi-color$ }
-//A.codeRef { font-weight: normal; color: #4444ee }
+/* A.code { } */
+/* A.code : hover { text-decoration: underline; color: $hi-color$ } */
+/* A.codeRef { font-weight: normal; color: #4444ee } */
 
 DL.el {
       margin-left: -1cm
@@ -97,13 +116,11 @@ DL.el {
 DIV.fragment {
 	     width		: 100%;
 	     border		: none;
-//	     background-color	: #eeeeee;
+/	     background-color	: #eeeeee;
 }
 
 DIV.ah {
-//       background-color		: black;
        font-weight		: bold;
-//       color			: #ffffff;
        margin-bottom		: 3px;
        margin-top		: 3px
 }
@@ -112,20 +129,14 @@ TD.md {
       background-color		: $barcolorlight$;
       font-weight		: bold;
       border			: none;
-//      border			: 1px solid #000000;
 }
 
 TD.mdname1 {
-//	   background-color	: #f2f2ff;
 	   font-weight		: bold;
-//	   color		: #602020;
 }
 
 TD.mdname {
-//	  background-color	: #f2f2ff;
 	  font-weight		: bold;
-//	  color			: #602020;
-//	  width			: 600px;
 }
 
 DIV.groupHeader {
