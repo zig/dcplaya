@@ -4,9 +4,9 @@
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sasahipa.com>
 #
 #
-# $Id: Makefile,v 1.8 2002-09-25 03:21:21 benjihan Exp $
+# $Id: Makefile,v 1.9 2003-01-20 21:04:24 zigziggy Exp $
 #
 
-SUBDIRS = xing sidplay ogg mikmod
+SUBDIRS = xing sidplay ogg mikmod sndtst
 
 include ../../Makefile.inc
