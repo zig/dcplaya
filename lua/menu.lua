@@ -132,8 +132,12 @@ function menu_create(owner, name, def, box, x1, y1)
 	 return evt
       end
 
-      if gui_keyconfirm[key] then
-	 return menu:confirm()
+      if gui_keyconfirm[key] or gui_keyselect[key] then
+	 local r = menu:confirm()
+	 if gui_keyconfirm[key] then
+	    menu:close()
+	 end
+	 return r
       elseif gui_keycancel[key] then
 	 evt_shutdown_app(menu.root_menu)
 	 return
@@ -294,10 +298,9 @@ function menu_create(owner, name, def, box, x1, y1)
 	 if cbname and type(menu.def.cb) == "table" then
 	    local cb = menu.def.cb[cbname]
 	    if cb then
-	       cb(menu)
+	       cb(menu, idx)
 	    end
 	 end
-	 print("confirm "..tostring(entry.name))
       end
       return
    end

@@ -4,7 +4,7 @@
 --- @date    2002/11/29
 --- @brief   Song info application.
 ---
---- $Id: song_info.lua,v 1.14 2002-12-23 09:01:36 ben Exp $
+--- $Id: song_info.lua,v 1.15 2003-01-03 13:39:57 ben Exp $
 
 song_info_loaded = nil
 
@@ -219,10 +219,15 @@ function song_info_create(owner, name, style)
 	 si:shutdown()
 	 return evt
       elseif key == gui_focus_event then
+	 local save_minimized = si.minimized
 	 si:maximize()
+	 si.focus_has_maximized = save_minimized
 	 return
       elseif key == gui_unfocus_event then
-	 si:minimize()
+	 if si.focus_has_maximized then
+	    si.focus_has_maximized = nil
+	    si:minimize()
+	 end
 	 return
       end
       return evt
@@ -257,6 +262,7 @@ function song_info_create(owner, name, style)
    --- @internal
    --
    function song_info_maximize(si)
+      si.focus_has_maximized = nil
       si.minimized = nil
       si:draw()
    end
@@ -306,12 +312,40 @@ function song_info_create(owner, name, style)
       si.info_comments = nil
    end
 
+   function song_info_menucreator(target)
+      local si = target;
+      local cb = {
+	 toggle = function(menu, idx)
+		     local si = menu.target
+		     if si.minimized then
+			menu.fl.dir[idx].name = "minimize"
+			si:maximize()
+		     else
+			menu.fl.dir[idx].name = "maximize"
+			si:minimize()
+		     end
+		     menu:draw()
+		  end,
+      }
+      local root = ":" .. target.name .. ":" ..
+	 ((si.minimized and "maximize") or "minimize") .. "{toggle}"
+
+      local def = menu_create_defs
+      (
+       {
+	  root=root,
+	  cb = cb,
+       }, target)
+      return def
+   end
+
    si = {
       -- Application
       name = name,
       version = 1.0,
       handle = song_info_handle,
       update = song_info_update,
+      mainmenu_def = song_info_menucreator,
 
       -- methods
       shutdown = song_info_shutdown,
@@ -514,6 +548,7 @@ function song_info_create(owner, name, style)
       dl_set_trans(field.dl, mat_trans(x,y,1))
       return field
    end
+
 
    color = color_new(0.5,1,1,1)
    local lbox, mbox, sbox
