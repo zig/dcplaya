@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.57 2003-03-17 15:37:38 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.58 2003-03-25 09:29:23 ben Exp $
  */
 
 //#define RELEASE
@@ -1038,7 +1038,8 @@ static int vmu_load(void)
 int dreammp3_main(int argc, char **argv)
 {
   int err = 0;
-  int debug_level = DBG_KDEBUG;
+  int kos_debug_level = DBG_KDEBUG;
+  int dcp_debug_level = (1<<sysdbg_user)-1;
 
   curlogo = 0; //& mine_3;
   fade68 = 0.0f;
@@ -1047,22 +1048,24 @@ int dreammp3_main(int argc, char **argv)
 
 #ifdef DEBUG_LOG
 # if DEBUG_LEVEL > 1
-  debug_level = DBG_KDEBUG;
+  kos_debug_level = DBG_KDEBUG;
+  dcp_debug_level = -1;
 # else
-  debug_level = DBG_DEBUG;
+  kos_debug_level = DBG_DEBUG;
+  dcp_debug_level = (1<<sysdbg_trace)-1; /* Get message prior to trace excl. */
 # endif
 #else
-  debug_level = DBG_NOTICE;
+  kos_debug_level = DBG_NOTICE;
+  dcp_debug_level = (1<<sysdbg_critical);
 #endif
 
-  dbglog_set_level(debug_level);
+  sysdbg_set_level(dcp_debug_level,0);
+  dbglog_set_level(kos_debug_level);
   /* Do basic setup */
   kos_init_all(IRQ_ENABLE | THD_ENABLE, romdisk);
-
   /* Initialize exceptions handling */
   expt_init();
-
-  dbglog_set_level(debug_level);
+  dbglog_set_level(kos_debug_level);
 
   /* $$$ Becoz of a bug sometine cdron is not detected, force detextio here */
   cdrom_reinit();

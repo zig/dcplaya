@@ -5,7 +5,7 @@
  * @date       2002/09/04
  * @brief      Debug fonctions.
  *
- * @version    $Id: sysdebug.c,v 1.10 2003-03-11 13:33:17 ben Exp $
+ * @version    $Id: sysdebug.c,v 1.11 2003-03-25 09:29:23 ben Exp $
  */
 
 #include <stdarg.h>
@@ -24,14 +24,12 @@ extern int dbgio_vprintf(const char *fmt, va_list args);
 
 static spinlock_t mutex;
 
-/** Default user message level mask (accept all messages) */
-#define SD_DEFAULT_LEVEL -1
-
-/** The SD_GLOBAL_LEVEL is a compile time message level mask. */
 #if defined(RELEASE)
-# define SD_GLOBAL_LEVEL ((int)sysdbg_critical)
+# define SD_DEFAULT_LEVEL (1<<(int)sysdbg_critical)
+# define SD_GLOBAL_LEVEL  -1
 #else
-# define SD_GLOBAL_LEVEL -1
+# define SD_DEFAULT_LEVEL -1
+# define SD_GLOBAL_LEVEL  -1
 #endif
 
 static const char unused[] = "unused";
@@ -188,28 +186,33 @@ sysdbg_f sysdbg_set_function(sysdbg_f print, void * cookie)
 /** Set debug level mask. */
 void sysdbg_set_level(int level, int * prev)
 {
-  if (prev) {
-    *prev = sd_level;
-  }
+  /* using tmp allowing user to use the same reference for level and prev */
+  int save = sd_level;
   sd_level = level;
+  if (prev) {
+    *prev = save;
+  }
 }
 
 void sysdbg_or_level(int level, int * prev)
 {
-  if (prev) {
-    *prev = sd_level;
-  }
+  /* using tmp allowing user to use the same reference for level and prev */
+  int save = sd_level;
   sd_level |= level;
+  if (prev) {
+    *prev = save;
+  }
 }
 
 void sysdbg_and_level(int level, int * prev)
 {
-  if (prev) {
-    *prev = sd_level;
-  }
+  /* using tmp allowing user to use the same reference for level and prev */
+  int save = sd_level;
   sd_level &= ~level;
+  if (prev) {
+    *prev = save;
+  }
 }
-
 
 /** Change indent level. */
 void sysdbg_indent(int indent, int * prev)
