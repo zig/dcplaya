@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Exceptions and guardians handling
  *
- * @version    $Id: exceptions.c,v 1.1 2002-09-14 04:46:45 zig Exp $
+ * @version    $Id: exceptions.c,v 1.2 2002-09-14 07:21:23 zig Exp $
  */
 
 #include <kos.h>
@@ -64,6 +64,10 @@ static void guard_irq_handler(irq_t source, irq_context_t *context)
     irq_srt_addr[0x40/4] = longjmp;
     irq_srt_addr[4] = thd_current->expt_jump_stack[thd_current->expt_guard_stack_pos];
     irq_srt_addr[5] = (void *) -1;
+  } else {
+    /* not handled --> panic !! */
+    irq_dump_regs(code, evt);
+    panic("unhandled IRQ/Exception");
   }
 
 }
