@@ -15,7 +15,7 @@ function song_browser_create(owner, name, box)
 	-- --------------------------
 	local style = {
 		bkg_color		= { 0.8, 0.7, 0.7, 0.7,  0.8, 0.3, 0.3, 0.3 },
-		border			= 5,
+		border			= 12,
 		span            = 1,
 		file_color		= { 1, 0, 0, 0 },
 		dir_color		= { 1, 0, 0, .4 },
@@ -29,22 +29,25 @@ function song_browser_create(owner, name, box)
 		local loading = sb.fl.dir.loading
 		if loading then
 			sb.fl:change_dir(sb.fl.dir)
-		end
+		 end
 
-		if sb.fade == 0 then return end
-		local a = sb.alpha
-		a = a + sb.fade * frametime
-		if a > 1 then
-			a = 1
-			sb.fade  = 0
-		elseif a < 0 then
-			a = 0
-			sb.fade  = 0
-			dl_set_active(sb.fdl, 0)
-			dl_set_active(sb.pdl, 0)
-		end
-		sb.alpha = a
-		sb:set_color(a, 1, 1, 1)
+		 sb.fl:update(frametime)
+		 sb.pl:update(frametime)
+
+-- 		if sb.fade == 0 then return end
+-- 		local a = sb.alpha
+-- 		a = a + sb.fade * frametime
+-- 		if a > 1 then
+-- 			a = 1
+-- 			sb.fade  = 0
+-- 		elseif a < 0 then
+-- 			a = 0
+-- 			sb.fade  = 0
+-- 			dl_set_active(sb.fdl, 0)
+-- 			dl_set_active(sb.pdl, 0)
+-- 		end
+-- 		sb.alpha = a
+-- 		sb:set_color(a, 1, 1, 1)
 	end
 
 	-- Song-Browser handle
@@ -77,15 +80,17 @@ function song_browser_create(owner, name, box)
 			return
 		elseif gui_keyleft[key] then
 			if sb.cl ~= sb.fl then
-				sb.cl = sb.fl
+			   sb.cl = sb.fl
+			   sb:open()
+-- 			   sb:close(2)
 			end
-			sb:open()
 			return
 		elseif gui_keyright[key] then
 			if sb.cl ~= sb.pl then
-				sb.cl = sb.pl
+			   sb.cl = sb.pl
+			   sb:open()
+-- 			   sb:close(1)
 			end
-			sb:open()
 			return
 		end
 
@@ -94,18 +99,35 @@ function song_browser_create(owner, name, box)
 
 	-- Song-Browser open
 	-- -----------------
-	function song_browser_open(sb)
-		sb.fade = 4
-		sb.closed = nil
-		dl_set_active(sb.fdl,1)
-		dl_set_active(sb.pdl,1)
+	function song_browser_open(sb, which)
+	   sb.closed = nil
+	   if not which then
+		  sb.cl:open()
+		  if sb.cl == sb.fl then
+			 sb.pl:close()
+		  else
+			 sb.fl:close()
+		  end
+	   elseif which == 1 then
+ 		  sb.fl:open()
+	   else
+		  sb.pl:open()
+	   end	  
 	end
 
 	-- Song-Browser close
 	-- ------------------
-	function song_browser_close(sb)
-		sb.closed = 1
-		sb.fade = -4;
+	function song_browser_close(sb, which)
+-- 	   print ("close",which)
+	   if not which then
+		  sb.fl:close()
+		  sb.pl:close()
+	   elseif which == 1 then
+		  sb.fl:close()
+	   else
+		  sb.pl:close()
+	   end
+--		sb.fade = -4;
 	end
 
 	-- Song-Browser shutdown
@@ -114,8 +136,6 @@ function song_browser_create(owner, name, box)
 		if not sb then return end
 		sb.fl:shutdown()
 		sb.pl:shutdown()
-		dl_destroy_list(sb.fdl)
-		dl_destroy_list(sb.pdl)
 		local i,v
 		for i,v in sb do
 			sb[i] = nil
@@ -124,24 +144,84 @@ function song_browser_create(owner, name, box)
 
 	--- Song-Browser draw.
 	--
-	function song_browser_draw(menu)
+	function song_browser_draw(sb)
+	   sb.fl:draw()
+	   sb.pl:draw()
+	end
+
+	function songbrowser_list_draw_background(fl,dl)
+	   local v = mat_new(4,8)
+	   local x1,y1,x2,y2,x3,y3,x4,y4
+	   local border = fl.border * 0.75
+	   x1 = 0
+	   x2 = x1 + border
+	   x4 = fl.bo2[1]
+	   x3 = x4 - border
+	   y1 = 0
+	   y2 = y1 + border
+	   y4 = fl.bo2[2]
+	   y3 = y4 - border
+
+	   local a1,r1,g1,b1 = 1.0, 0.2, 0.8, 1.0
+	   local a2,r2,g2,b2 = 1.0, 0.8, 0.5, 0.8
+
+	   local w = {
+		  {x1, y1, 0.1, 1.0,  a1, r1, g1, b1 }, -- 1
+		  {x4, y1, 0.1, 1.0,  a1, r1, g1, b1 }, -- 2
+		  {x1, y4, 0.1, 1.0,  a1, r1, g1, b1 }, -- 3
+		  {x4, y4, 0.1, 1.0,  a1, r1, g1, b1 }, -- 4
+
+		  {x2, y2, 0.1, 1.0,  a2, r2, g2, b2 }, -- 5
+		  {x3, y2, 0.1, 1.0,  a2, r2, g2, b2 }, -- 6
+		  {x2, y3, 0.1, 1.0,  a2, r2, g2, b2 }, -- 7
+		  {x3, y3, 0.1, 1.0,  a2, r2, g2, b2 }, -- 8
+	   }
+
+	   local def = {
+		  { 1, 5, 3, 7, 0.6 },
+		  { 1, 2, 5, 6, 1.0 },
+		  { 6, 2, 8, 4, 0.4 },
+		  { 7, 8, 3, 4, 0.3 },
+	   }
+
+	   local i,d
+	   for i,d in def do
+		  local m =  { 1,1,1,1, 1, d[5], d[5], d[5] }
+		  set_vertex(v[1], w[d[1]] * m)
+		  set_vertex(v[2], w[d[2]] * m)
+		  set_vertex(v[3], w[d[3]] * m)
+		  set_vertex(v[4], w[d[4]] * m)
+		  dl_draw_strip(dl,v);
+	   end
+
+-- 	   dl_draw_box1(dl, x1, y1, x2, y4,0, 1,1,1,1)
+-- 	   dl_draw_box1(dl, x3, y1, x4, y4,0, 1,1,1,1)
+-- 	   dl_draw_box1(dl, x1, y1, x4, y2,0, 1,1,1,1)
+-- 	   dl_draw_box1(dl, x1, y3, x4, y4,0, 1,1,1,1)
+
+	   if fl.draw_background_old then
+		  fl:draw_background_old(dl)
+	   end
 	end
 
 	--- Song-Browser set color
 	--
 	function song_browser_set_color(sb, a, r, g, b)
-		local f1,f2
-		a = a or sb.alpha or 1
-		sb.alpha = a
-		f1 = 1
-		f2 = 0.5
-		if sb.cl == sb.pl then
-			f1,f2 = f2,f1
-		end
-		dl_set_color(sb.fdl,a*f1,r,g,b)
-		dl_set_color(sb.pdl,a*f2,r,g,b)
-		sb.fl:set_color(a*f1,r,g,b)
-		sb.pl:set_color(a*f2,r,g,b)
+	   sb.fl:set_color(a,r,g,b)
+	   sb.pl:set_color(a,r,g,b)
+
+-- 		local f1,f2
+-- 		a = a or sb.alpha or 1
+-- 		sb.alpha = a
+-- 		f1 = 1
+-- 		f2 = 0.5
+-- 		if sb.cl == sb.pl then
+-- 			f1,f2 = f2,f1
+-- 		end
+-- 		dl_set_color(sb.fdl,a*f1,r,g,b)
+-- 		dl_set_color(sb.pdl,a*f2,r,g,b)
+-- 		sb.fl:set_color(a*f1,r,g,b)
+-- 		sb.pl:set_color(a*f2,r,g,b)
 	end
 
 	--- Song-Browser confirm
@@ -188,48 +268,47 @@ function song_browser_create(owner, name, box)
 --    *     - @b 2    if entry is "not confirmed" but change occurs
 --    *     - @b 3    if entry is "confirmed" and change occurs
 	function sbfl_confirm(fl, sb)
-		print("sbfl_confirm")
-		local idx = fl.pos+1
-		local entry = fl.dir[idx]
-		local entry_path = fl.dir.path
-
-		if not entry_path then
-			entry_path="/"
-		end
-		if entry_path ~= "/" then
-			entry_path = entry_path.."/"
-		end
-		entry_path = entry_path .. fl.dir[idx].file
-
-		if entry.size and entry.size==-1 then
-			entrylist_load(fl.dir,entry_path)
-			fl:change_dir(fl.dir)
-		else
-			play(entry_path)
-			return 1
-		end 
+	   print("sbfl_confirm")
+	   local idx = fl.pos+1
+	   local entry = fl.dir[idx]
+	   local entry_path = fl.dir.path or "/"
+	   entry_path = canonical(entry_path .. "/" .. fl.dir[idx].file)
+	   
+	   if entry.size and entry.size==-1 then
+		  entrylist_load(fl.dir,entry_path)
+		  fl:change_dir(fl.dir)
+	   else
+		  play(entry_path)
+		  return 1
+	   end 
 	end
 
 	sb.fl = textlist_create(
-				{	pos = {x, y, z},
-					box = minmax,
-					flags=nil,
-					dir=entrylist_new(),
-					filecolor = sb.style.file_color,
-					dircolor  = sb.style.dir_color,
-					bkgcolor  = sb.style.bkg_color,
-					curcolor  = sb.style.cur_color,
-					border    = sb.style.border,
-					span      = sb.style.span,
-					confirm   = sbfl_confirm,
-				} )
+			{
+			   pos = {x, y, z},
+			   box = minmax,
+			   flags=nil,
+			   dir=entrylist_new(),
+			   filecolor = sb.style.file_color,
+			   dircolor  = sb.style.dir_color,
+			   bkgcolor  = sb.style.bkg_color,
+			   curcolor  = sb.style.cur_color,
+			   border    = sb.style.border,
+			   span      = sb.style.span,
+			   confirm   = sbfl_confirm,
+			})
+	sb.fl.fade_min = 0.3
+	sb.fl.draw_background_old = sb.fl.draw_background
+	sb.fl.draw_background = songbrowser_list_draw_background
+
+
 
 	function sbpl_confirm(fl)
 	end
 
 	x = 341
 	sb.pl = textlist_create(
-				{	pos= {x, y, z+1},
+				{	pos = {x, y, z+1},
 					box = minmax,
 					flags=nil,
 					dir=entrylist_new(),
@@ -240,6 +319,9 @@ function song_browser_create(owner, name, box)
 					border    = sb.style.border,
 					span      = sb.style.span,
 				} )
+	sb.pl.fade_min = sb.fl.fade_min
+	sb.pl.draw_background_old = sb.pl.draw_background
+	sb.pl.draw_background = sb.fl.draw_background
 
 	sb.cl = sb.fl
 

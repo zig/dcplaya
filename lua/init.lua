@@ -1,11 +1,11 @@
---
--- fundamental lua stuffs
---
--- author : Vincent Penne
---
--- $Id: init.lua,v 1.10 2002-10-18 11:39:21 benjihan Exp $
---
-
+--- @ingroup  lua_devel
+--- @file     init.lua
+--- @author   vincent penne <ziggy@sashipa.com>
+--- @author   benjamin gerard <ben@sashipa.com>
+--- @brief    Fundamental lua stuff.
+---
+--- $Id: init.lua,v 1.11 2002-12-04 10:47:25 ben Exp $
+---
 
 -- do this file only once !
 if not init_lua then
@@ -16,16 +16,18 @@ if not LIBRARY_PATH then
 	LIBRARY_PATH = { home, "/ram/", "/rd/" }
 end
 
--- simple doshellcommand (reimplemented in shell.lua)
+--- Simple doshellcommand (reimplemented in shell.lua).
 function doshellcommand(string)
-	return dostring(string)
+   return dostring(string)
 end
 
--- command helps handling
-
+--- @name Help functions.
+--- @{
+--
 shell_help_array = {}
 shell_general_commands = {}
 
+--- Add help about a shell command.
 function addhelp(fname, help_func, loc)
 	if type(fname)=="function" then
 		fname=getinfo(fname).name
@@ -40,6 +42,7 @@ function addhelp(fname, help_func, loc)
 	end
 end
 
+--- Display help on a command.
 function help(fname)
 	local h
 
@@ -105,73 +108,78 @@ usage=help
 addhelp(help, [[print [[help(command_name|driver_name) : show information about a command]]]])
 addhelp(addhelp, [[print [[addhelp(command_name, string_to_execute) : add usage information about a command]]]])
 
+--- @}
 
--- drivers support
+--- @name Drivers support.
+--- @{
+--
 
+--- Register driver commands.
+---
 function register_commands(dd, commands, force)
 
-	if not commands then
-		return
-	end
+   if not commands then
+	  return
+   end
 
-	local i, c
-	for i, c in commands do
-		if force or c.registered == 0 then
-			print ("Registering new command ", c.name)
-			setglobal(c.name, c["function"])
-			addhelp(c.name, c.usage, 1)
-			if c.shortname then
-				setglobal(c.shortname, c["function"])
-				addhelp(c.shortname, c.usage, 1)
-			end
-			c.registered = 1
-		end
-	end
-
+   local i, c
+   for i, c in commands do
+	  if force or c.registered == 0 then
+		 print ("Registering new command ", c.name)
+		 setglobal(c.name, c["function"])
+		 addhelp(c.name, c.usage, 1)
+		 if c.shortname then
+			print ("Short name ", c.name)
+			setglobal(c.shortname, c["function"])
+			addhelp(c.shortname, c.usage, 1)
+		 end
+		 c.registered = 1
+	  end
+   end
 end
 
 function update_driver_list(list, force)
 
-	local i
-	local d
+   local i
+   local d
 
-	local n=list.n
-	for i=1, n, 1 do
+   local n=list.n
+   for i=1, n, 1 do
 
-		d = list[i]
-		local new=force
-		if not driver_list[d.name] then
-			new = 1
-		end
-		if driver_list[d.name] and driver_list[d.name] ~= d then
-			print("Warning : replacing driver '", d.name, "' in list")
-			new = 1
-		end
-		print (d.name, force, new)
-		driver_list[d.name] = d
---		print (d.name)
+	  d = list[i]
+	  local new=force
+	  if not driver_list[d.name] then
+		 new = 1
+	  end
+	  if driver_list[d.name] and driver_list[d.name] ~= d then
+		 print("Warning : replacing driver '", d.name, "' in list")
+		 new = 1
+	  end
+	  print (d.name, force, new)
+	  driver_list[d.name] = d
+	  --		print (d.name)
 
-		if new then
-			-- if a shutdown function exists, then call it
-			local shut
-			shut = getglobal(d.name.."_driver_shutdown")
-			if shut then
-				shut()
-			end
-
-			-- register commands
-			local commands = d.luacommands
-			register_commands(driver_list[d.name], commands, force)
-
-			-- if an init function exists, then call it
-			local init
-			init = getglobal(d.name.."_driver_init")
-			if init then
-				init()
-			end
-		end
-
-	end
+	  if new then
+		 -- if a shutdown function exists, then call it
+		 local shut
+		 shut = getglobal(d.name.."_driver_shutdown")
+		 if shut then
+			shut()
+		 end
+		 
+		 -- register commands
+		 local commands = d.luacommands
+		 register_commands(driver_list[d.name], commands, force)
+		 
+		 -- if an init function exists, then call it
+		 local init
+		 init = getglobal(d.name.."_driver_init")
+		 if init then
+			init()
+		 end
+	  end
+	  
+   end
 
 end
 
@@ -184,6 +192,9 @@ function update_all_driver_lists(force)
 --	update_driver_list(obj_drivers, force)
 	update_driver_list(exe_drivers, force)
 end
+
+--- @}
+
 
 -- this function is called when the shell is shutting down
 function dynshell_shutdown()
@@ -210,12 +221,12 @@ dl=driver_load
 
 end -- if not init_lua then
 
--- Load a lua library. The file lua/{NAME}.lua will be loaded via dofile()
--- in pathes stored in LIBRARY_PATH.
--- Library must set the {NAME}_loaded variable when loaded successfully
--- If force parameter is set, the function ignore the {NAME}_loaded value
--- and try to reload the library anyway.
--- the libpath parameter allows to override the default LIBRARY_PATH
+--- Load a lua library. The file lua/{NAME}.lua will be loaded via dofile()
+--- in pathes stored in LIBRARY_PATH.
+--- Library must set the {NAME}_loaded variable when loaded successfully
+--- If force parameter is set, the function ignore the {NAME}_loaded value
+--- and try to reload the library anyway.
+--- the libpath parameter allows to override the default LIBRARY_PATH
 --
 function dolib(name,force,libpath)
 	if not libpath then

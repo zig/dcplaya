@@ -1,20 +1,23 @@
---- @file   dirfunc.lua
---- @brief  implement directory support
---- @author vincent penne <ziggy@sashipa.com>
---- @author benjamin gerard <ben@sashipa.com>
+--- @ingroup  dcplaya_lua_basics
+--- @file     dirfunc.lua
+--- @author   vincent penne <ziggy@sashipa.com>
+--- @author   benjamin gerard <ben@sashipa.com>
+--- @brief    Directory and filename support.
 ---
---- $Id: dirfunc.lua,v 1.10 2002-10-30 19:59:30 benjihan Exp $
+--- $Id: dirfunc.lua,v 1.11 2002-12-04 10:47:25 ben Exp $
 ---
 
 PWD=home
 
 --- Get path and leaf from a filename.
---- @param pathname full 
---- @return path,leaf
---- 
+--- @ingroup  dcplaya_lua_basics
+--- @param    pathname full 
+--- @return   path,leaf
+---
 function get_path_and_leaf(pathname)
 	if not pathname then return end
 	local start,stop,path,leaf
+	pathname = canonical_path(pathname)
 	start,stop,path,leaf = strfind(pathname,"^(.*/)(.*)")
 	if path then
 		path = fullpath(path)
@@ -27,35 +30,24 @@ function get_path_and_leaf(pathname)
 end
 
 --- Create a full path name.
---- @return fullpath of given filename
+--- @ingroup  dcplaya_lua_basics
+--- @return   fullpath of given filename
 function fullpath(name)
-
-	if not name then
-		return PWD
-	end
-
-	if strsub(name, 1, 1) ~= "/" then
-		name = PWD..name
---		print ("Relative : ", name)
-	end
-
-	local i, j
-	-- remove relative parts
-	repeat
-		i, j=strfind(name, "/[^/]+/%.%.")
-		if i then
-			name = strsub(name, 1, i-1) .. strsub(name, j+1)
---			print ("Found pair ", i, j, name)
-		end
-	until not i
-
-	return name
-
+   if not name then
+	  return PWD
+   end
+   if strsub(name, 1, 1) ~= "/" then
+	  name = PWD.."/"..name
+   end
+   return canonical_path(name)
 end
-addhelp(fullpath, [[print[[fullpath(filename): return fullpath of given filename]]]])
 
--- classical change directory function
--- warning : it is not checked that we are going into a valid directory !!
+addhelp(fullpath,
+		[[print[[fullpath(filename): return fullpath of given filename]]]])
+
+--- Change current directory.
+--- @ingroup  dcplaya_lua_basics
+--- @warning  No check for new path validity.
 function cd(path)
 	PWD = fullpath(path)
 	if strsub(PWD, -1)~="/" then
@@ -66,7 +58,6 @@ end
 addhelp(cd, [[print[[cd(path) : set current directory]]]])
 
 -- Load the new ls() command
-
 dolib("ls")
 
 --
@@ -79,30 +70,30 @@ dolib("ls")
 -- arglist is the list of index of argument to convert or nil to convert all
 -- arguments, in that case '-' starting arguments are ignored.
 function fullpath_convert(name, arglist)
-	local new
-	local old = getglobal(name)
+   local new
+   local old = getglobal(name)
 
-	if arglist then
-		new =	function (...)
-				local i, v
-				for i, v in %arglist do
-					arg[v] = fullpath(arg[v])
-				end
-				return call (%old, arg)
+   if arglist then
+	  new =	function (...)
+			   local i, v
+			   for i, v in %arglist do
+				  arg[v] = fullpath(arg[v])
+			   end
+			   return call (%old, arg)
 			end
-	else
-		new =	function (...)
-				local i
-				for i=1, arg.n, 1 do
-					if strsub(arg[i], 1, 1) ~= "-" then
-						arg[i] = fullpath(arg[i])
-					end
-				end
-				return call (%old, arg)
+   else
+	  new =	function (...)
+			   local i
+			   for i=1, arg.n, 1 do
+				  if strsub(arg[i], 1, 1) ~= "-" then
+					 arg[i] = fullpath(arg[i])
+				  end
+			   end
+			   return call (%old, arg)
 			end
-	end
-
-	setglobal(name, new)
+   end
+   
+   setglobal(name, new)
 end
 
 addhelp("fullpath_convert", [[
@@ -129,3 +120,4 @@ fullpath_convert( "cp" )
 fullpath_convert( "rename" )
 
 dirfunc_loaded=1
+return dirfunc_loaded

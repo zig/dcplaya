@@ -4,7 +4,7 @@
  * @date    2002/09/30
  * @brief   filename utilities.
  *
- * $Id: filename.c,v 1.2 2002-10-25 01:03:54 benjihan Exp $
+ * $Id: filename.c,v 1.3 2002-12-04 10:47:25 ben Exp $
  */
 
 #include <string.h>
@@ -69,6 +69,127 @@ int fn_is_absolute(const char *pathname)
 int fn_is_relative(const char * pathname)
 {
   return pathname && pathname[0] != '/';
+}
+
+static int is_slash(int c)
+{
+  return c == '/' || c == '\\';
+}
+
+static const char * skip_slash(const char * s)
+{
+  int c;
+  while (c=*s, is_slash(c)) {
+	++s;
+  }
+  return s;
+}
+
+static int get_name_length(const char * s)
+{
+  const char * e = s;
+  int c;
+
+  while (c=*s, (c && !is_slash(c))) {
+	++s;
+  }
+  return s-e;
+}
+
+static char * backward_slash(char *s, char *e)
+{
+  while (e > s && !is_slash(*--e))
+	;
+  return e;
+}
+
+static char * copy_path(char *dst, const char * src, int max)
+{
+  char * dst_start = dst, * dst_stop;
+/*   int prev_slash = 0; */
+
+  if (max <= 0) {
+	return 0;
+  }
+
+  /* Beginning slash is unremovable */
+  if (is_slash(*src)) {
+	*dst++ = '/';
+	--max;
+	src = skip_slash(src);
+  }
+  dst_stop = dst;
+
+  if (max <= 0) {
+	return 0;
+  }
+
+  for ( ; ; ) {
+	int c, len;
+	const char * name;
+
+	*dst = 0;
+/* 	printf("[%s] [%s] [%d]\n", dst_start,src,prev_slash); */
+
+	/* Get file. */
+	len = get_name_length(src);
+	if (!len) {
+	  break;
+	}
+
+	name = src;
+	src += len;
+
+/* 	has_slash = is_slash(*src); */
+	src = skip_slash(src);
+
+	c = *name;
+	if (len == 1 && c == '.') {
+	  /* '.' */
+	  continue;
+	} else if (len == 2 && c == '.' && name[1] == '.') {
+	  /* '..' */
+	  char * d;
+	  int len;
+	  d = backward_slash(dst_stop, dst);
+	  len = dst - d;
+	  max += len;
+	  dst = d;
+/* 	  prev_slash = d > dst_stop; */
+	  continue;
+	}
+
+	/* Copy slash */
+	if (dst > dst_stop) {
+	  if (1 >= max) {
+		dst_start = 0;
+		break;
+	  } else {
+		*dst++ = '/';
+		--max;
+	  }
+	}
+
+	if (len >= max) {
+	  dst_start = 0;
+	  break;
+	}
+
+	/* Copy name */
+	memcpy(dst, name, len);
+	max -= len;
+	dst += len;
+	
+	/* store slash. */
+/* 	prev_slash = has_slash; */
+  }
+  *dst = 0;
+  return dst_start;
+}
+
+char * fn_canonical(char * dst, const char * name, int max)
+{
+  return copy_path(dst, name, max);
 }
 
 char * fn_get_path(char *path, const char *pathname, int max, int * isslash)

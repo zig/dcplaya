@@ -4,7 +4,7 @@
 --- @date   2002/10/04
 --- @brief  fileselector gui
 ---
---- $Id: fileselector.lua,v 1.15 2002-12-01 19:19:14 ben Exp $
+--- $Id: fileselector.lua,v 1.16 2002-12-04 10:47:25 ben Exp $
 --
 -- TODO : select item with space 
 --        completion with tab        
@@ -281,7 +281,7 @@ function fileselector(name,path,filename)
 			   local col = command.input_col-1
 			   local f = "%q"
 			   local c = strsub(command.input, col, col)
-			   if c == [["]] then
+			   if c == "\"" then
 					 f = ",%q"
 				  end
 				  local path,leaf

@@ -5,7 +5,7 @@
  * @date    2002/02/11
  * @brief   drawing and formating text primitives
  *
- * $Id: text.c,v 1.2 2002-11-27 09:58:09 ben Exp $
+ * $Id: text.c,v 1.3 2002-12-04 10:47:25 ben Exp $
  */
 
 #include <stdarg.h>
@@ -448,7 +448,7 @@ static float draw_text_char(float x1, float y1, float z1,
 
   hw->flags = TA_VERTEX_NORMAL;
   hw->x = x1;
-  hw->y = y1 + hc;
+  hw->y = y2;
   hw->z = z1;
   hw->u = u1;
   hw->v = v2;

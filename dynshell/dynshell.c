@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.41 2002-11-29 08:29:41 ben Exp $
+ * @version    $Id: dynshell.c,v 1.42 2002-12-04 10:47:25 ben Exp $
  */
 
 #include <stdio.h>
@@ -1431,6 +1431,29 @@ static int lua_clear_cd_cache(lua_State * L)
   return 0;
 }
 
+static int lua_canonical_path(lua_State * L)
+{
+  const char * path;
+  char buffer[1024], *res;
+
+  if (lua_type(L,1) != LUA_TSTRING) {
+	printf("canonical_path : bad argument\n");
+	return 0;
+  }
+  path = lua_tostring(L,1);
+
+/*   printf("canonical [%s]\n", path); */
+  res = fn_canonical(buffer, path, sizeof(buffer));
+  if (!res) {
+	printf("canonical_path : path [%s] too long\n", path);
+	return 0;
+  }
+
+/*   printf("--> [%s]\n", res); */
+  lua_settop(L,0);
+  lua_pushstring(L,res);
+  return 1;
+}
 
 #if 0
 static char shell_basic_lua_init[] = 
@@ -1791,6 +1814,14 @@ static luashell_command_description_t commands[] = {
     "clear_cd_cache()\n"
     "]])",
     SHELL_COMMAND_C, lua_clear_cd_cache
+  },
+  { 
+	"canonical_path",
+	"canonical",
+    "print([["
+    "canonical(path) : get canonical file path.\n"
+    "]])",
+    SHELL_COMMAND_C, lua_canonical_path
   },
 
   {0},

@@ -1,23 +1,24 @@
---- @file   textlist.lua
---- @author benjamin gerard <ben@sashipa.com>
---- @date   2002/10/04
+--- @ingroup dcplaya_lua_textlist Text
+--- @file    textlist.lua
+--- @author  benjamin gerard <ben@sashipa.com>
+--- @date    2002/10/04
+--- @brief   Manage and display a list of text.
+---
+--- $Id: textlist.lua,v 1.14 2002-12-04 10:47:25 ben Exp $
 ---
 
 -- Unload the library
 textlist_loaded = nil
 
----
-
--- Unload the library
-textlist_loaded = nil
-
+-- Load required libraries
 if not dolib("basic") then return end
 
---- @defgroup dcplaya_lua_textlist_gui Text-list GUI
+--- @defgroup dcplaya_lua_textlist Text-list GUI
 --- @ingroup  dcplaya_lua_gui
+--- @brief    Text list graphic browser.
 
 --- Entry displayed in textlist.
--- @ingroup dcplaya_lua_textlist_gui
+--- @ingroup dcplaya_lua_textlist
 ---
 --- struct flentry {
 ---   name; ///< Displayed text
@@ -25,11 +26,12 @@ if not dolib("basic") then return end
 --- };
 
 --- textlist object definition.
---- @ingroup dcplaya_lua_textlist_gui
+--- @ingroup dcplaya_lua_textlist
 ---
 --- struct textlist {
 ---
----   flentry dir[]; ///< Current fllist object
+---   flentry dir[];     ///< Current fllist object
+---   table dirinfo[];   ///< dir supplemental information
 ---   pos;       ///< Current select item
 ---   top;       ///< Top displayed line
 ---   lines;     ///< Computed max displayed lines
@@ -37,186 +39,9 @@ if not dolib("basic") then return end
 ---   n;         ///< Number of entry in "dir"
 ---   dl;        ///< Current display list
 ---   cdl;       ///< Cursor display list
----   mtx;       ///< Current transform matrix
----   cmtx;   ///< Cursor transform matrix (local, need to be multiply by mtx)
-
-if not dolib("basic") then return end
-
---- @defgroup dcplaya_lua_textlist_gui Text-list GUI
---- @ingroup  dcplaya_lua_gui
-
---- Entry displayed in textlist.
--- @ingroup dcplaya_lua_textlist_gui
 ---
---- struct flentry {
----   name; ///< Displayed text
----   size; ///< Optionnal. -1 for highlight (directories).
---- };
-
---- textlist object definition.
---- @ingroup dcplaya_lua_textlist_gui
----
---- struct textlist {
----
----   flentry dir[]; ///< Current fllist object
----   pos;       ///< Current select item
----   top;       ///< Top displayed line
----   lines;     ///< Computed max displayed lines
----   maxlines;  ///< Real maximum od displayed lines
----   n;         ///< Number of entry in "dir"
----   dl;        ///< Current display list
----   cdl;       ///< Cursor display list
----   mtx;       ///< Current transform matrix
----   cmtx;   ///< Cursor transform matrix (local, need to be multiply by mtx)
-
----
-
--- Unload the library
-textlist_loaded = nil
-
-if not dolib("basic") then return end
-
---- @defgroup dcplaya_lua_textlist_gui Text-list GUI
---- @ingroup  dcplaya_lua_gui
-
---- Entry displayed in textlist.
--- @ingroup dcplaya_lua_textlist_gui
----
---- struct flentry {
----   name; ///< Displayed text
----   size; ///< Optionnal. -1 for highlight (directories).
---- };
-
---- textlist object definition.
---- @ingroup dcplaya_lua_textlist_gui
----
---- struct textlist {
----
----   flentry dir[]; ///< Current fllist object
----   pos;       ///< Current select item
----   top;       ///< Top displayed line
----   lines;     ///< Computed max displayed lines
----   maxlines;  ///< Real maximum od displayed lines
----   n;         ///< Number of entry in "dir"
----   dl;        ///< Current display list
----   cdl;       ///< Cursor display list
----   mtx;       ///< Current transform matrix
----   cmtx;   ///< Cursor transform matrix (local, need to be multiply by mtx)
-
----
-
--- Unload the library
-textlist_loaded = nil
-
-if not dolib("basic") then return end
-
---- @defgroup dcplaya_lua_textlist_gui Text-list GUI
---- @ingroup  dcplaya_lua_gui
-
---- Entry displayed in textlist.
--- @ingroup dcplaya_lua_textlist_gui
----
---- struct flentry {
----   name; ///< Displayed text
----   size; ///< Optionnal. -1 for highlight (directories).
---- };
-
---- textlist object definition.
---- @ingroup dcplaya_lua_textlist_gui
----
---- struct textlist {
----
----   flentry dir[]; ///< Current fllist object
----   pos;       ///< Current select item
----   top;       ///< Top displayed line
----   lines;     ///< Computed max displayed lines
----   maxlines;  ///< Real maximum od displayed lines
----   n;         ///< Number of entry in "dir"
----   dl;        ///< Current display list
----   cdl;       ///< Cursor display list
----   mtx;       ///< Current transform matrix
----   cmtx;   ///< Cursor transform matrix (local, need to be multiply by mtx)
-
----
-
--- Unload the library
-textlist_loaded = nil
-
-if not dolib("basic") then return end
-
---- @defgroup dcplaya_lua_textlist_gui Text-list GUI
---- @ingroup  dcplaya_lua_gui
-
---- Entry displayed in textlist.
--- @ingroup dcplaya_lua_textlist_gui
----
---- struct flentry {
----   name; ///< Displayed text
----   size; ///< Optionnal. -1 for highlight (directories).
---- };
-
---- textlist object definition.
---- @ingroup dcplaya_lua_textlist_gui
----
---- struct textlist {
----
----   flentry dir[]; ///< Current fllist object
----   pos;       ///< Current select item
----   top;       ///< Top displayed line
----   lines;     ///< Computed max displayed lines
----   maxlines;  ///< Real maximum od displayed lines
----   n;         ///< Number of entry in "dir"
----   dl;        ///< Current display list
----   cdl;       ///< Cursor display list
----   mtx;       ///< Current transform matrix
----   cmtx;   ///< Cursor transform matrix (local, need to be multiply by mtx)
-
---- @brief  Manage and display a list of text.
----
---- $Id: textlist.lua,v 1.13 2002-12-01 19:19:14 ben Exp $
----
-
--- Unload the library
-textlist_loaded = nil
-
-if not dolib("basic") then return end
-
---- @defgroup dcplaya_lua_textlist_gui Text-list GUI
---- @ingroup  dcplaya_lua_gui
-
---- Entry displayed in textlist.
--- @ingroup dcplaya_lua_textlist_gui
----
---- struct flentry {
----   name; ///< Displayed text
----   size; ///< Optionnal. -1 for highlight (directories).
---- };
-
---- textlist object definition.
---- @ingroup dcplaya_lua_textlist_gui
----
---- struct textlist {
----
----   flentry dir[]; ///< Current fllist object
----   pos;       ///< Current select item
----   top;       ///< Top displayed line
----   lines;     ///< Computed max displayed lines
----   maxlines;  ///< Real maximum od displayed lines
----   n;         ///< Number of entry in "dir"
----   dl;        ///< Current display list
----   cdl;       ///< Cursor display list
----   mtx;       ///< Current transform matrix
----   cmtx;   ///< Cursor transform matrix (local, need to be multiply by mtx)
----   box;       ///< Display bounding box {x1,y1,x2,y2}
----   bo2;       ///< Extended box info {w,h,z}
----   border;    ///< Size of border. Default 3.
----   span;      ///< Size of separator line (up and down). Default 1.
----   filecolor; ///< Color to display flentry with size >= 0
----   dircolor;  ///< Color to display flentry with size < -1
----   bkgcolor;  ///< Color of background box
----   curcolor;  ///< Color of cursor box
----   /** bool function(textlist).
----    *   This function is call when confirm button is pressed.
+---   /** Confirm callback.
+---    *  This method is call when confirm button is pressed.
 ---    *   @return
 ---    *     - @b nil  if action failed
 ---    *     - @b 0    ok but no change
@@ -235,8 +60,8 @@ if not dolib("basic") then return end
 ---   flags;
 --- };
 
---- Create a textlist objects.
---- @ingroup dcplaya_lua_textlist_gui
+--- Create a textlist object.
+--- @ingroup dcplaya_lua_textlist
 --- 
 --- @param  flparm   Optionnal creation structure, with optionnal fields.
 ---                  Most fields are the same than fllist ones.
@@ -253,7 +78,7 @@ if not dolib("basic") then return end
 function textlist_create(flparm)
 
    --- Change textlist position and size.
-   --- @ingroup dcplaya_lua_textlist_gui
+   --- @ingroup dcplaya_lua_textlist
    ---
    --- @param  fl  textlist.
    --- @param  x   New horizontal position of textlist or nil.
@@ -267,11 +92,11 @@ function textlist_create(flparm)
 	  if not fl.bo2 then fl.bo2 = {} end
 
 	  -- [1]:x1 [2]:y1 [3]:x2 [4]:y2 [5]:w [6]:h [7]:z
-	  if x then fl.box[1] = x else x = fl.box[1] end
-	  if y then fl.box[2] = y else y = fl.box[2] end
-	  if w then fl.bo2[1] = w else w = fl.bo2[1] end
-	  if h then fl.bo2[2] = h else h = fl.bo2[2] end
-	  if z then fl.bo2[3] = z else z = fl.bo2[3] end
+	  x = x or fl.box[1]
+	  y = y or fl.box[2]
+	  w = w or fl.bo2[1]
+	  h = h or fl.bo2[2]
+	  z = z or fl.bo2[3]
 
 	  if fl.minmax then
 		 if 		w < fl.minmax[1] then w = fl.minmax[1]
@@ -281,15 +106,24 @@ function textlist_create(flparm)
 	  end
 	  fl.bo2[1] = w
 	  fl.bo2[2] = h
+	  fl.bo2[3] = z
+	  fl.box[1] = x
+	  fl.box[2] = y
 	  fl.box[3] = x + w
 	  fl.box[4] = y + h
-	  fl.bo2[3] = z
-	  fl.lines  = floor( (fl.bo2[2]-2*fl.border) / (fl.font_h+2*fl.span))
-	  fl.lines = clip_value(fl.lines,0,fl.maxlines)
+
+	  if fl.dl then
+		 dl_set_trans(fl.dl, mat_trans(x,y,z))
+	  end
+
+--	  dump(fl.box,"set_box")
+
+--	  fl.lines  = floor( (fl.bo2[2]-2*fl.border) / (fl.font_h+2*fl.span))
+--	  fl.lines = clip_value(fl.lines,0,fl.maxlines)
    end
 
    --- Change textlist position.
-   --- @ingroup dcplaya_lua_textlist_gui
+   --- @ingroup dcplaya_lua_textlist
    --- 
    --- @param  fl  textlist.
    --- @param  x   New horizontal position of textlist or nil.
@@ -300,16 +134,10 @@ function textlist_create(flparm)
    ---
    function textlist_set_pos(fl,x,y,z)
 	  fl:set_box(x,y,nil,nil,z)
-	  fl.mtx = mat_trans(fl.box[1],fl.box[2],fl.bo2[3])
-	  if fl.dl  then dl_set_trans(fl.dl, fl.mtx) end
-	  -- 		if fl.cdl then
-	  -- 			if not fl.cmtx then fl.cmtx = mat_trans(0,0,0.5) end
-	  -- 			dl_set_trans(fl.cdl, mat_mult(fl.mtx,fl.cmtx))
-	  -- 		end
    end
 
    --- Set textlist color.
-   --- @ingroup dcplaya_lua_textlist_gui
+   --- @ingroup dcplaya_lua_textlist
    --- 
    --- @param  fl  textlist.
    --- @param  a   New alpha component or nil
@@ -318,11 +146,28 @@ function textlist_create(flparm)
    --- @param  b   New blue component or nil
    ---
    function textlist_set_color(fl,a,r,g,b)
-	  dl_set_color(fl.dl,a,r,g,b)
+	  dl_set_color(fl.dl, a, r, g, b)
+   end
+
+   --- Open textlist (fade in).
+   --
+   function textlist_open(fl)
+-- 	  print ("open",fl)
+	  fl.closed = nil
+	  fl.fade = 1
+	  dl_set_active(fl.dl, 1)
+   end
+
+   --- Close textlist (fade out).
+   --
+   function textlist_close(fl)
+-- 	  print ("close",fl)
+	  fl.closed = 1
+	  fl.fade = -1
    end
 
    --- Center a textlist in a box.
-   --- @ingroup dcplaya_lua_textlist_gui
+   --- @ingroup dcplaya_lua_textlist
    --- 
    --- @param  fl  textlist.
    --- @param  x   Horizontal position of the outer box or nil.
@@ -343,113 +188,14 @@ function textlist_create(flparm)
 	  fl:set_pos(x,y,z)
    end
 
-   -- confirm default action : return current entry
+   --- Default confirm callback function.
    --
    function textlist_confirm(fl)
 	  if not fl or fl.dir.n < 1 then return end
 	  return 1
    end
 
-   -- Mesure maximum width and height for an entry
-   --
-   function textlist_measure(fl)
-	  if fl.dir.n < 1 then return 0,0 end
-
-	  -- Measure text --
-	  local i, w, h
-	  w,h = fl:measure_text(fl.dir[1])
-	  for i=2, fl.dir.n, 1 do
-		 local w2,h2
-		 w2,h2 = fl:measure_text(fl.dir[i])
-		 if w2 > w then w = w2 end
-		 if h2 > h then h = h2 end
-	  end
-	  fl.font_h = h;
-	  return w, h
-   end
-
-   function textlist_measure_text(fl, entry)
-	  return dl_measure_text(fl.dl, entry.name)
-   end
-
-   -- Reset textlist
-   --
-   function textlist_reset(fl)
-	  local w,h
-
-	  -- Control
-	  fl.pos		= 0
-	  fl.top		= 0
-
-	  -- Display lists :
-
-	  -- Main-list
-	  fl.dl = fl.dl or dl_new_list(128);
-	  dl_set_active(fl.dl,0)
-	  dl_clear(fl.dl)
-
-	  -- Cursor sub-list
-	  fl.cdl = fl.cdl or dl_new_list(512,1,1)
-	  dl_set_active(fl.cdl,0)
-	  dl_clear(fl.cdl)
-
-	  -- 2 sub-lists for double buffering rendering
-	  fl.dl1 = fl.dl1 or dl_new_list(1024,0,1)
-	  dl_set_active(fl.dl1,0)
-	  dl_clear(fl.dl1)
-	  fl.dl2 = fl.dl2 or dl_new_list(1024,0,1)
-	  dl_set_active(fl.dl2,0)
-	  dl_clear(fl.dl2)
-
-	  dl_text_prop(fl.dl, 0, 16, 1)
-	  dl_sublist(fl.dl, fl.cdl)
-	  dl_sublist(fl.dl, fl.dl2)
-	  dl_sublist(fl.dl, fl.dl1)
---$$$
--- 	  dl_set_color(fl.dl1, 1, 1,0,0)
--- 	  dl_set_color(fl.dl2, 1, 0,0,1)
-
-	  
-	  w,fl.font_h = fl:measure_text({ name="|" })
-
-	  if not fl.minmax then
-		 -- min_width, min_height, max_width, max heigth
-		 local maxlines = fl.maxlines or 8
-		 fl.minmax = {fl.border*2, fl.border*2,
-			400, fl.border*2 + maxlines*(2*fl.span+fl.font_h) }
-	  end
-
-	  -- Compute max lines
-	  fl:set_pos(nil,nil,nil)
-	  fl:change_dir(fl.dir)
-   end
-
-   function textlist_change_dir(fl,dir)
-	  if not dir then dir = {} end
-	  if not dir.n then dir.n = getn(fl.dir) end
-	  if not dir.n then dir.n = 0 end
-	  fl.dir = dir
-
-	  local w,h = textlist_measure(fl)
-	  fl:set_box(nil,nil,
-				 2*fl.border + w,
-				 2*fl.border + (h+2*fl.span)*fl.dir.n, nil)
-
-	  -- Set invalid top and pos will force update for both dl --
-	  fl.top = 1
-	  fl.pos = 1
-	  return fl:move_cursor(-1)
-   end
-
-
-   --- Draw textlist.
-   --
-   function textlist_draw(fl)
-	  textlist_draw_list(fl)
-	  textlist_draw_cursor(fl)
-   end
-
-   --- Textlist shutdown
+   --- Textlist shutdown.
    ---
    function textlist_shutdown(fl)
 	  local i,v
@@ -458,56 +204,134 @@ function textlist_create(flparm)
 	  end
    end
 
-   --- Draw given textlist entry in given diplay list.
+   --- Measure dimension of the whole textlist and set dirinfo.
    --
-   function textlist_draw_entry(fl, dl, i, x ,y , z)
-	  local color = fl.dircolor
-	  if fl.dir[i].size and fl.dir[i].size >= 0 then
-		 color = fl.filecolor
+   function textlist_measure(fl)
+	  if fl.dir.n < 1 then return 0,0 end
+
+	  -- Measure text --
+	  local i, w, h, y
+	  y,w,h = 0,0,0;
+	  for i=1, fl.dir.n, 1 do
+		 local w2,h2
+		 w2,h2 = fl:measure_text(fl.dir[i])
+		 if w2 > w then w = w2 end
+		 h = h + h2
+		 fl.dirinfo[i] = {}
+		 fl.dirinfo[i].y = y
+		 fl.dirinfo[i].w = w2
+		 fl.dirinfo[i].h = h2
+
+--		 dump(fl.dir[i])
+--		 dump(fl.dirinfo[i])
+		 y = y + h2
 	  end
-	  return dl_draw_text(dl,
-						  x, y, z,
-						  color[1],color[2],color[3],color[4],
-						  fl.dir[i].name)
+	  return w, h
    end
 
-   function textlist_draw_cursor(fl)
-	  if fl.dir.n < 1 then 
-		 dl_set_active(fl.cdl,0)
-		 return
-	  end
+   --- Measure an entry.
+   function textlist_measure_text(fl, entry)
+	  local w,h = dl_measure_text(fl.dl, entry.name)
+	  return w, h+2*fl.span
+   end
+
+   --- Reset textlist.
+   --
+   function textlist_reset(fl)
+	  local w,h
+
+	  -- Control
+	  fl.pos		= 0
+-- 	  fl.top		= 0
+
+	  -- Display lists :
+
+	  -- Main-list
+	  fl.dl = fl.dl or dl_new_list(128);
+	  dl_set_active(fl.dl,0)
+	  dl_clear(fl.dl)
+
+	  -- List-List
+	  fl.ldl = fl.ldl or dl_new_list(512,1,1)
+	  dl_clear(fl.ldl)
+
+	  -- Cursor sub-list
+	  fl.cdl = fl.cdl or dl_new_list(512,1,1)
+	  dl_set_active(fl.cdl,0)
 	  dl_clear(fl.cdl)
-	  dl_set_trans(fl.cdl, fl.cmtx)
+	  dl_set_trans(fl.cdl, mat_trans(0,0,0.1))
 
-	  local i,w,h
-	  i = fl.pos+1
-	  w,h = fl:measure_text(fl.dir[i])
-	  if fl.bo2[1] > w then w = fl.bo2[1] end
-	  
-	  dl_draw_box(fl.cdl,
-				  0, 0, w, h+2*fl.span, 0,
-				  fl.curcolor[1],fl.curcolor[2],fl.curcolor[3],fl.curcolor[4],
-				  fl.curcolor[5],fl.curcolor[6],fl.curcolor[7],fl.curcolor[8])
-	  fl:draw_entry(fl.cdl, i, fl.border, fl.span, 0.1)
-	  dl_set_active(fl.cdl,1)
+	  -- Item sub-list
+	  fl.idl = fl.idl or dl_new_list(1024,1,1)
+	  dl_clear(fl.idl)
+
+	  fl:set_color(0,1,1,1)
+	  fl:change_dir(fl.dir)
+	  fl:open()
    end
 
-   function textlist_swap_dl(fl)
- 	  dl_set_active2(fl.dl1, fl.dl2, 1)
- 	  dl_clear(fl.dl2)
-	  fl.dl1, fl.dl2 = fl.dl2, fl.dl1
-	  dl_set_active(fl.dl,1)
---  	  dl_set_active(fl.dl1,1)
---  	  dl_set_active(fl.dl2,0)
--- 	  print("swap dl",fl.dl1,fl.dl2)
+   --- Change the textlist content.
+   --
+   function textlist_change_dir(fl,dir)
+	  if not dir then dir = {} end
+	  if not dir.n then dir.n = getn(fl.dir) end
+	  if not dir.n then dir.n = 0 end
+	  fl.dir = dir
+	  fl.dirinfo = {}
+
+	  -- Measure new list.
+	  local w,h = textlist_measure(fl)
+	  fl:set_box(nil,nil,
+				 2*fl.border + w,
+				 2*fl.border + h, nil)
+	  fl.pos = 0
+-- 	  fl:close()
+	  fl:draw()
+-- 	  fl:open()
+
+	  return 1
    end
 
 
-   function textlist_draw_list(fl)
-	  local dl = fl.dl1
+   --- @name Textlist draw methods.
+   --- @{
+   --
 
---	  dl_set_clipping(dl, 0, 0, fl.bo2[1], fl.bo2[2])
-	  
+   --- Draw textlist.
+   --
+   function textlist_draw(fl)
+	  textlist_draw_main(fl)
+	  fl:draw_list(fl.idl)
+	  fl:draw_cursor(fl.cdl)
+   end
+
+   --- Draw main list.
+   --
+   function textlist_draw_main(fl)
+
+	  -- Redraw all
+	  dl_clear(fl.dl)
+	  dl_text_prop(fl.dl, 0, 16, 1)
+	  fl:draw_background(fl.dl)
+
+	  dl_clear(fl.ldl)
+	  dl_set_trans(fl.ldl, mat_trans(fl.border, fl.border, 0.1))
+	  local ww, wh
+	  ww = fl.bo2[1]-2*fl.border
+	  wh = fl.bo2[2]-2*fl.border
+	  if (ww <= 0) then ww = 1 end
+	  if (wh <= 0) then wh = 1 end
+
+	  dl_set_clipping(fl.ldl,0,0,0,wh)
+	  dl_sublist(fl.ldl,fl.cdl)
+	  dl_set_clipping(fl.ldl,0,0,ww,wh)
+	  dl_sublist(fl.ldl,fl.idl)
+	  dl_sublist(fl.dl,fl.ldl)
+   end
+
+   --- Draw background box.
+   --
+   function textlist_draw_background(fl, dl)
 	  if fl.bkgcolor then
 		 dl_draw_box(dl,
 					 0, 0, fl.bo2[1], fl.bo2[2], 0,
@@ -517,66 +341,89 @@ function textlist_create(flparm)
 					 fl.bkgcolor[7],fl.bkgcolor[8],
 					 fl.bkgtype)
 	  end
-
-	  local i,y,h
-	  local max=fl.top+fl.lines
-	  if max > fl.dir.n then max = fl.dir.n end
-	  y = fl.span + fl.border
-	  h = fl.font_h+2*fl.span
-
-	  for i=fl.top+1, max, 1 do
-		 fl:draw_entry(dl, i, fl.border, y, 0.1)
-		 fl.dir[i].y = y-fl.span
-		 fl.dir[i].h = h
-		 y = y + h
-	  end
-
-	  textlist_swap_dl(fl)
    end
 
-   -- Textlist move cursor from 'mov'
+   --- Draw given textlist entry in given diplay list.
+   --
+   function textlist_draw_entry(fl, dl, entry, x , y, z)
+	  local color = fl.dircolor
+	  if entry.size and entry.size >= 0 then
+		 color = fl.filecolor
+	  end
+	  return dl_draw_text(dl,
+						  x, y, z,
+						  color[1],color[2],color[3],color[4],
+						  entry.name)
+   end
+
+   --- Draw textlist cursor.
+   --
+   function textlist_draw_cursor(fl, dl)
+	  if fl.dir.n < 1 then
+		 dl_set_active(dl,0)
+		 return
+	  end
+	  dl_clear(dl)
+	  local i = fl.pos+1
+	  local y,w,h = fl.dirinfo[i].y, fl.dirinfo[i].w, fl.dirinfo[i].h
+	  local ww = fl.bo2[1] - 2 * fl.border
+	  if ww > w then w = ww end
+	  
+	  dl_draw_box(dl,
+				  0, y, w, y+h, 0,
+				  fl.curcolor[1],fl.curcolor[2],fl.curcolor[3],fl.curcolor[4],
+				  fl.curcolor[5],fl.curcolor[6],fl.curcolor[7],fl.curcolor[8])
+	  fl:draw_entry(dl, fl.dir[i], 0, y+fl.span, 0.1)
+	  dl_set_active(dl,1)
+   end
+
+   --- Draw entries.
+   --
+   function textlist_draw_list(fl, dl)
+	  local dl = fl.idl
+	  local i
+	  local max = getn(fl.dirinfo)
+	  dl_clear(dl)
+	  for i=1, max, 1 do
+		 fl:draw_entry(dl, fl.dir[i], 0, fl.dirinfo[i].y+fl.span, 0)
+	  end
+   end
+
+   --- @}
+
+   --- Move textlist cursor.
    --
    function textlist_move_cursor(fl,mov)
-	  local top,pos,action
-	  action=0
-	  top = fl.top
+	  local pos,action
+
 	  pos = fl.pos + mov
 	  if pos >= fl.dir.n then pos = fl.dir.n-1 end
 	  if pos < 0 then pos = 0 end
-	  if pos < top then
-		 top = pos
-	  elseif pos >= top+fl.lines then
-		 top = pos - fl.lines + 1
-		 if top < 0 then top = 0 end
-	  end
 
-	  -- $$$ Just move this to try. It seems to be OK.
-	  if top ~= fl.top then
-		 fl.top = top
-		 textlist_draw_list(fl)
-		 action = action + 2
-	  end
-	  
 	  if pos ~= fl.pos then
-		 local y = fl.border + (pos-top) * (fl.font_h + 2*fl.span)
-		 fl.cmtx = mat_trans(0,y,0.5)
 		 fl.pos = pos
-		 textlist_draw_cursor(fl)
-		 action = action + 1
+		 fl:draw_cursor(fl.cdl)
+		 return 1
 	  end
 	  
-	  return action
+	  return nil
    end
 
-   function textlist_get_entry()
+   --- Get a copy of the current entry.
+   --
+   function textlist_get_entry(fl)
 	  if fl.dir.n < 1 then return end
-	  local entry = fl.dir[fl.pos+1]
+	  local eentry = fl.dir[fl.pos+1]
+	  local xentry = fl.dirinfo[fl.pos+1]
 	  local i,v,e
 	  e = {}
-	  for i,v in entry do e[i] = v end
+	  for i,v in xentry do e[i] = v end
+	  for i,v in eentry do e[i] = v end
 	  return e
    end
 
+   --- Locate an entry which name matches a regular expression.
+   --
    function textlist_locate_entry_expr(fl,regexpr)
 	  if fl.dir.n < 1 or not regexpr then return end
 	  local i
@@ -587,6 +434,8 @@ function textlist_create(flparm)
 	  end
    end
 
+   --- Locate an entry from its name.
+   --
    function textlist_locate_entry(fl,name)
 	  if fl.dir.n < 1 or not name then return end
 	  local i
@@ -602,11 +451,12 @@ function textlist_create(flparm)
    fl = {
 	  -- Control
 	  dir = {},
+	  dirinfo = {},
 
 	  -- Border size
 	  border	= 3,
 	  span	    = 1,
-	  font_h	= 0,
+-- 	  font_h	= 0,
 
 	  -- Colors
 	  filecolor = { 0.7, 1, 1, 1 },
@@ -623,10 +473,18 @@ function textlist_create(flparm)
 	  set_box			= textlist_set_box,
 	  set_pos			= textlist_set_pos,
 	  shutdown			= textlist_shutdown,
+	  draw_list         = textlist_draw_list,
+	  draw_background   = textlist_draw_background,
+	  draw_cursor       = textlist_draw_cursor,
 	  draw_entry		= textlist_draw_entry,
+	  draw              = textlist_draw,
 	  change_dir		= textlist_change_dir,
 	  set_color			= textlist_set_color,
+	  open              = textlist_open,
+	  close             = textlist_close,
+	  update            = textlist_update,
    }
+
    -- Set display box to min.
    fl:set_box(100,100,0,0,200)
 
@@ -654,8 +512,64 @@ function textlist_create(flparm)
    return fl
 end
 
+--- Update function.
+--
+function textlist_update(fl, frametime)
+   if fl.fade then
+	  local fade = fl.fade * frametime
+	  local a,r,g,b = dl_get_color(fl.dl)
+	  local fademin = fl.fade_min or 0
+	  local fademax = fl.fade_max or 1
+	  a = a + fade
+	  if a < fademin then
+		 a = fademin
+		 fl.fade = nil
+-- 		 dl_set_active(fl.dl, 0)
+	  elseif a > fademax then
+		 a = fademax
+		 fl.fade = nil
+	  end
+	  fl:set_color(a,r,g,b)
+   end
+
+--    if fl.fade then
+-- 	  if fl.fade > 0 then
+-- 		 fl:set_color(1,1,1,1)
+-- 	  else  
+-- 		 fl:set_color(fl.fade_min or 0 ,1,1,1)
+-- 	  end
+-- 	  fl.fade = nil
+--    end
+
+   local i
+   i = fl.pos+1
+   if type(fl.dirinfo) == "table" and fl.dirinfo[i] then
+	  local y,h = fl.dirinfo[i].y, fl.dirinfo[i].h
+	  local wh = fl.bo2[2] - 2 * fl.border
+	  local mat = dl_get_trans(fl.cdl) 
+	  local ytop = -mat[4][2]
+	  local ytop2 = ytop
+
+	  if wh < 0 then wh = 0 end
+	  if y < ytop then
+		 ytop = y
+	  elseif y+h > ytop+wh then
+		 ytop = y+h-wh
+	  end
+	  if abs(ytop-ytop2) > 0.01 then
+		 ytop = ytop * 0.1 + ytop2 * 0.9
+	  end
+	  mat[4][2] = -ytop
+	  mat[4][3] = 0
+	  dl_set_trans(fl.idl, mat)
+	  mat[4][3] = 0.1
+	  dl_set_trans(fl.cdl, mat)
+   end
+
+end
+
 --- Create a textlist applcation from a textlist object.
---- @ingroup dcplaya_lua_textlist_gui
+--- @ingroup dcplaya_lua_textlist
 ---
 --- @param  fl     textlist
 --- @param  owner  Parent of the created application
@@ -665,7 +579,17 @@ end
 ---
 function textlist_create_app(fl,owner)
 
-   function handle(app,evt)
+   --- Default textlist update handler.
+   --- @internal
+   --
+   function textlist_app_update(app, frametime)
+	  app.fl:update(frametime)
+   end
+
+   --- Default textlist application event handler.
+   --- @internal
+   --
+   function textlist_app_handle(app,evt)
 	  local fl = app.fl
 	  if key == evt_shutdown_event then
 		 fl:shutdown()
@@ -674,10 +598,13 @@ function textlist_create_app(fl,owner)
 	  return evt
    end
 
-   app = {	name	= "textlist",
+   app = {
+	  name	    = "textlist",
 	  version	= "0.1",
-	  handle	= handle,
-	  fl		= fl }
+	  handle	= textlist_app_handle,
+	  update    = textlist_app_update,
+	  fl		= fl,
+   }
    evt_app_insert_first(owner, app)
 
    return app
@@ -688,10 +615,10 @@ function textlist_create_gui(fl, owner)
    local app = textlist_create_app(fl,owner)
    if not app then return nil end
 
-   -- textlist GUI application event handler.
-   -- @internal
+   --- textlist GUI application event handler.
+   --- @internal
    --
-   function handle(app,evt)
+   function textlist_gui_handle(app,evt)
 	  local key = evt.key
 	  local fl = app.fl
 	  local dir = nil
@@ -743,17 +670,16 @@ function textlist_create_gui(fl, owner)
    app.name	    	= "gui "..app.name
    app.box			= app.fl.box
    app.dl			= nil
-   app.handle		= handle
-   app.event_table = {}
+   app.handle		= textlist_gui_handle
+   app.event_table  = {}
    app.flags		= {}
 
    return app
 end
 
 --- Create textlist gui application.
---- @ingroup dcplaya_lua_textlist_gui
----
----
+--- @ingroup dcplaya_lua_textlist
+--
 function gui_textlist(owner, flparm)
    if not owner then return nil end
    local fl = textlist_create(flparm)
@@ -763,8 +689,10 @@ end
 
 if nil then
    fl = gui_textlist(evt_desktop_app, { dir=dirlist("/") })
-   getchar()
-   evt_shutdown_app(fl)
+   if fl then 
+	  getchar()
+	  evt_shutdown_app(fl)
+   end
 end
 
 textlist_loaded = 1

@@ -4,7 +4,7 @@
  * @date    2002/09/30
  * @brief   filename utilities.
  *
- * $Id: filename.h,v 1.2 2002-10-25 01:03:54 benjihan Exp $
+ * $Id: filename.h,v 1.3 2002-12-04 10:47:25 ben Exp $
  */
 
 #ifndef _FILENAME_H_
@@ -111,6 +111,9 @@ char * fn_get_path(char *path, const char *pathname, int max, int * isslash);
  * @retval 0  Error. Bad parameters or buffer overflow.
  */
 char * fn_add_path(char *path, char *pathend, const char *leafname, int max);
+
+/** Get a 'cleaned' path. */
+char * fn_canonical(char * dst, const char * name, int max);
 
 DCPLAYA_EXTERN_C_END
 
