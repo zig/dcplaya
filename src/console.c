@@ -1,9 +1,10 @@
 /**
+ * @ingroup   dcplaya_devel
  * @file      console.c
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.14 2002-11-14 23:40:28 benjihan Exp $
+ * @version   $Id: console.c,v 1.15 2002-11-25 16:46:48 ben Exp $
  */
 
 
@@ -16,23 +17,25 @@
 #include "syserror.h"
 
 
-#include "video.h"
-#include "gp.h"
-
+#include "draw/video.h"
+#include "draw/gc.h"
+#include "draw/box.h"
+#include "draw/draw.h"
 
 #define CSL_BASIC_OFFSET_X 12
 #define CSL_BASIC_OFFSET_Y 24
 
-
-
 /** First element of the linked list of consoles */
 csl_console_t * csl_first_console;
 
-
-
 /* Main console */
-
 csl_console_t * csl_main_console;
+
+/* Basic console */
+csl_console_t * csl_basic_console;
+
+/* TA console */
+csl_console_t * csl_ta_console;
 
 static dbgio_printk_func old_printk_func;
 
@@ -47,37 +50,62 @@ static void csl_printk_func(const char * s)
   }
 }
 
+void csl_init_basic_console()
+{
+  int w,h;
+  if (csl_basic_console) {
+    return;
+  }
+
+  w = (640-CSL_BASIC_OFFSET_X) / 12;
+  h = (480-CSL_BASIC_OFFSET_Y) / 24;
+
+  csl_basic_console = csl_console_create(w,h,CSL_RENDER_BASIC);
+  if (!csl_basic_console) {
+	return;
+  }
+  csl_window_configure(csl_basic_console,
+					   CSL_BASIC_OFFSET_X, CSL_BASIC_OFFSET_Y,
+					   w*12, h*24,
+					   1, 1);
+}
+
+void csl_init_ta_console()
+{
+  const int fw = 8;
+  const int fh = 14;
+  int w,h;
+
+  if (csl_ta_console) {
+    return;
+  }
+
+  w = (640 - 2*fw) / fw;
+  h = 400 / fh;
+  csl_ta_console = csl_console_create(w,h,0);
+
+  csl_window_configure(csl_ta_console, 50, 50, w * fw, h * fh, 1, 1);
+  csl_ta_console->window.ba1 = 0.4;   csl_ta_console->window.ba2 = 0.7;
+  csl_ta_console->window.br1 = 0.25;  csl_ta_console->window.br2 = 0.00;
+  csl_ta_console->window.bb1 = 0.25;  csl_ta_console->window.bg2 = 0.25;
+  csl_ta_console->window.bg1 = 0.00;  csl_ta_console->window.bb2 = 0.00;
+
+  csl_ta_console->window.ta = 1.0;
+  csl_ta_console->window.tr = 0.26;
+  csl_ta_console->window.tg = 1.0;
+  csl_ta_console->window.tb = 0.18;
+}
+
+
 void csl_init_main_console()
 {
+  csl_init_basic_console();
+  csl_init_ta_console();
 
-  if (csl_main_console)
-    return;
-
-#if 1
-  csl_main_console = csl_console_create((640 - 2*CSL_BASIC_OFFSET_X)/8, 
-					(512 - 2*CSL_BASIC_OFFSET_Y)/24, 
-					CSL_RENDER_BASIC);
-#else
-  csl_main_console = csl_console_create(60, 
-					20, 
-					0/*CSL_RENDER_BASIC*/);
-#endif
-
-  csl_window_configure(csl_main_console, 50, 50, csl_main_console->w * 11,
-					   csl_main_console->h * 16, 1, 1);
-  csl_main_console->window.ba1 = 0.4;   csl_main_console->window.ba2 = 0.7;
-  csl_main_console->window.br1 = 0.25;  csl_main_console->window.br2 = 0.00;
-  csl_main_console->window.bb1 = 0.25;  csl_main_console->window.bg2 = 0.25;
-  csl_main_console->window.bg1 = 0.00;  csl_main_console->window.bb2 = 0.00;
-
-  csl_main_console->window.ta = 1.0;
-  csl_main_console->window.tr = 0.26;
-  csl_main_console->window.tg = 1.0;
-  csl_main_console->window.tb = 0.18;
-
+  csl_main_console = csl_basic_console;
   old_printk_func = dbgio_set_printk(csl_printk_func);
-  
 }
+
 void csl_close_main_console()
 {
   if (!csl_main_console)
@@ -167,46 +195,26 @@ static MUterm_char_t *term_line_addr(MUterm_t *term, int line)
 
 void csl_basic_render(csl_console_t * c)
 {
-  static int debug;
-  int x, y;
-  char s[2];
-  //uint16 * vram = (uint16 *) (char *) 0xa05f8000;
-
-  //clrscr(0, ta_state.buffers[1].frame);
-
+  int y, yoffset;
+  int nlines, ncols;
+  char s[128];
   s[1] = 0;
 
-  debug++;
-  debug = 1;
+  nlines = c->term->nline;
+  ncols  = c->term->ncol;
 
-  //spinlock_lock(&c->mutex);
+/*   spinlock_lock(&c->mutex); */
+  for (y=0, yoffset=c->window.y; y<nlines; y++, yoffset+=24) {
+    MUterm_char_t * ptr = term_line_addr(c->term, y);
+	int x;
 
-  for (y=0; y<c->term->nline; y++) {
-    MUterm_char_t * ptr;
-    
-/*    ptr = c->term->data + (y + c->term->start_line)*c->term->ncol;
-    if (ptr > c->term->dataend)
-      ptr -= c->term->dataend - c->term->data;*/
-    ptr = term_line_addr(c->term, y);
-      
-    for (x = 0; x<c->term->ncol; x++, ptr++) {
-
-      s[0] = ptr->c + 32;
-      if (!(debug&31) && old_printk_func) {
-	old_printk_func(s);
-      }
-      //if (s[0] && s[0] != 32)
-      draw_string(CSL_BASIC_OFFSET_X + x*12 + ta_state.buffers[1].frame/2, 
-		  CSL_BASIC_OFFSET_Y + y*24, s, -1);
-      //      bfont_draw(vram + ta_state.buffers[1].frame/2 + (x*12 + y*640*24), 640, 1, s[0]);
-
-    }
-    if (!(debug&31) && old_printk_func) {
-      old_printk_func("\n");
-    }
+	for (x = 0; x < ncols; ++x) {
+	  s[x] = ptr[x].c + 32;
+	}
+	s[x] = 0;
+	draw_string(c->window.x + ta_state.buffers[1].frame/2, yoffset, s, -1);
   }
-
-  //spinlock_unlock(&c->mutex);
+/*   spinlock_unlock(&c->mutex); */
 }
 
 void csl_window_transparent_render(csl_console_t * c)
@@ -250,9 +258,8 @@ void csl_window_transparent_render(csl_console_t * c)
 
     if (*p) {
 	  text_set_color(c->window.ta, c->window.tr, c->window.tg, c->window.tb);
-      text_draw_str(c->window.x, c->window.y + y*16*c->window.scaley, 
+      text_draw_str(c->window.x, c->window.y + y*14*c->window.scaley, 
 					205.0f, p);
-      //      printf(p);
     }
 
     if (c->window.cursor_time < 0.5 && y == c->term->cursor.y) {
@@ -268,9 +275,9 @@ void csl_window_transparent_render(csl_console_t * c)
       else
 		w = 8;
 
-      draw_box1(px, c->window.y + y*16*c->window.scaley,
+      draw_box1(px, c->window.y + y*14*c->window.scaley,
 				px + w,
-				c->window.y + y*16*c->window.scaley + 16*c->window.scaley, 
+				c->window.y + (y+1)*14*c->window.scaley, 
 				200.0f,
 				1.0f, 0.0f, 1.0f, 1.0f);
     }
@@ -320,6 +327,8 @@ void csl_window_opaque_render_all()
 void csl_window_transparent_render_all()
 {
   csl_console_t * c = csl_first_console;
+
+  draw_set_clipping4(0, 0, draw_screen_width, draw_screen_height);
 
   while (c) {
 

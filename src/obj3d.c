@@ -4,7 +4,7 @@
  * @date    2002/02/12
  * @brief   Very simple 3D API.
  *
- * @version $Id: obj3d.c,v 1.3 2002-11-14 23:40:29 benjihan Exp $
+ * @version $Id: obj3d.c,v 1.4 2002-11-25 16:46:48 ben Exp $
  */
 
 #include <stdio.h>
@@ -13,8 +13,9 @@
 #include "sysdebug.h"
 #include "obj_driver.h"
 #include "obj3d.h"
-#include "gp.h"
+#include "draw/ta.h"
 #include "matrix.h"
+#include "border.h"
 
 static void swap (int *a, int *b) {
   int tmp = *a;

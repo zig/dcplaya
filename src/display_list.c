@@ -3,11 +3,13 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.c,v 1.7 2002-10-28 18:53:41 benjihan Exp $
+ * @version   $Id: display_list.c,v 1.8 2002-11-25 16:46:48 ben Exp $
  */
 
 #include <malloc.h>
 #include "display_list.h"
+#include "draw/draw.h"
+#include "draw/gc.h"
 
 /** this is the list of displayed list */
 static dl_lists_t dl_active_lists;
@@ -52,10 +54,10 @@ dl_list_t * dl_new_list(int heapsize, int active)
   l->color[2] = 1.0f;
   l->color[3] = 1.0f;
 
-  l->clip_box[0] = 0;
-  l->clip_box[1] = 0;
-  l->clip_box[2] = 0;
-  l->clip_box[3] = 0;
+  l->clip_box.x1 = 0;
+  l->clip_box.y1 = 0;
+  l->clip_box.x2 = 0;
+  l->clip_box.y2 = 0;
 
   MtxIdentity(l->trans);
 
@@ -173,18 +175,13 @@ void dl_clear(dl_list_t * dl)
   unlock(dl);
 }
 
-void draw_get_clipping(float*,float*,float*,float*);
-void draw_set_clipping(const float,const float,const float,const float);
-
 static void dl_render(int opaque)
 {
   dl_list_t * l;
-  float save_clip_box[4];
 
   locklists();
 
-  draw_get_clipping(&save_clip_box[0], &save_clip_box[1],
-					&save_clip_box[2], &save_clip_box[3]);
+  gc_push();
 
   LIST_FOREACH(l, &dl_active_lists, g_list) {
     dl_command_t * c;
@@ -194,22 +191,22 @@ static void dl_render(int opaque)
     memcpy(dl_trans, l->trans, sizeof(dl_trans));
     memcpy(dl_color, l->color, sizeof(dl_color));
 	
-	if (l->clip_box[0] < l->clip_box[2]) {
-	  clipx1 = dl_trans[0][0] * l->clip_box[0] + dl_trans[3][0];
-	  clipx2 = dl_trans[0][0] * l->clip_box[2] + dl_trans[3][0];
+	if (l->clip_box.x1 < l->clip_box.x2) {
+	  clipx1 = dl_trans[0][0] * l->clip_box.x1 + dl_trans[3][0];
+	  clipx2 = dl_trans[0][0] * l->clip_box.x2 + dl_trans[3][0];
 	} else {
 	  clipx1 = 0;
-	  clipx2 = 640;
+	  clipx2 = draw_screen_width;
 	}
-	if(l->clip_box[1] < l->clip_box[3]) {
-	  clipy1 = dl_trans[1][1] * l->clip_box[1] + dl_trans[3][1];
-	  clipy2 = dl_trans[1][1] * l->clip_box[3] + dl_trans[3][1];
+	if(l->clip_box.y1 < l->clip_box.y2) {
+	  clipy1 = dl_trans[1][1] * l->clip_box.y1 + dl_trans[3][1];
+	  clipy2 = dl_trans[1][1] * l->clip_box.y2 + dl_trans[3][1];
 	} else {
 	  clipy1 = 0;
-	  clipy2 = 480;
+	  clipy2 = draw_screen_height;
 	}
 
-	draw_set_clipping(clipx1,clipy1,clipx2,clipy2);
+	draw_set_clipping4(clipx1,clipy1,clipx2,clipy2);
 
     c = l->command_list;
     while (c) {
@@ -225,8 +222,7 @@ static void dl_render(int opaque)
 
     unlock(l);
   }
-  draw_set_clipping(save_clip_box[0], save_clip_box[1],
-					save_clip_box[2], save_clip_box[3]);
+  gc_pop();
   unlocklists();
 }
 
@@ -293,10 +289,10 @@ float * dl_get_color(dl_list_t * dl)
 
 void dl_set_clipping(dl_list_t * dl, const dl_clipbox_t box)
 {
-  memcpy(dl->clip_box, box, sizeof(dl->clip_box));
+  memcpy(&dl->clip_box, &box, sizeof(dl->clip_box));
 }
 
 float * dl_get_clipping(dl_list_t * dl)
 {
-  return dl->clip_box;
+  return &dl->clip_box.x1;
 }

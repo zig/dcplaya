@@ -1,5 +1,5 @@
 /**
- * $Id: draw_object.c,v 1.7 2002-11-14 23:40:29 benjihan Exp $
+ * $Id: draw_object.c,v 1.8 2002-11-25 16:46:48 ben Exp $
  */
 
 #include <stdio.h>
@@ -8,9 +8,12 @@
 
 #include <dc/ta.h>
 
-#include "gp.h"
+//#include "gp.h"
+#include "draw/ta.h"
+
 #include "sysdebug.h"
 #include "draw_object.h"
+
 
 typedef struct {
   float u;
@@ -209,8 +212,7 @@ int DrawObjectSingleColor(viewport_t * vp, matrix_t local, matrix_t proj,
     vtx_t * nrm = o->nvx;
     int     n = o->nbf;
 
-    draw_poly_hdr(HW_POLY, o->flags);
-	ta_commit32_nocopy();
+    DRAW_SET_FLAGS(o->flags);
 
     hw->addcol = 0;
     hw->col = col;
@@ -296,8 +298,7 @@ int DrawObjectLighted(viewport_t * vp, matrix_t local, matrix_t proj,
     vtx_t * nrm = o->nvx;
     int     n = o->nbf;
     
-    draw_poly_hdr(HW_POLY, o->flags);
-	ta_commit32_nocopy();
+    DRAW_SET_FLAGS(o->flags);
 
     hw->addcol = 0;
  
@@ -393,8 +394,7 @@ int DrawObjectFrontLighted(viewport_t * vp, matrix_t local, matrix_t proj,
     vtx_t * nrm = o->nvx;
     int     n = o->nbf;
 
-    draw_poly_hdr(HW_POLY, o->flags);
-	ta_commit32_nocopy();
+    DRAW_SET_FLAGS(o->flags);
 
     hw->addcol = 0;
  
@@ -476,8 +476,7 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
       return -1;
     }
 
-    draw_poly_hdr(HW_POLY, o->flags);
-	ta_commit32_nocopy();
+    DRAW_SET_FLAGS(o->flags);
     hw->addcol = 0;
 
     for(n=o->nbf ;n--; ++f, ++l, ++nrm)  {

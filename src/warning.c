@@ -1,6 +1,7 @@
 /* 2002/02/23 */
 #include "config.h"
-#include "gp.h"
+
+#include "draw/text.h"
 
 extern float fade68;
 extern unsigned int fade_argb(unsigned int argb);

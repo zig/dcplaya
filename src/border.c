@@ -7,9 +7,9 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+
+#include "border.h"
 #include "syserror.h"
-#include "gp.h"
-#include "texture.h"
 
 borderuv_t borderuv[4];
 texid_t bordertex[3];

@@ -1,12 +1,17 @@
 /* 2002/02/20 */
 
+#include <string.h>
+#include <stdio.h>
+
 #include "config.h"
 
-#include "gp.h"
+
+#include "draw/text.h"
 #include "option.h"
 #include "controler.h"
 #include "file_wrapper.h"
 #include "driver_list.h"
+#include "sysdebug.h"
 
 #define OPTION_LATCH_FRAMES_MAX 20
 #define OPTION_LATCH_FRAMES_MIN 6
@@ -60,16 +65,16 @@ int option_setup(void)
   filter = 1;
   shuffle = 0;
 
-  dbglog(DBG_DEBUG, "++ VISUALS = %d\n", vis_drivers.n);
+  SDDEBUG("++ VISUALS = %d\n", vis_drivers.n);
 
   visual = (vis_driver_t *) vis_drivers.drivers;
   if (visual) {
-    dbglog(DBG_DEBUG, "++ OPTION VISUAL = %s\n", visual->common.name);
+    SDDEBUG("++ OPTION VISUAL = %s\n", visual->common.name);
     if (visual->start() < 0) {
       visual = 0;
     }
   } else {
-    dbglog(DBG_DEBUG, "++ NO OPTION VISUAL\n");
+    SDDEBUG("++ NO OPTION VISUAL\n");
   }
 
   lcd_visual = OPTION_LCD_VISUAL_FFT_FULL;

@@ -1,5 +1,5 @@
 /**
- * $Id: vmu68.c,v 1.5 2002-11-14 23:40:29 benjihan Exp $
+ * $Id: vmu68.c,v 1.6 2002-11-25 16:46:48 ben Exp $
  */
 #include "config.h"
 
@@ -69,7 +69,7 @@ static uint8 vmutmp[32][48 / 8];
 
 /* From dreamcast68.c */
 extern int dreamcast68_isplaying(void);
-extern char songmenu_selected[];	//songmenu.c
+char songmenu_selected[64];	//songmenu.c
 extern char option_str[];				// option.c
 
 static int addr_xy(int x, int y, int w, int h)

@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.31 2002-11-14 23:40:29 benjihan Exp $
+ * @version   $Id: dreamcast68.c,v 1.32 2002-11-25 16:46:48 ben Exp $
  */
 
 //#define RELEASE
@@ -19,21 +19,24 @@
 #include "config.h"
 
 #include <dc/fmath.h>
+#include <dc/ta.h>
 #include <stdio.h>
 
 #include "sndstream.h"
 #include "songmenu.h"
-#include "gp.h"
-#include "draw_clipping.h"
+//#include "gp.h"
+//#include "draw_clipping.h"
+#include "draw/draw.h"
 
 /* dreamcast68 includes */
 #include "file_wrapper.h"
 #include "matrix.h"
 #include "obj3d.h"
 #include "controler.h"
-#include "info.h"
+//#include "info.h"
 #include "option.h"
 #include "remanens.h"
+#include "border.h"
 
 #include "playa.h"
 #include "vupeek.h"
@@ -42,8 +45,10 @@
 #include "playa.h"
 #include "plugin.h"
 #include "lef.h"
+
 //#include "fft.h"
-#include "viewport.h"
+//#include "viewport.h"
+
 #include "fs_ramdisk.h"
 #include "screen_shot.h"
 
@@ -52,7 +57,7 @@
 #include "console.h"
 #include "shell.h"
 #include "display_list.h"
-#include "texture.h"
+//#include "texture.h"
 
 #include "exceptions.h"
 
@@ -70,8 +75,6 @@ extern int vmu_lcd_title();
 static int warning_splash(void);
 extern void warning_render();
 
-static viewport_t viewport; 
-static matrix_t projection;
 static vis_driver_t * curvis;
 
 #define ANIM_CONT   0
@@ -103,6 +106,16 @@ static void fade(unsigned int elapsed_frames)
   } else if (fade68 > 1.0f) {
     fade68 = 1.0f;
   }
+}
+
+static unsigned int fade_any_argb(unsigned int argb, unsigned int factor)
+{
+  return (argb&0xFFFFFF) | ((((argb>>24)*factor)&0xFF00)<<16);
+}
+
+unsigned int fade_argb(unsigned int argb)
+{
+  return fade_any_argb(argb, (unsigned int)(fade68 * 256.0f));
 }
 
 /* Create a empty triangle to avoid TA empty list */
@@ -464,19 +477,8 @@ static int no_mt_init(void)
     goto error;
   }
 
-  /* Viewport init */
-  viewport_set(&viewport, 0, 0, SCREEN_W, SCREEN_H, 1.0f);
-
-  /* Set clipping */
-  draw_set_clipping(0, 0, SCREEN_W, SCREEN_H);
-
-  /* Projection init */
-  MtxProjection(projection, 70*2.0*3.14159/360,
-		0.01, (float)SCREEN_W/SCREEN_H,
-		1000);
-
-  /* Texture manager init */
-  if (texture_init() < 0) {
+  /* Drawing system  init */
+  if (draw_init(SCREEN_W, SCREEN_H) < 0) {
     err = __LINE__;
     goto error;
   }
@@ -513,12 +515,6 @@ static int no_mt_init(void)
     goto error;
   }
 
-  /* Init font 16x16 */
-  if (text_setup() < 0) {
-    err = __LINE__;
-    goto error;
-  }
-
   /* Init song menu */
 #if 0
   if (songmenu_init() < 0) {
@@ -528,10 +524,10 @@ static int no_mt_init(void)
 #endif
   
   /* Init info */
-  if (info_setup() < 0) {
-    err = __LINE__;
-    goto error;
-  }
+/*   if (info_setup() < 0) { */
+/*     err = __LINE__; */
+/*     goto error; */
+/*   } */
   
   /* Init option (must be done after visual plugin load)  */
   if (option_setup() < 0) {
@@ -592,7 +588,7 @@ static void process_visual(unsigned int elapsed_frames)
 
   curvis = option_visual();
   if (curvis) {
-    curvis->process(&viewport, projection, ms);
+    curvis->process(&draw_viewport, draw_projection, ms);
   }
 }
 
@@ -694,9 +690,9 @@ void main_thread(void *cookie)
   fade_step = 0.005f;  
   while ( (controler68.buttons & exit_buttons) != exit_buttons) {
     uint32 elapsed_frames;
-    int is_playing = playa_isplaying();
+	//    int is_playing = playa_isplaying();
 
-    SDDEBUG("%x \n",controler68.buttons & shot_buttons);
+	//    SDDEBUG("%x \n",controler68.buttons & shot_buttons);
     if ((controler68.buttons & shot_buttons) == shot_buttons) {
       controler68.buttons &= ~shot_buttons;
       screen_shot("shot/shot");
@@ -749,8 +745,8 @@ void main_thread(void *cookie)
     /* Visual translucent list */
     render_visual_translucent();
 
-    info_render(elapsed_frames, is_playing);
 #if 0
+    info_render(elapsed_frames, is_playing);
     songmenu_render(elapsed_frames);
 #endif
     option_render(elapsed_frames);
@@ -879,8 +875,9 @@ int dreammp3_main(int argc, char **argv)
   //  texture_init();
 
   /* change main console render mode */
-  csl_disable_render_mode(csl_main_console, CSL_RENDER_BASIC);
-  csl_enable_render_mode(csl_main_console, CSL_RENDER_WINDOW);
+  csl_disable_render_mode(csl_basic_console, CSL_RENDER_BASIC);
+  csl_enable_render_mode(csl_ta_console, CSL_RENDER_WINDOW);
+  csl_main_console = csl_ta_console;
   
   /* WARNING MESSAGE */
   SDDEBUG("Starting WARNING screen\n");
@@ -943,9 +940,9 @@ static int warning_splash(void)
 
     if (fade68 == 1.0f) {
       if (!end_frame) {
-	end_frame = frame_counter68 + 60 * 30;
+		end_frame = frame_counter68 + 60 * 30;
       } else if (frame_counter68 > end_frame) {
-	fade_step = -0.01f;
+		fade_step = -0.01f;
       }
     }
 

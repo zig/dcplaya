@@ -1,10 +1,10 @@
 /* 2002/02/13  */
 
-#include <stdio.h>
 #include <kos.h>
 #include <dc/maple.h>
 
 #include "controler.h"
+#include "sysdebug.h"
 
 #define CONTROLER_NO_SMOOTH_FRAMES  50      /* > 2 */
 #define CONTROLER_SMOOTH_FACTOR     0x6000  /* [0..65536] */
@@ -171,9 +171,11 @@ int controler_init(uint32 frame)
 {
   int err = 0;
   
-  dbglog(DBG_DEBUG, ">> " __FUNCTION__ "\n" );
+  SDDEBUG("[%f]\n", __FUNCTION__ );
+  SDINDENT;
+
   spinlock_init(&controler_mutex);
-  dbglog(DBG_DEBUG, "** " __FUNCTION__ " : GetControler, frame=%u\n", frame);
+  SDDEBUG("GetControler, frame=%u\n", frame);
 
   controler_get();
   oldcond = cond;
@@ -181,7 +183,8 @@ int controler_init(uint32 frame)
   status = RUNNING;
   thd_create(controler_thread, 0);
   
-  dbglog(DBG_DEBUG, "<< " __FUNCTION__ " : return code [%d]\n", err);
+  SDUNINDENT;
+  SDDEBUG("[%f] := [%d]\n", __FUNCTION__, err);
 
   return err;
 }
