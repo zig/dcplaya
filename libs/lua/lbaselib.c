@@ -1,5 +1,5 @@
 /*
-** $Id: lbaselib.c,v 1.3 2003-01-05 18:08:39 zigziggy Exp $
+** $Id: lbaselib.c,v 1.4 2003-01-28 22:58:18 ben Exp $
 ** Basic library
 ** See Copyright Notice in lua.h
 */
@@ -621,8 +621,109 @@ static int luaB_sort (lua_State *L) {
   return 0;
 }
 
+
 /* }====================================================== */
 
+/*
+** {======================================================
+** Quicksort
+** (based on `Algorithms in MODULA-3', Robert Sedgewick;
+**  Addison-Wesley, 1993.)
+**
+** $$$ BeN :
+** Extended version with a third cookie parameter for the cmp function.
+** Note that this cmp function must return a number less than, equal or
+** greater if a is respectively less than, equal or greater than b.
+*/
+
+/* */
+static int xsort_comp (lua_State *L, int a, int b) {
+  int res;
+
+  lua_pushvalue(L, 2);
+  lua_pushvalue(L, a-1);  /* -1 to compensate function */
+  lua_pushvalue(L, b-2);  /* -2 to compensate function and `a' */
+  lua_pushvalue(L, 3);
+  lua_rawcall(L, 3, 1);
+  res = lua_tonumber(L, -1);
+  lua_pop(L, 1);
+  return res;
+}
+
+static void xauxsort (lua_State *L, int l, int u) {
+  while (l < u) {  /* for tail recursion */
+    int i, j;
+    /* sort elements a[l], a[(l+u)/2] and a[u] */
+    lua_rawgeti(L, 1, l);
+    lua_rawgeti(L, 1, u);
+    if (0 > xsort_comp(L, -1, -2))  /* a[u] < a[l]? */
+      set2(L, l, u);  /* swap a[l] - a[u] */
+    else
+      lua_pop(L, 2);
+    if (u-l == 1) break;  /* only 2 elements */
+    i = (l+u)/2;
+    lua_rawgeti(L, 1, i);
+    lua_rawgeti(L, 1, l);
+    if (0 > xsort_comp(L, -2, -1))  /* a[i]<a[l]? */
+      set2(L, i, l);
+    else {
+      lua_pop(L, 1);  /* remove a[l] */
+      lua_rawgeti(L, 1, u);
+      if (0 > xsort_comp(L, -1, -2))  /* a[u]<a[i]? */
+        set2(L, i, u);
+      else
+        lua_pop(L, 2);
+    }
+    if (u-l == 2) break;  /* only 3 elements */
+    lua_rawgeti(L, 1, i);  /* Pivot */
+    lua_pushvalue(L, -1);
+    lua_rawgeti(L, 1, u-1);
+    set2(L, i, u-1);
+    /* a[l] <= P == a[u-1] <= a[u], only need to sort from l+1 to u-2 */
+    i = l; j = u-1;
+    for (;;) {  /* invariant: a[l..i] <= P <= a[j..u] */
+      /* repeat ++i until a[i] >= P */
+      while (lua_rawgeti(L, 1, ++i), (0 > xsort_comp(L, -1, -2))) {
+        if (i>u) lua_error(L, "invalid order function for sorting");
+        lua_pop(L, 1);  /* remove a[i] */
+      }
+      /* repeat --j until a[j] <= P */
+      while (lua_rawgeti(L, 1, --j), (0 > xsort_comp(L, -3, -1))) {
+        if (j<l) lua_error(L, "invalid order function for sorting");
+        lua_pop(L, 1);  /* remove a[j] */
+      }
+      if (j<i) {
+        lua_pop(L, 3);  /* pop pivot, a[i], a[j] */
+        break;
+      }
+      set2(L, i, j);
+    }
+    lua_rawgeti(L, 1, u-1);
+    lua_rawgeti(L, 1, i);
+    set2(L, u-1, i);  /* swap pivot (a[u-1]) with a[i] */
+    /* a[l..i-1] <= a[i] == P <= a[i+1..u] */
+    /* adjust so that smaller "half" is in [j..i] and larger one in [l..u] */
+    if (i-l < u-i) {
+      j=l; i=i-1; l=i+2;
+    }
+    else {
+      j=i+1; i=u; u=j-2;
+    }
+    xauxsort(L, j, i);  /* call recursively the smaller one */
+  }  /* repeat the routine for the larger one */
+}
+
+
+// $$$ Added by ben
+static int luaB_xsort (lua_State *L) {
+  int n;
+  luaL_checktype(L, 1, LUA_TTABLE);
+  n = lua_getn(L, 1);
+  luaL_checktype(L, 2, LUA_TFUNCTION);
+  lua_settop(L, 3);  /* make sure there is 3 arguments */
+  xauxsort(L, 1, n);
+  return 0;
+}
 
 
 /*
@@ -722,6 +823,7 @@ static const struct luaL_reg base_funcs[] = {
   {"assert", luaB_assert},
   {"getn", luaB_getn},
   {"sort", luaB_sort},
+  {"xsort", luaB_xsort}, /* $$$ added by ben */
   {"tinsert", luaB_tinsert},
   {"tremove", luaB_tremove}
 };

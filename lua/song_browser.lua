@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.28 2003-01-28 06:39:23 ben Exp $
+--- $Id: song_browser.lua,v 1.29 2003-01-28 22:58:18 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -759,39 +759,140 @@ function song_browser_create(owner, name)
       local pos = sb.pl:get_pos() or 0
       local i,j,idx
       local locate = nil
+
+      -- save index
+      if pos then
+	 dir[pos].__sortpos = pos
+      end
       
       local order = {}
       for i=1,n do
-	 local idx = n-i+1 -- random() here
-	 while order[idx] do
-	    for j=idx+1,n do
-	       if not order[j] then
-		  idx = j
-		  j = n
-	       end
-	    end
-	    if order[idx] then idx = 0 end
+	 local idx = random(1,getn(dir))
+	 local entry = tremove(dir,idx)
+	 if entry.__sortpos then
+	    if locate then print("[shuffle] : locate twice !") end
+	    locate = i
+	    entry.__sortpos = nil
 	 end
-	 order[idx] = dir[i]
-	 locate = locate or (i == pos and idx)
+	 tinsert(order,entry)
       end
+      sb.pl:change_dir(order, locate)
+   end
+
+   function sbpl_sort_any(sb, cmp)
+      local dir = sb.pl.dir
+      if not dir or (dir.n or 0) < 1 then return end
+      local n = dir.n
+      local pos = sb.pl:get_pos()
+      -- Save the current position
+      if pos then dir[pos].__sortpos = 1 end
       
-      if getn(order) ~= n then
-	 print("[shuffle] : bad number of entry : "..getn(order).."~="..n)
+      if type(cmp) == "function" then
+	 print("sorting with function")
+	 xsort(dir,cmp,sb)
+      elseif type(cmp) == "table" then
+	 printf("sorting with table of functions (%d)", getn(cmp))
+-- 	 local i,v
+-- 	 for i,v in cmp do
+-- 	    printf("%q=%q",i,tostring(v))
+-- 	    if type(v) == "function" then v() end
+-- 	 end
+	 xsort(dir, sbpl_cmp_any, cmp)
+      else
+	 print("[song_browser] : invalid sort parameter")
 	 return
       end
-      
+   
+--       local i
+--       -- $$$
+--       for i=1,n do
+-- 	 dump(dir[i],tostring(i))
+--       end
+
       for i=1,n do
-	 if not order[i] then
-	    print("[shuffle] : missing idx "..i)
+	 if dir[i].__sortpos then
+	    dir[i].__sortpos = nil
+	    sb.pl:change_dir(dir, i)
 	    return
 	 end
       end
-      
-      sb.pl:change_dir(order, locate)
+      sb.pl:change_dir(dir)
    end
    
-   
+   function sbpl_sort_get_names(a,b)
+      return strlower(a.name or a.file or ""), strlower(b.name or b.file or "")
+   end
+
+   function sbpl_sort_get_files(a,b)
+      return strlower(a.file or a.name or ""), strlower(b.file or b.name or "")
+   end
+
+   function sbpl_sort_get_pathes(a,b)
+      return strlower(a.path or "/"), strlower(b.path or "/")
+   end
+
+   function sbpl_cmp_type(a,b,sb)
+      if not a then print("types") return end
+      return (a.type or 0) - (b.type or 0)
+   end
+
+   function sbpl_cmp_string(a,b,sb)
+      if a<b then return -1
+      elseif a>b then return 1
+      end
+      return 0
+   end
+
+   function sbpl_cmp_name(a,b,sb)
+      if not a then print("names") return end
+      local s1,s2 =  sbpl_sort_get_names(a,b)
+      return sbpl_cmp_string(s1,s2,sb)
+   end
+
+   function sbpl_cmp_path(a,b,sb)
+      if not a then print("pathes") return end
+      local s1,s2 =  sbpl_sort_get_pathes(a,b)
+      return sbpl_cmp_string(s1,s2,sb)
+   end
+
+
+   function sbpl_cmp_any(a,b,cmptable)
+      local i,v
+      for i,v in cmptable do
+	 local r = v(a,b)
+	 if r ~= 0 then return r end
+      end
+      return 0
+   end
+
+   function sbpl_sort_by_type(a,b,sb)
+      local r = sbpl_cmp_type(a,b,sb)
+      if r == 0 then
+	 local s1,s2 = sbpl_sort_get_names(a,b)
+	 r = sbpl_cmp_string(s1,s2,sb)
+      end
+      return r or 0
+   end
+	 
+   function sbpl_sort_by_name(a,b,sb)
+      local s1,s2 =  sbpl_sort_get_names(a,b)
+      local r = sbpl_cmp_string(s1,s2,sb)
+      if r == 0 then
+	 r = sbpl_cmp_type(a,b,sb)
+      end
+      return r or 0
+   end
+
+   function sbpl_sort_by_path(a,b,sb)
+      local s1,s2 =  sbpl_sort_get_pathes(a,b)
+      local r = sbpl_cmp_string(s1,s2,sb)
+      if r == 0 then
+	 r = sbpl_cmp_type(a,b,sb)
+      end
+      return r or 0
+   end
+
+
    function sbpl_confirm(pl, sb)
       sbpl_run(sb)
    end
@@ -801,12 +902,61 @@ function song_browser_create(owner, name)
    end
 
    function sbpl_select(pl, sb)
+      if tag(pl.menu) == menu_tag then
+	 pl.menu:close()
+      end
+
       local entry = pl:get_entry()
       if not entry then return end
       local root = ""
       local fname = entry.file or entry.name
       if type(fname) == "string" then root = ":"..fname..":" end
       root = root.."run{run},remove{remove},shuffle{shuffle},sort>sort,clear{clear},save{save}"
+
+      function sbpl_make_menu_sort_func(sb,str,nocache)
+	 sb.sort_func_cache = (type(sb.sort_func_cache) == "table" and
+			       sb.sort_func_cache) or {}
+	 if not nocache and type(sb.sort_func_cache[str]) == "function" then
+	    print("Cached !")
+	    return sb.sort_func_cache[str]
+	 end
+
+	 local table, s = {}, str
+	 while 1 do
+	    local t = strsub(s,1,1)
+	    if strlen(t) == 0 then
+	       if getn(table) > 0 then
+		  table.n = nil
+		  sb.sort_func_cache[str] =
+		     function (menu)
+			local sb = menu.root_menu.target
+			print("Calling sort with "..%str)
+-- 			dump(%table,"dump of "..%str)
+-- 			local i,v
+-- 			for i,v in %table do
+-- 			   printf("%q=%q",i,tostring(v))
+-- 			   if type(v) == "function" then v() end
+-- 			end
+
+			sbpl_sort_any(sb, %table)
+		     end
+		  return sb.sort_func_cache[str]
+	       end
+	    end
+	    s = strsub(s,2)
+	    if t == "n" then
+	       e = sbpl_cmp_name
+	    elseif t == "t" then
+	       e = sbpl_cmp_type
+	    elseif t == "p" then
+	       e = sbpl_cmp_path
+	    else
+	       e = nil
+	    end
+	    if e then tinsert(table,e) end
+	 end
+      end
+
       local cb = {
 	 run = function (menu)
 		  local sb = menu.root_menu.target
@@ -828,21 +978,36 @@ function song_browser_create(owner, name)
 		      local sb = menu.root_menu.target
 		      sbpl_shuffle(sb)
 		   end,
+
+	 sort_by_nt = sbpl_make_menu_sort_func(sb,"ntp"),
+	 sort_by_np = sbpl_make_menu_sort_func(sb,"npt"),
+	 sort_by_tn = sbpl_make_menu_sort_func(sb,"tnp"),
+	 sort_by_tp = sbpl_make_menu_sort_func(sb,"tpn"),
+	 sort_by_pt = sbpl_make_menu_sort_func(sb,"ptn"),
+	 sort_by_pn = sbpl_make_menu_sort_func(sb,"pnt"),
+
       }
-	 
+
       local def = {
 	 root=root,
 	 cb = cb,
 	 sub = {
-	    sort = ":sort:by name{sort_by_name},by type{sort_by_type}",
+	    sort = {
+	       root = ":sort by ...:name>,type>,path>",
+	       sub = {
+		  name = ":... name and ...:type{sort_by_nt},path{sort_by_np}",
+		  type = ":... type and ...:name{sort_by_tn},path{sort_by_tp}",
+		  path = ":... path and ...:name{sort_by_pn},type{sort_by_pt}",
+	       },
+	    },
 	 }
       }
 
       local menudef = menu_create_defs(def, sb)
-      local menu = menu_create(sb, "playlist-menu", menudef)
-      if tag(menu) == menu_tag then
-	 menu.target = sb
-	 menu.target_pos = pl.pos + 1
+      pl.menu = menu_create(sb, "playlist-menu", menudef)
+      if tag(pl.menu) == menu_tag then
+	 pl.menu.target = sb
+	 pl.menu.target_pos = pl.pos + 1
       end
    end
 

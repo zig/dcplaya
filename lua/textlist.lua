@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.29 2003-01-12 19:48:01 ben Exp $
+--- $Id: textlist.lua,v 1.30 2003-01-28 22:58:18 ben Exp $
 ---
 
 -- Unload the library
@@ -93,7 +93,7 @@ function textlist_create(flparm)
       if not fl.box then fl.box = {} end
       if not fl.bo2 then fl.bo2 = {} end
 
-      -- [1]:x1 [2]:y1 [3]:x2 [4]:y2 [5]:w [6]:h [7]:z
+      -- box {[1]:x1 [2]:y1 [3]:x2 [4]:y2} bo2 { [1]:w [2]:h [3]:z}
       x = x or fl.box[1]
       y = y or fl.box[2]
       w = w or fl.bo2[1]

@@ -206,14 +206,25 @@ function menu_create(owner, name, def, box, x1, y1)
 	 return evt
       end
 
-      if gui_keyconfirm[key] or gui_keyselect[key] then
-	 local r = menu:confirm()
-	 if gui_keyconfirm[key] then
-	    menu.root_menu:close(1)
+      local keyconf,keyright = gui_keyconfirm[key],gui_keyright[key]
+      if keyconf or gui_keyselect[key] or keyright then
+	 if keyright then
+	    local pos = menu.fl and menu.fl:get_pos()
+	    local entry = pos and menu.fl.dir[pos]
+	    if not entry or entry.size >= 0 then
+	       return
+	    end
 	 end
-	 if (r or 0) > 0 then
+	 local r = menu:confirm() or 0
+	 local confirmed = intop(r,'&',1) == 1
+	 local change = intop(r,'&',2) == 2
+	 evt = nil
+	 if confirmed then
+	    if keyconf then
+	       menu.root_menu:close(1)
+	    end
 	    evt = { key = gui_item_confirm_event }
-	 else evt = nil end
+	 end
 	 return evt
       elseif gui_keycancel[key] then
 	 evt_shutdown_app(menu.root_menu)
@@ -229,18 +240,25 @@ function menu_create(owner, name, def, box, x1, y1)
       elseif gui_keyleft[key] then
 	 menu:close()
 	 return
-      elseif gui_keyright[key] then
-	 local fl = menu.fl
-	 if not fl then return end
-	 local pos = fl:get_pos()
-	 if not pos then return end
-	 local entry = fl.dir[pos]
-	 if entry and entry.size < 0 then
-	    menu:confirm()
-	 end
-	 return
       end
       return evt
+   end
+
+   -- Menu move
+   -- ---------
+   function menu_move(menu,movx,movy,movz,move_sub)
+      if tag(menu) ~= menu_tag or not menu.fl then return end
+      local box,z = menu.fl.box, menu.fl.bo2 and menu.fl.bo2[3]
+      local x,y = box and box[1], box and box[2]
+      menu.fl:set_pos(x and movx and x+movx,
+		      y and movy and y+movy,
+		      z and movz and z+moz)
+      if move_sub and type(menu.sub_menu) == "table" then
+	 local i,m
+	 for i,m in menu.sub_menu do
+	    menu_move(m,movx,movy,movz,1)
+	 end
+      end
    end
 
    -- Menu open
@@ -254,6 +272,17 @@ function menu_create(owner, name, def, box, x1, y1)
       end
       dl_set_active(menu.dl,1)
       gui_new_focus(menu)
+      local box = menu.fl and menu.fl.box
+      local movx,movy
+      if box then
+	 movx = (box[1] < 0 and -box[1])
+	    or (box[3] > 640 and 640-box[3])
+	 movy = (box[2] < 0 and -box[2])
+	    or (box[4] > 480 and 480-box[4])
+	 if (movx or movy) and tag(menu.root_menu) == menu_tag then
+	    menu.root_menu:move(movx,movy,nil,1)
+	 end
+      end
    end
 
    -- Menu close
@@ -370,33 +399,44 @@ function menu_create(owner, name, def, box, x1, y1)
    function menu_confirm(menu)
       local fl = menu.fl
       if not fl then return end
-      local entry = fl:get_entry()
+      local idx = fl:get_pos()
+      if not idx then return end
+      local entry = fl.dir[idx]
+      local xentry = fl.dirinfo[idx]
       if not entry then return end
-      local idx = fl.pos+1
 
-      if entry.size and entry.size==-1 then
+      -- Exec callback for both sub-entry or normal entry
+      local cbname = menu.def[idx].cbname
+--       dump({cbname=cbname, type=type(menu.def.cb)}, "cb")
+      if cbname and type(menu.def.cb) == "table" then
+	 local cb = menu.def.cb[cbname]
+-- 	 dump(menu.def.cb,"all cb")
+	 if type(cb) == "function" then
+-- 	    dump({cbname,cb},"exec")
+	    cb(menu, idx)
+	 else
+	    print("[menu_confirm] : wrong callback type:"..type(cb))
+	 end
+      end
+
+      if (entry.size or 0) == -1 then
 	 local subname = menu.def[idx].subname
+	 if not subname then return end
 	 local m = dl_get_trans(fl.dl)
-	 local submenu = menu.sub_menu[subname]
+	 local submenu = menu.sub_menu and menu.sub_menu[subname]
 	 
 	 if tag(submenu) == menu_tag then
 	    submenu:open()
 	    evt_app_insert_first(menu, submenu)
 	 else
-	    local y = entry.y
+	    local y = (xentry and xentry.y) or 0
+	    if not menu.def.sub then return end
 	    submenu = menu:create(subname, menu.def.sub[subname],
 				  { m[4][1]+fl.bo2[1],
 				     m[4][2]+y})
 	 end
 	 return 2
       else
-	 local cbname = menu.def[idx].cbname
-	 if cbname and type(menu.def.cb) == "table" then
-	    local cb = menu.def.cb[cbname]
-	    if cb then
-	       cb(menu, idx)
-	    end
-	 end
 	 return 1
       end
    end
@@ -432,6 +472,7 @@ function menu_create(owner, name, def, box, x1, y1)
       close = menu_close,
       set_color = menu_set_color,
       draw = menu_draw,
+      move = menu_move,
       confirm = menu_confirm,
       shutdown = menu_shutdown,
       create = menu_create,
@@ -614,26 +655,44 @@ function menu_create_def(menustr)
 	    if not menu.separator then menu.separator = {} end
 	    tinsert(menu.separator, getn(menu))
 	 else
-	    local size = 0
-	    local sub = nil
-	    local cb
-	    local substart,subend
-	    substart,subend = strfind(name,">",1,1)
-	    if substart then
+	    local size, sub, cb, main, substart,subend
+	    substart,subend,main,sub =
+	       strfind(name,"([%w%s_{}]*)(>?[%w_]*)")
+	    if not substart or not main then
+	       print("menu-def creation : invalid string ["..name.."]")
+	       return
+	    end
+-- 	    printf("menu parse all:%q",tostring(name))
+-- 	    printf("menu parse main:%q sub:%q", tostring(main), tostring(sub))
+	    substart,subend,name,cb = strfind(main,"([%w%s_]+)(%b{})",1)
+	    if not substart then
+	       name = strlen(main)>0 and main
+	       cb = nil
+	    end
+	    if not name then
+	       print("menu-def creation : missing menu name");
+	       return
+	    end
+	    -- printf("menu parse name:%q cb:%q",name, tostring(cb))
+	    if not cb or strlen(cb) < 3 then
+	       cb = nil
+	    else
+	       cb = strsub(cb, 2, strlen(cb)-1)
+	       cb = strlen(cb) >= 1 and cb
+	    end
+	    if sub and strsub(sub,1,1) == ">" then
 	       -- Submenu --
 	       size = -1
-	       sub = strsub(name,substart+1)
-	       name = strsub(name,1,substart)
-	       if strlen(sub) < 1 then sub = nil end
+	       sub = strsub(sub,2)
+	       sub = ((strlen(sub) > 0) and sub) or name
+	       name = name .. ">"
 	    else
-	       substart,subend = strfind(name,"%b{}",1)
-	       if substart then
-		  -- Submenu --
-		  cb = strsub(name,substart+1, subend-1)
-		  name = strsub(name,1,substart-1)
-		  if strlen(cb) < 1 then cb = nil end
-	       end
+	       sub = nil
+	       size = 0
 	    end
+-- 	    printf("final menu parse name:%q cb:%q sub:%q %s",
+-- 		   tostring(name), tostring(cb), tostring(sub),
+-- 		   (size < 0 and "SUB") or "ENTRY")
 	    tinsert(menu, {name=name, size=size, subname=sub, cbname=cb})
 	 end
       else
@@ -644,7 +703,7 @@ function menu_create_def(menustr)
    return menu
 end
 
-function menu_create_defs(def,target)
+function menu_create_defs(def,target,parent)
    local menu
 
 --    print("menu_create_defs : "..type(def))
@@ -670,19 +729,20 @@ function menu_create_defs(def,target)
       return
    end
 
+   menu.cb = menu.cb or (parent and parent.cb)
+
    if type(def) == "table" then
       menu.cb = menu.cb or def.cb
       if type(def.sub) == "table" then
 	 local i,v
 	 menu.sub = {}
 	 for i,v in def.sub do
-	    menu.sub[i] = menu_create_defs(v, target)
+	    menu.sub[i] = menu_create_defs(v, target, menu)
 	    if not menu.sub[i] then
 	       print("menu_create_defs : failed to create sub-menu [" ..
 		     tostring(i).."]")
 	       return
 	    end
-	    menu.sub[i].cb = menu.sub[i].cb or menu.cb
 	 end
       end
    end

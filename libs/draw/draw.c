@@ -5,7 +5,7 @@
  * @date    2002/11/22
  * @brief   drawing system
  *
- * $Id: draw.c,v 1.5 2003-01-28 06:38:18 ben Exp $
+ * $Id: draw.c,v 1.6 2003-01-28 22:58:18 ben Exp $
  */
 
 #include "draw/draw.h"
@@ -25,7 +25,7 @@ int draw_init(const float screen_width, const float screen_height)
 {
   int err;
   //  const float fov = 0.01, zFar = 1000;
-  const float fov = 1.0, zFar = 250;
+  const float fov = 0.4, zFar = 250;
 
   SDDEBUG("[%s] W:%.02f H:%.02f\n", __FUNCTION__, screen_width, screen_height);
   SDINDENT;

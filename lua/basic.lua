@@ -4,7 +4,7 @@
 --- @author  benjamin gerard <ben@sashipa.com>
 --- @brief   basic things used into other library (evt, keyboard_emu, gui)
 ---
---- $Id: basic.lua,v 1.13 2002-12-16 23:39:36 ben Exp $
+--- $Id: basic.lua,v 1.14 2003-01-28 22:58:18 ben Exp $
 ---
 
 -- Unload library
@@ -367,6 +367,15 @@ function set_vertex(vect, from)
    for i,v in from do
 	  if v then vect[i]=v end
    end
+end
+
+--- printf like function.
+--- @ingroup dcplaya_lua_basics
+--- @param  fmt  Format string
+--- @param  ...  Arguments needed by format string.
+--- @warning Unlike C printf this function add a newline.
+function printf(...)
+   print(call(format,arg))
 end
 
 settagmethod(tag( {} ), "add", table_add)

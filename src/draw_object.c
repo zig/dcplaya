@@ -1,5 +1,5 @@
 /**
- * $Id: draw_object.c,v 1.17 2003-01-28 06:38:18 ben Exp $
+ * $Id: draw_object.c,v 1.18 2003-01-28 22:58:18 ben Exp $
  */
 
 #include <stdio.h>
@@ -11,17 +11,10 @@
 #include "sysdebug.h"
 #include "draw_object.h"
 
-extern float draw_znear;
-
-static int counter = 0, counter2=0;
-
 typedef struct {
   float u;
   float v;
 } uv_t;
-
-// $$$ temp for debug
-static volatile int acolor = -1;
 
 static matrix_t mtx;
 static ta_hw_tex_vtx_t * const hw = HW_TEX_VTX;
@@ -38,7 +31,7 @@ typedef struct {
 
 static tvtx_t * transform = 0;
 static int transform_sz = 0;
-static float oozNear, zNear; // $$$ ben ugly !
+static float oozNear, zNear;
 static const int strong_mask = 7; // 0 for no strong link
 
 #define U1 (02.0f/64.0f)
@@ -219,10 +212,6 @@ inline static void proj_vtx(tvtx_t * d,
   d->p.x = d->v.x * oow * mx + tx;
   d->p.y = d->v.y * oow * my + ty;
   d->p.z = Inv(d->v.z + 1);
-#if DEBUG
-  d->p.flags |= 0x80000000; /* $$$ has been projected  */
-#endif
-
 }
 
 static void ProjectVtx(tvtx_t * d, int n,
@@ -291,23 +280,12 @@ static void TestVisibleFaceNotClipped(const obj_t * o, const int omask)
     const pvtx_t *t2 = &transform[f->c].p;
     int flags;
 
-
     flags = 0
       | (t0->flags << 8)
       | (t1->flags << (8+6))
       | (t2->flags << (8+12));
 
     if (!(flags&mask)) {
-
-#ifdef DEBUG
-    // $$$
-      if ((t0->flags&t1->flags&t2->flags) >= 0) {
-	SDDEBUG("Trying to test visibility on not projected face #%d [%x]\n",
-		f-o->tri, flags);
-	dump_face(f, o->tlk, o->tri, transform, "VISIBILITY");
-      } else
-#endif
-
       flags |= test_visible(t0,t1,t2);
     }
     f->flags = flags;
@@ -315,9 +293,8 @@ static void TestVisibleFaceNotClipped(const obj_t * o, const int omask)
   } while(--n);
 }
 
-
 typedef int cl_t;
-
+/* Set TA clipping */
 static void set_clipping(cl_t xmin, cl_t ymin, cl_t xmax, cl_t ymax)
 {
   struct {
@@ -782,8 +759,6 @@ static void draw_tri_single(const tri_t * f, /* triangle to draw */
   uv_t * uvl;
   const pvtx_t * pv;
   
-  hw->col = acolor;
-
   lflags  = (1&t[l->a].flags) << 0;
   lflags |= (1&t[l->b].flags) << 1;
   lflags |= (1&t[l->c].flags) << 2;
@@ -818,37 +793,6 @@ static void draw_tri_single(const tri_t * f, /* triangle to draw */
   hw->u = uvl[2].u;
   hw->v = uvl[2].v;
   ta_commit32_nocopy();
-
-  if(1)
-    {
-      hw->col = 0xFFFFFF00;
-      hw->flags = TA_VERTEX_NORMAL;
-
-      pv = &transfo[f->b].p;
-      hw->x = pv->x;
-      hw->y = pv->y;
-      hw->z = pv->z;
-      hw->u = uvl[1].u;
-      hw->v = uvl[1].v;
-      ta_commit32_nocopy();
-
-      pv = &transfo[f->a].p;
-      hw->x = pv->x;
-      hw->y = pv->y;
-      hw->z = pv->z;
-      hw->u = uvl[0].u;
-      hw->v = uvl[0].v;
-      ta_commit32_nocopy();
-
-      hw->flags = TA_VERTEX_EOL;
-      pv = &transfo[f->c].p;
-      hw->x = pv->x;
-      hw->y = pv->y;
-      hw->z = pv->z;
-      hw->u = uvl[2].u;
-      hw->v = uvl[2].v;
-      ta_commit32_nocopy();
-    }
 }
 
 static void clip_znear_vtx(tvtx_t * d, const vtx_t * a, const vtx_t * b, 
@@ -913,7 +857,6 @@ static void draw_clip_znear_tri(const tri_t * f, /* triangle to draw */
   flags &= 010101;
   if (!flags) {
     /* No clip */
-    acolor = 0xc0FFFFFF;
     draw_tri_single(f,l,t,transform);
     return;
   }
@@ -932,69 +875,26 @@ static void draw_clip_znear_tri(const tri_t * f, /* triangle to draw */
   switch (flags) {
   case 1: case 2: case 4:
     {
-      {
-	// verify cliping flags:
-	int flags2;
-	const pvtx_t *t0 = &va->p;
-	const pvtx_t *t1 = &vb->p;
-	const pvtx_t *t2 = &vc->p;
-	flags2 = 0
-	  | (t0->flags << 8)
-	  | (t1->flags << (8+6))
-	  | (t2->flags << (8+12));
-	flags2 >>= (8+4);
-	flags2 &= 010101;
-	if (flags2 != 000001) {
-	  printf("flags2:%x, flags:%x\n",flags2,flags);
-	  BREAKPOINT(0xDEADFACE);
-	}
-      }
-
-
       clip_znear_vtx(&cvtx[0], &va->v, &vb->v, vp);
       cvtx[1] = *vb;
       cvtx[2] = *vc;
       clip_znear_vtx(&cvtx[3], &va->v, &vc->v, vp);
 
-      acolor = 0xc00000FF;
-      if (1 || !test_visible(&cvtx[0].p,&cvtx[1].p,&cvtx[2].p)) {
+      if (!test_visible(&cvtx[0].p,&cvtx[1].p,&cvtx[2].p)) {
 	draw_tri_single(ctri+1,ctlk,ctri,cvtx);
-	//	draw_tri_single(ctri+3,ctlk,ctri,cvtx);
       }
-      acolor = 0xc000FF00;
-      if (1 || !test_visible(&cvtx[0].p,&cvtx[2].p,&cvtx[3].p)) {
+      if (!test_visible(&cvtx[0].p,&cvtx[2].p,&cvtx[3].p)) {
 	draw_tri_single(ctri+2,ctlk,ctri,cvtx);
-	//	draw_tri_single(ctri+4,ctlk,ctri,cvtx);
       }
     } break;
 
   case 3: case 5: case 6:
     {
-      {
-	// verify cliping flags:
-	int flags2;
-	const pvtx_t *t0 = &va->p;
-	const pvtx_t *t1 = &vb->p;
-	const pvtx_t *t2 = &vc->p;
-	flags2 = 0
-	  | (t0->flags << 8)
-	  | (t1->flags << (8+6))
-	  | (t2->flags << (8+12));
-	flags2 >>= (8+4);
-	flags2 &= 010101;
-	if (flags2 != 010100) {
-	  printf("flags2:%x, flags:%x\n",flags2,flags);
-	  BREAKPOINT(0xDEADFACE);
-	}
-      }
-
       cvtx[0] = *va;
       clip_znear_vtx(&cvtx[1], &vb->v, &va->v, vp);
       clip_znear_vtx(&cvtx[2], &vc->v, &va->v, vp);
-      acolor = 0xc0FF0000;
-      if (1 || !test_visible(&cvtx[0].p,&cvtx[1].p,&cvtx[2].p)) {
+      if (!test_visible(&cvtx[0].p,&cvtx[1].p,&cvtx[2].p)) {
 	draw_tri_single(ctri+1,ctlk,ctri,cvtx);
-	//	draw_tri_single(ctri+3,ctlk,ctri,cvtx);
       }
     } break;
   default:
@@ -1019,13 +919,15 @@ static void draw_clip_znear_object(obj_t *o, viewport_t * vp,
   hw->col = argb255(color);
 
   while (n--) {
-    draw_clip_znear_tri(f,l,t,transform,vp);
+    if (!(f->flags&1)) {
+      /* backface (only projected face were flaged...) */
+      draw_clip_znear_tri(f,l,t,transform,vp);
+    }
     ++f;
     ++l;
   }
   return;
 }
-
 
 int DrawObject(viewport_t * vp, matrix_t local, matrix_t proj,
 	       obj_t *o,
@@ -1072,16 +974,9 @@ int DrawObject(viewport_t * vp, matrix_t local, matrix_t proj,
   } else {
     oozNear = -(proj[2][2]/proj[3][2]);
     zNear = -(proj[3][2]/proj[2][2]);
-    //$$$
-    if (!FnearZero(zNear-draw_znear)) {
-      printf("znear : %f %f\n",zNear,draw_znear);
-    }
     ProjectVtxNotClipped(transform, o->nbv, vp, 00020);
     TestVisibleFaceNotClipped(o, 00020);
     draw_clip_znear_object(o, vp, diffuse);
-
-    ++counter;
-    counter2 = 0;
   }
 
 

@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.64 2003-01-25 17:26:03 ben Exp $
+ * @version    $Id: dynshell.c,v 1.65 2003-01-28 22:58:18 ben Exp $
  */
 
 #include <stdio.h>
@@ -1697,6 +1697,62 @@ static int lua_filetype_add(lua_State * L)
   return 1;
 }
 
+static int lua_intop(lua_State * L)
+{
+  int a,b;
+  const char * c;
+  if (lua_gettop(L) < 3) {
+    return 0;
+  }
+  a = lua_tonumber(L,1);
+  b = lua_tonumber(L,3);
+  c = lua_tostring(L,2);
+  lua_settop(L,0);
+
+  if (c && c[0] && !c[1]) {
+    int err = 0;
+    switch(c[0]) {
+    case '|':
+      a|=b;
+      break;
+    case '&':
+      a&=b;
+      break;
+    case '^':
+      a^=b;
+      break;
+    case '<':
+      a<<=b;
+      break;
+    case '>':
+      a>>=b;
+      break;
+    case '+':
+      a+=b;
+      break;
+    case '-':
+      a-=b;
+      break;
+    case '*':
+      a*=b;
+      break;
+    case '%':
+    case '/':
+      if (b) {
+	a = c[0]=='%'?a%b:a/b;
+	break;
+      }
+      printf("[intop] : divide by zero.\n");
+    default:
+      err = -1;
+    }
+    if (!err) {
+      lua_pushnumber(L,a);
+    }
+  }
+  return lua_gettop(L);
+}
+
 static int greaterlog2(int v)
 {
   int i;
@@ -2540,6 +2596,21 @@ static luashell_command_description_t commands[] = {
     "collect(step) :\nPerform the given number of step of garbage collection."
     "]])",
     SHELL_COMMAND_C, lua_collect
+  },
+
+  {
+    "intop",
+    0,
+    "print([["
+    "intop(a,op,b) :\n"
+    " Perform `a op b' on integer values.\n"
+    " op := [|,^,&,>,<,+,-,*,/,%].\n"
+    " Where `<' and `>' are arithmetical (signed) left and right shift.\n"
+    "  `|',`&' and `^' are bitwise OR, AND and XOR operands.\n"
+    "  `%' and `/' are signed modulo and division operands.\n"
+    "  e.g: `a = intop(a,'^',-1)' is equivalent to `a = ~a'."
+    "]])",
+    SHELL_COMMAND_C, lua_intop
   },
 
   {0},
