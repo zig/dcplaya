@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   RAM disk for KOS file system
  * 
- * $Id: fs_ramdisk.c,v 1.8 2002-09-26 02:22:12 benjihan Exp $
+ * $Id: fs_ramdisk.c,v 1.9 2002-09-26 22:28:45 benjihan Exp $
  */
 
 #ifdef VPSPECIAL
@@ -306,7 +306,7 @@ static int realloc_node(node_t * node, int req_size)
     return 0;
   }
 
-  missing = (missing + ALLOC_BLOCK_SIZE-1) & ALLOC_BLOCK_SIZE;
+  missing = (missing + ALLOC_BLOCK_SIZE-1) & -ALLOC_BLOCK_SIZE;
   missing += node->max;
 
   data = realloc(node->data, missing);
@@ -551,16 +551,18 @@ static ssize_t write(file_t fd, const void * buffer, size_t size)
     SDERROR("minus size:%d\n", size);
     return -1;
   }
-  of = fh + fd;
   if (!size) {
     return 0;
   }
 	
+  of = fh + fd;
   end_pos = of->pos + size;
-	
+
   if (end_pos > of->node->max) {
     realloc_node(of->node, end_pos);
     if (end_pos > of->node->max) {
+/*       SDWARNING("[%s] : Realloc failed [end:%d] [max:%d]\n", */
+/* 		__FUNCTION__, end_pos, of->node->max); */
       end_pos = of->node->max;
     }
   }
@@ -574,7 +576,7 @@ static ssize_t write(file_t fd, const void * buffer, size_t size)
     of->node->entry.size = of->pos;
   }
 	
-  //  SDDEBUG("--> %d bytes\n", n);
+  //SDDEBUG("--> %d bytes\n", n);
   return n;
 }
 
