@@ -1,5 +1,5 @@
 /*
-** $Id: lbaselib.c,v 1.1 2002-09-13 16:02:36 zig Exp $
+** $Id: lbaselib.c,v 1.2 2002-12-19 21:20:56 ben Exp $
 ** Basic library
 ** See Copyright Notice in lua.h
 */
@@ -20,54 +20,89 @@
 
 
 
-// VP : added this
-
-unsigned long strtoul(char * s, char * * end, int base)
+static int digit(int c, unsigned int base)
 {
-  unsigned long v = 0;
-  int neg;
-
-  //SYS_DEBUG1("'%s' --> ", s);
-
-  if (*s == '-') {
-    neg = 1;
-    s++;
-  } else if (*s == '+') {
-    neg = 0;
-    s++;
-  } else
-    neg = 0;
-
-  while (*s) {
-
-    int n = -1;
-
-    if (*s <= 9)
-      n = *s - '0';
-    else if (*s <= 'Z')
-      n = *s - 'A' + 10;
-    else if (*s <= 'z')
-      n = *s - 'z' + 10;
-
-    if (n >= 0 && n < base) {
-      v = v*base + n;
-    } else
-      break;
-
-    s++;
+  int n = -1;
+  if (c <= '9') {
+	n = c - '0';
+  } else if (c <= 'Z') {
+	n = c - 'A' + 10;
+  } else if (c <= 'z'){
+	n = c - 'a' + 10;
   }
-
-  //SYS_DEBUG1("%g\n", neg? -v:v);
-
-  if (end)
-    *end = s;
-
-  return neg? -v:v;
+  if ((unsigned int)n < base) {
+	return n;
+  }
+  return -1;
 }
 
+// VP : added this
+// Ben :  SVID 3, BSD 4.3, ISO 9899 compliant
 
 
 
+/*unsigned */
+long strtol(const char * s, char * * end, unsigned int base)
+{
+  const char * start = s;
+  unsigned long v = 0;
+  int neg = 0, c;
+
+/*   printf("strtoul[%s],%d)\n", s, base); */
+
+  /* Skip starting spaces. */
+  for (c = *s; isspace((unsigned char)c); c = *++s)
+	;
+
+  /* Get optionnal sign. */
+  /* $$$ ben : Does not has sens with unsigned value ! */
+  if (c == '-' || c == '+') {
+	neg = (c == '-');
+	c = *++s;
+  }
+
+  /* Get the base. */
+  if (!base) {
+	/* Assume default base is 10 */
+	base = 10;
+
+	/* Could be either octal(8) or hexidecimal(16) */
+	if (c == '0') {
+	  base = 8;
+	  c = *++s;
+	  if (c == 'x' || c == 'X') {
+		base = 16;
+		c = *++s;
+	  }
+	}
+  } else if (base == 16 && c == '0') {
+	/* Hexa mode must skip "0x" sequence */
+	c = *++s;
+	if (c == 'x' || c == 'X') {
+	  c = *++s;
+	}
+  }
+
+/*   printf(" After auto-detect : [%s],%d,[%c]\n", s, base, neg?'-':'+'); */
+
+  c = digit(c,base);
+  if (c < 0) {
+	s = start;
+  } else {
+	do {
+      v = v * base + c;
+	  c = digit(*++s,base);
+	} while (c >= 0);
+  }
+
+/*   printf(" Final: [%s] := [%ld]\n", s, v); */
+
+  if (end) {
+    *end = (char *)s;
+  }
+
+  return neg ? -(signed long)v : v;
+}
 
 /* Added by DP */
 void (*luaB_fputs)(const char *s) = (void (*)(const char *))printf;
@@ -152,9 +187,16 @@ static int luaB_tonumber (lua_State *L) {
   else {
     const char *s1 = luaL_check_string(L, 1);
     char *s2;
-    unsigned long n;
+	// $$$ ben : Since our internal numbers are float with a 24 bit mantissa,
+	// we don't need unsignde long precision and could keep the sign. This is
+	// an "enhancement" that does not match the tonumber() function
+	// documentationlua in lua reference manual.
+	
+	// unsigned long n;
+    long n;
     luaL_arg_check(L, 2 <= base && base <= 36, 2, "base out of range");
-    n = strtoul(s1, &s2, base);
+
+    n = strtol(s1, &s2, base);
     if (s1 != s2) {  /* at least one valid digit? */
       while (isspace((unsigned char)*s2)) s2++;  /* skip trailing spaces */
       if (*s2 == '\0') {  /* no invalid trailing characters? */
