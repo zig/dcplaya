@@ -4,16 +4,16 @@
  * @brief     Jpeg (JPG) translator class implementation
  * @date      2001/07/17
  * @author    BeN(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAtranslatorJpg.cxx,v 1.1 2002-12-15 02:31:45 ben Exp $
+ * @version   $Id: SHAtranslatorJpg.cxx,v 1.2 2002-12-15 12:44:15 zigziggy Exp $
  */
 
 #include "SHAtranslatorJpg.h"
 #include "SHAtranslator/SHAtranslatorBlitter.h"
 
 #include <stdio.h>  // For jpeglib !
-#include <setjmp.h>
 
 extern "C" {
+#include "setjmp.h"
 #include "jpeg/jpeglib.h"
 }
 
