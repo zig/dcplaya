@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, texture interface
  * 
- * $Id: display_texture.c,v 1.4 2002-12-16 23:39:36 ben Exp $
+ * $Id: display_texture.c,v 1.5 2002-12-20 01:57:33 ben Exp $
  */
 
 #include <stdio.h>
@@ -145,13 +145,22 @@ DL_FUNCTION_DECLARE(tex_info)
   lua_pushstring(L,t->name);
   lua_settable(L,1);
 
-  lua_pushstring(L,"w");
+  lua_pushstring(L,"orig_w");
   lua_pushnumber(L,t->width);
   lua_settable(L,1);
 
-  lua_pushstring(L,"h");
+  lua_pushstring(L,"orig_h");
   lua_pushnumber(L,t->height);
   lua_settable(L,1);
+
+  lua_pushstring(L,"w");
+  lua_pushnumber(L,1<<t->wlog2);
+  lua_settable(L,1);
+
+  lua_pushstring(L,"h");
+  lua_pushnumber(L,1<<t->hlog2);
+  lua_settable(L,1);
+
 
   lua_pushstring(L,"format");
   lua_pushstring(L,texture_formatstr(t->format));
