@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.34 2002-10-08 08:24:03 benjihan Exp $
+ * @version    $Id: dynshell.c,v 1.35 2002-10-08 20:51:25 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -779,7 +779,7 @@ static int copyfile(const char *dst, const char *src,
   char *fct;
 
   SDDEBUG("[%s] : [%s] [%s] %c%c%c\n", __FUNCTION__,  dst, src,
-	  'f' ^ (force<<5), 'u' ^ (unlink<<5), 'v' ^ (verbose<<5));
+		  'f' ^ (force<<5), 'u' ^ (unlink<<5), 'v' ^ (verbose<<5));
 
   if (unlink) {
     fct = "move";
@@ -796,9 +796,9 @@ static int copyfile(const char *dst, const char *src,
 
   if (err >= 0 && verbose) {
     printf("%s : [%s] -> [%s] (%d bytes)\n", unlink ? "move" : "copy",
-	   src, dst, err);
+		   src, dst, err);
   }
-
+  
   return err;
 }
 
@@ -860,7 +860,7 @@ static int lua_mkdir(lua_State * L)
       printf("mkdir : [%s] created\n", fname);
     }
   }
-
+  
   return err ? -1 : 0;
 }
 
@@ -869,10 +869,10 @@ static int lua_unlink(lua_State * L)
   int nparam = lua_gettop(L);
   int i, err;
   int verbose = 0, force = 0;
-
+  
   err = get_option(L, "unlink", &verbose, &force);
   if (err) {
-    return -1;
+    return 0;
   }
     
   for (i=1; i <= nparam; i++) {
@@ -883,14 +883,18 @@ static int lua_unlink(lua_State * L)
     e = fu_remove(fname);
     if (e < 0) {
       if (!force) {
-	printf("unlink : [%s] [%s].\n", fname, fu_strerr(e));
-	++err;
+		printf("unlink : [%s] [%s].\n", fname, fu_strerr(e));
+		++err;
       }
     } else if (verbose) {
       printf("unlink : [%s] removed.\n", fname);
     }
   }
-  return err ? -1 : 0;
+  if (!err) {
+	lua_pushnumber(L,1);
+	return 1;
+  }
+  return 0;
 }
 
 static int lua_copy(lua_State * L)
@@ -904,9 +908,9 @@ static int lua_copy(lua_State * L)
 
   err = get_option(L, "copy", &verbose, &force);
   if (err) {
-    return -1;
+    return 0;
   }
-
+  
   /* Count file parameters , get [first] and [last] file in [src] and [dst] */
   for (i=1, cnt=0; i <= nparam; i++) {
     const char *fname = lua_tostring(L, i);
@@ -918,58 +922,60 @@ static int lua_copy(lua_State * L)
     }
     ++cnt;
   }
-
+  
   if (cnt < 2) {
     printf("copy : [missing parameter]\n");
-    return -1;
+    return 0;
   }
-		     
+  
   /* Remove trialing '/' */
   enddest = fn_get_path(fulldest, dst, max, &slashed);
   if (!enddest) {
     printf("copy : [missing destination].\n");
-    return -1;
+    return 0;
   }
-
+  
   if (cnt == 2) {
     if (fu_is_dir(fulldest)) {
       if (!fn_add_path(fulldest, enddest, fn_basename(src), max)) {
-	printf("copy : [filename too long].\n");
-	return -1;
+		printf("copy : [filename too long].\n");
+		return 0;
       }
     } else if (slashed) {
       printf("copy : [%s] [not a directory].\n", dst);
-      return -1;
+      return 0;
     }
-    return copyfile(fulldest, src, force, 0, verbose);
+    err = copyfile(fulldest, src, force, 0, verbose);
   } else  {
     /* More than 2 files, destination must be a directory */
     if (!fu_is_dir(fulldest)) {
       printf("copy : [%s] [not a directory].\n", dst);
-      return -1;
+      return 0;
     }
-
+	
     err = 0;
     for (i=1; i<=nparam; ++i) {
       const char *fname = lua_tostring(L, i);
       if (fname == dst) {
-	break;
+		break;
       }
       if (fname[i] == '-') {
-	continue;
+		continue;
       }
       if (!fn_add_path(fulldest, enddest, fn_basename(fname), max)) {
-	printf("copy : [filename too long].\n");
-	err = -1;
+		printf("copy : [filename too long].\n");
+		err = -1;
       } else {
-	err |= copyfile(fulldest, fname, force, 0, verbose);
+		err |= copyfile(fulldest, fname, force, 0, verbose);
       }
     }
-    return err;
   }
+  if (!err) {
+	lua_pushnumber(L,1);
+	return 1;
+  }
+  return 0;
 }
-
-
 
 static int lua_dcar(lua_State * L)
 {
@@ -1060,6 +1066,7 @@ static int lua_dcar(lua_State * L)
  error:  
   if (count < 0) {
     printf("dcar : %s\n", error);
+	return 0;
   } else if (opt.in.verbose) {
     printf("dcar := %d\n", count);
     if (opt.out.level)
@@ -1074,8 +1081,8 @@ static int lua_dcar(lua_State * L)
       printf(" compression  : %d\n",opt.out.cbytes*100/opt.out.ubytes);
     }
   }
-
-  return count;
+  lua_pushnumber(L,count);
+  return 1;
 }
 
 static int lua_play(lua_State * L)
@@ -1108,9 +1115,10 @@ static int lua_play(lua_State * L)
 
   if (error) {
     printf("play : %s\n", error);
-    return -1;
+    return 0;
   }
-  return 0;
+  lua_pushnumber(L,1);
+  return 1;
 }
 
 static int lua_stop(lua_State * L)
@@ -1132,9 +1140,10 @@ static int lua_stop(lua_State * L)
     playa_stop(imm);
   } else {
     printf("stop : %s\n", error);
-    return -1;
+    return 0;
   }
-  return 0;
+  lua_pushnumber(L,1);
+  return 1;
 }
 
 /* THIS IS REALLY DIRTY AND TEMPORARY :)) */
