@@ -225,7 +225,9 @@ static void controler_thread(void * dummy)
 	  
       /* keyboard */
       keyboard_addr = maple_first_kb();
-      if (1 || keyboard_addr) {
+      /* WARNING : kbd_poll_repeat does also poll pad controllers so it NEED
+	 to be called even when there are no keyboard connected ! */
+      /*if (keyboard_addr)*/ {
 	kbd_poll_repeat(keyboard_addr, ta_state.frame_counter - last_frame);
       }
 	  
