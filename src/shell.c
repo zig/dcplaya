@@ -146,6 +146,7 @@ int shell_init()
 
 void shell_shutdown()
 {
+#warning "TODO"
 }
 
 void shell_update(float frameTime)
@@ -175,13 +176,11 @@ void shell_update(float frameTime)
 int shell_command(const char * com)
 {
   //printf("COMMAND <%s>\n", com);
-  int next_com;
 
   commands[write_command] = strdup(com);
 
   // increment in atomic way
-  next_com = (write_command+1) % MAX_COMMANDS;
-  write_command = next_com;
+  write_command = (write_command+1) % MAX_COMMANDS;
 
   return 0;
 

@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.18 2002-09-14 06:57:36 zig Exp $
+ * @version   $Id: dreamcast68.c,v 1.19 2002-09-14 07:36:07 zig Exp $
  */
 
 //#define RELEASE
@@ -878,6 +878,8 @@ int dreammp3_main(int argc, char **argv)
 error:
   dbglog_set_level(DBG_DEBUG);
   dbglog( DBG_DEBUG, ">> " __FUNCTION__ " : error line [%d]\n", err);
+
+  BREAKPOINT("toto");
 
   /* Shutting down exceptions handling */
   expt_shutdown();
