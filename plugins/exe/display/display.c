@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.2 2002-09-27 02:01:37 vincentp Exp $
+ * $Id: display.c,v 1.3 2002-10-04 21:04:32 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -196,6 +196,89 @@ static int lua_mat_trans(lua_State * L)
   return 1;
 }
 
+static int lua_mat_li(lua_State * L)
+{
+  int n = lua_gettop(L), l;
+  matrix_t *m;
+  
+  CHECK_MATRIX(1);
+  m = (matrix_t *) (float *) lua_touserdata(L, 1);
+
+  if (n != 2) {
+	printf("mat_li : bad arguments\n");
+	return 0;
+  }
+
+  l = lua_tonumber(L,2);
+  if (l<0 || l>3) {
+	printf("mat_li : invalid index %d\n", l);
+	return 0;
+  }
+
+  lua_settop(L,0);
+  lua_newtable(L);
+  for (n=0; n<4; ++n) {
+	lua_pushnumber(L, n+1);
+	lua_pushnumber(L, (*m)[l][n]);
+	lua_rawset(L, 1);
+  }
+  return 1;
+}
+
+static int lua_mat_co(lua_State * L)
+{
+  int n = lua_gettop(L), l;
+  matrix_t *m;
+  
+  CHECK_MATRIX(1);
+  m = (matrix_t *) (float *) lua_touserdata(L, 1);
+
+  if (n != 2) {
+	printf("mat_co : bad arguments\n");
+	return 0;
+  }
+
+  l = lua_tonumber(L,2);
+  if (l<0 || l>3) {
+	printf("mat_co : invalid index %d\n", l);
+	return 0;
+  }
+
+  lua_settop(L,0);
+  lua_newtable(L);
+  for (n=0; n<4; ++n) {
+	lua_pushnumber(L, n+1);
+	lua_pushnumber(L, (*m)[n][l]);
+	lua_rawset(L, 1);
+  }
+  return 1;
+}
+
+static int lua_mat_el(lua_State * L)
+{
+  int n = lua_gettop(L), l;
+  matrix_t *m;
+  
+  CHECK_MATRIX(1);
+  m = (matrix_t *) (float *) lua_touserdata(L, 1);
+
+  if (n != 3) {
+	printf("mat_el : bad arguments\n");
+	return 0;
+  }
+
+  l = lua_tonumber(L,2);
+  n = lua_tonumber(L,3);
+  if (l<0 || l>3 || n<0 || n>3) {
+	printf("mat_el : invalid index %d,%d\n", l, n);
+	return 0;
+  }
+
+  lua_settop(L,0);
+  lua_pushnumber(L, (*m)[l][n]);
+  return 1;
+}
+
 /* display list LUA interface */
 static int dl_list_tag;
 
@@ -263,7 +346,6 @@ static int lua_new_list(lua_State * L)
   return 0;
 }
 
-
 #define DL_FUNCTION_START(name) \
   static int lua_##name(lua_State * L) \
   { \
@@ -279,7 +361,7 @@ static int lua_new_list(lua_State * L)
 
 DL_FUNCTION_START(destroy_list)
 {
-  printf("destroying list %x\n", dl);
+  printf("destroying list %p\n", dl);
 
   lua_settop(L, 0);
 
@@ -294,6 +376,23 @@ DL_FUNCTION_START(destroy_list)
 }
 DL_FUNCTION_END()
 
+
+DL_FUNCTION_START(heap_size)
+{
+  lua_settop(L, 0);
+  lua_pushnumber(L, dl->heap_size);
+  return 1;
+}
+DL_FUNCTION_END()
+
+
+DL_FUNCTION_START(heap_used)
+{
+  lua_settop(L, 0);
+  lua_pushnumber(L, dl->heap_pos);
+  return 1;
+}
+DL_FUNCTION_END()
 
 DL_FUNCTION_START(get_active)
 {
@@ -582,9 +681,23 @@ static luashell_command_description_t display_commands[] = {
     SHELL_COMMAND_C, lua_destroy_list    /* function */
   },
   {
+    "dl_heap_size", 0,               /* long and short names */
+    "print [["
+      "dl_heap_size(list) : get heap size in bytes"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_heap_size      /* function */
+  },
+  {
+    "dl_heap_used", 0,              /* long and short names */
+    "print [["
+      "dl_heap_used(list) : get number of byte used in the heap"
+    "]]",                               /* usage */
+    SHELL_COMMAND_C, lua_heap_used      /* function */
+  },
+  {
     "dl_set_active", 0,                  /* long and short names */
     "print [["
-      "dl_destroy_list(list, active) : set active state, return old state"
+      "dl_set_active(list,state) : set active state"
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_set_active      /* function */
   },
@@ -693,6 +806,35 @@ static luashell_command_description_t display_commands[] = {
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_mat_scale       /* function */
   },
+  {
+    "mat_mult", 0,                       /* long and short names */
+    "print [["
+      "mat_mult(mat1, mat2) : make matrix by apply mat1xmat2"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_mat_mult        /* function */
+  },
+  {
+    "mat_li", 0,                         /* long and short names */
+    "print [["
+      "mat_li(mat, l) : get matrix line"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_mat_li          /* function */
+  },
+  {
+    "mat_co", 0,                         /* long and short names */
+    "print [["
+      "mat_co(mat, c) : get matrix column"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_mat_co          /* function */
+  },
+  {
+    "mat_el", 0,                         /* long and short names */
+    "print [["
+      "mat_el(mat, l, c) : get matrix element"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_mat_el          /* function */
+  },
+
   {0},                                   /* end of the command list */
 };
 
