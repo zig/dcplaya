@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.9 2003-03-13 23:00:06 ben Exp $
+# $Id: Makefile.in,v 1.10 2003-03-14 18:44:38 ben Exp $
 #
 
 VERSION = @VERSION@
@@ -58,7 +58,7 @@ DOXALL	+= -D dox-macro_expansion=YES
 DOXALL	+= -D dox-sort-member-docs=NO
 DOXALL	+= -D dox-recursive=NO
 DOXALL	+= -D dox-alphabetical-index=NO
-DOXALL	+= -D dox-internal-docs=YES
+DOXALL	+= -D dox-internal-docs=NO
 
 # DEVELOPER DOCUMENTATION
 ###################################################
@@ -72,8 +72,8 @@ DOXDEV	+= -D dox-enabled-sections=""
 DOXDEV	+= -D dox-generate-html=YES
 DOXDEV	+= -D dox-html-header=
 DOXDEV	+= -D dox-html-footer=
-DOXDEV	+= -D dox-html-stylesheet=
-DOXDEV	+= -D dox-generate-treeview=YES
+DOXDEV	+= -D dox-html-stylesheet=dcplaya_doc.css
+DOXDEV	+= -D dox-generate-treeview=NO
 DOXDEV	+= -D dox-generate-man=NO
 DOXDEV	+= -D dox-man-extension=.1
 DOXDEV	+= -D dox-generate-latex=NO

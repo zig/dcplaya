@@ -16,6 +16,13 @@
  **/
 
 /**
+@defgroup  dcplaya_lua_shell  Shell commands
+@ingroup   dcplaya_lua
+@author    benjamin gerard <ben@sashipa.com>
+@brief     LUA shell commands
+*/
+
+/**
 @defgroup  dcplaya_lua_gui  GUI components
 @ingroup   dcplaya_lua
 @author    benjamin gerard <ben@sashipa.com>
