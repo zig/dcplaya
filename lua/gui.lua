@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.28 2002-12-15 22:43:08 zigziggy Exp $
+--- $Id: gui.lua,v 1.29 2002-12-15 22:48:04 zigziggy Exp $
 ---
 
 --
@@ -430,7 +430,7 @@ end
 
 function gui_dialog_box_draw(dl, box, z, bcolor, color)
    
-   if nil then
+   if not nil then
       local t, l, b, r = 1.6*bcolor, 0.8*bcolor, 0.2*bcolor, 0.4*bcolor
       t[1] = bcolor[1]
       l[1] = bcolor[1]
@@ -444,7 +444,7 @@ function gui_dialog_box_draw(dl, box, z, bcolor, color)
 end
 
 function gui_button_box_draw(dl, box, z, bcolor, color)
-   if nil then
+   if not nil then
       local t, l, b, r = 1.6*bcolor, 0.8*bcolor, 0.2*bcolor, 0.4*bcolor
       t[1] = bcolor[1]
       l[1] = bcolor[1]
