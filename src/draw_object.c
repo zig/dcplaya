@@ -1,16 +1,13 @@
 /**
- * $Id: draw_object.c,v 1.11 2003-01-18 14:23:48 ben Exp $
+ * $Id: draw_object.c,v 1.12 2003-01-21 02:38:16 ben Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <dc/fmath.h>
-
 #include <dc/ta.h>
 
-//#include "gp.h"
+#include "math_float.h"
 #include "draw/ta.h"
-
 #include "sysdebug.h"
 #include "draw_object.h"
 
@@ -124,11 +121,11 @@ static void TransformVtx(vtx_t * d, const obj_t *o,
   // $$$ Optimize with special opcode
   do { 
     const float x = v->x, y = v->y, z = v->z; 
-    const float oow = 1.0f / ((x * m03 + y * m13 + z * m23) + m33);
+    const float oow = Inv((x * m03 + y * m13 + z * m23) + m33);
 
     d->x = ((x * m00 + y * m10 + z * m20) + m30) * oow * mx + tx;
     d->y = ((x * m01 + y * m11 + z * m21) + m31) * oow * my + ty;
-    d->z = 1.0f / ((x * m02 + y * m12 + z * m22) + m32);
+    d->z = Inv((x * m02 + y * m12 + z * m22) + m32);
     ++d; 
     ++v; 
   } while (--n);

@@ -6,11 +6,11 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, matrix interface
  * 
- * $Id: display_matrix.c,v 1.5 2003-01-11 07:44:59 zigziggy Exp $
+ * $Id: display_matrix.c,v 1.6 2003-01-21 02:38:16 ben Exp $
  */
 
 #include <stdlib.h>
-#include <dc/fmath.h>
+#include "math_float.h"
 #include "driver_list.h"
 #include "display_matrix.h"
 #include "allocator.h"
@@ -46,25 +46,25 @@ static lua_matrix_t * create_matrix(int lig, int col)
   int size;
 
   if (lig <= 0 || col <= 0) {
-	return 0;
+    return 0;
   }
 
   size = sizeof(lua_matrix_def_t)
-	+ sizeof(float)*(lig*col)
-	- sizeof(md->v);
+    + sizeof(float)*(lig*col)
+    - sizeof(md->v);
 
   md = allocator_alloc(matrixdef_allocator, size);
   if (md) {
-	md->refcount = 1;
-	md->l = lig;
-	md->c = col;
+    md->refcount = 1;
+    md->l = lig;
+    md->c = col;
   }
   m = allocator_alloc(matrixref_allocator, sizeof(*m));
   if (!m) {
-	allocator_free(matrixdef_allocator, md);
+    allocator_free(matrixdef_allocator, md);
   } else {
-	m->md = md;
-	m->li = 0;
+    m->md = md;
+    m->li = 0;
   }
   return m;
 }
@@ -80,7 +80,7 @@ DL_FUNCTION_START(set_trans)
 }
 DL_FUNCTION_END()
 
-DL_FUNCTION_START(get_trans)
+     DL_FUNCTION_START(get_trans)
 {
   lua_matrix_t * m;
   lua_matrix_def_t * md;
@@ -93,7 +93,7 @@ DL_FUNCTION_START(get_trans)
 }
 DL_FUNCTION_END()
 
-DL_FUNCTION_DECLARE(mat_gc)
+     DL_FUNCTION_DECLARE(mat_gc)
 {
   lua_matrix_t * mat;
   lua_matrix_def_t * md;
@@ -113,18 +113,18 @@ DL_FUNCTION_DECLARE(mat_gc)
 
 
   if (--md->refcount<=0) {
-	if (md->refcount < 0) {
-	  SDCRITICAL("%s : [%p] refcount=%d !!!\n",
-				 __FUNCTION__, md, md->refcount);
-	}
-/* 	printf("%s : destroy matrix def %p\n", __FUNCTION__, md); */
-	allocator_free(matrixdef_allocator, md);
-	driver_dereference(&display_driver);
+    if (md->refcount < 0) {
+      SDCRITICAL("%s : [%p] refcount=%d !!!\n",
+		 __FUNCTION__, md, md->refcount);
+    }
+    /* 	printf("%s : destroy matrix def %p\n", __FUNCTION__, md); */
+    allocator_free(matrixdef_allocator, md);
+    driver_dereference(&display_driver);
   }
 #if defined DEBUG && 0
   if (mat->li) {
-	printf("%s : [m:%p c:%d li:%d]\n", __FUNCTION__,
-		   mat, refcount, ((mat->li - md->v) * c)+1);
+    printf("%s : [m:%p c:%d li:%d]\n", __FUNCTION__,
+	   mat, refcount, ((mat->li - md->v) * c)+1);
   }
 #endif
 
@@ -143,19 +143,19 @@ static int char2col(const lua_matrix_def_t *md, const char *s)
   if (!s) return -1;
   k = *s;
   if ( k >= 'w' && k <= 'z' ) {
-	return ((k-'w') - 1) & 3;
+    return ((k-'w') - 1) & 3;
   }
   switch (k) {
   case 'a':
-	return 4;
+    return 4;
   case 'r':
-	return 5;
+    return 5;
   case 'g':
-	return 6;
+    return 6;
   case 'b':
-	return 7;
+    return 7;
   case 'u': case 'v':
-	return k-'u' + 4 + ((md->c > 8)<<2);
+    return k-'u' + 4 + ((md->c > 8)<<2);
   }
   return -1;
 }
@@ -169,37 +169,37 @@ DL_FUNCTION_DECLARE(mat_gettable)
 
   GET_MATRIX_OR_VECTOR(m,md,1,0);
   if (li=m->li, li) {
-	/* Matrix is a line vector */  
-	int type = lua_type(L,2);
-	if (type == LUA_TNUMBER) {
-	  c = lua_tonumber(L,2) - 1;
-	} else if (type == LUA_TSTRING) {
-	  c = char2col(md,lua_tostring(L,2));
-	}
-/*  	printf("%s(%d,%d) : m:%p d:%p c:%d\n", __FUNCTION__, */
-/*  		   ((li - md->v)*md->c)+1, c+1, m, md, md->refcount); */
-	if (c >= md->c) {
-	  printf("%s : column index %d out of range\n", __FUNCTION__, c+1);
-	  return 0;
-	}
-	lua_settop(L, 0);
-	lua_pushnumber(L, li[c]);
-	return 1;
+    /* Matrix is a line vector */  
+    int type = lua_type(L,2);
+    if (type == LUA_TNUMBER) {
+      c = lua_tonumber(L,2) - 1;
+    } else if (type == LUA_TSTRING) {
+      c = char2col(md,lua_tostring(L,2));
+    }
+    /*  	printf("%s(%d,%d) : m:%p d:%p c:%d\n", __FUNCTION__, */
+    /*  		   ((li - md->v)*md->c)+1, c+1, m, md, md->refcount); */
+    if (c >= md->c) {
+      printf("%s : column index %d out of range\n", __FUNCTION__, c+1);
+      return 0;
+    }
+    lua_settop(L, 0);
+    lua_pushnumber(L, li[c]);
+    return 1;
   } else {
-	lua_matrix_t * r;
+    lua_matrix_t * r;
 
-	l = lua_tonumber(L,2) - 1;
-/*printf("%s(%d) : m:%p d:%p c:%d\n", __FUNCTION__, l+1, m,md,md->refcount); */
-	if (l >= md->l) {
-	  printf("%s : line index %d out of range\n", __FUNCTION__, l+1);
-	  return 0;
-	}
-	REF_MATRIX(r, md, &md->v[l * md->c]);
-	lua_settop(L, 0);
-	lua_pushusertagsz(L, r, matrix_tag, sizeof(lua_matrix_t) + sizeof(lua_matrix_def_t));
-/* 	m->li = &md->v[l<<md->log2]; */
-/* 	lua_settop(L, 1); */
- 	return 1;
+    l = lua_tonumber(L,2) - 1;
+    /*printf("%s(%d) : m:%p d:%p c:%d\n", __FUNCTION__, l+1, m,md,md->refcount); */
+    if (l >= md->l) {
+      printf("%s : line index %d out of range\n", __FUNCTION__, l+1);
+      return 0;
+    }
+    REF_MATRIX(r, md, &md->v[l * md->c]);
+    lua_settop(L, 0);
+    lua_pushusertagsz(L, r, matrix_tag, sizeof(lua_matrix_t) + sizeof(lua_matrix_def_t));
+    /* 	m->li = &md->v[l<<md->log2]; */
+    /* 	lua_settop(L, 1); */
+    return 1;
   }
   return 0;
 }
@@ -214,40 +214,40 @@ DL_FUNCTION_DECLARE(mat_settable)
   GET_MATRIX_OR_VECTOR(m,md,1,0);
 
   if (li=m->li, li) {
-	int type;
-	/* Matrix reference vector */
-	if (lua_type(L,3) != LUA_TNUMBER) {
-	  printf("%s : bad type argument #3.\n", __FUNCTION__);
-	  return 0;
-	}
-	type = lua_type(L,2);
-	if (type == LUA_TNUMBER) {
-	  c = lua_tonumber(L,2) - 1;
-	} else if (type == LUA_TSTRING) {
-	  c = char2col(md,lua_tostring(L,2));
-	}
-/* 	printf("%s(%d,%d) : m:%p d:%p c:%d := %.3f\n", __FUNCTION__, */
-/* 		   ((li - md->v)>>md->log2)+1, c+1, */
-/* 		   m, md, md->refcount, lua_tonumber(L,3)); */
-	if (c >= md->c) {
-	  printf("%s : column index %d out of range\n", __FUNCTION__, c+1);
-	  return 0;
-	}
-	li[c] = lua_tonumber(L,3);
+    int type;
+    /* Matrix reference vector */
+    if (lua_type(L,3) != LUA_TNUMBER) {
+      printf("%s : bad type argument #3.\n", __FUNCTION__);
+      return 0;
+    }
+    type = lua_type(L,2);
+    if (type == LUA_TNUMBER) {
+      c = lua_tonumber(L,2) - 1;
+    } else if (type == LUA_TSTRING) {
+      c = char2col(md,lua_tostring(L,2));
+    }
+    /* 	printf("%s(%d,%d) : m:%p d:%p c:%d := %.3f\n", __FUNCTION__, */
+    /* 		   ((li - md->v)>>md->log2)+1, c+1, */
+    /* 		   m, md, md->refcount, lua_tonumber(L,3)); */
+    if (c >= md->c) {
+      printf("%s : column index %d out of range\n", __FUNCTION__, c+1);
+      return 0;
+    }
+    li[c] = lua_tonumber(L,3);
   } else {
-	lua_matrix_t * r;
-	lua_matrix_def_t * rd;
-	GET_VECTOR(r,rd,3,md->c);
-	l = lua_tonumber(L,2) - 1;
+    lua_matrix_t * r;
+    lua_matrix_def_t * rd;
+    GET_VECTOR(r,rd,3,md->c);
+    l = lua_tonumber(L,2) - 1;
 
-/* 	printf("%s(%d) : m:%p d:%p c:%d := m:%p d:%p c:%d\n", __FUNCTION__, */
-/* 		   l+1, m, md, md->refcount, r, rd, rd->refcount); */
+    /* 	printf("%s(%d) : m:%p d:%p c:%d := m:%p d:%p c:%d\n", __FUNCTION__, */
+    /* 		   l+1, m, md, md->refcount, r, rd, rd->refcount); */
 
-	if (l >= md->l) {
-	  printf("%s : line index %d out of range\n", __FUNCTION__, l+1);
-	  return 0;
-	}
-	memcpy(&md->v[l * md->c], r->li, md->c<<2);
+    if (l >= md->l) {
+      printf("%s : line index %d out of range\n", __FUNCTION__, l+1);
+      return 0;
+    }
+    memcpy(&md->v[l * md->c], r->li, md->c<<2);
   }
   return 0;
 }
@@ -258,13 +258,13 @@ DL_FUNCTION_DECLARE(mat_getglobal)
 {
   lua_matrix_t * mat, * r;
   lua_matrix_def_t * md;
-/*   const char * global = lua_tostring(L,1); */
+  /*   const char * global = lua_tostring(L,1); */
 
   CHECK_MATRIX(2);
   GET_MATRIX_OR_VECTOR(mat,md,2,0);
   REF_MATRIX(r, md, mat->li);
-/*   printf("%s : [%s] m:%p d:%p c:%d -> m:%p d:%p c:%d\n", __FUNCTION__, global, */
-/* 		 mat, md, md->refcount-1, r, r->md, r->md->refcount); */
+  /*   printf("%s : [%s] m:%p d:%p c:%d -> m:%p d:%p c:%d\n", __FUNCTION__, global, */
+  /* 		 mat, md, md->refcount-1, r, r->md, r->md->refcount); */
   lua_settop(L,0);
   lua_pushusertagsz(L, r, matrix_tag, sizeof(lua_matrix_t) + sizeof(lua_matrix_def_t));
   return 1;
@@ -281,27 +281,27 @@ DL_FUNCTION_DECLARE(mat_setglobal)
 
   CHECK_MATRIX(2);
   GET_MATRIX_OR_VECTOR(mat,md,2,0);
-/*   printf("%s : [%s] m:%p r:%p c:%d -> ", */
-/* 		 __FUNCTION__, global, mat, md, md->refcount); */
+  /*   printf("%s : [%s] m:%p r:%p c:%d -> ", */
+  /* 		 __FUNCTION__, global, mat, md, md->refcount); */
   md->refcount--;
 
   if (lua_tag(L, 3) != matrix_tag) {
-	lua_remove(L,2);
-	/* NAME VALUE */
-/* 	printf("[%s]=<%s>,%s\n", lua_tostring(L,1), lua_tostring(L,2), */
-/* 		   lua_typename(L, lua_type(L,2)));  */
+    lua_remove(L,2);
+    /* NAME VALUE */
+    /* 	printf("[%s]=<%s>,%s\n", lua_tostring(L,1), lua_tostring(L,2), */
+    /* 		   lua_typename(L, lua_type(L,2)));  */
   } else {
-	lua_matrix_t * r;
-	lua_matrix_def_t * rd;
+    lua_matrix_t * r;
+    lua_matrix_def_t * rd;
 
-	GET_MATRIX_OR_VECTOR(r,rd,3,0);
-	rd->refcount++;
-	*mat = *r;
-/* 	printf("m:%p r:%p c:%d\n", mat, rd, rd->refcount); */
-	lua_settop(L,1);
-	/* NAME */
-	lua_pushusertagsz(L, mat, matrix_tag, sizeof(lua_matrix_t) + sizeof(lua_matrix_def_t));
-	/* NAME VALUE */
+    GET_MATRIX_OR_VECTOR(r,rd,3,0);
+    rd->refcount++;
+    *mat = *r;
+    /* 	printf("m:%p r:%p c:%d\n", mat, rd, rd->refcount); */
+    lua_settop(L,1);
+    /* NAME */
+    lua_pushusertagsz(L, mat, matrix_tag, sizeof(lua_matrix_t) + sizeof(lua_matrix_def_t));
+    /* NAME VALUE */
   }
   /* NAME VALUE */
   lua_getglobals(L);
@@ -317,15 +317,15 @@ DL_FUNCTION_DECLARE(mat_setglobal)
 #endif 
 
 static void mat_mult(lua_matrix_def_t * rd,
-					lua_matrix_def_t * leftd,
-					lua_matrix_def_t * rightd)
+		     lua_matrix_def_t * leftd,
+		     lua_matrix_def_t * rightd)
 {
   int bytes = rd->c << 2;
 
   MtxVectorsMult(rd->v, leftd->v, *(matrix_t*)rightd->v, rd->l, bytes, bytes);
   /* Copy left matrix remaining data into destination. */
   if (rd != leftd && rd->c > 4) {
-	MtxCopyFlexible(rd->v+4, leftd->v+4, rd->l, rd->c-4, bytes, bytes);
+    MtxCopyFlexible(rd->v+4, leftd->v+4, rd->l, rd->c-4, bytes, bytes);
   }
 }
 
@@ -354,22 +354,22 @@ DL_FUNCTION_DECLARE(mat_mult_self)
   int n = lua_gettop(L);
 
   if (n < 2 || n > 3) {
-	printf("%s : bad arguments\n", __FUNCTION__);
+    printf("%s : bad arguments\n", __FUNCTION__);
   }
 
   CHECK_MATRIX(1);
   CHECK_MATRIX(2);
   if (n == 3) {
-	CHECK_MATRIX(3);
+    CHECK_MATRIX(3);
   }
 	
   GET_MATRIX(right,rightd,n,4,4);
   GET_MATRIX(left,leftd,n-1,0,0);
   if (n == 3) {
-	GET_MATRIX(r,rd,1,leftd->l,leftd->c);
+    GET_MATRIX(r,rd,1,leftd->l,leftd->c);
   } else {
-	r = left;
-	rd = leftd;
+    r = left;
+    rd = leftd;
   }
   mat_mult(rd,leftd,rightd);
   lua_settop(L, 0);
@@ -382,9 +382,9 @@ DL_FUNCTION_DECLARE(init_matrix_type)
   lua_getglobal(L,"matrix_tag");
   matrix_tag = lua_tonumber(L,1);
   if (! matrix_tag) {
-	matrix_tag = lua_newtag(L);
-	lua_pushnumber(L,matrix_tag);
-	lua_setglobal(L,"matrix_tag");
+    matrix_tag = lua_newtag(L);
+    lua_pushnumber(L,matrix_tag);
+    lua_setglobal(L,"matrix_tag");
   }
 
   lua_pushcfunction(L, lua_mat_gc);
@@ -399,11 +399,11 @@ DL_FUNCTION_DECLARE(init_matrix_type)
   lua_pushcfunction(L, lua_mat_settable);
   lua_settagmethod(L, matrix_tag, "settable");
 
-/*   lua_pushcfunction(L, lua_mat_getglobal); */
-/*   lua_settagmethod(L, matrix_tag, "getglobal"); */
+  /*   lua_pushcfunction(L, lua_mat_getglobal); */
+  /*   lua_settagmethod(L, matrix_tag, "getglobal"); */
 
-/*   lua_pushcfunction(L, lua_mat_setglobal); */
-/*   lua_settagmethod(L, matrix_tag, "setglobal"); */
+  /*   lua_pushcfunction(L, lua_mat_setglobal); */
+  /*   lua_settagmethod(L, matrix_tag, "setglobal"); */
 
   return 0;
 }
@@ -419,44 +419,40 @@ DL_FUNCTION_DECLARE(mat_new)
   lua_matrix_def_t * rd;
 
   if (lua_tag(L,1) == matrix_tag) {
-	lua_matrix_t * m;
-	lua_matrix_def_t * md;
-	GET_MATRIX(m,md,1,0,0);
-	NEW_MATRIX(r, rd, md->l, md->c);
-	memcpy(rd->v, md->v, rd->l * rd->c << 2);
+    lua_matrix_t * m;
+    lua_matrix_def_t * md;
+    GET_MATRIX(m,md,1,0,0);
+    NEW_MATRIX(r, rd, md->l, md->c);
+    memcpy(rd->v, md->v, rd->l * rd->c << 2);
   } else {
-	int l = 0, c = 0;
-	int n = lua_gettop(L);
+    int l = 0, c = 0;
+    int n = lua_gettop(L);
 
-	if (n >= 1) {
-	  l = (int) lua_tonumber(L,1);
-	}
-	if (n >= 2) {
-	  c = (int) lua_tonumber(L,2);
-	}
+    if (n >= 1) {
+      l = (int) lua_tonumber(L,1);
+    }
+    if (n >= 2) {
+      c = (int) lua_tonumber(L,2);
+    }
 
-	if (!l) {
-	  l = 4;
-	}
-	if (c<=0) {
-	  c = 4;
-	}
-	NEW_MATRIX(r, rd, l, c);
+    if (!l) {
+      l = 4;
+    }
+    if (c<=0) {
+      c = 4;
+    }
+    NEW_MATRIX(r, rd, l, c);
 
-	if (l == 4 && c == 4) {
-	  MtxIdentity(* (matrix_t *) rd->v);
-	} else {
-	  memset(rd->v, 0, l * c << 2);
-	}
+    if (l == 4 && c == 4) {
+      MtxIdentity(* (matrix_t *) rd->v);
+    } else {
+      memset(rd->v, 0, l * c << 2);
+    }
   }
   lua_settop(L, 0);
   lua_pushusertagsz(L, r, matrix_tag, sizeof(lua_matrix_t) + sizeof(lua_matrix_def_t));
   return 1;
 }
-
-#define Cos fcos
-#define Sin fsin
-#define Inv(a) (1.0f/(a))
 
 static void myMtxRotateX(matrix_t m2, const float a)
 {
@@ -565,25 +561,25 @@ DL_FUNCTION_DECLARE(mat_li)
   GET_MATRIX(m,md,1,0,0);
 
   if (n != 2) {
-	printf("%s : bad arguments\n", __FUNCTION__);
-	return 0;
+    printf("%s : bad arguments\n", __FUNCTION__);
+    return 0;
   }
 
   l = lua_tonumber(L,2) - 1;
   if (l >= md->l) {
-	printf("%s : line index %d out of range\n", __FUNCTION__, l+1);
-	return 0;
+    printf("%s : line index %d out of range\n", __FUNCTION__, l+1);
+    return 0;
   }
 
   lua_settop(L,0);
   lua_newtable(L);
   {
-	float *v = &md->v[l * md->c];
-	for (n=0; n<md->c; ++n) {
-	  lua_pushnumber(L, n+1);
-	  lua_pushnumber(L, *v++);
-	  lua_rawset(L, 1);
-	}
+    float *v = &md->v[l * md->c];
+    for (n=0; n<md->c; ++n) {
+      lua_pushnumber(L, n+1);
+      lua_pushnumber(L, *v++);
+      lua_rawset(L, 1);
+    }
   }
   return 1;
 }
@@ -599,25 +595,25 @@ DL_FUNCTION_DECLARE(mat_co)
   GET_MATRIX(m,md,1,0,0);
 
   if (n != 2) {
-	printf("%s : bad arguments\n", __FUNCTION__);
-	return 0;
+    printf("%s : bad arguments\n", __FUNCTION__);
+    return 0;
   }
 
   c = lua_tonumber(L,2) - 1;
   if (c >= md->c) {
-	printf("%s : column index %d out of range\n", __FUNCTION__, c+1);
-	return 0;
+    printf("%s : column index %d out of range\n", __FUNCTION__, c+1);
+    return 0;
   }
 
   lua_settop(L,0);
   lua_newtable(L);
   {
-	float * v = md->v+c;
-	for (n=0; n<md->l; ++n, v += md->c) {
-	  lua_pushnumber(L, n+1);
-	  lua_pushnumber(L, *v);
-	  lua_rawset(L, 1);
-	}
+    float * v = md->v+c;
+    for (n=0; n<md->l; ++n, v += md->c) {
+      lua_pushnumber(L, n+1);
+      lua_pushnumber(L, *v);
+      lua_rawset(L, 1);
+    }
   }
   return 1;
 }
@@ -633,15 +629,15 @@ DL_FUNCTION_DECLARE(mat_el)
   GET_MATRIX(m,md,1,0,0);
 
   if (n != 3) {
-	printf("%s : bad arguments\n", __FUNCTION__);
-	return 0;
+    printf("%s : bad arguments\n", __FUNCTION__);
+    return 0;
   }
 
   l = lua_tonumber(L,2) - 1;
   c = lua_tonumber(L,3) - 1;
   if (c >= md->c || l >= md->l) {
-	printf("%s : indexes (%d,%d) out of range\n", __FUNCTION__, l+1, c+1);
-	return 0;
+    printf("%s : indexes (%d,%d) out of range\n", __FUNCTION__, l+1, c+1);
+    return 0;
   }
 
   lua_settop(L,0);
@@ -659,46 +655,46 @@ DL_FUNCTION_DECLARE(mat_dim)
 
   lua_settop(L,0);
   if (!m->li) {
-	lua_pushnumber(L, md->l);
+    lua_pushnumber(L, md->l);
   }
   lua_pushnumber(L, md->c);
   return lua_gettop(L);
 }
 
 static void dump_matrix_def(const lua_matrix_def_t *def, int idx, int level,
-							const char *indent)
+			    const char *indent)
 {
   if (!indent) {
-	indent = "";
+    indent = "";
   }
   if (level > 0) {
-	printf("%s#%04d  %p[%dx%d] refcount:%d\n", indent, idx,
-		   def, def->l, def->c, def->refcount);
+    printf("%s#%04d  %p[%dx%d] refcount:%d\n", indent, idx,
+	   def, def->l, def->c, def->refcount);
   }
   if (level > 1) {
-	int j;
-	printf("%s [\n",indent);
-	for (j=0; j<def->l; ++j) {
-	  int k;
-	  printf("%s  [ ", indent);
-	  for (k=0; k<def->c; ++k) {
-		printf("%-5.2f ", def->v[k + j * def->c]);
-	  }
-	  printf("]\n");
-	}
-	printf("%s  ] \n", indent);
+    int j;
+    printf("%s [\n",indent);
+    for (j=0; j<def->l; ++j) {
+      int k;
+      printf("%s  [ ", indent);
+      for (k=0; k<def->c; ++k) {
+	printf("%-5.2f ", def->v[k + j * def->c]);
+      }
+      printf("]\n");
+    }
+    printf("%s  ] \n", indent);
   }
 }
 
 static void dump_matrix_ref(const lua_matrix_t *m, int idx, int level,
-							const char *indent)
+			    const char *indent)
 {
   if (level > 0) {
-	 printf("%s#%4d  %p",indent, idx, m->md);
-	 if (m->li) {
-	   printf("[%d]", ((m->li - m->md->v) / m->md->c) + 1);
-	 }
-	 printf("\n");
+    printf("%s#%4d  %p",indent, idx, m->md);
+    if (m->li) {
+      printf("[%d]", ((m->li - m->md->v) / m->md->c) + 1);
+    }
+    printf("\n");
   }
 }
 
@@ -722,53 +718,53 @@ DL_FUNCTION_DECLARE(mat_stat)
   allocator_elt_t * e;
 
   printf("\n"
-		 "Matrix statistics :\n");
+	 "Matrix statistics :\n");
 
   printf("\n"
-		 " Matrix definitions : ");
+	 " Matrix definitions : ");
   if (!matrixdef_allocator) {
-	printf("[NONE]!\n");
+    printf("[NONE]!\n");
   } else {
-	int f,u;
-	allocator_t * a = matrixdef_allocator;
-	allocator_lock(a);
-	for (f=0, e = a->free; e; e = e->next, ++f)
-	  ;
-	for (u=0, e = a->used; e; e = e->next, ++u)
-	  ;
+    int f,u;
+    allocator_t * a = matrixdef_allocator;
+    allocator_lock(a);
+    for (f=0, e = a->free; e; e = e->next, ++f)
+      ;
+    for (u=0, e = a->used; e; e = e->next, ++u)
+      ;
 
-	printf("[e-size:%d  size:%d  free:%d  used:%d]\n",
-		   a->elt_size, f+u, f, u);
-	if (level > 0) {
-	  for (i=0, e = a->used; e; e = e->next, ++i) {
-		lua_matrix_def_t *def = (lua_matrix_def_t *)(e+1);
-		dump_matrix_def(def, i, level, "  ");
-	  }
-	}
-	allocator_unlock(a);
+    printf("[e-size:%d  size:%d  free:%d  used:%d]\n",
+	   a->elt_size, f+u, f, u);
+    if (level > 0) {
+      for (i=0, e = a->used; e; e = e->next, ++i) {
+	lua_matrix_def_t *def = (lua_matrix_def_t *)(e+1);
+	dump_matrix_def(def, i, level, "  ");
+      }
+    }
+    allocator_unlock(a);
   }
 
   printf("\n"
-		 " Matrix reference : ");
+	 " Matrix reference : ");
   if (!matrixref_allocator) {
-	printf("[NONE]!\n");
+    printf("[NONE]!\n");
   } else {
-	int f,u;
-	allocator_t * a = matrixref_allocator;
-	allocator_lock(a);
-	for (f=0, e = a->free; e; e = e->next, ++f)
-	  ;
-	for (u=0, e = a->used; e; e = e->next, ++u)
-	  ;
-	printf("[e-size:%d  size:%d  free:%d  used:%d]\n",
-		   a->elt_size, f+u, f, u);
-	if (level > 0) {
-	  for (i=0, e = a->used; e; e = e->next, ++i) {
-		lua_matrix_t * m = (lua_matrix_t *)(e+1);
-		dump_matrix_ref(m, i, level, "  ");
-	  }
-	}
-	allocator_unlock(a);
+    int f,u;
+    allocator_t * a = matrixref_allocator;
+    allocator_lock(a);
+    for (f=0, e = a->free; e; e = e->next, ++f)
+      ;
+    for (u=0, e = a->used; e; e = e->next, ++u)
+      ;
+    printf("[e-size:%d  size:%d  free:%d  used:%d]\n",
+	   a->elt_size, f+u, f, u);
+    if (level > 0) {
+      for (i=0, e = a->used; e; e = e->next, ++i) {
+	lua_matrix_t * m = (lua_matrix_t *)(e+1);
+	dump_matrix_ref(m, i, level, "  ");
+      }
+    }
+    allocator_unlock(a);
   }
 
   return 0;
@@ -786,15 +782,15 @@ int display_matrix_shutdown(void)
 int display_matrix_init(void)
 {
   if (!matrixdef_allocator) {
-	matrixdef_allocator = allocator_create(256, sizeof(lua_matrix_def_t));
+    matrixdef_allocator = allocator_create(256, sizeof(lua_matrix_def_t));
   }
   if (!matrixref_allocator) {
-	matrixref_allocator = allocator_create(256, sizeof(lua_matrix_t));
+    matrixref_allocator = allocator_create(256, sizeof(lua_matrix_t));
   }
 
   if (!matrixdef_allocator || !matrixref_allocator) {
-	display_matrix_shutdown();
-	return -1;
+    display_matrix_shutdown();
+    return -1;
   }
   return 0;
 }

@@ -3,7 +3,7 @@
  * @author    Ben(jamin) Gerard <ben@sashipa.com>
  * @date      2001/10/20
  * @brief     Simple 3D objects defintions for 3D-object plugins
- * @version   $Id: obj3d.h,v 1.5 2003-01-20 14:19:43 ben Exp $
+ * @version   $Id: obj3d.h,v 1.6 2003-01-21 02:38:16 ben Exp $
  */
 
 /* Copyright (C) 1998-2001 Ben(jamin) Gerard */
@@ -52,6 +52,18 @@ typedef struct {
   vtx_t *nvx;       /**< Pointer to face normal */
 } obj_t;
 
+/** @name Simple 3d Object
+ *  @ingroup dcplaya_devel
+ *  @{
+ */
+
+/** Build and alloc if neccessary face normals. */
+int obj3d_build_normals(obj_t *o);
+
+/** @} */
+
 DCPLAYA_EXTERN_C_END
+
+
 
 #endif

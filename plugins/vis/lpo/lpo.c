@@ -1,11 +1,11 @@
 /**
- * $Id: lpo.c,v 1.17 2003-01-17 20:57:24 ben Exp $
+ * $Id: lpo.c,v 1.18 2003-01-21 02:38:16 ben Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
+#include "math_float.h"
 
 #include "matrix.h"
 #include "driver_list.h"

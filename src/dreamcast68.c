@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.43 2003-01-20 20:44:09 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.44 2003-01-21 02:38:16 ben Exp $
  */
 
 //#define RELEASE
@@ -19,10 +19,8 @@
 #include "config.h"
 
 #include <stdlib.h>
-#include <dc/fmath.h>
-//#include <dc/ta.h>
 #include <stdio.h>
-
+#include "math_float.h"
 #include "filetype.h"
 #include "sndstream.h"
 #include "songmenu.h"

@@ -54,6 +54,9 @@ void MtxVectorsMult(float *v, const float *u, matrix_t m, int nmemb,
 /** Matrix transpose. */
 void MtxTranspose(matrix_t m);
 
+/** Matrix 3x3 transpose. */
+void MtxTranspose3x3(matrix_t m);
+
 /** Apply scaling to a matrix. */
 void MtxScale(matrix_t m, const float s);
 

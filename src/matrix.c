@@ -6,13 +6,8 @@
  * @brief   4x4 matrix support.
  */
 
-#include <dc/fmath.h>
-#include <math.h>
+#include "math_float.h"
 #include "matrix.h"
-
-#define Cos fcos
-#define Sin fsin
-#define Inv(a) (1.0f/(a))
 
 void MtxCopy(matrix_t m, matrix_t m2)
 {
@@ -143,16 +138,26 @@ void MtxTranslate(matrix_t m, const float x, const float y, const float z)
 }
 
 
+#define SWAP_IDX(A,B) tmp = m[A][B]; m[A][B] = m[B][A]; m[B][A] = tmp
+
 void MtxTranspose(matrix_t m)
 {
-  int i, j;
-  for (i=0; i<4; ++i) {
-    for (j=i+1;j<4; ++j) {
-      float tmp = m[i][j];
-      m[i][j] = m[j][i];
-      m[j][i] = tmp;
-    }
-  }
+  float tmp;
+  SWAP_IDX(0,1);
+  SWAP_IDX(0,2);
+  SWAP_IDX(0,3);
+  SWAP_IDX(1,2);
+  SWAP_IDX(1,3);
+  SWAP_IDX(1,2);
+  SWAP_IDX(2,3);
+}
+
+void MtxTranspose3x3(matrix_t m)
+{
+  float tmp;
+  SWAP_IDX(0,1);
+  SWAP_IDX(0,2);
+  SWAP_IDX(1,2);
 }
 
 void MtxRotateX(matrix_t m, const float a)
@@ -200,19 +205,33 @@ static int IsNearZero(const float v)
 
 static void LookAt(matrix_t row, const float x, const float y, const float z)
 {
-  if(IsNearZero(x) && IsNearZero(y) && IsNearZero(z)) {
-    MtxIdentity(row);
-    return;
+  if(IsNearZero(x) && IsNearZero(z)) {
+    if (IsNearZero(y)) {
+      MtxIdentity(row);
+      return;
+    } else {
+      row[0][0] = 1;
+      row[1][0] = 0;
+      row[2][0] = 0;
+
+      row[0][1] = 0;
+      row[1][1] = 0;
+      row[2][1] = (y<0) ? -1 : 1;
+
+      row[0][2] = 0;
+      row[1][2] = -row[2][1];
+      row[2][2] = 0;
+    }
   } else {
     const float x2 = x*x;
     const float y2 = y*y;
     const float z2 = z*z;
-    const float nxz = sqrtf(x2+z2);
+    const float nxz = Sqrt(x2+z2);
     const float oonxz = Inv(nxz);
-    const float oonxyz = Inv(sqrtf(x2+y2+z2));
+    const float oonxyz = ISqrt(x2+y2+z2);
 
     /* $$$ ben : buggy ! Back to old school calculation ! */
-    /*     const float nxz = fsqrt(x2+z2); */
+    /*     const float nxz = Sqrt(x2+z2); */
     /*     const float oonxz = 1.0f / nxz; */
     /*     const float oonxyz= frsqrt(x2+y2+z2); */
 

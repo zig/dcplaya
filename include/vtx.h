@@ -4,7 +4,7 @@
  *  @date    2003/01/19
  *  @brief   Vertex.
  *
- * $Id: vtx.h,v 1.1 2003-01-20 14:19:43 ben Exp $
+ * $Id: vtx.h,v 1.2 2003-01-21 02:38:16 ben Exp $
  */
 
 #ifndef _VTX_H_
@@ -47,7 +47,7 @@ vtx_t * vtx_add(vtx_t *a, const vtx_t *b);
 /** Addition (r = a + b).
  *  @return r
  */
-vtx_t * vtx_add3(vtx_t * r, vtx_t *a, const vtx_t *b);
+vtx_t * vtx_add3(vtx_t * r, const vtx_t *a, const vtx_t *b);
 
 /** Substraction (a = a - b).
  *  @return a
@@ -57,7 +57,7 @@ vtx_t * vtx_sub(vtx_t *a, const vtx_t *b);
 /** Substraction (r = a - b).
  *  @return r
  */
-vtx_t * vtx_sub3(vtx_t * r, vtx_t *a, const vtx_t *b);
+vtx_t * vtx_sub3(vtx_t * r, const vtx_t *a, const vtx_t *b);
 
 /** Multiplication (a = a * b).
  *  @return a

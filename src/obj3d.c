@@ -4,12 +4,12 @@
  * @date    2002/02/12
  * @brief   Very simple 3D API.
  *
- * @version $Id: obj3d.c,v 1.5 2002-12-18 18:11:07 ben Exp $
+ * @version $Id: obj3d.c,v 1.6 2003-01-21 02:38:16 ben Exp $
  */
 
 #include <stdio.h>
-#include <math.h>
 #include <malloc.h>
+#include "math_float.h"
 #include "sysdebug.h"
 #include "obj_driver.h"
 #include "obj3d.h"
@@ -34,23 +34,12 @@ static float FaceCosAngle(obj_t *o, int ia, int ib)
 void FaceNormal(float *d, const vtx_t * v, const tri_t *t)
 {
   const vtx_t *a=v+t->a,*b=v+t->b,*c=v+t->c;
-  float n;
-  vtx_t A,B;
+  vtx_t A,B,*D = (vtx_t*)d;
 
-  A.x = a->x - b->x;
-  A.y = a->y - b->y;
-  A.z = a->z - b->z;
-
-  B.x = a->x - c->x;
-  B.y = a->y - c->y;
-  B.z = a->z - c->z;
-
-  CrossProduct(d,&A.x,&B.x);
-  //n = frsqrt((d[0]*d[0] + d[1]*d[1] + d[2]*d[2]));
-  n = 1.0f / sqrt((d[0]*d[0] + d[1]*d[1] + d[2]*d[2]));
-  d[0] *= n;
-  d[1] *= n;
-  d[2] *= n;
+  vtx_sub3(&A,a,b);
+  vtx_sub3(&B,a,c);
+  vtx_cross_product3(D,&A,&B);
+  vtx_normalize(D);
 }
 
 static void ResizeAndCenter(obj_t *o, const float w)
@@ -127,7 +116,7 @@ static void ResizeAndCenter(obj_t *o, const float w)
   }
 }
 
-static void BuildNormals(obj_t *o)
+static int BuildNormals(obj_t *o)
 {
   int i;
 
@@ -135,11 +124,18 @@ static void BuildNormals(obj_t *o)
     o ->nvx = (vtx_t *)malloc(sizeof(vtx_t) * o->nbf);
   }
   if (!o->nvx) {
-    return;
+    return -1;
   }
   for (i=0; i<o->nbf; ++i) {
     FaceNormal((float *)(o->nvx+i),o->vtx,o->tri+i);
   }
+  return 0;
+}
+
+int obj3d_build_normals(obj_t *o)
+{
+  if (!o) return -1;
+  return BuildNormals(o);
 }
 
 static void BuildLinks(obj_t *o)

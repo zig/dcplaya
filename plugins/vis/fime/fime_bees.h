@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/17
  *  @brief   FIME : bees 
- *  $Id: fime_bees.h,v 1.1 2003-01-20 14:23:09 ben Exp $
+ *  $Id: fime_bees.h,v 1.2 2003-01-21 02:38:16 ben Exp $
  */ 
 
 #ifndef _FIME_BEES_H_
@@ -24,7 +24,8 @@ struct fime_bee_s {
 
   vtx_t pos;      /**< Current position */
   vtx_t prev_pos; /**< Previous position */
-  vtx_t far_pos;  /**< Previous position, far enought */
+
+  float spd;
 
   matrix_t mtx;
 };

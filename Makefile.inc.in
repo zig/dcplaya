@@ -2,8 +2,10 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile.inc.in,v 1.20 2002-12-09 16:26:49 ben Exp $
+# $Id: Makefile.inc.in,v 1.21 2003-01-21 02:38:16 ben Exp $
 #
+
+.SUFFIXES:
 
 TOP_DIR="@TOP_DIR@"
 UTILS_DIR=$(TOP_DIR)/utils

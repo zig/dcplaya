@@ -4,17 +4,14 @@
  *  @date    2003/01/19
  *  @brief   Vertex functions.
  *
- * $Id: vtx.c,v 1.1 2003-01-20 14:19:43 ben Exp $
+ * $Id: vtx.c,v 1.2 2003-01-21 02:38:16 ben Exp $
  */
 
-#include <dc/fmath.h>
+#include "math_float.h"
 #include "vtx.h"
 
-#ifndef EPSYLON
-# define EPSYLON 0.00001
-#endif
-
-#define VTX_PI 3.14159265359f
+#define VTX_PI MF_PI
+#define EPSYLON MF_EPSYLON
 
 vtx_t * vtx_neg(vtx_t *a)
 {
@@ -41,7 +38,7 @@ vtx_t * vtx_add(vtx_t *a, const vtx_t *b)
   return a;
 }
 
-vtx_t * vtx_add3(vtx_t * r, vtx_t *a, const vtx_t *b)
+vtx_t * vtx_add3(vtx_t * r, const vtx_t *a, const vtx_t *b)
 {
   r->x = a->x + b->x;
   r->y = a->y + b->y;
@@ -58,7 +55,7 @@ vtx_t * vtx_sub(vtx_t *a, const vtx_t *b)
   return a;
 }
 
-vtx_t * vtx_sub3(vtx_t * r, vtx_t *a, const vtx_t *b)
+vtx_t * vtx_sub3(vtx_t * r, const vtx_t *a, const vtx_t *b)
 {
   r->x = a->x - b->x;
   r->y = a->y - b->y;
@@ -129,13 +126,13 @@ float vtx_sqnorm(const vtx_t * a)
 
 float vtx_norm(const vtx_t * a)
 {
-  return fsqrt(vtx_sqnorm(a));
+  return Sqrt(vtx_sqnorm(a));
 }
 
 float vtx_inorm(const vtx_t * a)
 {
   const float d = vtx_sqnorm(a);
-  return (d > EPSYLON) ? frsqrt(d) : -1;
+  return (d > EPSYLON) ? ISqrt(d) : -1;
 }
 
 static vtx_t * max_to_1(vtx_t * a)
@@ -203,33 +200,33 @@ float vtx_dot_product(const vtx_t * a, const vtx_t * b)
 
 vtx_t * vtx_sin(vtx_t * a)
 {
-  a->x = fsin(a->x);
-  a->y = fsin(a->y);
-  a->z = fsin(a->z);
+  a->x = Sin(a->x);
+  a->y = Sin(a->y);
+  a->z = Sin(a->z);
   return a;
 }
 
 vtx_t * vtx_sin2(vtx_t * r, const vtx_t * a)
 {
-  r->x = fsin(a->x);
-  r->y = fsin(a->y);
-  r->z = fsin(a->z);
+  r->x = Sin(a->x);
+  r->y = Sin(a->y);
+  r->z = Sin(a->z);
   return r;
 }
 
 vtx_t * vtx_cos(vtx_t * a)
 {
-  a->x = fcos(a->x);
-  a->y = fcos(a->y);
-  a->z = fcos(a->z);
+  a->x = Cos(a->x);
+  a->y = Cos(a->y);
+  a->z = Cos(a->z);
   return a;
 }
 
 vtx_t * vtx_cos2(vtx_t * r, const vtx_t * a)
 {
-  r->x = fcos(a->x);
-  r->y = fcos(a->y);
-  r->z = fcos(a->z);
+  r->x = Cos(a->x);
+  r->y = Cos(a->y);
+  r->z = Cos(a->z);
   return r;
 }
 
@@ -264,5 +261,5 @@ float vtx_sqdist(const vtx_t * a, const vtx_t * b)
 
 float vtx_dist(const vtx_t * a, const vtx_t * b)
 {
-  return fsqrt(vtx_sqdist(a,b));
+  return Sqrt(vtx_sqdist(a,b));
 }

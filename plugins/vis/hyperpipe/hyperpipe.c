@@ -3,13 +3,13 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/14
  *
- *  $Id: hyperpipe.c,v 1.7 2003-01-20 14:57:24 zigziggy Exp $
+ *  $Id: hyperpipe.c,v 1.8 2003-01-21 02:38:16 ben Exp $
  */ 
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
+#include "math_float.h"
 
 #include "matrix.h"
 #include "driver_list.h"
@@ -21,10 +21,6 @@
 #include "sysdebug.h"
 #include "draw/vertex.h"
 #include "border.h"
-
-#ifndef PI
-# define PI 3.14159265359
-#endif
 
 #define MIN_RAY 0.05
 #define MAX_RAY 0.28
@@ -118,21 +114,23 @@ static float inc_angle(float a, const float v)
 {
   a = a + v;
   if (a<0) {
-    do { a += 2*PI; } while (a<0);
-  } else if (a>=2*PI) {
-    do { a -= 2*PI; } while (a>=2*PI);
+    do { a += 2*MF_PI; } while (a<0);
+  } else if (a>=2*MF_PI) {
+    do { a -= 2*MF_PI; } while (a>=2*MF_PI);
   }
   return a;
 }
 
-static void inc_angle_vector(vtx_t *a, const vtx_t * v)
-{
-  int i;
-  for (i=0; i<3; ++i) {
-    float * b = (float *)(&a->x) + i;
-    *b = inc_angle(*b, ((float *)(&v->x))[i]);
-  }
-}
+/* static void inc_angle_vector(vtx_t *a, const vtx_t * v) */
+/* { */
+/*   int i; */
+/*   for (i=0; i<3; ++i) { */
+/*     float * b = (float *)(&a->x) + i; */
+/*     *b = inc_angle(*b, ((float *)(&v->x))[i]); */
+/*   } */
+/* } */
+
+
 
 static void set_obj_pointer(void)
 {
@@ -185,9 +183,9 @@ static void build_ring(void)
 {
   vtx_t *v,*ve;
   float a, stp;
-  for(v=ring, ve=v+N, a=0, stp = 2*PI/N; v<ve; ++v, a+=stp) {
-    v->x = cosf(a);
-    v->y = sinf(a);
+  for(v=ring, ve=v+N, a=0, stp = 2*MF_PI/N; v<ve; ++v, a+=stp) {
+    v->x = Cos(a);
+    v->y = Sin(a);
     v->z = 0;
     v->w = 1;
   }
@@ -340,7 +338,7 @@ static void anim_light(const float seconds)
   speed.z = light_speed.z * seconds;
   speed.w = 0;
 
-  inc_angle_vector(&light_angle, &speed);
+  vtx_inc_angle(&light_angle, &speed);
 
   MtxIdentity(light_mtx);
   MtxRotateX(light_mtx, light_angle.x);
@@ -419,7 +417,7 @@ static void anim_occilo2(const float seconds)
       s3 = MIN_RAY + w2 * 0.5,
       s2 = s1 * ((v<0) ? -0.5 : 0.5);
 
-    const float sy = cosf(az2) * s * 0.3;
+    const float sy = Cos(az2) * s * 0.3;
     az2 = inc_angle(az2,saz2);
 
     for (j=0; j<N; ++j, ++vy) {
@@ -624,11 +622,11 @@ static void anim_object(const float seconds)
 
   /* Build local matrix */
   MtxIdentity(mtx);
-  az = sinf(paz += 0.0433f) * 0.22f;
-  MtxRotateX(mtx, PI/2);
+  az = Sin(paz += 0.0433f) * 0.22f;
+  MtxRotateX(mtx, MF_PI/2);
   MtxRotateY(mtx, ay += 0.014*0.52);
   MtxRotateX(mtx, 0.4f+ az);
-  if (ay > 2*PI) {ay -= 2*PI;}
+  if (ay > 2*MF_PI) {ay -= 2*MF_PI;}
 
   mtx[3][0] = pos.x;
   mtx[3][1] = pos.y;
@@ -721,7 +719,7 @@ static int opaque_render(void)
     return -1;
   }
   
-  if (0 && light_object) {
+  if (light_object) {
     vtx_t di;
     matrix_t tmp;
 
@@ -731,11 +729,10 @@ static int opaque_render(void)
     lz = light_vtx.z + pos.z;
 
     di.x = color.x; di.y = color.y; di.z = color.z; di.w = 0.9;
-    MtxLookAt2(light_mtx, lx,ly,lz, pos.x,pos.y,pos.z);
+    MtxLookAt(light_mtx, pos.x-lx, pos.y-ly, pos.z-lz);
+    MtxTranspose3x3(light_mtx);
     MtxScale(light_mtx,0.43);
-    light_mtx[3][0] += pos.x;
-    light_mtx[3][1] += pos.y;
-    light_mtx[3][2] += pos.z;
+    MtxTranslate(light_mtx,lx,ly,lz);
     
     light_object->obj.flags = 0
       | DRAW_NO_FILTER
@@ -758,10 +755,7 @@ static int transparent_render(void)
 
   if (1) {
     vtx_t light_dir;
-    light_dir.x = -light_vtx.x;
-    light_dir.y = -light_vtx.y;
-    light_dir.z = -light_vtx.z;
-    light_dir.w = 1;
+    vtx_neg2(&light_dir, &light_vtx);
     DrawObjectLighted(&viewport, mtx, proj,
 		      &hyperpipe_obj,
 		      &ambient, &light_dir, &color);
