@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.89 2003-03-21 03:33:20 ben Exp $
+ * @version    $Id: dynshell.c,v 1.90 2003-03-22 00:34:47 ben Exp $
  */
 
 #include "dcplaya/config.h"
@@ -1701,23 +1701,126 @@ static int lua_set_visual(lua_State * L)
   return lua_gettop(L);
 }
 
-/* $$$ ben : this function does nothing but returning the parameter string of
-   a normal print. This is used to by driver_info to get the usage string
-   since usage is a function not a string. This will not works with usage
-   functions that do not use a print !!
-*/
+static char * print_wrapper_buffer = 0;
+static int print_wrapper_buffer_size = 0;
+static int print_wrapper_pos = 0;
 
-static char print_wrapper_buffer[1024];
+static void print_wrapper_kill(void)
+{
+  if (print_wrapper_buffer) {
+    free(print_wrapper_buffer);
+    print_wrapper_buffer = 0;
+  }
+  print_wrapper_pos = 0;
+  print_wrapper_buffer_size = 0;
+}
+
+static void print_wrapper_reset()
+{
+  if (print_wrapper_buffer) {
+    print_wrapper_buffer[0] = 0;
+  }
+  print_wrapper_pos = 0;
+}
+
+static void print_wrapper_alloc(int needed)
+{
+  if (needed > print_wrapper_buffer_size) {
+    char * p;
+    int size = (needed + 2048) & - 1024;
+    p = realloc(print_wrapper_buffer, size);
+/*     printf("print_wrapper_alloc(%d) := %d,%p,%p\n", */
+/* 	   needed, size,print_wrapper_buffer,p); */
+    if (p) {
+      print_wrapper_buffer = p;
+      print_wrapper_buffer_size = size;
+    }
+  }
+}
 
 static int print_wrapper(lua_State * L)
 {
-  const char * s = lua_tostring(L,1);
-  print_wrapper_buffer[0] = 0;
-  if (s) {
-    strncpy(print_wrapper_buffer,s,sizeof(print_wrapper_buffer));
-    print_wrapper_buffer[sizeof(print_wrapper_buffer)-1] = 0;
+  int i, n = lua_gettop(L);
+  
+/*   printf("print_wrapper(%d) [enter] %p, %d %d\n",n, */
+/* 	 print_wrapper_buffer,print_wrapper_pos, print_wrapper_buffer_size); */
+
+  for (i=1; i<=n; ++i) {
+    const char * s;
+    int len ,need;
+
+    
+    s = lua_tostring(L,i);
+    if (!s || !s[0]) {
+/*       printf("print_wrapper [skip] #%d [not a string]\n",i); */
+      continue;
+    }
+
+/*     printf("print_wrapper [add] #%d, [%s]\n",i,s); */
+    
+    /* Got a string, calc length +1 for additionnal '\n' */
+    len = strlen(s) + 1;
+    need = print_wrapper_pos + len + 1; /* +1 for '\0' */
+    print_wrapper_alloc(need);
+    if (need > print_wrapper_buffer_size) {
+/*       printf("print_wrapper : Skip [%s] (alloc failed)\n", s); */
+      continue;
+    }
+/*     printf("print_wrapper : [%s]\n", s); */
+    memcpy(print_wrapper_buffer + print_wrapper_pos,
+	   s, len - 1);
+    print_wrapper_pos += len - 1;
+    print_wrapper_buffer[print_wrapper_pos++] = '\n';
+    print_wrapper_buffer[print_wrapper_pos] = 0;
   }
-  return 1;
+
+  lua_settop(L,0);
+  if (print_wrapper_buffer) {
+/*     printf("print_wrapper : [return] [%s]\n", print_wrapper_buffer); */
+    lua_pushstring(L,print_wrapper_buffer);
+  }
+  return lua_gettop(L);
+}
+
+static int lua_dostring_print(lua_State * L)
+{
+  const char * s;
+  int print_pos;
+
+  /* Want a string ! */
+  if (lua_type(L,1) != LUA_TSTRING) {
+    return 0;
+  }
+  /* Discard other parameters */
+  lua_settop(L,1);
+
+  s = lua_tostring(L,1);
+  if (!s || !s[0]) {
+    return 0;
+  }
+
+  /* Save old print */
+  lua_getglobal(L,"print");
+  print_pos = lua_gettop(L);
+
+  /* Register new print */
+  lua_register(L,"print",print_wrapper);
+
+  /* Do our dobuffer call $$$ Not thread safe... */
+  print_wrapper_reset();
+  lua_dobuffer(L, s, strlen(s), "dostring_print");
+
+  /* restore old print */
+  lua_pushvalue(L,print_pos);
+  lua_setglobal(L,"print");
+
+  /* Finally return the print_wrapper_buffer */
+  lua_settop(L,0);
+  if (print_wrapper_buffer && print_wrapper_buffer[0]) {
+    lua_pushstring(L,print_wrapper_buffer);
+  }
+  print_wrapper_kill();
+  return lua_gettop(L);
 }
 
 /* Create a driver info table.
@@ -2145,7 +2248,7 @@ static int lua_load_background(lua_State * L)
   int i;
   int type;
   const char * typestr;
-  float dw, dh, orgRatio, finalRatio, u1, v1, w, h;
+  float dw, dh, orgRatio, u1, v1, w, h;
   int smodulo = 0;
 
   struct {
@@ -3342,6 +3445,16 @@ static luashell_command_description_t commands[] = {
     SHELL_COMMAND_C, lua_keyboard_present
   },
 
+  {
+    "dostring_print",
+    0,
+    "print([["
+    "dostring_print(string) : "
+    "Like dostring but all print are done into a string."
+    " Returns printed values into a string."
+    "]])",
+    SHELL_COMMAND_C, lua_dostring_print
+  },
 
   {0},
 };
@@ -3408,16 +3521,9 @@ static void shell_register_lua_commands()
 			 commands[i].short_name, commands[i].usage);
     }
   }
-
-  
+ 
   //lua_register(L, "malloc_stats", lua_malloc_stats);
 }
-
-
-
-
-
-
 
 #if 0
 void shell_lua_fputs(const char * s)
