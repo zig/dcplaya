@@ -2,7 +2,7 @@
 --
 -- author : vincent penne <ziggy@sashipa.com>
 --
--- $Id: basic.lua,v 1.6 2002-10-14 23:31:16 benjihan Exp $
+-- $Id: basic.lua,v 1.7 2002-10-15 06:02:47 benjihan Exp $
 ---
 
 -- Unload library
@@ -191,6 +191,26 @@ function table_min(a)
 	return imin
 end
 
+-- Duplicate data 
+--
+function dup(v)
+	local t = type(v)
+
+	if t == "table" then
+		local tbl = {}
+		local i,w
+		for i,w in v do
+			rawset(tbl,i,dup(w))
+		end
+		if tag(tbl) ~= tag(v) then settag(tbl,tag(v)) end
+		return tbl
+	else
+		return v
+	end
+end
+
+-- Get a lua compatible string describing this object.
+--
 function type_dump(v, name, indent)
 	if not indent then indent = 0 end
 	local t = type(v)
@@ -211,6 +231,8 @@ function type_dump(v, name, indent)
 			s=s..type_dump(w,i,indent+1)..",\n"
 		end
 		s=s..istr.."}"
+	elseif t == "function" then
+		s=s..getinfo(v).name
 	else
 		local a = tostring(v)
 		if type(a) == "string"  then s=s..a else s=s.."???" end

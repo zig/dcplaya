@@ -3,11 +3,13 @@
 -- author : benjamin gerard <ben@sashipa.com>
 -- date   : 2002/10/04
 --
--- $Id: textlist.lua,v 1.7 2002-10-14 19:10:06 benjihan Exp $
+-- $Id: textlist.lua,v 1.8 2002-10-15 06:02:47 benjihan Exp $
 --
 
 -- Unload the library
 textlist_loaded = nil
+
+if not dolib("basic") then return end
 
 --- textlist object - Display a textlist from a given dir
 --
@@ -15,7 +17,8 @@ textlist_loaded = nil
 -- "dir"     	Current fllist object
 -- "pos"     	Current select item
 -- "top"     	Top displayed line
--- "lines"   	Max displayed lines
+-- "lines"   	Computed max displayed lines
+-- "maxlines"   Real maximum od displayed lines
 -- "entries" 	Number of entry in "dir"
 --
 -- "dl"      	Current display list
@@ -54,24 +57,7 @@ textlist_loaded = nil
 
 
 function textlist_dump(fl)
-	if not fl then print("textlist : nil") end
-
-	print("Boxes:")
-	print(format(" box {x1:%d y1:%d x2:%d y2:%d w:%d h:%d z:%d}",
-		fl.box[1],fl.box[2],fl.box[3],fl.box[4],
-		fl.bo2[1],fl.bo2[2],fl.bo2[3]))
-	print(format(" minmax {minw:%d minh:%d maxw:%d maxh:%d}",
-		fl.minmax[1], fl.minmax[2], fl.minmax[3], fl.minmax[4]))
-	print(format(" border:%d span:%d",fl.border, fl.span))
-
-	print("Controls:")
-	print(format(" top:%d pos:%d lines:%d entries:%d",
-		fl.top, fl.pos, fl.lines, fl.entries))
-	if (fl.dir) then
-		print(format(" dir: %d entries", getn(fl.dir)))
-	else
-		print(format(" dir: nil"))
-	end
+	print("textlist object = "..type_dump(fl))
 end
 
 function textlist_set_box(fl,x,y,w,h,z)
@@ -89,13 +75,11 @@ function textlist_set_box(fl,x,y,w,h,z)
 	if z then fl.bo2[3] = z else z = fl.bo2[3] end
 
 --	print(format("box-before-minmax %d %d %d %d %d %d", x,y,x+w,y+h,w,h))
-
 -- Check min/max box
+
 	if fl.minmax then
-
---	print(format("minmax %d %d - %d %d",
---		fl.minmax[1],fl.minmax[2],fl.minmax[3],fl.minmax[4] ))
-
+--		print(format("minmax %d %d - %d %d",
+--			fl.minmax[1],fl.minmax[2],fl.minmax[3],fl.minmax[4] ))
 		if 		w < fl.minmax[1] then w = fl.minmax[1]
 		elseif	w > fl.minmax[3] then w = fl.minmax[3] end
 		if		h < fl.minmax[2] then h = fl.minmax[2]
@@ -109,7 +93,8 @@ function textlist_set_box(fl,x,y,w,h,z)
 	fl.box[4] = y + h
 	fl.bo2[3] = z
 	fl.lines  = floor( (fl.bo2[2]-2*fl.border) / (fl.font_h+2*fl.span))
-	if fl.lines < 0 then fl.lines = 0 end
+	fl.lines = clip_value(fl.lines,0,fl.maxlines)
+	
 --	print(format("LINES=%d B:%d H:%d FH:%d",fl.lines, fl.border, fl.bo2[2], fl.font_h));
 
 --	print(format("setbox {x1:%d y1:%d x2:%d y2:%d w:%d h:%d z:%d lines=%d}",
@@ -161,6 +146,7 @@ function textlist_default(fl)
 	-- Control
 	fl.dir = nil
 	fl.entries = 0;
+	fl.maxlines=nil
 
 	-- Border size
 	fl.border	= 3
@@ -227,8 +213,9 @@ function textlist_reset(fl)
 
 	if not fl.minmax then
 		-- min_width, min_height, max_width, max heigth
+		local maxlines = fl.maxlines or 8
 		fl.minmax = {fl.border*2, fl.border*2,
-					400, fl.border*2 + 8*(2*fl.span+fl.font_h) }
+					400, fl.border*2 + maxlines*(2*fl.span+fl.font_h) }
 	end
 
 --	print(format("minmax {minw:%d minh:%d maxw:%d maxh:%d}",
@@ -257,7 +244,7 @@ end
 --
 --        pos : { x, y, z }. Each component is optionnal. Default {100,100,100}
 --        box : { min_width, max_width, min_heigth, max_height }
---				display box min/max Default={0,0,400,size for 8 entries)
+--				display box min/max Default={0,0,400, size for 8 entries)
 --
 function textlist_create(flparm)
 	local fl = {}
@@ -276,6 +263,7 @@ function textlist_create(flparm)
 --				flparm.pos[1], flparm.pos[2]))
 		end
 		
+		if flparm.lines		then fl.maxlines	= flparm.lines		end
 		if flparm.box		then fl.minmax		= flparm.box		end
 		if flparm.confirm 	then fl.confirm		= flparm.confirm 	end
 		if flparm.border 	then fl.border		= flparm.border		end
