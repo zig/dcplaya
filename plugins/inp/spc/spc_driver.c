@@ -1,5 +1,5 @@
 /*
- * $Id: spc_driver.c,v 1.7 2003-04-17 22:55:51 vincentp Exp $
+ * $Id: spc_driver.c,v 1.8 2003-04-19 23:53:48 vincentp Exp $
  */
 
 #include "dcplaya/config.h"
@@ -24,10 +24,11 @@ volatile static int ready; /**< Ready flag : 1 when music is playing */
 
 /** SPC config */
 static SPC_Config spc_config = {
-  16000,
-  //44100,
+  26800,
+  //  16000,
+  //  44100,
   16,
-  1,
+  2,
   0,
   0
 };
@@ -114,12 +115,12 @@ static int start(const char *fn, int track, playa_info_t *info)
     goto error;
   }
 
-  info->info[PLAYA_INFO_BPS].v    = 0;
-  info->info[PLAYA_INFO_DESC].s   = strdup("SNES music");
-  info->info[PLAYA_INFO_FRQ].v    = spc_config.sampling_rate;
-  info->info[PLAYA_INFO_BITS].v   = spc_config.resolution;
-  info->info[PLAYA_INFO_STEREO].v = spc_config.channels-1;
-  info->info[PLAYA_INFO_TIME].v   = spcinfo.playtime * 1000;
+  //playa_info_bps    (info, 0);
+  playa_info_desc   (info, "SNES music");
+  playa_info_frq    (info, spc_config.sampling_rate);
+  playa_info_bits   (info, spc_config.resolution);
+  playa_info_stereo (info, spc_config.channels-1);
+  playa_info_time   (info, spcinfo.playtime * 1000);
 
   buf_cnt = buf_size;
   ready = 1;
@@ -211,17 +212,17 @@ static int id_info(playa_info_t *info, SPC_ID666 * idinfo)
   // VP : playa_make_time_str is not existing anymore ...
   //  info->info[PLAYA_INFO_TIME].v     = playa_make_time_str(idinfo->playtime * 1000);
  
-  info->info[PLAYA_INFO_ARTIST].s   = mystrdup(idinfo->author);
-  info->info[PLAYA_INFO_ALBUM].s    = mystrdup(idinfo->gametitle);
-  info->info[PLAYA_INFO_TRACK].v    = 0;
-  info->info[PLAYA_INFO_TITLE].s    = mystrdup(idinfo->songname);
-  info->info[PLAYA_INFO_YEAR].v     = 0;
-  info->info[PLAYA_INFO_GENRE].s    = mystrdup("Video Games");
-  info->info[PLAYA_INFO_COMMENTS].v = 0;
+  playa_info_artist   (info, idinfo->author);
+  playa_info_album    (info, idinfo->gametitle);
+  //  playa_info_track    (info, 0);
+  playa_info_title    (info, idinfo->songname);
+  //playa_info_year     (info, 0);
+  playa_info_genre    (info, "Video Games");
+  //playa_info_comments (info, 0);
 
   if (idinfo->dumper[0]) {
     sprintf(tmp, "Ripped by %s", idinfo->dumper);
-    info->info[PLAYA_INFO_COMMENTS].s = mystrdup(tmp);
+    playa_info_comments (info, tmp);
   }
 
   EXPT_GUARD_CATCH;

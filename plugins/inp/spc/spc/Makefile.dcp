@@ -1,0 +1,30 @@
+LIBRARY := yes
+SRCDIR := libspc
+
+#LEZ=yes
+#LEF_EXTRA := $(foreach dir,$(SUBDIRS),$(dir)/lib$(dir).a) 
+
+#ELFS=$(shell basename `pwd`).elf
+#ELF_EXTRA := $(foreach dir,$(SUBDIRS),$(dir)/lib$(dir).a)
+
+
+FILES = apu \
+	libspc \
+	spc700 \
+	globals \
+	soundux
+
+# linux/main_linu
+
+KOS_LOCAL_CFLAGS := -DHOST_LITTLE_ENDIAN -DDCPLAYA=1 -DSPC_PLAYER=1 -DSPC700_SHUTDOWN
+
+OBJS := $(addprefix $(SRCDIR)/,$(addsuffix .o, $(FILES)))
+
+KOS_LOCAL_INCS := -I../../../include\
+ -I$(SRCDIR)
+
+# -I$(BUILDDIR)
+
+OPTIMIZE = $(OPTIMIZE_FOR_SPEED)
+
+include ../../../../Makefile.inc
