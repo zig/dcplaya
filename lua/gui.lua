@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.36 2002-12-23 09:01:36 ben Exp $
+--- $Id: gui.lua,v 1.37 2002-12-23 14:15:17 zigziggy Exp $
 ---
 
 --
@@ -861,28 +861,28 @@ function gui_ask(question, answers, width, label)
       text = text..' label="'..label..'"'
    end
    if width then
-      text = text..format(' w="%d"', width)
+      text = text..format(' hint_w="%d"', width)
    end
    text = text..'>'
 
-   text = text..'<vspace h="8">'
+   text = text..'<vspace h="16">'
 
    text = text..question
 
-   text = text..'<vspace h="8">'
+   text = text..'<vspace h="16">'
 
    local i
    for i=1, getn(answers), 1 do
-      text = text..'<hspace w="8">'
+      text = text..'<hspace w="16">'
       text = text..format('<button guiref="%d">', i)..answers[i]..'</button>'
    end
-   text = text..'<hspace w="8">'
+   text = text..'<hspace w="16">'
 
-   text = text..'<vspace h="4">'
+   text = text..'<vspace h="8">'
 
    text = text..'</dialog>'
 
-   --print(text)
+   print(text)
    local tt = tt_build(text, {
 			  x = "center",
 			  y = "center",

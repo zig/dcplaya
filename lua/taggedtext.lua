@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  sgml text and gui element formater
 ---
---- $Id: taggedtext.lua,v 1.8 2002-12-23 14:07:38 zigziggy Exp $
+--- $Id: taggedtext.lua,v 1.9 2002-12-23 14:15:08 zigziggy Exp $
 ---
 
 if not dolib("sprite") then return end
@@ -311,7 +311,7 @@ tt_commands = {
 
    vspace = function(mode, param)
 	       local h = param.h or 16
-	       mode.h = mode.h + h
+--	       mode.h = mode.h + h
 	       tt_endline(mode)
 	       tt_insert_block(mode, { w = 0, h = h, draw = function() end })
 	       tt_endline(mode)
@@ -319,7 +319,7 @@ tt_commands = {
 
    hspace = function(mode, param)
 	       local w = param.w or 16
-	       mode.w = mode.w + w
+--	       mode.w = mode.w + w
 	       return { w = w, h = 0, draw = function() end }
 	    end,
 
