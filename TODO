@@ -1,5 +1,5 @@
 
-$Id: TODO,v 1.16 2002-09-27 06:33:53 vincentp Exp $
+$Id: TODO,v 1.17 2002-09-27 15:51:22 vincentp Exp $
 
 ** TODO :
 
@@ -103,7 +103,7 @@ $Id: TODO,v 1.16 2002-09-27 06:33:53 vincentp Exp $
   It would probably be easier to choose color with a #AARRBBGG format rather 
   than the current 4 float values one, wouldn't it ?
 
-  $d$
+  [2002-09-27 04:12:26 PM, zig]
   I chose this because it was the parameters used into C side
   draw_poly_text and draw_poly_box ... Also I find easier
   to handle value between 0 and 1 than value between 0 and ff :)

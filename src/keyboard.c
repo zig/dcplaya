@@ -52,7 +52,8 @@ int kbd_poll_repeat(uint8 addr, int elapsed_frame) {
 	}
 
 	/* Process all joystick */
-#define CONTROLER_DEAD          15
+#define CONTROLER_JOY_DEAD          48
+#define CONTROLER_TRIG_DEAD         15
 	for (j=0; j<4; j++) {
 	  int bits;
 
@@ -61,7 +62,40 @@ int kbd_poll_repeat(uint8 addr, int elapsed_frame) {
 
 	  bits = controler_cond[j].buttons;
 	  for (i=0; i<16; i++, bits>>=1) {
-	    int v = !(bits&1)? 64 : 0;
+
+#define O(e) ( offsetof(cont_cond_t, e) )
+
+	    static struct {
+	      int sign, addr, offset;
+	      int dead;
+	      int coef;
+	    } d[] = {
+	      { +1, O(rtrig), 0, CONTROLER_TRIG_DEAD, 1.0f * (1<<16) },  // 0 : RTRIG
+	      { 0 }, // 1
+	      { 0 }, // 2
+	      { 0 }, // 3
+	      { 0 }, // 4
+	      { 0 }, // 5
+	      { 0 }, // 6
+	      { 0 }, // 7
+	      { 0 }, // 8
+	      { 0 }, // 9
+	      { 0 }, // 10
+	      { +1, O(ltrig), 0, CONTROLER_TRIG_DEAD, 1.0f * (1<<16) },  // 11 : LTRIG
+	      { -1, O(joyy), 128, CONTROLER_JOY_DEAD, 1.0f * (1<<16) }, // 12 : PAD2_UP
+	      { +1, O(joyy), 128, CONTROLER_JOY_DEAD, 1.0f * (1<<16) }, // 13 : PAD2_DOWN
+	      { -1, O(joyx), 128, CONTROLER_JOY_DEAD, 1.0f * (1<<16) }, // 14 : PAD2_LEFT
+	      { +1, O(joyx), 128, CONTROLER_JOY_DEAD, 1.0f * (1<<16) }, // 15 : PAD2_RIGHT
+	    };
+
+	    int v = !(bits&1)? 128 : 0;
+	    int s = d[i].sign;
+	    if (s) {
+	      uint8 * p = (uint8 *) (controler_cond + j);
+	      v = (s * ( ( (int)p[d[i].addr] ) - d[i].offset) - d[i].dead) * d
+		[i].coef >> 16;
+	    }
+#if 0
 	    switch (i) {
 	    case 0:
 	      v = controler_cond[j].rtrig;
@@ -94,7 +128,8 @@ int kbd_poll_repeat(uint8 addr, int elapsed_frame) {
 	      v = controler_cond[j].joyx - 128;
 	      break;
 	    }
-	    if (v > CONTROLER_DEAD) {
+#endif
+	    if (v > 0) {
 	      int k = 128 + j*16 + i;
 	      int p = kbd_matrix[k];
 	      kbd_matrix[k] = 2;	/* 2 == currently pressed */

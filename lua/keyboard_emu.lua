@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: keyboard_emu.lua,v 1.2 2002-09-27 06:33:54 vincentp Exp $
+-- $Id: keyboard_emu.lua,v 1.3 2002-09-27 15:51:32 vincentp Exp $
 --
 
 
@@ -301,16 +301,21 @@ function ke_handle(frametime, key)
 		return nil
 	end
 
-	if ke_keyup[key] then
-		local box = ke_cursorbox - { 0, 25, 0, 25 }
-		ke_set_keynum(ke_closest_key(ke_array, box, ke_closest_vertical_coef))
-
-		return nil
-	end
-
-	if ke_keydown[key] then
-		local box = ke_cursorbox + { 0, 25, 0, 25 }
-		ke_set_keynum(ke_closest_key(ke_array, box, ke_closest_vertical_coef))
+	local up = ke_keyup[key]
+	local down = ke_keydown[key]
+	if (up or down) and not (up and down) then
+		--local box = ke_cursorbox - { 0, 25, 0, 25 }
+		local box
+		if up then
+			box = ke_key.box - { 0, 25, 0, 25 }
+		else
+			box = ke_key.box + { 0, 25, 0, 25 }
+		end
+		local num = ke_closest_key(ke_array, box, ke_closest_vertical_coef)
+		if ke_array[num].box[2] ~= ke_key.box[2] then
+			-- only if this resulted in a change in Y
+			ke_set_keynum(num)
+		end
 
 		return nil
 	end
@@ -346,6 +351,7 @@ function ke_update(key)
 
 	ke_curframecounter = ke_origframecounter(1)
 
+	-- activating key toggle
 	if key and ke_keyactivate[key] then
 		ke_set_active(not ke_active)
 		return nil
@@ -355,6 +361,7 @@ function ke_update(key)
 		return key
 	end
 
+	-- calculate frame time
 	local frametime = ke_curframecounter/60
 	ke_time = ke_time + frametime
 --	rp (frametime .. "\n")
@@ -365,16 +372,17 @@ function ke_update(key)
 	-- do collect garbage once per frame for smoother animation
 	collectgarbage()
 
-	dl_set_trans(ke_cursor_dl, mat_scale(ke_cursorbox[3] - ke_cursorbox[1], ke_cursorbox[4] - ke_cursorbox[2], 1) * mat_trans(ke_cursorbox[1], ke_cursorbox[2], 0))
-	dl_set_color(ke_cursor_dl, 0.5+0.5*sin(360*ke_time*2), 1, 1, 1)
-
+	-- handle key if there is any
 	if key then
 		key = ke_handle(frametime, key)
 	end
 
-	-- update cursor position
+	-- update cursor position and color
 	ke_cursorbox = ke_cursorbox + 
 			20 * frametime * (ke_key.box - ke_cursorbox)
+
+	dl_set_trans(ke_cursor_dl, mat_scale(ke_cursorbox[3] - ke_cursorbox[1], ke_cursorbox[4] - ke_cursorbox[2], 1) * mat_trans(ke_cursorbox[1], ke_cursorbox[2], 0))
+	dl_set_color(ke_cursor_dl, 0.5+0.5*sin(360*ke_time*2), 1, 1, 1)
 
 	return key
 end
