@@ -1,9 +1,10 @@
-/** @ingroup dcplaya_vis_driver
+/** @ingroup dcplaya_fime_vis_plugin_devel
  *  @file    fime_beatdetect.h
  *  @author  benjamin gerard 
  *  @date    2003/01/19
- *  @brief   FIME : beat detection
- *  $Id: fime_beatdetect.h,v 1.1 2003-01-20 14:23:09 ben Exp $
+ *  @brief   FIME beat detection
+ *
+ *  $Id: fime_beatdetect.h,v 1.2 2003-03-19 05:16:16 ben Exp $
  */ 
 
 #ifndef _FIME_BEATDETECT_H_

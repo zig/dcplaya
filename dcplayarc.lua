@@ -4,7 +4,8 @@
 --- @author   Penne Vincent <ziggy@sashipa.com>
 --- @date     2002
 --- @brief    Main dcplaya lua script.
---- $Id: dcplayarc.lua,v 1.35 2003-03-14 18:51:03 ben Exp $
+---
+--- $Id: dcplayarc.lua,v 1.36 2003-03-19 05:16:15 ben Exp $
 ---
 ---   The @b home..dcplayarc.lua file is dcplaya main script. It is executed
 ---   after the dynshell has been loaded.

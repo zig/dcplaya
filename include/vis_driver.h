@@ -1,14 +1,23 @@
 /**
- * Dreammp3 - visual driver
+ * @ingroup dcplaya_plugin_devel
+ * @file    vis_driver.h
+ * @author  benjamin gerard <ben@sahipa.com>
+ * @date    2002
+ * @brief   visual plugin API.
  *
- * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
- *
- * $Id: vis_driver.h,v 1.5 2002-11-25 16:51:05 ben Exp $
+ * $Id: vis_driver.h,v 1.6 2003-03-19 05:16:16 ben Exp $
  */
-
 
 #ifndef _VIS_DRIVER_H_
 #define _VIS_DRIVER_H_
+
+/** @defgroup  dcplaya_vis_plugin_devel  Visual Plugin API
+ *  @ingroup   dcplaya_plugin_devel
+ *  @author    benjamin gerard <ben@sashipa.com>
+ *  @brief     Programming dcplaya visual plugins
+ *
+ *  Visual plugins are dcplaya graphical effects drivers.
+ */
 
 #include "extern_def.h"
 
@@ -19,7 +28,9 @@ DCPLAYA_EXTERN_C_START
 #include "draw/viewport.h"
 #include "matrix.h"
 
-/** Input driver */
+/** Visual driver structure.
+ *  @ingroup dcplaya_vis_plugin_devel
+ */
 typedef struct
 {
   /** Any driver common structure :  {nxt, id, name} */ 

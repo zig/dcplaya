@@ -1,10 +1,11 @@
 /**
- * @ingroup   dcplaya_plugin_img
+ * @ingroup   dcplaya_img_plugin_devel
  * @file      SHAtranslatorJpg.h
  * @brief     Jpeg (JPG) translator class definition
  * @date      2001/07/17
- * @author    BeN(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAtranslatorJpg.h,v 1.1 2002-12-15 02:31:45 ben Exp $
+ * @author    Benjamin Gerard <ben@sashipa.com>
+ *
+ * $Id: SHAtranslatorJpg.h,v 1.2 2003-03-19 05:16:16 ben Exp $
  *
  * How to decompress JPEG via jpeglib.
  *
@@ -25,10 +26,17 @@
 
 #include "SHAtranslator/SHAtranslatorImage.h"
 
+/** @defgroup  dcplaya_jpg_img_plugin_devel  JPEG image plugin.
+ *  @ingroup   dcplaya_img_plugin_devel
+ *  @author    benjamin gerard <ben@sashipa.com>
+ *  @brief     Jpeg (.jpg) image plugin
+ */
+
+
 /** Jpeg (.JPG) translator class definition.
  *
- * @ingroup   dcplaya_plugin_img
- * @author    BeN(jamin) Gerard <ben@sashipa.com>
+ * @ingroup   dcplaya_jpg_img_plugin_devel
+ * @author    Benjamin Gerard <ben@sashipa.com>
  */
 class SHAtranslatorJpg : public SHAtranslatorImage
 {

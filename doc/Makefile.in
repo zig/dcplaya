@@ -2,15 +2,37 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.12 2003-03-18 23:24:58 ben Exp $
+# $Id: Makefile.in,v 1.13 2003-03-19 05:16:15 ben Exp $
 #
 
 VERSION = @VERSION@
 DOXYGEN = "@DOXYGEN@"
 
-ALL_HEADERS		:= $(shell find .. -type f -name '*.h')
-ALL_HEADERS_PATH	:= $(sort . $(dir $(ALL_HEADERS)))
+#ALL_HEADERS		:= $(shell find .. -type f -name '*.h')
+#ALL_HEADERS_PATH	:= $(sort . $(dir $(ALL_HEADERS)))
 
+PLG_HEADERS	:= $(shell find ../plugins -maxdepth 3 -type f -name '*.h')
+PLG_HEADERS_PATH	:= $(sort . $(dir $(PLG_HEADERS)))
+
+
+PLUG_TOP = ../plugins
+PLUG_DIR = exe img inp vis
+
+
+ALL_HEADERS_PATH := . \
+ ../include \
+ ../libs/draw \
+ ../libs/translator \
+ ../libs/translator/SHAsys \
+ ../libs/translator/SHAtk \
+ ../libs/translator/SHAR \
+ ../libs/translator/SHAwrapper \
+ ../libs/translator/SHAtranslator \
+ ../libs/translator/SHAblitter \
+ $(PLG_HEADERS_PATH)
+# $(foreach i,$(PLUG_DIR),$(PLUG_TOP)/$(i))
+
+# Local doc files
 HINFILES		:= $(wildcard *.hin)
 DEVDOCFILES		:= $(HINFILES:%.hin=%.h)
 
@@ -123,6 +145,12 @@ DOXDEV	+= -D dox-generate-latex=NO
 
 all: Makefile devdoc
 xml: all
+txt: all txt_only
+
+txt_only:
+	mkdir -p $(DOC_DIR)/text
+	for i in `find $(DOC_DIR)/html -type f -name '*.html'`; do lynx -dump $$i > $(DOC_DIR)/text/`basename $$i .html`.txt ; done
+
 
 Makefile : Makefile.in
 	(cd ..; ./config.status) 
@@ -159,7 +187,7 @@ clean_local:
 	@rm -f *.dox *.h *~ *.html *.css *.lua
 
 clean: clean_local
-	@rm -rf $(DOC)/html $(DOC)/xml $(DOC)/latex $(DOC)/lsman $(LUADOCDIR)
+	@rm -rf $(foreach i, html xml man text latex,$(DOC_DIR)/$(i)) $(LUADOCDIR)
 
 distclean: clean
 	@rm -f Makefile *~

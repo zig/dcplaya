@@ -1,6 +1,11 @@
-/**
- * @date 2003/02/03
- */
+/** @ingroup dcplaya_fime_vis_plugin_devel
+ *  @file    fime_ground.h
+ *  @author  benjamin gerard 
+ *  @date    2003/02/03
+ *  @brief   FIME ground
+ *
+ *  $Id: fime_ground.h,v 1.2 2003-03-19 05:16:16 ben Exp $
+ */ 
 
 #ifndef _FIME_GROUND_H_
 #define _FIME_GROUND_H_

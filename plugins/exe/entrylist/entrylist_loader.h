@@ -1,11 +1,11 @@
 /**
- * @ingroup  exe_plugin
+ * @ingroup  dcplaya_el_exe_plugin_devel
  * @file     entrylist_loader.h
  * @author   benjamin gerard <ben@sashipa.com> 
  * @date     2002/10/24
- * @brief    entry-list lua extension plugin
+ * @brief    entry-list loader thread.
  * 
- * $Id: entrylist_loader.h,v 1.4 2002-12-13 17:06:53 ben Exp $
+ * $Id: entrylist_loader.h,v 1.5 2003-03-19 05:16:16 ben Exp $
  */
 
 #ifndef _ENTRY_LOADER_H_

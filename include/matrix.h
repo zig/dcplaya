@@ -3,7 +3,9 @@
  * @file    matrix.h
  * @author  ben(jamin) gerard <ben@sashipa.com>
  * @date    2002/02/12
- * @brief   4x4 matrix support.
+ * @brief   Matrix support.
+ *
+ * $Id: matrix.h,v 1.11 2003-03-19 05:16:16 ben Exp $
  */
 
 #ifndef _MATRIX_H_
@@ -11,17 +13,25 @@
 
 #include "extern_def.h"
 
+/** @defgroup  dcplaya_matrix_devel  Matrix support.
+ *  @ingroup   dcplaya_devel
+ *  @author    benjamin gerard <ben@sashipa.com>
+ *  @brief     Performing matrix operations.
+ *
+ */
+
+
 DCPLAYA_EXTERN_C_START
 
 #ifndef __MATRIX_H
 /** 4x4 matrix type.
- *  @ingroup dcplaya_devel
+ *  @ingroup dcplaya_matrix_devel
  */
 typedef float matrix_t[4][4];
 #endif
 
 /** @name Matrix functions.
- *  @ingroup dcplaya_devel
+ *  @ingroup dcplaya_matrix_devel
  */
 
 #ifdef DEBUG

@@ -1,20 +1,22 @@
 /**
- * @ingroup dcplaya_plugin_img
+ * @ingroup dcplaya_img_plugin_devel
  * @file    img_driver.h
  * @author  benjamin gerard <ben@sahipa.com>
  * @date    2002/12/14
- * @brief   dcplaya image plugin.
+ * @brief   Image Plugin API.
  *
- * $Id: img_driver.h,v 1.2 2002-12-15 16:15:03 ben Exp $
+ * $Id: img_driver.h,v 1.3 2003-03-19 05:16:16 ben Exp $
  */
 
 #ifndef _IMG_DRIVER_H_
 #define _IMG_DRIVER_H_
 
-/** @defgroup dcplaya_plugin_img  Image driver API
- *  @ingroup  dcplaya_plugin_devel
+/** @defgroup  dcplaya_img_plugin_devel  Image Plugin API
+ *  @ingroup   dcplaya_plugin_devel
+ *  @author    benjamin gerard <ben@sashipa.com>
+ *  @brief     Programming dcplaya image plugins
  *
- *  Image plugins are for loading image file.
+ *  Image plugins are used for loading image file.
  */
 
 #include "extern_def.h"
@@ -26,17 +28,17 @@ DCPLAYA_EXTERN_C_START
 #include "translator/translator.h"
 
 /** Image format enumeration.
- *  @ingroup dcplaya_plugin_img
+ *  @ingroup dcplaya_img_plugin_devel
  **/
 typedef SHAwrapperImageFormat_e image_format_e;
 
 /** Image description structure.
- *  @ingroup dcplaya_plugin_img
+ *  @ingroup dcplaya_img_plugin_devel
  */
 typedef SHAwrapperImage_t image_t;
 
 /** Image driver structure.
- *  @ingroup dcplaya_plugin_img
+ *  @ingroup dcplaya_img_plugin_devel
  */
 typedef struct
 {

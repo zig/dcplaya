@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, texture interface
  * 
- * $Id: display_texture.c,v 1.10 2003-03-18 16:11:10 ben Exp $
+ * $Id: display_texture.c,v 1.11 2003-03-19 05:16:16 ben Exp $
  */
 
 #include <stdio.h>
@@ -148,7 +148,7 @@ DL_FUNCTION_DECLARE(tex_exist)
 /* Get info on texture. */
 DL_FUNCTION_DECLARE(tex_info)
 {
-  texture_t * t;
+  texture_t * t, tmp;
   texid_t texid;
 
   GET_TEXID(texid,1,1);
@@ -157,6 +157,11 @@ DL_FUNCTION_DECLARE(tex_info)
 	printf("%s : invalid texture\n", __FUNCTION__);
 	return 0;
   }
+  /* Copy the texture so that it can be release as fast as possible. */
+  tmp = *t;
+  texture_release(t);
+  t = &tmp;
+
   lua_settop(L,0);
   lua_newtable(L);
 
@@ -204,7 +209,6 @@ DL_FUNCTION_DECLARE(tex_info)
   lua_pushnumber(L,t->ref);
   lua_settable(L,1);
 
-  texture_release(t);
 
   return 1;
 }

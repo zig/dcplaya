@@ -1,9 +1,10 @@
-/** @ingroup dcplaya_vis_driver
+/** @ingroup dcplaya_fime_vis_plugin_devel
  *  @file    fime_pcm.h
  *  @author  benjamin gerard 
  *  @date    2003/01/17
- *  @brief   FIME : pcm
- *  $Id: fime_pcm.h,v 1.1 2003-01-18 14:22:17 ben Exp $
+ *  @brief   FIME pcm
+ *
+ *  $Id: fime_pcm.h,v 1.2 2003-03-19 05:16:16 ben Exp $
  */ 
 
 #ifndef _FIME_PCM_H_

@@ -1,9 +1,10 @@
-/** @ingroup dcplaya_vis_driver
+/** @ingroup dcplaya_fime_vis_plugin_devel
  *  @file    fime_star.h
  *  @author  benjamin gerard 
  *  @date    2003/02/04
  *  @brief   FIME star field 
- *  $Id: fime_star.h,v 1.1 2003-02-04 15:07:34 ben Exp $
+ *
+ *  $Id: fime_star.h,v 1.2 2003-03-19 05:16:16 ben Exp $
  */ 
 
 #ifndef _FIME_STAR_H_
@@ -16,7 +17,9 @@
 #include "obj_driver.h"
 #include "draw/viewport.h"
 
-/* fime star transform and anim. */
+/** fime star transform and anim.
+ *  @ingroup dcplaya_fime_vis_plugin_devel
+ */
 typedef struct {
   matrix_t mtx;     /**< Transform matrix (without translation). */
   vtx_t scale;      /**< Scaling X,Y,Z.                          */
@@ -28,14 +31,18 @@ typedef struct {
   float cur_z_mov;
 } fime_star_trans_t;
 
-/** fime star. */
+/** fime star.
+ *  @ingroup dcplaya_fime_vis_plugin_devel
+ */
 typedef struct {
   fime_star_trans_t * trans; /**< Reference transformation. */
   obj_t *obj;                /**< Reference object.         */
   vtx_t pos;                 /**< Star position.            */ 
 } fime_star_t;
 
-/** fime star field bounding box. */
+/** fime star field bounding box.
+ *  @ingroup dcplaya_fime_vis_plugin_devel
+ */
 typedef struct {
   float xmin;
   float xmax;
@@ -47,9 +54,14 @@ typedef struct {
 
 typedef struct fime_star_field_s fime_star_field_t;
 
-/** star generator function. */
+/** star generator function.
+ *  @ingroup dcplaya_fime_vis_plugin_devel
+ */
 typedef void (*fime_star_generator_t)(fime_star_field_t *, fime_star_t *);
 
+/** star field.
+ *  @ingroup dcplaya_fime_vis_plugin_devel
+ */
 struct fime_star_field_s {
   int nb_forms;
   obj_driver_t ** forms;

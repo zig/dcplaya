@@ -1,20 +1,23 @@
 /**
- * @ingroup dcplaya_plugin_inp
+ * @ingroup dcplaya_plugin_devel
  * @file    inp_driver.h
  * @author  benjamin gerard <ben@sahipa.com>
  * @date    2002
- * @brief   dcplaya input plugin.
+ * @brief   input plugin API.
  *
- * $Id: inp_driver.h,v 1.5 2002-12-14 16:15:36 ben Exp $
+ * $Id: inp_driver.h,v 1.6 2003-03-19 05:16:16 ben Exp $
  */
 
 #ifndef _INP_DRIVER_H_
 #define _INP_DRIVER_H_
 
-/** @defgroup dcplaya_plugin_inp Input driver API
- *  @ingroup  dcplaya_plugin_devel
+/** @defgroup  dcplaya_inp_plugin_devel  Input driver API
+ *  @ingroup   dcplaya_plugin_devel
+ *  @brief     Programming dcplaya input plugins
  *
- *  Input plugins are dcplaya music drivers.
+ *    Input plugins are dcplaya music drivers.
+ *
+ *  @author    benjamin gerard <ben@sashipa.com>
  */
 
 #include "extern_def.h"
@@ -26,7 +29,7 @@ DCPLAYA_EXTERN_C_START
 #include "any_driver.h"
 
 /** @name Input plugin decoding return codes.
- *  @ingroup dcplaya_plugin_inp
+ *  @ingroup dcplaya_inp_plugin_devel
  *
  *   Return bits code for decode() handler.
  *  @{
@@ -35,12 +38,12 @@ DCPLAYA_EXTERN_C_START
 #define INP_DECODE_CONT   1 /**< Decoder has decode some sample     */
 #define INP_DECODE_END    2 /**< Decoder has reach end of track     */
 #define INP_DECODE_INFO   4 /**< Decoder has detect some info
-							     change. Call info() handler to
-								 retrieve them.                   */      
+			       change. Call info() handler to
+			       retrieve them.                   */      
 /**@}*/
 
 /** Input driver structure.
- *  @ingroup dcplaya_plugin_inp
+ *  @ingroup dcplaya_inp_plugin_devel
  */
 typedef struct
 {

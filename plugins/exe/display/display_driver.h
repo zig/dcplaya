@@ -1,22 +1,34 @@
 /**
- * @ingroup  exe_plugin
+ * @ingroup  dcplaya_display_exe_plugin_devel
  * @file     display_driver.h
  * @author   Vincent Penne <ziggy@sashipa.com>
  * @author   Benjamin Gerard <ben@sashipa.com>
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display_driver.h,v 1.1 2002-10-18 11:42:07 benjihan Exp $
+ * $Id: display_driver.h,v 1.2 2003-03-19 05:16:16 ben Exp $
  */
 
 #ifndef _DISPLAY_DRIVER_H_
 #define _DISPLAY_DRIVER_H_
+
+/** @defgroup dcplaya_display_exe_plugin_devel  LUA graphical extensions
+ *  @ingroup  dcplaya_exe_plugin_devel
+ *  @author   Vincent Penne <ziggy@sashipa.com>
+ *  @author   Benjamin Gerard <ben@sashipa.com>
+ *  @brief    Doing graphics with LUA.
+ *  @see      dcplaya_display_list
+ */
 
 #include <stdio.h>
 #include "lua.h"
 #include "any_driver.h"
 #include "display_list.h"
 
+/** LUA tag for display list type.
+ *  @ingroup dcplaya_display_exe_plugin_devel
+ *  @see dcplaya_display_list
+ */
 extern int dl_list_tag;
 extern any_driver_t display_driver;
 

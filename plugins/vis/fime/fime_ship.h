@@ -1,13 +1,23 @@
-/** @ingroup dcplaya_vis_driver
+/** @ingroup dcplaya_fime_vis_plugin_devel
  *  @file    fime_ship.h
  *  @author  benjamin gerard 
  *  @date    2003/01/17
- *  @brief   FIME : spac ship
- *  $Id: fime_ship.h,v 1.1 2003-01-18 14:22:17 ben Exp $
+ *  @brief   FIME space ship
+ *
+ *  $Id: fime_ship.h,v 1.2 2003-03-19 05:16:16 ben Exp $
  */ 
 
 #ifndef _FIME_SHIP_H_
 #define _FIME_SHIP_H_
+
+/** @defgroup  dcplaya_fime_vis_plugin_devel  FIME visual plugin
+ *  @ingroup   dcplaya_vis_plugin_devel
+ *  @brief     FIME, Fly Into a Musical Environment.
+ *
+ *    This plugin is in development. It is far from what it intends to do.
+ *
+ *  @author    benjamin gerard
+ */
 
 #include "draw/viewport.h"
 #include "matrix.h"

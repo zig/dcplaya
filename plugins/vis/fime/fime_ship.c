@@ -1,9 +1,9 @@
-/** @ingroup dcplaya_vis_driver
+/** @ingroup dcplaya_fime_vis_plugin_devel
  *  @file    fime_ship.c
  *  @author  benjamin gerard 
  *  @date    2003/01/17
  *  @brief   FIME : space ship
- *  $Id: fime_ship.c,v 1.4 2003-03-10 22:55:34 ben Exp $
+ *  $Id: fime_ship.c,v 1.5 2003-03-19 05:16:16 ben Exp $
  */ 
 
 #include <stdlib.h>

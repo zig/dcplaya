@@ -1,20 +1,27 @@
 /**
- * @ingroup dcplaya_devel
+ * @ingroup dcplaya_plugin_devel
  * @file    any_driver.h
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   dcplaya plugin structure.
  *
- * $Id: any_driver.h,v 1.8 2002-12-30 06:28:18 ben Exp $ 
+ * $Id: any_driver.h,v 1.9 2003-03-19 05:16:15 ben Exp $ 
  */
  
 #ifndef _ANY_DRIVER_H_
 #define _ANY_DRIVER_H_
+
+/** @defgroup  dcplaya_plugin_devel  Plugin API
+ *  @ingroup   dcplaya_devel
+ *  @author    benjamin gerard <ben@sashipa.com>
+ *  @brief     Programming dcplaya plugins
+ */
 
 #include "extern_def.h"
 
 DCPLAYA_EXTERN_C_START
 
 /** Driver types.
+ *  @ingroup dcplaya_plugin_devel
  *  @{
  */
 #define OBJ_DRIVER  'JBO' /**< 3D object         */
@@ -28,7 +35,9 @@ DCPLAYA_EXTERN_C_START
 
 struct luashell_command_description;
 
-/** Shared by any driver. */
+/** Shared by any driver.
+ *  @ingroup dcplaya_plugin_devel
+ */
 typedef struct _any_driver_s
 {
   /** Next driver in list. */

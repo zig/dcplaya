@@ -8,16 +8,10 @@
  **/
 
 /**
-@defgroup  dcplaya_plugin_devel	Plugin API
-@ingroup   dcplaya_devel
-@author    benjamin gerard <ben@sashipa.com>
-@brief     Programming dcplaya plugins
- **/
-
-/**
 @defgroup  dcplaya_exe_plugin_devel Executable Plugin API
 @ingroup   dcplaya_plugin_devel
 @author    benjamin gerard <ben@sashipa.com>
 @brief     Programming dcplaya executable plugins
  **/
+
 

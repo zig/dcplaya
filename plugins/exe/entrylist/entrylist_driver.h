@@ -1,15 +1,25 @@
 /**
- * @ingroup  exe_plugin
+ * @ingroup  dcplaya_el_exe_plugin_devel
  * @file     entrylist_driver.h
  * @author   Benjamin Gerard <ben@sashipa.com>
  * @date     2002/10/23
- * @brief    entry-list lua extension plugin
+ * @brief    entry-list lua extensions.
  * 
- * $Id: entrylist_driver.h,v 1.4 2002-11-04 22:41:53 benjihan Exp $
+ * $Id: entrylist_driver.h,v 1.5 2003-03-19 05:16:16 ben Exp $
  */
 
 #ifndef _ENTRYLIST_DRIVER_H_
 #define _ENTRYLIST_DRIVER_H_
+
+/** @defgroup  dcplaya_el_exe_plugin_devel entry-list lua extensions
+ *  @ingroup   dcplaya_exe_plugin_devel
+ *  @brief     entry-list lua extensions.
+ *
+ *    entry-list plugin adds LUA extensions to support multi-threaded
+ *    directory content reading.
+ *
+ *  @author    Benjamin Gerard <ben@sashipa.com>
+ */
 
 #include <stdio.h>
 #include "lua.h"
@@ -17,18 +27,31 @@
 #include "allocator.h"
 #include "entrylist.h"
 
-/** Entrylist user tag. */
+/** entry-list user tag.
+ *  @ingroup dcplaya_el_exe_plugin_devel
+ */
 extern int entrylist_tag;
-/** Holds all entrylist. */
+
+/** Holds all entrylist.
+ *  @ingroup dcplaya_el_exe_plugin_devel
+ */
 extern allocator_t * lists;
-/** Holds standard entries. */
+
+/** Holds standard entries.
+ *  @ingroup dcplaya_el_exe_plugin_devel
+ */
 extern allocator_t * entries;
-/** The driver. */
+
+/** The driver.
+ *  @ingroup dcplaya_el_exe_plugin_devel
+ */
 any_driver_t entrylist_driver;
 
 int lua_entrylist_init(lua_State * L);
 
-/** Entrylist driver name. */
+/** entry-list driver name.
+ *  @ingroup dcplaya_el_exe_plugin_devel
+ */
 #define DRIVER_NAME "entrylist"
 
 #define EL_FUNCTION_DECLARE(name) int lua_entrylist_##name(lua_State * L)
