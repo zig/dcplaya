@@ -2,11 +2,14 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.21 2003-04-12 12:46:27 ben Exp $
+# $Id: Makefile.in,v 1.22 2003-07-30 00:29:56 benjihan Exp $
 #
 
 VERSION = @VERSION@
 DOXYGEN = "@DOXYGEN@"
+AWK=@AWK@
+LUA=@LUA@
+LYNX=@LYNX@
 
 PLG_HEADERS	 := $(shell find ../plugins -maxdepth 3 -type f -name '*.h')
 PLG_HEADERS_PATH := $(sort . $(dir $(PLG_HEADERS)))
@@ -50,8 +53,9 @@ LUASRCFILES:=$(LUAALLFILES:$(LUASRCDIR)/%=%)
 LUADOCFILES:=$(addprefix $(LUADOCDIR)/,$(LUASRCFILES:%.lua=%.lua)\
  userconf.lua\
  dcplayarc.lua\
- autorun.lua\
 )
+# ben : This file is missing from repository !!
+# autorun.lua\
 
 DOCINPUTS=$(ALL_HEADERS_PATH) $(LUADOCDIR) $(LUADOCDIR)/lua
 
@@ -62,9 +66,9 @@ SHASUBST=../utils/shasubst.sh
 # Sed version
 #LUA2DOX=sed --silent -f ../utils/lua2dox.sed $<
 # Awk version
-LUA2DOX=awk -f ../utils/lua2dox.awk $<
+LUA2DOX=$(AWK) -f ../utils/lua2dox.awk $<
 #TXT2ZML=sed --silent -f ../utils/txt2zml.sed
-TXT2ZML=lua -f ../utils/txt2zml.lua
+TXT2ZML=$(LUA) -f ../utils/txt2zml.lua
 
 DOXYGENERIC=../utils/doxygeneric.sh
 
@@ -185,28 +189,50 @@ DOXDEV	+= -D GENERATE_LATEX=NO
 ## Make rules
 #
 
-
 all: Makefile devdoc
-xml: all
-txt: all txt_only
+
+.PHONY: lynx-is-missing lua-is-missing awk-is-missing doxygen-is-missing
+lynx-is-missing lua-is-missing awk-is-missing doxygen-is-missing:
+	@echo "You need to install $(patsubst %-is-missing,%,$@) for building this documentation."
+	@test "1" = "2"
+
+ifeq '$(LYNX)' 'echo'
+# These targets need lynx to be configured.
+txt_only txt4zml_only: lynx-is-missing
+
+else
+
 
 txt_only:
 	@mkdir -p $(DOC_DIR)/text
 	@for i in `find $(DOC_DIR)/html -type f -name '*.html'`; do\
-	lynx -width=64 -dump $$i > $(DOC_DIR)/text/`basename $$i .html`.txt;\
+	$(LYNX) -width=64 -dump $$i > $(DOC_DIR)/text/`basename $$i .html`.txt;\
 	done
+
+txt4zml_only:
+	@mkdir -p $(DOC_DIR)/text4zml
+	@for i in `find $(DOC_DIR)/html4zml -type f -name '*.html'`; do\
+	$(LYNX) -width=4096 -dump $$i \
+	> $(DOC_DIR)/text4zml/`basename $$i .html`.txt;\
+	done; rm -rf "$(DOC_DIR)/html4zml"
+
+endif
+
+xml: all
+txt: all txt_only
 
 special: Makefile zmldoc
 txt4zml: special txt4zml_only
 zml: txt4zml zml_only
 
-txt4zml_only:
-	@mkdir -p $(DOC_DIR)/text4zml
-	@for i in `find $(DOC_DIR)/html4zml -type f -name '*.html'`; do\
-	lynx -width=4096 -dump $$i \
-	> $(DOC_DIR)/text4zml/`basename $$i .html`.txt;\
-	done; rm -rf "$(DOC_DIR)/html4zml"
+ifeq '$(LUA)' 'echo'
 
+zml_only : lua-is-missing
+
+else
+
+# This target does not required lynx because text files should
+# have been processed before.
 zml_only:
 	@mkdir -p $(DOC_DIR)/zml
 	@for i in `find $(DOC_DIR)/text4zml -type f -name '*.txt'`; do\
@@ -215,12 +241,19 @@ zml_only:
 	$(TXT2ZML) "$$i" >> $(DOC_DIR)/zml/`basename "$$i" .txt`.zml;\
 	done; rm -rf "$(DOC_DIR)/text4zml"
 
+endif
 
 Makefile : Makefile.in
 	(cd ..; ./config.status) 
 
 # $(LUADOCDIR)/doc.lua : luadoc.h
 # 	cp -f $< $@
+
+ifeq 'x$(AWK)' 'xecho'
+
+$(LUADOCDIR)/%.lua : awk-is-missing
+	@mkdir -p $(dir $@)
+else
 
 $(LUADOCDIR)/userconf.lua : $(LUASRCDIR)/userconf-release.lua # Makefile
 	@echo "make [$@] from [$<]"
@@ -232,11 +265,16 @@ $(LUADOCDIR)/%.lua : %.lua  # Makefile
 	@echo "make [$@] from [$<]"
 	@$(LUA2DOX) > $@
 
-luadoc: $(LUADOCFILES)
+endif
 
-imgdoc:
-	@mkdir -p $(DOC_DIR)/html
-	cp -f images/* $(DOC_DIR)/html
+$(DOC_DIR) $(LUADOCDIR) $(DOC_DIR)/html:
+	@echo "Create directory [$@]"
+	@mkdir -p $@
+
+luadoc: $(LUADOCDIR) $(LUADOCFILES)
+
+imgdoc: $(DOC_DIR)/html
+	cp -f images/*.gif $(DOC_DIR)/html
 
 devdoc: devdoc.dox $(DEVDOCFILES) luadoc $(HTML_EXTRA) imgdoc
 	$(DOXYGEN) $<
