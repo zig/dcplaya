@@ -5,7 +5,7 @@
  * @author    benjamin gerard <ben@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.h,v 1.10 2002-12-01 19:19:14 ben Exp $
+ * @version   $Id: display_list.h,v 1.11 2002-12-26 07:12:57 ben Exp $
  */
 
 #ifndef _DISPLAY_LIST_H_
@@ -147,7 +147,7 @@ typedef struct dl_list {
 	unsigned int type:2;       /**< type of list [MAIN,SUB,DEAD]        */
   } flags;
 
-  int refcount;                /**< Reference counter.                  */
+  volatile int refcount;           /**< Reference counter.                  */
 
   matrix_t   trans;            /**< Current transform matrix.           */
   dl_color_t color;            /**< Current color.                      */
@@ -160,7 +160,7 @@ typedef struct dl_list {
   int    heap_size;            /**< Size of the heap.                   */
   int    heap_pos;             /**< Position in heap.                   */
 
-  spinlock_t mutex;            /**< Mutex.                              */
+  //  spinlock_t mutex;            /**< Mutex.                              */
 
 } dl_list_t;
 
@@ -269,37 +269,17 @@ int dl_set_active2(dl_list_t * l1, dl_list_t * l2, int active);
 /** @name Display list command functions.
  *  @ingroup dcplaya_display_list
  *
- *  Set of function of creating and removing display list commands. There
- *  is to way for adding a new command to a display list.
+ *  Set of function of creating and removing display list commands.
  *
- *
- *  Old fashioned method :
+ *  How to add a command to a display list :
  *  - Allocate requested number of byte for the command in the display list
  *    heap with the dl_alloc() function. After this function the display list
  *    will be locked.
  *  - Fill command data in the returned memory area.
- *  - At last insert the command to the display list with the dl_insert()
+ *  - Insert the command to the display list with the dl_insert()
  *    function. This will unlock the display list.
  *
- *  New fashioned method :
- *  - Allocate requested number of byte for the command in the display list
- *    heap with the dl_alloc2() function.
- *  - Fill the heap with command data (dl_command_t struct and any additionnal
- *    data for command parameters with the dl_data() function.
- *  - At last insert the command to the display list with the dl_insert2()
- *    function.
  */
-
-/** Allocate requested number of bytes in the display list heap.
- *
- *  @param dl    Display list.
- *  @param size  Requested number of by to allocate.
- *  @param hb    Returned heap transfert block to use with dl_data() function.
- *
- *  @return Display list command identifier.
- *  @retval DL_COMID_ERROR failure.
- */
-dl_comid_t dl_alloc2(dl_list_t * dl, size_t size, dl_heap_transfert_t * hb);
 
 /** Allocate requested number of byte in the display list heap and keep
  *  display list locked until dl_insert() function call.
@@ -316,32 +296,6 @@ dl_comid_t dl_alloc2(dl_list_t * dl, size_t size, dl_heap_transfert_t * hb);
  */
 void * dl_alloc(dl_list_t * dl, size_t size);
 
-/** Fill heap allocate block.
- *
- *    The dl_data() function copy data from a source buffer to the display list
- *    heap memory. It is possible to transfert data by successive call to this
- *    function.
- *
- *  @param hb   Heap transfert block allocated by the dl_alloc() function.
- *  @param data Pointer to source data.
- *  @param size Number of byte to copy.
- *
- *  @return error-code
- *  @retval 0  success, hb fields has been filled.
- *  @retval <0 failure.
- */
-int dl_data(dl_heap_transfert_t * hb, void * data, size_t size);
-
-/** Insert the given command into the display list.
- *
- *  @param dl        Display list.
- *  @param id        Display list command allocated by dl_alloc() function.
- *  @param o_render  Opaque render callback.
- *  @param t_render  Transparent render callback.
- */
-void dl_insert2(dl_list_t * dl, dl_comid_t id,
-			   dl_command_func_t o_render, dl_command_func_t t_render);
-
 /** Insert the given command into the display list.
  *
  *  @param dl        Display list locked by dl_alloc() function.
@@ -353,7 +307,7 @@ void dl_insert2(dl_list_t * dl, dl_comid_t id,
  *  @retval  DL_COMMID_ERROR failure
  */
 dl_comid_t dl_insert(dl_list_t * dl, void * pcom,
-					 dl_command_func_t o_render, dl_command_func_t t_render);
+		     dl_command_func_t o_render, dl_command_func_t t_render);
 
 /** Clear the display list (i.e. reset the command list) */
 void dl_clear(dl_list_t * dl);

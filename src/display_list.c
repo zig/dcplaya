@@ -5,7 +5,7 @@
  * @author    benjamin gerard <ben@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.c,v 1.15 2002-12-23 00:51:04 ben Exp $
+ * @version   $Id: display_list.c,v 1.16 2002-12-26 07:12:57 ben Exp $
  */
 
 #include <malloc.h>
@@ -20,79 +20,101 @@
 
 #define DL_MAIN_TYPE  0
 #define DL_SUB_TYPE   1
-#define DL_DEAD_TYPE  2
 
-static const char * typestr[3] =  { "main", "sub", "dead" };
+#define CHECK_INIT(RETURNVAL) if (!init) { \
+   SDERROR("[%s] : display-list system not initialized.\n",__FUNCTION__); \
+   return RETURNVAL; \
+} else
+
+struct sublist_command_t {
+  dl_command_t uc;
+  dl_list_t * sublist;
+  dl_runcontext_t rc;
+};
+
+/* For debuggin' */
+static const char * typestr[2] =  { "main", "sub" };
 	
 /* List of display list. */
-static dl_lists_t dl_lists[3];
+static dl_lists_t dl_lists[2];
 
 /* List of display list mutex. */
 static spinlock_t listmutex;
 
+/* Render context for main-list. */
 static dl_runcontext_t listrc;
 
+/* Set when display list system is not available */
+static volatile int init;
 
-#define lock(l) spinlock_lock(&(l)->mutex)
-#define unlock(l) spinlock_unlock(&(l)->mutex)
+/* #define lock(l) spinlock_lock(&(l)->mutex) */
+/* #define unlock(l) spinlock_unlock(&(l)->mutex) */
 
+#define lock(l)    totto
+#define unlock(l)  werwef
 
-static void locklists(void)
+static void real_destroy(dl_list_t * l, int force);
+static void real_clear(dl_list_t * dl);
+static int real_dereference(dl_list_t * dl);
+
+static void locklists()
 {
   spinlock_lock(&listmutex);
 }
 
-static void unlocklists(void)
+static void unlocklists()
 {
   spinlock_unlock(&listmutex);
 }
 
-static void changetype(dl_list_t *l, int type)
-{
-  if (l->flags.type != type) {
-    LIST_REMOVE(l, g_list);
-    l->flags.type = type;
-    LIST_INSERT_HEAD(&dl_lists[type], l, g_list);
-  }
-}
-
 int dl_init(void)
 {
+  int err = -1;
+
   SDDEBUG("[%s]\n", __FUNCTION__);
   SDINDENT;
-
+  if (init) {
+    SDERROR("[%s] : already initialized.\n", __FUNCTION__);
+    goto error;
+  }
+  /* Init mutex. */
   spinlock_init(&listmutex);
-  LIST_INIT(&dl_lists[0]);
-  LIST_INIT(&dl_lists[1]);
-  LIST_INIT(&dl_lists[2]);
 
+  /* Init lists. */
+  LIST_INIT(&dl_lists[DL_MAIN_TYPE]);
+  LIST_INIT(&dl_lists[DL_SUB_TYPE]);
+
+  /* Init main-list render context. */
   listrc.gc_flags = 0;
   listrc.color_inherit = listrc.trans_inherit = DL_INHERIT_LOCAL;
+  init = 1;
+  err = 0;
 
+ error:
   SDUNINDENT;
-  SDDEBUG("[%s] := [0]\n", __FUNCTION__);
-
-  return 0;
+  SDDEBUG("[%s] := [%d]\n", __FUNCTION__, err);
+  return err;
 }
-
-static void real_destroy(dl_list_t * l);
 
 int dl_shutdown(void)
 {
   dl_list_t *l, *next;
   int j;
 
+  CHECK_INIT(-1);
+
   SDDEBUG("[%s]\n", __FUNCTION__);
   SDINDENT;
 
   locklists();
-  for (j=0; j<3; ++j) {
+  init = 0;
+  for (j=0; j<2; ++j) {
     SDDEBUG("Destroying [%s-lists]\n", typestr[j]);
     SDINDENT;
     for (l=LIST_FIRST(&dl_lists[j]); l; l=next) {
+      SDDEBUG("destroying [%p,%d]\n", l, l->refcount);
       next = LIST_NEXT(l,g_list);
-      SDDEBUG(" - destroying [%p,%d]\n", l, l->refcount);
-      real_destroy(l);
+      real_destroy(l,0);
     }
     SDUNINDENT;
   }
@@ -103,93 +125,121 @@ int dl_shutdown(void)
   return 0;
 }
 
+dl_list_t * dl_create(int heapsize, int active, int sub)
+{
+  dl_list_t * l;
+  int type;
+
+  CHECK_INIT(0);
+
+  l = calloc(1, sizeof(dl_list_t));
+  if (!l) {
+    SDERROR("[%s] : alloc error\n", __FUNCTION__);
+    return 0;
+  }
+  if (!heapsize) {
+    heapsize = 128;
+  }
+  l->flags.active = !!active;
+  type = l->flags.type = sub ? DL_SUB_TYPE : DL_MAIN_TYPE;
+
+  l->heap = heapsize ? malloc(heapsize) : 0;
+  l->heap_size = l->heap ? heapsize : 0;
+  l->color.a = l->color.r = l->color.g = l->color.b = 1.0f;
+  MtxIdentity(l->trans);
+  l->first_comid = DL_COMID_ERROR; /* Set this before dl_clear() */
+  real_clear(l);
+  l->refcount = 1;
+  locklists(type);
+  LIST_INSERT_HEAD(&dl_lists[type], l, g_list);
+  unlocklists(type);
+
+  return l;
+}
+
+static void real_destroy(dl_list_t * l, int force)
+{
+  if (l->refcount) {
+    SDWARNING("[%s] : [%p] refcount = [%d]\n", __FUNCTION__, l, l->refcount);
+  }
+  if (!l->refcount || force) {
+    if (l->heap) free(l->heap);
+    if (l) free(l);
+  }
+}
+
+static dl_code_e sub_render_opaque(void * pcom, dl_context_t * context);
+
+static void real_clear(dl_list_t * dl)
+{
+  dl_comid_t id;
+  dl_command_t * c;
+  char * const heap = dl->heap;
+
+  for (c=0, id=dl->first_comid; id != DL_COMID_ERROR; id = c->next_id) {
+    c = DLCOM(heap, id);
+    /* $$$ Temporary : remove sub-list reference */
+    if (c->render_opaque == sub_render_opaque) {
+      dl_list_t * subdl = ((struct sublist_command_t*)c)->sublist;
+      real_dereference(subdl);
+    }
+  }
+  dl->first_comid = dl->last_comid = DL_COMID_ERROR;
+  dl->heap_pos = 0;
+  dl->n_commands = 0;
+}
+
+void dl_destroy(dl_list_t * l)
+{
+  SDCRITICAL("[%s] : OBSOLETE !!! DO NOT USE ANY MORE PLEASE !!!");
+  BREAKPOINT(0xDEADD1D1);
+}
+
 void dl_reference(dl_list_t * dl)
 {
-  lock(dl);
+  CHECK_INIT();
+  locklists();
   ++dl->refcount;
-  unlock(dl);
+  unlocklists();
+}
+
+static int real_dereference(dl_list_t * dl)
+{
+  int ref;
+
+  ref = --dl->refcount;
+  if (ref < 0) {
+    SDWARNING("[%s] : [%p] refcount = [%d].\n",__FUNCTION__,dl, ref);
+    ref = 0;
+  }
+  if (!ref) {
+    dl->flags.active = 0;
+    LIST_REMOVE(dl, g_list);
+    real_clear(dl);
+    real_destroy(dl,0);
+  }
+  return ref;
 }
 
 int dl_dereference(dl_list_t * dl)
 {
   int ref;
 
-  lock(dl);
-  ref = --dl->refcount;
-  unlock(dl);
-  if (ref <= 0) {
-    ref = 0;
-    dl_destroy(dl);
-  }
+  locklists();
+  ref = real_dereference(dl);
+  unlocklists();
   return ref;
 }
 
-dl_list_t * dl_create(int heapsize, int active, int sub)
-{
-  dl_list_t * l;
-
-  l = calloc(1, sizeof(dl_list_t));
-  if (!l) {
-    return 0;
-  }
-  if (!heapsize) {
-    heapsize = 128;
-  }
-
-  spinlock_init(&l->mutex);
-  l->flags.active = !!active;
-  l->flags.type = sub ? DL_SUB_TYPE : DL_MAIN_TYPE;
-
-  l->heap = heapsize ? malloc(heapsize) : 0;
-  l->heap_size = l->heap ? heapsize : 0;
-  l->color.a = l->color.r = l->color.g = l->color.b = 1.0f;
-  MtxIdentity(l->trans);
-  dl_clear(l);
-  l->refcount = 1;
-
-  locklists();
-  LIST_INSERT_HEAD(&dl_lists[l->flags.type], l, g_list);
-  unlocklists();
-
-  return l;
-}
-
-static void real_destroy(dl_list_t * l)
-{
-  if (l->refcount) {
-    SDWARNING("[%s] : [%p] refcount = [%d]\n", __FUNCTION__, l, l->refcount);
-  } 
-  if (l->heap) free(l->heap);
-  if (l) free(l);
-}
-
-void dl_destroy(dl_list_t * l)
-{
-  locklists();
-  lock(l);
-  if (l->refcount) {
-    changetype(l, DL_DEAD_TYPE);
-    l->flags.active = 0;
-    SDWARNING("[%s] : [%p,%d] added to dead-lists.\n", __FUNCTION__,
-	      l, l->refcount);
-    unlock(l);
-  } else {
-    /* 	SDDEBUG("[%s] : [%p, %s-list]\n", __FUNCTION__, */
-    /* 			l, typestr[l->flags.type]); */
-    LIST_REMOVE(l, g_list);
-    real_destroy(l);
-  }
-  unlocklists();
-}
 
 int dl_set_active(dl_list_t * l, int active)
 {
   int old;
 
-  lock(l);
+  locklists();
   old = l->flags.active;
-  l->flags.active = active && (l->flags.type != DL_DEAD_TYPE);
-  unlock(l);
+  l->flags.active = !!active;
+  unlocklists();
 
   return old;
 }
@@ -199,8 +249,11 @@ int dl_set_active2(dl_list_t * l1, dl_list_t * l2, int active)
   int old;
 
   locklists();
-  old = dl_set_active(l1, active&1) | (dl_set_active(l2, active&2) << 1);
+  old = l1->flags.active | (l2->flags.active<<1);
+  l1->flags.active = active;
+  l2->flags.active = (active>>1);
   unlocklists();
+
   return old;
 }
 
@@ -214,68 +267,27 @@ static int dl_enlarge(dl_list_t * dl, int min_size)
   int size;
   char * new_heap;
 
-
   size = dl->heap_size << 1;
   if (size < min_size) {
     size = min_size;
   }
   new_heap = realloc(dl->heap, size);
-
-  /*   SDDEBUG("[%s] [%p,%d] [%p %d] -> [%p %d]\n", __FUNCTION__, */
-  /* 		  dl, min_size, dl->heap, dl->heap_size, new_heap, size); */
-
   if (new_heap) {
     dl->heap = new_heap;
     dl->heap_size = size;
     return 0;
   }
-
   return -1;
 }
 
 /* must be a power of two */
 #define MIN_ALLOC 16
 
-int dl_data(dl_heap_transfert_t * hb, void * data, size_t size)
-{
-  int err = -1;
-
-  lock(hb->dl);
-  memcpy(hb->dl->heap + hb->cur, data, size);
-  hb->cur += size;
-  unlock(hb->dl);
-
-  return err;
-}
-
-dl_comid_t dl_alloc2(dl_list_t * dl, size_t size, dl_heap_transfert_t * hb)
-{
-  dl_comid_t err;
-  int req;
-
-  lock(dl);
-  size += (-size) & (MIN_ALLOC - 1);
-  req = dl->heap_pos + size;
-  if (req > dl->heap_size &&
-      dl_enlarge(dl, req) < 0) { 
-    err = DL_COMID_ERROR;
-  } else {
-    hb->dl = dl;
-    err = hb->cur = hb->start = dl->heap_pos;
-    hb->end = hb->start + size;
-    dl->heap_pos += size;
-  }
-  unlock(dl);
-
-  return err;
-}
-
-void * dl_alloc(dl_list_t * dl, size_t size)
+static void * real_alloc(dl_list_t * dl, size_t size)
 {
   void * r;
   int req;
 
-  lock(dl);
   size += (-size) & (MIN_ALLOC - 1);
   req = dl->heap_pos + size;
   if (req > dl->heap_size &&
@@ -285,18 +297,23 @@ void * dl_alloc(dl_list_t * dl, size_t size)
     r = dl->heap + dl->heap_pos;
     dl->heap_pos += size;
   }
-  /*   SDDEBUG("[%s] : [%p] [%d] := [%p]\n", __FUNCTION__, dl, size, r); */
-
   return r;
+}
+
+void * dl_alloc(dl_list_t * dl, size_t size)
+{
+  CHECK_INIT(0);
+  locklists();
+  /* Do not unlock on ourpose. */
+  return real_alloc(dl, size);
 }
 
 void dl_clear(dl_list_t * dl)
 {
-  lock(dl);
-  dl->first_comid = dl->last_comid = DL_COMID_ERROR;
-  dl->heap_pos = 0;
-  dl->n_commands = 0;
-  unlock(dl);
+  CHECK_INIT();
+  locklists();
+  real_clear(dl);
+  unlocklists();
 }
 
 dl_comid_t dl_insert(dl_list_t * dl, void * pcom,
@@ -306,8 +323,6 @@ dl_comid_t dl_insert(dl_list_t * dl, void * pcom,
   dl_command_t * com = pcom;
   dl_comid_t lastid;
   dl_comid_t id;
-
-  /*   SDDEBUG("[%s] : [%p] [%p]\n", __FUNCTION__, dl, pcom); */
 
   if (!com) {
     return DL_COMID_ERROR;
@@ -328,19 +343,8 @@ dl_comid_t dl_insert(dl_list_t * dl, void * pcom,
   dl->last_comid = id;
   ++dl->n_commands;
  
-  unlock(dl);
-
+  unlocklists();
   return id;
-}
-
-void dl_insert2(dl_list_t * dl, dl_comid_t id,
-		dl_command_func_t o_render, dl_command_func_t t_render)
-{
-  if (id != DL_COMID_ERROR) {
-    return;
-  }
-  lock(dl);
-  dl_insert(dl, DLCOM(dl->heap,id), o_render, t_render);
 }
 
 static dl_code_e dl_render_list(dl_runcontext_t * rc, dl_context_t * parent,
@@ -365,10 +369,6 @@ static dl_code_e dl_render_list(dl_runcontext_t * rc, dl_context_t * parent,
   if (rc->gc_flags) {
     gc_push(rc->gc_flags);
   }
-
-  /*   SDDEBUG("[%s] [%p,%s,%d]\n", __FUNCTION__, */
-  /* 		  l, typestr[l->flags.type], l->n_commands); */
-  /*   SDINDENT; */
 
   switch (rc->trans_inherit) {
   case DL_INHERIT_PARENT:
@@ -404,11 +404,8 @@ static dl_code_e dl_render_list(dl_runcontext_t * rc, dl_context_t * parent,
 
   for (code = DL_COMMAND_OK; i < end_idx /*&& id != DL_COMID_ERROR*/;
        ++i, id = c->next_id) {
-
     c = DLCOM(heap, id);
-
     if (c->flags.inactive) {
-      /* 	  SDDEBUG("[%p,%d/%d], INACTVE\n", l, i, end_idx); */
       continue;
     }
 	
@@ -441,7 +438,6 @@ static dl_code_e dl_render_list(dl_runcontext_t * rc, dl_context_t * parent,
   }
 
   /*   SDUNINDENT; */
-
   if (rc->gc_flags) {
     gc_pop(rc->gc_flags);
   }
@@ -451,14 +447,14 @@ static dl_code_e dl_render_list(dl_runcontext_t * rc, dl_context_t * parent,
 
 static void dl_render(int opaque)
 {
-  dl_list_t * l;
+  dl_list_t * l, * next;
 
+  CHECK_INIT();
   locklists();
-  LIST_FOREACH(l, &dl_lists[DL_MAIN_TYPE], g_list) {
-    lock(l);
+  for (l=LIST_FIRST(&dl_lists[DL_MAIN_TYPE]); l; l=next) {
+    next = LIST_NEXT(l,g_list);
     gc_reset();
     dl_render_list(&listrc, 0, l, opaque);
-    unlock(l);
   }
   gc_reset();
   unlocklists();
@@ -518,12 +514,6 @@ dl_comid_t dl_nop_command(dl_list_t * dl)
 
 /* SUBLIST command */
 
-struct sublist_command_t {
-  dl_command_t uc;
-  dl_list_t * sublist;
-  dl_runcontext_t rc;
-};
-
 static dl_code_e sub_render(struct sublist_command_t * c,
 			    dl_context_t * context,
 			    int opaque)
@@ -531,10 +521,7 @@ static dl_code_e sub_render(struct sublist_command_t * c,
   dl_code_e code;
   dl_list_t * dl = c->sublist;
 
-  lock(dl);
   code = dl_render_list(&c->rc, context, dl, opaque);
-  unlock(dl);
-
   return code;
 }
 
@@ -556,28 +543,31 @@ dl_comid_t dl_sublist_command(dl_list_t * dl, dl_list_t * sublist,
   dl_comid_t err = DL_COMID_ERROR;
   struct sublist_command_t * c = 0;
 
+  /* $$$ Trivial circular reference test. We need to be smarter if we want
+     to avoid a system crash ! */
   if (dl == sublist) {
     SDERROR("[%s] : Nested lists.\n", __FUNCTION__);
     goto finish;
   }
 
-  lock(sublist);
-  changetype(sublist, DL_SUB_TYPE);
+  locklists();
+  if (sublist->flags.type == DL_MAIN_TYPE) {
+    /* Change mainlist to sublist type. */
+    LIST_REMOVE(sublist, g_list);
+    sublist->flags.type = DL_SUB_TYPE;
+    LIST_INSERT_HEAD(&dl_lists[DL_SUB_TYPE], sublist, g_list);
+  }
   ++sublist->refcount;
-  unlock(sublist);
 
-  c = dl_alloc(dl, sizeof(*c));
+  c = real_alloc(dl, sizeof(*c));
   if (c) {
     c->sublist = sublist;
     c->rc = *rc;
     err = dl_insert(dl, c, sub_render_opaque, sub_render_transparent);
   } else {
-    dl_dereference(sublist);
+    --sublist->refcount;
+    unlocklists();
   }
-  
  finish:
-
-  /*   SDDEBUG("[%s] : [%p,%p] := [%d]\n", __FUNCTION__, dl, sublist, err); */
-
   return err;
 }
