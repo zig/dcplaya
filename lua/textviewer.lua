@@ -4,7 +4,7 @@
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  hyper text viewer gui.
 ---
---- $Id: textviewer.lua,v 1.15 2003-03-22 06:18:19 ben Exp $
+--- $Id: textviewer.lua,v 1.16 2003-03-23 08:04:03 ben Exp $
 ---
 
 if not dolib("taggedtext") then return end
@@ -19,6 +19,7 @@ if not dolib("menu") then return end
 --- Create a taggeg text from a string that may be either a file or a text.
 --- @internal
 function text_viever_tt_build(text, mode)
+   local dl_len_scale = 1.5
    mode = mode or {}
    if type(text) ~= "string" then
       mode.dl = dl_new_list(256,0,1)
@@ -34,10 +35,10 @@ function text_viever_tt_build(text, mode)
       if type(buffer) ~= "string" then
 	 buffer = format("file %q read error.<br>", text)
       end
-      mode.dl = dl_new_list(strlen(buffer),0,1)
+      mode.dl = dl_new_list(strlen(buffer) * dl_len_scale, 0, 1, "tv_tt")
       return tt_build(buffer,mode)
    else
-      mode.dl = dl_new_list(strlen(text),0,1)
+      mode.dl = dl_new_list(strlen(text) * dl_len_scale, 0,1)
       return tt_build(text,mode)
    end
 end

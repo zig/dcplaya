@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.61 2003-03-22 18:37:49 ben Exp $
+--- $Id: song_browser.lua,v 1.62 2003-03-23 08:04:03 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song Browser
@@ -31,7 +31,6 @@ if not dolib("fileselector") then return end
 if not dolib("playlist") then return end
 if not dolib("lua_colorize") then return end
 
-
 --
 --- @name Update Application functions
 --- @{
@@ -39,7 +38,7 @@ if not dolib("lua_colorize") then return end
 --- @see dcplaya_lua_app
 --
 
---- @brief  Update CDROM status.
+--- Update CDROM status.
 --- @param sb song-browser application
 --- @param cd cdrom_change_event
 --- @internal
@@ -62,7 +61,7 @@ function song_browser_update_cdrom(sb, cd)
    sb.cdrom_stat, sb.cdrom_type, sb.cdrom_id = st, ty, id
 end
 
---- @brief  Update the loaddir status.
+--- Update the loaddir status.
 --- @internal
 --
 function song_browser_update_loaddir(sb, frametime)
@@ -84,7 +83,7 @@ function song_browser_update_loaddir(sb, frametime)
    end
 end
 
---- @brief  Update the playlist recursive directory loading.
+--- Update the playlist recursive directory loading.
 --- @internal
 --
 function song_browser_update_recloader(sb, frametime)
@@ -140,7 +139,7 @@ function song_browser_update_recloader(sb, frametime)
 end
 
 
---- @brief  Update the playlist running.
+--- Update the playlist running.
 --- @internal
 --
 function song_browser_update_playlist(sb, frametime)
@@ -199,7 +198,7 @@ function song_browser_update_playlist(sb, frametime)
    end
 end
 
---- @brief  song-browser update handler.
+--- song-browser update handler.
 ---
 ---   This is the main update handler.
 ---   It performs several update functions:
@@ -241,7 +240,7 @@ function song_browser_update(sb, frametime)
    sb.pl:update(frametime)
 end
 
---- @brief  Song-Browser application handle.
+--- Song-Browser application handle.
 --
 function song_browser_handle(sb, evt)
    -- call the standard dialog handle (manage child autoplacement)
@@ -328,7 +327,7 @@ end
 --- @{
 ---
 
---- @brief  Song-Browser fall asleep.
+--- Song-Browser fall asleep.
 --
 function song_browser_asleep(sb)
    sb = sb or song_browser
@@ -340,7 +339,7 @@ function song_browser_asleep(sb)
    end
 end
 
---- @brief  Song-Browser wakes up.
+--- Song-Browser wakes up.
 --
 function song_browser_awake(sb)
    sb = sb or song_browser
@@ -352,7 +351,7 @@ function song_browser_awake(sb)
    end
 end
 
---- @brief  Open (show) Song-Browser.
+--- Open (show) Song-Browser.
 --
 function song_browser_open(sb, which)
    sb = sb or song_browser
@@ -370,7 +369,7 @@ function song_browser_open(sb, which)
    end	  
 end
 
---- @brief  Close (hide) Song-Browser.
+--- Close (hide) Song-Browser.
 --
 function song_browser_close(sb, which)
    sb = sb or song_browser
@@ -391,7 +390,7 @@ function song_browser_close(sb, which)
    end
 end
 
---- @brief  Song-Browser shutdown.
+--- Song-Browser shutdown.
 --- @internal
 --- @warning Do not used directly. To kill a song-browser application
 ---  use song_browser::kill() or song_browser_kill().
@@ -405,7 +404,7 @@ function song_browser_shutdown(sb)
    vmu_set_text("dcplaya")
 end
 
---- @brief  Redraw Song-Browser.
+--- Redraw Song-Browser.
 --- @internal
 --
 function song_browser_draw(sb)
@@ -425,7 +424,7 @@ function song_browser_list_draw_background(fl, dl)
    b3d:draw(dl, mat_trans(0, 0, 50))
 end
 
---- @brief  Set Song-Browser color.
+--- Set Song-Browser color.
 --- @internal
 --
 function song_browser_set_color(sb, a, r, g, b)
@@ -433,28 +432,28 @@ function song_browser_set_color(sb, a, r, g, b)
    sb.pl:set_color(a,r,g,b)
 end
 
---- @brief  Confirm event handler.
+--- Confirm event handler.
 --- @internal
 --
 function song_browser_confirm(sb)
    return sb.cl:confirm(sb)
 end
 
---- @brief  Cancel event handler.
+--- Cancel event handler.
 --- @internal
 --
 function song_browser_cancel(sb)
    return sb.cl:cancel(sb)
 end
 
---- @brief  Select event handler.
+--- Select event handler.
 --- @internal
 --
 function song_browser_select(sb)
    return sb.cl:select(sb)
 end
 
---- @brief  Create contextual menu.
+--- Create contextual menu.
 --- @internal
 function song_browser_contextmenu(sb, name, fl, def, entry_path)
    if sb.menu then
@@ -481,7 +480,7 @@ end
 --- @{
 ---
 
---- @brief  Stop current music and playlist running.
+--- Stop current music and playlist running.
 --- @param  sb   song-browser application (default to song_browser)
 function song_browser_stop(sb)
    sb = sb or song_browser
@@ -491,7 +490,7 @@ function song_browser_stop(sb)
    return song_browser_playlist_stop(sb)
 end
 
---- @brief  Start a new music.
+--- Start a new music.
 --- @param  sb   song-browser application (default to song_browser)
 --- @param  filename  filename of music to play
 --- @param  track-number 0:file default
@@ -506,7 +505,7 @@ function song_browser_play(sb, filename, track, immediat)
    return r
 end
 
---- @brief  Run the playlist.
+--- Run the playlist.
 --- @param  sb    song-browser application (default to song_browser)
 --- @param  pos   running position  (default to cursor)
 --- @param  loop  loop at this position if setted 0:keep current loop
@@ -530,7 +529,7 @@ function song_browser_run(sb,pos,loop)
    end
 end
 
---- @brief  Load directory into filelist.
+--- Load directory into filelist.
 --- @param  sb      song-browser application (default to song_browser)
 --- @param  path    path of directory to load.
 --- @param  locate  name of entry to locate in this directory (optionnal)
@@ -559,7 +558,7 @@ function song_browser_loaddir(sb, path, locate)
 end
 
 
---- @brief  Clear playlist.
+--- Clear playlist.
 ---
 --- @param  sb      song-browser application (default to song_browser)
 ---
@@ -572,7 +571,7 @@ function song_browser_playlist_clear(sb)
    sbpl_clear(sb)
 end
 
---- @brief  Stop playlist running.
+--- Stop playlist running.
 ---
 --- @param  sb      song-browser application (default to song_browser)
 ---
@@ -588,7 +587,7 @@ function song_browser_playlist_stop(sb)
    return 1
 end
 
---- @brief  Load/Insert/Append playlist and run it
+--- Load/Insert/Append playlist and run it
 ---
 --- @param  sb      song-browser application (default to song_browser)
 --- @param  path    path of playlist
@@ -668,7 +667,7 @@ end
 ---
 --- 
 
---- @brief  Ask for background library loading.
+--- Ask for background library loading.
 ---
 ---    The song_browser_ask_background_load(sb) checks for background 
 ---    presence. If it exists the function returns immediatly else it
@@ -694,7 +693,7 @@ function song_browser_ask_background_load(sb)
    end
 end
 
---- @brief  Load an image on the background.
+--- Load an image on the background.
 ---
 --- @param  sb      song-browser application (default to song_browser)
 --- @param  path    path of image to load
@@ -720,7 +719,7 @@ function songbrowser_load_image(sb, filename, mode)
    return 1
 end
 
---- @brief  Display a dialog with image information.
+--- Display a dialog with image information.
 ---
 ---  @param  sb        Unused
 ---  @param  filename  Image file.
@@ -746,21 +745,19 @@ function songbrowser_info_image(sb, filename)
    gui_ask(text, "<center>close", 300, format("info on %s",leaf or ""))
 end
 
---- @brief  View a file.
+--- View a file.
 ---
 function song_browser_view_file(sb, entry_path)
    sb = sb or song_browser
    if not sb then return end
    if type(entry_path) ~= "string" then return end
    if not test("-f",entry_path) then return end
-   local type,major,minor = filetype(entry_path)
-
+   local typ,major,minor = filetype(entry_path)
    local path,leaf = get_path_and_leaf(entry_path)
-   local type,major,minor = filetype(entry_path)
    local width,preformatted,view = 550,4,1
 
    if major == "lua" then
-      if sb.no_lua_colorize then
+      if not sb.no_lua_colorize and type(luacolor_file) == "function" then
 	 gui_text_viewer(nil, { [leaf] = luacolor_file(entry_path) },
 			 width, leaf)
 	 return
@@ -793,7 +790,7 @@ function song_browser_view_file(sb, entry_path)
    end
 end
 
---- @brief  Edit a file.
+--- Edit a file.
 ---
 function song_browser_edit_file(sb, entry_path)
    sb = sb or song_browser
@@ -957,12 +954,12 @@ function sbfl_select_dir(fl, sb, action, entry_path, entry)
 		 end,
 
 	 append =  function (menu, idx)
-		    local root_menu = menu.root_menu
-		    local sb = menu.root_menu.target
-		    local entry_path = root_menu.__entry_path or ""
-		    sbpl_insertdir(sb, entry_path)
-		 end,
-
+		      local root_menu = menu.root_menu
+		      local sb = menu.root_menu.target
+		      local entry_path = root_menu.__entry_path or ""
+		      sbpl_insertdir(sb, entry_path)
+		   end,
+	 
 	 recurse = function (menu, idx)
 		      local sb = menu.root_menu.target
 		      sb.recursive_mode = not sb.recursive_mode
@@ -1232,7 +1229,7 @@ function sbpl_insertdir(sb, path)
 	 dir = dir,
 	 cur = 0,
 	 cur2 = 0,
-	--  el_filter = "DMI"  -- Default defined in update_recloader
+	 --  el_filter = "DMI"  -- Default defined in update_recloader
       }
       if not entrylist_load(dir,path,sb.el_filter) then
 	 sb.recloader = nil
@@ -1581,7 +1578,7 @@ end
 --
 
 --
---- @brief  Create all icon sprites. 
+--- Create all icon sprites. 
 --- @internal
 --
 function song_browser_create_sprites(sb)
@@ -1600,7 +1597,7 @@ function song_browser_create_sprites(sb)
    menu_create_sprite("no", "stock_button_cancel.tga", 20)
 end
 
---- @brief  Creates some sprites.
+--- Creates some sprites.
 --- @internal
 function song_browser_create_dcpsprite(sb)
    sb.sprites = {}
@@ -1671,7 +1668,7 @@ function song_browser_create_dcpsprite(sb)
 
 end
 
---- @brief  Creates box3d.
+--- Creates box3d.
 --- 
 --- @internal
 function song_browser_create_box(sb, box, style)
@@ -1720,7 +1717,7 @@ function song_browser_create_box(sb, box, style)
 end
 
 
---- @brief  Create a song-browser application.
+--- Create a song-browser application.
 ---
 --- @param  owner  Owner application (default to  desktop).
 --- @param  name   Name of application (default to "song browser").
@@ -2023,6 +2020,26 @@ function song_browser_create(owner, name)
    -- Menu
    sb.mainmenu_def = songbrowser_menucreator
 
+   -- Create options table
+   sb.options = {
+      no_lua_colorize = {
+	 type  = "bool",
+	 label = "colorize LUA source",
+	 default = nil,
+      },
+      slide_show_speed = {
+	 type  = "number",
+	 label = "slide show time %.1f",
+	 default = 10,
+      },
+   }
+   -- Copy default value to current.
+   local i,v
+   for i,v in sb.options do
+      v.current = v.default
+   end
+   
+
    song_browser_create_box(sb, box, nil)
 
    sb:set_color(0, 1, 1, 1)
@@ -2035,7 +2052,7 @@ function song_browser_create(owner, name)
 end
 
 --
---- @brief  Kill a song-browser application.
+--- Kill a song-browser application.
 ---
 ---   The song_browser_kill() function kills the given application by
 ---   calling sending the evt_shutdown_app() function. If the given
@@ -2071,7 +2088,7 @@ if song_browser then
    return 1 
 end
 
---- @brief  song-browser playlist action table.
+--- song-browser playlist action table.
 ---
 ---    For the playlist actions are not standard. Standard action does
 ---    the same :
@@ -2091,7 +2108,7 @@ end
 ---
 --: function song_browser_playlist_actions[run][major-type];
 
---- @brief  song-browser filelist actions table.
+--- song-browser filelist actions table.
 ---
 ---  Standard actions are:
 ---   - @b confirm (A)

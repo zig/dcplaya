@@ -1,38 +1,213 @@
 --- @ingroup dclpaya_lua_gui
---- @author benjamin gerard <ben@sashipa.com>
---- @date 2003/03/20
---- @brief LUA source colorizer.
+--- @file    lua_colorize.lua
+--- @author  benjamin gerard <ben@sashipa.com>
+--- @date    2003/03/20
+--- @brief   LUA source colorizer.
 ---
---- $Id: lua_colorize.lua,v 1.2 2003-03-21 05:45:37 ben Exp $
+--- $Id: lua_colorize.lua,v 1.3 2003-03-23 08:04:03 ben Exp $
 --
+
+--- @defgroup  dcplaya_lua_colorize  LUA source colorizer
+--- @ingroup   dclpaya_lua_gui
+--- @brief     creates preformatted colorized zml for lua source viewer
+---
+--- @author  benjamin gerard <ben@sashipa.com>
+--- @{
 
 --- LUA keywords.
 --: boolean lua_color_key_words[keywodr];
 lua_color_key_words = {
+   ["and"] = 1,
+   ["break"] = 1,
+   ["do"] = 1,
+   ["else"] = 1,
+   ["elseif"] = 1,
+   ["end"] = 1,
+   ["for"] = 1,
    ["function"] = 1,
    ["if"] = 1,
-   ["while"] = 1,
-   ["do"] = 1,
-   ["for"] = 1,
+   ["in"] = 1,
+   ["local"] = 1,
+   ["nil"] = 1,
+   ["not"] = 1,
+   ["or"] = 1,
    ["repeat"] = 1,
    ["return"] = 1,
-   ["local"] = 1,
-   ["break"] = 1,
-   ["if"] = 1,
    ["then"] = 1,
-   ["else"] = 1,
-   ["end"] = 1,
-   ["elseif"] = 1,
    ["until"] = 1,
+   ["while"] = 1,
 }
 
-lua_color_cod = "LemonChiffon2"
-lua_color_kwd = "LightSkyBlue2"
-lua_color_rem = "IndianRed1"
-lua_color_str = "MediumAquamarine"
-lua_color_fnm = "orange"
-lua_color_pct = "gold"
+--: color lua_color_cod; ///< color used for code (default color).
+lua_color_cod = "wheat" --"LemonChiffon2"
+--: color lua_color_kwd; ///< color used for keyword.
+lua_color_kwd = "cyan" --"LightSkyBlue2"
+--: color lua_color_rem; ///< color used for comment.
+lua_color_rem = "chocolate1" --"IndianRed1"
+--: color lua_color_str; ///< color used for string.
+lua_color_str = "LightSalmon1" --"MediumAquamarine"
+--: color lua_color_fnm; ///< color used for function name.
+lua_color_fnm = "LightSkyBlue"
+--: color lua_color_fdf; ///< color used for function definition.
+lua_color_fdf = "yellow" --"DarkSeaGreen1"
+--: color lua_color_pct; ///< color used for punctuation.
+lua_color_pct = "white"
+--: color lua_color_digit; ///< color used for number.
 lua_color_dgt = "gold1"
+
+--- Line number format string (nil for none)
+--: string lua_color_line_number;
+lua_color_line_number = "%03d "
+
+--- Maximum number of line.
+--: number lua_color_max_line;
+lua_color_max_line = 1000
+
+function luacolor_codeflow_change(flow, newmode)
+   local code = flow.code
+
+   if code.mode ~= newmode then
+      if code.text ~= "" then
+	 code.format = code.format
+	    .. code.mode .. code.text .. "</pre>"
+	 code.fctdef = (newmode == "<kwd>" and code.kwd_fct) or
+	    (code.fctdef and code.mode == "<kwd>" and newmode=="<cod>")
+
+	 code.kwd_fct = nil
+	 code.text = ""
+      end
+      code.mode = newmode
+   end
+end
+
+function luacolor_dump_codeflow(flow)
+   printf("Flow line %d-%d:",flow.mode_line,flow.line)
+   printf("Current mode: [%s]",code.mode)
+   printf("Current text: [%s]",strsub(code.text,-60))
+   print("Current format:")
+   print(strsub(code.format,-512))
+end
+
+function luacolor_codeflow (flow)
+   local i,l = 1,strlen(flow.text)
+   if l < i then
+      -- Empty code node discarded
+      return ""
+   end
+   local code = {}
+   flow.code = code
+
+   -- Setup
+   code.mode = "<cod>" -- Current mode (opening tag)
+   code.format = ""    -- Current formatted code output
+   code.text = ""      -- Current mode text
+
+   local oi = 0 -- Backstream detection
+   while i <= l do
+      local a,b,c,d,e,w
+
+      if i <= oi then
+	 printf("[luacolor_codeflow] : internal backward stream [%d %d]",
+		i,oi)
+	 luacolor_dump_codeflow(flow)
+	 return -- Generate an concate error !
+      end
+      oi = i
+
+      local newmode,best
+      -- Find word/number starting position (and get char)
+      a,b,c = strfind(flow.text, "([%w_])",i)
+
+      -- Find punctuation string [considere space has punctuation here]
+      d,e,w = strfind(flow.text, "([%p%s]+)", i)
+
+      if d then
+	 -- Get punctuation as default best.
+	 best = d
+	 -- e is the end, no nee to set it
+	 newmode = "<pct>"
+
+	 -- Check for function call here if we had an opening parenthesys.
+	 if code.mode == "<cod>" and strfind(w,"[%s]*[(]") then
+	    code.mode = code.fctdef and "<fdf>" or "<fnm>"
+	 end
+      end
+
+      if a then
+	 -- have some wordz too !
+	 if not best or a < best then
+	    -- Word was found before punctuation, it is our winner :P
+	    best = a
+	    -- Now we should determine what kind of word it is.
+
+	    if strfind(c,"%d") then
+	       -- It is a number 
+	       newmode = "<dgt>"
+	       a,e = strfind(flow.text, "%d+[.]?%d*[Ee]?%-?%d*", a)
+	    else
+	       -- It is a word, get it and trailing space too !
+	       a,e,w,d = strfind(flow.text, "([%w_]*)(%s*)", a)
+
+	       if lua_color_key_words[w] then
+		  newmode = "<kwd>"
+		  code.kwd_fct = w == "function"
+	       else
+		  newmode = "<cod>"
+		  code.kwd_fct = code.kwd_fct and code.kwd_fct + 1
+	       end
+
+	    end
+	 end
+      end
+
+
+      -- Well here we should have a new mode, indeed it is possible that
+      -- we have none. This could happen if we make an error in the regexpr
+      -- or more likely on unexpected characters. In that case we will
+      -- simply advance in the current mode if there is none, we crates
+      -- a default <cod> node.
+      if not newmode then
+	 break
+      end
+      
+      -- Append skipped text if any to previous node
+      if best > i then
+	 print("APPEND TO " .. code.mode .. " BEFORE " .. newmode)
+	 code.text = code.text .. strsub(flow.text, i, best-1)
+      end
+      
+      -- Change to new mode
+      luacolor_codeflow_change(flow, newmode)
+      
+      -- Append this mode text
+      if not best or not e then
+	 print("HAVE no best or no end",best,e)
+	 luacolor_dump_codeflow(flow)
+      end
+
+      code.text = code.text .. strsub(flow.text,best,e)
+      -- Finally advance text postion
+      i = e + 1
+   end
+   
+   --- Going out, needs to close current node, but we need to add
+   if i <= l then
+      code.text = code.text .. strsub(flow.text,i)
+   end
+   luacolor_codeflow_change(flow, "")
+
+   if code.text ~= "" then
+      print("Text remaining in code text buffer !!");
+      luacolor_dump_codeflow(flow)
+   end
+
+   --- Mr. Clean ;)
+   local r = code.format
+   flow.code = nil
+   code = nil
+
+   return r
+end
 
 lua_color_modes = {
    { -- 1 : startup
@@ -42,87 +217,26 @@ lua_color_modes = {
 	 .. '<macro macro-name="rem" macro-cmd="pre" color="$lua_color_rem">'
 	 .. '<macro macro-name="str" macro-cmd="pre" color="$lua_color_str">'
 	 .. '<macro macro-name="fnm" macro-cmd="pre" color="$lua_color_fnm">'
+	 .. '<macro macro-name="fdf" macro-cmd="pre" color="$lua_color_fdf">'
 	 .. '<macro macro-name="pct" macro-cmd="pre" color="$lua_color_pct">'
 	 .. '<macro macro-name="dgt" macro-cmd="pre" color="$lua_color_dgt">'
 	 .. '<font id="1" size="16">'
-	 .. '<pre id="1" tabsize="8" tabchar=" "></pre>'
+	 .. '<pre id="1" tabsize="8" tabchar=" "></pre>',
+      stop  = "",
    },
    { -- 2 : finish
       start = '<font id="0" size="20" color="text_color"><wrap>',
+      stop  = ""
    },
    { -- 3 : code
-      start = "<cod>",
-      stop = '</pre>',
-      flow_ctrl = function (s)
-		     if not s then return "" end
- 		     if strfind(s,"^<cod>.*") then
- 			s = strsub(s,6)
- 		     end
-		     local r = "<cod>"
-		     local i,l = 1,strlen(s)
-
-		     local oi = 0
-
-		     while i <= l do
-			local a,b,c
-
-			if i <= oi then
-			   printf("flow %d %d",i,oi)
-			   break
-			end
-			oi = i
-
-			a,b,c = strfind(s,"([%w_])",i)
-			if not a then
-			   -- no more words nor number !
-			   break
-			end
-
-			if c == "" then
-			   print("NULL")
-			   break
-			end
-
---			r = r .. gsub(strsub(s,i,a-1),"(%p+)","<pct>%1")
-			if a > i then
-			   r = r .. "</pre><cod>" .. strsub(s,i,a-1)
-			end
-
-			if strfind(c,"%d") then
-			   local number = "%-?%d+[.]?%d*[Ee]?%-?%d*"
-			   a,b = strfind(s,number, a)
-			   r = r .. gsub(strsub(s,a,b),"(.*)","</pre><dgt>%1")
-			   i = b + 1
-			else
-			   a,b,c,d = strfind(s,"([%w_]*)(%s*)", a)
-			   if not a then
-			      print ("ERROR")
-			      return ""
-			   end
-			   if lua_color_key_words[c] then
-			      r = r .. '</pre><kwd>'.. c .. d
-			   else
-			      r = r .. '</pre><cod>' .. c .. d
-			   end
-			   
-			   i = b + 1
-			end
-		     end
-
-		     if i <= l then
-			r = r .. "</pre><cod>" .. strsub(s,i)
-		     end
-
-		     return r
-		  end,
-      no_empty = 1
+      flow_ctrl = luacolor_codeflow,
    },
    { -- 4 : comment
       start = "<rem>--",
       stop = "</pre>",
       add = 2
    },
-   { -- 5 : [[
+   { -- 5 : [ [
       start = "<str>[[",
       stop = "]]</pre>",
       add = 2
@@ -139,33 +253,48 @@ lua_color_modes = {
    },
 }
 
+--
+--- Change lua colorizer machine state.
+--- @internal
+--
 function luacolor_mode(flow, mode)
+   --- Did we change mode ?
    if mode ~= flow.mode then
+      --- If we have an old mode ?
       if flow.mode then
-	 if lua_color_modes[flow.mode].no_empty and
-	    flow.text == lua_color_modes[flow.mode].start then
-	    -- nothing to do
+	 -- There is an old mode !
+	 -- Is there a special sub-parser for this type ?
+	 if type(lua_color_modes[flow.mode].flow_ctrl) == "function" then
+	    -- Yes, there is ! Append the result to formatted output.
+	    flow.format = flow.format .. 
+	       lua_color_modes[flow.mode].flow_ctrl(flow)
 	 else
-	    if type(lua_color_modes[flow.mode].flow_ctrl) == "function" then
-	       flow.format = flow.format .. 
-		  lua_color_modes[flow.mode].flow_ctrl(flow.text)
-	    else
-	       flow.format = flow.format .. flow.text
-	    end
-	    if lua_color_modes[flow.mode].stop then
-	       flow.format = flow.format .. lua_color_modes[flow.mode].stop
-	    end
+	    flow.format = flow.format
+	       .. lua_color_modes[flow.mode].start
+	       .. flow.text
+	       .. lua_color_modes[flow.mode].stop
 	 end
+	 flow.text = ""
       end
-      flow.text = (mode and lua_color_modes[mode].start) or ""
+      flow.mode_line = flow.line+1
+      -- Discard text.
+      flow.text = ""
+      -- Set new mode
       flow.mode = mode
    end
 end
 
+--
+--- Convert a lua source file into colored zml.
+---
+---  @param  fname  Path to lua file
+---  @return zml string
+---  @retval nil on error
+--
 function luacolor_file(fname)
    local file = openfile(fname,"rt")
    if not file then return end
-   local flow = { format = "", text = "" }
+   local flow = { format = "", text = "", code = nil, line = 0 }
 
    local brk
    local line
@@ -174,16 +303,33 @@ function luacolor_file(fname)
    luacolor_mode(flow,1)
    luacolor_mode(flow,3)
 
+   -- $$$ Always have a maximum number of line ! 
+   local linemax = lua_color_max_line or 5000
+
    line = read(file)
    while line do
-      line = line .. "\n"
+      --- $$$$ mega hack since kos still bugged with printing '%' char !
+      --- Strange becoz I have already removed this bug and it come again !!?
+--      line = gsub(line,"[%]","%%")
+
+      flow.line = flow.line + 1
+      if linemax and flow.line > linemax then
+	 printf("[luacolor_file] maximum line number exceeded (%d > %d)",
+		flow.line,linemax)
+	 return
+      end
+
+      line = (lua_color_line_number and
+	      format(lua_color_line_number,flow.line) or "") .. line .. "\n"
       local start,len = 1, strlen(line)
       local os = 0
 
+      
       while start <= len do
 
 	 if os >= start then
-	    printf("UNDERFLOW %d %d", os,start)
+	    printf("[luacolor_file] : internal error : backward stream %d %d",
+		   os, start)
 	    return
 	 end
 	 os = start
@@ -238,15 +384,16 @@ function luacolor_file(fname)
 	    flow.text = flow.text .. strsub(line, start, bs-1)
 	    luacolor_mode(flow, 3)
 	    start = be+1
+	    brk = nil
 	 end
       end
       line = read(file)
-      
    end
-
    -- finish
    luacolor_mode(flow,2)
    luacolor_mode(flow,nil)
+
+   printf("[luacolor_file] [%s] process [%d lines]",fname, flow.line)
    return flow.format
 end
 

@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  sgml text and gui element formater.
 ---
---- $Id: taggedtext.lua,v 1.28 2003-03-21 03:35:55 ben Exp $
+--- $Id: taggedtext.lua,v 1.29 2003-03-23 08:04:03 ben Exp $
 ---
 
 if not dolib("dirfunc") then return end
@@ -802,7 +802,7 @@ function tt_build(text, mode)
       end
 
 
-      -- Get next word
+      -- Get next word ( or line in preformatted mode )
       local t = strsub(text, start, e2)
 
       local tag
@@ -810,13 +810,17 @@ function tt_build(text, mode)
       if start < e2 then
 	 if mode.preformatted then
 	    e3, e4 = strfind(t, "</pre>")
+	    if e3 then
+	       e3 = e3 + start - 1
+	       e4 = e4 + start - 1
+	    end
 	 else
 	    e3, e4 = strfind(t, "<")
+	    if e3 then
+	       e3, e4 = strfind(text, "%b<>", start)
+	    end
 	 end
-	 if e3 then
-	    e3, e4 = strfind(text, "%b<>", start)
-	    
-	 end
+
 	 if e3 then
 	    -- Get text
 	    e2 = e3-1
@@ -825,6 +829,11 @@ function tt_build(text, mode)
 	    tag = strsub(text, e3+1, e4-1)
 	 end
       end
+
+      if tag and tag == "p" then
+	 print ("p in " .. ((mode.preformatted and "PRE") or "/PRE") )
+      end
+
 
       -- Create text block
       if start <= e2 then
