@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.18 2003-03-12 22:02:00 ben Exp $
+--- $Id: control_center.lua,v 1.19 2003-03-13 23:12:55 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_cc_app Control center application
@@ -149,7 +149,7 @@ function vmu_save_as(vmu)
    if choice then
       return vmu_save_confirm(choice)
    end
-end   
+end
 
 function vmu_save(vmu, alternate)
    vmu = (type(vmu) == "string" and vmu) or vmu_file()

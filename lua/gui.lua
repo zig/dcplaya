@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.53 2003-03-13 04:21:47 zigziggy Exp $
+--- $Id: gui.lua,v 1.54 2003-03-13 23:12:55 ben Exp $
 ---
 
 --
@@ -797,7 +797,7 @@ function gui_input_display_text(app)
 
    dl_clear(app.input_dl)
 -- $$$ ben : clipping fucks the measure text up !
---   dl_set_clipping(app.input_dl,box[1],box[2],box[3],box[4])
+   dl_set_clipping(app.input_dl,box[1],box[2],box[3],box[4])
    dl_draw_text(app.input_dl, x, y, z, gui_text_color, app.input)
 
    if not app.owner or gui_is_focus(app) then

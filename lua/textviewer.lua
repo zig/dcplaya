@@ -2,8 +2,8 @@
 --- @file   textviewer.lua
 --- @date   2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
---- @brief  hyper text viwer gui
---- $Id: textviewer.lua,v 1.11 2003-03-11 15:07:58 zigziggy Exp $
+--- @brief  hyper text viwer gui.
+--- $Id: textviewer.lua,v 1.12 2003-03-13 23:12:55 ben Exp $
 ---
 
 if not dolib("taggedtext") then return end
