@@ -2,9 +2,9 @@
  * @file    screen_shot.c
  * @author  benjamin gerard <ben@sashipa.com>
  * @date    2002/09/14
- * @brief   take a TGA screen shot.
+ * @brief   Takes TGA screen shot.
  * 
- * $Id: screen_shot.c,v 1.1 2002-09-14 09:46:22 ben Exp $
+ * $Id: screen_shot.c,v 1.2 2002-09-14 15:17:01 ben Exp $
  */
 
 #include <kos/fs.h>
@@ -14,6 +14,8 @@
 
 #include "config.h"
 #include "sysdebug.h"
+
+const char screen_shot_id[] = "dcplaya " VERSION_STR " - " DREAMMP3_URL;
 
 /* TGA pixel format */
 typedef enum {
@@ -28,19 +30,20 @@ typedef enum {
 
 typedef struct {
   char idfield_size[1];  ///< id field lenght in byte
-  char colormap_type[1]; ///< 0:no color table, 1:color table, >=128:user defined
+  char colormap_type[1]; ///< 0:no color table, 1:color table, >=128:user def.
   char type[1];          ///< pixel encoding format
 
   char colormap_org[2];  ///< first color used in colormap
   char colormap_n[2];    ///< number of colormap entries
   char colormap_bit[1];  ///< number of bit per colormap entries [15,16,24,32]
 
-  char xorg[2];          ///< horizontal coordinate of lower left corner of image
-  char yorg[2];          ///< vertical coordinate of lower left corner of image
+  char xorg[2];          ///< horizontal coord of lower left corner of image
+  char yorg[2];          ///< vertical coord of lower left corner of image
   char w[2];             ///< width of image in pixel
   char h[2];             ///< height of image in pixel
   char bpp[1];           ///< bit per pixel
-  char descriptor[1];    ///< image descriptor bits [76:clear|5:bottom/top|4:left/right|3210:alpha bits]
+  char descriptor[1];    ///< img desc bits [76:clr|5:bot/top|4:l/r|3-0:alpha]
+
 } TGAfileHeader;
 
 static void Word(uint8 *a, uint16 v)
@@ -60,10 +63,9 @@ static void Dword(uint8 *a, uint32 v)
 #define TGA16(F, N) Word(tga->F,N)
 #define TGA32(F, N) Dword(tga->F, N)
 
-static void set_tga(TGAfileHeader * tga, int w, int h)
-
+static void set_tga(TGAfileHeader * tga, int w, int h, int idsize)
 {
-  TGA8(idfield_size, 0);
+  TGA8(idfield_size, idsize);
   TGA8(colormap_type,0);
   TGA8(type, RGB);
 
@@ -80,8 +82,6 @@ static void set_tga(TGAfileHeader * tga, int w, int h)
   TGA8(descriptor, (1<<5));
   
 };
-
-
 
 static int rgb565_1555(int v)
 {
@@ -110,6 +110,7 @@ static void swap16(uint16 *d, uint16 *b, int n)
     *d++ = rgb565_1555(*b++);
   }
 } 
+
 
 /* This is a 16 bit TGA header 
  0000 0002 0000 0000 0000 0000 0280 01e0
@@ -140,15 +141,17 @@ int screen_shot(const char *basename)
     goto error;
   }
 
+  /* Alloc temporary screen buffer */
   vcpy = (uint8 *)malloc(w*h*2);
   if (!vcpy) {
     SDERROR("Alloc error.\n");
     goto error;
   }
+  /* Copy VRAM to temporary with conversion. */
   swap16((uint16 *)vcpy, (uint16 *)vram, w*h);
   
-  set_tga(&tga, w, h);
-
+  /* Build and save TGA header. */
+  set_tga(&tga, w, h, sizeof(screen_shot_id));
   SDDEBUG("Write TGA header [%dx%dx16] [1555] (%d bytes)\n",
 	  w, h, sizeof(tga));
   if (fs_write(fd, &tga, sizeof(tga)) != sizeof(tga)) {
@@ -156,6 +159,16 @@ int screen_shot(const char *basename)
     goto error;
   }
 
+  /* Save identifier string. */
+  SDDEBUG("Write TGA identifier string [%s] (%d bytes)\n",
+	  screen_shot_id, sizeof(screen_shot_id));
+  if (fs_write(fd, screen_shot_id, sizeof(screen_shot_id)) !=
+      sizeof(screen_shot_id)) {
+    SDERROR("Write error.\n");
+    goto error;
+  }
+
+  /* Save pixels. */
   SDDEBUG("Write Pixel data.\n", w, h, vcpy);
   if (fs_write(fd, vcpy, w*h*2) != w*h*2) {
     SDERROR("Write error.\n");
@@ -176,6 +189,3 @@ int screen_shot(const char *basename)
 
   return err;
 }
-
-
-
