@@ -2,11 +2,11 @@
 
 #include "config.h"
 
-
 #include "gp.h"
 #include "option.h"
 #include "controler.h"
 #include "file_wrapper.h"
+#include "driver_list.h"
 
 #define OPTION_LATCH_FRAMES_MAX 20
 #define OPTION_LATCH_FRAMES_MIN 6
@@ -36,15 +36,16 @@ static int track_offset;
 static int volume;
 static int filter;
 static int shuffle;
-static int visual;
+static vis_driver_t * visual;
 static int lcd_visual;
 
-static int joyfx_onoff, joyfx_strength, joyfx_time, joyfx_lr;
+/* static int joyfx_onoff, joyfx_strength, joyfx_time, joyfx_lr; */
 
 char option_str[16];
 
 extern controler_state_t controler68;
 extern unsigned int sqrt68(unsigned int);
+extern int playa_volume(int);
 
 void lockapp(void);
 void unlockapp(void);
@@ -58,10 +59,10 @@ int option_setup(void)
   volume = playa_volume(-1);
   filter = 1;
   shuffle = 0;
-  visual=1;
+  visual = (vis_driver_t *) vis_drivers.drivers;
   lcd_visual = OPTION_LCD_VISUAL_FFT_FULL;
   track_offset = 0;
-  joyfx_onoff = -1;
+/*   joyfx_onoff = -1; */
   return 0;
 }
 
@@ -80,7 +81,7 @@ int option_shuffle()
   return shuffle;
 }
 
-int option_visual()
+vis_driver_t * option_visual()
 {
   return visual;
 }
@@ -98,18 +99,18 @@ static int get_latch_frames()
   return latch_frames;
 }
 
-static void joyfx_in()
-{
-  if (joyfx_onoff == -1) {
-  }
-}
+/* static void joyfx_in() */
+/* { */
+/*   if (joyfx_onoff == -1) { */
+/*   } */
+/* } */
 
-static void joyfx_out()
-{
-  if (joyfx_onoff != -1) {
-  }
-  joyfx_onoff = -1;
-}
+/* static void joyfx_out() */
+/* { */
+/*   if (joyfx_onoff != -1) { */
+/*   } */
+/*   joyfx_onoff = -1; */
+/* } */
 
 void option_render(unsigned int elapsed_frame)
 {
@@ -217,9 +218,46 @@ void option_render(unsigned int elapsed_frame)
 
     case OPTION_VISUAL:
     {
-      visual = (visual + hmove) & 1;
-      strcpy(option_str,  !visual ? "Visual OFF" : "Visual ON");
+      vis_driver_t * save = visual;
+      char tmp [256];
+      
+      
+      if (hmove > 0) {
+	/* Find next visual */
+	if (!visual) {
+	  visual = (vis_driver_t *)vis_drivers.drivers;
+	} else {
+	  visual = (vis_driver_t *) visual->common.nxt;
+	}
+      } else if (hmove < 0) {
+	/* Find previous visual */
+	any_driver_t *p, *v;
+
+	for (p=0, v=vis_drivers.drivers;
+	     v && v != &visual->common;
+	     p=v, v=v->nxt)
+	  ;
+	visual = (vis_driver_t *)p;
+      }
+
+      /* Do plugin stop/start op */
+      if (visual != save) {
+	/* Only if visual changes */
+	if (save) {
+	  /* Stop previous ... if any */
+	  save->stop();
+	}
+	if (visual) {
+	  /* Start new one ... if any */
+	  visual->start();
+	}
+      }
+
+      sprintf(tmp,"Visual %s", !visual ? "OFF" : visual->common.name);
+      option_str[sizeof(option_str)-1] = 0;
+      strcpy(option_str, tmp);
       y += draw_poly_layer_text (y, z, option_str);
+
     } break;
 
     case OPTION_LCD_VISUAL:

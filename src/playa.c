@@ -654,6 +654,16 @@ int playa_start(const char *fn, int immediat) {
   return e;
 }
 
+int playa_loaddisk(const char *fn, int immediat)
+{
+  /* No filename : stop, no error */
+  if (!fn) {
+    playa_stop(immediat);
+    return 0;
+  }
+  return playa_start(fn,immediat);
+}
+
 
 int playa_volume(int volume) {
   int old = playavolume;

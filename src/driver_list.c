@@ -53,6 +53,9 @@ int driver_list_register(driver_list_t *dl, any_driver_t * driver)
 {
   const any_driver_t * d;
 
+  if (!dl || !driver) {
+    return -1;
+  }
   d = driver_list_search(dl, driver->name);
   if (d) {
     return -1;
@@ -68,6 +71,30 @@ int driver_list_register(driver_list_t *dl, any_driver_t * driver)
   }
 
   return 0;
+}
+
+static driver_list_t * search_driver_list(any_driver_t *driver)
+{
+  if (!driver) {
+    return 0;
+  }
+  switch(driver->type) {
+  case OBJ_DRIVER:
+    return &obj_drivers;
+  case VIS_DRIVER:
+    return &vis_drivers;
+  case INP_DRIVER:
+    return &inp_drivers;
+  case EXE_DRIVER:
+    return &exe_drivers;
+  default:
+    return 0;
+  }
+}
+
+int driver_register(any_driver_t * driver)
+{
+  return driver_list_register(search_driver_list(driver), driver); 
 }
 
 /** Remove a driver from the driver list */
