@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.33 2003-03-09 02:00:36 zigziggy Exp $
+--- $Id: textlist.lua,v 1.34 2003-03-09 11:14:46 ben Exp $
 ---
 
 -- Unload the library
@@ -111,6 +111,24 @@ function textlist_create(flparm)
 	 if	h < fl.minmax[2] then h = fl.minmax[2]
 	 elseif	h > fl.minmax[4] then h = fl.minmax[4] end
       end
+
+      if not fl.no_keep_in_screen then
+	 -- $$$ ben : screen size should be in variable on day !
+	 local sx1,sy1,sx2,sy2 = 15, 15, 640-15, 480-15
+	 
+	 -- Force bottom/right part to be on screen.
+	 if x + w > sx2 then x = sx2 - w end 
+	 if y + h > sy2 then y = sy2 - w end
+
+	 -- Force top/left part to be on screen.
+	 if x < sx1 then x = sx1 end 
+	 if y < sy1 then y = sy1 end 
+
+	 -- $$$ ben : No test for box larger than screen. May be should it be ?
+	 -- Anyway I have added a minmax box that should avoid it by default
+	 -- but it could be override by user provided minmax box.
+      end
+
       fl.bo2[1] = w
       fl.bo2[2] = h
       fl.bo2[3] = z
@@ -317,6 +335,11 @@ function textlist_create(flparm)
       -- Control
       fl.pos		= 0
       -- 	  fl.top		= 0
+
+      -- $$$ Avoid going outside screen
+      if not fl.minmax then
+	 fl.minmax = {0,0,600,400}
+      end
 
       -- Display lists :
 
