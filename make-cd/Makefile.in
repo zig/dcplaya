@@ -3,7 +3,7 @@
 #
 # by Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.1 2003-07-30 09:37:59 benjihan Exp $
+# $Id: Makefile.in,v 1.2 2003-07-30 11:07:56 benjihan Exp $
 #
 
 CDRECORD	= @CDRECORD@ dev=$(cdr) $(CDRECORD_FLAGS)
@@ -57,7 +57,12 @@ all help:
 
 .PHONY: $(ALL_MISSING)
 $(ALL_MISSING):
-	@echo "You need to install $(patsubst %-is-missing,%,$@) for this."
+	@echo "You *MUST* install $(patsubst %-is-missing,%,$@) for this."
+	@test "1" = "2"
+
+.PHONY: invalid-configuration
+invalid-configuration:
+	@echo "You *MUST* configure dcplaya with --enable-release and without --enable-master to make a valid dcplaya CD."
 	@test "1" = "2"
 
 .PHONY: all-burn
@@ -65,7 +70,7 @@ all-burn: 1ST_READ.BIN IP.BIN burn
 	@echo "Well done, you have successfully burned a dcplaya CD !!!"
 
 .PHONY: burn
-burn: prepare-all burn-audio burn-data
+burn: burn-audio burn-data
 
 # ----------------------------------------------------------------------
 # CD distrib files
@@ -107,6 +112,9 @@ data.raw: tmp.iso IP.BIN
 
 .PHONY: burn-data
 
+ifneq '@MASTER@@RELEASE@' '01'
+burn-audio burn-data: invalid-configuration
+else
 ifeq 'x@CRECORD@' 'xecho'
 burn-audio burn-data: cdrecord-is-missing
 else
@@ -125,6 +133,7 @@ burn-data: .cdrdev data.raw
 	$(CDRECORD) -xa1 data.raw \
 	&& rm -f burn-audio
 
+endif
 endif
 
 IP.txt: IP.m4 ../VERSION
