@@ -4,7 +4,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.18 2002-12-17 23:34:32 zigziggy Exp $
+ * @version   $Id: console.c,v 1.19 2003-01-21 05:44:06 ben Exp $
  */
 
 
@@ -223,8 +223,9 @@ void csl_window_transparent_render(csl_console_t * c)
   int y;
   char s[128]; // warning : console with 128 cars width max
   char * p;
-  float oldsize, oldaspect;
-  int oldfont, oldescape;
+/*   float oldsize, oldaspect; */
+/*   int oldfont; */
+  int oldescape;
   
 
   //spinlock_lock(&c->mutex);

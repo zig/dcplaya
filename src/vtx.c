@@ -4,7 +4,7 @@
  *  @date    2003/01/19
  *  @brief   Vertex functions.
  *
- * $Id: vtx.c,v 1.2 2003-01-21 02:38:16 ben Exp $
+ * $Id: vtx.c,v 1.3 2003-01-21 05:44:06 ben Exp $
  */
 
 #include "math_float.h"
@@ -168,6 +168,7 @@ vtx_t * vtx_normalize2(vtx_t * r, const vtx_t * a)
   const float d = vtx_inorm(a);
   if (d == -1) {
     *r = *a;
+    max_to_1(r);
     return r;
   } else {
     return vtx_scale3(r, a, d);
@@ -211,6 +212,7 @@ vtx_t * vtx_sin2(vtx_t * r, const vtx_t * a)
   r->x = Sin(a->x);
   r->y = Sin(a->y);
   r->z = Sin(a->z);
+  r->w = 1;
   return r;
 }
 
@@ -227,6 +229,7 @@ vtx_t * vtx_cos2(vtx_t * r, const vtx_t * a)
   r->x = Cos(a->x);
   r->y = Cos(a->y);
   r->z = Cos(a->z);
+  r->w = 1;
   return r;
 }
 

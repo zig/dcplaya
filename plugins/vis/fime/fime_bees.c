@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include "config.h"
 #include "math_float.h"
 
 #include "fime_bees.h"
@@ -37,7 +38,7 @@ static fime_bee_t * bees;
 
 static int init_bo_obj(void)
 {
-  const float s = 0.5, sx = s*0.35, sy = s*0.2;
+  const float s = 1, sx = s*0.35, sy = s*0.2;
   int i;
 
   for (i=0;i<4;++i) {
@@ -97,30 +98,60 @@ static void bee_update(matrix_t leader_mtx, matrix_t mtx, fime_bee_t * bee)
   vtx_t tgt;
   vtx_t mov;
   float d;
+  char * dump=0;
 
   bee->prev_pos = bee->pos;
 
   leader_pos = *(vtx_t *)leader_mtx[3];
   MtxVectMult(&tgt.x, &bee->rel_pos.x, leader_mtx);
 
+#if 1
   vtx_sub3(&mov, &tgt, &bee->pos);
   d = vtx_norm(&mov);
   if (d < MF_EPSYLON) {
-    SDDEBUG("NO MOVE\n");
+    printf("Heho : %f [%f %f %f]\n", d, mov.x, mov.y, mov.z);
+    dump = "NO MOVE";
     bee->spd = 0;
+    d = 0;
   } else {
     if (d <= bee->spd) {
       bee->spd = d;
+      //      dump = "TOO FAST";
     } else {
       const float f = 0.2f;
+      const float maxspd = 0.013f;
       bee->spd = d * f + bee->spd * (1.0-f);
-      if (bee->spd > 0.1) {
-	//	printf("clip : %f %f\n",bee->spd, d);
-	bee->spd = 0.1;
+      if (bee->spd > maxspd) {
+	bee->spd = maxspd;
       }
       vtx_scale(&mov, bee->spd/d);
     }
     vtx_add(&bee->pos, &mov);
+  }
+#else
+  vtx_blend(&bee->pos,&tgt, 0.9);
+  
+#endif
+/*   if (!dump && bee == bees) dump = "Leader"; */
+
+  if (dump) {
+    printf("dump [%p,'%s']\n"
+	   " lea:[ %f %f %f ]\n"
+	   " tgt:[ %f %f %f ]\n"
+	   " mov:[ %f %f %f ] := %f\n"
+	   " dir:[ %f %f %f ]\n"
+	   " pos:[ %f %f %f ] := %f\n"
+	   " rel:[ %f %f %f ]\n",
+	   bee,dump,
+	   leader_pos.x, leader_pos.y, leader_pos.z,
+	   tgt.x, tgt.y, tgt.z,
+	   mov.x, mov.y, mov.z, d,
+	   (leader_pos.x-bee->pos.x),(leader_pos.y-bee->pos.y),
+	   (leader_pos.z-bee->pos.z),
+	   bee->pos.x, bee->pos.y, bee->pos.z, bee->spd,
+	   bee->rel_pos.x, bee->rel_pos.y, bee->rel_pos.z
+	   );
+	   
   }
 
   MtxLookAt(mtx,
@@ -128,6 +159,8 @@ static void bee_update(matrix_t leader_mtx, matrix_t mtx, fime_bee_t * bee)
 	    (leader_pos.y - bee->pos.y),
 	    (leader_pos.z - bee->pos.z));
   MtxTranspose3x3(mtx);
+  MtxScale(mtx,0.2);
+/*   MtxIdentity(mtx); */
   MtxTranslate(mtx, bee->pos.x, bee->pos.y, bee->pos.z);
 }
 
@@ -184,24 +217,32 @@ static fime_bee_t * create_bee(int n)
   int n_leader = 0;
   float z;
 
+  SDDEBUG("[fime] : create_bee (%d) -> %d bees\n",n,m);
+
   bees = (fime_bee_t *) malloc(m * sizeof(*bees));
   if (!bees) {
     return 0;
   }
   memset(bees, 0, m * sizeof(*bees));
- 
 
   leader = 0;
   n_leader = 0;
   for (i=0, z=0, bee=bees; i<n; ++i, z-=sep) {
     int j;
-    float a,s=(2*MF_PI) / (i+1);
+    float a,s=(2*MF_PI) / (float)(i+1);
     float f = (float)i/(float)n;
     float sx = rmin * (1.0-f) + rmax * f;
     float sy = sx;
     fime_bee_t *first_buddy = bee;
    
     for (j=0, a=0; j<=i; ++j, ++bee, a+=s) {
+      if (bee - bees >= m) {
+	SDERROR("[fime] : create_bee too many bees (INTERNAL)\n");
+	free(bees);
+	BREAKPOINT(0xdead0bee);
+	return 0;
+      }
+
       bee->pos.x = Cos(a) * sx;
       bee->pos.y = Sin(a) * sy;
       bee->pos.z = z;
@@ -221,12 +262,21 @@ static fime_bee_t * create_bee(int n)
     n_leader = bee-leader;
   }
 
+  if (bee - bees != m) {
+    SDERROR("[fime] : bad number of bees [%d != %d]\n",bee-bees,m);
+    free(bees);
+    BREAKPOINT(0xdead0bee);
+    return 0;
+  }
+
   /* Compute relative position. */
+  bees->pos.x = bees->pos.y = bees->pos.z = 0;
   bees->rel_pos = bees->pos;
   for (i=1; i<m; ++i) {
-    vtx_t tmp = bee->leader->pos;
-/*     tmp.x = tmp.y = 0; */
+    vtx_t tmp;
     bee=bees+i;
+    tmp = bee->leader->pos;
+/*     tmp.x = tmp.y = 0; */
     vtx_sub3(&bee->rel_pos, &bee->pos, &tmp);
   }
 
@@ -248,6 +298,7 @@ static fime_bee_t * create_bee(int n)
 int fime_bees_init(void)
 {
   int err = 0;
+  SDDEBUG("[fime] bees init...\n");
 
   bee_obj = 0;
   if (0) {
@@ -263,7 +314,7 @@ int fime_bees_init(void)
     }
   }
 
-  bees = create_bee(3);
+  bees = create_bee(6);
   texid = texture_get("fime_bordertile");
   err |= !bees || !cur_obj || (texid<0);
 
@@ -292,26 +343,21 @@ int fime_bees_update(void)
   static float ax;
   static float ay;
   matrix_t tmp;
-  float x,y,z = 5;
+  vtx_t pos, pos_scale = {1.4, 1.0, 2.0, 1};
 
   if (!bees) {
     return -1;
   }
 
   MtxIdentity(tmp);
-
   MtxRotateX(tmp, ax += -0.021f);
   MtxRotateY(tmp, ay += 0.033f);
-
-  x = tmp[0][0] * 1.4;
-  y = tmp[1][0] * 1.0;
-  z = tmp[2][0] * 2.0;
+  vtx_mul3(&pos, (vtx_t *)tmp[2], &pos_scale);
+  pos.z += 4;
 
   MtxIdentity(tmp);
   MtxScale(tmp,0.3f);
-  tmp[3][0] = x;
-  tmp[3][1] = y;
-  tmp[3][2] = z + 5;
+  *(vtx_t *)tmp[3] = pos;
 
   bee_update_tree(tmp, bees);
 
@@ -322,7 +368,8 @@ static int bee_render(fime_bee_t * bee,
 		      viewport_t *vp, matrix_t camera, matrix_t proj)
 {
   int err;
-  vtx_t color = { 1, 0, 1, 1 };
+  vtx_t ambient = { 0.1, 0.2, 0.3, 1 };
+  vtx_t color = { 0.3, 1, 1, 0 };
   const int opaque = 1;
 
   if (!cur_obj) {
@@ -336,8 +383,10 @@ static int bee_render(fime_bee_t * bee,
 
   MtxMult(bee->mtx, camera);
 
-  err =  DrawObjectSingleColor(vp, bee->mtx, proj,
-			       cur_obj, &color);
+/*   err =  DrawObjectSingleColor(vp, bee->mtx, proj, */
+/* 			       cur_obj, &color); */
+  err =  DrawObjectFrontLighted(vp, bee->mtx, proj,
+			       cur_obj, &ambient, &color);
 
   return -!!err;
 }

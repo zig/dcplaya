@@ -24,6 +24,12 @@ typedef float matrix_t[4][4];
  *  @ingroup dcplaya_devel
  */
 
+#ifdef DEBUG
+void MtxDump(matrix_t m);
+#else
+# define MtxDump(A)
+#endif
+
 /** Copy a matrix. */
 void MtxCopy(matrix_t m, matrix_t m2);
 
@@ -60,6 +66,9 @@ void MtxTranspose3x3(matrix_t m);
 /** Apply scaling to a matrix. */
 void MtxScale(matrix_t m, const float s);
 
+/** Apply scaling to a 3x3 matrix. */
+void MtxScale3x3(matrix_t m, const float s);
+
 /** Apply scaling to a matrix. */
 void MtxScale3(matrix_t m, const float sx, const float sy, const float sz);
 
@@ -86,7 +95,7 @@ void MtxProjection(matrix_t row, const float openAngle, const float fov,
 void MtxFrustum(matrix_t row, const float left, const float right,
                               const float top, const float bottom,
                               const float zNear, const float zFar);
-void CrossProduct(float *d, const float *v, const float * w);
+/* void CrossProduct(float *d, const float *v, const float * w); */
 
 /**@}*/
 

@@ -6,8 +6,23 @@
  * @brief   4x4 matrix support.
  */
 
+#include "config.h"
 #include "math_float.h"
 #include "matrix.h"
+
+#ifdef DEBUG
+#include <stdio.h>
+void MtxDump(matrix_t m)
+{
+  int i;
+  printf("Mtx[%p] : \n", m);
+  printf(" [\n");
+  for (i=0; i<4; ++i) {
+    printf("  [%.2f %.2f %.2f %.2f]\n", m[i][0],m[i][1],m[i][2],m[i][3]);
+  }
+  printf( "]\n");
+}
+#endif
 
 void MtxCopy(matrix_t m, matrix_t m2)
 {
@@ -119,6 +134,16 @@ void MtxScale(matrix_t m, const float s)
   }
 }
 
+void MtxScale3x3(matrix_t m, const float s)
+{
+  int i;
+  for (i=0; i<3; ++i) {
+    m[i][0] *= s;
+    m[i][1] *= s;
+    m[i][2] *= s;
+  }
+}
+
 void MtxScale3(matrix_t m, const float sx, const float sy, const float sz)
 {
   int i;
@@ -132,6 +157,11 @@ void MtxScale3(matrix_t m, const float sx, const float sy, const float sz)
 void MtxTranslate(matrix_t m, const float x, const float y, const float z)
 {
   const float w = m[3][3];
+#if DEBUG
+  if (w != 1.0) {
+    printf("[%s] : w=%f\n", __FUNCTION__, w);
+  }
+#endif
   m[3][0] += x * w;
   m[3][1] += y * w;
   m[3][2] += z * w;
@@ -148,7 +178,6 @@ void MtxTranspose(matrix_t m)
   SWAP_IDX(0,3);
   SWAP_IDX(1,2);
   SWAP_IDX(1,3);
-  SWAP_IDX(1,2);
   SWAP_IDX(2,3);
 }
 
@@ -196,17 +225,10 @@ void MtxRotateZ(matrix_t m, const float a)
   MtxMult(m,m2);
 }
 
-static int IsNearZero(const float v)
-{
-  const float e = 1E-6f;
-  return (v > -e && v < e);
-}
-
-
 static void LookAt(matrix_t row, const float x, const float y, const float z)
 {
-  if(IsNearZero(x) && IsNearZero(z)) {
-    if (IsNearZero(y)) {
+  if(FnearZero(x) && FnearZero(z)) {
+    if (FnearZero(y)) {
       MtxIdentity(row);
       return;
     } else {
@@ -230,18 +252,12 @@ static void LookAt(matrix_t row, const float x, const float y, const float z)
     const float oonxz = Inv(nxz);
     const float oonxyz = ISqrt(x2+y2+z2);
 
-    /* $$$ ben : buggy ! Back to old school calculation ! */
-    /*     const float nxz = Sqrt(x2+z2); */
-    /*     const float oonxz = 1.0f / nxz; */
-    /*     const float oonxyz= frsqrt(x2+y2+z2); */
-
     {
       const float tmp = oonxz*oonxyz;
       row[0][1] = -y*x*tmp;
       row[1][1] = nxz*oonxyz;
       row[2][1] = -y*z*tmp;
     }
-                
                 
     {
       const float tmp02 = x * oonxyz;
@@ -255,7 +271,7 @@ static void LookAt(matrix_t row, const float x, const float y, const float z)
 	row[0][0] =  tmp22 * tmp;
 	row[2][0] = -tmp02 * tmp;
 	row[1][0] = 0;
-	  }
+      }
     }
   }
   row[0][3] = row[1][3] = row[2][3] = 0;
@@ -371,9 +387,9 @@ void MtxFrustum(matrix_t row, const float left, const float right,
 }
 
 
-void CrossProduct(float *d, const float *v, const float * w)
-{
-  d[0] = v[1] * w[2] - v[2] * w[1];
-  d[1] = v[2] * w[0] - v[0] * w[2];
-  d[2] = v[0] * w[1] - v[1] * w[0];
-}
+/* void CrossProduct(float *d, const float *v, const float * w) */
+/* { */
+/*   d[0] = v[1] * w[2] - v[2] * w[1]; */
+/*   d[1] = v[2] * w[0] - v[0] * w[2]; */
+/*   d[2] = v[0] * w[1] - v[1] * w[0]; */
+/* } */
