@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     shell support for dcplaya
- * @version   $Id: shell.c,v 1.20 2004-07-04 14:16:45 vincentp Exp $
+ * @version   $Id: shell.c,v 1.21 2004-08-01 17:54:26 vincentp Exp $
  */
 
 #include <kos.h>
@@ -201,7 +201,8 @@ int shell_init()
 #endif
   uint32 old = thd_default_stack_size;
   //thd_default_stack_size = 1024*1024;
-  thd_default_stack_size = 256*1024;
+  //thd_default_stack_size = 256*1024;
+  thd_default_stack_size = 64*1024;
   kthread_t * thd;
 
   SDDEBUG("[shell_init] : dynshell [%s]\n",shell_lef_fname);

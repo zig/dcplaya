@@ -10,7 +10,7 @@ AC_INIT(main.c)
 AC_PROG_MAKE_SET
 
 PACKAGE=dcplaya
-VERSION=1.2
+VERSION="2.0 Beta"
 VERSION_STAT=""
 DREAMMP3_URL="http://sashipa.ben.free.fr/dcplaya"
 TOP_DIR="`pwd`"
@@ -400,5 +400,5 @@ AC_MSG_RESULT([ CDR tools           : $CDR_TOOLS])
 AC_MSG_RESULT([])
 
 dnl#
-dnl# End of "$Id: configure.in,v 1.17 2004-06-30 15:17:35 vincentp Exp $".
+dnl# End of "$Id: configure.in,v 1.18 2004-08-01 17:54:26 vincentp Exp $".
 dnl#

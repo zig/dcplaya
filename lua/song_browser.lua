@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.73 2004-07-31 22:55:18 vincentp Exp $
+--- $Id: song_browser.lua,v 1.74 2004-08-01 17:54:26 vincentp Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song Browser
@@ -2071,6 +2071,7 @@ function song_browser_create(owner, name)
 	 playlist = sbfl_confirm_playlist,
 	 plugin = sbfl_select_default, -- select on purpose !
 	 text = sbfl_confirm_text,
+	 sub = sbfl_confirm_sub,
       },
       select = {
 	 default = sbfl_select_default,
@@ -2093,11 +2094,13 @@ function song_browser_create(owner, name)
 	 lua = sbfl_view_text,
 	 text = sbfl_view_text,
 	 playlist = sbfl_view_text,
+	 sub = sbfl_view_text,
       },
       edit = {
 	 lua = sbfl_edit_file,
 	 text = sbfl_edit_file,
 	 playlist = sbfl_edit_file,
+	 sub = sbfl_edit_file,
       },
       info = {
 	 default = sbfl_info_file,
@@ -2172,7 +2175,7 @@ function song_browser_create(owner, name)
    --   sb.cdrom_check_timeout = 0
 
    -- filters
-   sb.el_filter = "DXIMPTL"
+   sb.el_filter = "DXIMPTLS"
 
    -- Menu
    sb.mainmenu_def = song_browser_menucreator

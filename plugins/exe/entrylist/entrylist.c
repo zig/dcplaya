@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist.c,v 1.12 2003-04-05 16:33:31 ben Exp $
+ * $Id: entrylist.c,v 1.13 2004-08-01 17:54:26 vincentp Exp $
  */
 
 #include <stdlib.h>
@@ -484,6 +484,7 @@ EL_FUNCTION_START(load)
     { 'p', "playlist" },
     { 'l', "lua" },
     { 't', "text" },
+    { 's', "sub" }, /* VP : Why do I have to add this here ?? */
     { 0,0 }
   };
 

@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/04/08
  *
- *  $Id: nsf_driver.c,v 1.4 2003-05-01 22:34:19 benjihan Exp $
+ *  $Id: nsf_driver.c,v 1.5 2004-08-01 17:54:26 vincentp Exp $
  */ 
 
 /* Adapted from nosefart main_linux.c */
@@ -142,7 +142,8 @@ static nsf_t * load_nsf_file(const char * filename)
   if (buffer) {
     nsf = nsf_load(0/*(char *)filename*/, buffer, buffer_len);
     free(buffer);
-  }
+  } else
+    nsf = nsf_load((char *)filename,0,0);
 #else
   nsf = nsf_load((char *)filename,0,0);
 #endif

@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.63 2004-07-31 22:55:19 vincentp Exp $
+ * @version   $Id: dreamcast68.c,v 1.64 2004-08-01 17:54:26 vincentp Exp $
  */
 
 //#define RELEASE
@@ -1068,7 +1068,6 @@ int dreammp3_main(int argc, char **argv)
   int kos_debug_level = DBG_KDEBUG;
   int dcp_debug_level = (1<<sysdbg_user)-1;
 
-
   /* VP : put our keyboard manager */
   maple_shutdown();
   dcp_kbd_init();
@@ -1096,9 +1095,15 @@ int dreammp3_main(int argc, char **argv)
   dbglog_set_level(kos_debug_level);
   /* Do basic setup */
   /*irq_init();*/
-  thd_default_stack_size = 64*1024;
+
+  /* Default thread stack of 16Kb */
+  thd_default_stack_size = 16*1024;  /* seems to be enough in most cases */
+  //thd_current->stack_size = 64*1024; /* this is the value sbrk is configured for */
+  //thd_default_stack_size = 32*1024;
+
   thd_init(THD_MODE_PREEMPT);
   
+
   //kos_init_all(IRQ_ENABLE | THD_ENABLE, romdisk);
   /* Initialize exceptions handling */
   expt_init();

@@ -560,9 +560,11 @@ void DecodeBlock (Channel *ch)
 
 }
 
+/* VP : Moved into a static array, it used to be allocated on the stack !! */
+static int wave[SOUND_BUFFER_SIZE];
+
 void MixStereo (int sample_count)
 {
-    int wave[SOUND_BUFFER_SIZE];
     int pitch_mod = SoundData.pitch_mod & ~APU.DSP[APU_NON];
 
     for (uint32 J = 0; J < NUM_CHANNELS; J++) 
@@ -872,7 +874,6 @@ END_OF_FUNCTION(MixStereo);
 
 void MixMono (int sample_count)
 {
-    int wave[SOUND_BUFFER_SIZE];
     int pitch_mod = SoundData.pitch_mod & (~APU.DSP[APU_NON]);
 
     for (uint32 J = 0; J < NUM_CHANNELS; J++) 

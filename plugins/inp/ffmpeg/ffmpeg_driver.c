@@ -5,7 +5,7 @@
 #else
 
 /*
- * $Id: ffmpeg_driver.c,v 1.7 2004-07-31 22:55:19 vincentp Exp $
+ * $Id: ffmpeg_driver.c,v 1.8 2004-08-01 17:54:26 vincentp Exp $
  *
  * Author : Vincent Penne
  *
@@ -260,9 +260,14 @@ static int init(any_driver_t *d)
 
 #ifdef DECODE_THREAD
   vid_fifo_sema = sem_create(0);
-  vdecode_thd = thd_create(vdecode_thread, 0);
-  if (vdecode_thd)
-    thd_set_label(vdecode_thd, "Video-decode-thd");
+  {
+    int old = thd_default_stack_size;
+    thd_default_stack_size = 64*1024;
+    vdecode_thd = thd_create(vdecode_thread, 0);
+    if (vdecode_thd)
+      thd_set_label(vdecode_thd, "Video-decode-thd");
+    thd_default_stack_size = old;
+  }
 #endif
 
 
@@ -2322,6 +2327,9 @@ int decode_stop()
 
     shell_command("dl_set_trans(background.dl, mat_scale(640,480,1)) "
 		  "dl_set_trans(background_dl, mat_trans(0,0,0.0001))");
+
+    btexture->twiddled = 1;  /* Force twiddle */
+    btexture->twiddlable = 1;  /* Force twiddle */
 
     btexture = NULL;
 

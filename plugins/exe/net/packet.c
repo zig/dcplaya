@@ -25,6 +25,13 @@ unsigned short tool_port;
 
 spinlock_t net_spinlock;
 
+int net_trylock()
+{
+  int res;
+  spinlock_trylock(&net_spinlock, res);
+  return res;
+}
+
 void net_lock()
 {
   spinlock_lock(&net_spinlock);

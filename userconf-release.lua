@@ -68,7 +68,7 @@ if __RELEASE then
 	 plug_obj,
 	 plug_cdda, plug_ffmpeg, 
 	 plug_ogg, plug_mikmod, plug_sidplay, 
-	 plug_sc68, plug_nsf,
+	 plug_sc68, plug_nsf, plug_spc,
 	 plug_lpo, plug_fftvlr, plug_hyperpipe, plug_fime
       }
    else
@@ -106,6 +106,12 @@ if __RELEASE then
    dolib("song_info")
    dolib("song_browser")
    dolib("fifo_tracker")
+
+   dolib "subtitles"
+
+   if SHADOCK_EDITION then
+      song_browser.pl:change_dir(playlist_load(home.."../extra/radio.m3u"))
+   end
 
    if fifo_tracker_create then
       fifo_tracker_create()

@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.27 2004-07-31 22:55:19 vincentp Exp $
+ * $Id: playa.c,v 1.28 2004-08-01 17:54:26 vincentp Exp $
  */
 
 #include <kos.h>
@@ -465,9 +465,14 @@ int playa_init()
   SDDEBUG("Create PLAYA decoder thread\n");
   playastatus = PLAYA_STATUS_INIT;
 #ifdef PLAYA_THREAD
-  playa_thread = thd_create(playadecoder_thread, 0);
-  if (playa_thread) {
-    thd_set_label(playa_thread, "Playa-thd");
+  {
+    int old = thd_default_stack_size;
+    thd_default_stack_size = 64*1024;
+    playa_thread = thd_create(playadecoder_thread, 0);
+    if (playa_thread) {
+      thd_set_label(playa_thread, "Playa-thd");
+    }
+    thd_default_stack_size = old;
   }
 #endif
   SDDEBUG("Waiting PLAYA decoder thread\n");

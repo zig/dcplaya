@@ -4,7 +4,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.28 2004-07-31 22:55:19 vincentp Exp $
+ * @version   $Id: console.c,v 1.29 2004-08-01 17:54:26 vincentp Exp $
  */
 
 
@@ -46,6 +46,13 @@ int (*old_printk_func)(const uint8 *data, int len, int xlat);
 
 /* added by ben for disabling console output in zed */
 int csl_echo = 1;
+
+int csl_trylock(csl_console_t * csl)
+{
+  int res;
+  spinlock_trylock(&csl->mutex, res);
+  return res;
+}
 
 void csl_lock(csl_console_t * csl)
 {
@@ -482,7 +489,8 @@ void csl_write(csl_console_t * console, const char * s, int len )
 {
   int ret = 0;
   int i;
-  csl_lock(console);
+  if (!csl_trylock(console))
+    return;
   for (i=0; i<len; i++) {
     int c = s[i];
     MUterm_inputc(c, console->term);
@@ -492,7 +500,8 @@ void csl_write(csl_console_t * console, const char * s, int len )
   if ((console->render_modes & CSL_RENDER_BASIC) && ret)
     csl_basic_render(console);
   console->window.cursor_time = 0;
-  csl_unlock(console);
+
+  spinlock_unlock(&console->mutex);
 }
 void csl_printf(csl_console_t * console, const char *fmt, ... )
 {

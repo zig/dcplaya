@@ -749,30 +749,33 @@ static void dcload_close_handler(uint32 hnd)
 
 /* Printk replacement */
 
+static printk_noreent;
 void dcload_printk(const char *str) {
   int oldirq = 0;
 
-  net_lock();
-  STOPIRQ;
-  sc_write(1, str, strlen(str));
-  STARTIRQ;
-  net_unlock();
+  if (net_trylock()) {
+    STOPIRQ;
+    sc_write(1, str, strlen(str));
+    STARTIRQ;
+    net_unlock();
+  }
 }
 
 static int printk_func(const uint8 *data, int len, int xlat)
 {
   if (tool_ip) {
     int oldirq = 0;
-    int res;
+    int res = -1;
 
     if (irq_inside_int())
       return 0;
 
-    net_lock();
-    STOPIRQ;
-    res = sc_write(1, data, len);
-    STARTIRQ;
-    net_unlock();
+    if (net_trylock()) {
+      STOPIRQ;
+      res = sc_write(1, data, len);
+      STARTIRQ;
+      net_unlock();
+    }
     return res;
   } else {
     if (real_old_printk_func)
@@ -875,7 +878,7 @@ void dcload_close(uint32 hnd)
   net_unlock();
 }
 
-#ifdef BENPATCH
+#ifndef BENPATCHx
 #define dcload_read_buffer sc_read
 #if 0
 #endif
@@ -1126,7 +1129,7 @@ off_t dcload_tell(uint32 hnd)
 
 size_t dcload_total(uint32 hnd) {
   int oldirq = 0;
-  size_t ret = -1;
+  ssize_t ret = -1;
   size_t cur;
 	
   net_lock();
