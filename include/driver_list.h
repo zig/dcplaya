@@ -27,6 +27,7 @@ void driver_list_shutdown(driver_list_t * dl);
 
 int driver_list_register(driver_list_t * dl, any_driver_t * driver);
 int driver_list_unregister(driver_list_t * dl, any_driver_t * driver);
+int driver_register(any_driver_t * driver);
 
 any_driver_t * driver_list_search(driver_list_t * dl, const char *name);
 

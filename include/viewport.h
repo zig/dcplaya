@@ -1,4 +1,9 @@
-/* 2002/02/21 */
+/**
+ *
+ * 2002/02/21
+ *
+ * $Id: viewport.h,v 1.3 2002-09-02 19:11:01 ben Exp $
+ */
 
 #ifndef _VIEWPORT_H_
 #define _VIEWPORT_H_

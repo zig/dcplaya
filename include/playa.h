@@ -1,7 +1,7 @@
 /*
  *
  *
- * $Id: playa.h,v 1.1 2002-08-26 14:15:00 ben Exp $
+ * $Id: playa.h,v 1.2 2002-09-02 19:11:01 ben Exp $
  */
 
 #ifndef _PLAYA_H_
@@ -26,6 +26,7 @@ int playa_isplaying();
 
 int playa_start(const char *fn, int loop);
 int playa_stop(int flush);
+int playa_loaddisk(const char *fn, int immediat);
 
 int playa_volume(int volume);
 
