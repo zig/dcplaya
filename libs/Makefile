@@ -1,5 +1,5 @@
-# $Id: Makefile,v 1.2 2002-09-18 12:04:38 zig Exp $
+# $Id: Makefile,v 1.3 2002-09-19 15:56:42 benjihan Exp $
 
-SUBDIRS = lua
+SUBDIRS = lua z
 
 include ../Makefile.inc
