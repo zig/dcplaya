@@ -191,7 +191,7 @@ end
 function playlist_load(fname)
    if type(fname) ~= "string" then return end
 
-   local type, major,minor = filetype(fname)
+   local type, major,minor = filetype(fname, 0)
    if not major or major ~= "playlist" or not minor then
       print("playlist_load : not a playlist ["..fname.."]")
       return
