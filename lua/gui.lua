@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.26 2002-12-12 18:35:24 zigziggy Exp $
+--- $Id: gui.lua,v 1.27 2002-12-15 12:27:18 zigziggy Exp $
 ---
 
 --
@@ -169,7 +169,7 @@ function gui_child_autoplacement(app)
       i = i.next
    end
 
-   -- swaping
+   -- swaping display lists
    dl_set_active2(app._dl1, app._dl2, 1)
    app._dl1, app._dl2 = app._dl2, app._dl1
 end
@@ -179,13 +179,12 @@ end
 function gui_new_focus(app, f)
    local of = app.sub
    if f and f~=of then
-      if of then
-	 evt_send(of, { key = gui_unfocus_event, app = of })
-      end
+--      if of then
+--	 evt_send(of, { key = gui_unfocus_event, app = of })
+--      end
       evt_app_remove(f)
       evt_app_insert_first(app, f)
-      evt_send(f, { key = gui_focus_event, app = f })
-      app.focus_time = 0
+--      evt_send(f, { key = gui_focus_event, app = f })
 
       return 1
    end
@@ -264,7 +263,7 @@ end
 
 function gui_dialog_shutdown(app)
    if app.sub then
-      evt_send(app.sub, { key = gui_unfocus_event, app = app.sub })
+      evt_send(app.sub, { key = gui_unfocus_event, app = app.sub }, 1)
    end
    dl_destroy_list(app.dl)
    dl_destroy_list(app.focusup_dl)
@@ -292,20 +291,37 @@ function gui_dialog_handle(app, evt)
    end
 
    if (key == evt_app_insert_event or key == evt_app_remove_event) and evt.app.owner == app then
+
+      if focused ~= app.focused then
+	 if app.focused then
+	    evt_send(app.focused, { key = gui_unfocus_event, app = app.focused }, 1)
+	 end
+	 evt_send(focused, { key = gui_focus_event, app = focused }, 1)
+	 app.focused = focused
+	 app.focus_time = 0
+      end
+
       gui_child_autoplacement(app)
       return
    end
    
    if focused then
+      if key == gui_focus_event or key == gui_unfocus_event then
+	 -- translate and pass down the event to the focused item
+	 evt.app = focused
+	 evt_send(focused, evt, 1)
+	 return
+      end
+
       if gui_keyconfirm[key] then
 	 evt_send(focused, { key = gui_press_event })
 	 return
       end
 
-      if gui_keymenu[key] then
-	 evt_send(focused, { key = gui_menu_event })
-	 return
-      end
+--      if gui_keymenu[key] then
+--	 evt_send(focused, { key = gui_menu_event })
+--	 return
+--      end
       
       if gui_keyup[key] then
 	 if gui_new_focus(app, 
@@ -435,6 +451,10 @@ function gui_new_dialog(owner, box, z, dlsize, text, mode)
       flags  = { }
       
    }
+
+   for _, dl in { dial.focusup_dl, dial.focusdown_dl, dial.focusleft_dl, dial.focusright_dl } do
+      dl_sublist(dial.dl, dl)
+   end
    
    -- draw surrounding box
    dl_draw_box(dial.dl, box, z, gui_box_color1, gui_box_color2)
@@ -564,11 +584,11 @@ function gui_input_handle(app, evt)
       end
    end
 
-   if key == gui_focus_event and gui_is_focus(app) and ke_set_active then
+   if key == gui_focus_event and evt.app == app and ke_set_active then
       ke_set_active(1)
       return nil
    end
-   if key == gui_unfocus_event and gui_is_focus(app) and ke_set_active then
+   if key == gui_unfocus_event and evt.app == app and ke_set_active then
       ke_set_active(nil)
       return nil
    end
@@ -641,6 +661,8 @@ function gui_new_input(owner, box, text, mode, string, z)
       input_dl = dl_new_list(1024, 1)
       
    }
+
+   dl_sublist(app.dl, app.input_dl)
    
    dl_draw_box(app.dl, app.box, z, gui_input_color1, gui_input_color2)
    

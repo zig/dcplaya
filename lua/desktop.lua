@@ -1,20 +1,35 @@
+--- @file   desktop.lua
+--- @author Vincent Penne <ziggy@sashipa.com>
+--- @brief  desktop application
+---
+--- $Id: desktop.lua,v 1.1 2002-12-15 12:27:18 zigziggy Exp $
+---
 
-vmu_select_loaded = nil
-if not dolib("textlist") then return end
+if not dolib("evt") then return end
 if not dolib("gui") then return end
+if not dolib("textlist") then return end
 if not dolib("sprite") then return end
 
-function vmu_select_create_sprites(vs)
+dskt_keytoggle = { 
+   [KBD_KEY_PRINT] = 1, 
+   [KBD_CONT1_Y] = 1, 
+   [KBD_CONT2_Y] = 1, 
+   [KBD_CONT3_Y] = 1, 
+   [KBD_CONT4_Y] = 1
+}
+
+
+function dskt_create_sprites(vs)
    vs.sprites = {}
 end
 
-function vmu_select_create(owner, name, dir, x, y, z)
+function dskt_switcher_create(owner, name, dir, x, y, z)
 
    -- Default
    owner = owner or evt_desktop_app
-   name = name or "vmu select"
+   name = name or "app_switcher"
 
-   -- VMU-select default style
+   -- application switcher default style
    -- ------------------------
    local style = {
       bkg_color	= { 0.8, 0.7, 0.7, 0.7,  0.8, 0.3, 0.3, 0.3 },
@@ -23,12 +38,12 @@ function vmu_select_create(owner, name, dir, x, y, z)
       file_color= { 1, 0, 0, 0 },
       dir_color	= { 1, 0, 0, .4 },
       cur_color	= { 1, 1, 1, 1,  1, 0.1, 0.4, 0.5 },
-      text      = {font=0, size=16, aspect=1}
+      text      = { font=0, size=16, aspect=1 }
    }
 
-   --- VMU-select event handler.
+   --- application switcher event handler.
    --
-   function vmu_select_handle(dial,evt)
+   function dskt_switcher_handle(dial, evt)
       local key = evt.key
 
       if key == gui_item_confirm_event then
@@ -43,6 +58,17 @@ function vmu_select_create(owner, name, dir, x, y, z)
 	 dial._result = nil
 	 return
       end
+
+      if key == gui_item_change_event then
+	 local dir = dial.dir
+	 print("dir = ", dir)
+	 if dir then
+	    local a = dir[evt.pos+1].app
+	    gui_new_focus(evt_desktop_app, a)
+	    gui_new_focus(evt_desktop_app, dial)
+	 end
+      end
+
       return evt
    end
 
@@ -67,12 +93,13 @@ function vmu_select_create(owner, name, dir, x, y, z)
    -- Create dialog
    local dial
    dial = gui_new_dialog(owner,
-			 {x, y, x2, y2 }, z, nil, name,
+			 { x, y, x2, y2 }, z, nil, name,
 			 { x = "left", y = "up" } )
    dial.event_table = {
-      [gui_item_confirm_event]	= vmu_select_handle,
-      [gui_item_cancel_event]	= vmu_select_handle,
-      [gui_item_change_event]	= vmu_select_handle,
+      [gui_item_change_event]	= dskt_switcher_handle,
+      [gui_item_confirm_event]	= dskt_switcher_handle,
+      [gui_item_cancel_event]	= dskt_switcher_handle,
+      [gui_item_change_event]	= dskt_switcher_handle,
    }
 
    box = box + { x+border, y+16+border, x-border, y-border }
@@ -92,7 +119,7 @@ function vmu_select_create(owner, name, dir, x, y, z)
 			  })
 
    if not dial.vs then
-      print("vmu_select: error creating textlist-gui")
+      print("dskt_switcher: error creating textlist-gui")
       return
    end
 
@@ -118,21 +145,78 @@ function vmu_select_create(owner, name, dir, x, y, z)
 		   end
 
    fl.draw_cursor = function () end
-   
-   fl:change_dir(dir or dirlist("-n","/vmu"))
+
+   dial.dir = dir or { }
+   fl:change_dir(dial.dir)
 
    return dial
 end
 
-if nil then
-   vs = vmu_select_create()
-   function k()
-      if vs then evt_shutdown_app(vs) end
-      vs = nil
+
+function dskt_handle(app, evt)
+   local key = evt.key
+
+   if dskt_keytoggle[key] then
+      if app.switcher then
+	 evt_shutdown_app(app.switcher)
+	 app.switcher = nil
+      else
+
+	 local dir = { n = 0 }
+
+	 local i = app.sub
+	 while i do
+	    tinsert(dir, { name = i.name, size = 0, app = i })
+
+	    i = i.next
+	 end
+
+	 app.switcher = dskt_switcher_create(app, "Application Switcher", dir)
+	 
+      end
+
+      return
    end
-   -- getchar()
-   -- k()
+
+   if key == evt_app_remove_event and evt.app == app.switcher then
+      app.switcher = nil
+   end
+
+   if (key == evt_app_insert_event or key == evt_app_remove_event) and evt.app.owner == app then
+
+      if focused ~= app.focused then
+	 if app.focused then
+	    evt_send(app.focused, { key = gui_unfocus_event, app = app.focused }, 1)
+	 end
+	 evt_send(focused, { key = gui_focus_event, app = focused }, 1)
+	 app.focused = focused
+	 app.focus_time = 0
+      end
+
+      gui_child_autoplacement(app)
+      return
+   end
+
+   return evt
 end
 
--- vmu_select_loaded = 1
--- return vmu_select_loaded
+function dskt_update(app)
+end
+
+function dskt_create()
+   print("Installing desktop application")
+
+   local app = evt_desktop_app
+
+   app.handle = dskt_handle
+   app.update = dskt_update
+   if not app.dl then
+      app.dl = dl_new_list(256, 1)
+   end
+
+   return app
+end
+
+dskt_create()
+
+desktop_loaded = 1

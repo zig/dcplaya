@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.20 2002-12-12 18:35:24 zigziggy Exp $
+--- $Id: textlist.lua,v 1.21 2002-12-15 12:27:18 zigziggy Exp $
 ---
 
 -- Unload the library
@@ -268,6 +268,11 @@ function textlist_create(flparm)
 	  fl.dl = fl.dl or dl_new_list(128);
 	  dl_set_active(fl.dl,0)
 	  dl_clear(fl.dl)
+
+	  -- added by Vincent
+	  if fl.owner and fl.owner.dl then
+	     dl_sublist(fl.owner.dl, fl.dl)
+	  end
 
 	  -- List-List
 	  fl.ldl = fl.ldl or dl_new_list(512,1,1)
@@ -655,13 +660,13 @@ function textlist_create_gui(fl, owner)
 	  elseif gui_keyup[key] then
 		 local code = fl:move_cursor(-1)
 		 if code and code > 0 then
-			evt_send(app.owner, { key = gui_item_change_event })
+			evt_send(app.owner, { key = gui_item_change_event, app = fl, pos = fl.pos })
 		 end
 		 return
 	  elseif gui_keydown[key] then
 		 local code = fl:move_cursor(1)
 		 if code and code > 0 then
-			evt_send(app.owner, { key = gui_item_change_event })
+			evt_send(app.owner, { key = gui_item_change_event, app = fl, pos = fl.pos })
 		 end
 		 return
 	  elseif gui_keycancel[key] then

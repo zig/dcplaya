@@ -67,10 +67,10 @@ static img_driver_t driver =
     0x0100,               /* Driver version */
     "jpeg",               /* Driver name */
     "Benjamin Gerard, "
-	"The Independent "
-	"JPEG Group",         /* Driver authors */
+    "The Independent "
+    "JPEG Group",         /* Driver authors */
     "jpeg (jpg) image"
-	"translator",         /**< Description */
+    "translator",         /**< Description */
     0,                    /**< DLL handler */
     init,                 /**< Driver init */
     shutdown,             /**< Driver shutdown */
