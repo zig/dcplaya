@@ -52,8 +52,11 @@ end
 
 -- reimplement some dl function with automatic list expansion
 re "dl_draw_box"
+re "dl_draw_box1"
+re "dl_draw_box4"
+re "dl_draw_triangle"
 re "dl_draw_text"
-
+re "dl_set_clipping"
 
 -- set it at the end so that it is not set if something failed before !
 init_display_driver = 1

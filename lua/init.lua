@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: init.lua,v 1.9 2002-10-18 00:06:49 benjihan Exp $
+-- $Id: init.lua,v 1.10 2002-10-18 11:39:21 benjihan Exp $
 --
 
 
@@ -20,7 +20,6 @@ end
 function doshellcommand(string)
 	return dostring(string)
 end
-
 
 -- command helps handling
 
@@ -209,6 +208,7 @@ function driver_load(...)
 end
 dl=driver_load
 
+end -- if not init_lua then
 
 -- Load a lua library. The file lua/{NAME}.lua will be loaded via dofile()
 -- in pathes stored in LIBRARY_PATH.
@@ -228,6 +228,7 @@ function dolib(name,force,libpath)
 		print("dolib : bad arguments")
 		return
 	end
+--	print(type_dump(libpath,"libpath"))
 
 	local test = "return "..name.."_loaded"
 	local reset = name.."_loaded=nil"
@@ -235,6 +236,7 @@ function dolib(name,force,libpath)
 	function loadlib()
 		local i,p
 		for i,p in %libpath do
+--			print(format("searching in %q", tostring(p)))
 			if type(p) == "string" then
 				p = p.."lua/"..%name..".lua"
 				if dofile(p) and dostring(%test) then
@@ -261,6 +263,3 @@ function dolib(name,force,libpath)
 	return 1
 end
 
---dolib("evt")
-
-end -- if not init_lua then

@@ -5,11 +5,12 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.9 2002-10-18 00:06:49 benjihan Exp $
+ * $Id: display.c,v 1.10 2002-10-18 11:39:21 benjihan Exp $
  */
 
 #include <stdlib.h>
 #include <string.h>
+
 #include "luashell.h"
 #include "lef.h"
 #include "driver_list.h"
@@ -18,6 +19,7 @@
 #include "draw_object.h"
 
 #include "display_driver.h"
+#include "display_matrix.h"
 
 /* display_matrix.c */
 DL_FUNCTION_DECLARE(init_matrix_type);
@@ -35,6 +37,7 @@ DL_FUNCTION_DECLARE(mat_trans);
 DL_FUNCTION_DECLARE(mat_li);
 DL_FUNCTION_DECLARE(mat_co);
 DL_FUNCTION_DECLARE(mat_el);
+DL_FUNCTION_DECLARE(mat_dim);
 
 /* display_text.c */
 DL_FUNCTION_DECLARE(draw_text);
@@ -226,14 +229,13 @@ DL_FUNCTION_END()
 
 static int display_init(any_driver_t *d)
 {
-  return 0;
+  return display_matrix_init();
 }
 
 static int display_shutdown(any_driver_t * d)
 {
-  return 0;
+  return display_matrix_shutdown();
 }
-
 
 static driver_option_t * display_options(any_driver_t * d, int idx,
                                         driver_option_t * o)
@@ -482,7 +484,7 @@ static luashell_command_description_t display_commands[] = {
 	"If matrix dimension is 4x4 the result is an identity matrix "
 	"else the result matrix is zeroed."
     "]]",                                /* usage */
-    SHELL_COMMAND_C, lua_mat_trans       /* function */
+    SHELL_COMMAND_C, lua_mat_new         /* function */
   },
   {
     "mat_trans", 0,                      /* long and short names */
@@ -554,6 +556,13 @@ static luashell_command_description_t display_commands[] = {
       "mat_el(mat, l, c) : get matrix element"
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_mat_el          /* function */
+  },
+  {
+    "mat_dim", 0,                         /* long and short names */
+    "print [["
+      "mat_dim(mat) : get matrix dimension (line,columns)"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_mat_dim         /* function */
   },
 
   {0},                                   /* end of the command list */
