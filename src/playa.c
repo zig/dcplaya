@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.20 2003-03-10 22:55:35 ben Exp $
+ * $Id: playa.c,v 1.21 2003-03-17 15:39:03 ben Exp $
  */
 
 #include <kos.h>
@@ -14,7 +14,7 @@
 #include "inp_driver.h"
 #include "sndstream.h"
 
-#include "pcm_buffer.h"
+/* #include "pcm_buffer.h" */
 #include "driver_list.h"
 #include "file_wrapper.h"
 #include "fifo.h"
@@ -374,7 +374,7 @@ int playa_init()
   SDDEBUG(">> %s()\n", __FUNCTION__);
   SDINDENT;
 
-  pcm_buffer_init(0,0);
+/*   pcm_buffer_init(0,0); */
   fade_v = 0;
   fade_ms = 0;
   playa_paused = 0;
