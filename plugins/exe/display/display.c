@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.24 2002-12-17 23:31:07 ben Exp $
+ * $Id: display.c,v 1.25 2002-12-24 04:49:17 ben Exp $
  */
 
 #include <stdlib.h>
@@ -72,6 +72,8 @@ DL_FUNCTION_DECLARE(tex_info);
 /* display_commands.c */
 DL_FUNCTION_DECLARE(nop);
 DL_FUNCTION_DECLARE(sublist);
+DL_FUNCTION_DECLARE(gc_push);
+DL_FUNCTION_DECLARE(gc_pop);
 
 /* display_color.c */
 DL_FUNCTION_DECLARE(draw_colors);
@@ -566,6 +568,27 @@ static luashell_command_description_t display_commands[] = {
 	"]]",                           /* usage */
 	SHELL_COMMAND_C, lua_sublist    /* function */
   },
+
+  {
+    "dl_gc_push", 0,                /* long and short names */
+    "print [["
+    "dl_gc_push([flags]) : Push current GC. Do not forget to call dl_gc_pop()"
+    " later in your display list.\n"
+    "See dl_sublist for flags parameter."
+    "]]",                       /* usage */
+    SHELL_COMMAND_C, lua_gc_push    /* function */
+  },
+
+  {
+    "dl_gc_pop", 0,                /* long and short names */
+    "print [["
+    "dl_gc_pop([flags]) : Pop current GC. Call it after dl_gc_push()"
+    " in your display list.\n"
+    "See dl_sublist for flags parameter."
+    "]]",                       /* usage */
+    SHELL_COMMAND_C, lua_gc_pop    /* function */
+  },
+
 
   /* clipping interface */
 
