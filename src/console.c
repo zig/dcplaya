@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.7 2002-09-14 07:13:12 zig Exp $
+ * @version   $Id: console.c,v 1.8 2002-09-14 09:46:22 ben Exp $
  */
 
 
@@ -355,11 +355,15 @@ void csl_printf(csl_console_t * console, const char *fmt, ... )
 }
 void csl_vprintf(csl_console_t * console, const char *fmt, va_list args )
 {
+
   MUterm_setactive(console->term);
   MUterm_vprintf(fmt, args);
-/*  char tmp[2048];
+
+  /*
+  char tmp[2048];
   vsprintf(tmp, fmt, args);
-  csl_putstring(console, tmp);*/
+  csl_putstring(console, tmp);
+  */
 
   console->window.cursor_time = 0;
 }

@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.19 2002-09-14 07:36:07 zig Exp $
+ * @version   $Id: dreamcast68.c,v 1.20 2002-09-14 09:46:22 ben Exp $
  */
 
 //#define RELEASE
@@ -452,14 +452,12 @@ static int driver_init(void)
       "/pc" DREAMMP3_HOME "plugins/obj",
       "/pc" DREAMMP3_HOME "plugins/vis/lpo",
       "/pc" DREAMMP3_HOME "plugins/vis/fftvlr",
-      //      "/pc" DREAMMP3_HOME "plugins/inp/xing",
+      "/pc" DREAMMP3_HOME "plugins/inp/xing",
 /*      "/pc" DREAMMP3_HOME "plugins/inp/ogg",
       "/pc" DREAMMP3_HOME "plugins/inp/sc68",
 */
-      "/pc" DREAMMP3_HOME "plugins/inp/sidplay",
-      /*
-      "/pc" DREAMMP3_HOME "plugins/inp/spc",
-*/
+//      "/pc" DREAMMP3_HOME "plugins/inp/sidplay",
+//     "/pc" DREAMMP3_HOME "plugins/inp/spc",
       0
     };
 
@@ -618,6 +616,7 @@ static void render_visual_translucent(void)
 void main_thread(void *cookie)
 {
   const int exit_buttons = CONT_START|CONT_A|CONT_Y;
+  const int shot_buttons = CONT_START|CONT_X|CONT_B;
   int err = 0;
 
   dbglog(DBG_DEBUG, ">> " __FUNCTION__ "\n");
@@ -690,6 +689,11 @@ void main_thread(void *cookie)
   while ( (controler68.buttons & exit_buttons) != exit_buttons) {
     uint32 elapsed_frames;
     int is_playing = playa_isplaying();
+
+    SDDEBUG("%x \n",controler68.buttons & shot_buttons);
+    if ((controler68.buttons & shot_buttons) == shot_buttons) {
+      screen_shot("shot/shot");
+    }
 
     //    my_vid_border_color(0,0,0);
     ta_begin_render();
