@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.h,v 1.5 2002-09-25 03:21:21 benjihan Exp $
+ * $Id: playa.h,v 1.6 2002-10-10 06:07:39 benjihan Exp $
  */
 
 #ifndef _PLAYA_H_
@@ -36,6 +36,9 @@ int playa_isplaying();
 
 int playa_start(const char *fn, int track, int immediat);
 int playa_stop(int flush);
+int playa_ispaused(void);
+int playa_pause(int v);
+int playa_fade(int ms);
 
 int playa_volume(int volume);
 

@@ -30,20 +30,33 @@ void draw_poly_box(float x1, float y1, float x2, float y2, float z,
 		float a2, float r2, float g2, float b2);
 float measure_poly_char(int c);
 float measure_poly_text(const char * s);
+float measure_poly_vtextf(const char * s, va_list list);
+float measure_poly_textf(const char * s, ...);
 
 /* songmenu.c */
 void song_menu_render();
 
 /* text.c */
 int text_setup();
+
+void text_set_clipping(const float xmin, const float ymin,
+					   const float xmax, const float ymax);
+
 float text_set_font_size(float size);
 int text_set_font(int n);
+
+unsigned int text_get_argb(void);
+void text_get_color(float *a, float *r, float *g, float *b);
+void text_set_color(const float a, const float r,
+					const float g, const float b);
+void text_set_argb(unsigned int argb);
+
+
 int text_set_escape(int n);
 float draw_poly_text(float x1, float y1, float z1,
-                     float a, float r, float g, float b,
+/*                      float a, float r, float g, float b, */
                      const char *s, ...);
-float draw_poly_center_text(float y1, float z1,
-                            float a, float r, float g, float b,
+float draw_poly_center_text(float x1, float y1, float x2, float y2, float z1,
                             const char *s, ...);
                      
 float draw_poly_layer_text(float y1, float z1, const char *s);

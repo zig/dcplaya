@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.3 2002-10-04 21:04:32 benjihan Exp $
+ * $Id: display.c,v 1.4 2002-10-10 06:07:39 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -495,7 +495,12 @@ void dl_draw_text_render_transparent(void * pcom)
 {
   struct dl_draw_text_command * c = pcom;  
 
-  draw_poly_text(dl_trans[0][0] * c->x + dl_trans[3][0], dl_trans[1][1] * c->y + dl_trans[3][1], dl_trans[2][2] * c->z + dl_trans[3][2], c->a * dl_color[0], c->r * dl_color[1], c->g * dl_color[2], c->b * dl_color[3], c->text);
+  text_set_color(c->a * dl_color[0], c->r * dl_color[1],
+				 c->g * dl_color[2], c->b * dl_color[3]);
+  draw_poly_text(dl_trans[0][0] * c->x + dl_trans[3][0],
+				 dl_trans[1][1] * c->y + dl_trans[3][1],
+				 dl_trans[2][2] * c->z + dl_trans[3][2],
+				 c->text);
 }
 
 void dl_draw_text(dl_list_t * dl, 
