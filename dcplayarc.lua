@@ -27,6 +27,13 @@ print ("Reading user config file 'userconf.lua'")
 dofile (home.."userconf.lua")
 
 
+--
 -- Exemple of command to put into userconf.lua :
 --
 --    driver_load(plug_spc)
+--
+-- or
+--
+--    list=dir_load()
+--    call(driver_load, list)
+--
