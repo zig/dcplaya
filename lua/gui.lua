@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.50 2003-03-11 15:07:58 zigziggy Exp $
+--- $Id: gui.lua,v 1.51 2003-03-12 15:08:53 ben Exp $
 ---
 
 --
@@ -773,20 +773,29 @@ end
 
 function gui_input_display_text(app)
    local w, h = dl_measure_text(app.input_dl, app.input)
-   local x = app.input_box[1]
-   local y = (app.input_box[2] + app.input_box[4] - h) / 2
+   local box=app.input_box
+   local x = box[1]
+   local y = (box[2] + box[4] - h) / 2
    local z = app.z + 1
+   local maxw,maxh = box[3]-box[1], box[4]-box[2]
+   local maxlines
 
-   dl_clear(app.input_dl)
-   dl_draw_text(app.input_dl, x, y, z, gui_text_color, app.input)
-
+   -- Compute substrings (before and after cursor point)
    local prefix = strsub(app.input, 1, app.input_col-1)
    local suffix = strsub(app.input, app.input_col)
+   -- Get dimension of before cursor strings
+   w, h = dl_measure_text(app.input_dl, prefix)
 
---    print("input app:"..app.name)
---    print("input owner:" .. tostring( app.owner and app.owner,anme))
---    print("input prefix:" .. prefix)
---    print("input suffix:" .. suffix)
+   -- ensure to see the enought to get the cursor inside
+   maxw = 0.75 * maxw
+   if w > maxw then
+      x = x - w + maxw
+   end
+
+   dl_clear(app.input_dl)
+-- $$$ ben : clipping fucks the measure text up !
+--   dl_set_clipping(app.input_dl,box[1],box[2],box[3],box[4])
+   dl_draw_text(app.input_dl, x, y, z, gui_text_color, app.input)
 
    if not app.owner or gui_is_focus(app) then
       if ke_set_active then
@@ -797,8 +806,7 @@ function gui_input_display_text(app)
       end
    end
 
-   w, h = dl_measure_text(app.input_dl, prefix)
-   dl_draw_box(app.input_dl, x+w, y, x+w+2, y+h, z,
+   dl_draw_box(app.input_dl, x+w+1, y, x+w+3, y+h, z,
 	       gui_input_cursor_color1, gui_input_cursor_color2)
    --	print (x+w, y, x+w+2, y+h)
 end
