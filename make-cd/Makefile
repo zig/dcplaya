@@ -3,7 +3,7 @@
 #
 # by Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.2 2003-02-12 12:26:41 ben Exp $
+# $Id: Makefile,v 1.3 2003-02-12 17:53:07 ben Exp $
 #
 
 CDRECORD	= cdrecord dev=0,0,0 speed=4
@@ -83,12 +83,12 @@ tmp.iso: dcplaya-data
 	$(MKISOFS) -C `$(CDRECORD) -msinfo` -o tmp.iso 1ST_READ.BIN iso
 
 .PHONY: burn-data
-burn-data: data.raw
+burn-data:  burn-audio data.raw
 	@echo "[$@]"
 	$(CDRECORD) -xa1 $< && rm -f audio.raw data.raw burn-audio tmp.iso
 
 .PHONY: dcplaya-data
-dcplaya-data: id.txt RELEASE.txt README.txt 1ST_READ.BIN burn-audio
+dcplaya-data: id.txt RELEASE.txt README.txt 1ST_READ.BIN
 	@echo "[$@]"
 	@rm -rf dcplaya iso
 	@mkdir -p iso dcplaya/dynshell
@@ -99,7 +99,7 @@ dcplaya-data: id.txt RELEASE.txt README.txt 1ST_READ.BIN burn-audio
 	| tar cf - -C .. -T - \
 	| tar xf - -C dcplaya
 	@rm -rf `find dcplaya/ -name CVS -o -name '*~' -o -name '.#*'`
-	@cp -a README.txt id.txt RELEASE.txt jess-lysen/* iso/
+	@cp -a README.txt id.txt RELEASE.txt extra_data/* iso/
 	@mv dcplaya iso
 
 .PHONY : clean
