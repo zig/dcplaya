@@ -4,13 +4,14 @@
  * @date    2002/10/20
  * @brief   texture manager
  *
- * $Id: texture.h,v 1.2 2002-12-16 23:39:36 ben Exp $
+ * $Id: texture.h,v 1.3 2003-01-19 16:45:14 zigziggy Exp $
  */
 
 #ifndef _TEXTURE_H_
 #define _TEXTURE_H_
 
 #include <arch/types.h>
+#include "exheap.h"
 
 /** Texture idetifier type. */
 typedef int texid_t;
@@ -25,6 +26,8 @@ typedef struct {
   int format;    /**< see list in ta.h               */
   int ref;       /**< Reference counter              */
   int lock;      /**< Lock counter                   */
+
+  eh_block_t ehb;/**< External heap block            */
 
   void * addr;   /**< Mapped VRAM address            */
   uint32 ta_tex; /**< Texture address for TA         */

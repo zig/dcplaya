@@ -4,7 +4,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.3 2002-12-20 23:38:37 ben Exp $
+ * $Id: texture.c,v 1.4 2003-01-19 16:45:14 zigziggy Exp $
  */
 
 #include <stdlib.h>
@@ -20,6 +20,9 @@
 #include "filename.h"
 #include "sysdebug.h"
 
+
+/** Video memory heap */
+static eh_heap_t * vid_heap;
 
 /** Texture allocator. */
 static allocator_t *texture;
@@ -57,6 +60,7 @@ static int greaterlog2(int v)
 static void texture_clean(texture_t * t)
 {
   memset(t,0, sizeof(*t));
+  t->ta_tex = ~0;
 }
 
 static int texture_enlarge(void)
@@ -64,14 +68,64 @@ static int texture_enlarge(void)
   return -1;
 }
 
+
+static eh_block_t * freeblock_alloc(eh_heap_t * heap)
+{
+  printf("freeblock_alloc %x\n", ta_txr_map(heap->current_offset));
+
+  /* use video memory to maintain free blocks structure */
+  return ta_txr_map(heap->current_offset);
+}
+
+static void freeblock_free(eh_heap_t * heap, eh_block_t * b)
+{
+  printf("freeblock_free %x\n", b);
+
+}
+
+static eh_block_t * usedblock_alloc(eh_heap_t * heap)
+{
+  printf("usedblock_alloc %x\n", heap->userdata);
+
+  /* use texture structure ehb entry to store used block structure */
+  return (eh_block_t *) heap->userdata;
+}
+
+static void usedblock_free(eh_heap_t * heap, eh_block_t * b)
+{
+  printf("usedblock_free %x\n", b);
+
+}
+
+static size_t vid_sbrk(eh_heap_t * heap, size_t size)
+{
+  printf("sbrk %d\n", size);
+
+  /* return the maximum amount of memory */
+  return 5*1024*1024; /* TODO calculate the exact amount */
+}
+
 int texture_init(void)
 {
   SDDEBUG("[%s]\n", __FUNCTION__);
+
+  /* create the video memory heap */
+  vid_heap = eh_create_heap();
+  if (vid_heap == NULL)
+    return -1;
+  vid_heap->freeblock_alloc = freeblock_alloc;
+  vid_heap->freeblock_free = freeblock_free;
+  vid_heap->usedblock_alloc = usedblock_alloc;
+  vid_heap->usedblock_free = usedblock_free;
+  vid_heap->sbrk = vid_sbrk;
+  vid_heap->small_threshold = 10*1024; /* small allocs are at the end of memory */
+
+
   texture_locks = 0;
   texture_references = 0;
   texture = allocator_create(256, sizeof(texture_t));
   if (!texture) {
-	return -1;
+    return -1;
   }
   ta_txr_release_all();
   texture_create_flat("default", 8, 8, 0xFFFFFF);
@@ -92,8 +146,15 @@ void texture_shutdown(void)
 {
   SDDEBUG("[%s]\n", __FUNCTION__);
   if (texture) {
-	allocator_destroy(texture);
+    allocator_destroy(texture);
+    texture = NULL;
   }
+
+  if (vid_heap) {
+    eh_destroy_heap(vid_heap);
+    vid_heap = NULL;
+  }
+
   texture = 0;
 }
 
@@ -153,7 +214,12 @@ texid_t texture_dup(texid_t texid, const char * name)
   t->hlog2  = ts->hlog2;
   t->format = ts->format;
   size = t->height << t->wlog2;
-  t->ta_tex = ta_txr_allocate(size<<1);
+  vid_heap->userdata = &t->ehb;
+  if (eh_alloc(vid_heap, size<<1) == NULL) {
+    goto error;
+  }
+  t->ta_tex = t->ehb.offset;
+/*  t->ta_tex = ta_txr_allocate(size<<1); */
   /* $$$ TODO check alloc error */ 
   t->addr = ta_txr_map(t->ta_tex);
   /** $$$ Don't know if it is a good things to do ... */
@@ -227,7 +293,12 @@ texid_t texture_create(texture_create_t * creator)
   t->format = format;
 
   size = creator->height << (wlog2);
-  t->ta_tex = ta_txr_allocate(size<<1);
+  vid_heap->userdata = &t->ehb;
+  if (eh_alloc(vid_heap, size<<1) == NULL) {
+    goto error;
+  }
+  t->ta_tex = t->ehb.offset;
+/*  t->ta_tex = ta_txr_allocate(size<<1);*/
   /* $$$ TODO check alloc error */ 
   addr = ta_txr_map(t->ta_tex);
   /** $$$ Don't know if it is a good things to do ... */
@@ -265,8 +336,13 @@ texid_t texture_create(texture_create_t * creator)
 
  error:
   if (t) {
-	texture_clean(t);
-	allocator_free(texture, t);
+
+    if (t->ta_tex != ~0) {
+      eh_free(vid_heap, &t->ehb);
+    }
+
+    texture_clean(t);
+    allocator_free(texture, t);
   }
   return -1;
 }
@@ -503,6 +579,11 @@ int texture_destroy(texid_t texid, int force)
 	} else if (!force && t->ref) {
 	  err = -3;
 	} else {
+
+	  if (t->ta_tex != ~0) {
+	    eh_free(vid_heap, &t->ehb);
+	  }
+
 	  texture_clean(t);
 	  allocator_free(texture,t);
 	  err = 0;
