@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/17
  *  @brief   FIME : border texture
- *  $Id: fime_bordertex.c,v 1.1 2003-01-18 14:22:17 ben Exp $
+ *  $Id: fime_bordertex.c,v 1.2 2003-01-20 20:44:09 ben Exp $
  */ 
 
 #include "fime_bordertex.h"
@@ -76,7 +76,7 @@ void fime_bordertex_shutdown(void)
   SDDEBUG("[fime : bordertex shutdowned\n");
 }
 
-int fime_bordertex_add(const char *name, const unsigned short *def16) 
+int fime_bordertex_add(const char *name, const unsigned short *def16)
 {
   texid_t texid;
 

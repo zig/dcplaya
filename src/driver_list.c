@@ -5,7 +5,7 @@
  * @date    2002
  * @brief   Registered driver list.
  *
- * $Id: driver_list.c,v 1.13 2003-01-03 19:05:39 ben Exp $
+ * $Id: driver_list.c,v 1.14 2003-01-20 20:44:09 ben Exp $
  */
 
 #include <string.h>
@@ -24,11 +24,20 @@ driver_list_t exe_drivers;
 driver_list_t vis_drivers;
 driver_list_t img_drivers;
 
+driver_list_reg_t * driver_lists;
+
+static driver_list_reg_t registered_lists[] = {
+  { 0, "inp", INP_DRIVER, &inp_drivers },
+  { 0, "obj", OBJ_DRIVER, &obj_drivers },
+  { 0, "exe", EXE_DRIVER, &exe_drivers },
+  { 0, "vis", VIS_DRIVER, &vis_drivers },
+  { 0, "img", IMG_DRIVER, &img_drivers },
+};
+
 /** Initialize a driver list */
 int driver_list_init(driver_list_t *dl, const char *name)
 {
-  SDDEBUG("%s(%s)\n", __FUNCTION__, name);
-
+  SDDEBUG("[driver_list] : init list [%s]\n", name);
   spinlock_init(&dl->mutex);
   dl->n = 0;
   dl->drivers = 0;
@@ -39,12 +48,18 @@ int driver_list_init(driver_list_t *dl, const char *name)
 /** Init all driver list */
 int driver_list_init_all()
 {
-  int err = 0;
-  err |= driver_list_init(&inp_drivers, "inp");
-  err |= driver_list_init(&obj_drivers, "obj");
-  err |= driver_list_init(&exe_drivers, "exe");
-  err |= driver_list_init(&vis_drivers, "vis");
-  err |= driver_list_init(&img_drivers, "img");
+  int i, err = 0;
+  const int n = sizeof(registered_lists) / sizeof(*registered_lists);
+
+  driver_lists = 0;
+  for (i=0; i<n; ++i) {
+    driver_list_reg_t * reg = registered_lists + i;
+    if (!driver_lists) {
+      driver_lists = reg;
+    }
+    err |= driver_list_init(reg->list, reg->name);
+    reg->next = (i == n-1) ? 0 :  reg+1;
+  }
 
   return err;
 }
@@ -52,15 +67,21 @@ int driver_list_init_all()
 /** Shutddown all driver list */
 void driver_list_shutdown_all(void)
 {
-  driver_list_shutdown(&vis_drivers);
-  driver_list_shutdown(&exe_drivers);
-  driver_list_shutdown(&obj_drivers);
-  driver_list_shutdown(&inp_drivers);
+  driver_list_reg_t * reg, * next;
+
+  for (reg=driver_lists; reg; reg=next) {
+    next = reg->next;
+    driver_list_shutdown(reg->list);
+  }
+  driver_lists = 0;
+  SDDEBUG("[driver_list : all lists shutdowned\n");
 }
 
 /** Shutdown driver list : nothing to do ! */
 void driver_list_shutdown(driver_list_t *dl)
 {
+  spinlock_lock(&dl->mutex);
+  SDDEBUG("[driver_list] : shutdown list [%s]\n", dl->name);
 }
 
 void driver_list_lock(driver_list_t *dl) {

@@ -3,7 +3,7 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: plugin.c,v 1.12 2003-01-03 19:05:39 ben Exp $
+ * $Id: plugin.c,v 1.13 2003-01-20 20:44:09 ben Exp $
  */
 #include <stdio.h>
 #include <string.h>
@@ -130,9 +130,9 @@ int plugin_load_and_register(const char *fname)
     /* Remove driver with the same name if it exists. */
     old = driver_list_search(dl, d->name);
     if (old) {
-      SDDEBUG("Existing driver [%p %s] : [%p %s]\n",
-	      d, d->name, old, old->name);
+      SDDEBUG("Existing driver [%p %s %d]\n", old, old->name, old->count);
       driver_list_unregister(dl, old);
+      SDDEBUG("List unregister [%p %s %d]\n", old, old->name, old->count);
       driver_dereference(old); /* Becoz search add a reference. */
     }
 

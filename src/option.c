@@ -12,6 +12,8 @@
 #include "file_wrapper.h"
 #include "driver_list.h"
 #include "sysdebug.h"
+#include "exceptions.h"
+
 
 #define OPTION_LATCH_FRAMES_MAX 20
 #define OPTION_LATCH_FRAMES_MIN 6
@@ -55,6 +57,7 @@ extern int playa_volume(int);
 
 void lockapp(void);
 void unlockapp(void);
+static int set_visual(vis_driver_t * d);
 
 int option_setup(void)
 {
@@ -70,17 +73,8 @@ int option_setup(void)
   driver_list_lock(&vis_drivers);
 
   SDDEBUG("++ VISUALS = %d\n", vis_drivers.n);
-  visual = (vis_driver_t *) vis_drivers.drivers;
-  driver_reference(&visual->common);
-  if (visual) {
-    SDDEBUG("++ OPTION VISUAL = %s\n", visual->common.name);
-    if (visual->start() < 0) {
-      driver_dereference(&visual->common);
-      visual = 0;
-    }
-  } else {
-    SDDEBUG("++ NO OPTION VISUAL\n");
-  }
+  visual = 0;
+  set_visual((vis_driver_t *)vis_drivers.drivers);
   driver_list_unlock(&vis_drivers);
 
   lcd_visual = OPTION_LCD_VISUAL_FFT;
@@ -117,23 +111,38 @@ vis_driver_t * option_visual()
 
 static int set_visual(vis_driver_t * d)
 {
-  if (d && d != visual && d->start()) {
+  if (d == visual) {
     driver_dereference(&d->common);
-    return -1;
-  } else {
-    if (visual) {
-      SDDEBUG("Stop visual [%s]\n",visual->common.name);
+    return 0;
+  }
 
-      if (d != visual) {
-	visual->stop();
-      }
-      driver_dereference(&visual->common);
-    }
-    visual = d;
-    if (visual) {
-      SDDEBUG("Start visual [%s]\n",visual->common.name);
+  if (d) {
+    int err;
+    SDDEBUG("Start visual [%s,%p]\n", d->common.name, d);
+    EXPT_GUARD_BEGIN;
+    err = d->start();
+    EXPT_GUARD_CATCH;
+    err = -1;
+    EXPT_GUARD_END;
+    if (err) {
+      driver_dereference(&d->common);
+      return -1;
     }
   }
+
+  if (visual) {
+    SDDEBUG("Stop visual [%s,%p]\n",visual->common.name,visual);
+    EXPT_GUARD_BEGIN;
+    visual->stop();
+    EXPT_GUARD_CATCH;
+    EXPT_GUARD_END;
+    driver_dereference(&visual->common);
+  }
+
+  visual = d;
+
+  SDDEBUG("New visual [%s,%p]\n",
+	  d ? d->common.name : "NONE", d);
   return 0;
 }
 

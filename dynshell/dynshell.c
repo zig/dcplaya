@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.62 2003-01-20 14:57:24 zigziggy Exp $
+ * @version    $Id: dynshell.c,v 1.63 2003-01-20 20:44:09 ben Exp $
  */
 
 #include <stdio.h>
@@ -1606,9 +1606,26 @@ static int lua_set_visual(lua_State * L)
   lua_settop(L,0);
   if (vis && vis->common.name) {
     lua_pushstring(L,vis->common.name);
+    driver_dereference(&vis->common);
   }
   return lua_gettop(L);
 }
+
+#if 0
+static int lua_driver_list(lua_State * L)
+{
+  if (lua_gettop(L) < 1) {
+    lua_settop(L,0);
+    lua_newtable(L,1);
+    lua_pushsting(L, "");
+    lua_rawseti(L, 2, 1);
+
+    lua_
+  }
+    
+  
+}
+#endif
 
 static int lua_filetype(lua_State * L)
 {

@@ -67,6 +67,14 @@ void MtxMult(matrix_t m, matrix_t m2)
   }
 }
 
+/* m = m2 * m */
+void MtxInvMult(matrix_t m, matrix_t m2)
+{
+  matrix_t tmp;
+  MtxCopy(tmp,m);
+  MtxMult3(m, m2, tmp);
+}
+
 void MtxMult3(matrix_t d, matrix_t m, matrix_t m2)
 {
   int i,k;
@@ -94,25 +102,46 @@ void MtxVectorsMult(float *v, const float *u, matrix_t m, int nmemb,
 					int sizev, int sizeu)
 {
   while (nmemb--) {
-	const float x=u[0],y=u[1],z=u[2],w=u[3];
-	v[0] = x * m[0][0] + y * m[1][0] + z * m[2][0] + w * m[3][0];
-	v[1] = x * m[0][1] + y * m[1][1] + z * m[2][1] + w * m[3][1];
-	v[2] = x * m[0][2] + y * m[1][2] + z * m[2][2] + w * m[3][2];
-	v[3] = x * m[0][3] + y * m[1][3] + z * m[2][3] + w * m[3][3];
-
-	v = (float *)((char *)v + sizev);
-	u = (const float *)((const char *)u + sizeu);
+    const float x=u[0],y=u[1],z=u[2],w=u[3];
+    v[0] = x * m[0][0] + y * m[1][0] + z * m[2][0] + w * m[3][0];
+    v[1] = x * m[0][1] + y * m[1][1] + z * m[2][1] + w * m[3][1];
+    v[2] = x * m[0][2] + y * m[1][2] + z * m[2][2] + w * m[3][2];
+    v[3] = x * m[0][3] + y * m[1][3] + z * m[2][3] + w * m[3][3];
+    
+    v = (float *)((char *)v + sizev);
+    u = (const float *)((const char *)u + sizeu);
   }
 }
 
 
 void MtxScale(matrix_t m, const float s)
 {
-  matrix_t sm;
-  MtxIdentity(sm);
-  sm[0][0] = sm[1][1] = sm[2][2] = s;
-  MtxMult(m,sm);
+  int i;
+  for (i=0; i<4; ++i) {
+    m[i][0] *= s;
+    m[i][1] *= s;
+    m[i][2] *= s;
+  }
 }
+
+void MtxScale3(matrix_t m, const float sx, const float sy, const float sz)
+{
+  int i;
+  for (i=0; i<4; ++i) {
+    m[i][0] *= sx;
+    m[i][1] *= sy;
+    m[i][2] *= sz;
+  }
+}
+
+void MtxTranslate(matrix_t m, const float x, const float y, const float z)
+{
+  const float w = m[3][3];
+  m[3][0] += x * w;
+  m[3][1] += y * w;
+  m[3][2] += z * w;
+}
+
 
 void MtxTranspose(matrix_t m)
 {
@@ -229,13 +258,13 @@ void MtxLookAt2(matrix_t row,
 /*                  0     11     12      0 */
 /*                 20     21     22      0 */
 /*                  0      0      0      1 */
-/* ---------------------------------------- */
+/* --------------------------------------- */
 /* 1     0   0  0| 00     01     02      0 */
 /* 0     1   0  0|  0     11     12      0 */
 /* 0     0   1  0| 20     21     22      0 */
-/* X     Y   Z  1| X.00   X.01   X.02    */
-/* 		Z.20   Y.11   Y.12 */
-/* 		       Z.21   Z.22 */
+/* X     Y   Z  1| X.00   X.01   X.02    1 */
+/* 		   Z.20   Y.11   Y.12      */
+/* 		          Z.21   Z.22      */
 
   LookAt(row, x-eyes_x, y-eyes_y, z-eyes_z);
 

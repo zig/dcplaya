@@ -5,7 +5,7 @@
  * @date    2002
  * @brief   Registered driver list.
  *
- * $Id: driver_list.h,v 1.9 2003-01-03 19:05:39 ben Exp $
+ * $Id: driver_list.h,v 1.10 2003-01-20 20:44:09 ben Exp $
  */
 
 #ifndef _DRIVER_LIST_H_
@@ -32,6 +32,16 @@ typedef struct
   any_driver_t * drivers; /**< First entry.              */
 } driver_list_t;
 
+/** Registered driver type.
+ *  @ingroup dcplaya_devel
+ */
+typedef struct _driver_list_reg_s {
+  struct _driver_list_reg_s * next; /**< Next registered driver type. */
+  const char * name;                /**< Name of driver list.         */
+  int type;                         /**< Type id.                     */
+  driver_list_t * list;             /**< Driver list.                 */
+} driver_list_reg_t;
+
 /** @name Global driver lists.
  *  @ingroup dcplaya_devel
  *  @{
@@ -47,6 +57,9 @@ extern driver_list_t vis_drivers;
 extern driver_list_t exe_drivers;
 /** List of image driver. */
 extern driver_list_t img_drivers;
+
+/** Table of all driver lists. */
+driver_list_reg_t * driver_lists;
 
 /*@}*/
 

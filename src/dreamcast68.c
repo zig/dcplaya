@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.42 2003-01-19 21:44:50 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.43 2003-01-20 20:44:09 ben Exp $
  */
 
 //#define RELEASE
@@ -614,6 +614,10 @@ static void process_visual(unsigned int elapsed_frames)
 {
   const float ms = elapsed_frames * (1000.0f / 60.0f);
 
+  if (curvis) {
+    SDDEBUG("Should not have a visual here !!!\n");
+    BREAKPOINT(0xbeefdade);
+  }
   curvis = option_visual();
   if (curvis) {
     EXPT_GUARD_BEGIN;
