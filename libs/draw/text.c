@@ -5,7 +5,7 @@
  * @date    2002/02/11
  * @brief   drawing and formating text primitives
  *
- * $Id: text.c,v 1.1 2002-11-25 16:42:28 ben Exp $
+ * $Id: text.c,v 1.2 2002-11-27 09:58:09 ben Exp $
  */
 
 #include <stdarg.h>
@@ -39,7 +39,7 @@ static font_t dummyfont = {
   0, 16, 16, 1, 1, 1, { { 16, 16, 0, 1, 0, 1 } }
 };
 
-static int nfont;
+static fontid_t nfont;
 static font_t * fonts[8];
 
 #define curfont (fonts[current_gc->text.fontid])
@@ -227,8 +227,7 @@ int text_init(void)
   memset(fonts,0, sizeof(fonts));
   current_gc->text.argb = 0xFFFFFFFF;
   current_gc->text.size = 16;
-  current_gc->text.xscale = 1.0f;
-  current_gc->text.yscale = 1.0f;
+  current_gc->text.aspect = 1.0f;
 
   fonts[0] = &dummyfont;
 
@@ -267,10 +266,12 @@ static float size_of_char(float * h, int c)
 {
   myglyph_t * g;
   float wc, hc;
+  const float xscale = current_gc->text.size / curfont->wc;
+  const float yscale = xscale * current_gc->text.aspect;
 
   g = curglyph(c);
-  hc = g->h * current_gc->text.yscale;
-  wc = g->w * current_gc->text.xscale;
+  hc = g->h * yscale;
+  wc = g->w * xscale;
   if (h) *h = hc;
   return wc;
 }
@@ -293,6 +294,9 @@ static float size_of_str(float * h, const char *s)
   unsigned int c;
   float sum = 0, max_h = 0;
 
+  const float xscale = current_gc->text.size / curfont->wc;
+  const float yscale = xscale * current_gc->text.aspect;
+
   while ((c=(*s++)&255), c) {
 	myglyph_t * g;
 	  
@@ -303,9 +307,9 @@ static float size_of_str(float * h, const char *s)
 	if (g->h > max_h) max_h = g->h;
 	sum += g->w;
   }
-  if (h) *h = max_h * current_gc->text.yscale;
+  if (h) *h = max_h * yscale;
 
-  return sum * current_gc->text.xscale;
+  return sum * xscale;
 }
 
 static float size_of_strf(float *h, const char *s, va_list list)
@@ -313,6 +317,9 @@ static float size_of_strf(float *h, const char *s, va_list list)
   int c, esc = 0;
   float sum = 0, maxh = 0;
   gc_text_t savegc;
+  float xscale = current_gc->text.size / curfont->wc;
+  float yscale = xscale * current_gc->text.aspect;
+
 
   save_state(&savegc);
   while ((c=(*s++)&255), c) {
@@ -320,6 +327,8 @@ static float size_of_strf(float *h, const char *s, va_list list)
 	float ch;
 	if (esc) {
 	  c = do_escape(c, &list);
+	  xscale = current_gc->text.size / curfont->wc;
+	  yscale = xscale * current_gc->text.aspect;
 	  esc = 0;
 	} else if (c==current_gc->text.escape) {
       esc = 1;
@@ -327,9 +336,9 @@ static float size_of_strf(float *h, const char *s, va_list list)
     }
 	if (c == -1) continue;
 	g = curglyph(c);
-	ch = g->h * current_gc->text.yscale;
+	ch = g->h * yscale;
 	if (ch > maxh) maxh = ch;
-	sum += g->w * current_gc->text.xscale;
+	sum += g->w * xscale;
   }
   restore_state(&savegc);
   if (h) *h = maxh;
@@ -522,15 +531,18 @@ float text_draw_vstrf(float x1, float y1, float z1,
   int esc = 0, c;
   float maxh = 0;
   int flags;
+  float xscale, yscale;
 
   if (x1>=current_gc->clipbox.x2 || y1>=current_gc->clipbox.y2) {
 	return 0;
   }
 
+  xscale = current_gc->text.size / curfont->wc;
+  yscale = xscale * current_gc->text.aspect;
+
   flags = 0
 	| DRAW_TRANSLUCENT
-	| ((current_gc->text.yscale == 1.0f && current_gc->text.xscale == 1.0f)
-	   ? DRAW_NO_FILTER : DRAW_BILINEAR)
+	| DRAW_BILINEAR
 	| (curfont->texid << DRAW_TEXTURE_BIT);
 
   DRAW_SET_FLAGS(flags);
@@ -541,6 +553,8 @@ float text_draw_vstrf(float x1, float y1, float z1,
     if (esc) {
       esc = 0;
 	  c = do_escape(c, &list);
+	  xscale = current_gc->text.size / curfont->wc;
+	  yscale = xscale * current_gc->text.aspect;
     } else if (c==current_gc->text.escape) {
       c = -1;
       esc = 1;
@@ -548,12 +562,12 @@ float text_draw_vstrf(float x1, float y1, float z1,
 	if (c == -1) continue;
 
     if (c == ' ') {
-      x1 += curfont->glyph[32].w * current_gc->text.xscale;
-	  curh = curfont->glyph[32].h * current_gc->text.yscale;
+      x1 += curfont->glyph[32].w * xscale;
+	  curh = curfont->glyph[32].h * yscale;
     } else {
 	  myglyph_t * g = curglyph(c);
-      x1 = draw_text_char(x1, y1, z1, current_gc->text.xscale, current_gc->text.yscale, c);
-	  curh = g->h * current_gc->text.yscale;
+      x1 = draw_text_char(x1, y1, z1, xscale, yscale, c);
+	  curh = g->h * yscale;
     }
 	if (curh > maxh) maxh = curh;
 
@@ -621,25 +635,25 @@ float text_draw_str_inside(float x1, float y1, float x2, float y2, float z1,
 {
   const float boxw = x2 - x1;
   const float boxh = y2 - y1;
-  float scale = 2.0f, strw, strh;
+  float scale = 1.0f, strw, strh, xscale, yscale;
   int c, flags;
-  gc_text_t savegc;
 	
   if (!s) {
     return 0.0f;
   }
 
-  save_state(&savegc);
-
-  current_gc->text.xscale = current_gc->text.yscale = scale;
+  xscale = current_gc->text.size / curfont->wc;
   strw = size_of_str(&strh, s);
+
   if (strw > boxw || strh > boxh) {
 	float f1 = boxw / strw, f2 =  boxh / strh;
-	if (f2 < f1) f1 = f2;
-	scale *= f1;
-	strw *= f1;
-	strh *= f1;
+	scale = (f2 < f1) ? f2 : f1;
+	strw *= scale;
+	strh *= scale;
+	xscale *= scale;
   }
+  yscale = xscale * current_gc->text.aspect;
+
   x1 += (boxw - strw) * 0.5f;
   y1 += (boxh - strh) * 0.5f;
 
@@ -652,23 +666,30 @@ float text_draw_str_inside(float x1, float y1, float x2, float y2, float z1,
 
   while (c=(*s++)&255, c) {
     if (c == ' ') {
-      x1 += curfont->glyph[32].w * scale;
+      x1 += curfont->glyph[32].w * xscale;
     } else {
-      x1 = draw_text_char(x1, y1, z1, scale, scale, c);
+      x1 = draw_text_char(x1, y1, z1, xscale, yscale, c);
     }
   }
-  restore_state(&savegc);
+
   return strh;
 }
 
-float text_set_font_size(float size)
+float text_set_font_size(const float size)
 {
-  float old = current_gc->text.size;
+  const float old = current_gc->text.size;
+  if (size >= 0) {
+	current_gc->text.size = size;
+  }
+  return old;
+}
 
-  current_gc->text.size   = size;
-  current_gc->text.xscale = size / curfont->wc;
-  current_gc->text.yscale = current_gc->text.xscale;
-
+float text_set_font_aspect(const float aspect)
+{
+  const float old = current_gc->text.aspect;
+  if (aspect >= 0) {
+	current_gc->text.aspect = aspect;
+  }
   return old;
 }
 
@@ -676,11 +697,23 @@ fontid_t text_set_font(fontid_t n)
 {
   int old = current_gc->text.fontid;
 
-  if ((unsigned int)n < nfont) {
+  if (n < nfont) {
 	current_gc->text.fontid = n;
-	text_set_font_size(current_gc->text.size);
   }
   return old;
+}
+
+void text_set_properties(fontid_t n, const float size, const float aspect)
+{
+  if (n < nfont) {
+	current_gc->text.fontid = n;
+  }
+  if (size >= 0) {
+	current_gc->text.size = size;
+  }
+  if (aspect >= 0) {
+	current_gc->text.aspect = aspect;
+  }
 }
 
 int text_set_escape(int n)

@@ -5,7 +5,7 @@
  * @date    2002/10/10
  * @brief   2D drawing primitives.
  *
- * $Id: primitives.h,v 1.1 2002-11-25 16:42:28 ben Exp $
+ * $Id: primitives.h,v 1.2 2002-11-27 09:58:09 ben Exp $
  */
 
 #ifndef _DRAW_PRIMITIVES_H_
@@ -13,7 +13,7 @@
 
 #include "draw/vertex.h"
 
-/** @name Draw primtives.
+/** @name Draw primitives.
  *  @ingroup dcplaya_draw
  *  @{
  */

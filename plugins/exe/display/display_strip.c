@@ -5,7 +5,7 @@
  * @date     2002/10/17
  * @brief    graphics lua extension plugin, strip interface
  * 
- * $Id: display_strip.c,v 1.2 2002-11-25 16:56:09 ben Exp $
+ * $Id: display_strip.c,v 1.3 2002-11-27 09:58:09 ben Exp $
  */
 
 #include "draw/gc.h"
@@ -21,37 +21,42 @@ struct dl_draw_strip_command {
   draw_vertex_t v[256];
 };
 
-static void dl_draw_strip_render(const struct dl_draw_strip_command * c)
+static void dl_draw_strip_render(const struct dl_draw_strip_command * c,
+									  const dl_context_t * context)
 {
   draw_vertex_t v[256];
   int i;
 
   for (i=0; i<c->n; i++) {
-	MtxVectMult(&v[i].x, &c->v[i].x, dl_trans);
+	MtxVectMult(&v[i].x, &c->v[i].x, context->trans);
 	v[i].u = c->v[i].u;
 	v[i].v = c->v[i].v;
-	v[i].a = dl_color[0] * c->v[i].a;
-	v[i].r = dl_color[1] * c->v[i].r;
-	v[i].g = dl_color[2] * c->v[i].g;
-	v[i].b = dl_color[3] * c->v[i].b;
+	v[i].a = context->color.a * c->v[i].a;
+	v[i].r = context->color.r * c->v[i].r;
+	v[i].g = context->color.g * c->v[i].g;
+	v[i].b = context->color.b * c->v[i].b;
   }
   draw_strip(v, c->n, c->flags);
 }
 
-static void dl_draw_strip_render_opaque(void * pcom)
+static dl_code_e dl_draw_strip_render_opaque(void * pcom,
+											 dl_context_t * context)
 {
   struct dl_draw_strip_command * c = pcom;
   if (DRAW_OPACITY(c->flags) == DRAW_OPAQUE) {
-	dl_draw_strip_render(c);
+	dl_draw_strip_render(c, context);
   }
+  return DL_COMMAND_OK;
 }
 
-static void dl_draw_strip_render_transparent(void * pcom)
+static dl_code_e dl_draw_strip_render_transparent(void * pcom,
+												  dl_context_t * context)
 {
   struct dl_draw_strip_command * c = pcom;
   if (DRAW_OPACITY(c->flags) == DRAW_TRANSLUCENT) {
-	dl_draw_strip_render(c);
+	dl_draw_strip_render(c, context);
   }
+  return DL_COMMAND_OK;
 }
 
 void dl_draw_strip(dl_list_t * dl,

@@ -60,6 +60,20 @@ void MtxMult(matrix_t m, matrix_t m2)
   }
 }
 
+void MtxMult3(matrix_t d, matrix_t m, matrix_t m2)
+{
+  int i,k;
+  for (i=0; i<4; ++i) {
+    const float x = m[i][0];
+    const float y = m[i][1];
+    const float z = m[i][2];
+    const float w = m[i][3];
+    for (k=0; k<4; ++k) {
+      d[i][k] = x * m2[0][k] + y * m2[1][k] + z * m2[2][k] + w * m2[3][k];
+    }
+  }
+}
+
 void MtxVectMult(float *v, const float *u, matrix_t m)
 {
   const float x=u[0],y=u[1],z=u[2],w=u[3];

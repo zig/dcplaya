@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.32 2002-11-25 16:46:48 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.33 2002-11-27 09:58:09 ben Exp $
  */
 
 //#define RELEASE
@@ -18,6 +18,7 @@
 /* generated config include */
 #include "config.h"
 
+#include <stdlib.h>
 #include <dc/fmath.h>
 #include <dc/ta.h>
 #include <stdio.h>
@@ -548,8 +549,7 @@ static int no_mt_init(void)
   }
 
   /* Start display_list */
-  dl_open();
-
+  dl_init();
 
   /* Call "dcplayarc.lua" */
   shell_command("dofile (home..[[dcplayarc.lua]])");

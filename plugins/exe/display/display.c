@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.15 2002-11-25 16:56:09 ben Exp $
+ * $Id: display.c,v 1.16 2002-11-27 09:58:09 ben Exp $
  */
 
 #include <stdlib.h>
@@ -44,6 +44,7 @@ DL_FUNCTION_DECLARE(mat_dump);
 /* display_text.c */
 DL_FUNCTION_DECLARE(draw_text);
 DL_FUNCTION_DECLARE(measure_text);
+DL_FUNCTION_DECLARE(text_prop);
 
 /* display_box.c */
 DL_FUNCTION_DECLARE(draw_box1);
@@ -115,7 +116,7 @@ static int lua_new_list(lua_State * L)
   printf("Creating new list %d %d\n", heapsize, active);
 
   lua_settop(L, 0);
-  l = dl_new_list(heapsize, active);
+  l = dl_create(heapsize, active);
   if (l) {
 
     /* insert the new display list into list of all display lists
@@ -147,7 +148,7 @@ DL_FUNCTION_START(destroy_list)
   lua_pushnil(L);
   lua_settable(L, 1);
 
-  dl_destroy_list(dl);
+  dl_destroy(dl);
   return 0;
 }
 DL_FUNCTION_END()
@@ -219,20 +220,20 @@ DL_FUNCTION_START(set_color)
     lua_tonumber(L, 4),
     lua_tonumber(L, 5),
   };
-  dl_set_color(dl, col);
+  dl_set_color(dl, &col);
   return 0;
 }
 DL_FUNCTION_END()
 
 DL_FUNCTION_START(get_color)
 {
-  float * col;
+  dl_color_t * col;
   col = dl_get_color(dl);
   lua_settop(L, 0);
-  lua_pushnumber(L, col[0]);
-  lua_pushnumber(L, col[1]);
-  lua_pushnumber(L, col[2]);
-  lua_pushnumber(L, col[3]);
+  lua_pushnumber(L, col->a);
+  lua_pushnumber(L, col->r);
+  lua_pushnumber(L, col->g);
+  lua_pushnumber(L, col->b);
   return 4;
 }
 DL_FUNCTION_END()
@@ -436,6 +437,13 @@ static luashell_command_description_t display_commands[] = {
       "dl_measure_text(list, string) : measure text"
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_measure_text    /* function */
+  },
+  {
+    "dl_text_prop", 0,                   /* long and short names */
+    "print [["
+      "dl_text_prop(list, [fontid, [size, [aspect] ] ]) : set text properties"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_text_prop       /* function */
   },
 
   /* triangle interface */

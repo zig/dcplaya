@@ -4,7 +4,7 @@
  * @author   ben(jamin) gerard <ben@sashipa.com>
  * @brief    drawing text interface
  *
- * $Id: text.h,v 1.1 2002-11-25 16:42:28 ben Exp $
+ * $Id: text.h,v 1.2 2002-11-27 09:58:09 ben Exp $
  */
 
 #ifndef _TEXT_H_
@@ -19,10 +19,13 @@
  *  
  */
 
+/** Invalid font identifier. */
+#define DRAW_TEXT_INVALID_FONT ((fontid_t)-1)
+
 /** Font identifier. */
 typedef unsigned int fontid_t;
 
-/** @name text initialize functions.
+/** @name Text initialize functions.
  *  @ingroup dcplaya_draw_text
  *  @{
  */
@@ -36,7 +39,7 @@ void text_shutdown(void);
 /**@}*/
 
 
-/** @name text font functions.
+/** @name Text font functions.
  *  @ingroup dcplaya_draw_text
  *  @{
  */
@@ -44,16 +47,26 @@ void text_shutdown(void);
 /** Create a new font. */
 fontid_t text_new_font(texid_t texid, int wc, int hc, int fixed);
 
-/** Set current font size. */
-float text_set_font_size(float size);
-
-/** Set current font. */
+/** Set current text font. */
 fontid_t text_set_font(fontid_t fontid);
+
+/** Set text font size. */
+float text_set_font_size(const float size);
+
+/** Set text font aspect ratio (Y/X). */
+float text_set_font_aspect(const float aspect);
+
+/** Set text font properties.
+ *  @see text_set_font()
+ *  @see text_set_font_size()
+ *  @see text_set_font_aspect()
+ */
+void text_set_properties(fontid_t n, const float size, const float aspect);
 
 /**@}*/
 
 
-/** @name text color functions.
+/** @name Text color functions.
  *  @ingroup dcplaya_draw_text
  *  @{
  */
@@ -102,7 +115,7 @@ float text_draw_strf_center(float x1, float y1, float x2, float y2, float z1,
 /**@}*/
 
 
-/** @name text measure functions.
+/** @name Text measure functions.
  *  @ingroup dcplaya_draw_text
  *  @{
  */

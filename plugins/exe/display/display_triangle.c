@@ -5,56 +5,61 @@
  * @date     2002/10/17
  * @brief    graphics lua extension plugin, triangle interface
  * 
- * $Id: display_triangle.c,v 1.4 2002-11-25 16:56:09 ben Exp $
+ * $Id: display_triangle.c,v 1.5 2002-11-27 09:58:09 ben Exp $
  */
 
 #include "draw/primitives.h"
 #include "display_driver.h"
 #include "display_matrix.h"
 
-struct dl_draw_triangle_command {
+struct triangle_command {
   dl_command_t uc;
   int flags;
   draw_vertex_t v[3];
 };
 
-static void dl_draw_triangle_render(const struct dl_draw_triangle_command * c)
+static void triangle_render(const struct triangle_command * c,
+							dl_context_t * context)
 {
   draw_vertex_t v[3];
   int i;
   for (i=0; i<3; i++) {
-	MtxVectMult(&v[i].x, &c->v[i].x, dl_trans);
+	MtxVectMult(&v[i].x, &c->v[i].x, context->trans);
 	v[i].u = c->v[i].u;
 	v[i].v = c->v[i].v;
-	v[i].a = dl_color[0] * c->v[i].a;
-	v[i].r = dl_color[1] * c->v[i].r;
-	v[i].g = dl_color[2] * c->v[i].g;
-	v[i].b = dl_color[3] * c->v[i].b;
+	v[i].a = context->color.a * c->v[i].a;
+	v[i].r = context->color.r * c->v[i].r;
+	v[i].g = context->color.g * c->v[i].g;
+	v[i].b = context->color.b * c->v[i].b;
   }
   draw_triangle(v+0, v+1, v+2, c->flags);
 }
 
-static void dl_draw_triangle_render_opaque(void * pcom)
+static dl_code_e triangle_render_opaque(void * pcom,
+										dl_context_t * context)
 {
-  struct dl_draw_triangle_command * c = pcom;
+  struct triangle_command * c = pcom;
   if (DRAW_OPACITY(c->flags) == DRAW_OPAQUE) {
-	dl_draw_triangle_render(c);
+	triangle_render(c, context);
   }
+  return DL_COMMAND_OK;
 }
 
-static void dl_draw_triangle_render_transparent(void * pcom)
+static dl_code_e triangle_render_transparent(void * pcom,
+											 dl_context_t * context)
 {
-  struct dl_draw_triangle_command * c = pcom;
+  struct triangle_command * c = pcom;
   if (DRAW_OPACITY(c->flags) == DRAW_TRANSLUCENT) {
-	dl_draw_triangle_render(c);
+	triangle_render(c, context);
   }
+  return DL_COMMAND_OK;
 }
 
-void dl_draw_triangle(dl_list_t * dl,
-					  const draw_vertex_t v[3],
-					  int flags)
+void triangle(dl_list_t * dl,
+			  const draw_vertex_t v[3],
+			  int flags)
 {
-  struct dl_draw_triangle_command * c = dl_alloc(dl, sizeof(*c));
+  struct triangle_command * c = dl_alloc(dl, sizeof(*c));
 
   if (c) {
 	c->v[0] = v[0];
@@ -62,8 +67,8 @@ void dl_draw_triangle(dl_list_t * dl,
 	c->v[2] = v[2];
 	c->flags = flags;
     dl_insert(dl, c,
-			  dl_draw_triangle_render_opaque,
-			  dl_draw_triangle_render_transparent);
+			  triangle_render_opaque,
+			  triangle_render_transparent);
   }
 }
 
@@ -160,7 +165,7 @@ DL_FUNCTION_START(draw_triangle)
   if (n >= i) {
 	/* Got a texture */
 	flags |= ((unsigned int)lua_tonumber(L, i) << DRAW_TEXTURE_BIT)
-				 & DRAW_TEXTURE_MASK;
+	  & DRAW_TEXTURE_MASK;
 	if (n >= i+1) {
 	  /* Got a opacity mode */
 	  flags |= ((unsigned int)lua_tonumber(L, i+1) << DRAW_OPACITY_BIT)
@@ -172,22 +177,9 @@ DL_FUNCTION_START(draw_triangle)
 		  & DRAW_FILTER_MASK;
 	  }
 	}
-	{
-	  static int toto =0;
-	  if (toto < 256) {
-		printf("flags=%08x\n", flags);
-		printf("textured:%s\n",
-			   DRAW_TEXTURE(flags) == DRAW_NO_TEXTURE ? "no":"yes");
-		printf("opacity:%s\n",
-			   DRAW_OPACITY(flags) == DRAW_OPAQUE ? "opaque" : "translucent");
-		printf("filter:%s\n",
-			   DRAW_FILTER(flags) == DRAW_NO_FILTER ? "none" : "bilinear");
-		toto++;
-	  }
-	}
   }
 
-  dl_draw_triangle(dl, v, flags);
+  triangle(dl, v, flags);
   return 0;
 }
 DL_FUNCTION_END()

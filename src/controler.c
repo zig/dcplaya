@@ -164,6 +164,7 @@ int controler_thread(void * dummy)
   }
 
   status = ZOMBIE;
+  return 0;
 }
 
 
