@@ -6,7 +6,7 @@
    An MP3 player using sndstream and XingMP3
 */
 
-static char id[] = "TRYP $Id: xing_driver.c,v 1.2 2002-09-04 18:54:11 ben Exp $";
+static char id[] = "TRYP $Id: xing_driver.c,v 1.3 2002-09-24 18:29:42 vincentp Exp $";
 
 
 /* This library is designed to be called from another program in a thread. It
@@ -378,9 +378,9 @@ static driver_option_t * sndmp3_options(any_driver_t * d, int idx,
     NEXT_DRIVER,          /* Next driver (see any_driver.h)  */
     INP_DRIVER,           /* Driver type */      
     0x0100,               /* Driver version */
-    "Xing-mp3-decoder",   /* Driver name */
-    "Benjamin Gerard\0"   /* Driver authors */
-    "Dan Potter\0",
+    "xing",               /* Driver name */
+    "Benjamin Gerard, "   /* Driver authors */
+    "Dan Potter",
     "Xing Technology "
     "MPEG I layer "
     "I,II,III decoder",  /**< Description */

@@ -8,7 +8,7 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.13 2002-09-24 13:47:04 vincentp Exp $
+ * $Id: fftvlr.c,v 1.14 2002-09-24 18:29:42 vincentp Exp $
  */
 
 #include <stdlib.h>
@@ -496,9 +496,9 @@ static vis_driver_t fftvlr_driver =
     0,                    /**< Next driver (see any_driver.h)  */
     VIS_DRIVER,           /**< Driver type                     */      
     0x0100,               /**< Driver version                  */
-    "FFT-VLR",            /**< Driver name                     */
-    "Vincent Penne\0"     /**< Driver authors                  */
-    "Benjamin Gerard\0",
+    "fftvlr",             /**< Driver name                     */
+    "Vincent Penne, "     /**< Driver authors                  */
+    "Benjamin Gerard",
     "Virtual Landscape "  /**< Description                     */
     "Reality based on "
     "Fast Fourier "

@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.7 2002-09-20 00:22:14 benjihan Exp $
+ * $Id: lpo.c,v 1.8 2002-09-24 18:29:42 vincentp Exp $
  */
 
 #include <stdio.h>
@@ -397,7 +397,7 @@ static vis_driver_t driver = {
     NEXT_DRIVER,          /* Next driver (see any_driver.h) */
     VIS_DRIVER,           /* Driver type */      
     0x0100,               /* Driver version */
-    "LPO",                /* Driver name */
+    "lpo",                /* Driver name */
     "Benjamin Gerard\0",  /* Driver authors */
     "Little "             /**< Description */
     "Pumping "

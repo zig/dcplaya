@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.18 2002-09-24 13:47:03 vincentp Exp $
+ * @version    $Id: dynshell.c,v 1.19 2002-09-24 18:29:39 vincentp Exp $
  */
 
 #include <stdio.h>
@@ -140,6 +140,21 @@ static int lua_shellcd_gettable(lua_State * L)
   return lua_push_entry(L, luashell_command_description_t, cd, field);
 }
 
+static int lua_shellcd_settable(lua_State * L)
+{
+  const char * field;
+  luashell_command_description_t * cd;
+
+  cd = lua_touserdata(L, 1);
+  field = lua_tostring(L, 2);
+
+  if (!strcmp(field, "registered")) {
+    cd->registered = lua_tonumber(L, 3);
+  }
+
+  return 0;
+}
+
 
 
 static
@@ -162,8 +177,16 @@ static int lua_driverlist_gettable(lua_State * L)
   } else {
     // access by name
     const char * name = lua_tostring(L, 2);
+
     lua_assert(L, name);
-    driver = driver_list_search(table, name);
+    if (!strcmp(name, "n")) {
+      /* asked for number of entry */
+      lua_settop(L, 0);
+      lua_pushnumber(L, table->n);
+      return 1;
+    } else {
+      driver = driver_list_search(table, name);
+    }
   }
 
   lua_assert(L, driver);
@@ -216,6 +239,9 @@ static void register_driver_type(lua_State * L)
   shellcd_tag = lua_newtag(L);
   lua_pushcfunction(L, lua_shellcd_gettable);
   lua_settagmethod(L, shellcd_tag, "gettable");
+
+  lua_pushcfunction(L, lua_shellcd_settable);
+  lua_settagmethod(L, shellcd_tag, "settable");
 
 
   driverlist_tag = lua_newtag(L);
@@ -929,9 +955,9 @@ static void shell_register_lua_commands()
   /* register helps */
   for (i=0; commands[i].name; i++) {
     if (commands[i].usage) {
-      dynshell_command("addhelp (%s, [[%s]])", commands[i].name, commands[i].usage);
+      dynshell_command("addhelp ([[%s]], [[%s]])", commands[i].name, commands[i].usage);
       if (commands[i].short_name)
-	dynshell_command("addhelp (%s, [[%s]])", commands[i].short_name, commands[i].usage);
+	dynshell_command("addhelp ([[%s]], [[%s]])", commands[i].short_name, commands[i].usage);
     }
   }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: spc_driver.c,v 1.4 2002-09-14 04:46:45 zig Exp $
+ * $Id: spc_driver.c,v 1.5 2002-09-24 18:29:42 vincentp Exp $
  */
 
 #include "config.h"
@@ -256,9 +256,9 @@ static inp_driver_t spc_driver =
     INP_DRIVER,           /**< Driver type */      
     0x0100,               /**< Driver version */
     "spc",                /**< Driver name */
-    "Benjamin Gerard\0"   /**< Driver authors */
-    "Gary Henderson\0"
-    "Jerremy Koot\0",
+    "Benjamin Gerard, "   /**< Driver authors */
+    "Gary Henderson, "
+    "Jerremy Koot",
     "SNES music player",  /**< Description */
     0,                    /**< DLL handler */
     init,                 /**< Driver init */

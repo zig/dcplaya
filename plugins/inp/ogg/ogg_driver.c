@@ -10,7 +10,7 @@
  *  An Ogg/Vorbis player library using sndstream and functions provided by
  *  sndvorbisfile.
  *
- * $Id: ogg_driver.c,v 1.3 2002-09-23 03:25:01 benjihan Exp $
+ * $Id: ogg_driver.c,v 1.4 2002-09-24 18:29:42 vincentp Exp $
  */
 
 #include <kos.h>
@@ -329,10 +329,10 @@ static inp_driver_t ogg_driver = {
     NEXT_DRIVER,          /* Next driver (see any_driver.h)  */
     INP_DRIVER,           /* Driver type */
     0x100,                /* Version */
-    "ogg-vorbis-decoder", /* Driver name */
-    "Benjamin Gerard\0"   /* Authors */
-    "Dan Potter\0"
-    "and vorbis team\0",
+    "ogg_vorbis",         /* Driver name */
+    "Benjamin Gerard, "   /* Authors */
+    "Dan Potter, "
+    "and vorbis team",
     "ogg vorbis audio "   /* Description */
     "decoder",
     0,                    /* Dll */

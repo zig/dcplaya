@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/09/03
  * @brief     sidplay input plugin for dcplaya
- * @version   $Id: sidplay_driver.cxx,v 1.5 2002-09-21 09:55:35 benjihan Exp $
+ * @version   $Id: sidplay_driver.cxx,v 1.6 2002-09-24 18:29:42 vincentp Exp $
  */
 
 /* generated config include */
@@ -351,7 +351,7 @@ inp_driver_t sidplay_driver =
     INP_DRIVER,           /**< Driver type */      
     0x0100,               /**< Driver version */
     "sidplay",            /**< Driver name */
-    "Benjamin Gerard\0",  /**< Driver authors */
+    "Benjamin Gerard",    /**< Driver authors */
     "C64 music player",   /**< Description */
     0,                    /**< DLL handler */
     init,                 /**< Driver init */

@@ -4,7 +4,7 @@
  * @date      2002/09/20
  * @brief     mikmod input plugin for dcplaya
  *
- * $Id: mikmod_driver.c,v 1.1 2002-09-21 09:53:40 benjihan Exp $
+ * $Id: mikmod_driver.c,v 1.2 2002-09-24 18:29:42 vincentp Exp $
  */
 
 #include <stdio.h>
@@ -332,11 +332,11 @@ inp_driver_t mikmod_driver =
     INP_DRIVER,           /**< Driver type */      
     0x0100,               /**< Driver version */
     "mikmod",             /**< Driver name */
-    "Benjamin Gerard\0"   /**< Driver authors */
-    "Jean-Paul Mikkers (MikMak)\0"
-    "Jake Stine (Air Richter)\0"
-    "Miodrag Vallat <miod@mikmod.org>\0"
-    "Many others...\0",
+    "Benjamin Gerard, "   /**< Driver authors */
+    "Jean-Paul Mikkers (MikMak), "
+    "Jake Stine (Air Richter), "
+    "Miodrag Vallat <miod@mikmod.org>, "
+    "Many others...",
     "multi module tracker", /**< Description */
     0,                    /**< DLL handler */
     init,                 /**< Driver init */

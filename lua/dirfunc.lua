@@ -29,6 +29,8 @@ function fullpath(name)
 end
 addhelp(fullpath, [[print[[fullpath(filename): return fullpath of given filename]]]])
 
+-- classical change directory function
+-- warning : it is not checked that we are going into a valid directory !!
 function cd(path)
 	PWD = fullpath(path)
 	if strsub(PWD, -1)~="/" then
@@ -39,7 +41,7 @@ end
 addhelp(cd, [[print[[cd(path) : set current directory]]]])
 
 
-
+-- classical list files
 function ls(path)
 
 	if not path then
@@ -73,38 +75,59 @@ end
 addhelp(ls, [[print[[ls([path]) : list files into current or given directory]]]])
 
 
+--
 -- reimplement basic io function with relative path support
-function openfile(filename, ...)
-	return %openfile(fullpath(filename), arg)
+--
+
+
+-- template reimplementation function
+--
+-- name is the name of the function to reimplement
+-- arglist is the list of index of argument to convert or nil to convert all arguments
+function fullpath_convert(name, arglist)
+	local new
+	local old = getglobal(name)
+
+	if arglist then
+		new =	function (...)
+				local i, v
+				for i, v in %arglist do
+					arg[v] = fullpath(arg[v])
+				end
+				return call (%old, arg)
+			end
+	else
+		new =	function (...)
+				local i
+				for i=1, arg.n, 1 do
+					arg[i] = fullpath(arg[i])
+				end
+				return call (%old, arg)
+			end
+	end
+
+	setglobal(name, new)
 end
-function readfrom(filename, ...)
-	return %readfrom(fullpath(filename), arg)
-end
-function writeto(filename, ...)
-	return %writeto(fullpath(filename), arg)
-end
-function appendto(filename, ...)
-	return %appendto(fullpath(filename), arg)
-end
-function remove(filename, ...)
-	return %remove(fullpath(filename), arg)
-end
-function dofile(filename, ...)
-	return %dofile(fullpath(filename), arg)
-end
-function mkdir(filename, ...)
-	return %mkdir(fullpath(filename), arg)
-end
-function md(filename, ...)
-	return %md(fullpath(filename), arg)
-end
-function unlink(filename, ...)
-	return %unlink(fullpath(filename), arg)
-end
-function rm(filename, ...)
-	return %rm(fullpath(filename), arg)
-end
-function rename(from, to)
-	return %rename(fullpath(from), fullpath(to))
-end
+
+addhelp("fullpath_convert", [[
+print[[fullpath_convert(function_name[, arglist]) : 
+Reimplement given function with relative path support by converting its input parameters.
+
+- function_name is the name of the function to reimplement
+- arglist is the list of index of argument to convert or nil to convert all arguments
+]]]])
+
+
+
+fullpath_convert( "openfile", { 1 } )
+fullpath_convert( "readfrom", { 1 } )
+fullpath_convert( "writeto", { 1 } )
+fullpath_convert( "appendto", { 1 } )
+fullpath_convert( "remove" )
+fullpath_convert( "dofile" )
+fullpath_convert( "mkdir" )
+fullpath_convert( "md" )
+fullpath_convert( "unlink" )
+fullpath_convert( "rm" )
+fullpath_convert( "rename" )
 
