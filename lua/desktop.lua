@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.22 2003-03-05 17:48:29 ben Exp $
+--- $Id: desktop.lua,v 1.23 2003-03-07 10:11:15 ben Exp $
 ---
 
 if not dolib("evt") then return end
@@ -124,8 +124,8 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 	 icon_file = "dcplaya.tga"
       end
 
-
-      text = text..'<button total_w="64" guiref="r'..format("%d", i)..'">'
+      text = text .. format('<button name=%q total_w="64" guiref="r%d">',
+			    (app.name or "app") .. " switcher" , i)
       text = text
 	 .. '<img name="' .. icon_name
 	 .. '" src="' .. icon_file
@@ -399,12 +399,13 @@ function dskt_handle(app, evt)
 	 local i = app.sub
 	 while i do
 	    tinsert(dir, { name = i.name, size = 0, app = i })
-
 	    i = i.next
 	 end
 
-	 app.switcher = dskt_switcher_create(app, [[<font size="14"> Application Switcher]], dir)
-	 
+	 app.switcher =
+	    dskt_switcher_create(app,
+				 [[<font size="14"> Application Switcher]],
+				 dir)
       end
 
       return
@@ -414,30 +415,29 @@ function dskt_handle(app, evt)
       app.switcher = nil
    end
 
-   if (key == evt_app_insert_event or key == evt_app_remove_event) and evt.app.owner == app then
+   if (key == evt_app_insert_event or key == evt_app_remove_event)
+      and evt.app.owner == app then
 
       local focused = app.sub
-
 
       if key == evt_app_remove_event and focused and focused == evt.app then
 	 focused = focused.next
       end
 
-
-      if console_app and evt.app ~= console_app and focused ~= console_app and console_app.next then
+      if console_app and evt.app ~= console_app 
+	 and focused ~= console_app and console_app.next then
 	 -- force console to be last application (user friendly)
 	 evt_app_insert_last(app, console_app)
       end
 
-
       if focused ~= app.focused then
 	 if app.focused then
---	    print("unfocus", app.focused.name)
+	    --	    print("unfocus", app.focused.name)
 	    evt_send(app.focused, { key = gui_unfocus_event, app = app.focused }, 1)
 	 end
 	 if focused then
 	    evt_send(focused, { key = gui_focus_event, app = focused }, 1)
---	    print("new focused", focused.name)
+	    --	    print("new focused", focused.name)
 	 end
 	 app.focused = focused
 	 app.focus_time = 0
@@ -478,7 +478,7 @@ sprite_simple("app_dcplaya","dcplaya.tga")
 -- Load application icons
 for k,v in { "close", "console", "windowmanager" } do
    local tex = tex_get(v) or
-		    tex_new(home .. "lua/rsc/icons/" .. v .. ".tga")
+      tex_new(home .. "lua/rsc/icons/" .. v .. ".tga")
 end
 
 return dskt_create() ~= nil

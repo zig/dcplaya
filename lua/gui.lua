@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.46 2003-03-05 17:48:29 ben Exp $
+--- $Id: gui.lua,v 1.47 2003-03-07 10:11:15 ben Exp $
 ---
 
 --
@@ -177,12 +177,10 @@ function gui_child_autoplacement(app)
    local n = 0
    while i do
       n = n + 1
-
       if not i._dl and i.dl and i.dl ~= app.dl then
 	 i._dl = dl_new_list(256, 1)
 	 dl_sublist(i._dl, i.dl)
       end
-
       i = i.next
    end
 
@@ -213,7 +211,7 @@ function gui_new_focus(app, f)
    if f and f~=of then
 --      if of then
 --	 evt_send(of, { key = gui_unfocus_event, app = of })
---      end
+      --      end
       evt_app_remove(f)
       evt_app_insert_first(app, f)
 --      evt_send(f, { key = gui_focus_event, app = f })
@@ -289,9 +287,20 @@ function gui_minimal_handle(app,evt)
       app.dl = nil
       return evt
    end
+
    if f then
       return f(app, evt)
    end
+
+   -- $$$ added by ben for vmu display
+   if vmu_set_text then
+      if key == gui_focus_event and evt.app == app then
+	 vmu_set_text("focus on:   "..app.name)
+      elseif key == gui_unfocus_event and evt.app == app then
+	 vmu_set_text(nil)
+      end
+   end
+
    return evt
 end
 
@@ -330,7 +339,22 @@ function gui_dialog_handle(app, evt)
       return f(app, evt)
    end
 
+   -- $$$ added by ben for vmu display
+   if vmu_set_text then
+      if key == gui_focus_event and evt.app == app then
+	 vmu_set_text("dialog:     " .. app.name)
+      elseif key == gui_unfocus_event and evt.app == app then
+	 vmu_set_text(nil)
+      end
+   end
+
    if (key == evt_app_insert_event or key == evt_app_remove_event) and evt.app.owner == app then
+
+      -- $$$ 
+--       printf("gui_dialog_handle %q : recieve %q for %q",
+-- 	     app.name, (key == evt_app_insert_event and "insert") or "remove",
+-- 	     evt.app.name)
+
       if key == evt_app_remove_event and focused and focused == evt.app then
 	 focused = focused.next
       end
@@ -623,19 +647,25 @@ function gui_button_handle(app, evt)
       return f(app, evt)
    end
 
+   -- $$$ added by ben for vmu display
+   if vmu_set_text then
+      if key == gui_focus_event and evt.app == app then
+	 vmu_set_text("button:     " .. app.name)
+      elseif key == gui_unfocus_event and evt.app == app then
+	 vmu_set_text(nil)
+      end
+   end
+
    return evt
 end
 
 -- warning : owner must be a gui item (we use its dl)
-function gui_new_button(owner, box, text, mode, z)
+function gui_new_button(owner, box, text, mode, z, name)
    local app
 
    z = gui_guess_z(owner, z) + 10
---   print("button", z)
-
    app = { 
-
-      name = "gui_button",
+      name = name or "gui_button",
       version = "0.9",
 
       handle = gui_button_handle,
@@ -647,11 +677,11 @@ function gui_new_button(owner, box, text, mode, z)
 
       event_table = { },
       flags = { }
-
    }
 
    --dl_draw_box(app.dl, app.box, z, gui_button_color1, gui_button_color2)
-   gui_button_box_draw(app.dl, app.box, z, gui_button_bcolor, gui_button_color1, gui_button_color2)
+   gui_button_box_draw(app.dl, app.box, z,
+		       gui_button_bcolor, gui_button_color1, gui_button_color2)
 
    if text then
       gui_label(app, text, mode)
@@ -710,13 +740,22 @@ function gui_input_handle(app, evt)
       end
    end
 
-   if key == gui_focus_event and evt.app == app and ke_set_active then
-      ke_set_active(1)
-      return nil
+   if key == gui_focus_event and evt.app == app then
+      gui_input_display_text(app) -- $$$ display vmu
+      if ke_set_active then
+	 ke_set_active(1)
+	 return nil
+      end
    end
-   if key == gui_unfocus_event and evt.app == app and ke_set_active then
-      ke_set_active(nil)
-      return nil
+   if key == gui_unfocus_event and evt.app == app then
+      if ke_set_active then
+	 ke_vmu_prefix = nil
+	 ke_vmu_suffix = nil
+	 ke_set_active(nil)
+	 return nil
+      elseif vmu_set_text then
+	 vmu_set_text(nil)
+      end
    end
    
    return evt
@@ -731,7 +770,24 @@ function gui_input_display_text(app)
    dl_clear(app.input_dl)
    dl_draw_text(app.input_dl, x, y, z, gui_text_color, app.input)
 
-   w, h = dl_measure_text(app.input_dl, strsub(app.input, 1, app.input_col-1))
+   local prefix = strsub(app.input, 1, app.input_col-1)
+   local suffix = strsub(app.input, app.input_col)
+
+   print("input app:"..app.name)
+   print("input owner:" .. tostring( app.owner and app.owner,anme))
+   print("input prefix:" .. prefix)
+   print("input suffix:" .. suffix)
+
+   if not app.owner or gui_is_focus(app) then
+      if ke_set_active then
+	 ke_vmu_prefix = prefix
+	 ke_vmu_suffix = suffix
+      elseif vmu_set_text then
+	 vmu_set_text("input :     " .. strsub(prefix,-24))
+      end
+   end
+
+   w, h = dl_measure_text(app.input_dl, prefix)
    dl_draw_box(app.input_dl, x+w, y, x+w+2, y+h, z,
 	       gui_input_cursor_color1, gui_input_cursor_color2)
    --	print (x+w, y, x+w+2, y+h)
@@ -794,13 +850,16 @@ function gui_new_input(owner, box, text, mode, string, z)
    gui_input_box_draw(app.dl, app.box, z, gui_input_color1, gui_input_color2)
    --dl_draw_box(app.dl, app.box, z, gui_input_color1, gui_input_color2)
    
-   gui_input_set(app, string)
    
    if text then
       gui_label(app, text, mode)
    end
    
    evt_app_insert_last(owner, app)
+
+   -- $$$ ben : move this after insert becoz I need to know if focusing
+   -- for vmu display
+   gui_input_set(app, string)
    
    -- if we are the focused widget, then show the keyboard
    if app.sub == app and ke_set_active then

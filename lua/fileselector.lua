@@ -4,7 +4,7 @@
 --- @date   2002/10/04
 --- @brief  fileselector gui
 ---
---- $Id: fileselector.lua,v 1.22 2003-03-04 17:27:54 zigziggy Exp $
+--- $Id: fileselector.lua,v 1.23 2003-03-07 10:11:15 ben Exp $
 --
 -- TODO : select item with space 
 --        completion with tab        
@@ -353,7 +353,7 @@ function fileselector(name,path,filename,owner)
    local mkbutton =
       function(p)
 	 local but
-	 but = gui_new_button(%dial, p.box, p.name)
+	 but = gui_new_button(%dial, p.box, p.name,nil,nil,p.name)
 	 but.event_table[gui_press_event] = p.handle
       end
    local i, b, yb

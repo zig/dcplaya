@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.35 2003-03-03 18:11:45 ben Exp $
+--- $Id: song_browser.lua,v 1.36 2003-03-07 10:11:16 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -254,13 +254,22 @@ function song_browser_create(owner, name)
 	 return evt
       end
 
-      local action, key_char 
-      key_char = (key >= 32 and key<128 and strchar(key)) or ""
+      local action
 
-      if not strfind("`'\"^$()%.[]*+-?`",key_char,1,1) then
-	 sb.search_str = (sb.search_str or "^") .. key_char
-	 action = sb.cl:locate_entry_expr(sb.search_str .. ".*")
-	 sb.key_time = 0
+      -- $$$ Test 96 '`' to prevent event eating for the console switching.
+      if key >= 0 and key<128 and key ~= 96 then
+	 local key_char 
+	 key_char = strchar(key)
+	 if key_char then
+	    if strfind(key_char,"%a") then
+	       key_char = "[".. strlower(key_char) .. strupper(key_char) .."]"
+	    end
+	    if not strfind("`'\"^$()%.[]*+-?`",key_char,1,1) then
+	       sb.search_str = (sb.search_str or "^") .. key_char
+	       action = sb.cl:locate_entry_expr(sb.search_str .. ".*")
+	       sb.key_time = 0
+	    end
+	 end
       elseif key == gui_focus_event then
 	 -- nothing to do, this will awake song-browser
       elseif key == gui_unfocus_event then

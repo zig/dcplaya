@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: keyboard_emu.lua,v 1.15 2003-03-06 19:59:41 zigziggy Exp $
+-- $Id: keyboard_emu.lua,v 1.16 2003-03-07 10:11:15 ben Exp $
 --
 
 dolib("keydefs")
@@ -146,6 +146,8 @@ function ke_shutdown()
 
    if ke_app then
       evt_shutdown_app(ke_app)
+      -- $$$ added by ben
+      ke_app = nil
    end
 
 end
@@ -340,6 +342,15 @@ function ke_set_active(s)
       ke_cursorbox = 3*ke_box
       ke_time = 0
    end
+   if not s then -- $$$ added by ben for vmu display
+      if vmu_set_visual and ke_app then
+	 vmu_set_visual(ke_app.save_vmu_visual)
+	 ke_app.save_vmu_visual = nil
+      end
+      if vmu_set_text then
+	 vmu_set_text(nil)
+      end
+   end
    ke_active = s
    ke_vanishing_arrays[ke_array] = not s
    if s then
@@ -378,6 +389,7 @@ function ke_update(app, frametime)
       return
    end
 
+
    -- do collect garbage once per frame for smoother animation
    -- (done in evt.lua now)
    --	collectgarbage()
@@ -406,6 +418,26 @@ function ke_update(app, frametime)
 
    local ci = 0.5+0.5*cos(360*ke_time*2)
    dl_set_color(ke_cursor_dl, ci, 1, ci, ci)
+
+   if vmu_set_text and ke_key and ke_key.text then
+      if not app.save_vmu_visual and vmu_set_visual then
+	 app.save_vmu_visual = vmu_set_visual(0)
+      end
+
+      local len
+      local vmustr = "kbd " .. (ke_array.name or "emulator")
+      local len,klen = strlen(vmustr), strlen(ke_key.text)
+      if len < 12 then vmustr = vmustr .. strrep(" ",12-len) end
+      if ke_vmu_prefix then
+	 vmustr = vmustr .. strsub(ke_vmu_prefix,-24+klen)
+      end
+      vmustr = vmustr
+	 .. ((ci > 0.5 and ke_key.text) or strrep(" ", klen))
+      if ke_vmu_suffix then
+	 vmustr = vmustr .. ke_vmu_suffix
+      end
+      vmu_set_text(vmustr)
+   end
 
 end
 
@@ -451,9 +483,15 @@ function ke_init()
 
    ke_arrays = { }
    ke_vanishing_arrays = { }
-   ke_downarray = { dl = ke_downarray_dl, ypos = ke_vanish_y, yaim = ke_vanish_y, alpha = 0 }
+   ke_downarray = {
+      name = "down", -- $$ added by ben for VMU display
+      dl = ke_downarray_dl, ypos = ke_vanish_y, yaim = ke_vanish_y, alpha = 0
+   }
    tinsert(ke_arrays, ke_downarray)
-   ke_uparray = { dl = ke_uparray_dl , ypos = ke_vanish_y, yaim = ke_vanish_y, alpha = 0}
+   ke_uparray = {
+      name = "up", -- $$ added by ben for VMU display
+      dl = ke_uparray_dl , ypos = ke_vanish_y, yaim = ke_vanish_y, alpha = 0
+   }
    tinsert(ke_arrays, ke_uparray)
 
    ke_addkeypos(5, 5)

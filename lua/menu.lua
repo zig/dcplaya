@@ -171,20 +171,6 @@ function menu_create(owner, name, def, box, x1, y1)
 	    evt_send(menu.owner, { key = gui_menu_close_event })
 	 end
       end
-
---       if menu.fade == 0 then return end
---       local a,r,g,b
---       a, r, g, b = dl_get_color(menu.dl)
---       a = a + menu.fade * frametime
---       if a > 1 then
--- 	 a = 1
--- 	 menu.fade  = 0
---       elseif a < 0 then
--- 	 a = 0
--- 	 menu.fade  = 0
--- 	 dl_set_active(menu.dl, 0)
---       end
---       menu:set_color(a, r, g, b)
    end
 
    -- Menu handle
@@ -198,8 +184,8 @@ function menu_create(owner, name, def, box, x1, y1)
       end
 
       if key == gui_focus_event then
+	 print("MENU handle [gui_focus_event (1)] : " .. tostring(menu.name))
 	 menu:open()
-	 return
       end
 
       if menu.closed then
@@ -241,12 +227,12 @@ function menu_create(owner, name, def, box, x1, y1)
 	 menu:close()
 	 return
       elseif key == gui_focus_event then
-	 print("menu focused")
-	 vmu_set_text(fl:get_text())
+	 print("MENU handle [gui_focus_event] : " .. tostring(menu.name))
+--	 vmu_set_text(menu.fl:get_text())
 	 return
       elseif key == gui_unfocus_event then
-	 print("menu unfocused")
-	 vmu_set_text(nil)
+	 print("MENU handle [gui_unfocus_event] : " .. tostring(menu.name))
+--	 vmu_set_text(nil)
 	 return
       end
       return evt
@@ -255,6 +241,10 @@ function menu_create(owner, name, def, box, x1, y1)
    -- Menu move
    -- ---------
    function menu_move(menu,movx,movy,movz,move_sub)
+
+      -- $$$
+      print("MENU move:"..tostring(menu.name))
+
       if tag(menu) ~= menu_tag or not menu.fl then return end
       local box,z = menu.fl.box, menu.fl.bo2 and menu.fl.bo2[3]
       local x,y = box and box[1], box and box[2]
@@ -272,6 +262,9 @@ function menu_create(owner, name, def, box, x1, y1)
    -- Menu open
    -- ---------
    function menu_open(menu)
+
+      print("MENU open:" .. tostring(menu.name))
+
       menu.closed = nil
       local fl = menu.fl
       if fl then
@@ -296,6 +289,8 @@ function menu_create(owner, name, def, box, x1, y1)
    -- Menu close
    -- ----------
    function menu_close(menu, close_sub)
+      print("MENU close:" .. tostring(menu.name))
+
       if close_sub then
 	 local i,v
 	 for i,v in menu.sub_menu do
@@ -405,6 +400,10 @@ function menu_create(owner, name, def, box, x1, y1)
    -- Menu confirm
    -- ------------
    function menu_confirm(menu)
+
+      -- $$$
+      print("MENU confirm:"..tostring(menu.name))
+
       local fl = menu.fl
       if not fl then return end
       local idx = fl:get_pos()
@@ -440,8 +439,11 @@ function menu_create(owner, name, def, box, x1, y1)
 	    local y = (xentry and xentry.y) or 0
 	    if not menu.def.sub then return end
 	    submenu = menu:create(subname, menu.def.sub[subname],
-				  { m[4][1]+fl.bo2[1],
-				     m[4][2]+y})
+				  { m[4][1]+fl.bo2[1], m[4][2]+y})
+	    if (submenu) then
+	       -- $$$
+	    end
+
 	 end
 	 return 2
       else
@@ -454,6 +456,10 @@ function menu_create(owner, name, def, box, x1, y1)
    function menu_shutdown(menu)
       if not menu then return end
 
+      -- $$$
+      print("MENU shutdown:"..tostring(menu.name))
+
+
       local owner = menu.owner
       if tag(owner) == menu_tag then
 	 owner.sub_menu[menu.name] = nil
@@ -461,6 +467,7 @@ function menu_create(owner, name, def, box, x1, y1)
       if menu.fl then
 	 menu.fl:shutdown()
 	 menu.fl = nil
+	 vmu_set_text(nil)
       end
       if menu.dl then
 	 dl_set_active(menu.dl)
