@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/17
  *  @brief   Fly Into a Musical Environment
- *  $Id: fime.c,v 1.2 2003-01-19 21:36:33 ben Exp $
+ *  $Id: fime.c,v 1.3 2003-01-20 14:23:09 ben Exp $
  */ 
 
 #include <stdio.h>
@@ -28,6 +28,7 @@
 #include "fime_beatdetect.h"
 #include "fime_bordertex.h"
 #include "fime_ship.h"
+#include "fime_bees.h"
 
 #ifndef PI
 # define PI 3.14159265359
@@ -75,6 +76,7 @@ static int stop(void)
 {
   ready = 0;
 
+  fime_bees_shutdown();
   fime_ship_shutdown();
   fime_beatdetect_shutdown();
   fime_analysis_shutdown();
@@ -98,6 +100,7 @@ static int start(void)
   err = err || fime_analysis_init();
   err = err | fime_beatdetect_init();
   err = err || fime_ship_init();
+  err = err || fime_bees_init();
 
   ready = !err;
 

@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/17
  *  @brief   FIME : spac ship
- *  $Id: fime_ship.c,v 1.1 2003-01-18 14:22:17 ben Exp $
+ *  $Id: fime_ship.c,v 1.2 2003-01-20 14:23:09 ben Exp $
  */ 
 
 #include <stdlib.h>
@@ -124,7 +124,7 @@ matrix_t * fime_ship_update(const float seconds)
 
   mtx[3][0] = tmp[0][0] * 1.4;
   mtx[3][1] = tmp[1][0] * 1.0;
-  mtx[3][2] = z + 0.1;
+  mtx[3][2] = z;// + 0.1;
   
   return &mtx;
 }
