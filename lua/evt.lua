@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.5 2002-10-06 22:47:29 vincentp Exp $
+-- $Id: evt.lua,v 1.6 2002-10-08 08:22:34 benjihan Exp $
 --
 
 
@@ -120,13 +120,13 @@ function evt_peek()
 		key = evt_origpeekchar()
 
 		if key then
-			vcolor(255, 0, 0)
+--			vcolor(255, 0, 0)
 			evt = { key = key }
 			evt = evt_send(evt_root_app, evt)
 			if evt then
 				return evt
 			end
-			vcolor(0, 0, 0)
+--			vcolor(0, 0, 0)
 		else
 			-- do collect garbage once per frame for smoother animation
 			collectgarbage()
@@ -138,9 +138,9 @@ function evt_peek()
 	until not key
 
 	-- call update method of applications
-	vcolor(100, 0, 0)
+--	vcolor(100, 0, 0)
 	evt_update(evt_root_app, frametime)
-	vcolor(0, 0, 0)
+--	vcolor(0, 0, 0)
 
 end
 

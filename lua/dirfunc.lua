@@ -2,6 +2,23 @@
 
 PWD=home
 
+
+-- return path,leaf
+-- 
+function get_path_and_leaf(pathname)
+	if not pathname then return end
+	local start,stop,path,leaf
+	start,stop,path,leaf = strfind(pathname,"^(.*/)(.*)")
+	if path then
+		path = fullpath(path)
+	elseif not leaf or leaf == "" then
+		-- Find no path -- leaf only 
+		leaf = pathname
+	end
+	if leaf and leaf == "" then leaf = nil end
+	return path,leaf
+end
+
 -- return fullpath of given filename
 function fullpath(name)
 

@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: gui.lua,v 1.7 2002-10-07 23:28:02 vincentp Exp $
+-- $Id: gui.lua,v 1.8 2002-10-08 08:22:34 benjihan Exp $
 --
 
 --
@@ -394,8 +394,8 @@ gui_input_edline_set = {
 [KBD_KEY_RIGHT] = 1,
 [KBD_KEY_DEL] = 1,
 [KBD_BACKSPACE] = 1,
-
 }
+
 function gui_input_handle(app, evt)
 	local key = evt.key
 
@@ -409,12 +409,18 @@ function gui_input_handle(app, evt)
 		return f(app, evt)
 	end
 
-	
-
-	if not app.prev and ((key >= 32 and key < 128) or gui_input_edline_set[key]) then
-		app.input, app.input_col = zed_edline(app.input, app.input_col, key)
-		gui_input_display_text(app)
-		return nil
+	if not app.prev then
+		if ((key >= 32 and key < 128) or gui_input_edline_set[key]) then
+			app.input,app.input_col = zed_edline(app.input,app.input_col,key)
+			gui_input_display_text(app)
+			return nil
+		elseif gui_keyconfirm[key] then
+			evt_send(app.owner, { key=gui_input_confirm_event, input=app })
+			return nil
+		elseif gui_keycancel[key] then
+			gui_input_set(app,strsub(app.input,1,app.input_col-1))
+			return nil
+		end
 	end
 
 	if key == gui_focus_event and ke_set_active then
@@ -453,6 +459,19 @@ function gui_input_set(app, string, col)
 	end
 	app.input = string
 	app.input_col = col
+	gui_input_display_text(app)
+end
+
+-- insert text
+function gui_input_insert(app, string, col)
+	if not string or string == "" then return end
+	if col then app.input_col = col end
+	local i,len
+	len = strlen(string)
+	for i=1, len, 1 do
+		app.input, app.input_col = zed_edline(app.input, app.input_col,
+			strbyte(string,i))
+	end
 	gui_input_display_text(app)
 end
 
@@ -500,6 +519,49 @@ function gui_new_input(owner, box, text, mode, string, z)
 	return app
 end
 
+function gui_text_set(app, text)
+	if not app then return end
+	dl_clear(app.dl)
+	dl_draw_box(app.dl, app.box, z, {0.1, 1, 1, 1} , {0.15, 1, 1, 1})
+	if text and strlen(text) > 0 then
+		gui_label(app, text, app.mode)
+	end
+	dl_set_active(app.dl,1)
+end
+
+function gui_destroy_text(app)
+	if app then
+		dl_destroy_list(app.dl)
+	end
+end
+
+function gui_new_text(owner, box, text, mode, z)
+	local app
+
+	z = gui_guess_z(owner, z)
+
+	function handle(app,evt)
+		if evt.key == evt_shutdown_event then
+			gui_destroy_text(app)
+		end
+		return evt
+	end
+
+	app = { 
+		name = "gui_text",
+		version = "1.0",
+		handle = handle,
+		dl = dl_new_list(1024),
+		box = box,
+		z = z,
+		event_table = { },
+		flags = { i888nactive = 1 },
+		mode = mode
+	}
+	gui_text_set(app, text)
+	evt_app_insert_last(owner, app)
+	return app
+end
 
 
 -- display justified text into given box
@@ -601,6 +663,7 @@ function gui_init()
 	gui_press_event 		= evt_new_code()
 	gui_focus_event 		= evt_new_code()
 	gui_unfocus_event 		= evt_new_code()
+	gui_input_confirm_event	= evt_new_code()
 	gui_item_confirm_event	= evt_new_code()
 	gui_item_cancel_event	= evt_new_code()
 	gui_item_change_event	= evt_new_code()

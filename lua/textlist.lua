@@ -3,7 +3,7 @@
 -- author : benjamin gerard <ben@sashipa.com>
 -- date   : 2002/10/04
 --
--- $Id: textlist.lua,v 1.2 2002-10-07 23:54:58 benjihan Exp $
+-- $Id: textlist.lua,v 1.3 2002-10-08 08:22:34 benjihan Exp $
 --
 
 --- textlist object - Display a textlist from a given dir
@@ -25,13 +25,18 @@
 -- "border"  	Size of border. Default 3.
 -- "span"    	Size of separator line (up and down). Default 1.
 --
--- "filecolor"	Color to display flentry with size ~= -1
--- "dircolor"	Color to display flentry with size == -1
+-- "filecolor"	Color to display flentry with size >= 0
+-- "dircolor"	Color to display flentry with size < -1
 -- "bkgcolor"	Color of background box
 -- "curcolor"	Color of cursor box
 --
 -- "confirm"	bool function(textlist). This function is call when confirm
---              button is pressed. Return 1 if entry is "confirmed"
+--              button is pressed.
+--              Returns :	- nil if action failed
+--							- 0 ok but no change
+--							- 1 if entry is "confirmed"
+--							- 2 if entry is "not confirmed" but change occurs
+--                          - 3 if entry is "confirmed" and change occurs
 -- "flags"		{ no_bkg align=["left"|"center"|"right"] }
 --              	no_bkg : Do not display background box
 --               	align  : Entry text horizontal alignment. default="left"
@@ -138,7 +143,7 @@ end
 -- confirm default action : return current entry
 --
 function file_list_default_confirm(fl)
-	if not fl or not fl.dir or not fl.entries then return end
+	if not fl or not fl.dir or fl.entries < 1 then return end
 	return 1
 end
 
@@ -179,7 +184,7 @@ end
 -- Mesure maximum width and height for an entry
 --
 function textlist_measure(fl)
-	if not fl or not fl.dir or not fl.entries then return {0,0} end
+	if not fl or not fl.dir or fl.entries < 1 then return {0,0} end
 
 	-- Measure text --
 	local i, w, h
@@ -338,6 +343,8 @@ function textlist_updatecursor(fl)
 				fl.curcolor[1], fl.curcolor[2],	fl.curcolor[3], fl.curcolor[4],
 				fl.curcolor[5], fl.curcolor[6],	fl.curcolor[7], fl.curcolor[8])
 		dl_set_active(fl.cdl,1)
+	else
+		dl_set_active(fl.cdl,0)
 	end
 --	print("..textlist_updatecursor")
 
@@ -370,7 +377,7 @@ function textlist_update(fl)
 		local color = fl.dircolor
 --		print(format(" > draw_text #%d at %d '%s'", i, y, fl.dir[i].name))
 
-		if fl.dir[i].size and fl.dir[i].size ~= -1 then
+		if fl.dir[i].size and fl.dir[i].size > 0 then
 			color = fl.filecolor
 		end
 
@@ -400,7 +407,7 @@ function textlist_movecursor(fl,mov)
 		top = pos - fl.lines + 1
 		if top < 0 then top = 0 end
 	end
-	
+
 	if pos ~= fl.pos then
 		local y
 		y = fl.border + (pos-top) * (fl.font_h + 2*fl.span)
@@ -419,6 +426,37 @@ function textlist_movecursor(fl,mov)
 	end
 --	print(format("action:%d",action))
 	return action
+end
+
+function textlist_get_entry(fl)
+	if not fl or not fl.dir or fl.entries < 1 then return end
+	local entry = fl.dir[fl.pos+1]
+	return { name=entry.name, size=entry.size }
+end
+
+function textlist_find_entry_expr(fl,regexpr)
+	if not fl or not fl.dir or fl.entries < 1 or not regexpr then return end
+	local i
+	for i=1, fl.entries, 1 do
+		if strfind(fl.dir[i].name,regexpr) then
+			print(format("textlist_locate_entry_expr(%s) found %s at %d",
+				regexpr, fl.dir[i].name,i))
+			return textlist_movecursor(fl,i-1-fl.pos)
+		end
+	end
+	return
+end
+
+function textlist_locate_entry(fl,name)
+	if not fl or not fl.dir or fl.entries < 1 or not name then return end
+	local i
+	for i=1, fl.entries, 1 do
+		if fl.dir[i].name == name then
+			print(format("textlist_locate_entry(%s) found at %d",name,i))
+			return textlist_movecursor(fl,i-1-fl.pos)
+		end
+	end
+	return
 end
 
 -- textlist application event handler
@@ -441,12 +479,14 @@ function textlist_gui_handle(app,evt)
 		-- No dir loaded or no focus, ignore event --
 		return evt;
 	elseif gui_keyup[key] then
-		if textlist_movecursor(fl,-1) then
+		local code = textlist_movecursor(fl,-1)
+		if code and code > 0 then
 			evt_send(app.owner, { key = gui_item_change_event })
 		end
 		return nil
 	elseif gui_keydown[key] then
-		if textlist_movecursor(fl,1) then
+		local code = textlist_movecursor(fl,1)
+		if code and code > 0 then
 			evt_send(app.owner, { key = gui_item_change_event })
 		end
 		return nil
@@ -454,7 +494,14 @@ function textlist_gui_handle(app,evt)
 		evt_send(app.owner, { key = gui_item_cancel_event })
 		return nil
 	elseif gui_keyconfirm[key] then
-		if fl.confirm(fl) then
+		local action = fl.confirm(fl)
+		if not action then return end
+		if action == 1 then
+			evt_send(app.owner, { key = gui_item_confirm_event })
+		elseif action == 2 then
+			evt_send(app.owner, { key = gui_item_change_event })
+		else
+			evt_send(app.owner, { key = gui_item_change_event })
 			evt_send(app.owner, { key = gui_item_confirm_event })
 		end
 	else
@@ -558,7 +605,7 @@ end
 textlist_loaded = 1
 print("Loaded textlist.lua")
 
-if not nil then
+if nil then
 print("Run test (y/n) ?")
 c = getchar()
 if c == 121 then
