@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.36 2002-12-15 16:15:03 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.37 2002-12-18 18:11:07 ben Exp $
  */
 
 //#define RELEASE
@@ -524,7 +524,7 @@ static int no_mt_init(void)
 #endif
 
   /* Setup border poly */
-  if (border_setup() < 0) {
+  if (border_init() < 0) {
     err = __LINE__;
     goto error;
   }

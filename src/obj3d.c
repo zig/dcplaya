@@ -4,7 +4,7 @@
  * @date    2002/02/12
  * @brief   Very simple 3D API.
  *
- * @version $Id: obj3d.c,v 1.4 2002-11-25 16:46:48 ben Exp $
+ * @version $Id: obj3d.c,v 1.5 2002-12-18 18:11:07 ben Exp $
  */
 
 #include <stdio.h>
@@ -68,7 +68,7 @@ static void ResizeAndCenter(obj_t *o, const float w)
   if (o->flags) {
     return;
   }
-  o->flags = bordertex[2];
+  o->flags = 1;
 
   // Set W
   for (i=0; i<o->nbv; ++i) {

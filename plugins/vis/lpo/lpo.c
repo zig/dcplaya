@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.9 2002-12-18 12:41:52 ben Exp $
+ * $Id: lpo.c,v 1.10 2002-12-18 18:11:07 ben Exp $
  */
 
 #include <stdio.h>
@@ -38,7 +38,7 @@ static vtx_t pos;     /**< Object position */
 static vtx_t angle;   /**< Object rotation */
 static float flash;
 static float ozoom;
-static int curbordertex;
+static texid_t lpo_texid;
 
 #define RANDOM_MODE 1
 #define FLASH_MODE 2
@@ -312,7 +312,7 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
   curobj->obj.flags = 0
 	| DRAW_NO_FILTER
 	| DRAW_TRANSLUCENT
-	| (bordertex[curbordertex] << DRAW_TEXTURE_BIT);
+	| (lpo_texid << DRAW_TEXTURE_BIT);
 
   /* Copy viewport and projection matrix for further use (render) */
   viewport = *vp;
@@ -393,8 +393,18 @@ static int transparent_render(void)
 
 static int init(any_driver_t *d)
 {
+  const char * tname = "lpo_bordertile";
+  border_def_t borderdef;
+
   curobj = 0;
-  return 0;
+  lpo_texid = texture_get(tname);
+  if (lpo_texid < 0) {
+	lpo_texid = texture_dup(texture_get("bordertile"), tname);
+  }
+  border_get_def(borderdef, 2);
+  border_customize(lpo_texid, borderdef);
+
+  return -(lpo_texid < 0);;
 }
 
 static int shutdown(any_driver_t *d)
@@ -413,17 +423,38 @@ static driver_option_t * options(struct _any_driver_s *driver,
 
 static int lua_setbordertex(lua_State * L)
 {
-  if (lua_type(L,1) == LUA_TNUMBER) {
-	curbordertex = (unsigned int)lua_tonumber(L, 1) % border_max;
-  }
+  border_def_t borderdef;
+
+  border_get_def(borderdef,lua_tonumber(L, 1));
+  border_customize(lpo_texid, borderdef);
   return 0;
 }
 
-static void lua_setcolor(lua_State * L, float * c)
+static int lua_custombordertex(lua_State * L)
 {
   int i;
-  for (i=0; i<4; ++i) {
-	if (lua_type(L,i+1) == LUA_TNUMBER) {
+  int max = lua_gettop(L);
+  static border_def_t borderdef = {
+	{1,1,1,1}, {0.5, 0.5, 0.5, 0.5}, {0.7, 0.2, 0.2, 0.2}
+  };
+
+  if (max > 12) max = 12;
+  for (i=0; i<max; ++i) {
+	if (lua_type(L,i+1) != LUA_TNIL) {
+	  ((float *)&borderdef[i>>2])[i&3] = lua_tonumber(L,i+1);
+	}
+  }
+  border_customize(lpo_texid,borderdef);
+  return 0;
+}  
+
+static void lua_setcolor(lua_State * L, float * c)
+{
+  int i, max;
+  max = lua_gettop(L);
+  if (max > 4) max = 4;
+  for (i=0; i<max; ++i) {
+	if (lua_type(L,i+1) != LUA_TNIL) {
 	  c[(i-1)&3] = lua_tonumber(L, i+1);
 	}
   }
@@ -462,13 +493,13 @@ static int lua_setremanens(lua_State * L)
 static int lua_setchange(lua_State * L)
 {
   int mode = change_mode;
-  float time = (float)change_time/1000.0f;
+  float time = (float)change_time/1000.0f, new_time;
   
   change_mode = lua_tonumber(L,1);
-  if (lua_type(L,2) == LUA_TNUMBER) {
-	change_time = 1000.0f * lua_tonumber(L,2);
+  new_time = lua_tonumber(L,2) * 1000.0f;
+  if (new_time > 0) {
+	change_time = new_time;
   }
-
   lua_settop(L,0);
   lua_pushnumber(L, mode);
   lua_pushnumber(L, time);
@@ -515,6 +546,20 @@ static luashell_command_description_t commands[] = {
 	"]]",                                /* usage */
 	SHELL_COMMAND_C, lua_setbordertex    /* function */
   },
+  {
+    "lpo_custombordertex", 0,            /* long and short names */
+    "print [["
+	"lpo_custombordertex(a1,r1,g1,b1, a2,r2,g2,b2, a3,r3,g3,b3) : "
+	"set custom border texture. Each color componant could be set to nil to "
+	"keep the current value.\n"
+	" a1,r1,g1,b1 : border color\n"
+	" a2,r2,g2,b2 : fill color\n"
+	" a3,r3,g3,b3 : link color\n"
+    "]]",                                   /* usage */
+    SHELL_COMMAND_C, lua_custombordertex    /* function */
+  },
+
+
   {
 	"lpo_setremanens", 0,            /* long and short names */
 	"print [["

@@ -10,8 +10,10 @@
 
 #include "border.h"
 #include "syserror.h"
+#include "draw/color.h"
+#include "translator/SHAtranslator/SHAtranslatorBlitter.h"
 
-static uint16 mode_colors[][3] = {
+static const uint16 mode_colors[][3] = {
   /* border, fill, no-link */
   {0xFFFF, 0xF666, 0xF666}, /* */
   {0xFFFF, 0x8DDD, 0x8DDD}, 
@@ -22,15 +24,15 @@ static uint16 mode_colors[][3] = {
 
 #define N_BORDER (sizeof(mode_colors) / sizeof(*mode_colors))
 
-borderuv_t borderuv[4];
-texid_t bordertex[N_BORDER];
-const unsigned int border_max = N_BORDER;
+texid_t bordertex;
+static texid_t bordertex_org;
+static const unsigned int border_max = N_BORDER;
 
-static void make_blk(uint16 *texture, int w, int h, int ws, int mode)
+static void convert_blk(uint16 * dst, uint16 *src, int w, int h, int ws,
+						const uint16 colors[])
 {
   int y = 0;
 
-  mode %= border_max;
   for (y=0; y<h; ++y) {
     int x;
     
@@ -38,7 +40,7 @@ static void make_blk(uint16 *texture, int w, int h, int ws, int mode)
 	  int i;
       uint16 c;
 
-	  c = *texture & 15;
+	  c = *src++ & 15;
 	  if (c < 3) {
 		i = 2;
 	  }	else if (c<8) {
@@ -46,42 +48,97 @@ static void make_blk(uint16 *texture, int w, int h, int ws, int mode)
 	  } else {
 		i = 0;
 	  }
-	  *texture++ = mode_colors[mode][i];
+	  *dst++ = colors[i];
     }
-    texture += ws-w;
+    src += ws-w;
+    dst += ws-w;
   }
 }
 
-int border_setup(void)
-{
-  int i, err = -1;
-	
-  const char *fname = "/rd/bordertile.tga";
-  char tname[32];
 
-  /* Alloc 3 textures */
-  bordertex[0] = texture_create_file(fname,"4444");
-  for (i=1; i<N_BORDER; ++i) {
-	sprintf(tname,"bordertile%d",i);
-	bordertex[i] = texture_dup(bordertex[0],tname);
+static void make_blk(uint16 *texture, int w, int h, int ws, int mode)
+{
+  convert_blk(texture, texture, w, h, ws, mode_colors[mode%border_max]);
+}
+
+int border_customize(texid_t texid, border_def_t def)
+{
+  int i, err = 0;
+  texture_t * torg, * t = 0;
+  uint16 color16[3], * org, * dst;
+  int worg,horg,lorg;
+
+  /* Convert colors to ARGB4444. */
+  for (i=0;i<3;++i) {
+	draw_argb_t tmp;
+	tmp = draw_color_float_to_argb(def+i);
+	ARGB32toARGB4444(color16+i, &tmp, 1);
   }
 
-  err = 0;
-  for (i=0; i<N_BORDER; ++i) {
-	texture_t * t;
+/*   SDDEBUG("[%f]:\n" */
+/* 		  "%08x -> %04x\n" */
+/* 		  "%08x -> %04x\n" */
+/* 		  "%08x -> %04x\n", */
+/* 		  border, color16[0], fill, color16[1], link, color16[2]); */
 
-	SDDEBUG("[%s] : border[%d] := %d\n", __FUNCTION__, i, bordertex[i]);
-	t = texture_lock(bordertex[i]);
-	if (!t) {
-	  SDERROR("[%s] : texture [#%d], lock failed\n",
-			  __FUNCTION__, bordertex[i]);
-	  err = -1;
-	  continue;
-	}
-	make_blk(t->addr, t->width, t->height, 1 << t->wlog2, i);
-	SDDEBUG("-> %s\n",t->name);
+  /* Lock the original border texture the time to get its properties. */
+  torg = texture_lock(bordertex_org);
+  if (!torg) {
+	return -1;
+  }
+  worg = torg->width;
+  horg = torg->height;
+  lorg = 1 << torg->wlog2;
+  org = torg->addr;
+  texture_release(torg);
+
+  /* Lock the custom border texture ...  */
+  t = texture_lock(texid);
+  if (!t || t->width != worg || t->height != horg || (1<<t->wlog2) != lorg) {
+	err = -1;
+	goto error;
+  }
+  dst = t->addr;
+  texture_release(t);
+  t = 0;
+  convert_blk(dst, org, worg, horg, lorg, color16);
+
+ error:
+  if (t) {
+	texture_release(t);
+  }
+  return err;
+}
+
+void border_get_def(border_def_t def, int n)
+{
+  const uint16 * color;
+  int i;
+  color = mode_colors[n %= border_max];
+  for (i=0; i<3; ++i) {
+	def[i].a = ((color[i] >> 12) & 15) / 15.0f;
+	def[i].r = ((color[i] >>  8) & 15) / 15.0f;
+	def[i].g = ((color[i] >>  4) & 15) / 15.0f;
+	def[i].b = ((color[i] >>  0) & 15) / 15.0f;
+  }
+}
+
+int border_init(void)
+{
+  const char *fname = "/rd/bordertile.tga";
+  texture_t * t;
+
+  /* Create original border tile. */
+  bordertex_org = texture_create_file(fname,"4444");
+  /* Create a second version used as standard border. */
+  bordertex = texture_dup(bordertex_org, "bordertile2");
+
+  /* Apply texture conversion (+1 for custom). */
+  t = texture_lock(bordertex);
+  if (t) {
+	make_blk(t->addr, t->width, t->height, 1 << t->wlog2, 2);
 	texture_release(t);
   }
 
-  return err;
+  return -(!t);
 }

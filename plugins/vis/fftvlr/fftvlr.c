@@ -8,7 +8,7 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.20 2002-12-18 12:41:52 ben Exp $
+ * $Id: fftvlr.c,v 1.21 2002-12-18 18:11:07 ben Exp $
  */
 
 #include <stdlib.h>
@@ -25,7 +25,6 @@
 //#define BENSTYLE
 
 static int db_scaling;
-static int curbordertex;
 
 /* From obj3d.c */
 void FaceNormal(float *d, const vtx_t * v, const tri_t *t);
@@ -54,6 +53,7 @@ volatile int ready;
 static viewport_t viewport;  /* Graphic viewport */
 static matrix_t fftvlr_proj; /* Projection matrix */
 static matrix_t fftvlr_mtx;  /* Local matrix */
+static texid_t fftvlr_texid; /* Custom texid. */
 
 static vtx_t light_normal = { 
   0.8,
@@ -316,20 +316,24 @@ static int fftvlr_stop(void)
 
 static int fftvlr_init(any_driver_t *d)
 {
+  const char * tname = "fftvlr_bordertile";
+  border_def_t borderdef;
   ready = 0;
   v = 0;
   tri = 0;
   nrm = 0;
   tlk = 0;
 
-  db_scaling = 0;
-#ifdef BENSTYLE
-  curbordertex = 1;
-#else
-  curbordertex = 2;
-#endif
+  fftvlr_texid = texture_get(tname);
+  if (fftvlr_texid < 0) {
+	fftvlr_texid = texture_dup(texture_get("bordertile"), tname);
+  }
+  border_get_def(borderdef, 2);
+  border_customize(fftvlr_texid, borderdef);
 
-  return 0;
+  db_scaling = 0;
+
+  return -(fftvlr_texid < 0);
 }
 
 static int fftvlr_shutdown(any_driver_t * d)
@@ -366,7 +370,7 @@ static int fftvlr_process(viewport_t * vp, matrix_t projection, int elapsed_ms)
     fftvlr_obj.flags = 0
 	  | DRAW_NO_FILTER
 	  | DRAW_TRANSLUCENT
-	  | (bordertex[curbordertex] << DRAW_TEXTURE_BIT);
+	  | (fftvlr_texid << DRAW_TEXTURE_BIT);
     return 0;
   }
   return -1;
@@ -379,9 +383,9 @@ static int fftvlr_opaque(void)
 
 static int fftvlr_transparent(void)
 {
-  static vtx_t color = {
-    80.0f, 0.90f, 0.0f, 0.4f
-  };
+/*   static vtx_t color = { */
+/*     80.0f, 0.90f, 0.0f, 0.4f */
+/*   }; */
   if (ready) {
 /*     DrawObjectSingleColor(&viewport, fftvlr_mtx, fftvlr_proj, */
 /* 			  &fftvlr_obj, &color); */
@@ -442,11 +446,30 @@ static int lua_setdb(lua_State * L)
 
 static int lua_setbordertex(lua_State * L)
 {
-  if (lua_type(L,1) == LUA_TNUMBER) {
-	curbordertex = (unsigned int)lua_tonumber(L, 1) % border_max;
-  }
+  border_def_t borderdef;
+
+  border_get_def(borderdef,lua_tonumber(L, 1));
+  border_customize(fftvlr_texid,borderdef);
   return 0;
 }
+
+static int lua_custombordertex(lua_State * L)
+{
+  int i;
+  int max = lua_gettop(L);
+  static border_def_t borderdef = {
+	{1,1,1,1}, {0.5, 0.5, 0.5, 0.5}, {0.7, 0.2, 0.2, 0.2}
+  };
+
+  if (max > 12) max = 12;
+  for (i=0; i<max; ++i) {
+	if (lua_type(L,i+1) != LUA_TNIL) {
+	  ((float *)&borderdef[i>>2])[i&3] = lua_tonumber(L,i+1);
+	}
+  }
+  border_customize(fftvlr_texid,borderdef);
+  return 0;
+}  
 
 static luashell_command_description_t fftvlr_commands[] = {
   {
@@ -468,10 +491,24 @@ static luashell_command_description_t fftvlr_commands[] = {
   {
     "fftvlr_setbordertex", 0,            /* long and short names */
     "print [["
-      "fftvlr_setbordertex(num) : set border texture type."
+	"fftvlr_setbordertex([number]) : set border texture type."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_setbordertex    /* function */
   },
+
+  {
+    "fftvlr_custombordertex", 0,            /* long and short names */
+    "print [["
+	"fftvlr_custombordertex(a1,r1,g1,b1, a2,r2,g2,b2, a3,r3,g3,b3) : "
+	"set custom border texture. Each color componant could be set to nil to "
+	"keep the current value.\n"
+	" a1,r1,g1,b1 : border color\n"
+	" a2,r2,g2,b2 : fill color\n"
+	" a3,r3,g3,b3 : link color\n"
+    "]]",                                   /* usage */
+    SHELL_COMMAND_C, lua_custombordertex    /* function */
+  },
+
   {
     "fftvlr_setdb", 0,            /* long and short names */
     "print [["
@@ -479,8 +516,6 @@ static luashell_command_description_t fftvlr_commands[] = {
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_setdb    /* function */
   },
-
-
 
   {0},                                   /* end of the command list */
 };
