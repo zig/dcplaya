@@ -4,12 +4,13 @@
 --- @date     2003
 --- @brief    fifo tracker application.
 ---
---- $Id: fifo_tracker.lua,v 1.4 2003-05-01 06:37:04 vincentp Exp $
+--- $Id: fifo_tracker.lua,v 1.5 2003-07-29 08:25:00 benjihan Exp $
 ---
 
 fifo_tracker_loaded = nil
 
 if not dolib("evt") then return end
+if not dolib("menu") then return end
 
 fifo_tracker_full_color = { 0.5,0.3,0.7,0 }
 fifo_tracker_empty_color = { 0.5,0.7,0.7,0 }
@@ -21,6 +22,41 @@ function fifo_tracker_create(owner, name)
    local z
    owner = owner or evt_desktop_app
    name = name or "fifo tracker"
+
+   --- Create fifo tracker menu
+   function fifo_tracker_menucreator(target)
+      local ft = target;
+      if not ft then return end
+      local cb = {
+	 show = function(menu, idx)
+		   local ft = menu.root_menu.target
+		   if ft then
+		      local old = ft.hidden_mode or 1
+		      ft.hidden_mode = idx or 1
+		      if old ~= ft.hidden_mode then
+			 local label = { "normal", "never", "always" }
+			 menu_yesno_image(menu, old, nil,  label[old], 1)
+			 menu_yesno_image(menu, idx, 1, label[idx], nil)
+		      end
+		   end
+		end,
+      }
+      ft.hidden_mode = ft.hidden_mode or 1
+
+      local root = ":" .. target.name .. ":show >show"
+      local showdef = {
+	 root = ":show:"
+	    .. menu_yesno_menu(ft.hidden_mode == 1,'normal','show') .. ","
+	    .. menu_yesno_menu(ft.hidden_mode == 2,'never','show') .. ","
+	    .. menu_yesno_menu(ft.hidden_mode == 3,'always','show')
+      }
+      local def = {
+	 root = root,
+	 cb = cb,
+	 sub = { show = showdef },
+      }
+      return menu_create_defs(def , target)
+   end
 
    --- volume control application avent handler.
    function fifo_tracker_handle(ft, evt)
@@ -63,7 +99,15 @@ function fifo_tracker_create(owner, name)
       end
 
       local color = { 1, 1, 1, 1 }
-      if ft.time_full > 0.5 then
+      
+      ft.hidden_mode = ft.hidden_mode or 1
+      if ft.hidden_mode == 1 then
+	 ft.hidden = ft.time_full > 0.5
+      else
+	 ft.hidden = ft.hidden_mode == 2
+      end
+
+      if ft.hidden then
 	 if ft.alpha < 0.1 then
 	    ft.alpha = 0
 	    dl_set_active(ft.dl, 0)
@@ -131,6 +175,7 @@ function fifo_tracker_create(owner, name)
       update = fifo_tracker_update,
       icon_name = "volume2",
       flags = { unfocusable = 1 },
+      mainmenu_def = fifo_tracker_menucreator,
 
       -- Members
       z = gui_guess_z(owner,z),
@@ -183,13 +228,34 @@ function fifo_tracker_create(owner, name)
       
    evt_app_insert_last(owner, ft)
 
-   if fifo_tracker then
-      evt_shutdown_app(fifo_tracker)
-   end
+   fifo_tracker_kill()
    fifo_tracker = ft
 
    return ft
 end
+
+--
+--- Kill a fifo tracker application.
+---
+---   The fifo_tracker_kill() function kill the given application by
+---   calling sending the evt_shutdown_app() function. If the given
+---   application is nil or fifo_tracker the default fifo tracker
+---   (fifo_tracker) is killed and the global fifo_tracker is set
+---   to nil.
+---
+--- @param  cc  application to kill (default to fifo_tracker)
+--
+function fifo_tracker_kill(cc)
+   cc = cc or fifo_tracker
+   if type(cc) == "table" then
+      evt_shutdown_app(cc)
+      if cc == fifo_tracker then
+	 fifo_tracker = nil
+	 print("fifo-tracker shutdowed")
+      end
+   end
+end
+
 
 -- Load application icon
 local tex = tex_exist("volume2") or
