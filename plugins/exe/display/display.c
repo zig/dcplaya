@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.12 2002-10-21 14:57:00 benjihan Exp $
+ * $Id: display.c,v 1.13 2002-10-23 02:07:44 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -481,8 +481,8 @@ static luashell_command_description_t display_commands[] = {
   {
 	"tex_destroy", 0,                    /* long and short names */
 	"print [["
-	"tex_destroy(texture-name|texture-id) : "
-	"Destroy a teture."
+	"tex_destroy(texture-name|texture-id [,force] ) : "
+	"Destroy a texture."
 	"]]",                                /* usage */
 	SHELL_COMMAND_C, lua_tex_destroy     /* function */
   },

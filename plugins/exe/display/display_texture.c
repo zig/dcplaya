@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, texture interface
  * 
- * $Id: display_texture.c,v 1.1 2002-10-21 14:57:00 benjihan Exp $
+ * $Id: display_texture.c,v 1.2 2002-10-23 02:07:44 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -68,9 +68,35 @@ DL_FUNCTION_DECLARE(tex_new)
 DL_FUNCTION_DECLARE(tex_destroy)
 {
   texid_t texid;
+  int err;
+  const char *reason;
 
   GET_TEXID(texid,1);
-  return 0;
+  err = texture_destroy(texid, lua_tonumber(L,2));
+  switch (err) {
+  case 0:
+	reason = "destroyed";
+	break;
+  case -1:
+	reason = "not found";
+	break;
+  case -2:
+	reason = "locked";
+	break;
+  case -3:
+	reason = "referenced";
+	break;
+  default:
+	reason = "unexpected error";
+	break;
+  }
+  printf("%s : texture-id %d %s.\n", __FUNCTION__, texid, reason);
+
+  lua_settop(L,0);
+  if (err = !err, err) {
+	lua_pushnumber(L,1);
+  }
+  return err;
 }
 
 /* Get texture from name */
