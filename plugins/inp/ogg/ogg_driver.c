@@ -10,12 +10,14 @@
  *  An Ogg/Vorbis player library using sndstream and functions provided by
  *  sndvorbisfile.
  *
- * $Id: ogg_driver.c,v 1.7 2002-12-20 08:49:54 ben Exp $
+ * $Id: ogg_driver.c,v 1.8 2003-03-17 15:35:48 ben Exp $
  */
 
 #include <kos.h>
 
 //#include <vorbis/codec.h>
+
+# include "dcplaya/config.h"
 
 //#include "ogg/config_types.h"
 #include "ogg/os_types.h"
@@ -174,6 +176,11 @@ static int sndogg_start(const char *fn, int track, playa_info_t *info)
   SDDEBUG("%s([%s])\n", fn);
   SDINDENT;
 
+  if (pcm_buffer_init(-1,-1)) {
+    SDERROR("PCM buffer init error\n");
+    goto error;
+  }
+
   sndoggvorbis_clearcomments();
   sndoggvorbis_setbitrateinterval(1000);
   if (VorbisFile_openFile(fn, &v_headers)) {
@@ -219,6 +226,9 @@ static int sndogg_start(const char *fn, int track, playa_info_t *info)
   err = 0;
 
  error:
+  if (err) {
+    pcm_buffer_shutdown();
+  }
   SDUNINDENT;
   SDDEBUG("%s() := [%d]\n", __FUNCTION__, err);
   return err;
@@ -238,6 +248,7 @@ static int sndogg_stop(void)
   SDDEBUG("Vorbis file closed\n");
   sndoggvorbis_clearcomments();
   SDDEBUG("Comments cleared\n");
+  pcm_buffer_shutdown();
 
   SDUNINDENT;
   SDDEBUG("<< %s()\n", __FUNCTION__);

@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @author  Dan Potter
  *
- *  $Id: xing_driver.c,v 1.7 2003-03-10 22:55:34 ben Exp $
+ *  $Id: xing_driver.c,v 1.8 2003-03-17 15:35:48 ben Exp $
  */ 
 
  /* Based on :
@@ -346,13 +346,20 @@ static int sndmp3_init(any_driver_t * driver)
 /* Start playback (implies song load) */
 int sndmp3_start(const char *fn, int track, playa_info_t *info)
 {
+  int err;
   SDDEBUG("%s('%s', %d)\n", __FUNCTION__, fn, track);
   track=track;
   /* Initialize MP3 engine */
   if(id3_info(info, fn)<0) {
     playa_info_free(info);
   }
-  return xing_init(fn, info);
+  err = pcm_buffer_init(-1,-1);
+  err = err || xing_init(fn, info);
+  if (err) {
+    pcm_buffer_shutdown();
+    err = -1;
+  }
+  return err;
 }
 
 /* Stop playback (implies song unload) */
@@ -360,6 +367,7 @@ static int sndmp3_stop(void)
 {
   SDDEBUG("%s()\n", __FUNCTION__);
   xing_shutdown();
+  pcm_buffer_shutdown();
   return 0;
 }
 
