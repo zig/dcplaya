@@ -6,7 +6,7 @@
 ---
 ---   A color is table. Color operators use table' ones.
 ---
---- $Id: color.lua,v 1.4 2002-10-30 19:59:30 benjihan Exp $
+--- $Id: color.lua,v 1.5 2002-12-10 15:20:42 ben Exp $
 ---
 
 color_loaded = nil
@@ -62,11 +62,7 @@ function color_new(a,r,g,b,noclip)
 		a = rawget(a,1)
 		noclip = r
 	end
-	if not a then a = 1 end
-	if not r then r = 0 end
-	if not g then g = 0 end
-	if not b then b = 0 end
-	local c = { a, r, g, b }
+	local c = { a or 1, r or 1, g or 1, b or 1 }
 	settag(c,color_tag)
 	if not noclip then color_clip(c) end
 	return c

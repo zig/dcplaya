@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.18 2002-12-09 16:26:49 ben Exp $
+--- $Id: textlist.lua,v 1.19 2002-12-10 15:20:42 ben Exp $
 ---
 
 -- Unload the library
@@ -412,7 +412,7 @@ function textlist_create(flparm)
    --- Move textlist cursor.
    --
    function textlist_move_cursor(fl,mov)
-	  local pos,action
+	  local pos
 
 	  pos = fl.pos + mov
 	  if pos >= fl.dir.n then pos = fl.dir.n-1 end
@@ -421,7 +421,7 @@ function textlist_create(flparm)
 	  if pos ~= fl.pos then
 		 fl.pos = pos
 		 fl:draw_cursor(fl.cdl)
-		 return 1
+		 return 2
 	  end
 	  
 	  return nil

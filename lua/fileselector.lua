@@ -4,7 +4,7 @@
 --- @date   2002/10/04
 --- @brief  fileselector gui
 ---
---- $Id: fileselector.lua,v 1.17 2002-12-06 12:15:56 ben Exp $
+--- $Id: fileselector.lua,v 1.18 2002-12-10 15:20:42 ben Exp $
 --
 -- TODO : select item with space 
 --        completion with tab        
@@ -18,16 +18,22 @@ fileselector_loaded=nil
 if not dolib("gui") then return end
 if not dolib("filelist") then return end
 
---- fileselector GUI object.
+--- @name Fileselector
 --- @ingroup dcplaya_lua_gui
---- struct fileselector{
+--- @{
+
+-- fileselector GUI object.
+-- @ingroup dcplaya_lua_gui
+-- struct fileselector {
+-- };
 
 --- Create a fileselector GUI application.
----  @ingroup dcplaya_lua_gui
----  @param name Fileselector label.
----  @param path Fileselector current path. nil for current.
----  @param filename Default input filename.
----  @return gui application
+---  @param  name      Fileselector label.
+---  @param  path      Fileselector current path (nil for current).
+---  @param  filename  Default input filename.
+---
+---  @return dialog application
+
 function fileselector(name,path,filename)
    local dial,but,input
 
@@ -110,6 +116,8 @@ function fileselector(name,path,filename)
 		 gui_new_focus(dial,dial.input)
 	  end
 
+   --- Locate an entry in the current file list.
+   --- @internal
    function fileselector_locate(dial,text)
 	  local path,leaf,fl
 	  if not dial then return end
@@ -203,14 +211,16 @@ function fileselector(name,path,filename)
    -- MAIN DIALOG
    -- --- --- ----
 
-   -- Set status text
+   --- Set status text.
+   --- @internal
    function fileselector_status(dial,text)
 	  if dial.status then
 		 gui_text_set(dial.status,text)
 	  end
    end
    
-   -- Get command name from command input
+   --- Get command name from command input.
+   --- @internal
    function fileselector_get_command(dial)
 	  local start,stop,com
 	  com = nil
@@ -221,7 +231,8 @@ function fileselector(name,path,filename)
 	  return com
    end
 
-   -- Set command input text
+   --- Set command input text.
+   --- @internal
    function fileselector_set_command(dial,com)
 	  if not dial.command then return end
 	  local start, stop
@@ -241,7 +252,8 @@ function fileselector(name,path,filename)
 	  end
    end
    
-   -- Set file input text form current filelist entry
+   --- Set file input text from current filelist entry.
+   --- @internal
    function fileselector_change(dial)
 	  local entry = dial.flist.fl:get_entry()
 	  if entry then
@@ -249,14 +261,16 @@ function fileselector(name,path,filename)
 	  end
    end
    
-   -- Get name of  current filelist entry
+   --- Get name of current filelist entry.
+   --- @internal
    function fileselector_current(dial)
 	  local entry = dial.flist.fl:get_entry()
 	  if not entry then return "" end
 	  return entry.name
    end
 
-   -- Main dialog event handle function
+   --- Main dialog event handle function.
+   --- @internal
    function fileselector_handle(dial,evt)
 	  local key = evt.key
 	  
@@ -395,7 +409,6 @@ function fileselector(name,path,filename)
 end
 
 --- };
-
 
 if nil then
    dial = nil

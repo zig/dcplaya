@@ -3,13 +3,22 @@
 --- @author  benjamin gerard <ben@sashipa.com>
 --- @date    2002/11/29
 --- @brief   Song info application.
---- $Id: song_info.lua,v 1.4 2002-12-06 12:15:56 ben Exp $
+---
+--- $Id: song_info.lua,v 1.5 2002-12-10 15:20:42 ben Exp $
 
 song_info_loaded = nil
 
 if not dolib("basic") then return end
 if not dolib("evt") then return end
 
+--- @name song-info functions
+--- @ingroup dcplaya_lua_gui
+--- @{
+--
+
+--- Creates song-info sprite icons.
+--- @internal
+--- @param  si  song-info application
 function song_info_create_icons(si)
 
    -- Make vertrices
@@ -58,15 +67,22 @@ function song_info_create_icons(si)
 
 end
 
---- Song-Info create.
---
-function song_info_create(owner, nane)
+--- Create a song-info application.
+---
+--- @param  owner  Owner application (nil for desktop).
+--- @param  name   Application name (nil for "song-info").
+---
+--- @return  song-info application
+--- @retval  nil  error
+---
+function song_info_create(owner, name)
    local si
 
    if not owner then owner = evt_desktop_app end
    if not name then name = "song-info" end
 
-   --- Song-Info update.
+   --- Default song-info update.
+   --- @internal
    --
    function song_info_update(si, frametime)
 
@@ -141,7 +157,8 @@ function song_info_create(owner, nane)
 	  end
    end
 
-   --- Song-Info handle.
+   --- Default song-info handle.
+   --- @internal
    --
    function song_info_handle(si, evt)
 	  local key = evt.key
@@ -151,7 +168,8 @@ function song_info_create(owner, nane)
 	  return evt
    end
 
-   --- Song-Info open.
+   --- Default song-info open.
+   --- @internal
    --
    function song_info_open(si)
 	  si.fade = 1
@@ -159,14 +177,16 @@ function song_info_create(owner, nane)
 	  dl_set_active(si.dl,1)
    end
    
-   --- Song-Info close.
+   --- Default song-info close.
+   --- @internal
    --
    function song_info_close(si)
 	  si.closed = 1
 	  si.fade = -1;
    end
 
-   --- Song-info set color.
+   --- Default song-info set color.
+   --- @internal
    --
    function song_info_set_color(si, a, r, g, b)
 	  a = a or si.alpha or 1
@@ -174,14 +194,17 @@ function song_info_create(owner, nane)
 	  dl_set_color(si.dl, a, r, g, b)
    end
 
-   --- Song-info draw.
+   --- Default song-info draw.
+   --- @internal
    --
    function song_info_draw(si)
 	  dl_set_trans(si.dl,mat_scale(16,16,1) * mat_trans(80,50,si.z))
 -- 	  dl_set_trans(si.icon_dl, )
    end
 
-   --- Song-Info shutdown.
+   --- Default song-info shutdown.
+   --- @internal
+   --
    function song_info_shutdown(si)
 	  si.dl = nil
 	  si.icon_dl = nil
@@ -231,6 +254,8 @@ function song_info_create(owner, nane)
 
    return si
 end
+
+--- @}
 
 
 si = song_info_create()

@@ -1,3 +1,11 @@
+--- @ingroup  dcplaya_lua_application
+--- @file     song_browser.lua
+--- @author   benjamin gerard <ben@sashipa.com>
+--- @date     2002
+--- @brief    song browser application.
+---
+--- $Id: song_browser.lua,v 1.7 2002-12-10 15:20:42 ben Exp $
+---
 
 song_browser_loaded = nil
 if not dolib("textlist") then return end
@@ -62,7 +70,15 @@ function song_browser_create_sprite(sb)
 
 end
 
-function song_browser_create(owner, name, box)
+--- Create a song-browser application.
+---
+--- @param  owner  Owner application (nil for desktop).
+--- @param  name   Name of application (nil for "song-browser").
+---
+--- @return song-browswer application
+--- @retval nil Error
+---
+function song_browser_create(owner, name)
 	local sb
 
 	if not owner then
@@ -82,11 +98,11 @@ function song_browser_create(owner, name, box)
 		text            = {font=0, size=16, aspect=1}
 	}
 
-	-- Song-Browser update (handles fade in / fade out)
-	-- -------------------
+	--- Song-Browser update (handles fade in / fade out).
+	--  ------------------------------------------------
 	function song_browser_update(sb, frametime)
 		local loading = sb.fl.dir.loading
-		if loading then
+		if loading == 2 then
 			sb.fl:change_dir(sb.fl.dir)
 		 end
 
@@ -122,8 +138,8 @@ function song_browser_create(owner, name, box)
 		 sb.pl:update(frametime)
 	end
 
-	-- Song-Browser handle
-	-- -------------------
+	--- Song-Browser handle.
+	--  -------------------
 	function song_browser_handle(sb, evt)
 		local key = evt.key
 		if key == evt_shutdown_event then
@@ -134,46 +150,45 @@ function song_browser_create(owner, name, box)
 			return evt
 		end
 
+		local action = 0
+
 		if gui_keyconfirm[key] then
-		   sb:confirm()
-		   return
+		   action = sb:confirm()
 		elseif gui_keycancel[key] then
-		   sb:cancel()
-		   return
+		   action = sb:cancel()
 		elseif gui_keyselect[key] then
-		   sb:select()
-		   return
-		elseif key == gui_item_change_event then
-			return
+		   action = sb:select()
 		elseif gui_keyup[key] then
-			sb:open()
-			sb.cl:move_cursor(-1)
-			return
+		   sb:open()
+		   action = sb.cl:move_cursor(-1)
 		elseif gui_keydown[key] then
-			sb:open()
-			sb.cl:move_cursor(1)
-			return
+		   sb:open()
+		   action = sb.cl:move_cursor(1)
 		elseif gui_keyleft[key] then
-			if sb.cl ~= sb.fl then
-			   sb.cl = sb.fl
-			   sb:open()
--- 			   sb:close(2)
-			end
-			return
+		   if sb.cl ~= sb.fl then
+			  sb.cl = sb.fl
+			  sb:open()
+			  action = 2
+		   end
 		elseif gui_keyright[key] then
-			if sb.cl ~= sb.pl then
-			   sb.cl = sb.pl
-			   sb:open()
--- 			   sb:close(1)
-			end
-			return
+		   if sb.cl ~= sb.pl then
+			  sb.cl = sb.pl
+			  sb:open()
+			  action = 2
+		   end
+		else
+		   return evt
 		end
 
-		return evt
-	end
+		if action >= 2 then
+		   local entry = sb.cl:get_entry()
+		   vmu_set_text(entry and entry.name)
+		end
+		
+	 end
 
-	-- Song-Browser open
-	-- -----------------
+	--- Song-Browser open.
+	--  -----------------
 	function song_browser_open(sb, which)
 	   sb.closed = nil
 	   if not which then
@@ -190,10 +205,9 @@ function song_browser_create(owner, name, box)
 	   end	  
 	end
 
-	-- Song-Browser close
-	-- ------------------
+	--- Song-Browser close.
+	--  ------------------
 	function song_browser_close(sb, which)
--- 	   print ("close",which)
 	   if not which then
 		  sb.fl:close()
 		  sb.pl:close()
@@ -202,11 +216,10 @@ function song_browser_create(owner, name, box)
 	   else
 		  sb.pl:close()
 	   end
---		sb.fade = -4;
 	end
 
-	-- Song-Browser shutdown
-	-- ---------------------
+	--- Song-Browser shutdown.
+	--  ---------------------
 	function song_browser_shutdown(sb)
 		if not sb then return end
 		sb.fl:shutdown()
@@ -215,7 +228,7 @@ function song_browser_create(owner, name, box)
 	end
 
 	--- Song-Browser draw.
-	--
+	--  -----------------
 	function song_browser_draw(sb)
 	   sb.fl:draw()
 	   sb.pl:draw()
@@ -281,7 +294,7 @@ function song_browser_create(owner, name, box)
 	   end
 	end
 
-	--- Song-Browser set color
+	--- Song-Browser set color.
 	--
 	function song_browser_set_color(sb, a, r, g, b)
 	   sb.fl:set_color(a,r,g,b)
@@ -381,7 +394,7 @@ function song_browser_create(owner, name, box)
 
 	function sbfl_select(fl, sb)
 	   print("sbfl_select")
-	   sbpl_insert(sb, fl:get_entry())
+	   return sbpl_insert(sb, fl:get_entry())
 	end
 
 	sb.fl = textlist_create(
