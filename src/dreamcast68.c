@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.55 2003-03-13 23:15:27 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.56 2003-03-17 05:05:59 ben Exp $
  */
 
 //#define RELEASE
@@ -822,6 +822,8 @@ void main_thread(void *cookie)
     /* Display opaque render list */
     dl_render_opaque();
       
+    /* Render translucent consoles */
+    csl_window_opaque_render_all();
 
     /* Translucent list ********************************/
 
@@ -838,11 +840,13 @@ void main_thread(void *cookie)
 
     //    my_vid_border_color(255,0,255);
 
-    /* Render translucent consoles */
-    csl_window_transparent_render_all();
 
     /* Display transparent render list */
     dl_render_transparent();
+
+    /* Render translucent consoles */
+    csl_window_transparent_render_all();
+
 
     /* Finish the frame *******************************/
 

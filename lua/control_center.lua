@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.20 2003-03-14 18:51:03 ben Exp $
+--- $Id: control_center.lua,v 1.21 2003-03-17 05:05:59 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_cc_app Control Center
@@ -108,6 +108,7 @@ function control_center_create_sprites(cc)
    control_center_create_sprite(cc, "cc_dcp", "dcplaya.tga", 32)
    control_center_create_sprite(cc, "cc_vmu", "vmu32.tga",32)
    control_center_create_sprite(cc, "cc_vol", "volume2.tga", 32)
+   control_center_create_sprite(cc, "cc_kbd", "keyboard.tga", 32)
    control_center_create_sprite(cc, "cc_yes", "stock_button_apply.tga", 20)
    control_center_create_sprite(cc, "cc_no", "stock_button_cancel.tga", 20)
    --				   24, 24) --, 0 , 0, 8/64, 48/64)
@@ -174,14 +175,14 @@ function control_center_menucreator(target)
    control_center_create_sprites(cc)
 
    local root = ":" .. target.name .. ":" .. 
-      '{cc_dcp}about{about},{cc_vol}volume{volume},{cc_vmu}vmu >vmu,plugins >plugins'
+      '{cc_dcp}about{about},{cc_vol}volume{volume},{cc_vmu}vmu >vmu,plugins >plugins,{cc_kbd}keyboard >keyboard'
 
-   function cc_yesno_image(menu, idx, flag, label)
+   function cc_yesno_image(menu, idx, flag, label, nodraw)
       menu.fl.dir[idx].name =
 	 '<img name="cc_'
 	 .. ((flag and 'yes') or 'no')
 	 .. '">' .. label
-      menu:draw()
+      if not nodraw then menu:draw() end
    end
 
    function cc_yesno_menu(flag,label)
@@ -261,6 +262,17 @@ function control_center_menucreator(target)
 			 cc_yesno_image(menu, idx, not vmu_never_confirm_write,
 					'confirm')
 		      end,
+      kbd_rule = function (menu, idx)
+		    local i,v
+		    local tbl = {"never","normal","nokbd"}
+		    ke_set_active_rule(tbl[idx])
+		    tbl[3] = "no keyboard"
+		    for i,v in tbl do
+		       cc_yesno_image(menu, i, i == idx, v, 1)
+		    end
+		    menu:draw()
+		 end,
+		    
    }
 
    -- Read available driver type
@@ -321,6 +333,8 @@ function control_center_menucreator(target)
    end
 
 
+   local krule = ke_set_active_rule()
+
    local def = {
       root=root,
       cb = cb,
@@ -339,6 +353,12 @@ function control_center_menucreator(target)
 	    }
 	 },
 	 plugins = plugins,
+	 keyboard = ':keyboard:'
+	       .. cc_yesno_menu(krule == "never",'never') .. '{kbd_rule},'
+--	       .. cc_yesno_menu(krule == "always",'always') .. '{kbd_rule},'
+	       .. cc_yesno_menu(krule == "normal",'normal') .. '{kbd_rule},'
+	       .. cc_yesno_menu(krule == "nokbd",'no keyboard')
+	       .. '{kbd_rule}'
       }
    }
    return menu_create_defs(def , target)
@@ -440,8 +460,7 @@ if control_center then
 end
 
 -- Load application icon
-for k,v in { "dcplaya", "vmu32", "volume", "control-center" } do
-
+for k,v in { "dcplaya", "vmu32", "volume", "control-center", "keyboard" } do
    local tex = tex_exist(v) or
       tex_new(home .. "lua/rsc/icons/" .. v .. ".tga")
 end
