@@ -8,10 +8,11 @@
    +2002/02/12 variable stream size modification by ben(jamin) gerard
 */
 
-static char id[] = "sndserver $Id: sndstream.c,v 1.1 2002-08-26 14:15:03 ben Exp $";
+static char id[] = "sndserver $Id: sndstream.c,v 1.2 2002-12-19 02:25:12 ben Exp $";
 
 #include <kos.h>
 #include "sndstream.h"
+#include "sysdebug.h"
 
 #include <arch/types.h>
 #include "arm/aica_cmd_iface.h"
@@ -148,18 +149,18 @@ int stream_init(void* (*callback)(int), int samples)
   int bytes;
   char *streamdrv = 0;
 
-  dbglog(DBG_DEBUG, ">> " __FUNCTION__ "(%d)\n", samples);
+  SDDEBUG("[%s] : %d\n",  __FUNCTION__ , samples);
 
   /* Load the AICA driver. Do this once. */
   hnd = fs_open("/rd/stream.drv", O_RDONLY);
   if (!hnd) {
-    dbglog(DBG_DEBUG, "** " __FUNCTION__  " : Can't open sound driver\r\n");
+    SDERROR("[%s] : can't open sound driver\n", __FUNCTION__);
     return -1;
   }
   streamdrv_size = fs_total(hnd);
   streamdrv = fs_mmap(hnd);
   if (!streamdrv) {
-    dbglog(DBG_DEBUG, "** " __FUNCTION__  " : driver alloc failed\n");
+    SDERROR("[%s] : driver alloc failed\n", __FUNCTION__);
     fs_close(hnd);
     return -1;
   }
@@ -179,20 +180,21 @@ int stream_init(void* (*callback)(int), int samples)
   sep_buffer[1] = realloc(sep_buffer[1], stream_bytes_max);
 
   if (!sep_buffer[0] || !sep_buffer[1]) {
-    dbglog(DBG_DEBUG, "** " __FUNCTION__ " : Separate buffer allocation failed\r\n");
+    SDERROR("[%s] : Separate buffer allocation failed\n",__FUNCTION__);
     if (sep_buffer[0]) free(sep_buffer[0]);
     if (sep_buffer[1]) free(sep_buffer[1]);
     sep_buffer[0] = sep_buffer[1] = 0;
     return -1;
   }
-  dbglog(DBG_DEBUG, "** " __FUNCTION__ " : Sound buffers allocated (2  %d bytes)\n", stream_bytes_max);
+  SDDEBUG("[%s] : Sound buffers allocated (2  %d bytes)\n",
+		  __FUNCTION__, stream_bytes_max);
 
   /* Finish loading the stream driver */
   spu_disable();
   spu_memset(0, 0, SPU_TOP_RAM);
   spu_memload(0, streamdrv, streamdrv_size);
   spu_enable();
-  dbglog(DBG_DEBUG, "** " __FUNCTION__ " : SPU enabled\n");
+  SDDEBUG("SPU enabled\n");
 
   if (hnd) fs_close(hnd);
 
@@ -209,7 +211,7 @@ int stream_init(void* (*callback)(int), int samples)
 /* Shut everything down and free mem */
 void stream_shutdown()
 {
-  dbglog(DBG_DEBUG, "** " __FUNCTION__ "()\n");
+  SDDEBUG("[%s]\n", __FUNCTION__);
 
 //  stream_stop();
 
@@ -224,11 +226,13 @@ void stream_shutdown()
 }
 
 /* Start streaming */
-void stream_start(int samples, uint32 freq, int vol, int st) {
-  dbglog(DBG_DEBUG,">> " __FUNCTION__ "(spl:%d,frq:%d,vol:%d,stereo:%d)\n", samples, freq, vol, st);
+void stream_start(int samples, uint32 freq, int vol, int st)
+{
+  SDDEBUG("[%s] : (spl:%d,frq:%d,vol:%d,stereo:%d)\n",
+		  __FUNCTION__,samples, freq, vol, st);
 
   if (!str_get_data || !stream_bytes_max) {
-    dbglog(DBG_DEBUG,"** " __FUNCTION__ "() : init haas failed ?\n");
+	SDERROR("[%s] : init has failed ?\n", __FUNCTION__);
     return;
   }
 
@@ -242,15 +246,10 @@ void stream_start(int samples, uint32 freq, int vol, int st) {
     samples = stream_bytes_max;
   }
   stream_bytes = samples;
-  dbglog(DBG_DEBUG,"** " __FUNCTION__ "() : stream bytes = %d\n", stream_bytes );
-
   stereo = (st != 0);
 
   /* Prefill buffers */
-  dbglog(DBG_DEBUG,"** " __FUNCTION__ "() : start prefill\n");
   stream_prefill();
-
-  dbglog(DBG_DEBUG,"** " __FUNCTION__ "() : start streaming : run aica\n");
   
   /* Start streaming */
   chans[0].cmd    = AICA_CMD_START;
@@ -259,9 +258,6 @@ void stream_start(int samples, uint32 freq, int vol, int st) {
   chans[0].vol    = vol&255;
   /* chans[0].pos    = SPU_SPL1_ADDR; */
   chn_kick(0);
-
-  dbglog(DBG_DEBUG,"<< " __FUNCTION__ "(spl:%d,frq:%d,vol:%d,stereo:%d)\n", samples, freq, vol, st);
-
 }
 
 /* Stop streaming */

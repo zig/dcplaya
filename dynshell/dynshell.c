@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.51 2002-12-18 06:30:30 ben Exp $
+ * @version    $Id: dynshell.c,v 1.52 2002-12-19 02:25:12 ben Exp $
  */
 
 #include <stdio.h>
@@ -1387,7 +1387,7 @@ static int lua_cond_connect(lua_State * L)
   cond_disconnected = !lua_tonumber(L, 1);
 
   /* read state to avoid unwanted button */
-  controler_read(&s, 1);
+  controler_read(&s, 0);
   if (was_connected) {
 	lua_pushnumber(L,1);
 	return 1;

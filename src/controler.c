@@ -11,96 +11,119 @@
 #define CONTROLER_JOY_DEAD          15
 #define CONTROLER_TRIG_DEAD         15
 
-cont_cond_t controler_cond[4]; /* all joystick status */
-int controler_cond_connected[4];
+#define MAX_CONTROLER 4u
+typedef struct {
+  cont_cond_t cond;
+  cont_cond_t oldcond;
+  int connected;
+  int port;
+  int unit;
+  uint32 last_frame;
+} controler_t;
 
-static int cond_disconnected;
-static cont_cond_t cond;
-static cont_cond_t oldcond;
+static controler_t controlers[MAX_CONTROLER];
+static int controler_connected;
+int cond_disconnected;
+
 static uint32 last_frame;
-//static controler_state_t state;
 
 static const uint32 controler_smooth_mult =
 CONTROLER_SMOOTH_FACTOR / (CONTROLER_NO_SMOOTH_FRAMES-2);
 //  ((CONTROLER_NO_SMOOTH_FRAMES-1)<<16) / CONTROLER_SMOOTH_FACTOR;
 
+/* Controler thread globales */
 static kthread_t * controler_thd;
 static spinlock_t controler_mutex;
-
 enum { RUNNING, QUIT, ZOMBIE };
 static int status;
 
-
-static void clear_cond(void)
+static void clear_cond(cont_cond_t * cond)
 {
-  cond.buttons = ~0;
-  cond.rtrig = cond.ltrig = 0;
-  cond.joyx = cond.joyy = 
-    cond.joy2x = cond.joy2y = 128;
+  cond->buttons = ~0;
+  cond->rtrig = cond->ltrig = 0;
+  cond->joyx = cond->joyy = cond->joy2x = cond->joy2y = 128;
 }
 
-static int fport, funit;
+static void clear_all_cond(void)
+{
+  controler_t * cont;
+  for (cont=controlers; cont<controlers+MAX_CONTROLER; ++cont) {
+	clear_cond(&cont->cond);
+  }
+}
 
 /* try to get controler cond or clear it. */
-static void controler_get()
+static void controler_get(void)
 {
-  /* fill all joystick cond structure */
-  int port, unit;
+  int port, unit, cur_cont;
 
-  fport = -1;
-  funit = -1;
-  for (port=0; port<4; port++) {
-    controler_cond_connected[port] = 0;
-    for (unit=0; unit<6; unit++) {
-      if ((maple_device_func(port, unit) & MAPLE_FUNC_CONTROLLER) && 
-	  !(maple_device_func(port, unit) & MAPLE_FUNC_KEYBOARD)) {
-	int adr;
-	adr = maple_create_addr(port, unit);
-	cont_get_cond(adr, &controler_cond[port]);
-	controler_cond_connected[port] = 1;
-	if (fport < 0) {
-	  fport = port;
-	  funit = unit;
+  controler_connected = 0;
+
+  /* Scanning mapple bus until max controler found. */
+  for (controler_connected =cur_cont = port = 0; port < 4; ++port) {
+    for (unit=0; unit<6 && cur_cont < MAX_CONTROLER; ++unit) {
+	  int func = maple_device_func(port, unit);
+      if ((func & (MAPLE_FUNC_CONTROLLER|MAPLE_FUNC_KEYBOARD)) ==
+		  MAPLE_FUNC_CONTROLLER) {
+		int adr = maple_create_addr(port, unit);
+		cont_get_cond(adr, &controlers[cur_cont].cond);
+		controlers[cur_cont].connected = 1;
+		controlers[cur_cont].port = port;
+		controlers[cur_cont].unit = unit;
+		controler_connected |= 1<<cur_cont;
+		if (++cur_cont >= MAX_CONTROLER) {
+		  goto out;
+		}
+	  }
 	}
-      }
-    }
   }
-
-  if (!cond_disconnected && fport >= 0) {
-    cond = controler_cond[fport];
-  } else
-    clear_cond();
+ out:  
+  /* Disconect others controlers. */
+  while (cur_cont < MAX_CONTROLER) {
+	controlers[cur_cont].connected = 0;
+	clear_cond(&controlers[cur_cont].cond);
+	++cur_cont;
+  }
 }
 
-static void fill_controler_state(controler_state_t * state, uint32 elapsed)
+static void fill_controler_state(controler_state_t * state, controler_t * cont,
+								 uint32 elapsed)
 {
-  state->elapsed_frames = elapsed;
-  state->buttons = ~cond.buttons;
-  state->buttons_change = cond.buttons ^ oldcond.buttons;
-  
-  state->rtrig = (cond.rtrig < CONTROLER_TRIG_DEAD) ? 0 : cond.rtrig;
-  state->ltrig = (cond.ltrig < CONTROLER_TRIG_DEAD) ? 0 : cond.ltrig;
-  
-  state->joyx = (cond.joyx > 128-CONTROLER_JOY_DEAD &&
-		 cond.joyx < 128+CONTROLER_JOY_DEAD) ? 0 : (int)cond.joyx-128;
-  state->joyy = (cond.joyy > 128-CONTROLER_JOY_DEAD &&
-		 cond.joyy < 128+CONTROLER_JOY_DEAD) ? 0 : (int)cond.joyy-128;
+  const cont_cond_t * cond = &cont->cond;
+  cont_cond_t * oldcond = &cont->oldcond;
 
-  state->joy2x = (cond.joy2x > 128-CONTROLER_JOY_DEAD &&
-		  cond.joy2x < 128+CONTROLER_JOY_DEAD) ? 0 : (int)cond.joy2x-128;
-  state->joy2y = (cond.joy2y > 128-CONTROLER_JOY_DEAD &&
-		  cond.joy2y < 128+CONTROLER_JOY_DEAD) ? 0 : (int)cond.joy2y-128;
+  state->elapsed_frames = elapsed;
+  state->buttons = ~cond->buttons;
+  state->buttons_change = cond->buttons ^ oldcond->buttons;
+  
+  state->rtrig = (cond->rtrig < CONTROLER_TRIG_DEAD) ? 0 : cond->rtrig;
+  state->ltrig = (cond->ltrig < CONTROLER_TRIG_DEAD) ? 0 : cond->ltrig;
+  
+  state->joyx = (cond->joyx > 128-CONTROLER_JOY_DEAD &&
+		 cond->joyx < 128+CONTROLER_JOY_DEAD) ? 0 : (int)cond->joyx-128;
+  state->joyy = (cond->joyy > 128-CONTROLER_JOY_DEAD &&
+		 cond->joyy < 128+CONTROLER_JOY_DEAD) ? 0 : (int)cond->joyy-128;
+
+  state->joy2x = (cond->joy2x > 128-CONTROLER_JOY_DEAD &&
+		  cond->joy2x < 128+CONTROLER_JOY_DEAD) ? 0 : (int)cond->joy2x-128;
+  state->joy2y = (cond->joy2y > 128-CONTROLER_JOY_DEAD &&
+		  cond->joy2y < 128+CONTROLER_JOY_DEAD) ? 0 : (int)cond->joy2y-128;
+
+  *oldcond = *cond;
+  cont->last_frame += elapsed;
 }
 
-static void controler_smooth(uint32 factor)
+static void controler_smooth(uint32 factor,
+							 cont_cond_t * cond,
+							 const cont_cond_t * oldcond)
 {
   uint32 oofactor = 65536 - factor;
-  cond.rtrig = (cond.rtrig * factor + oldcond.rtrig * oofactor) >> 16;
-  cond.ltrig = (cond.ltrig * factor + oldcond.ltrig * oofactor) >> 16;
-  cond.joyx  = (cond.joyx  * factor + oldcond.joyx  * oofactor) >> 16;
-  cond.joyy  = (cond.joyy  * factor + oldcond.joyy  * oofactor) >> 16;
-  cond.joy2x = (cond.joy2x * factor + oldcond.joy2x * oofactor) >> 16;
-  cond.joy2y = (cond.joy2y * factor + oldcond.joy2y * oofactor) >> 16;
+  cond->rtrig = (cond->rtrig * factor + oldcond->rtrig * oofactor) >> 16;
+  cond->ltrig = (cond->ltrig * factor + oldcond->ltrig * oofactor) >> 16;
+  cond->joyx  = (cond->joyx  * factor + oldcond->joyx  * oofactor) >> 16;
+  cond->joyy  = (cond->joyy  * factor + oldcond->joyy  * oofactor) >> 16;
+  cond->joy2x = (cond->joy2x * factor + oldcond->joy2x * oofactor) >> 16;
+  cond->joy2y = (cond->joy2y * factor + oldcond->joy2y * oofactor) >> 16;
 }
 
 // defined in src/keyboard.c
@@ -127,61 +150,70 @@ static void controler_thread(void * dummy)
       /* first unit of given port */
       maple_rescan_unit(0, report, 0);
       if (maple_device_func(report, 0) != oldfunc) {
-	int unit;
-	/* rescan also other units of same port is some change happened */
-	for (unit=1; unit<6; unit++)
-	  maple_rescan_unit(0, report, unit);
+		int unit;
+		/* rescan also other units of same port if some change happened */
+		for (unit=1; unit<6; unit++)
+		  maple_rescan_unit(0, report, unit);
       }
 
-      report++;
-      if (report >= 4)
-	report = 0;
-
+      if (++report >= 4) {
+		report = 0;
+	  }
+	  
       /* pad */
       controler_get();
-
+	  
       if (elapsed_frame < CONTROLER_NO_SMOOTH_FRAMES) {
-	int i;
-	uint32 factor = 65536 - CONTROLER_SMOOTH_FACTOR;
-	
-	for (i=1; i<elapsed_frame; ++i) {
-	  factor = (factor * factor) >> 16;
-	}
-	factor = 65536 - factor;
-	controler_smooth(factor);
+		controler_t * cont;
+		int i;
+		uint32 factor = 65536 - CONTROLER_SMOOTH_FACTOR;
+		
+		for (i=1; i<elapsed_frame; ++i) {
+		  factor = (factor * factor) >> 16;
+		}
+		factor = 65536 - factor;
+		for (cont=controlers; cont<controlers+MAX_CONTROLER; ++cont) {
+		  if (cont->connected) {
+			controler_smooth(factor, &cont->cond, &cont->oldcond);
+		  }
+		}
       }
-
-
+	  
       /* keyboard */
       keyboard_addr = maple_first_kb();
-      if (keyboard_addr)
-	kbd_poll_repeat(keyboard_addr, ta_state.frame_counter - last_frame);
-
-
+      if (keyboard_addr) {
+		kbd_poll_repeat(keyboard_addr, ta_state.frame_counter - last_frame);
+	  }
+	  
       spinlock_unlock(&controler_mutex);
-
       last_frame = frame;
     }
-
+	
     thd_pass();
   }
-
+  
   status = ZOMBIE;
 }
 
 
-int controler_init(uint32 frame)
+int controler_init(void)
 {
+  controler_t * cont;
   int err = 0;
   
   SDDEBUG("[%f]\n", __FUNCTION__ );
   SDINDENT;
 
   spinlock_init(&controler_mutex);
-  SDDEBUG("GetControler, frame=%u\n", frame);
+/*   SDDEBUG("GetControler, frame=%u\n", frame); */
 
+  cond_disconnected = 0;
+  last_frame = ta_state.frame_counter;
   controler_get();
-  oldcond = cond;
+  for (cont=controlers; cont<controlers+MAX_CONTROLER; ++cont) {
+	cont->last_frame = last_frame;
+	cont->oldcond = cont->cond;
+  }
 
   status = RUNNING;
   controler_thd = thd_create(controler_thread, 0);
@@ -202,17 +234,19 @@ void controler_shutdown()
     thd_pass();
 }
 
-int controler_read(controler_state_t * state, uint32 frame)
+int controler_read(controler_state_t * state, unsigned int idx)
 {
-  uint32 elapsed_frame = last_frame;
-  
-  elapsed_frame = frame - elapsed_frame;
+  controler_t * cont;
+  uint32 elapsed_frame;
 
+  if (idx >= MAX_CONTROLER) {
+	return -1;
+  }
+
+  cont = controlers + idx;
   spinlock_lock(&controler_mutex);
-
-  fill_controler_state(state, elapsed_frame);
-  oldcond = cond;
-
+  elapsed_frame = ta_state.frame_counter - cont->last_frame;
+  fill_controler_state(state, cont, elapsed_frame);
   spinlock_unlock(&controler_mutex);
   return 0;
 }
@@ -225,81 +259,66 @@ int controler_pressed(const controler_state_t * state, uint32 mask)
 int controler_released(const controler_state_t * state, uint32 mask)
 {
   return ~state->buttons & state->buttons_change & mask;
-} 
-
-void controler_print(void)
-{
-  dbglog(DBG_DEBUG, 
-	 "%c%c%c%c%c%c%c %c %c%c%c%c %c%c%c%c "
-	 "[r:%02x] [l:%02x] [x:%02x] [y:%02x] [x2:%02x] [y2:%02x]\n",
-
-	 (cond.buttons & CONT_A) ? 'A' : 'a',
-	 (cond.buttons & CONT_B) ? 'B' : 'b',
-	 (cond.buttons & CONT_C) ? 'C' : 'c',
-	 (cond.buttons & CONT_D) ? 'D' : 'd',
-	 (cond.buttons & CONT_X) ? 'X' : 'x',
-	 (cond.buttons & CONT_Y) ? 'Y' : 'y',
-	 (cond.buttons & CONT_Z) ? 'Z' : 'z',
-
-	 (cond.buttons & CONT_START) ? 'S' : 's',
-
-	 (cond.buttons & CONT_DPAD_UP) ? 'U' : 'u',
-	 (cond.buttons & CONT_DPAD_DOWN) ? 'D' : 'd',
-	 (cond.buttons & CONT_DPAD_LEFT) ? 'L' : 'l',
-	 (cond.buttons & CONT_DPAD_RIGHT) ? 'R' : 'r',
-
-	 (cond.buttons & CONT_DPAD2_UP) ? 'U' : 'u',
-	 (cond.buttons & CONT_DPAD2_DOWN) ? 'D' : 'd',
-	 (cond.buttons & CONT_DPAD2_LEFT) ? 'L' : 'l',
-	 (cond.buttons & CONT_DPAD2_RIGHT) ? 'R' : 'r',
-    
-	 cond.rtrig, cond.ltrig,
-	 cond.joyx, cond.joyy,
-	 cond.joy2x, cond.joy2y);
 }
 
+/* void controler_print(void) */
+/* { */
+/*   dbglog(DBG_DEBUG,  */
+/* 	 "%c%c%c%c%c%c%c %c %c%c%c%c %c%c%c%c " */
+/* 	 "[r:%02x] [l:%02x] [x:%02x] [y:%02x] [x2:%02x] [y2:%02x]\n", */
 
+/* 	 (cond.buttons & CONT_A) ? 'A' : 'a', */
+/* 	 (cond.buttons & CONT_B) ? 'B' : 'b', */
+/* 	 (cond.buttons & CONT_C) ? 'C' : 'c', */
+/* 	 (cond.buttons & CONT_D) ? 'D' : 'd', */
+/* 	 (cond.buttons & CONT_X) ? 'X' : 'x', */
+/* 	 (cond.buttons & CONT_Y) ? 'Y' : 'y', */
+/* 	 (cond.buttons & CONT_Z) ? 'Z' : 'z', */
 
-int controler_getchar()
+/* 	 (cond.buttons & CONT_START) ? 'S' : 's', */
+
+/* 	 (cond.buttons & CONT_DPAD_UP) ? 'U' : 'u', */
+/* 	 (cond.buttons & CONT_DPAD_DOWN) ? 'D' : 'd', */
+/* 	 (cond.buttons & CONT_DPAD_LEFT) ? 'L' : 'l', */
+/* 	 (cond.buttons & CONT_DPAD_RIGHT) ? 'R' : 'r', */
+
+/* 	 (cond.buttons & CONT_DPAD2_UP) ? 'U' : 'u', */
+/* 	 (cond.buttons & CONT_DPAD2_DOWN) ? 'D' : 'd', */
+/* 	 (cond.buttons & CONT_DPAD2_LEFT) ? 'L' : 'l', */
+/* 	 (cond.buttons & CONT_DPAD2_RIGHT) ? 'R' : 'r', */
+    
+/* 	 cond.rtrig, cond.ltrig, */
+/* 	 cond.joyx, cond.joyy, */
+/* 	 cond.joy2x, cond.joy2y); */
+/* } */
+
+int controler_getchar(void)
 {
   int k;
-
   for ( ;; ) {
-
     k = controler_peekchar();
     if (k != -1) {
-/*      static count;
-      if (count++ > 200) {
-	controler_print();
-	count = 0;
-      }*/
       return k;
     }
-
     thd_pass();
   }
-
 }
 
-
-
-
-int controler_peekchar()
+int controler_peekchar(void)
 {
-  //static last_frame = -1;
   int k;
+  spinlock_lock(&controler_mutex);
+  k = kbd_get_key();
+  spinlock_unlock(&controler_mutex);
+  return k;
+}
 
-
-  //if (ta_state.frame_counter != last_frame) {
-    spinlock_lock(&controler_mutex);
-    k = kbd_get_key();
-    spinlock_unlock(&controler_mutex);
-
-    //last_frame = ta_state.frame_counter;
-    
-    if (k != -1)
-      return k;
-    //}
-
-  return -1;
+cont_cond_t * controler_get_cond(int idx)
+{
+  if ( /*cond_disconnected ||*/
+	   (unsigned int)idx >= MAX_CONTROLER ||
+	   !controlers[idx].connected) {
+	return 0;
+  }
+  return &controlers[idx].cond;
 }

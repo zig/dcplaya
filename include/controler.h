@@ -1,4 +1,4 @@
-/* $Id: controler.h,v 1.4 2002-09-27 06:33:54 vincentp Exp $ */
+/* $Id: controler.h,v 1.5 2002-12-19 02:25:12 ben Exp $ */
 /* 2002/02/13 */
 
 #ifndef _CONTROLER_H_
@@ -25,17 +25,17 @@ typedef struct
   int8 joy2y;             /**< second joystick Y */
 } controler_state_t;
 
-int controler_init(uint32 frame);
-void controler_shutdown();
+int controler_init(void);
+void controler_shutdown(void);
 
-int controler_read(controler_state_t * state, uint32 frame);
+int controler_read(controler_state_t * state, unsigned int idx);
 int controler_pressed(const controler_state_t * state, uint32 mask);
 int controler_released(const controler_state_t * state, uint32 mask);
 
-int controler_getchar();
-int controler_peekchar();
+int controler_getchar(void);
+int controler_peekchar(void);
 
-void controler_print(void);
+/* void controler_print(void); */
 
 
 #define KBD_CONT1_C		(0x80)

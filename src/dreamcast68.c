@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.37 2002-12-18 18:11:07 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.38 2002-12-19 02:25:12 ben Exp $
  */
 
 //#define RELEASE
@@ -562,7 +562,7 @@ static int no_mt_init(void)
   }
   
   /* Start controller */
-  if (controler_init(frame_counter68) < 0) {
+  if (controler_init() < 0) {
     err = __LINE__;
     goto error;
   }
@@ -671,7 +671,7 @@ void main_thread(void *cookie)
 		update_lcd();
 
 		fade(elapsed_frames);
-		controler_read(&controler68, frame_counter68);
+		controler_read(&controler68, 0);
 
 		/* Update shell */
 		shell_update(elapsed_frames * 1.0f/60.0f);
@@ -720,7 +720,7 @@ void main_thread(void *cookie)
     frame_counter68 += elapsed_frames;
 
     fade(elapsed_frames);
-    controler_read(&controler68, frame_counter68);
+    controler_read(&controler68, 0);
 
     
     /* Update shell */
@@ -939,7 +939,7 @@ static int warning_splash(void)
     elapsed_frames = frame_counter68 - elapsed_frames;
 
     fade(elapsed_frames);
-    controler_read(&controler68, frame_counter68);
+    controler_read(&controler68, 0);
 
     /* Update shell */
     shell_update(elapsed_frames * 1.0f/60.0f);
