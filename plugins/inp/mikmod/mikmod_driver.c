@@ -4,7 +4,7 @@
  * @date      2002/09/20
  * @brief     mikmod input plugin for dcplaya
  *
- * $Id: mikmod_driver.c,v 1.2 2002-09-24 18:29:42 vincentp Exp $
+ * $Id: mikmod_driver.c,v 1.3 2002-09-25 03:21:22 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -26,6 +26,10 @@ extern MDRIVER drv_dcplaya;
 
 static char extensions[400];
 static const int curiosity = 0;
+static int prev_pos;
+static char * usedpos;
+static int usedpos_size;
+
 
 /* $$$ ben: Get this form mikmod_internals.h ... Sorry :) */
 typedef struct DCMLOADER_S {
@@ -35,6 +39,8 @@ typedef struct DCMLOADER_S {
 
 /* defined in drv_dcplaya.c */
 extern volatile int dcmikmod_status;
+
+static int disk_info(playa_info_t *info, MODULE * mod);
 
 /* $$$ ben: for load_it.c */
 int isalnum(int c) {
@@ -127,6 +133,8 @@ static int init(any_driver_t *d)
   MikMod_RegisterAllLoaders();
   build_extensions();
 
+  usedpos = 0;
+  usedpos_size = 0;
   SDDEBUG("Init\n");
   if (err = MikMod_Init(0), err) {
     SDERROR("failed : [%s]\n", MikMod_strerror(MikMod_errno));
@@ -152,7 +160,8 @@ static int stop(void)
   /* Stop and Free modules. */
   SDDEBUG("Player free\n");
   Player_Free(Player_GetModule());
-
+  prev_pos = -1;
+  
   SDUNINDENT;
   SDDEBUG("<< %s() := [%d]\n", __FUNCTION__ , err);
   return 0;
@@ -167,6 +176,10 @@ static int shutdown(any_driver_t *d)
 
   stop();
   MikMod_Exit();
+  if (usedpos) {
+    free(usedpos);
+    usedpos_size = 0;
+  }
 
   SDUNINDENT;
   SDDEBUG("<< %s(%s) := [%d]\n", __FUNCTION__, d->name, err);
@@ -189,21 +202,19 @@ static MODULE * dc_load_mod(const char *fn)
   dcplaya_mreader.pos = 0;
   SDDEBUG("Module loaded [%p : %d]\n",
 	  dcplaya_mreader.data, dcplaya_mreader.max);
-
   /* Last parameters is curiosity of loaded : search hidden pattern ! */
   mod = Player_LoadGeneric(&dcplaya_mreader.mreader, MAX_CHANNEL, curiosity);
-
-  if (mod) {
-    SDDEBUG("Start module [%s] [#%d] [%s]\n",
-	    mod->modtype, mod->numchn, mod->songname);
-    Player_Start(mod);
-  } else {
-    SDERROR("Load error : [%s]\n", MikMod_strerror(MikMod_errno));
-  }
 
  error:
   if (dcplaya_mreader.data) {
     free(dcplaya_mreader.data);
+  }
+
+  if (!mod) {
+    SDERROR("Load error : [%s]\n", MikMod_strerror(MikMod_errno));
+  } else {
+    SDDEBUG("Module loaded:\n" " - [%s]\n" " - [#%d]\n" " - [%s]\n",
+	    mod->modtype, mod->numchn, mod->songname);
   }
 
   SDUNINDENT;
@@ -212,29 +223,33 @@ static MODULE * dc_load_mod(const char *fn)
   return mod;
 }
 
-static int start(const char *fn, decoder_info_t *info)
+static int start(const char *fn, int track, playa_info_t *info)
 {
   int err = -1;
   MODULE *mod = 0;
 
-  SDDEBUG(">> %s(%s)\n", __FUNCTION__, fn);
+  SDDEBUG(">> %s(%s, %d)\n", __FUNCTION__, fn, track);
   SDINDENT;
-
+  track = track;
   stop();
   mod = dc_load_mod(fn);
   if (mod) {
-    static char desc[256];
-
-    sprintf(desc, "%s - #%d channels", mod->modtype, mod->numchn);
-    info->bps    = 0;
-    info->desc   = desc;
-    info->frq    = 44100;
-    info->bits   = 16;
-    info->stereo = 1;
-    info->time   = (mod->sngtime*1000) >> 10;
-
+    Player_Start(mod);
+    prev_pos = -1;
+    if ((usedpos_size<<3) < mod->numpos) {
+      int need = (mod->numpos + 7) >> 3;
+      char * b = realloc(usedpos, need);
+      if (b) {
+	usedpos_size = need;
+	usedpos = b;
+      }
+    }
+    if (usedpos) {
+      memset(usedpos,0,usedpos_size);
+    }
     err = 0;
   }
+  disk_info(info,mod);
 
   SDUNINDENT;
   SDDEBUG("<< %s(%s) := [%d]\n", __FUNCTION__, fn, err);
@@ -242,29 +257,37 @@ static int start(const char *fn, decoder_info_t *info)
   return err;
 }
 
-static int decoder(decoder_info_t *info)
+static int decoder(playa_info_t *info)
 {
-  static int pos = -1;
-
   int status = 0;
 
   if (!Player_Active()) {
-    pos = -1;
+    prev_pos = -1;
     status = INP_DECODE_END;
   } else {
-    int p = Player_GetPosition();
-    if (p != pos) {
-      pos = p;
-      SDDEBUG("Position:%d\n",pos);
-    }
-
     MikMod_Update();
-
-    
 
     status = dcmikmod_status;
     if (status != INP_DECODE_ERROR) {
-      /* $$$ ben: Can check end & pos-change here */
+      int p = Player_GetPosition();
+
+      if (p >= 0 && p != prev_pos) {
+	int idx = p>>3, bit = p&7;
+	prev_pos = p;
+
+	if (usedpos && idx < usedpos_size) {
+	  if (usedpos[idx] & (1<<bit)) {
+	      SDDEBUG("Auto loop detected at position #%d\n", p);
+	      return INP_DECODE_END;
+	  } else {
+	    usedpos[idx] |= (1<<bit);
+	  }
+	}
+
+	if (!disk_info(info, 0)) {
+	  status |= INP_DECODE_INFO;
+	}
+      }
     }
   }
 
@@ -277,42 +300,83 @@ static driver_option_t * options(any_driver_t * d, int idx,
   return o;
 }
 
+static char * track_info(MODULE *mod, char *tmp)
+{
+  int pos = -1;
+
+  if (Player_Active()) {
+    pos = Player_GetPosition();
+  }
+  if (pos>=0) {
+    sprintf(tmp, "%d/%d", pos+1, mod->numpos);
+  } else {
+    sprintf(tmp, "%d", mod->numpos);
+  }
+  return tmp;
+}
+
+static char * desc_info(MODULE *mod, char *tmp)
+{
+  sprintf(tmp, "%s - %d channels", mod->modtype, mod->numchn);
+  return tmp;
+}
+
+static int update_info(playa_info_t *info, MODULE *mod, char *tmp)
+{
+  info->update_mask = 0;
+  if (!mod) {
+    return -1;
+  }
+  playa_info_track(info, track_info(mod, tmp));
+  return 0;
+}
 
 static int disk_info(playa_info_t *info, MODULE * mod)
 {
   char tmp[512];
-  int pos = 0;
+
+  //  SDDEBUG("%s(%p,%p)\n", __FUNCTION__, info, mod);
 
   if (!mod) {
-    mod = Player_GetModule();
-    if (mod && Player_Active()) {
-      pos = Player_GetPosition();
-    }
+    return update_info(info, Player_GetModule(), tmp);
   }
 
-  if (!mod) {
+  if (update_info(info, mod, tmp)) {
     return -1;
   }
 
-  sprintf(tmp, "%s - #%d channels", mod->modtype, mod->numchn);
-  info->format = strdup(tmp);
-  info->time   = playa_make_time_str((mod->sngtime*1000) >> 10);
-  info->artist = 0;
-  info->album  = 0;
-  sprintf(tmp, "%d/%d", pos, mod->numpos);
-  info->track  = strdup(tmp);
-  info->title = strdup(mod->songname);
-  info->year = 0;
-  info->genre = strdup("tracker");
-  info->comments = strdup(mod->comment);
+  playa_info_bits(info,1);
+  playa_info_stereo(info,1);
+  playa_info_frq(info,44100);
+  playa_info_time(info, mod->sngtime);
+  playa_info_bps(info,0);
+  playa_info_desc(info,desc_info(mod, tmp));
+
+  playa_info_artist(info,0);
+  playa_info_album(info,0);
+  playa_info_title(info,mod->songname);
+  playa_info_year(info,0);
+  playa_info_genre(info,"tracker");
+  playa_info_comments(info,mod->comment);
+
+  //  SDDEBUG("%s(%p,%p) := 0\n");
+
   return 0;
 }
 
+// $$$ ben: Load whole module file. There must be better functions in mikmod
 static int file_info(playa_info_t *info, const char *fname)
 {
-  return -1;
-}
+  int err;
+  MODULE * mod;
 
+  err = disk_info(info,  mod = dc_load_mod(fname));
+  if (mod) {
+    free(mod);
+  }
+
+  return err;
+}
 
 static int info(playa_info_t *info, const char *fname)
 {

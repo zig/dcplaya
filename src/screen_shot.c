@@ -4,18 +4,19 @@
  * @date    2002/09/14
  * @brief   Takes TGA screen shot.
  * 
- * $Id: screen_shot.c,v 1.2 2002-09-14 15:17:01 ben Exp $
+ * $Id: screen_shot.c,v 1.3 2002-09-25 03:21:22 benjihan Exp $
  */
 
-#include <kos/fs.h>
+//#include <kos/fs.h>
 #include <dc/ta.h>
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "zlib.h"
 #include "config.h"
 #include "sysdebug.h"
 
-const char screen_shot_id[] = "dcplaya " VERSION_STR " - " DREAMMP3_URL;
+const char screen_shot_id[] = "dcplaya " DCPLAYA_VERSION_STR " - " DCPLAYA_URL;
 
 /* TGA pixel format */
 typedef enum {
@@ -121,21 +122,23 @@ int screen_shot(const char *basename)
   static int shot=0;
   char tmp[2048];
   int err = -1;
-  uint32 fd = 0;
+  //  uint32 fd = 0;
   uint8 * vram = (uint8 *) 0xa5000000 + ta_state.buffers[1].frame;
   uint8 * vcpy = 0;
   int w = ta_state.w;
   int h = ta_state.h;
   TGAfileHeader tga;
+  gzFile fd;
+
 
   SDDEBUG(">> %s(%s)\n", __FUNCTION__, basename);
   sysdbg_indent(1,0);
 
   ++shot;
-  sprintf(tmp, "/pc" DREAMMP3_HOME "%s%03d.tga", basename, shot);
+  sprintf(tmp, "/pc" DREAMMP3_HOME "%s%03d.tga.gz", basename, shot);
 
   SDDEBUG("Opening [%s] for writing\n", tmp);
-  fd = fs_open(tmp, O_WRONLY);
+  fd = gzopen(tmp,"wb");//fs_open(tmp, O_WRONLY);
   if (!fd) {
     SDERROR("Open error.\n");
     goto error;
@@ -154,7 +157,8 @@ int screen_shot(const char *basename)
   set_tga(&tga, w, h, sizeof(screen_shot_id));
   SDDEBUG("Write TGA header [%dx%dx16] [1555] (%d bytes)\n",
 	  w, h, sizeof(tga));
-  if (fs_write(fd, &tga, sizeof(tga)) != sizeof(tga)) {
+  //  if (fs_write(fd, &tga, sizeof(tga)) != sizeof(tga)) {
+  if (gzwrite(fd, &tga, sizeof(tga)) != sizeof(tga)) {
     SDERROR("Write error.\n");
     goto error;
   }
@@ -162,7 +166,8 @@ int screen_shot(const char *basename)
   /* Save identifier string. */
   SDDEBUG("Write TGA identifier string [%s] (%d bytes)\n",
 	  screen_shot_id, sizeof(screen_shot_id));
-  if (fs_write(fd, screen_shot_id, sizeof(screen_shot_id)) !=
+  //  if (fs_write(fd, screen_shot_id, sizeof(screen_shot_id)) !=
+  if (gzwrite(fd, screen_shot_id, sizeof(screen_shot_id)) !=
       sizeof(screen_shot_id)) {
     SDERROR("Write error.\n");
     goto error;
@@ -170,7 +175,8 @@ int screen_shot(const char *basename)
 
   /* Save pixels. */
   SDDEBUG("Write Pixel data.\n", w, h, vcpy);
-  if (fs_write(fd, vcpy, w*h*2) != w*h*2) {
+  //  if (fs_write(fd, vcpy, w*h*2) != w*h*2) {
+  if (gzwrite(fd, vcpy, w*h*2) != w*h*2) {
     SDERROR("Write error.\n");
     goto error;
   }
@@ -178,7 +184,8 @@ int screen_shot(const char *basename)
 
  error:
   if (fd) {
-    fs_close(fd);
+    //    fs_close(fd);
+    gzclose(fd);
   }
   if (vcpy) {
     free(vcpy);

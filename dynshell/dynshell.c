@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.19 2002-09-24 18:29:39 vincentp Exp $
+ * @version    $Id: dynshell.c,v 1.20 2002-09-25 03:21:21 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -663,21 +663,25 @@ static int lua_play(lua_State * L)
   int nparam = lua_gettop(L);
   const char * file = 0, *error = 0;
   unsigned int imm = 1;
+  int track = 0;
 
   /* Get lua parms */
   if (nparam >= 1) {
     file = lua_tostring(L, 1);
   }
   if (nparam >= 2) {
-    imm = lua_tonumber(L, 2);
+    track = lua_tonumber(L, 2);
+  }
+  if (nparam >= 3) {
+    imm = lua_tonumber(L, 3);
   }
   
   if (!file) {
     error = "missing music file argument";
-  } else if (imm<2) {
+  } else if (imm > 1) {
     error = "boolean expected";
   } else {
-    if (playa_loaddisk(file, imm) < 0) {
+    if (playa_start(file, track-1, imm) < 0) {
       error = "invalid music file";
     }
   }
@@ -700,12 +704,12 @@ static int lua_stop(lua_State * L)
     imm = lua_tonumber(L, 1);
   }
 
-  if (imm < 2) {
+  if (imm > 1) {
     error = "boolean expected";
   }
    
   if (!error) {
-    playa_loaddisk(0,imm);
+    playa_stop(imm);
   } else {
     printf("stop : %s\n", error);
     return -1;
@@ -894,7 +898,7 @@ static luashell_command_description_t commands[] = {
     "pl",
 
     "print([["
-    "play(music-file [,immediat]) : play a music file\n"
+    "play(music-file [,track, [,immediat]]) : play a music file\n"
     "]])",
 
     SHELL_COMMAND_C, lua_play

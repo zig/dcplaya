@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/09/03
  * @brief     sidplay input plugin for dcplaya
- * @version   $Id: sidplay_driver.cxx,v 1.6 2002-09-24 18:29:42 vincentp Exp $
+ * @version   $Id: sidplay_driver.cxx,v 1.7 2002-09-25 03:21:22 benjihan Exp $
  */
 
 /* generated config include */
@@ -30,6 +30,7 @@ extern "C" {
 #include "fifo.h"
 #include "playa.h"
 #include "gzip.h"
+#include "sysdebug.h"
 };
 
 extern "C" {
@@ -38,6 +39,8 @@ int time()
   return 0;
 }
 }
+
+static int disk_info(playa_info_t *info, sidTune * sidtune);
 
 void * operator new (unsigned int bytes) {
   return malloc(bytes);
@@ -173,7 +176,7 @@ static int load_sid(const char *fn)
   return -1;
 }
 
-static int start(const char *fn, decoder_info_t *info)
+static int start(const char *fn, int track, playa_info_t *info)
 {
   int err = 0;
   sidTuneInfo sidinfo;
@@ -196,38 +199,37 @@ static int start(const char *fn, decoder_info_t *info)
     goto error;
   }
 
-  tune->getInfo(sidinfo);
-  if (!sidEmuInitializeSong(*engine, *tune, sidinfo.startSong)) {
+  /* Sid track are 1 based. */
+  ++track;
+  if (track < 1 || track > sidinfo.songs) {
+    track = sidinfo.startSong;
+  }
+
+  if (!sidEmuInitializeSong(*engine, *tune, track)) {
     err = __LINE__;
     goto error;
   }
+  disk_info(info, tune);
 
-  info->bytes = sidbuffer_len;
-
-  {
-    int secs;
-    static char desc[256];
-    sprintf(desc, "%s - %s", sidinfo.formatString, sidinfo.speedString);
-
-    secs = 5*60;
-    info->bps    =  (info->bytes << 3) / secs;
-    info->desc   = desc;
-    info->frq    = config.frequency;
-    info->bits   = config.bitsPerSample;
-    info->stereo = config.channels-1;
-    info->time   = secs * 1000;
-
-    splCnt  = 0;
-    splGoal = secs * info->frq;
+  splCnt = 0;
+  splGoal = 0x192d500;
+    /*
+    (info->info[PLAYA_INFO_TIME].v >>
+     (10 -
+      info->info[PLAYA_INFO_STEREO].v -
+      info->info[PLAYA_INFO_BITS].v)) * 
+      config.frequency;*/
+  
+  if (!splGoal) {
+    SDWARNING("Music has no time : goal=%u\n", splGoal);
   }
 
   err = 0;
-
  error:
   return err;
 }
 
-static int decoder(decoder_info_t *info)
+static int decoder(playa_info_t *info)
 {
   int status = 0;
   int buffer[512];
@@ -235,12 +237,14 @@ static int decoder(decoder_info_t *info)
 
   /* Check fir valid sid engine and sid tune objects  */
   if (!engine || !tune) {
+    SDERROR("sidplay: null object [%p %p]\n", engine, tune);
     return INP_DECODE_ERROR;
   }
 
   /* Get fifo free space (in bytes) */
   n = fifo_free() << 1;
   if (n < 0) {
+    SDERROR("sidplay: fifo error\n");
     return INP_DECODE_ERROR;
   }
 
@@ -256,6 +260,7 @@ static int decoder(decoder_info_t *info)
   /* Run emulator, fill buffer */
   sidEmuFillBuffer(*engine, *tune, buffer, n);
   if (!engine->getStatus()) {
+    SDERROR("sidplay: status error\n");
     return INP_DECODE_ERROR;
   }
 
@@ -265,6 +270,7 @@ static int decoder(decoder_info_t *info)
   if (fifo_write_mono((short *)buffer, n) != n) {
     /* This should not happen since we check the fifo above and no other
        thread fill it. */
+    SDERROR("sidplay: write error\n");
     return INP_DECODE_ERROR;
   }
 
@@ -272,6 +278,7 @@ static int decoder(decoder_info_t *info)
 
   splCnt += n;
   if (splCnt >= splGoal) {
+    SDDEBUG("sidplay: reach end [%u > %u]\n",splCnt, splGoal);
     status |= INP_DECODE_END ;
   }
 
@@ -284,53 +291,69 @@ static driver_option_t * options(any_driver_t * d, int idx,
   return o;
 }
 
-
-static int disk_info(playa_info_t *info, sidTune * sidtune)
+static int update_info(playa_info_t *info, sidTuneInfo & sidinfo, char *tmp)
 {
-  char tmp[64];
-  sidTuneInfo sidinfo;
+  sidTune * sidtune;
 
-  if (!sidtune) {
-    sidtune = tune;
-  }
-  if (!sidtune) {
+  info->update_mask = 0;
+  if (sidtune = tune, !sidtune) {
     return -1;
   }
-
-
   if (!sidtune->getInfo(sidinfo)) {
     return -1;
   }
 
-  info->format = strdup(sidinfo.formatString);
-  info->time   = playa_make_time_str(5*60*1000);
-
-  info->artist = strdup(sidinfo.authorString);
-  info->album  = strdup(sidinfo.nameString);
+  playa_info_time(info, 5*60<<10);
   sprintf(tmp,"%02d/%02d", sidinfo.currentSong, sidinfo.songs);
-  info->track  = strdup(tmp);
-  info->title = strdup(sidinfo.nameString);
-  info->year = 0;
-  info->genre = strdup("chip-tune");
-  info->comments = 0;
+  playa_info_track(info, tmp);
+  playa_info_title(info, sidinfo.nameString);
+  playa_info_comments(info, sidinfo.copyrightString);
+
+  return 0;
+}
+
+static int disk_info(playa_info_t *info, sidTune * sidtune)
+{
+  char tmp[256];
+  sidTuneInfo sidinfo;
+
+  if (!sidtune) {
+    return update_info(info, sidinfo, tmp);
+  }
+  if (!sidtune->getInfo(sidinfo)) {
+    return -1;
+  }
+
+  SDDEBUG("disk_info(%p)\n",sidtune);
+
+//$$$ ben: Make stream channel low frq !! Add another variable for replay frq
+    //(sidinfo.clock & SIDTUNE_CLOCK_PAL) ? 50 : 60;
+
+  playa_info_bits(info, config.bitsPerSample >> 4);
+  playa_info_stereo(info, config.channels-1);
+  playa_info_frq(info, config.frequency);
+  playa_info_time(info, (5*60) << 10);
+  playa_info_bps(info, 0);
+  playa_info_bytes(info, 0);
+  
+  playa_info_desc(info, (char *)sidinfo.formatString);
+  playa_info_artist(info, sidinfo.authorString);
+  playa_info_album(info, sidinfo.nameString);
+  sprintf(tmp,"%02d/%02d", sidinfo.currentSong, sidinfo.songs);
+  playa_info_track(info, tmp);
+  playa_info_title(info, sidinfo.nameString);
+  playa_info_year(info, 0);
+  playa_info_genre(info, "chip-tune");
+  playa_info_comments(info, sidinfo.copyrightString);
+
   return 0;
 }
 
 static int file_info(playa_info_t *info, const char *fname)
 {
-  info->format = 0;
-  info->time   = 0;
-
-  info->artist = 0;
-  info->album  = 0;
-  info->track  = 0;
-  info->title = 0;
-  info->year = 0;
-  info->genre = 0;
-  info->comments = 0;
+  info->update_mask = 0;
   return 0;
 }
-
 
 static int info(playa_info_t *info, const char *fname)
 {
@@ -348,21 +371,20 @@ inp_driver_t sidplay_driver =
   /* Any driver */
   {
     NEXT_DRIVER,          /**< Next driver (see any_driver.h)  */
-    INP_DRIVER,           /**< Driver type */      
-    0x0100,               /**< Driver version */
-    "sidplay",            /**< Driver name */
-    "Benjamin Gerard",    /**< Driver authors */
-    "C64 music player",   /**< Description */
-    0,                    /**< DLL handler */
-    init,                 /**< Driver init */
-    shutdown,             /**< Driver shutdown */
-    options,              /**< Driver options */
+    INP_DRIVER,           /**< Driver type                     */      
+    0x0100,               /**< Driver version                  */
+    "sid",                /**< Driver name                     */
+    "Benjamin Gerard",    /**< Driver authors                  */
+    "C64 music player",   /**< Description                     */
+    0,                    /**< DLL handler                     */
+    init,                 /**< Driver init                     */
+    shutdown,             /**< Driver shutdown                 */
+    options,              /**< Driver options                  */
   },
   
   /* Input driver specific */
-  
-  0,                      /**< User Id */
-  ".sid\0"                /**< Extension list */
+  0,                      /**< User Id                         */
+  ".sid\0"                /**< Extension list                  */
   ".sid.gz\0"
   ".psid\0"
   ".psid.gz\0"

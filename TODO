@@ -1,5 +1,5 @@
 
-$Id: TODO,v 1.9 2002-09-24 13:46:52 vincentp Exp $
+$Id: TODO,v 1.10 2002-09-25 03:21:19 benjihan Exp $
 
 ** TODO :
 
@@ -58,3 +58,23 @@ $Id: TODO,v 1.9 2002-09-24 13:46:52 vincentp Exp $
 - Ignore joypad move when awaking browser display
 
 - Don't make browser sleep when no visual ( or music playing ? )
+
+- check sndstream functions parameters (frq, vol ... )
+
+- Correct bug of hilight (see BUGS)
+
+- Correct time bug. I Don't really remember what is the bug. Sommething like
+  time is not ressetted when changing track in the same file (sc68/playsid).
+
+- Encoding support : e.g Chris Huelsbeck
+
+- Clipping !!! At least for the text window ! A scroller should be nice  when
+  text becomes to long.
+
+- Better support for multi track. Think to a supported-features flag in inp API
+  and a get_tracks() function.
+
+- File selected is desactivated when reload plugin (side effects of previous
+  bug correction for filetype)
+
+- Bug : Lock when killing app to earlier (e.g. while initializing ZED)

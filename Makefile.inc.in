@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile.inc.in,v 1.17 2002-09-21 09:58:28 benjihan Exp $
+# $Id: Makefile.inc.in,v 1.18 2002-09-25 03:21:19 benjihan Exp $
 #
 
 TOP_DIR="@TOP_DIR@"
@@ -166,7 +166,7 @@ $(LIBNAME) : $(OBJS) $(LIB_EXTRA)
 subdirs: $(patsubst %, _dir_%, $(SUBDIRS))
 
 $(patsubst %, _dir_%, $(SUBDIRS)):
-	@$(MAKE) -s -C $(patsubst _dir_%, %, $@)
+	@$(MAKE) -C $(patsubst _dir_%, %, $@)
 
 # ----------------------------------------------------------------------
 # Clean rules

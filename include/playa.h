@@ -1,7 +1,9 @@
-/*
+/**
+ * @file     playa.h
+ * @author   benjamin gerard <ben@sashipa.com>
+ * @brief    music player threads
  *
- *
- * $Id: playa.h,v 1.4 2002-09-06 23:16:09 ben Exp $
+ * $Id: playa.h,v 1.5 2002-09-25 03:21:21 benjihan Exp $
  */
 
 #ifndef _PLAYA_H_
@@ -12,8 +14,10 @@
 DCPLAYA_EXTERN_C_START
 
 
-/* Main decoder thread status */
-#define PLAYA_STATUS_INIT	    0
+/** @name  Main decoder thread status
+ *  @{
+ */
+#define PLAYA_STATUS_INIT     0
 #define PLAYA_STATUS_READY    1
 #define PLAYA_STATUS_STARTING 2
 #define PLAYA_STATUS_PLAYING  3
@@ -21,6 +25,7 @@ DCPLAYA_EXTERN_C_START
 #define PLAYA_STATUS_QUIT     5
 #define PLAYA_STATUS_ZOMBIE   6
 #define PLAYA_STATUS_REINIT   7
+/*@}*/
 
 #include "playa_info.h"
 
@@ -29,9 +34,8 @@ int playa_shutdown();
 
 int playa_isplaying();
 
-int playa_start(const char *fn, int loop);
+int playa_start(const char *fn, int track, int immediat);
 int playa_stop(int flush);
-int playa_loaddisk(const char *fn, int immediat);
 
 int playa_volume(int volume);
 
@@ -42,11 +46,6 @@ int playa_info(playa_info_t * info, const char *fn);
 
 unsigned int playa_playtime();
 void playa_get_buffer(int **b, int *nbSamples, int *counter, int *frq);
-
-playa_info_t *playa_info_lock();
-void playa_info_release(playa_info_t *);
-
-char * playa_make_time_str(unsigned int ms);
 
 DCPLAYA_EXTERN_C_END
 

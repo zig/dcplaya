@@ -3,7 +3,7 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: inp_driver.h,v 1.3 2002-09-06 23:16:09 ben Exp $
+ * $Id: inp_driver.h,v 1.4 2002-09-25 03:21:21 benjihan Exp $
  */
 
 #ifndef _INP_DRIVER_H_
@@ -37,13 +37,14 @@ typedef struct
   /** Extensions list terminated by a double zero. */
   const char * extensions;
 
-  /** Start a new file and set info. */
-  int (*start)(const char *fn, decoder_info_t *info);
+  /** Start a new file at given tarck and set info. */
+  int (*start)(const char *fn, int track, playa_info_t *info);
+
   /** Stop playing file */
   int (*stop)(void);
 
   /** Decode next frame and updates info. */
-  int (*decode)(decoder_info_t *info);
+  int (*decode)(playa_info_t *info);
   
   /** Get file info. Can be use as is_mine() function. */
   int (*info)(playa_info_t * info, const char *fn);

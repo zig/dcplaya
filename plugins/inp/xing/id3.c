@@ -1,6 +1,7 @@
 #include <kos.h>
 
 #include "id3.h"
+#include "sysdebug.h"
 
 /*  $$$ Get this from the id3lib !!! Sorry it is ugly joe :_(
  */ 
@@ -29,27 +30,22 @@ int id3_info(playa_info_t * info, const char *fn)
   struct id3_file * f;
   int i;
 
-  dbglog(DBG_DEBUG, ">> " __FUNCTION__"(%s)\n", fn);
+  SDDEBUG(">> %s(%s)\n", __FUNCTION__, fn);
 
   memset(info, 0, sizeof(*info));
   
   f = id3_file_open(fn, ID3_FILE_MODE_READONLY);
   if (!f) {
-    dbglog(DBG_DEBUG, "<< " __FUNCTION__"(%s) := -1\n", fn);
+    SDERROR("id3 : open error\n");
     return -1;
   }
    
-  dbglog(DBG_DEBUG, "** " __FUNCTION__"(%s)\n", fn);
-  dbglog(DBG_DEBUG, " -- # ID3 tags[%d %p %p]\n", f->ntags, f->primary, f->tags);
   for (i=0; i<f->ntags; ++i) {
-    dbglog(DBG_DEBUG, "   == tag #%d [pos=%8d len=%8d nframe=%d]\n",
-	   i+1, 
-	   f->tags[i].location, f->tags[i].length, f->tags[i].tag->nframes);
     show_id3(info, f->tags[i].tag);
   }
   
   id3_file_close(f);
-  dbglog(DBG_DEBUG, "<< " __FUNCTION__"(%s) := 0\n", fn);
+  SDDEBUG("<< %s(%s) := [0]\n", __FUNCTION__, fn);
   return 0;
 }
 
@@ -114,10 +110,10 @@ void show_id3(playa_info_t * info3, struct id3_tag const *tag)
 
       latin1 = id3_ucs4_latin1duplicate(ucs4);
       if (latin1 == 0)
-	goto fail;
+	return;
 
       if (j == 0 && name) {
-	((char **)&info3->artist)[i] = latin1;
+	info3->info[PLAYA_INFO_ARTIST+i].s = latin1;
       } else {
 	free (latin1);
       }
@@ -151,12 +147,10 @@ void show_id3(playa_info_t * info3, struct id3_tag const *tag)
       }
     }
     if (strlen(latin1) > 0) {
-      info3->comments = latin1;
+      info3->info[PLAYA_INFO_COMMENTS].s = latin1;
       break; /* One comment only ! */
     } else {
       free (latin1);
     }
   }
-
- fail:
 }

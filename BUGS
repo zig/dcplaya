@@ -3,7 +3,7 @@
  * @author ben
  * @date   2002/09/18
  *
- * $Id: BUGS,v 1.2 2002-09-21 05:15:42 benjihan Exp $
+ * $Id: BUGS,v 1.3 2002-09-25 03:21:19 benjihan Exp $
  *
  *  This is the bug section. Run for your life.
  *
@@ -31,13 +31,30 @@
  *  border faces because the "invisible" face has no color.
  *
  *
- * @par     Protection fault.
- * @date	2002/09/18 author ben
- * @author  ben
+ * @par     	Protection fault.
+ * @date	2002/09/18
+ * @author  	ben
  *
  *  Crash when playing a mp3 with FFTVLR running. No idea of a cause for
  *  this bug.
  *
  *
+ * @par     	Dead lock.
+ * @date    	2002/09/23
+ * @author  	ben
+ *
+ *  Dead lock when decoder goes out too early ???
+ *
+ * @date    	2002/09/23
+ * @author  	ben
+ *
+ *  This happen when replay frequency becomes to low ! 
+ *  Needs to check parameter when setting stream frequency.
+ *
+ * @par     	selected playing music.
+ * @date    	2002/09/23
+ * @author  	ben
+ *
+ *  The hilight of selected playing music do not disapear when music stops.
  *
  **/

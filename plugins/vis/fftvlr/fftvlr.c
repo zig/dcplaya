@@ -8,7 +8,7 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.14 2002-09-24 18:29:42 vincentp Exp $
+ * $Id: fftvlr.c,v 1.15 2002-09-25 03:21:22 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -34,8 +34,6 @@ void FaceNormal(float *d, const vtx_t * v, const tri_t *t);
 #define VLR_X 0.5f
 #define VLR_Z 0.5f
 #define VLR_Y (4.5f)
-#define VLR_W 32
-#define VLR_H 48
 /*#define VLR_W 32
 #define VLR_H 96*/
 #define VLR_W 84

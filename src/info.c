@@ -9,6 +9,8 @@
 #include "songmenu.h"
 #include "playa.h"
 
+#include "sysdebug.h"
+
 /* Help PAD button colors */
 #define A_BUTTON_COLOR fade_argb(0xFFFF6363)
 #define B_BUTTON_COLOR fade_argb(0xFF00bded)
@@ -77,7 +79,7 @@ static void render_fps(uint32 elapsed_frames, const float x, const float y)
 	    "%%cfade=%3.2f",
 	    (unsigned int)elapsed_frames,
 	    playa_statusstr(playa_status()),
-	    fade68);
+	    (double)fade68);
     draw_poly_text (x,y,100.0f,1.0f,1.0f,1.0f,1.0f,
                     tmp,
                     fade_argb(0xFFFFFF00),
@@ -214,13 +216,13 @@ static void render_diskinfo(const float xs, const float ys)
     
     t = playa_playtime();
     if (t < 0) {
-      dbglog (DBG_ERROR, "*************** " __FUNCTION__ "() : BUGS time = %d\n",t);
+      SDDEBUG("BUGS time = %d\n",t);
       t = 0;
     }
     
-    h = t / 3600000;
-    m = t / 60000 % 60;
-    s = t % 60000 / 1000;
+    h = t / (3600<<10);
+    m = t / (60<<10) % 60;
+    s = t % (60<<10) / 1000;
     if (h) {
       sprintf(tmp,"%u:%02u:%02u",h,m,s);
     } else {
@@ -232,12 +234,14 @@ static void render_diskinfo(const float xs, const float ys)
   y = 340.0f;
   
   /* Track time */  
-  if (info->valid && info->time) {
+
+  if (info->valid && info->info[PLAYA_INFO_TIMESTR].s) {
     float tw, th; 
+    const char * timestr = info->info[PLAYA_INFO_TIMESTR].s;
     x = 600.0f;
-    draw_poly_get_text_size(info->time,&tw, &th);
+    draw_poly_get_text_size(timestr, &tw, &th);
     x -= tw; 
-    draw_poly_text(x, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3], info->time);
+    draw_poly_text(x, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3], timestr);
   }
 	
   /* Playing time */
@@ -250,12 +254,13 @@ static void render_diskinfo(const float xs, const float ys)
   }
 	
   /* Track */
-  if (info->valid && info->track) {
+  if (info->valid && info->info[PLAYA_INFO_TRACK].s) {
+    char * trkstr = info->info[PLAYA_INFO_TRACK].s;
     float tw, th;
     x = 451;
-    draw_poly_get_text_size(info->track, &tw, &th);
+    draw_poly_get_text_size(trkstr, &tw, &th);
     x -= tw;
-    draw_poly_text(x, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3], info->track);
+    draw_poly_text(x, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3], trkstr);
   }
 	
 
@@ -263,46 +268,52 @@ static void render_diskinfo(const float xs, const float ys)
   rgb = info_color;
 
   /* Format */	
-  if (info->valid && info->format) {
+  if (info->valid && info->info[PLAYA_INFO_FORMAT].s) {
     draw_poly_text(x, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3],
-		   info->format);
+		   info->info[PLAYA_INFO_FORMAT].s);
   }
 
   y = 363;
   /* Album */
-  if (info->valid && info->album) {
-    draw_poly_text(x, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3], info->album);
+  if (info->valid && info->info[PLAYA_INFO_ALBUM].s) {
+    draw_poly_text(x, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3],
+		   info->info[PLAYA_INFO_ALBUM].s);
   }
 	
   /* Genre */
-  if (info->valid && info->genre) {
-    draw_poly_text(413, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3], info->genre);
+  if (info->valid && info->info[PLAYA_INFO_GENRE].s) {
+    draw_poly_text(413, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3],
+		   info->info[PLAYA_INFO_GENRE].s);
     
   }
   
   /* Year */
-  if (info->valid && info->year) {
-    draw_poly_text(560, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3], info->year);
+  if (info->valid && info->info[PLAYA_INFO_YEAR].s) {
+    draw_poly_text(560, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3],
+		   info->info[PLAYA_INFO_YEAR].s);
   }
 	
   /* Artist */
-  if (info->valid && info->artist) {
+  if (info->valid && info->info[PLAYA_INFO_ARTIST].s) {
     y = 386;
-    ystep = draw_poly_text(x, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3], info->artist);
+    ystep = draw_poly_text(x, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3], 
+			   info->info[PLAYA_INFO_ARTIST].s);
   }
 
   /* Title */
-  if (info->valid && info->title) {
+  if (info->valid && info->info[PLAYA_INFO_TITLE].s) {
     y = 409;
-    ystep = draw_poly_text(x, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3], info->title);
+    ystep = draw_poly_text(x, y, 100.0f, rgb[0], rgb[1], rgb[2], rgb[3],
+			   info->info[PLAYA_INFO_TITLE].s);
   }
 	
   rgb = title_color;
-  if (info->valid && info->comments) {
+  if (info->valid && info->info[PLAYA_INFO_COMMENTS].s) {
     y = 434;
     x = xs+4;
     rgb = info_color;
-    ystep = draw_poly_text(x, y, 100.0f, rgb[0], 0,0, 0, info->comments);
+    ystep = draw_poly_text(x, y, 100.0f, rgb[0], 0,0, 0,
+			   info->info[PLAYA_INFO_COMMENTS].s);
   }
 
   playa_info_release(info);

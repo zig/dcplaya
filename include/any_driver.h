@@ -1,6 +1,9 @@
-/*
+/**
+ * @file    any_driver.h
+ * @author  benjamin gerard <ben@sashipa.com>
+ * @brief   dcplaya plugin structure.
  *
- * $Id: any_driver.h,v 1.4 2002-09-24 13:47:04 vincentp Exp $ 
+ * $Id: any_driver.h,v 1.5 2002-09-25 03:21:21 benjihan Exp $ 
  */
  
 #ifndef _ANY_DRIVER_H_
@@ -10,17 +13,22 @@
 
 DCPLAYA_EXTERN_C_START
 
-/* Driver types */
+/** Driver types.
+ *  @{
+ */
 #define OBJ_DRIVER  'JBO' /**< 3D object         */
 #define VIS_DRIVER  'SIV' /**< Visual plugin     */
 #define INP_DRIVER  'PNI' /**< Input plugin      */
 #define EXE_DRIVER  'EXE' /**< Executable plugin */
+/**@}*/
 
 #include "driver_option.h"
 
+
+
 struct luashell_command_description;
 
-/** Shared by any driver */
+/** Shared by any driver. */
 typedef struct _any_driver_s
 {
   /** Next driver in list. */
@@ -35,10 +43,10 @@ typedef struct _any_driver_s
   /** Driver unic name (for each type). */
   const char *name;
 
-  /** Authors list */
+  /** Authors list. */
   const char *authors;
 
-  /** Driver short description */
+  /** Driver short description. */
   const char *description;
 
   /** DLL handler (currently the pointer to lef_prog_t. */
@@ -50,7 +58,7 @@ typedef struct _any_driver_s
   /** Driver shutdown (clean-up). */ 
   int (*shutdown)(struct _any_driver_s *);
 
-  /** Get/Set driver options */
+  /** Get/Set driver options. */
   driver_option_t * (*options)(struct _any_driver_s *,
                                int idx, driver_option_t * opt);
 
@@ -60,7 +68,7 @@ typedef struct _any_driver_s
 
 
 
-/* These #define *MUST* be use to fill the any_driver_t.nxt field. It allows
+/** These #define *MUST* be use to fill the any_driver_t.nxt field. It allows
  * to build a correct linked-list at compile time for a single multi-driver
  * plugin (.lef) file.
  */
@@ -70,7 +78,6 @@ typedef struct _any_driver_s
       return (any_driver_t *)&symbol; \
     }
 #else
-/* # warning "EXPORT_DRIVER empty" */
 # define EXPORT_DRIVER(symbol)
 #endif
 

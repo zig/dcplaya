@@ -4,7 +4,7 @@
  * @date    2002/02/10
  * @brief   file and playlist browser
  * 
- * $Id: songmenu.c,v 1.7 2002-09-23 03:25:01 benjihan Exp $
+ * $Id: songmenu.c,v 1.8 2002-09-25 03:21:22 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -20,6 +20,7 @@
 #include "m3u.h"
 #include "driver_list.h"
 #include "filetype.h"
+#include "playa.h"
 
 #include "sysdebug.h"
 
@@ -61,8 +62,6 @@ char songmenu_selected[64];
 //static const inp_driver_list_t * drivers;
 
 /* From dreamcast68.c */
-extern int playa_loaddisk(const char *fn, int imm);
-extern int playa_isplaying(void);
 extern controler_state_t controler68;
 extern float fade68;
 
@@ -770,7 +769,7 @@ static void check_playlist(void)
   while (++playwin->play < playlist.nb) {
     le = entrylist_addrof(&playlist, playwin->play);
     SDDEBUG("Playlist load #%d '%s'\n", playwin->play, le->fn);
-    if (!playa_loaddisk(le->fn, imm)) {
+    if (!playa_start(le->fn, -1, imm)) {
       return;
     }
     SDERROR("Failed loading #%d '%s'\n", playwin->play, le->fn);
@@ -1150,7 +1149,7 @@ static void check_controller(entry_window_t * win)
   if (controler_released(&controler68, CONT_B) && selected >= 0) {
     if (win->list == &direntry) {
       /* Stop the playback */
-      playa_loaddisk(0, 1);
+      playa_stop(1);
       if (playwin->play >= 0) {
 	playwin->selected = playwin->play;
       }
@@ -1222,7 +1221,7 @@ static void check_controller(entry_window_t * win)
 	    strcat(tmpstr, e->fn);
 	    strcpy(playdir, curdir);
 	    dirwin->play =
-	      playa_loaddisk(tmpstr, 1) < 0 ? -1 : selected;
+	      playa_start(tmpstr, -1, 1) < 0 ? -1 : selected;
 	  }
 	}
       } else if (e->type >= FILETYPE_PLAYLIST) {
@@ -1269,7 +1268,7 @@ static void check_controller(entry_window_t * win)
       }
     } else {
       /* A pressed in playlist : start/restart at index */
-      playa_loaddisk(0, 1);
+      playa_stop(1);
       dirwin->play = -1;
       playwin->play = -1;
       playlist_start_idx = selected;

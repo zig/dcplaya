@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.24 2002-09-20 00:22:14 benjihan Exp $
+ * @version   $Id: dreamcast68.c,v 1.25 2002-09-25 03:21:22 benjihan Exp $
  */
 
 //#define RELEASE
@@ -44,11 +44,13 @@
 #include "fft.h"
 #include "viewport.h"
 #include "fs_ramdisk.h"
+#include "screen_shot.h"
 
 #include "sysdebug.h"
 #include "syserror.h"
 #include "console.h"
 #include "shell.h"
+
 
 #include "exceptions.h"
 
@@ -69,28 +71,6 @@ extern void warning_render();
 static viewport_t viewport; 
 static matrix_t projection;
 static vis_driver_t * curvis;
-
-static vtx_t light_normal = { 
-  0.8,
-  0.4,
-  0.5
-};
-
-static vtx_t tlight_normal;
-static vtx_t light_color = {
-  0.9,
-  0.90,
-  0.9,
-  0.5
-};
-
-static vtx_t ambient_color = {
-  0.5,
-  0.3,
-  0.1,
-  0.5
-};
-
 
 #define ANIM_CONT   0
 #define ANIM_CYCLE  1
@@ -153,15 +133,6 @@ static void my_vid_border_color(int r, int g, int b)
 #else
 # define my_vid_border_color(R,G,B)
 #endif
-
-static void change_timeinfo(int lock)
-{
-}
-
-static void change_diskinfo(int lock)
-{
-}
-
 
 /* Sound first init : load arm code and setup streaming */
 static int sound_init(void)
@@ -573,7 +544,7 @@ static int no_mt_init(void)
 
 
  error:
-  dbglog(DBG_DEBUG, "<< " __FUNCTION__ " : error line [%d]\n", err);
+  SDDEBUG("<< %s : error line [%d]\n",__FUNCTION__, err);
   return err;
 }
 
@@ -629,7 +600,7 @@ void main_thread(void *cookie)
   const int shot_buttons = CONT_START|CONT_X|CONT_B;
   int err = 0;
 
-  dbglog(DBG_DEBUG, ">> " __FUNCTION__ "\n");
+  SDDEBUG(">> %s()\n", __FUNCTION__);
 
   //  vid_border_color(0,0,0);
 
@@ -643,7 +614,7 @@ void main_thread(void *cookie)
       err = __LINE__;
       goto error;
       }*/
-  playa_loaddisk("/rd/01 Intro.spc", 1);
+  playa_start("/rd/01 Intro.spc", -1, 1);
   thd_pass(); // $$$ Don't ask me why !!! It removes a bug in intro sound !!!
 
   fade68    = 0.0f;
@@ -702,6 +673,7 @@ void main_thread(void *cookie)
 
     SDDEBUG("%x \n",controler68.buttons & shot_buttons);
     if ((controler68.buttons & shot_buttons) == shot_buttons) {
+      controler68.buttons &= ~shot_buttons;
       screen_shot("shot/shot");
     }
 
@@ -775,19 +747,19 @@ void main_thread(void *cookie)
     //    my_vid_border_color(0,0,0);    
   }
 
-  dbglog(DBG_DEBUG, "** "  __FUNCTION__ " : Start exit procedure\n");
+  SDDEBUG("Start exit procedure\n");
 
   /* Stop sc68 from playing */
-  playa_loaddisk(0,0);
+  playa_stop(1);
   vmu_lcd_title();
 
   /* */
   stream_shutdown();
 
   /* Stop the sound */
-  dbglog(DBG_DEBUG, "** " __FUNCTION__ " : disable SPU\n");
+  SDDEBUG("Disable SPU\n");
   spu_disable();
-  dbglog(DBG_DEBUG, "** " __FUNCTION__ " : SPU disabled\n");
+  SDDEBUG("SPU disabled\n");
 
   /* Stop songmenu */
   songmenu_kill();
@@ -800,7 +772,11 @@ void main_thread(void *cookie)
   if (cookie) {
     *(int *)cookie = err;
   }
-  dbglog(DBG_DEBUG, "<< " __FUNCTION__ " : error line [%d]\n", err);
+  if (err) {
+    SDERROR("Error line [%d]\n", err);
+  } else {
+    SDDEBUG("Exit procedure success\n");
+  }
 }
 
 extern uint8 romdisk[];
@@ -868,9 +844,9 @@ int dreammp3_main(int argc, char **argv)
   csl_enable_render_mode(csl_main_console, CSL_RENDER_WINDOW);
   
   /* WARNING MESSAGE */
-  dbglog( DBG_DEBUG, "** " __FUNCTION__ " : starting WARNING screen\n");
+  SDDEBUG("Starting WARNING screen\n");
   warning_splash();
-  dbglog( DBG_DEBUG, "** " __FUNCTION__ " : End of WARNING screen\n");
+  SDDEBUG("End of WARNING screen\n");
 
   /* MAIN */
   main_thread(0);
@@ -878,12 +854,15 @@ int dreammp3_main(int argc, char **argv)
   /* Close the console debugging log facility */
   csl_close_main_console();
 
-
 error:
   dbglog_set_level(DBG_DEBUG);
-  dbglog( DBG_DEBUG, ">> " __FUNCTION__ " : error line [%d]\n", err);
+  if (err) {
+    SDERROR("Error line [%d]\n", err);
+  } else {
+    SDDEBUG("Clean exit\n");
+  }
 
-  BREAKPOINT("toto");
+  BREAKPOINT(0x00DEAD00);
 
   /* Shutting down exceptions handling */
   expt_shutdown();

@@ -1,3 +1,11 @@
+/**
+ * @file     playa.c
+ * @author   benjamin gerard <ben@sashipa.com>
+ * @brief    music player threads
+ *
+ * $Id: playa.c,v 1.7 2002-09-25 03:21:22 benjihan Exp $
+ */
+
 #include <kos.h>
 
 #include "sysdebug.h"
@@ -10,9 +18,6 @@
 #include "file_wrapper.h"
 #include "fifo.h"
 
-//#include "id3tag.h"
-
-
 #define PLAYA_THREAD
 
 
@@ -23,13 +28,10 @@ static int current_stereo;
 
 static inp_driver_t * driver = 0;
 
-/** INFO */
-static void dump_info();
-static int info_id;
-static playa_info_t curinfo;
-static decoder_info_t decinfo;
-static void free_info(playa_info_t *i);
+
 int playa_info(playa_info_t * info, const char *fn);
+static char * make_default_name(const char *fn);
+const char * playa_statusstr(int status);
 
 kthread_t * playa_thread;
 static semaphore_t *playa_haltsem;
@@ -38,41 +40,6 @@ static volatile int playastatus = PLAYA_STATUS_INIT;
 static volatile unsigned int play_samples_start;
 static volatile unsigned int play_samples;
 static volatile int streamstatus = PLAYA_STATUS_INIT;
-
-const char * playa_statusstr(int status);
-static void make_global_info(playa_info_t * info);
-
-/** INFO **/
-
-static spinlock_t infomutex;
-
-static void lockinfo(void)
-{
-  spinlock_lock(&infomutex);
-}
-
-void unlockinfo(void)
-{
-  spinlock_unlock(&infomutex);
-}
-
-playa_info_t * playa_info_lock() {
-  lockinfo();
-  return &curinfo;
-}
-
-void playa_info_release(playa_info_t *i) {
-  if (i == &curinfo) {
-    unlockinfo();
-  }
-}
-
-static void clean_info(playa_info_t *i)
-{
-  if (i) {
-    memset(i,0,sizeof(*i));
-  }
-}
 
 static int out_buffer[1<<14];
 static int out_samples;
@@ -222,27 +189,29 @@ static void real_playa_update(void)
   case PLAYA_STATUS_PLAYING:
     {
       int status;
+      playa_info_t info;
       //      VCOLOR(255,255,0);
-      status = driver ? driver->decode(&decinfo) : INP_DECODE_ERROR;
+      if (!driver) {
+	SDERROR("No driver !\n");
+	status = INP_DECODE_ERROR;
+      } else {
+	memset(&info,0,sizeof(info));
+	status = driver->decode(&info);
+      }
       //      VCOLOR(0,0,0);
 
       if (status & INP_DECODE_END) {
+	if (driver && status == INP_DECODE_ERROR) {
+	  SDERROR("Driver error\n");
+	}
+	SDDEBUG("STOOOOOOOOP\n");
 	playastatus = PLAYA_STATUS_STOPPING;
 	break;
       }
 
       if (status & INP_DECODE_INFO) {
-	playa_info_t info;
-
-	if (!playa_info(&info, 0)) {
-	  make_global_info(&info);
-	  lockinfo();
-	  free_info(&curinfo);
-	  info.valid = curinfo.valid = 0;
-	  curinfo = info;
-	  curinfo.valid = ++info_id;
-	  unlockinfo();
-	}
+	SDDEBUG("Driver change INFO\n");
+	playa_info_update(&info);
       }
 
       if (! (status & INP_DECODE_CONT)) {
@@ -255,14 +224,13 @@ static void real_playa_update(void)
     break;
 
   case PLAYA_STATUS_STOPPING:
-    if (driver) {
-      driver->stop();
-    }
-    lockinfo();
-    free_info(&curinfo);
-    unlockinfo();
-    playastatus = PLAYA_STATUS_READY;
-    break;
+    {
+      if (driver) {
+	driver->stop();
+      }
+      playa_info_clean();
+      playastatus = PLAYA_STATUS_READY;
+    } break;
   }
 }
 
@@ -276,6 +244,22 @@ void playa_update(void)
 #else
   real_playa_update();
 #endif
+}
+
+static void wait_playastatus(const int status)
+{
+  const int retimeout = 5000;
+  int timeout = 1;
+
+  while (playastatus != status) {
+    if (!--timeout) {
+      SDDEBUG("Player [%s] waiting [%s]\n",
+	      playa_statusstr(playastatus),
+	      playa_statusstr(status));
+      timeout = retimeout;
+    }
+    playa_update();
+  }
 }
 
 
@@ -312,8 +296,7 @@ int playa_init()
 
   pcm_buffer_init(0,0);
 
-  clean_info(&curinfo);
-  spinlock_init(&infomutex);
+  playa_info_init();
   fifo_init();
   playa_haltsem = sem_create(0);
 
@@ -331,9 +314,7 @@ int playa_init()
   thd_create(playadecoder_thread, 0);
 #endif
   SDDEBUG("Waiting PLAYA decoder thread\n");
-  while (playastatus != PLAYA_STATUS_READY) {
-    playa_update();
-  }
+  wait_playastatus(PLAYA_STATUS_READY);
   SDDEBUG("READY PLAYA decoder thread\n");
 
   SDUNINDENT;
@@ -351,8 +332,7 @@ int playa_shutdown()
   SDDEBUG("Decoder stream\n");
   playastatus = PLAYA_STATUS_QUIT;
   sem_signal(playa_haltsem);
-  while (playastatus != PLAYA_STATUS_ZOMBIE)
-    playa_update();
+  wait_playastatus(PLAYA_STATUS_ZOMBIE);
   sem_destroy(playa_haltsem);
 
   /* Sound Stream */
@@ -376,9 +356,7 @@ int playa_shutdown()
     }
   }
 
-  lockinfo();
-  free_info(&curinfo);
-  unlockinfo();
+  playa_info_shutdown();
 
   SDUNINDENT;
   SDDEBUG("<< %s() := [%d]\n",__FUNCTION__, e);
@@ -409,59 +387,24 @@ const char * playa_statusstr(int status) {
   return (status < 0 || status > 7) ? "???" : statusstr[status];
 }
 
-static int ToUpper(int c)
-{
-  if (c>='a' && c<='z') c ^= 32;
-  return c;
-}
-
-static int ToLower(int c)
-{
-  if (c>='A' && c<='Z') c ^= 32;
-  return c;
-}
 
 static int StrLen(const char *s)
 {
   return s ? strlen(s) : 0;
 }
 
-static char * frq_1000(int frq, const char *append)
-{
-  static char s[16], *s2;
-  int v;
-
-  v = frq / 1000;
-  sprintf(s,"%d",v);
-  s2 = s + strlen(s);
-  v = frq % 1000;
-  if (v) {
-    int div;
-
-    *s2++='.';
-    for (div=100; v && div>0; div /= 10) {
-      int d = v / div;
-      *s2++ = '0' + d;
-      v -= d * div;
-    }
-  }
-  *s2=0;
-  if (append) {
-    strcpy(s2, append);
-  }
-  return s;
-}
 
 int playa_info(playa_info_t * info, const char *fn)
 {
   int err;
-  clean_info(info);
+
+  memset(info,0,sizeof(*info));
   err = driver ? driver->info(info, fn) : -1;
   if (err < 0) {
     /* $$$ ben: Safety net to be sure the driver does not trash it ... 
      * Memory leaks are possible anyway ... 
      */
-    clean_info(info);
+    memset(info,0,sizeof(*info));
   }
   return err;
 }
@@ -472,13 +415,12 @@ int playa_stop(int flush)
   
   /* Already stopped */
   if (playastatus == PLAYA_STATUS_READY) {
-    goto end;;
+    goto end;
   }
 
   /* Ask thread to stop */
   playastatus = PLAYA_STATUS_STOPPING;
-  while (playastatus != PLAYA_STATUS_READY)
-    playa_update();
+  wait_playastatus(PLAYA_STATUS_READY);
 
   /* If flush : clean PCM FIFO */
   if (flush) {
@@ -495,88 +437,21 @@ int playa_stop(int flush)
   return 0;
 }
 
-char * playa_make_time_str(unsigned int ms)
-{
-  char time[16];
-  unsigned int h,m,s;
 
-  h = ms / (3600*1000);
-  ms -= h * (3600*1000);
-  m = ms / (60*1000);
-  ms -= m * (60*1000);
-  s = ms / 1000;
-
-  if (h) {
-    sprintf(time, "%d:%02d:%02d",h,m,s);
-  } else {
-    sprintf(time, "%02d:%02d",m,s);
-  }
-  return strdup(time);
-}
-
-static void make_decoder_info(playa_info_t * info,
-			     const decoder_info_t * decinfo)
-{
-  char tmp[256];
-
-  strcpy(tmp, frq_1000(decinfo->bps, "kbps "));
-  strcat(tmp, decinfo->desc);
-  strcat(tmp, " ");
-  strcat(tmp, frq_1000(decinfo->frq, "khz"));
-  info->format = strdup(tmp);
-  info->time = playa_make_time_str(decinfo->time);
-}
-
-static void make_global_info(playa_info_t * info)
-{
-  char tmp[1024];
-  char **p, *d;
-  int i;
-  static char *names[] = {
-    "format", "time",
-    "artist", "album",
-    "track", "title",
-    "year", "genre",
-    "comments",
-    0
-  };
-
-  strcpy(tmp, "            ");
-  for (d=tmp+strlen(tmp), i=0, p=&info->format; names[i];
-       ++p, ++i) {
-    char *s;
-    int c;
-
-    if (!*p) continue;
-
-    s = names[i];
-    *d++ = '*';
-    *d++ = '*';
-    *d++ = ' ';
-    while (c = ToUpper(*s++), c) {
-      *d++ = c;
-    }
-    *d++ = ':';
-    *d++ = ' ';
-    s = *p;
-    while (c = ToUpper(*s++), c) {
-      *d++ = c;
-    }
-    *d++ = ' ';
-    *d++ = ' ';
-    *d++ = ' ';
-  }
-  *d++ = 0;
-  info->info = strdup(tmp);
-}
-
-int playa_start(const char *fn, int immediat) {
+int playa_start(const char *fn, int track, int immediat) {
   int e = -1;
   playa_info_t info;
   inp_driver_t *d;
 
-  SDDEBUG(">> %s('%s',%d)\n",__FUNCTION__, fn, immediat);
+  SDDEBUG(">> %s('%s',%d, %d)\n",__FUNCTION__, fn, track, immediat);
   SDINDENT;
+
+  memset(&info, 0, sizeof(info));
+
+  if (!fn) {
+    SDERROR("null filename\n");
+    goto error;
+  }
 
   /* $$$ Try to find a driver for this file. A quick glance at file extension
      will be suffisant right now. Later the driver should support an is_mine()
@@ -609,76 +484,46 @@ int playa_start(const char *fn, int immediat) {
 
   /* Start playa, get decoder info */
   driver = d;
-  e = driver->start(fn, &decinfo);
-
+  e = driver->start(fn, track, &info);
   if (e) {
-    lockinfo();
-    free_info(&curinfo);
-    unlockinfo();
+    SDERROR("Driver [%s] error := [%d]\n", e);
     goto error;
   }
 
-  // Get ID3 info in temp info
-  playa_info(&info, fn);
+  // $$$ DEBUG
+  SDDEBUG("------- after driver start ----\n");
+  playa_info_dump(&info);
 
-  /* Setup decode info */
-  make_decoder_info(&info, &decinfo);
+  // $$$ ben: Validate all fields ? Not sure this is really wise.
+  info.update_mask = (1 << PLAYA_INFO_SIZE) - 1;
+  if (!info.info[PLAYA_INFO_TITLE].s) {
+    // $$$ ben: direct access ! Not very clean.
+    info.info[PLAYA_INFO_TITLE].s = make_default_name(fn);
+  }
+  playa_info_update(&info);
 
   /* Set sampling rate for next music */
   if (!immediat) {
-    next_frq = decinfo.frq;
+    next_frq = info.info[PLAYA_INFO_FRQ].v;
   } else {
-    stream_frq(current_frq = decinfo.frq);
+    stream_frq(current_frq = info.info[PLAYA_INFO_FRQ].v);
   }
 
-
-  make_global_info(&info);
-
-  // Copy and valid new info when it is done.
-  lockinfo();
-  info.valid = curinfo.valid = 0;
-  curinfo = info;
-  curinfo.valid = ++info_id;
-  unlockinfo();
-
-  make_global_info(&info);
-
-  // Copy and valid new info when it is done.
-  lockinfo();
-  info.valid = curinfo.valid = 0;
-  curinfo = info;
-  curinfo.valid = ++info_id;
-  unlockinfo();
-
   /* Wait for player thread to be ready */
-  while (playastatus != PLAYA_STATUS_READY)
-    playa_update();
+  wait_playastatus(PLAYA_STATUS_READY);
 
   /* Tell it to start */
   playastatus = PLAYA_STATUS_STARTING;
   sem_signal(playa_haltsem);
-  while (playastatus == PLAYA_STATUS_STARTING)
-    playa_update();
+  wait_playastatus(PLAYA_STATUS_STARTING);
+  playa_info_dump(&info);
 
  error:
-  dump_info();
-
   SDUNINDENT;
-  SDDEBUG("<< %s([%s],%d) := [%d] \n",__FUNCTION__, fn, immediat, e);
+  SDDEBUG("<< %s([%s],%d,%d) := [%d] \n",__FUNCTION__, fn, track, immediat, e);
 
   return e;
 }
-
-int playa_loaddisk(const char *fn, int immediat)
-{
-  /* No filename : stop, no error */
-  if (!fn) {
-    playa_stop(immediat);
-    return 0;
-  }
-  return playa_start(fn,immediat);
-}
-
 
 int playa_volume(int volume) {
   int old = playavolume;
@@ -688,9 +533,8 @@ int playa_volume(int volume) {
 
 unsigned int playa_playtime()
 {
-  return (long long)play_samples * 1000 / current_frq;
+  return ((long long)play_samples << 10) / current_frq;
 }
-
 
 static void remove_extension(char *n)
 {
@@ -706,64 +550,37 @@ static void remove_extension(char *n)
   }
 }
 
-static void make_default_name(char * dest, int max, const char *fn)
+static char * make_default_name(const char *fn)
 {
-  const char *s;
+  const char *s , *e;
+  char * name;
+  int len;
 
   /* Remove path */
   s = strrchr(fn,'/');
   if (!s) {
     s = fn;
-  }
-  while (*fn && max > 0) {
-    int c = *fn++;
-    if (c == '_') c = ' ';
-    *dest++ = c;
-    --max;
-  }
-  *dest = 0;
-  remove_extension(dest);
-}
-
-static void free_info(playa_info_t *info)
-{
-  if(info->info)      free(info->info);
-  if(info->format)    free(info->format);
-  if(info->time)      free(info->time);
-  if(info->album)     free(info->album);
-  if(info->title)     free(info->title);
-  if(info->artist)    free(info->artist);
-  if(info->year)      free(info->year);
-  if(info->genre)     free(info->genre);
-  if(info->track)     free(info->track);
-  if(info->comments)  free(info->comments);
-  clean_info(info);
-}
-
-
-static char *null(char *a) {
-  return a ? a : "<null>";
-}
-
-static void dump_info() {
-  playa_info_t *info = &curinfo;
-
-  lockinfo();
-  if (info->valid) {
-
-    SDDEBUG(" FORMAT   : %s\n", null(info->format));
-    SDDEBUG(" TIME     : %s\n", null(info->time));
-
-    SDDEBUG(" ALBUM    : %s\n", null(info->album));
-    SDDEBUG(" TITLE    : %s\n", null(info->title));
-    SDDEBUG(" ARTIST   : %s\n", null(info->artist));
-    SDDEBUG(" YEAR     : %s\n", null(info->year));
-    SDDEBUG(" GENRE    : %s\n", null(info->genre));
-    SDDEBUG(" TRACK    : %s\n", null(info->track));
-    SDDEBUG(" COMMENTS : %s\n", null(info->comments));
   } else {
-    SDDEBUG("Invalid info\n");
+    ++s;
   }
 
-  unlockinfo();
+  /* Remove extension */
+  e = strrchr(s, '.');
+  if (e && !stricmp(e,".gz")) {
+    const char *e2 = strrchr(s, '.');
+    e = e2 ? e2 : e;
+  }
+
+  len = e ? (e-s) : strlen(s);
+  name = malloc(len+1);
+  if (name) {
+    int i;
+    for (i=0; i<len; ++i) {
+      int c = s[i];
+      if (c == '_') c = ' ';
+      name[i] = c;
+    }
+    name[i]= 0;
+  }
+  return name;
 }

@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: sc68_driver.c,v 1.2 2002-09-04 18:54:11 ben Exp $
+ * @version   $Id: sc68_driver.c,v 1.3 2002-09-25 03:21:22 benjihan Exp $
  */
 
 /* generated config include */
@@ -37,6 +37,14 @@
 #include "inp_driver.h"
 #include "fifo.h"
 
+#undef DEBUG
+#define DEBUG 1
+
+#undef DEBUG_LOG
+#define DEBUG_LOG 1
+
+#include "sysdebug.h"
+
 
 /* 512 Kb 68K memory buffer */
 #define MEMORY68 (1<<19)
@@ -46,7 +54,7 @@
 
 SC68app_t app; /**< sc68 application context. */
 
-extern char * playa_make_time_str(unsigned int);
+static int disk_info(playa_info_t *info, disk68_t *d);
 
 /** Display to output debug statcked error messages.
  */
@@ -153,19 +161,16 @@ static int shutdown(any_driver_t *d)
 
 extern uint8 sc68disk[], romdisk[];
 
-static int start(const char *fn, decoder_info_t *info)
+static int start(const char *fn, int track, playa_info_t *info)
 {
   int err = 0;
   disk68_t *disk = 0;
-  music68_t *mus = 0;
 
-
+  SDDEBUG("%s(%s)\n", __FUNCTION__, fn);
   /* $$$ Hack romdisk */
-  
   fs_romdisk_shutdown();
   fs_romdisk_init(sc68disk);
   
-
   disk = SC68app_load_diskfile((char *)fn, 0);
   if (!disk) {
     stop();
@@ -183,29 +188,23 @@ static int start(const char *fn, decoder_info_t *info)
   /* Patch for tao_tsd, use 25Khz version ! */
   if (app.cur_disk) {
     int i;
-    file_t fd;
 
     for (i=0; i<app.cur_disk->nb_six; ++i) {
       char *replay = app.cur_disk->mus[i].replay;
       if (replay && !strcmp("tao_tsd", replay)) {
         app.cur_disk->mus[i].replay = "tao_tsd25";
-        dbglog(DBG_DEBUG, "sc68 : Patched #%d for tao_tsd25\n", i+1);
+        SDDEBUG( "sc68 : Patched #%d for tao_tsd25\n", i+1);
       } 
     }
 
-    fd = fs_open(fn, O_RDONLY);
-    if (fd) {
-      info->bytes = fs_total(fd);
-      fs_close(fd);
-    } else {
-      info->bytes = 0; /* $$$ Safety net !!! */
+    if (err = SC68track(&app, track), err < 0) {
+      goto error;
     }
-    info->bps    =  (info->bytes << 3) / (mus->time ? mus->time : 5*60);
-    info->desc   = "sc68 file";
-    info->frq    = (int) app.mix.real_frq;
-    info->bits   = 16;
-    info->stereo = 1;
-    info->time   = app.cur_disk->time * 1000;
+
+    if (err = SC68play(&app), err < 0) {
+      goto error;
+    }
+
   } else {
     err = -1;
     goto error;
@@ -213,8 +212,11 @@ static int start(const char *fn, decoder_info_t *info)
   err = 0;
 
  error:
+  if (err) {
+    SC68eject(&app);
+  }
+  disk_info(info, app.cur_disk);
   spool_error_message();
-  
   fs_romdisk_shutdown();
   fs_romdisk_init(romdisk);
   
@@ -285,7 +287,7 @@ static int FillYM(void)
   return status;
 }
 
-static int decoder(decoder_info_t *info)
+static int decoder(playa_info_t * info)
 {
   int status;
   int n;
@@ -294,6 +296,10 @@ static int decoder(decoder_info_t *info)
   if (status < 0) {
     spool_error_message();
     return INP_DECODE_ERROR;
+  }
+
+  if (status & INP_DECODE_INFO) {
+    disk_info(info, 0);
   }
 
   n = 0;
@@ -319,57 +325,100 @@ static driver_option_t * options(any_driver_t * d, int idx,
   return o;
 }
 
+static char *make_author(music68_t *mus, char *tmp)
+{
+  if(mus->author == mus->composer || !strcmp(mus->author, mus->composer)) {
+    tmp = mus->author;
+  } else {
+    sprintf(tmp, "%s / %s", mus->author, mus->composer);
+  }
+  return tmp;
+}
+
+static char * make_desc(music68_t *mus, char *tmp)
+{
+  sprintf(tmp, "%s - %s",
+	  mus->flags.amiga
+	  ? "Amiga"
+	  : (mus->flags.ste ? "Atari STE" : "Atari STF"),
+	  mus->replay ? mus->replay : "internal replay");
+  return tmp;
+}
+
+static char * make_track(disk68_t *d, char * tmp)
+{
+  if (app.cur_track < 0) {
+    sprintf(tmp,"%02d", d->nb_six);
+  } else {
+    sprintf(tmp,"%02d/%02d", app.cur_track+1, d->nb_six);
+  }
+  return tmp;
+}
+
+static int update_info(playa_info_t *info, disk68_t *d, music68_t *mus,
+		       char *tmp)
+{
+  SDDEBUG("update info [%p] [%p]\n", d, mus);
+  info->update_mask = 0;
+  if (!d) {
+    return -1;
+  }
+  if (!mus) {
+    mus = d->mus + d->default_six;
+  }
+
+  SDDEBUG("update info\n");
+  playa_info_time(info, mus->time << 10);
+  playa_info_desc(info, make_desc(mus,tmp));
+  playa_info_artist(info, make_author(mus,tmp));
+  playa_info_track(info, make_track(d,tmp));
+  playa_info_title(info, mus->name);
+
+  return 0;
+}
 
 static int disk_info(playa_info_t *info, disk68_t *d)
 {
   char tmp[256];
   music68_t *mus = 0;
 
+  SDDEBUG("disk info [%p]\n", d);
+
   if (!d) {
-    d = app.cur_disk;
-    mus = app.cur_mus;
-    if (!d) {
-      return -1;
-    }
+    return update_info(info, app.cur_disk, app.cur_mus, tmp);
+  }
+  SDDEBUG("disk info...\n");
+
+  if (mus = app.cur_mus, !mus) {
+    mus = d->mus + d->default_six;
   }
 
-  if (!mus) {
-    mus = d->mus + d-> default_six;
-  }
+  update_info(info, d, mus, tmp);
 
-  sprintf(tmp, "%s - %s replay @ %d Hz",
-	  mus->flags.amiga
-	  ? "Amiga"
-	  : (mus->flags.ste ? "Atari STE" : "Atari STF"),
-	  mus->replay ? mus->replay : "internal",
-	  mus->frq);
-  info->time = playa_make_time_str(mus->time * 1000);
-  info->format = strdup(tmp);
-  info->artist = strdup(mus->author);
-  info->album  = strdup(d->name);
-  if (app.cur_track < 0) {
-    sprintf(tmp,"%02d", d->nb_six);
-  } else {
-    sprintf(tmp,"%02d/%02d", app.cur_track+1, d->nb_six);
-  }
-  info->track  = strdup(tmp);
-  info->title = strdup(mus->name);
-  info->year = 0;
-  info->genre = strdup("chip-tune");
-  info->comments = 0;
+  playa_info_bits(info,1);
+  playa_info_stereo(info,1);
+  playa_info_frq(info, (int)app.mix.real_frq);
+  playa_info_bps(info,0);
+  playa_info_bytes(info,0);
+  playa_info_album(info,d->name);
+  playa_info_year(info,0);
+  playa_info_genre(info,"chip-tune");
+  playa_info_comments(info,0);
+
   return 0;
 }
 
 static int file_info(playa_info_t *info, const char *fname)
 {
+  int err = -1;
   disk68_t *d;
 
   d = SC68file_load((char *)fname);
   if (d) {
-    disk_info(info, d);
+    err = disk_info(info, d);
     free(d);
   }
-  return d ? 0 : -1;
+  return err;
 }
 
 static int info(playa_info_t *info, const char *fname)
@@ -390,7 +439,7 @@ static inp_driver_t sc68_driver =
     INP_DRIVER,           /**< Driver type */      
     0x0100,               /**< Driver version */
     "sc68",               /**< Driver name */
-    "Benjamin Gerard\0",  /**< Driver authors */
+    "Benjamin Gerard",    /**< Driver authors */
     "Atari & Amiga "      /**< Description */
     "music player",
     0,                    /**< DLL handler */
@@ -402,7 +451,7 @@ static inp_driver_t sc68_driver =
   /* Input driver specific */
   
   0,                      /**< User Id */
-  ".sc68\0.sc6\0",        /**< EXtension list */
+  ".sc68\0.sc6\0",        /**< Extension list */
 
   start,
   stop,

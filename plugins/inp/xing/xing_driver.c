@@ -4,10 +4,9 @@
    (c)2000 Dan Potter
 
    An MP3 player using sndstream and XingMP3
+
+   $Id: xing_driver.c,v 1.4 2002-09-25 03:21:22 benjihan Exp $
 */
-
-static char id[] = "TRYP $Id: xing_driver.c,v 1.3 2002-09-24 18:29:42 vincentp Exp $";
-
 
 /* This library is designed to be called from another program in a thread. It
    expects an input filename, and it will do all the setup and playback work.
@@ -18,7 +17,7 @@ static char id[] = "TRYP $Id: xing_driver.c,v 1.3 2002-09-24 18:29:42 vincentp E
 
 /*
 
-  xing-mp3 driver - DreamMp3 version by ben
+  xing-mp3 driver - DreamMp3 version by benjamin gerard
 
 */
 
@@ -32,6 +31,7 @@ static char id[] = "TRYP $Id: xing_driver.c,v 1.3 2002-09-24 18:29:42 vincentp E
 #include "pcm_buffer.h"
 #include "fifo.h"
 #include "id3.h"
+#include "sysdebug.h"
 
 /************************************************************************/
 #include "mhead.h"		/* From xingmp3 */
@@ -110,7 +110,7 @@ static int decode_frame()
     /* Decode a frame */
     x = audio_decode(&mpeg, bs_ptr, (short *) pcm_buffer);
     if (x.in_bytes <= 0) {
-      dbglog(DBG_DEBUG, "** " __FUNCTION__ " : Bad sync in MPEG file\n");
+      SDDEBUG("xing : Bad sync in MPEG file\n");
       return INP_DECODE_ERROR;
     }
     bs_ptr      += x.in_bytes;
@@ -118,7 +118,7 @@ static int decode_frame()
 
     /* Check output ... */	  
     if (x.out_bytes & pcm_align_mask) {
-      dbglog(DBG_ERROR, "** Bad number of output bytes."
+      SDERROR("xing: Bad number of output bytes."
 	     "%d is not a multiple of %d\n",
 	     x.out_bytes, pcm_align_mask+1);
       x.out_bytes &= ~pcm_align_mask;
@@ -128,59 +128,54 @@ static int decode_frame()
   } else {
     /* Pull in some more data (and check for EOF) */
     if (bs_fill() < 0 || bs_count < frame_bytes) {
-      dbglog(DBG_DEBUG, "** " __FUNCTION__ " : Decode complete\n");
+      SDDEBUG("xing : Decode complete\n");
       return INP_DECODE_END;
     }
   }
   return 0;
 }
 
-
-
 /* Open an MPEG stream and prepare for decode */
-static int xing_init(const char *fn, decoder_info_t * decoder_info) {
+static int xing_init(const char *fn, playa_info_t * info)
+{
   uint32	fd;
 
-  dbglog(DBG_DEBUG, ">> " __FUNCTION__"('%s')\r\n", fn);
+  SDDEBUG(">> %s('%s')\n", __FUNCTION__, fn);
 
   /* Open the file */
   mp3_fd = fd = fs_open(fn, O_RDONLY);
   if (fd == 0) {
-    dbglog(DBG_DEBUG, "** " __FUNCTION__ 
-	   " : Can't open input file %s\r\n", fn);
-    dbglog(DBG_DEBUG, "** " __FUNCTION__ 
-	   " : getwd() returns '%s'\r\n", fs_getwd());
+    SDERROR("xing : Can't open input file %s\n", fn);
     return -1;
   }
-  decoder_info->bytes = fs_total(fd);
-  if (decoder_info->bytes<0) {
-    decoder_info->bytes = 0;
-  }
+  playa_info_bytes(info,fs_total(fd));
 	
   /* Allocate buffers */
   bs_ptr = bs_buffer; bs_count = 0;
   pcm_ptr = pcm_buffer; pcm_count = 0;
 	
-  dbglog(DBG_DEBUG, "** " __FUNCTION__ " : pcm[%p %d] bs[%p %d]\n",
-    pcm_buffer, pcm_buffer_size,
-    bs_buffer, bs_buffer_size);
-	
   /* Fill bitstream buffer */
   frame_bytes = 1; /* pipo frame bytes must be > 0 */
   if (bs_fill() < 0) {
-    dbglog(DBG_DEBUG, "** " __FUNCTION__ " : Can't read file header\r\n");
+    SDERROR("xing : can't read file header\n");
     goto errorout;
   }
   frame_bytes = 0;
 
   /* Are we looking at a RIFF file? (stupid Windows encoders) */
-  if (bs_ptr[0] == 'R' && bs_ptr[1] == 'I' && bs_ptr[2] == 'F' && bs_ptr[3] == 'F') {
+  if (bs_ptr[0] == 'R'
+      && bs_ptr[1] == 'I'
+      && bs_ptr[2] == 'F'
+      && bs_ptr[3] == 'F') {
     /* Found a RIFF header, scan through it until we find the data section */
-    dbglog(DBG_DEBUG, "** " __FUNCTION__ "Skipping stupid RIFF header\r\n");
-    while (bs_ptr[0] != 'd' || bs_ptr[1] != 'a' || bs_ptr[2] != 't'	|| bs_ptr[3] != 'a') {
+    SDDEBUG("xing: Skipping stupid RIFF header\n");
+    while (bs_ptr[0] != 'd'
+	   || bs_ptr[1] != 'a'
+	   || bs_ptr[2] != 't'
+	   || bs_ptr[3] != 'a') {
       bs_ptr++;
       if (bs_ptr >= (bs_buffer + BS_SIZE)) {
-	dbglog(DBG_DEBUG, "** " __FUNCTION__ " : Indeterminately long RIFF header\r\n");
+	SDERROR("xing : Indeterminately long RIFF header\n");
 	goto errorout;
       }
     }
@@ -188,11 +183,10 @@ static int xing_init(const char *fn, decoder_info_t * decoder_info) {
     /* Skip 'data' and length */
     bs_ptr += 8;
     bs_count -= (bs_ptr - bs_buffer);
-    dbglog(DBG_DEBUG, "** " __FUNCTION__ " : Final index is %d\r\n", (bs_ptr - bs_buffer));
   }
 
   if (((uint8)bs_ptr[0] != 0xff) && (!((uint8)bs_ptr[1] & 0xe0))) {
-    dbglog(DBG_DEBUG, "** " __FUNCTION__ " : Definitely not an MPEG file\r\n");
+    SDERROR("xing : Definitely not an MPEG file\n");
     goto errorout;
   }
 
@@ -204,83 +198,71 @@ static int xing_init(const char *fn, decoder_info_t * decoder_info) {
   {
     int forward;
     frame_bytes = head_info3(bs_ptr, bs_count, &head, &bitrate,&forward);
-    dbglog(DBG_DEBUG, "** " __FUNCTION__ 
-	   " : head_info [frame_bytes=%d, forward=%d]\r\n",
-	   frame_bytes, forward);
     bs_ptr += forward;
     bs_count -= forward;
   }
   if (frame_bytes == 0) {
-    dbglog(DBG_DEBUG, "** " __FUNCTION__
-	   " : Bad or unsupported MPEG file\r\n");
+    SDERROR("xing: Bad or unsupported MPEG file\n");
     goto errorout;
   }
-  decoder_info->bps = bitrate;
 
-  /* Print out some info about it */
-  {
-    static char *layers[] = { "invalid", "layer 3", "layer 2", "layer 1" };
-    static char *modes[] = { " stereo", " joint-stereo", " dual", " mono" };
-    static char desc[32];
-    decoder_info->desc = desc;
-    strcpy(desc, layers[head.option]);
-    strcat(desc, modes[head.mode]);
-  }
 
   /* Initialize audio decoder */
   /* $$$ Last parameters looks like cut frequency :
      Dim said to me 40000 is a good value */ 
   if (!audio_decode_init(&mpeg, &head, frame_bytes,
 			 REDUCT_NORMAL, 0, CONV_NORMAL, 40000)) {
-    dbglog(DBG_DEBUG, "** " __FUNCTION__ 
-	   " : Failed to initialize decoder\r\n");
+    SDERROR("xing : failed to initialize decoder\n");
     goto errorout;
   }
   audio_decode_info(&mpeg, &decinfo);
+
+  if (decinfo.channels < 1 || decinfo.channels > 2 || decinfo.bits != 16) {
+    SDERROR("xing: unsupported audio outout format\n");
+    goto errorout;
+  }
+
+  {
+    static char *layers[] = { "invalid", "layer 3", "layer 2", "layer 1" };
+    static char *modes[] = { " stereo", " joint-stereo", " dual", " mono" };
+    static char desc[32];
+    strcpy(desc, layers[head.option]);
+    strcat(desc, modes[head.mode]);
+    playa_info_desc(info, desc);
+  }
 	
   /* Copy decoder PCM info */ 
-  decoder_info->frq    = decinfo.samprate;
-  decoder_info->bits   = decinfo.bits;
-  decoder_info->stereo = decinfo.channels-1;
+  playa_info_bps(info, bitrate); //$$$kbps or bps ???
+  playa_info_frq(info, decinfo.samprate);
+  playa_info_bits(info, decinfo.bits);
+  playa_info_stereo(info, decinfo.channels-1);
 
-  if (decoder_info->bps > 0) {
+  if (bitrate > 0) {
     unsigned long long ms;
-    ms = decoder_info->bytes;
-    ms *= 8 * 1000;
-    ms /= decoder_info->bps;
-    decoder_info->time = ms;
+    ms = playa_info_bytes(info, -1);
+    ms <<= 13;
+    ms /= bitrate;
+    playa_info_time(info, ms);
   }
 
   pcm_ptr    = pcm_buffer;
   pcm_count  = 0;
-  pcm_stereo = decoder_info->stereo;
+  pcm_stereo = decinfo.channels-1;
 
-  dbglog(DBG_DEBUG, ">> Desc            = 	%s\n", decoder_info->desc);
-  dbglog(DBG_DEBUG, ">> Bits            = 	%u\n", 8<<decoder_info->bits);
-  dbglog(DBG_DEBUG, ">> Channels        = 	%u\n", 1+decoder_info->stereo);
-  dbglog(DBG_DEBUG, ">> Sampling        = 	%uhz\n",decoder_info->frq);
-  dbglog(DBG_DEBUG, ">> Bitrate         = 	%ubps\n", decoder_info->bps);
-  dbglog(DBG_DEBUG, ">> Bytes           = 	%u\n", decoder_info->bytes);
-  dbglog(DBG_DEBUG, ">> Time (ms)       = 	%u\n", decoder_info->time);
-
-  if (decinfo.channels < 1 || decinfo.channels > 2 || decinfo.bits != 16) {
-    dbglog(DBG_ERROR, ">> Unsupported audio outout format\n");
-    goto errorout;
-  }
-
-  dbglog(DBG_DEBUG, "<< " __FUNCTION__"('%s') := 0\r\n", fn);
+  SDDEBUG("<< %s('%s') := [0]\n",  __FUNCTION__, fn);
   return 0;
 
  errorout:
-  dbglog(DBG_DEBUG, "<< " __FUNCTION__"('%s') := -1\r\n", fn);
+  SDERROR("<< %s('%s') := [-1]\n", __FUNCTION__, fn);
   if (fd) fs_close(fd);
   frame_bytes = 0;
   mp3_fd = 0;
   return -1;
 }
 
-static void xing_shutdown() {
-  dbglog(DBG_DEBUG, "** " __FUNCTION__"\r\n");
+static void xing_shutdown()
+{
+  SDDEBUG("%s\n", __FUNCTION__);
   if (mp3_fd) {
     fs_close(mp3_fd);
     mp3_fd = 0;
@@ -290,39 +272,42 @@ static void xing_shutdown() {
 
 /************************************************************************/
 
-/*$$$static*/int sndmp3_init(void)
+static int sndmp3_init(any_driver_t * driver)
 {
-  dbglog(DBG_DEBUG, "** " __FUNCTION__"\n");
+  SDDEBUG("%s('%s')\n", __FUNCTION__, driver->name);
+  mp3_fd = 0;
   return 0;
 }
 
 /* Start playback (implies song load) */
-/*static */int sndmp3_start(const char *fn, decoder_info_t *info)
+int sndmp3_start(const char *fn, int track, playa_info_t *info)
 {
-  dbglog(DBG_DEBUG, "** " __FUNCTION__ " ('%s')\n", fn);
-  
+  SDDEBUG("%s('%s', %d)\n", __FUNCTION__, fn, track);
+  track=track;
   /* Initialize MP3 engine */
-  if (xing_init(fn, info) < 0)
-    return -1;
-  return 0;
+  if(id3_info(info, fn)<0) {
+    playa_info_free(info);
+  }
+  return xing_init(fn, info);
 }
 
 /* Stop playback (implies song unload) */
 static int sndmp3_stop(void)
 {
-  dbglog(DBG_DEBUG, "** " __FUNCTION__"\n");
+  SDDEBUG("%s()\n", __FUNCTION__);
   xing_shutdown();
   return 0;
 }
 
 /* Shutdown the player */
-static int sndmp3_shutdown(void)
+static int sndmp3_shutdown(any_driver_t * driver)
 {
-  dbglog(DBG_DEBUG, "** " __FUNCTION__"\n");
+  SDDEBUG("%s('%s')\n", __FUNCTION__, driver->name);
+  sndmp3_stop();
   return 0;
 }
 
-static int sndmp3_decoder()
+static int sndmp3_decoder(playa_info_t * info)
 {
   int n = 0;
 	
@@ -370,7 +355,7 @@ static driver_option_t * sndmp3_options(any_driver_t * d, int idx,
   return o;
 }
 
-/*static*/ inp_driver_t xing_driver =
+static inp_driver_t xing_driver =
 {
 
   /* Any driver */

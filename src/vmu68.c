@@ -1,6 +1,11 @@
+/**
+ * $Id: vmu68.c,v 1.3 2002-09-25 03:21:22 benjihan Exp $
+ */
 #include "config.h"
 
 #include <dc/vmu.h>
+#include <dc/maple.h>
+
 #include <string.h>
 #include <stdio.h>
 
@@ -14,6 +19,42 @@
 #include "vupeek.h"
 #include "option.h"
 #include "playa.h"
+
+static const char vmu_scrolltext[] =
+"            "
+"dcplaya " DCPLAYA_VERSION_STR " - "
+"Ultimate music player - "
+"(c)2002 Benjamin Gerard - "
+"            "
+"Website:"
+"            "
+DCPLAYA_URL
+"            "
+"Credits:"
+"            "
+"Code & Art works:"
+"            "
+"Benjamin Gerard"
+"            "
+"Additionnal Coding:"
+"            "
+"Vincent Penne"
+"            "
+"3trd party developers:"
+"            "
+"They are too many to be listed here. "
+"See README files and plugin options. "
+"            "
+"Greetings:"
+"            "
+"KOS developers - "
+"zlib developers - "
+"mikmod developers - "
+"sidplay developers - "
+"ogg-vorbis developers - "
+"xing mpeg developers - "
+"other involved developers - "
+"sashipa members...";
 
 static int scroll = 0, invert = 0;
 
@@ -390,18 +431,15 @@ void vmu_lcd_title()
 
 void vmu_lcd_update(int *spl, int nbSpl, int splFrame)
 {
-  char *info_str = "            "
-    " *** dreammp3"
-    " *** free mp3 player for dreamcast"
-    " *** (c)2002 benjamin gerard"
-    " *** " DREAMMP3_URL;
+  const char *info_str = vmu_scrolltext;
+
   //  const int spd = 8;
   playa_info_t *info;
 
   info = playa_info_lock();
 
-  if (info->valid) {
-    info_str = info->info;
+  if (info->valid && info->info[PLAYA_INFO_VMU].s) {
+    info_str = info->info[PLAYA_INFO_VMU].s;
   }
 
   if (info->valid != last_valid) {

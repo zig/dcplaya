@@ -1,5 +1,5 @@
 /**
- * @file    ogg_friver.c
+ * @file    ogg_driver.c
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   dcplaya ogg input driver.
  *
@@ -10,7 +10,7 @@
  *  An Ogg/Vorbis player library using sndstream and functions provided by
  *  sndvorbisfile.
  *
- * $Id: ogg_driver.c,v 1.4 2002-09-24 18:29:42 vincentp Exp $
+ * $Id: ogg_driver.c,v 1.5 2002-09-25 03:21:22 benjihan Exp $
  */
 
 #include <kos.h>
@@ -36,6 +36,8 @@ static int tempcounter =0;
 
 /* liboggvorbis Related Variables */
 VorbisFile_headers_t	v_headers;
+
+static int sndogg_info(playa_info_t *info, const char *fname);
 
 /* Since we're only providing this library for single-file playback it should
  * make no difference if we define an info-storage here where the user can
@@ -106,7 +108,7 @@ char *sndoggvorbis_getcommentbyname(char *commentfield)
 }
 
 
-void sndoggvorbis_clearcomments()
+void sndoggvorbis_clearcomments(void)
 {
   sndoggvorbis_info.artist=VorbisFile_NULL;
   sndoggvorbis_info.title=VorbisFile_NULL;
@@ -164,10 +166,11 @@ static int sndogg_init(any_driver_t * d)
 
 
 /* Start playback (implies song load) */
-static int sndogg_start(const char *fn, decoder_info_t *decoder_info)
+static int sndogg_start(const char *fn, int track, playa_info_t *info)
 {
   int err = -1;
 
+  track = track;
   SDDEBUG("%s([%s])\n", fn);
   SDINDENT;
 
@@ -185,19 +188,17 @@ static int sndogg_start(const char *fn, decoder_info_t *decoder_info)
     v_headers->vendor = vc.vendor;
   */
 
-  decoder_info->bits      = 16;
-  decoder_info->stereo    = v_headers.channels-1;
-  decoder_info->frq       = v_headers.frequency; //$$$ decinfo.samprate;
-  decoder_info->bps       = v_headers.bitrate*1000;
-  decoder_info->bytes     = v_headers.bytes;
-  decoder_info->time      = 0;
-
-  if (decoder_info->bps > 0) {
+  playa_info_bits(info,16);
+  playa_info_stereo(info,v_headers.channels-1);
+  playa_info_frq(info,v_headers.frequency);
+  playa_info_bps(info,v_headers.bitrate);
+  playa_info_bytes(info,v_headers.bytes);
+  {
     unsigned long long ms;
-    ms = decoder_info->bytes;
-    ms *= 8 * 1000;
-    ms /= decoder_info->bps;
-    decoder_info->time = ms;
+    ms = v_headers.bytes;
+    ms <<= 13;
+    ms /= v_headers.bitrate;
+    playa_info_time(info, ms);
   }
 
   {
@@ -208,12 +209,13 @@ static int sndogg_start(const char *fn, decoder_info_t *decoder_info)
       strcat(version, " ");
       strcat(version, s);
     }
-    strcat(version, decoder_info->stereo ? " stereo" : " mono");
-    decoder_info->desc    = version;
+    playa_info_desc(info, version);
   }
+  sndogg_info(info, 0);
+
   pcm_ptr = pcm_buffer;
   pcm_count = 0;
-  pcm_stereo = decoder_info->stereo;
+  pcm_stereo = v_headers.channels-1;
   err = 0;
 
  error:
@@ -249,7 +251,7 @@ static int sndogg_shutdown(any_driver_t * d)
   return 0;
 }
 
-static int sndogg_decoder(decoder_info_t * info)
+static int sndogg_decoder(playa_info_t * info)
 {
   int n = 0;
 
@@ -304,15 +306,19 @@ static char *StrDup(const char *s)
   return strdup(s);
 }
 
+
 static int sndogg_info(playa_info_t *info, const char *fname)
 {
-  info->artist   = StrDup(VorbisFile_getCommentByName("artist"));
-  info->title    = StrDup(VorbisFile_getCommentByName("title"));
-  info->album    = StrDup(VorbisFile_getCommentByName("album"));
-  info->track    = StrDup(VorbisFile_getCommentByName("tracknumber"));
-  info->comments = StrDup(VorbisFile_getCommentByName("description"));
-  info->genre    = StrDup(VorbisFile_getCommentByName("genre"));
-  info->year     = StrDup(VorbisFile_getCommentByName("date"));
+  if (fname) {
+    return -1;
+  }
+  playa_info_artist(info,sndoggvorbis_getartist());
+  playa_info_title(info,sndoggvorbis_gettitle());
+  playa_info_album(info,VorbisFile_getCommentByName("album"));
+  playa_info_track(info,VorbisFile_getCommentByName("tracknumber"));
+  playa_info_comments(info,VorbisFile_getCommentByName("description"));
+  playa_info_genre(info,sndoggvorbis_getgenre());
+  playa_info_year(info,VorbisFile_getCommentByName("date"));
 
   return 0;
 }
@@ -329,7 +335,7 @@ static inp_driver_t ogg_driver = {
     NEXT_DRIVER,          /* Next driver (see any_driver.h)  */
     INP_DRIVER,           /* Driver type */
     0x100,                /* Version */
-    "ogg_vorbis",         /* Driver name */
+    "ogg",                /* Driver name */
     "Benjamin Gerard, "   /* Authors */
     "Dan Potter, "
     "and vorbis team",
