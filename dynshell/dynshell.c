@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.16 2002-09-23 03:23:27 benjihan Exp $
+ * @version    $Id: dynshell.c,v 1.17 2002-09-23 16:26:42 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -21,6 +21,7 @@
 
 #include "plugin.h"
 #include "dcar.h"
+#include "playa.h"
 
 #include "exceptions.h"
 
@@ -474,7 +475,60 @@ static int lua_dcar(lua_State * L)
   return count;
 }
 
+static int lua_play(lua_State * L)
+{
+  int nparam = lua_gettop(L);
+  const char * file = 0, *error = 0;
+  unsigned int imm = 1;
 
+  /* Get lua parms */
+  if (nparam >= 1) {
+    file = lua_tostring(L, 1);
+  }
+  if (nparam >= 2) {
+    imm = lua_tonumber(L, 2);
+  }
+  
+  if (!file) {
+    error = "missing music file argument";
+  } else if (imm<2) {
+    error = "boolean expected";
+  } else {
+    if (playa_loaddisk(file, imm) < 0) {
+      error = "invalid music file";
+    }
+  }
+
+  if (error) {
+    printf("play : %s\n", error);
+    return -1;
+  }
+  return 0;
+}
+
+static int lua_stop(lua_State * L)
+{
+  int nparam = lua_gettop(L);
+  const char * error = 0;
+  unsigned int imm = 1;
+
+  /* Get lua parms */
+  if (nparam >= 1) {
+    imm = lua_tonumber(L, 1);
+  }
+
+  if (imm < 2) {
+    error = "boolean expected";
+  }
+   
+  if (!error) {
+    playa_loaddisk(0,imm);
+  } else {
+    printf("stop : %s\n", error);
+    return -1;
+  }
+  return 0;
+}
 
 #if 0
 static char shell_basic_lua_init[] = 
@@ -651,6 +705,29 @@ static shell_command_description_t commands[] = {
 
     SHELL_COMMAND_C, lua_dcar
   },
+
+  {
+    "play",
+    "pl",
+
+    "print([["
+    "play(music-file [,immediat]) : play a music file\n"
+    "]])",
+
+    SHELL_COMMAND_C, lua_play
+  },
+
+  {
+    "stop",
+    "st",
+
+    "print([["
+    "stop([immediat]) : stop current music\n"
+    "]])",
+
+    SHELL_COMMAND_C, lua_stop
+  },
+
 
   {0},
 };
