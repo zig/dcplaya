@@ -4,7 +4,7 @@
 --- @author   benjamin gerard <ben@sashipa.com>
 --- @brief    Fundamental lua stuff.
 ---
---- $Id: init.lua,v 1.15 2003-03-03 08:35:24 ben Exp $
+--- $Id: init.lua,v 1.16 2003-03-03 17:32:51 zigziggy Exp $
 ---
 
 -- do this file only once !
@@ -147,11 +147,12 @@ if not init_lua then
       for i=1, n, 1 do
 
 	 d = list[i]
+	 local old_d = driver_list[d.name]
 	 local new=force
-	 if not driver_list[d.name] then
+	 if not old_d then
 	    new = 1
 	 end
-	 if driver_list[d.name] and driver_list[d.name] ~= d then
+	 if old_d and not driver_is_same(old_d, d) then
 	    print("Warning : replacing driver '", d.name, "' in list")
 	    new = 1
 	 end
@@ -187,10 +188,13 @@ if not init_lua then
       if type(driver_list)~="table" then
 	 driver_list = {}
       end
-      update_driver_list(inp_drivers, force)
-      update_driver_list(vis_drivers, force)
-      --	update_driver_list(obj_drivers, force)
-      update_driver_list(exe_drivers, force)
+
+      -- get all types of driver lists
+      local lists = get_driver_lists()
+      local name, list
+      for name,list in lists do
+	 update_driver_list(list, force)
+      end
    end
 
    --- @}

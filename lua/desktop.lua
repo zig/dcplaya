@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.17 2003-03-03 11:32:32 ben Exp $
+--- $Id: desktop.lua,v 1.18 2003-03-03 17:32:51 zigziggy Exp $
 ---
 
 if not dolib("evt") then return end
@@ -18,6 +18,13 @@ dskt_keytoggle = {
    [KBD_CONT2_Y] = 1, 
    [KBD_CONT3_Y] = 1, 
    [KBD_CONT4_Y] = 1
+}
+
+dskt_keyswitchto = { 
+   [KBD_CONT1_X] = 1, 
+   [KBD_CONT2_X] = 1, 
+   [KBD_CONT3_X] = 1, 
+   [KBD_CONT4_X] = 1
 }
 
 
@@ -44,13 +51,21 @@ function dskt_openmenu(dial, target, x, y)
    local user_def = menu_create_defs(target.mainmenu_def, target)
    local default_def = menu_create_defs
    ({
-       root=":"..name..":{stock_button_cancel}kill{kill}",
+       root=":"..name..":switch to{switch},{stock_button_cancel}kill{kill}",
        cb = {
 	  kill = function(menu) 
 		    evt_shutdown_app(%dial)
 		    evt_shutdown_app(%target)
 		    evt_shutdown_app(menu)
-		 end
+		 end,
+	  switch = function(menu) 
+		    evt_shutdown_app(%dial)
+		    evt_shutdown_app(menu)
+		    local owner = %target.owner
+		    if owner then
+		       gui_new_focus(owner, %target)
+		    end
+		 end,
        },
     }, target)
 
@@ -82,7 +97,7 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
    local text = '<dialog guiref="dialog" label="Desktop" name="desktop dialog">'
 
    text = text..'<linecenter>Running application ('..
-      strchar(16)..' menu,'..strchar(19)..
+      strchar(16)..' menu,'..strchar(18)..
       ' switch to) :<br><vspace h="8"><hspace w="16"><linedown>'
    local i
    for i=1,dir.n, 1 do
@@ -101,7 +116,7 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
    end
 
    text = text..'<br><vspace h="16"><left><linecenter>'..
-      'Launchable application ('..strchar(16)..' launch,'..strchar(17)..
+      'Launchable application ('..strchar(16)..' launch,'..strchar(18)..
       ' info) :<br><vspace h="8"><hspace w="16"><linedown>'
 
    text = text..'</dialog>'
@@ -124,6 +139,17 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 	       if dskt_keytoggle[key]
 		  --or (key == gui_item_confirm_event)
 	       then
+		  if app.owner then
+		     local owner = app.owner.owner
+		     evt_shutdown_app(app.owner)
+--		     if owner then
+--			gui_new_focus(owner, app.target)
+--		     end
+		     return
+		  end
+	       end
+	       
+	       if dskt_keyswitchto[key] then
 		  if app.owner then
 		     local owner = app.owner.owner
 		     evt_shutdown_app(app.owner)

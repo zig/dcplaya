@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  sgml text and gui element formater.
 ---
---- $Id: taggedtext.lua,v 1.19 2003-03-03 11:59:31 zigziggy Exp $
+--- $Id: taggedtext.lua,v 1.20 2003-03-03 17:32:52 zigziggy Exp $
 ---
 
 if not dolib("dirfunc") then return end
@@ -103,18 +103,11 @@ end
 
 function tt_font_cmd(mode, param)
 
-   if param.size then
-      mode.font_h = tonumber(param.size) or mode.font_h
-   end
+   mode.font_h = tonumber(param.size) or mode.font_h
    if param.color then
---      print("color", param.color)
       mode.color = tt_tocolor(param.color)
---      print(mode.color[1], mode.color[2], mode.color[3], mode.color[4])
    end
-   if param.id then
-      mode.font_id = tonumber(param.id) or mode.font_id
-   end
---   print(param.size)
+   mode.font_id = tonumber(param.id) or mode.font_id
 
    local block = {
       type = "font_style",
@@ -124,7 +117,6 @@ function tt_font_cmd(mode, param)
       w = 0,
       h = 0,
       draw = function(block)
---		print(block.dl, block.id, block.h)
 		dl_text_prop(block.dl, block.id, block.h)
 	     end
    }

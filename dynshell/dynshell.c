@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.70 2003-03-03 08:35:24 ben Exp $
+ * @version    $Id: dynshell.c,v 1.71 2003-03-03 17:32:51 zigziggy Exp $
  */
 
 #include "config.h"
@@ -211,17 +211,17 @@ static
 static int driver_tag;
 static int driverlist_tag;
 
+
 static int lua_driverlist_gettable(lua_State * L)
 {
   driver_list_t * table = lua_touserdata(L, 1);
   any_driver_t * driver = NULL;
+  any_driver_t * * pdriver = NULL;
   if (lua_isnumber(L, 2)) {
     // access by number
     int n = lua_tonumber(L, 2);
     lua_assert(L, n>=1 && n<=table->n);
-    driver = table->drivers;
-    while (--n)
-      driver = driver->nxt;
+    driver = driver_list_index(table, n-1);
   } else {
     // access by name
     const char * name = lua_tostring(L, 2);
@@ -238,11 +238,48 @@ static int lua_driverlist_gettable(lua_State * L)
   }
 
   lua_assert(L, driver);
+
+  pdriver = (any_driver_t * *) malloc(sizeof(any_driver_t * *));
+  lua_assert(L, pdriver);
+  *pdriver = driver;
   
   lua_settop(L, 0);
-  lua_pushusertag(L, driver, driver_tag);
+  lua_pushusertag(L, pdriver, driver_tag);
 
   return 1;
+}
+
+static int lua_driver_is_same(lua_State * L)
+{
+  any_driver_t * * pdriver1;
+  any_driver_t * * pdriver2;
+  int cmp;
+
+  pdriver1 = lua_touserdata(L, 1);
+  pdriver2 = lua_touserdata(L, 2);
+
+  cmp = (pdriver1 && pdriver2 && *pdriver1 == *pdriver2);
+
+  lua_settop(L, 0);
+  if (cmp) {
+    lua_pushnumber(L, 1);
+    return 1;
+  } else
+    return 0;
+}
+
+static int lua_driver_gc(lua_State * L)
+{
+  const char * field;
+  any_driver_t * * pdriver;
+
+  pdriver = lua_touserdata(L, 1);
+
+  driver_dereference(*pdriver);
+
+  free(pdriver);
+
+  return 0;
 }
 
 static int lua_driver_gettable(lua_State * L)
@@ -250,7 +287,7 @@ static int lua_driver_gettable(lua_State * L)
   const char * field;
   any_driver_t * driver;
 
-  driver = lua_touserdata(L, 1);
+  driver = *(any_driver_t * *) lua_touserdata(L, 1);
   field = lua_tostring(L, 2);
 
   lua_assert(L, driver);
@@ -292,25 +329,18 @@ static void register_driver_type(lua_State * L)
   lua_settagmethod(L, shellcd_tag, "settable");
 
 
+  /* driver_list */
   driverlist_tag = lua_newtag(L);
 
   lua_pushcfunction(L, lua_driverlist_gettable);
   lua_settagmethod(L, driverlist_tag, "gettable");
 
-  lua_pushusertag(L, &inp_drivers, driverlist_tag);
-  lua_setglobal(L, "inp_drivers");
 
-  lua_pushusertag(L, &obj_drivers, driverlist_tag);
-  lua_setglobal(L, "obj_drivers");
-
-  lua_pushusertag(L, &vis_drivers, driverlist_tag);
-  lua_setglobal(L, "vis_drivers");
-
-  lua_pushusertag(L, &exe_drivers, driverlist_tag);
-  lua_setglobal(L, "exe_drivers");
-
-
+  /* driver */
   driver_tag = lua_newtag(L);
+
+  lua_pushcfunction(L, lua_driver_gc);
+  lua_settagmethod(L, driver_tag, "gc");
 
   lua_pushcfunction(L, lua_driver_gettable);
   lua_settagmethod(L, driver_tag, "gettable");
@@ -1805,6 +1835,31 @@ static int lua_driver_list(lua_State * L)
   return 0;
 }
 
+
+/* Get an array of all driver list indexed by type (inp, vis, etc ...).
+ * no paramter : return a table indexed by driver list type name containing
+ *               driver lists.
+ */
+static int lua_get_driver_lists(lua_State * L)
+{
+  /* return all driver types. */
+  driver_list_reg_t * dl, *next;
+  int table;
+  lua_settop(L,0);
+  lua_newtable(L);
+  table = lua_gettop(L);
+  for (dl = driver_lists; dl; dl=next) {
+    driver_list_lock(dl->list);
+    lua_pushstring(L, dl->name);
+    /*lua_driver_list_info(L, dl->list); */
+    lua_pushusertag(L, dl->list, driverlist_tag);
+    next = dl->next;
+    driver_list_unlock(dl->list);
+    lua_settable(L,table);
+  }
+  return 1;
+}
+
 static int lua_filetype(lua_State * L)
 {
   const char * major_name, * minor_name;
@@ -2930,6 +2985,27 @@ static luashell_command_description_t commands[] = {
     " }\n"
     "]])",
     SHELL_COMMAND_C, lua_driver_list
+  },
+
+  {
+    "get_driver_lists",
+    0,
+    "print([["
+    "get_driver_lists() :\n"
+    " Return an array of driver list indexed by their type"
+    " (inp, vis, etc ...)\n"
+    "]])",
+    SHELL_COMMAND_C, lua_get_driver_lists
+  },
+
+  {
+    "driver_is_same",
+    0,
+    "print([["
+    "driver_is_same(driver1, driver2) :\n"
+    " Compare two driver, return non-nil if they are the same.\n"
+    "]])",
+    SHELL_COMMAND_C, lua_driver_is_same
   },
 
   {0},
