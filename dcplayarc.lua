@@ -1,7 +1,7 @@
 --
 -- This is main DCplaya lua script
 --
--- $Id: dcplayarc.lua,v 1.29 2003-03-01 14:53:43 ben Exp $
+-- $Id: dcplayarc.lua,v 1.30 2003-03-08 13:54:52 ben Exp $
 --
 
 showconsole()
@@ -21,6 +21,7 @@ dolib ("dirfunc")
 dolib ("shell")
 dolib ("zed")
 dolib ("keyboard_emu")
+dolib ("io_control")
 dolib ("gui")
 
 -- reading directory on PC is slow through serial port, 
