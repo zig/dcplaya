@@ -3,7 +3,7 @@
 --- @date   2002/10/04
 --- @brief  Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.10 2002-10-27 18:39:46 benjihan Exp $
+--- $Id: textlist.lua,v 1.11 2002-10-28 18:53:40 benjihan Exp $
 ---
 
 -- Unload the library
@@ -59,7 +59,6 @@ if not dolib("basic") then return end
 ---   confirm;
 ---   /** Some flags.
 ---    *  flags are :
----    *  - @b no_bkg   Do not display background box.
 ---    *  - @b align    Entry text horizontal alignment :
 ---    *  -- "left". This is the default.
 ---    *  -- "center".
@@ -184,7 +183,7 @@ function textlist_default(fl)
 	-- Colors
 	fl.filecolor = { 0.7, 1, 1, 1 }
 	fl.dircolor  = { 1.0, 1, 1, 1 }
-	fl.bkgcolor  = { 0.6, 0, 0, 0, 0.6, 0, 0, 0 }
+--	fl.bkgcolor  = { 0.6, 0, 0, 0, 0.6, 0, 0, 0 }
 	fl.curcolor  = { 0.5, 1, 1, 0, 0.5, 0.5, 0.5, 0 }
 
 	-- confirm function
@@ -288,7 +287,7 @@ function textlist_create(flparm)
 		if flparm.box		then fl.minmax		= flparm.box		end
 		if flparm.confirm 	then fl.confirm		= flparm.confirm 	end
 		if flparm.border 	then fl.border		= flparm.border		end
-		if flparm.span 		then fl.border		= flparm.span		end
+		if flparm.span 		then fl.span		= flparm.span		end
 		if flparm.filecolor then fl.filecolor	= flparm.filecolor	end
 		if flparm.dircolor  then fl.dircolor	= flparm.dircolor	end
 		if flparm.bkgcolor  then fl.bkgcolor	= flparm.bkgcolor	end
@@ -361,14 +360,13 @@ function textlist_updatecursor(fl)
 		if fl.bo2[1] > w then w = fl.bo2[1] end
 
 		dl_draw_box(fl.cdl,
-				0, 0, w, fl.font_h+2*fl.span, 0,
+--				0, 0, w, fl.font_h+2*fl.span, 0,
+				0, 0, w, fl.dir[i].h, 0,
 				fl.curcolor[1], fl.curcolor[2],	fl.curcolor[3], fl.curcolor[4],
 				fl.curcolor[5], fl.curcolor[6],	fl.curcolor[7], fl.curcolor[8])
 
-
-
 		dl_draw_text(fl.cdl,
-					 fl.border, 0, 0.1,
+					 fl.border, fl.span, 0.1,
 					 color[1]+0.3,color[2],color[3],color[4],
 					 fl.dir[i].name)
 
@@ -402,16 +400,19 @@ function textlist_update(fl)
 					fl.border, y, 0.1,
 					color[1],color[2],color[3],color[4],
 					fl.dir[i].name)
+		fl.dir[i].y = y-fl.span
+		fl.dir[i].h = h
 		y = y + h
 	end
 	-- Here because commands are fetched from last to first
 	dl_set_clipping(fl.dl, 0, 0, fl.bo2[1], fl.bo2[2])
 
-	if not (fl.flags and fl.flags.no_bkg) then
+	if fl.bkgcolor then
 		dl_draw_box(fl.dl,
 				0, 0, fl.bo2[1], fl.bo2[2],	0,
 				fl.bkgcolor[1],fl.bkgcolor[2],fl.bkgcolor[3],fl.bkgcolor[4],
-				fl.bkgcolor[5],fl.bkgcolor[6],fl.bkgcolor[7],fl.bkgcolor[8])
+				fl.bkgcolor[5],fl.bkgcolor[6],fl.bkgcolor[7],fl.bkgcolor[8],
+				fl.bkgtype)
 	end
 	dl_set_active(fl.dl,1)
 end
@@ -433,6 +434,13 @@ function textlist_movecursor(fl,mov)
 		if top < 0 then top = 0 end
 	end
 
+	-- $$$ Just move this to try. It seems to be OK.
+	if top ~= fl.top then
+		fl.top = top
+		textlist_update(fl)
+		action = action + 2
+	end
+
 	if pos ~= fl.pos then
 		local y
 		y = fl.border + (pos-top) * (fl.font_h + 2*fl.span)
@@ -442,11 +450,6 @@ function textlist_movecursor(fl,mov)
 		action = 1
 	end
 
-	if top ~= fl.top then
-		fl.top = top
-		textlist_update(fl)
-		action = action + 2
-	end
 	return action
 end
 

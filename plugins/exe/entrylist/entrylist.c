@@ -5,11 +5,12 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist.c,v 1.3 2002-10-25 01:03:54 benjihan Exp $
+ * $Id: entrylist.c,v 1.4 2002-10-28 18:53:40 benjihan Exp $
  */
 
 #include <stdlib.h>
 #include <string.h>
+#include "driver_list.h"
 #include "entrylist_driver.h"
 #include "entrylist_loader.h"
 
@@ -21,6 +22,7 @@ el_list_t * entrylist_create(void)
   if (el) {
 	memset(el, 0, sizeof(*el));
 	iarray_create(&el->a, 0, 0, lists);
+	driver_reference(&entrylist_driver);
   }
   return el;
 }
@@ -32,6 +34,8 @@ void entrylist_destroy(el_list_t * el)
 	free((char *)el->path);
 	el->path = 0;
   }
+  allocator_free(lists, el);
+  driver_dereference(&entrylist_driver);
 }
 
 void entrylist_lock(el_list_t * el)

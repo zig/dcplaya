@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.c,v 1.6 2002-10-16 23:59:50 benjihan Exp $
+ * @version   $Id: display_list.c,v 1.7 2002-10-28 18:53:41 benjihan Exp $
  */
 
 #include <malloc.h>
@@ -54,8 +54,8 @@ dl_list_t * dl_new_list(int heapsize, int active)
 
   l->clip_box[0] = 0;
   l->clip_box[1] = 0;
-  l->clip_box[2] = 640;
-  l->clip_box[3] = 480;
+  l->clip_box[2] = 0;
+  l->clip_box[3] = 0;
 
   MtxIdentity(l->trans);
 
@@ -188,14 +188,28 @@ static void dl_render(int opaque)
 
   LIST_FOREACH(l, &dl_active_lists, g_list) {
     dl_command_t * c;
+	float clipx1,clipy1,clipx2,clipy2;
 
     lock(l);
     memcpy(dl_trans, l->trans, sizeof(dl_trans));
     memcpy(dl_color, l->color, sizeof(dl_color));
-	draw_set_clipping(dl_trans[0][0] * l->clip_box[0] + dl_trans[3][0],
-					  dl_trans[1][1] * l->clip_box[1] + dl_trans[3][1],
-					  dl_trans[0][0] * l->clip_box[2] + dl_trans[3][0],
-					  dl_trans[1][1] * l->clip_box[3] + dl_trans[3][1]);
+	
+	if (l->clip_box[0] < l->clip_box[2]) {
+	  clipx1 = dl_trans[0][0] * l->clip_box[0] + dl_trans[3][0];
+	  clipx2 = dl_trans[0][0] * l->clip_box[2] + dl_trans[3][0];
+	} else {
+	  clipx1 = 0;
+	  clipx2 = 640;
+	}
+	if(l->clip_box[1] < l->clip_box[3]) {
+	  clipy1 = dl_trans[1][1] * l->clip_box[1] + dl_trans[3][1];
+	  clipy2 = dl_trans[1][1] * l->clip_box[3] + dl_trans[3][1];
+	} else {
+	  clipy1 = 0;
+	  clipy2 = 480;
+	}
+
+	draw_set_clipping(clipx1,clipy1,clipx2,clipy2);
 
     c = l->command_list;
     while (c) {

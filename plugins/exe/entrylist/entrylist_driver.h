@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist_driver.h,v 1.2 2002-10-24 18:57:07 benjihan Exp $
+ * $Id: entrylist_driver.h,v 1.3 2002-10-28 18:53:41 benjihan Exp $
  */
 
 #ifndef _ENTRYLIST_DRIVER_H_
@@ -17,12 +17,14 @@
 #include "allocator.h"
 #include "entrylist.h"
 
-/**< Entrylist user tag. */
+/** Entrylist user tag. */
 extern int entrylist_tag;
-/**< Holds all entrylist. */
+/** Holds all entrylist. */
 extern allocator_t * lists;
-/**< Holds standard entries. */
+/** Holds standard entries. */
 extern allocator_t * entries;
+/** The driver. */
+any_driver_t entrylist_driver;
 
 int lua_entrylist_init(lua_State * L);
 

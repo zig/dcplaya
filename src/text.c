@@ -4,7 +4,7 @@
  * @date   2002/02/11
  * @brief  drawing and formating text primitives
  *
- * $Id: text.c,v 1.6 2002-10-11 12:09:28 benjihan Exp $
+ * $Id: text.c,v 1.7 2002-10-28 18:53:42 benjihan Exp $
  */
 
 #include <stdarg.h>
@@ -28,10 +28,10 @@ static unsigned int text_argb_save;
 //static float text_color_a, text_color_r, text_color_g, text_color_b;
 
 /* define me to use 16x16 instead of 8x12 font */
-#undef USE_FONT_16x16
-//#define USE_FONT_16x16 1
-//#undef USE_FONT_8x14
-#define USE_FONT_8x14
+//#undef USE_FONT_16x16
+#define USE_FONT_16x16 1
+#undef USE_FONT_8x14
+//#define USE_FONT_8x14
 
 #ifdef USE_FONT_16x16
 # define FONT_TEXTURE_W 256
@@ -345,28 +345,19 @@ static float draw_text_char(float x1, float y1, float z1,
   }
   /* Clip very small char */
   if (hc < 1E-5 || wc < 1E-5) {
-	return 0;
+	return x1;
   }
 
-  /* Clip right out and bottom out*/
-  if (x1 >= clipbox[2] || y1 >= clipbox[3]) {
-	return 0;
-  }
   /* Compute right and bottom */
   x2 = x1 + wc;
   y2 = y1 + hc;
 
-  /* Clip left oout and top out */
-  if (x2 <= clipbox[0] || y2 <= clipbox[1]) {
-	return 0;
+  /* Clip right out and bottom out*/
+  /* Clip left out and top out */
+  if (x1 >= clipbox[2] || y1 >= clipbox[3] ||
+	  x2 <= clipbox[0] || y2 <= clipbox[1]) {
+	return x2;
   }
-	
-/*   ix = (unsigned int)c % (FONT_TEXTURE_W/FONT_CHAR_W); */
-/*   iy = (unsigned int)c / (FONT_TEXTURE_W/FONT_CHAR_W); */
-/*   u1 = (float)ix * xscale; */
-/*   u2 = u1 + xscale; */
-/*   v1 = (float)iy * yscale; */
-/*   v2 = v1 + yscale; */
 
   /* Compute UV */
   u1 = myglyph[c].u1;
@@ -500,7 +491,6 @@ float text_draw_vstrf(float x1, float y1, float z1,
   poly.flags1 &= ~(3<<4);
   ta_commit_poly_hdr(&poly);
 
-
   while (c=(*s++)&255, c) {
 	float curh;
 
@@ -521,12 +511,12 @@ float text_draw_vstrf(float x1, float y1, float z1,
       x1 = draw_text_char(x1, y1, z1, text_xscale, text_yscale, c);
 	  curh = myglyph[c].h * text_yscale;
     }
+	if (curh > maxh) maxh = curh;
 
 	if (x1>=clipbox[2]) {
 	  break;
 	}
 
-	if (curh > maxh) maxh = curh;
   }
   return maxh;
 }

@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: gui.lua,v 1.14 2002-10-13 07:55:45 benjihan Exp $
+-- $Id: gui.lua,v 1.15 2002-10-28 18:53:40 benjihan Exp $
 --
 
 --
@@ -108,7 +108,7 @@ end
 -- compute an automatic guess if none is given, using parent's z
 function gui_guess_z(owner, z)
 	if not z then
-		z = owner.z + 10
+		z = gui_orphanguess_z(owner.z) + 10
 	end
 	return z
 end
@@ -281,15 +281,18 @@ function gui_dialog_update(app, frametime)
 		dl_set_trans(app.focusup_dl, 
 			mat_scale(app.focus_box[3] - app.focus_box[1], 
 				  gui_focus_border_height, 1) *
-			mat_trans(app.focus_box[1], app.focus_box[2]-gui_focus_border_height, 0))
+			mat_trans(app.focus_box[1],
+					app.focus_box[2]-gui_focus_border_height, 0))
 		dl_set_trans(app.focusdown_dl, 
 			mat_scale(app.focus_box[3] - app.focus_box[1], 
 				  gui_focus_border_height, 1) *
 			mat_trans(app.focus_box[1], app.focus_box[4], 0))
 		dl_set_trans(app.focusleft_dl, 
 			mat_scale(gui_focus_border_width, 
-				  2*gui_focus_border_height + app.focus_box[4] - app.focus_box[2], 1) *
-			mat_trans(app.focus_box[1]-gui_focus_border_width, app.focus_box[2]-gui_focus_border_height, 0))
+				  2*gui_focus_border_height	+ app.focus_box[4]
+				- app.focus_box[2], 1)
+				* mat_trans(app.focus_box[1]-gui_focus_border_width,
+							app.focus_box[2]-gui_focus_border_height, 0))
 		dl_set_trans(app.focusright_dl, 
 			mat_scale(gui_focus_border_width, 
 				  2*gui_focus_border_height + app.focus_box[4] - app.focus_box[2], 1) *
@@ -306,7 +309,9 @@ function gui_dialog_update(app, frametime)
 
 	else
 		-- no focus cursor
-		dl_set_active(app.focus_dl, nil)
+		if app.focus_dl then 
+			dl_set_active(app.focus_dl, nil)
+		end
 	end
 
 end

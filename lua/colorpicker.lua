@@ -4,7 +4,7 @@
 --- @date    2002/10/11
 --- @brief   Colorpicker GUI.
 ---
---- $Id: colorpicker.lua,v 1.5 2002-10-27 18:39:46 benjihan Exp $
+--- $Id: colorpicker.lua,v 1.6 2002-10-28 18:53:39 benjihan Exp $
 
 -- Load required libraries
 --
@@ -674,3 +674,5 @@ function kill()
 	if dial then evt_shutdown_app(dial) dial = nil end
 	if dial2 then evt_shutdown_app(dial2) dial2 = nil end
 end
+
+return colorpicker_loaded

@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist_driver.c,v 1.2 2002-10-24 18:57:07 benjihan Exp $
+ * $Id: entrylist_driver.c,v 1.3 2002-10-28 18:53:41 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -27,23 +27,28 @@ EL_FUNCTION_DECLARE(settable);
 EL_FUNCTION_DECLARE(clear);
 EL_FUNCTION_DECLARE(load);
 
-/**< Entrylist user tag. */
+/** Entrylist user tag. */
 int entrylist_tag;
-/**< Holds all entrylist. */
+/** Holds all entrylist. */
 allocator_t * lists;
-/**< Holds standard entries. */
+/** Holds standard entries. */
 allocator_t * entries;
+/** Lua side init fkags. */
+static int init;
 
 /* Iniatilize entrylist user tag. */
 static void lua_init_el_type(lua_State * L)
 {
-  lua_getglobal(L,"entrylist_tag");
-  entrylist_tag = lua_tonumber(L,1);
-  if (!entrylist_tag) {
+  /* $$$ ben : Don't do that ! It may crash when loading a new driver and some
+	 entrylist still alive from the previous one.
+  */
+/*   lua_getglobal(L,"entrylist_tag"); */
+/*   entrylist_tag = lua_tonumber(L,1); */
+/*   if (!entrylist_tag) { */
 	entrylist_tag = lua_newtag(L);
 	lua_pushnumber(L,entrylist_tag);
 	lua_setglobal(L,"entrylist_tag");
-  }
+/*   } */
   
   /* Setup tag functions */
   lua_pushcfunction(L, lua_entrylist_gc);
@@ -75,14 +80,35 @@ static void lua_shutdown_el_type(lua_State * L)
   entrylist_tag = 0;
 }
 
+static int driver_shutdown(any_driver_t * d);
+
 /* Driver init : not much to do. */ 
 static int driver_init(any_driver_t *d)
 {
-  printf("driver_init(%s)\n", d->name);
+  printf("%s_driver_init ... \n", d->name);
   entrylist_tag = -1;
   lists = 0;
   entries = 0;
-  return el_loader_init();
+  init = 0;
+
+  lists = allocator_create(8, sizeof(el_list_t));
+  if (!lists) {
+	printf(DRIVER_NAME "_driver_init : list allocator creation failed.\n");
+	goto error;
+  }
+  entries = allocator_create(65536 / sizeof(el_entry_t), sizeof(el_entry_t));
+  if (!entries) {
+	printf(DRIVER_NAME "_driver_init : entry allocator creation failed.\n");
+	goto error;
+  }
+  if (el_loader_init() < 0) {
+	goto error;
+  }
+  return 0;
+
+ error:
+  driver_shutdown(d);
+  return -1;
 }
 
 /* Driver shutdown : Kill any remaining list any way */
@@ -90,8 +116,6 @@ static int driver_shutdown(any_driver_t * d)
 {
   el_loader_shutdown();
   if (lists) {
-	printf(DRIVER_NAME "_driver_shutdown : lua side has not been"
-		   " shutdown correctly.\n");
 	allocator_destroy(lists);
 	lists = 0;
   }
@@ -111,25 +135,12 @@ static driver_option_t * driver_options(any_driver_t * d, int idx,
 
 int lua_entrylist_init(lua_State * L)
 {
-  if (lists) {
+  if (init) {
     goto ok;
   }
-
-  lists = allocator_create(8, sizeof(el_list_t));
-  if (!lists) {
-	printf("entrylist_driver_init : list allocator creation failed.\n");
-	return 0;
-  }
-  entries = allocator_create(65536 / sizeof(el_entry_t), sizeof(el_entry_t));
-  if (!entries) {
-	printf("entrylist_driver_init : entry allocator creation failed.\n");
-	allocator_destroy(lists);
-	lists = 0;
-	return 0;
-  }
-
   lua_init_el_type(L);
   printf("entrylist_driver initialized.\n");
+  init = 1;
 ok:
   lua_settop(L,1);
   lua_pushnumber(L,1);
@@ -138,28 +149,17 @@ ok:
 
 static int lua_entrylist_shutdown(lua_State * L)
 {
-  int force, n;
+  int n;
 
-  if (!lists) {
+  if (!init) {
 	goto ok;
   }
-  force = lua_tonumber(L,1);
   if (n=allocator_count_used(lists), n)  {
-	if (!force) {
-	  printf("entrylist_shutdown : %d entrylist in used. "
-			 "May be dangerous to shutdown.\n"
-			 "Use force option to shutdown anyway.\n", n);
-	  return 0;
-	} else {
-	  printf("entrylist_shutdown : %d entrylist in used. "
-			 "Force shutdown !!!\n", n);
-	}
+	printf("entrylist_shutdown : %d entrylist in used. "
+		   "Should be OK anyway ...\n", n);
   }
-  allocator_destroy(lists);
-  allocator_destroy(entries);
-  lists = 0;
-  entries = 0;
   lua_shutdown_el_type(L);
+  init = 0;
   printf("entrylist_driver shutdown.\n");
  ok:
   lua_settop(L,0);
@@ -244,7 +244,7 @@ static luashell_command_description_t driver_commands[] = {
   {0},                                    /* end of the command list */
 };
 
-static any_driver_t entrylist_driver =
+any_driver_t entrylist_driver =
 {
 
   0,                     /**< Next driver                     */
