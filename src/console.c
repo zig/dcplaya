@@ -4,7 +4,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.17 2002-12-12 00:08:04 ben Exp $
+ * @version   $Id: console.c,v 1.18 2002-12-17 23:34:32 zigziggy Exp $
  */
 
 
@@ -80,12 +80,13 @@ void csl_init_ta_console()
     return;
   }
 
-  w = (640 - 2*fw) / fw;
-  h = 400 / fh;
+  w = (640 - 32) / fw;
+  //h = 400 / fh;
+  h = 300 / fh;
   csl_ta_console = csl_console_create(w,h,0);
 
-  csl_window_configure(csl_ta_console, 50, 50, w * fw, h * fh, 1, 1);
-  csl_ta_console->window.ba1 = 0.4;   csl_ta_console->window.ba2 = 0.7;
+  csl_window_configure(csl_ta_console, 25, 50, w * fw, h * fh, 1, 1);
+  csl_ta_console->window.ba1 = 0.7;   csl_ta_console->window.ba2 = 0.7;
   csl_ta_console->window.br1 = 0.25;  csl_ta_console->window.br2 = 0.00;
   csl_ta_console->window.bb1 = 0.25;  csl_ta_console->window.bg2 = 0.25;
   csl_ta_console->window.bg1 = 0.00;  csl_ta_console->window.bb2 = 0.00;

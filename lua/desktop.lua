@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.5 2002-12-16 21:37:07 zigziggy Exp $
+--- $Id: desktop.lua,v 1.6 2002-12-17 23:34:32 zigziggy Exp $
 ---
 
 if not dolib("evt") then return end
@@ -192,7 +192,7 @@ function dskt_handle(app, evt)
       end
 
 
-      if not app.switcher and console_app and evt.app ~= console_app and focused ~= console_app and console_app.next then
+      if console_app and evt.app ~= console_app and focused ~= console_app and console_app.next then
 	 -- force console to be last application (user friendly)
 	 evt_app_insert_last(app, console_app)
       end
