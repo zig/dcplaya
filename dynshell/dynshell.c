@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.24 2002-09-27 03:20:20 benjihan Exp $
+ * @version    $Id: dynshell.c,v 1.25 2002-09-27 06:33:54 vincentp Exp $
  */
 
 #include <stdio.h>
@@ -783,6 +783,13 @@ static int lua_stop(lua_State * L)
   return 0;
 }
 
+extern int cond_disconnected;
+static int lua_cond_connect(lua_State * L)
+{
+  cond_disconnected = !lua_tonumber(L, 1);
+  return 0;
+}
+
 #if 0
 static char shell_basic_lua_init[] = 
 "\n shell_help_array = {}"
@@ -1016,6 +1023,16 @@ static luashell_command_description_t commands[] = {
 
     SHELL_COMMAND_C, lua_stop
   },
+  { 
+    "cond_connect",
+    0,
+
+    "print([["
+    "cond_connect(state) : set the connected state of main controller\n"
+    "]])",
+
+    SHELL_COMMAND_C, lua_cond_connect
+  },
 
 
   {0},
@@ -1086,8 +1103,6 @@ void shell_lua_fputs(const char * s)
 
 
 
-
-
 static void shutdown()
 {
   printf("shell: Shutting down dynamic shell\n");
@@ -1097,6 +1112,9 @@ static void shutdown()
   shell_set_command_func(old_command_func);
 
   lua_close(shell_lua_state);
+
+  cond_disconnected = 0;
+
 }
 
 shutdown_func_t lef_main()

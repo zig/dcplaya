@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: keyboard_emu.lua,v 1.1 2002-09-27 02:01:37 vincentp Exp $
+-- $Id: keyboard_emu.lua,v 1.2 2002-09-27 06:33:54 vincentp Exp $
 --
 
 
@@ -17,6 +17,7 @@ end
 ke_box 		= { 20, 330, 640-20, 330+140 }
 ke_z		= 150
 ke_cursorz	= ke_z + 20
+ke_textz	= ke_z + 30
 
 if not ke_theme then
 	ke_theme = 2	-- currently 1 .. 3
@@ -48,20 +49,71 @@ ke_themes = {
 
 ke_themes[ke_theme]()
 
-ke_keyup	= { [KBD_KEY_UP]=1 }
-ke_keydown	= { [KBD_KEY_UP]=1 }
-ke_keyleft	= { [KBD_KEY_UP]=1 }
-ke_keyright	= { [KBD_KEY_UP]=1 }
-ke_keyconfirm	= { [KBD_ENTER]=1 }
-ke_keycancel	= { [KBD_ESC]=1 }
-ke_keynext	= { [KBD_KEY_PGUP]=1 }
-ke_keyprev	= { [KBD_KEY_PGDOWN]=1 }
+ke_keyup	= { [KBD_CONT1_DPAD2_UP]=1 }
+ke_keydown	= { [KBD_CONT1_DPAD2_DOWN]=1 }
+ke_keyleft	= { [KBD_CONT1_DPAD2_LEFT]=1 }
+ke_keyright	= { [KBD_CONT1_DPAD2_RIGHT]=1 }
+ke_keyselect	= { [KBD_CONT1_X]=1 }
+ke_keyconfirm	= { [KBD_CONT1_A]=1 }
+ke_keycancel	= { [KBD_CONT1_B]=1 }
+ke_keynext	= { [KBD_CONT1_C]=1 }
+ke_keyprev	= { [KBD_CONT1_D]=1 }
+ke_keyactivate	= { [KBD_CONT1_START]=1 }
+
+ke_translate	= { 
+	[KBD_CONT1_DPAD_UP] = KBD_KEY_UP,
+	[KBD_CONT1_DPAD_DOWN] = KBD_KEY_DOWN,
+	[KBD_CONT1_DPAD_LEFT] = KBD_KEY_LEFT,
+	[KBD_CONT1_DPAD_RIGHT] = KBD_KEY_RIGHT
+}
+
+function table_sqrdist(t1, t2)
+	local sum = 0
+	local i, v
+	for i, v in t1 do
+		local d = v - t2[i]
+		sum = sum + d*d
+	end
+	
+	return sum
+end
 
 function table_add(t1, t2)
 	local r = {}
 	local i, v
 	for i, v in t1 do
 		r[i] = v + t2[i]
+	end
+	
+	return r
+end
+
+function table_sub(t1, t2)
+	local r = {}
+	local i, v
+	for i, v in t1 do
+		r[i] = v - t2[i]
+	end
+	
+	return r
+end
+
+function table_mul(a, t)
+	local r = {}
+	local i, v
+	if type(a) == "table" then
+		a, t = t, a
+	end
+	if type(a) == "table" then
+		-- two tables case
+		for i, v in a do
+			r[i] = v * t[i]
+		end
+	else
+		-- number * table case
+		for i, v in t do
+			r[i] = v * a
+		end
 	end
 	
 	return r
@@ -117,7 +169,7 @@ function ke_addsinglekey(text, code, dl, list, spacing)
 	key.code =  code
 
 	dl_draw_box(dl, key.box, ke_z+10, ke_keycolor1, ke_keycolor2)
-	dl_draw_text(dl, key.box[1]+3+(w2-w)/2, key.box[2]+3, ke_z+15, ke_textcolor, key.text)
+	dl_draw_text(dl, key.box[1]+3+(w2-w)/2, key.box[2]+3, ke_textz, ke_textcolor, key.text)
 	tinsert(list, key)
 
 	return w2, h
@@ -166,11 +218,41 @@ function ke_shutdown()
 	end
 end
 
+function ke_set_keynum(n)
+	ke_keynum = n
+	ke_key = ke_array[n]
+end
+
+ke_closest_coef = { 1, 1, 1, 1 }
+ke_closest_vertical_coef = { 1, 5, 1, 5 }
+function ke_closest_key(array, box, coef)
+
+	if not coef then
+		coef = ke_closest_coef
+	end
+	box = box * coef
+	local i
+	local imin = 1
+	local min = array[1].box ^ box
+	for i=2, array.n, 1 do
+		local k = array[i]
+		local b = k.box * coef
+		local d = b ^ box
+		if d < min then
+			imin = i
+			min = d
+		end
+	end
+	
+	return imin
+end
+
 function ke_set_active_array(n)
 	dl_set_active(ke_arrays[ke_arraynum].dl, 0)
 	ke_arraynum = n
 	ke_array = ke_arrays[n]
 	dl_set_active(ke_arrays[ke_arraynum].dl, 1)
+	ke_set_keynum(ke_closest_key(ke_array, ke_cursorbox))
 end
 
 
@@ -199,12 +281,75 @@ function ke_handle(frametime, key)
 		return nil
 	end
 
+	if ke_keyright[key] then
+		local n = ke_keynum+1
+		if n > ke_array.n then
+			n = 1
+		end
+		ke_set_keynum(n)
+
+		return nil
+	end
+
+	if ke_keyleft[key] then
+		local n = ke_keynum-1
+		if n < 1 then
+			n = ke_array.n
+		end
+		ke_set_keynum(n)
+
+		return nil
+	end
+
+	if ke_keyup[key] then
+		local box = ke_cursorbox - { 0, 25, 0, 25 }
+		ke_set_keynum(ke_closest_key(ke_array, box, ke_closest_vertical_coef))
+
+		return nil
+	end
+
+	if ke_keydown[key] then
+		local box = ke_cursorbox + { 0, 25, 0, 25 }
+		ke_set_keynum(ke_closest_key(ke_array, box, ke_closest_vertical_coef))
+
+		return nil
+	end
+
+	if ke_keyselect[key] then
+		return ke_key.code
+	end
+
+	if ke_keyconfirm[key] then
+		return KBD_ENTER
+	end
+
+	if ke_keycancel[key] then
+		return KBD_ESCAPE
+	end
+
+	local trans = ke_translate[key]
+	if trans then
+		return trans
+	end
+
 	return key
+end
+
+function ke_set_active(s)
+	ke_active = s
+	cond_connect(not s)
+	dl_set_active(ke_array.dl, s)
+	dl_set_active(ke_cursor_dl, s)
 end
 
 function ke_update(key)
 
 	ke_curframecounter = ke_origframecounter(1)
+
+	if key and ke_keyactivate[key] then
+		ke_set_active(not ke_active)
+		return nil
+	end
 
 	if not ke_active then
 		return key
@@ -220,11 +365,16 @@ function ke_update(key)
 	-- do collect garbage once per frame for smoother animation
 	collectgarbage()
 
-	dl_set_trans(ke_cursor_dl, mat_scale(100, 25, 1) * mat_trans(100 + 50*sin(360*ke_time), ke_box[2] + 100 + 50*sin(360*ke_time*1.3252462624), 0))
+	dl_set_trans(ke_cursor_dl, mat_scale(ke_cursorbox[3] - ke_cursorbox[1], ke_cursorbox[4] - ke_cursorbox[2], 1) * mat_trans(ke_cursorbox[1], ke_cursorbox[2], 0))
+	dl_set_color(ke_cursor_dl, 0.5+0.5*sin(360*ke_time*2), 1, 1, 1)
 
 	if key then
 		key = ke_handle(frametime, key)
 	end
+
+	-- update cursor position
+	ke_cursorbox = ke_cursorbox + 
+			20 * frametime * (ke_key.box - ke_cursorbox)
 
 	return key
 end
@@ -265,6 +415,9 @@ function ke_init()
 	ke_active = 1
 
 	settagmethod(tag( {} ), "add", table_add)
+	settagmethod(tag( {} ), "sub", table_sub)
+	settagmethod(tag( {} ), "mul", table_mul)
+	settagmethod(tag( {} ), "pow", table_sqrdist)
 
 	if not check_display_driver or not check_display_driver() then
 		return
@@ -276,6 +429,7 @@ function ke_init()
 
 	dl_clear(ke_cursor_dl)
 	dl_draw_box(ke_cursor_dl, 0, 0, 1, 1, ke_cursorz, 1, 1, 1, 1, 1, 1, 1, 1)
+	ke_cursorbox = ke_box
 
 	local dl
 	for _, dl in { ke_downarray_dl, ke_uparray_dl} do
@@ -290,9 +444,6 @@ function ke_init()
 	tinsert(ke_arrays, ke_downarray)
 	ke_uparray = { dl = ke_uparray_dl }
 	tinsert(ke_arrays, ke_uparray)
-
-	ke_arraynum = 1 -- set it to any valid value for start ...
-	ke_set_active_array(1)
 
 	ke_addkeypos(5, 5)
 	ke_addkey("ESC", 33)
@@ -326,14 +477,14 @@ function ke_init()
 	ke_addkey("0", nil, ")")
 	ke_addkey("-", nil, "_")
 	ke_addkey("=", nil, "+")
-	ke_addkey("Backspace")
+	ke_addkey("Backspace", KBD_BACKSPACE)
 
 	ke_addkeypos(505, 0)
 	ke_addkey("Del")
 	ke_addkey("Insert")
 
 	ke_addkeypos(5, -25)
-	ke_addkey("Tab", 8, nil, nil, 20)
+	ke_addkey("Tab", nil, nil, nil, 20)
 	ke_addkey("q")
 	ke_addkey("w")
 	ke_addkey("e")
@@ -390,6 +541,12 @@ function ke_init()
 	ke_addkey("Left")
 	ke_addkey("Right")
 	ke_addkey("Down")
+
+	ke_arraynum = 1 -- set it to any valid value for start ...
+	ke_set_active_array(1)
+	ke_set_keynum(1)
+
+	ke_set_active(1)
 
 	-- last step : replace getchar and cie
 	getchar = ke_getchar

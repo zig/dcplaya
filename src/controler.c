@@ -11,7 +11,10 @@
 #define CONTROLER_JOY_DEAD          15
 #define CONTROLER_TRIG_DEAD         15
 
-static uint8 mcont;
+cont_cond_t controler_cond[4]; /* all joystick status */
+int controler_cond_connected[4];
+
+static int cond_disconnected;
 static cont_cond_t cond;
 static cont_cond_t oldcond;
 static uint32 last_frame;
@@ -29,24 +32,43 @@ static int status;
 
 static void clear_cond(void)
 {
-  cond.buttons = 0;
+  cond.buttons = ~0;
   cond.rtrig = cond.ltrig = 0;
   cond.joyx = cond.joyy = 
     cond.joy2x = cond.joy2y = 128;
 }
 
+static int fport, funit;
+
 /* try to get controler cond or clear it. */
 static void controler_get()
 {
-  if (!mcont) {
-    mcont = maple_first_controller();
-    //if (!mcont) {
-    //  mcont = maple_second_controller();
-    //}
-  }  
-  if (!mcont || cont_get_cond(mcont, &cond)) {
-    clear_cond();
+  /* fill all joystick cond structure */
+  int port, unit;
+
+  fport = -1;
+  funit = -1;
+  for (port=0; port<4; port++) {
+    controler_cond_connected[port] = 0;
+    for (unit=0; unit<6; unit++) {
+      if ((maple_device_func(port, unit) & MAPLE_FUNC_CONTROLLER) && 
+	  !(maple_device_func(port, unit) & MAPLE_FUNC_KEYBOARD)) {
+	int adr;
+	adr = maple_create_addr(port, unit);
+	cont_get_cond(adr, &controler_cond[port]);
+	controler_cond_connected[port] = 1;
+	if (fport < 0) {
+	  fport = port;
+	  funit = unit;
+	}
+      }
+    }
   }
+
+  if (!cond_disconnected && fport >= 0) {
+    cond = controler_cond[fport];
+  } else
+    clear_cond();
 }
 
 static void fill_controler_state(controler_state_t * state, uint32 elapsed)
@@ -92,6 +114,7 @@ int controler_thread(void * dummy)
 
     if (elapsed_frame) {
       spinlock_lock(&controler_mutex);
+
 
       /* pad */
       controler_get();
@@ -178,7 +201,7 @@ int controler_released(const controler_state_t * state, uint32 mask)
 void controler_print(void)
 {
   dbglog(DBG_DEBUG, 
-	 "%c%c%c%c%c%c%c %c%c%c%c %c%c%c%c "
+	 "%c%c%c%c%c%c%c %c %c%c%c%c %c%c%c%c "
 	 "[r:%02x] [l:%02x] [x:%02x] [y:%02x] [x2:%02x] [y2:%02x]\n",
 
 	 (cond.buttons & CONT_A) ? 'A' : 'a',
@@ -188,6 +211,8 @@ void controler_print(void)
 	 (cond.buttons & CONT_X) ? 'X' : 'x',
 	 (cond.buttons & CONT_Y) ? 'Y' : 'y',
 	 (cond.buttons & CONT_Z) ? 'Z' : 'z',
+
+	 (cond.buttons & CONT_START) ? 'S' : 's',
 
 	 (cond.buttons & CONT_DPAD_UP) ? 'U' : 'u',
 	 (cond.buttons & CONT_DPAD_DOWN) ? 'D' : 'd',
@@ -211,10 +236,16 @@ int controler_getchar()
   int k;
 
   for ( ;; ) {
-    
+
     k = controler_peekchar();
-    if (k != -1)
+    if (k != -1) {
+/*      static count;
+      if (count++ > 200) {
+	controler_print();
+	count = 0;
+      }*/
       return k;
+    }
 
     thd_pass();
   }
