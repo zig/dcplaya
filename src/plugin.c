@@ -3,148 +3,147 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: plugin.c,v 1.4 2002-09-14 00:47:13 zig Exp $
+ * $Id: plugin.c,v 1.5 2002-09-14 04:30:55 ben Exp $
  */
 #include <stdio.h>
 #include <string.h>
 #include <kos/fs.h>
 
+#include "plugin.h"
+
 #include "any_driver.h"
 #include "driver_list.h"
 #include "lef.h"
 #include "filetype.h"
-
-
-
-any_driver_t * plugin_load_and_register(const char *fname)
-{
-  any_driver_t *d, *driver, *nxt, *old;
-    
-  driver = plugin_load(fname);
-  if (!driver) {
-    return 0;
-  }
-
-  for (d=driver; d; d = nxt) {
-    driver_list_t *dl = 0;
-      
-    /* Save nxt here, It will be crashed by driver_list */
-    nxt = d->nxt;
-    switch (d->type) {
-    case OBJ_DRIVER:
-      dl = &obj_drivers;
-      break;
-    case VIS_DRIVER:
-      dl = &vis_drivers;
-      break;
-    case INP_DRIVER:
-      dl = &inp_drivers;
-      break;
-    case EXE_DRIVER:
-      dl = &exe_drivers;
-      break;
-    default:
-      dbglog(DBG_ERROR, "!! " __FUNCTION__
-	     " : Unexecpected plugin type !\n");
-    }
-
-    if (!dl) {
-      /* Error !! Let's run away !! */
-      break;
-    }
-
-    old = driver_list_search(dl, driver->name);
-    if (old) {
-      lef_prog_t * lef = (lef_prog_t *) old->dll;
-      if (lef->ref_count == 1) {
-	driver_list_unregister(dl, old);
-	lef_free(lef);
-      }
-    }
-
-    if (d->init(d) < 0 || driver_list_register(dl, d) < 0) {
-
-      dbglog(DBG_DEBUG, "++ [%s] INIT OR REGISTRATION FAILED\n", d->name);
-      /* If the registration failed, let's free the dll. */
-      lef_free((lef_prog_t *)d->dll);
-      return 0;
-    } else {
-      dbglog(DBG_DEBUG, "++ [%s] added to [%s]\n", d->name, dl->name);
-      return driver;
-    }
-  }
-}
-
+#include "sysdebug.h"
 
 any_driver_t * plugin_load(const char *fname)
 {
   int fd;
   lef_prog_t * prog = 0;
-  any_driver_t *d = 0;
+  any_driver_t *d = 0, *d2 = 0, *pd = 0, *d1 = 0;
 
-  dbglog(DBG_DEBUG, ">> " __FUNCTION__ "(%s)\n", fname);
+  SDDEBUG(">> %s(%s)\n", __FUNCTION__, fname);
+  sysdbg_indent(1,0);
 
   fd = fs_open(fname, O_RDONLY);
   if (!fd) {
-    dbglog(DBG_ERROR, "!! " __FUNCTION__ 
-	   " : Plugin file not found [%s]\n", fname);
+    SDERROR("Plugin file not found [%s]\n", fname);
     goto error;
   }
 
   d = 0;
-  /* $$$ After this call, ffd is closed by lef_load !!! */
+  /* $$$ After this call, fd is closed by lef_load !!! */
   prog = lef_load(fd);
   fd = 0;
 
   if (!prog) {
-    dbglog(DBG_ERROR, "!! " __FUNCTION__
-	   " : Plugin [%s] load error\n", fname);
-    return 0;
-  }
-  dbglog(DBG_DEBUG,"** " __FUNCTION__ 
-	 " : Plugin [%s] load success.\n", fname);
-  d = (any_driver_t *)prog->main(0, 0);
-  if (!d) {
-    dbglog(DBG_ERROR,"** " __FUNCTION__ 
-	 " No driver found in plugin [%s].\n", fname);
+    SDERROR("Plugin [%s] load error\n", fname);
     goto error;
   }
-  
-  switch (d->type) {
-  case INP_DRIVER:
-  case EXE_DRIVER:
-  case OBJ_DRIVER:
-  case VIS_DRIVER:
-    {
-      any_driver_t * d2;
 
-      dbglog(DBG_DEBUG, "** " __FUNCTION__
-	     " : Driver list in [%s]\n", fname);
-      for (d2=d; d2; d2=d2->nxt) {
-	d2->dll = prog;
-	++prog->ref_count;
-	dbglog(DBG_DEBUG, " + [%s] [%s]\n", (char *)&d2->type, d2->name);
-      }
-    } break;
-  default:
-    dbglog(DBG_ERROR, "!! " __FUNCTION__ 
-	   "Bad driver type %08x [%c%c%c%c]\n",
-	   d->type,
-	   (d->type&255), (d->type>>8)&255,
-	   (d->type>>16)&255,  (d->type>>24)&255);
-    d = 0;
+  SDDEBUG("Plugin load success [%s].\n", fname);
+  d = (any_driver_t *)prog->main(0, 0);
+  if (!d) {
+    SDWARNING("No driver found in plugin [%s].\n", fname);
+    goto error;
   }
 
+  SDDEBUG("Driver list in [%s]\n", fname);
+
+  sysdbg_indent(1, 0);
+  for (d1 = pd = 0, d2 = d; d2; d2 = d2->nxt) {
+    driver_list_t *dl;
+
+    dl = driver_list_which(d2);
+    if (dl) {
+      /* Have a valid driver. */
+      
+      if (pd) {
+	/* Link it to previous valid driver. */
+	pd->nxt = d2;
+      } else {
+	/* Or set first valid. */
+	d1 = d2;
+      }
+      pd = d2;
+      /* Add a ref count to lef. */
+      ++prog->ref_count;
+      SDDEBUG("+ [%s] [%s] -> [%s]\n", (char *)&d2->type, d2->name, dl->name);
+    } else {
+      SDERROR("Bad driver type %08x [%c%c%c%c]\n",
+	      d->type,
+	      (d->type&255), (d->type>>8)&255,
+	      (d->type>>16)&255,  (d->type>>24)&255);
+    }
+  }
+  sysdbg_indent(-1, 0);
+
+  /* Close the list. */ 
+  if (pd) {
+    pd->nxt = 0;
+  }
 
 error:
-  if (!d && prog) {
+  if (!d1) {
+    /* No valid driver has be*/
     lef_free(prog);
   }
-  dbglog(DBG_DEBUG, "<< " __FUNCTION__
-    " : %s\n", d ? "OK" : "FAILED");
-  return d;
+  sysdbg_indent(-1,0);
+  SDDEBUG("<< %s() = %s\n", __FUNCTION__, d1 ? "OK" : "FAILED");
+  
+  return d1;
 }
 
+static void remove_driver(driver_list_t * dl, any_driver_t * d)
+{
+  lef_prog_t * lef = (lef_prog_t *) d->dll;
+  driver_list_unregister(dl, d);
+  lef_free(lef); /* dereference and optionnal free. */
+}
+
+int plugin_load_and_register(const char *fname)
+{
+  lef_prog_t * lef;
+  any_driver_t *d, *driver, *nxt, *old;
+  int count = 0;
+    
+  driver = plugin_load(fname);
+  if (!driver) {
+    return 0;
+  }
+  
+  /* We can set the lef here since it is the same for all this drivers */
+  lef = (lef_prog_t *) d->dll;
+
+  for (d=driver; d; d = nxt) {
+    driver_list_t *dl;
+
+    /* Save nxt here, It will be crashed by driver_list */
+    nxt = d->nxt;
+
+    dl = driver_list_which(d);
+    if (!dl) {
+      SDERROR("Unexpected plugin type !\n");
+      continue;
+    }
+
+    /* Remove driver with the same name if it exists. */
+    old = driver_list_search(dl, driver->name);
+    if (old) {
+      remove_driver(dl, old);
+    }
+
+    if (d->init(d) < 0 || driver_list_register(dl, d) < 0) {
+      SDERROR( "[%s] Init or Registration failed, removed\n", d->name);
+      remove_driver(dl, d);
+    } else {
+      SDDEBUG("++ [%s] added to [%s]\n", d->name, dl->name);
+      ++count;
+    }
+  }
+  return count;
+}
 
 static int r_plugin_path_load(char *path, unsigned int level)
 {
@@ -153,12 +152,12 @@ static int r_plugin_path_load(char *path, unsigned int level)
   int fd = 0;
   char *path_end = 0;
 
-  dbglog(DBG_DEBUG, ">> " __FUNCTION__ "(%2d,[%s])\n", level, path);
+  SDDEBUG(">> %s(%2d,[%s])\n", __FUNCTION__, level, path);
+  sysdbg_indent(1,0);
 
   if (level == 0) {
     goto error;
   }
-
 
   fd = fs_open(path, O_RDONLY | O_DIR);
   if (!fd) {
@@ -171,13 +170,9 @@ static int r_plugin_path_load(char *path, unsigned int level)
   path_end[1] = 0;
 
   while (de = fs_readdir(fd), de) {
-    any_driver_t *d, *driver, *nxt;
     int type;
 
     type = filetype_get(de->name, de->size);
-
-/*     dbglog(DBG_DEBUG, "** size=%08x [%s] type=%08x\n", */
-/* 	   de->size, de->name, type); */
 
     if (type == FILETYPE_DIR) {
       int cnt;
@@ -192,11 +187,7 @@ static int r_plugin_path_load(char *path, unsigned int level)
     }
 
     strcpy(path_end+1, de->name);
-    driver = plugin_load_and_register(path);
-    if (driver) {
-      ++count;
-    }
-
+    count += plugin_load_and_register(path);
   }
 
  error:
@@ -206,8 +197,10 @@ static int r_plugin_path_load(char *path, unsigned int level)
   if (path_end) {
     *path_end = 0;
   }
-  dbglog(DBG_DEBUG, "<< " __FUNCTION__ "(%2d,[%s]) = %d\n",
-	 level, path, count);
+  
+  sysdbg_indent(-1,0);
+  SDDEBUG("<< %s(%2d,[%s]) = %d\n", __FUNCTION__, level, path, count);
+
   return count;
 }
 
