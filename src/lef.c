@@ -5,7 +5,7 @@
  * @author  Dan Potter
  * @brief   ELF library loader - Based on elf.c from KallistiOS 1.1.5 
  *
- * @version $Id: lef.c,v 1.6 2002-09-12 17:57:31 ben Exp $
+ * @version $Id: lef.c,v 1.7 2002-09-12 18:18:46 zig Exp $
  */
 
 #include <malloc.h>
@@ -215,6 +215,7 @@ static int loadfile(int fd, char * img, int sz)
     sz -= n;
   }
   SDDEBUG("\nLoad completed\n");
+  return 0;
 }
 
 /* Pass in a file descriptor from the virtual file system, and the
