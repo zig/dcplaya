@@ -1,10 +1,10 @@
 # Makefile - dcplaya - data
 #
-# $Id: Makefile,v 1.13 2003-07-30 00:41:31 benjihan Exp $
+# $Id: Makefile,v 1.14 2003-07-30 10:12:01 benjihan Exp $
 #
 
 TARGETS=
-CLEAN_LOCAL=tmp/* romdisk/* romdisk.* vmu_header.bin $(HEADERS)
+CLEAN_LOCAL=romdisk.* vmu_header.bin $(HEADERS) -r romdisk/
 REQUIRED_LOCAL=req_local
 
 HEADERS= ../include/vmu_dcplaya.h ../include/vmu_dcplaya4.h ../include/vmu_font.h
@@ -12,7 +12,7 @@ HEADERS= ../include/vmu_dcplaya.h ../include/vmu_dcplaya4.h ../include/vmu_font.
 MKVMUHEADER=$(UTILS_DIR)/mkvmuheader
 
 
-my_all: vmuimg romdisk
+my_all: vmuimg all-romdisk
 
 # Images
 fntimg : romdisk/font16x16.tga romdisk/font8x14.tga
@@ -30,11 +30,11 @@ romimg: fntimg bdrimg
 
 romdisk/%.tga : img/%.tga
 	@echo "[$@] from [$^]"
-	@cp $< $@
+	@mkdir -p $(@D) && cp -f $< $@
 
 romdisk/%.jpg : img/%.jpg
 	@echo "[$@] from [$^]"
-	@cp $< $@
+	@mkdir -p $(@D) && cp -f $< $@
 
 # ----------------------------------------------------------------------
 # ROMDISK
@@ -43,17 +43,17 @@ romdisk/%.jpg : img/%.jpg
 # Copy ARM stream driver into romdisk
 romdisk/stream.drv: ../arm/stream.drv
 	@echo "[$@]"
-	@cp -f $< $@
+	@mkdir -p $(@D) && cp -f $< $@
 
 # VMU header file
 # romdisk/vmu_header.gz : vmu_header.bin
 # 	gzip -c --best -n $< > $@
 romdisk/vmu_header.bin : vmu_header.bin
 	@echo "[$@]"
-	@cp -f $< $@
+	@mkdir -p $(@D) && cp -f $< $@
 
 $(MKVMUHEADER):
-	$(MAKE) -C ../utils/ mkvmuheader
+	@$(MAKE) --quiet -C ../utils/ mkvmuheader
 
 vmu_header.bin: $(MKVMUHEADER)
 	@echo "[$@]"
@@ -67,27 +67,27 @@ vmu_header.bin: $(MKVMUHEADER)
 vmuheader: romdisk/vmu_header.bin
 	@echo "[$@]"
 
-
 # ROM-disk fixed data
-.PHONY: romdisk_data
-romdisk_data:
+.PHONY: romdisk-data
+romdisk-data:
 	@echo "[$@]"
-	@find romdisk_data -maxdepth 1 -type f -exec cp -f {} romdisk \;
+	if test -d romdisk_data; then \
+		find romdisk_data/ -type f -exec cp -vf {} romdisk/ \; ; \
+	else echo "No [romdisk_data] extra file"; fi;
 
 .PHONY: romdisk.img
-romdisk.img: romdisk_data vmuheader romimg romdisk/stream.drv
+romdisk.img: romdisk-data vmuheader romimg romdisk/stream.drv
 	@echo "[$@]"
 	@$(KOS_GENROMFS) -f $@ -d romdisk -v 2> /dev/null
 
-.PHONY: romdisk
-romdisk: romdisk.o
+.PHONY: all-romdisk
+all-romdisk: romdisk.o
 	@echo "[$@]"
-
 
 .PHONY: req_local
 req_local:
-	mkdir -p tmp romdisk romdisk_data
-
+	@echo "[$@]"
+	
 # ----------------------------------------------------------------------
 include ../Makefile.inc
 # ----------------------------------------------------------------------
