@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Error functions.
  *
- * @version    $Id: syserror.h,v 1.3 2002-09-12 17:24:18 zig Exp $
+ * @version    $Id: syserror.h,v 1.1 2002-09-13 14:51:27 zig Exp $
  */
 
 #ifndef _SYSERROR_H_
@@ -16,9 +16,9 @@
 #include "sysmacro.h"
 
 
-#define STHROW_ERROR(error)              \
+#define SERROR(error)                    \
   SMACRO_START                           \
-    SDERROR( "GOTO '" #error "'\n" );    \
+    SDERROR(level, "GOTO '"#error"'\n"); \
     goto error;                          \
   SMACRO_END
 
