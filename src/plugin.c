@@ -3,7 +3,7 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: plugin.c,v 1.10 2002-12-13 17:06:53 ben Exp $
+ * $Id: plugin.c,v 1.11 2002-12-15 16:15:03 ben Exp $
  */
 #include <stdio.h>
 #include <string.h>
@@ -52,11 +52,11 @@ any_driver_t * plugin_load(const char *fname)
     if (dl) {
       /* Have a valid driver. */
       if (pd) {
-	/* Link it to previous valid driver. */
-	pd->nxt = d2;
+		/* Link it to previous valid driver. */
+		pd->nxt = d2;
       } else {
-	/* Or set first valid. */
-	d1 = d2;
+		/* Or set first valid. */
+		d1 = d2;
       }
       pd = d2;
       /* Add a ref count to lef. */
@@ -64,9 +64,9 @@ any_driver_t * plugin_load(const char *fname)
       SDDEBUG("+ [%s] [%s] -> [%s]\n", (char *)&d2->type, d2->name, dl->name);
     } else {
       SDERROR("Bad driver type %08x [%c%c%c%c]\n",
-	      d->type,
-	      (d->type&255), (d->type>>8)&255,
-	      (d->type>>16)&255,  (d->type>>24)&255);
+			  d->type,
+			  (d->type&255), (d->type>>8)&255,
+			  (d->type>>16)&255,  (d->type>>24)&255);
     }
   }
   SDUNINDENT;
@@ -76,7 +76,7 @@ any_driver_t * plugin_load(const char *fname)
     pd->nxt = 0;
   }
 
-error:
+ error:
   if (!d1) {
     /* No valid driver has be*/
     lef_free(prog);
@@ -92,7 +92,7 @@ static void remove_driver(driver_list_t * dl, any_driver_t * d)
   lef_prog_t * lef = (lef_prog_t *) d->dll;
 
   SDDEBUG("%s([%s], [%s] : lef:%p count:%d\n", __FUNCTION__,
-	  dl->name, d->name, lef, lef ? lef->ref_count : -666);
+		  dl->name, d->name, lef, lef ? lef->ref_count : -666);
   driver_list_unregister(dl, d);
   SDDEBUG("Dereferencing driver\n");
   driver_dereference(d);
@@ -132,7 +132,7 @@ int plugin_load_and_register(const char *fname)
     old = driver_list_search(dl, d->name);
     if (old) {
       SDDEBUG("Existing driver [%p %s] : [%p %s]\n",
-	      d, d->name, old, old->name);
+			  d, d->name, old, old->name);
       remove_driver(dl, old);
     }
 
@@ -179,6 +179,7 @@ static int r_plugin_path_load(char *path, unsigned int level)
     int type;
 
     type = filetype_get(de->name, de->size);
+/* 	SDDEBUG("[%s] : %04x\n", de->name, type); */
 
     if (type == filetype_dir) {
       int cnt;

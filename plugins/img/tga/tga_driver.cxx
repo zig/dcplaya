@@ -30,7 +30,7 @@ static int init(any_driver_t * driver)
   }
 
   /* Set up translator. */
-  d->translator = translator;
+  d->translator = (translator_t)translator;
 
   /* Set up extensions. */
   d->extensions = *translator->Extension();
@@ -57,7 +57,7 @@ static driver_option_t * options(any_driver_t * d, int idx,
 }
 
 
-static img_driver_t driver =
+img_driver_t tga_driver =
 {
 
   /* Any driver */
@@ -83,6 +83,6 @@ static img_driver_t driver =
 
 extern "C" {
 
-EXPORT_DRIVER(driver)
+EXPORT_DRIVER(tga_driver)
 
 }

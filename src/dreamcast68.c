@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.35 2002-12-13 17:06:53 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.36 2002-12-15 16:15:03 ben Exp $
  */
 
 //#define RELEASE
@@ -45,6 +45,7 @@
 #include "vupeek.h"
 #include "driver_list.h"
 #include "inp_driver.h"
+#include "img_driver.h"
 #include "playa.h"
 #include "plugin.h"
 #include "lef.h"
@@ -407,11 +408,12 @@ static int same_sign(float a, float b) {
 }
 
 /* extern inp_driver_t sidplay_driver; */
+extern img_driver_t tga_driver;
 
 static int load_builtin_driver(void)
 {
   any_driver_t **d, *list[] = {
-/*     &sidplay_driver.common, */
+     &tga_driver.common,
     0
   };
   for (d=list; *d; ++d) {
@@ -449,13 +451,16 @@ static int driver_init(void)
 
   /* Load the default drivers from romdisk */
   /* VP : No more necessary, load drivers from dcplayarc.lua instead ! */
+  /* BEN : Use it to load tga driver since we need it to load fonts ...
+   *       Probably I'll add it to built-in drivers.
+   */
 #if 0
   {
     const char **p, *paths[] = {
-      "/pc" DREAMMP3_HOME "plugins/obj",
-      "/pc" DREAMMP3_HOME "plugins/vis/lpo",
-      "/pc" DREAMMP3_HOME "plugins/vis/fftvlr",
-      "/pc" DREAMMP3_HOME "plugins/inp/xing",
+      "/pc" DREAMMP3_HOME "plugins/img",
+/*       "/pc" DREAMMP3_HOME "plugins/vis/lpo", */
+/*       "/pc" DREAMMP3_HOME "plugins/vis/fftvlr", */
+/*       "/pc" DREAMMP3_HOME "plugins/inp/xing", */
 /*      "/pc" DREAMMP3_HOME "plugins/inp/ogg",
       "/pc" DREAMMP3_HOME "plugins/inp/sc68",
 */
@@ -466,7 +471,7 @@ static int driver_init(void)
 
     for (p=paths; *p; ++p) {
       SDDEBUG("[%s] : Load default drivers in [%s]\n", __FUNCTION__, *p);
-      err |= plugin_path_load(*p, 1);
+      err |= plugin_path_load(*p, 2);
     }
   }
 #endif
@@ -492,14 +497,14 @@ static int no_mt_init(void)
     goto error;
   }
 
-  /* Drawing system  init */
-  if (draw_init(SCREEN_W, SCREEN_H) < 0) {
+  /* Driver list */
+  if (driver_init() < 0) {
     err = __LINE__;
     goto error;
   }
 
-  /* Driver list */
-  if (driver_init() < 0) {
+  /* Drawing system init */
+  if (draw_init(SCREEN_W, SCREEN_H) < 0) {
     err = __LINE__;
     goto error;
   }

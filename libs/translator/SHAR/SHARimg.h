@@ -1,10 +1,10 @@
 /**
- * @ingroup SHARdesc
+ * @ingroup dcplaya_devel
  * @file    SHARimg.h
  * @brief   Image descriptor definition
  * @author  BeN(jamin) Gerard <ben@sashipa.com>
  * @date    2001/07/08
- * @version $Id: SHARimg.h,v 1.2 2002-10-05 09:43:58 benjihan Exp $
+ * @version $Id: SHARimg.h,v 1.3 2002-12-15 16:15:03 ben Exp $
  */
 
 #ifndef _SHARIMG_H_
@@ -16,7 +16,7 @@ struct SHARimgFileDesc;
 
 /** Image descriptor.
  *
- * @ingroup SHARdesc
+ * @ingroup dcplaya_devel
  * @author  BeN(jamin) Gerard <ben@sashipa.com>
  * @see SHARimgFileDesc
  * @see SHAtranslatorAudio
@@ -55,6 +55,7 @@ struct SHARimgDesc
 };
 
 /** Image file descriptor.
+ *  @ingroup dcplaya_devel
  *
  *   SHAimgFileDesc structure is as image file descriptor.
  *   That is why all fields of the structures are arrays of chars.

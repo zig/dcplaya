@@ -3,14 +3,14 @@
  * @brief     SHAtranslator "C" wrapper
  * @date      2002/09/27
  * @author    Ben(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAwrapper.cxx,v 1.2 2002-10-21 14:57:00 benjihan Exp $
+ * @version   $Id: SHAwrapper.cxx,v 1.3 2002-12-15 16:15:03 ben Exp $
  */
 
 #include "SHAwrapper/SHAwrapper.h"
 #include "SHAtk/SHAstreamMem.h"
 #include "SHAtk/SHAstreamFile.h"
 #include "SHAtranslator/SHAtranslator.h"
-#include "SHAtranslator/SHAtranslatorTga.h"
+// #include "SHAtranslator/SHAtranslatorTga.h"
 
 #include "sysdebug.h"
 
@@ -73,20 +73,70 @@ static SHAwrapperImage_t * SHAwrapperLoad(SHAtranslator * t,
   return (SHAwrapperImage_t *) data;
 }
 
+typedef struct translator_list_s 
+{
+  struct translator_list_s * next;
+  SHAtranslator * translator;
+} translator_list_t;
 
+static translator_list_t * tlist = 0;
+
+int SHAwrapperAddTranslator(void * t)
+{
+  translator_list_t * l;
+  if (!t) {
+	return -1;
+  }
+  
+  l = new translator_list_t;
+  if (!l) {
+	return -1;
+  }
+  l->next = tlist;
+  l->translator = (SHAtranslator *)t;
+  SDDEBUG("[%s] : [%s]\n", __FUNCTION__, l->translator->Extension()[0]);
+  tlist = l;
+  return 0;
+}
+
+int SHAwrapperDelTranslator(void * t)
+{
+  translator_list_t * l, * p;
+
+  for (p=0, l=tlist; l && l->translator != t; p=l, l=l->next)
+	;
+  if (!l) {
+	return -1;
+  }
+  if (p) {
+	p->next = l->next;
+  } else {
+	tlist = l->next;
+  }
+
+  SDDEBUG("[%s] : [%s]\n", __FUNCTION__, l->translator->Extension()[0]);
+
+  delete l;
+  return 0;
+}
+  
 /* Test all translators one by one...
  */
 static SHAwrapperImage_t * SHAwrapperLoad(SHAstream * in)
 {
+  translator_list_t * l;
+
   // Built-in translator(s)
   // $$$ ben : Do not make them static, it crash !
-  SHAtranslatorTga translatorTga;
-  SHAtranslator * translators [] =
-  {
-    &translatorTga,
-    0
-  };
-  SHAtranslator ** trans = translators , *t;
+//   SHAtranslatorTga translatorTga;
+//   SHAtranslator * translators [] =
+//   {
+//     &translatorTga,
+//     0
+//   };
+//   SHAtranslator ** trans = translators , *t;
+
+  SHAtranslator *t;
   SHAstreamPos pos;
 
   /* Save input stream starting position. */
@@ -96,10 +146,12 @@ static SHAwrapperImage_t * SHAwrapperLoad(SHAstream * in)
   }
 
   SHAwrapperImage_t * img = 0;
-  while (t = *trans++, t) {
+  for (l=tlist; l; l=l->next) {
+	t = l->translator;
+
     const char **ext;
     ext = t->Extension();
-//     SDDEBUG("[%s] : translator [%s]\n", __FUNCTION__, ext[0]);
+	SDDEBUG("[%s] : translator [%s]\n", __FUNCTION__, ext[0]);
     img = SHAwrapperLoad(t, in, pos);
     if (img) {
       break;

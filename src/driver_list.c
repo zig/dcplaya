@@ -5,7 +5,7 @@
  * @date    2002
  * @brief   Registered driver list.
  *
- * $Id: driver_list.c,v 1.11 2002-12-14 16:15:36 ben Exp $
+ * $Id: driver_list.c,v 1.12 2002-12-15 16:15:03 ben Exp $
  */
 
 #include <string.h>
@@ -64,6 +64,7 @@ void driver_list_shutdown(driver_list_t *dl)
 int driver_list_register(driver_list_t *dl, any_driver_t * driver)
 {
   const any_driver_t * d;
+  int err = 0;
 
   if (!dl || !driver) {
     return -1;
@@ -92,13 +93,18 @@ int driver_list_register(driver_list_t *dl, any_driver_t * driver)
   case IMG_DRIVER:
 	{
 	  img_driver_t * d = (img_driver_t *) driver;
-	  d->id = filetype_add(filetype_major_add("image"),
-						   driver->name, d->extensions);
-	  SDDEBUG("Driver '%s' : filetype %d\n", driver->name, d->id);
+	  /* Add to translator */
+	  err = AddTranslator(d->translator);
+	  if (!err) {
+		/* Add filetype. */
+		d->id = filetype_add(filetype_major_add("image"),
+							 driver->name, d->extensions);
+		SDDEBUG("Driver '%s' : filetype %d\n", driver->name, d->id);
+	  }
 	} break;
   }
 
-  return 0;
+  return err;
 }
 
 driver_list_t * driver_list_which(any_driver_t *driver)
@@ -148,6 +154,7 @@ int driver_list_unregister(driver_list_t *dl, any_driver_t * driver)
 	break;
   case IMG_DRIVER:
 	filetype_del(((img_driver_t *)driver)->id);
+	DelTranslator(((img_driver_t *)driver)->translator);
 	break;
   }
 
@@ -164,7 +171,7 @@ int driver_list_unregister(driver_list_t *dl, any_driver_t * driver)
   if (!d) {
     SDERROR("Failed to unregister [%s] from [%s].\n", driver->name, dl->name);
   } else {
-    SDDEBUG("Unregister [%s] from [%s] failed\n", driver->name, dl->name);
+    SDDEBUG("Unregister [%s] from [%s] success\n", driver->name, dl->name);
   }
 
   return d ? 0 : -1;

@@ -11,7 +11,6 @@ LIB_EXTRA := \
  ./SHAtranslator/SHAtranslatorImage.o\
  ./SHAtranslator/SHAtranslatorBlitter.o\
  ./SHAtranslator/SHAtranslatorResult.o\
- ./SHAtranslator/SHAtranslatorTga.o\
  ./SHAblitter/SHAblitter.o\
  ./SHAblitter/SHAblitterFastCopy.o\
  ./SHAblitter/SHAblitterFastStretch.o

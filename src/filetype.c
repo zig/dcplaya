@@ -4,7 +4,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   Deal with file types and extensions.
  *
- * $Id: filetype.c,v 1.9 2002-12-13 19:29:13 ben Exp $
+ * $Id: filetype.c,v 1.10 2002-12-15 16:15:03 ben Exp $
  */
 
 #include <stdlib.h>
@@ -109,16 +109,20 @@ static void delete_minor(int type)
 
   /* Protected filetype */
   if (reserved_type(type)) {
+ 	SDWARNING("Trying to remove reserved filetype [%04x]\n", type);
 	return;
   }
 
-  for (prev = &maj->minor, m = maj->minor; m; prev = &m, m = m->next) {
+  for (prev = &maj->minor, m = maj->minor; m; prev = &m->next, m = m->next) {
 	if (m->type == type) {
-	  (*prev)->next = m->next;
+	  *prev = m->next;
+	  SDDEBUG("Removing filetype [%04x,%s:%s]\n", type, maj->name, m->name);
 	  free(m);
 	  return;
 	}
   }
+
+  SDWARNING("Removing filetype [%04x] failed.\n", type);
 }
 
 int filetype_major(const char * name)
@@ -229,6 +233,8 @@ int filetype_add(int major_type, const char * name, const char *exts)
   major_type = FILETYPE_MAJOR_NUM(major_type);
   m = find_minor_name(major[major_type].minor, name);
   if (m) {
+ 	SDDEBUG("filetype [%04x, %s:%s] already exist\n",
+ 			m->type, major[major_type].name, name);
 	return -1;
 /* 	SDDEBUG("Replacing filetype [%04x, %s:%s]\n", */
 /* 			m->type, major[major_type].name, name); */

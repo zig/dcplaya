@@ -3,7 +3,7 @@
 #
 # (C) COPYRIGHT 2002 benjamin gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.19 2002-12-12 18:35:23 zigziggy Exp $ 
+# $Id: Makefile,v 1.20 2002-12-15 16:15:03 ben Exp $ 
 #
 TARGETS=dreammp3.elf
 
@@ -11,11 +11,12 @@ SH_LDFLAGS=-ml -m4-single-only -nostartfiles -nostdlib -static  -Wl,-Ttext=0x8c0
 
 SUBDIRS = arm plugins src data libs dynshell
 
+BUILTIN_DRIVERS=./plugins/img/tga/tga.lef
 WHOLE_LIBS=-lz,-ltranslator,-ldraw,-ldreammp3,-llua,-ldcutils,-lkallisti
 OPT_LIBS= -los -lgcc -lm
 ELF_EXTRA += -L./src -L./libs/z -L./libs/draw -L./libs/translator -L./libs/lua -L$(KOS_BASE)/lib\
  -Wl,--whole-archive,$(WHOLE_LIBS),--no-whole-archive\
- $(OPT_LIBS)
+ $(BUILTIN_DRIVERS) $(OPT_LIBS)
 
 #ELF_EXTRA +=  -shared -L./src -ldreammp3 -los
 #ELF_EXTRA +=  `find src -type f -name  '*.o'` -los
