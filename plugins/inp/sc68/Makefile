@@ -4,7 +4,7 @@
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sasahipa.com>
 #
 #
-# $Id: Makefile,v 1.6 2003-03-08 09:55:23 ben Exp $
+# $Id: Makefile,v 1.7 2004-07-16 07:35:21 vincentp Exp $
 #
 
 #SC68HOME=/home/ben/sc68-from-cvs/sc68
@@ -34,7 +34,7 @@ KOS_LOCAL_INCS := -Iinclude\
 
 OPTIMIZE = $(OPTIMIZE_FOR_SPEED)
 
-OBJS =  sc68_driver.o fs_rz.o sc68newdisk.o
+OBJS =  sc68_driver.o fs_rz.o sc68newdisk.o flen.o
 
 myall : all
 

@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   Gzipped compressed rom disk for KOS file system
  * 
- * $Id: fs_rz.c,v 1.4 2004-07-04 14:16:45 vincentp Exp $
+ * $Id: fs_rz.c,v 1.5 2004-07-16 07:35:21 vincentp Exp $
  */
 
 #include <arch/types.h>
@@ -203,7 +203,7 @@ static dirent_t * readdir(file_t fd)
 
 
 /* Open a file or directory */
-static file_t open(const char *fn, int mode)
+static file_t open(vfs_handler_t * vfs, const char *fn, int mode)
 {
   const char * name;
 
@@ -358,8 +358,15 @@ static size_t total(uint32 fd)
 
 /* Put everything together */
 static vfs_handler_t vh = {
-  "sc68-romdisk",       /* name */
-  0, 0, NULL,		/* In-kernel, no cacheing, next */
+  {
+    "/rz",              /* name */
+    0, 
+    0x00010000,		/* Version 1.0 */
+    0,			/* flags */
+    NMMGR_TYPE_VFS,	/* VFS handler */
+    NMMGR_LIST_INIT	/* list */
+  },
+  0, 0,		        /* In-kernel, no cacheing */
   open,
   close,
   read,
@@ -398,7 +405,7 @@ int fs_rz_init(const unsigned char * romdisk)
   SDDEBUG("[%s] : %d entries\n",__FUNCTION__, root_entries);
 
   /* Register with VFS */
-  if (fs_handler_add("/rz", &vh)) {
+  if (nmmgr_handler_add(&vh)) {
     SDERROR("-->fs_handler_add failed\n");
     return -1;
   }
@@ -430,5 +437,5 @@ int fs_rz_shutdown(void)
   memset(&mydh,0,sizeof(mydh));
   cur_dh = 0;
 
-  return fs_handler_remove(&vh);
+  return nmmgr_handler_remove(&vh);
 }
