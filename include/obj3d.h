@@ -3,7 +3,7 @@
  * @author    Ben(jamin) Gerard <ben@sashipa.com>
  * @date      2001/10/20
  * @brief     Simple 3D objects defintions for 3D-object plugins
- * @version   $Id: obj3d.h,v 1.4 2002-10-03 21:43:34 benjihan Exp $
+ * @version   $Id: obj3d.h,v 1.5 2003-01-20 14:19:43 ben Exp $
  */
 
 /* Copyright (C) 1998-2001 Ben(jamin) Gerard */
@@ -16,15 +16,9 @@
 DCPLAYA_EXTERN_C_START
 
 
+#include "vtx.h"
 /* #include "any_driver.h" */
 
-/** Vertex */
-typedef struct {
-  float x;  /**< X axis coordinate */
-  float y;  /**< Y axis coordinate */
-  float z;  /**< Z axis coordinate */
-  float w;  /**< W homogeneous coordinate */
-} vtx_t;
 
 /** Triangle */
 typedef struct {
