@@ -6,7 +6,7 @@
 ---
 ---   A color is table. Color operators use table' ones.
 ---
---- $Id: color.lua,v 1.7 2003-03-08 18:30:44 ben Exp $
+--- $Id: color.lua,v 1.8 2003-03-19 21:58:03 ben Exp $
 ---
 
 color_loaded = nil
@@ -67,18 +67,24 @@ end
 function color_new(a,r,g,b,noclip)
    if type(a) == "string" then
       noclip = r
-      local s = (strsub(a,1,1) == "#" and strsub(a,2)) or a
-      local len = strlen(s)
-      a = 1
-      if len > 6 then
-	 a = floor(mod(tonumber(strsub(s,1,len-6), 16) or 255,256)) / 255
-	 s = strsub(s,len-6+1)
+      if strsub(a,1,1) ~= "#" then
+	 a = type(rgb_color_table) == "table" and rgb_color_table[a]
+      else
+	 local s = strsub(a,2)
+	 local len = strlen(s)
+	 a = 1
+	 if len > 6 then
+	    a = floor(mod(tonumber(strsub(s,1,len-6), 16) or 255,256)) / 255
+	    s = strsub(s,len-6+1)
+	 end
+	 local n = tonumber(s,16) or 16777215
+	 b = floor(mod(n,256)) / 255
+	 g = floor(mod(n/256,256)) / 255
+	 r = floor(mod(n/65536,256)) / 255
       end
-      local n = tonumber(s,16) or 16777215
-      b = floor(mod(n,256)) / 255
-      g = floor(mod(n/256,256)) / 255
-      r = floor(mod(n/65536,256)) / 255
-   elseif type(a) == "table" then
+   end
+
+   if type(a) == "table" then
       b = rawget(a,4)
       g = rawget(a,3)
       r = rawget(a,2)
@@ -436,6 +442,9 @@ settagmethod(color_tag, "unm",		color_minus)
 settagmethod(color_tag, "concat",	color_concat)
 settagmethod(color_tag, "index",	color_index)
 settagmethod(color_tag, "settable",	color_settable)
+
+-- Load rgb color table
+dolib("rgb")
 
 color_loaded = 1
 return color_loaded
