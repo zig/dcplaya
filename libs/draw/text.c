@@ -5,7 +5,7 @@
  * @date    2002/02/11
  * @brief   drawing and formating text primitives
  *
- * $Id: text.c,v 1.11 2003-03-18 14:48:20 ben Exp $
+ * $Id: text.c,v 1.12 2003-03-21 03:37:13 ben Exp $
  */
 
 #include <stdarg.h>
@@ -286,7 +286,7 @@ static float size_of_char(float * h, int c)
 {
   myglyph_t * g;
   float wc, hc;
-  const float xscale = current_gc->text.size / curfont->wc;
+  const float xscale = current_gc->text.size / 16 /*curfont->wc*/;
   const float yscale = xscale * current_gc->text.aspect;
 
   g = curglyph(c);
@@ -319,7 +319,7 @@ static float size_of_str(float * h, const char *s)
   unsigned int c;
   float sum = 0, max_h = 0;
 
-  const float xscale = current_gc->text.size / curfont->wc;
+  const float xscale = current_gc->text.size / 16 /*curfont->wc*/;
   const float yscale = xscale * current_gc->text.aspect;
 
   while ((c=(*s++)&255), c) {
@@ -342,7 +342,7 @@ static float size_of_strf(float *h, const char *s, va_list list)
   int c, esc = 0;
   float sum = 0, maxh = 0;
   gc_text_t savegc;
-  float xscale = current_gc->text.size / curfont->wc;
+  float xscale = current_gc->text.size / 16 /*curfont->wc*/;
   float yscale = xscale * current_gc->text.aspect;
 
 
@@ -352,7 +352,7 @@ static float size_of_strf(float *h, const char *s, va_list list)
     float ch;
     if (esc) {
       c = do_escape(c, &list);
-      xscale = current_gc->text.size / curfont->wc;
+      xscale = current_gc->text.size / 16 /*curfont->wc*/;
       yscale = xscale * current_gc->text.aspect;
       esc = 0;
     } else if (c==current_gc->text.escape) {
@@ -613,7 +613,7 @@ float text_draw_vstrf(float x1, float y1, float z1,
     return 0;
   }
 
-  xscale = current_gc->text.size / curfont->wc;
+  xscale = current_gc->text.size / 16 /*curfont->wc*/;
   yscale = xscale * current_gc->text.aspect;
 
   flags = 0
@@ -629,7 +629,7 @@ float text_draw_vstrf(float x1, float y1, float z1,
     if (esc) {
       esc = 0;
       c = do_escape(c, &list);
-      xscale = current_gc->text.size / curfont->wc;
+      xscale = current_gc->text.size / 16 /*curfont->wc*/;
       yscale = xscale * current_gc->text.aspect;
     } else if (c==current_gc->text.escape) {
       c = -1;
@@ -718,7 +718,7 @@ float text_draw_str_inside(float x1, float y1, float x2, float y2, float z1,
     return 0.0f;
   }
 
-  xscale = current_gc->text.size / curfont->wc;
+  xscale = current_gc->text.size / 16 /*curfont->wc*/;
   strw = size_of_str(&strh, s);
 
   if (strw > boxw || strh > boxh) {
