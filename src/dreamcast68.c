@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.17 2002-09-14 04:02:04 zig Exp $
+ * @version   $Id: dreamcast68.c,v 1.18 2002-09-14 06:57:36 zig Exp $
  */
 
 //#define RELEASE
@@ -561,6 +561,7 @@ static int no_mt_init(void)
 
   /* Call "dcplayarc.lua" */
   shell_command("dofile (home..[[dcplayarc.lua]])");
+  //shell_wait();
 
 
  error:

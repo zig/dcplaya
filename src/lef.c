@@ -1,11 +1,11 @@
 /**
  * @file    lef.c
- * @brief   ELF loader - Based on elf.c from KallistiOS 1.1.5 
  * @author  Benjamin Gerard <ben@sashipa.com>
  * @author  Vincent Penne
  * @author  Dan Potter
+ * @brief   ELF library loader - Based on elf.c from KallistiOS 1.1.5 
  *
- * $Id: lef.c,v 1.5 2002-09-13 16:04:19 zig Exp $
+ * @version $Id: lef.c,v 1.9 2002-09-14 06:57:36 zig Exp $
  */
 
 #include <malloc.h>
@@ -14,9 +14,10 @@
 #include <kos/fs.h>
 
 #include "lef.h"
+#include "sysdebug.h"
 
 // VP : define this to have full debug logging informations
-//#define FULL_DEBUG
+#define FULL_DEBUG
 
 extern symbol_t main_symtab[];
 extern int main_symtab_size;
@@ -25,41 +26,42 @@ static int verbose = 0;
 
 static char * section_str(int type)
 {
-  switch(type & 0x0F) {
-  case SHT_NULL:       return "Inactive.........";
-  case SHT_PROGBITS:   return "Program-code/data";
-  case SHT_SYMTAB:     return "Full-symbol-table";
-  case SHT_STRTAB:     return "String-table.....";
-  case SHT_RELA:       return "Relocation-table.";
-  case SHT_HASH:       return "Sym-tab-hashtable";
-  case SHT_DYNAMIC:    return "Dynamic-link-info";
-  case SHT_NOTE:       return "Notes............";
-  case SHT_NOBITS:     return "NoBits...........";
-  case SHT_REL:        return "Relocation table.";
-  case SHT_SHLIB:      return "Sharedlib.Invalid";
-  case SHT_DYNSYM:     return "Dynamic-only-symb";
-  default:
-                       return "?????????????????";
+  switch(type & SHT_TYPE) {
+  case SHT_NULL:          return "Inactive..........";
+  case SHT_PROGBITS:      return "Program-code/data.";
+  case SHT_SYMTAB:        return "Full-symbol-table.";
+  case SHT_STRTAB:        return "String-table......";
+  case SHT_RELA:          return "Relocation-table..";
+  case SHT_HASH:          return "Sym-tab-hashtable.";
+  case SHT_DYNAMIC:       return "Dynamic-link-info.";
+  case SHT_NOTE:          return "Notes.............";
+  case SHT_NOBITS:        return "NoBits............";
+  case SHT_REL:           return "Relocation table..";
+  case SHT_SHLIB:         return "Sharedlib.Invalid.";
+  case SHT_DYNSYM:        return "Dynamic-only-symb.";
+  case SHT_INIT_ARRAY:    return "Init functions....";
+  case SHT_FINI_ARRAY:    return "Term functions....";
+  case SHT_PREINIT_ARRAY: return "Pre-init functions";
+  case SHT_GROUP:         return "Group.............";
+  case SHT_SYMTAB_SHNDX:  return "Symbol table index";
+  default:                return "??????????????????";
   }
 }
 
 /* Display stringtable */
-void display_stringtable(char *stringtab, int stringsize, int n)
+static void display_stringtable(char *stringtab, int stringsize, int n)
 {
-#ifdef FULL_DEBUG
   char *s;
   int i;
   
-  dbglog(DBG_DEBUG, "*************** STRING TABLE %d **************\n", n);
+  SDDEBUG("*************** STRING TABLE %d **************\n", n);
   for (i=0, s=stringtab; s<stringtab+stringsize; ++i) {
-    dbglog(DBG_DEBUG, "[%4d] [%08x] [%s]\n",
-	   i, s-stringtab, s);
+    SDDEBUG("[%4d] [%08x] [%s]\n",
+	    i, s-stringtab, s);
     while (*s++);
   }
-  dbglog(DBG_DEBUG, "**********************************************\n");
-#endif
+  SDDEBUG("**********************************************\n");
 }
-
 
 static int bind_chr(unsigned int bind) {
   char bind_tab[] = { 'L', 'G', 'W', '.',
@@ -71,11 +73,15 @@ static int bind_chr(unsigned int bind) {
 
 static void display_symb(struct lef_sym_t *symb, char *strtab, int tag)
 {
+  int lvl = tag ? sysdbg_info : sysdbg_debug;
+
   char *type_str[] = { "UDF", "OBJ", "FCT", "SEC",
 		       "FIL", "???", "???", "???",
                        "???", "???", "???", "???",
                        "???", "???", "???", "???"};
   char section[8];
+
+  lvl = lvl;
 
   switch (symb->shndx) {
   case SHN_ABS:
@@ -108,59 +114,62 @@ static void display_symb(struct lef_sym_t *symb, char *strtab, int tag)
   section[4] = bind_chr(ELF32_ST_BIND(symb->info));
   section[5] = 0;
 
-#ifdef FULL_DEBUG
-  dbglog(DBG_DEBUG, "%s[%s] val:[%08x] sz:[%06x] %s [%s]\n",
-	 tag ? "SYM: " : "",
-	 type_str[ELF32_ST_TYPE(symb->info)],
-	 symb->value,
-	 symb->size,
-	 section,
-	 symb->name + strtab);
-#endif
+  SDMSG(lvl, "%s[%s] val:[%08x] sz:[%06x] %s [%s]\n",
+	tag ? "SYM: " : "",
+	type_str[ELF32_ST_TYPE(symb->info)],
+	symb->value,
+	symb->size,
+	section,
+	symb->name + strtab);
 }
 
-static display_section(int i, struct lef_shdr_t *shdrs, int tag)
+static void display_section(int i, struct lef_shdr_t *shdrs, int tag)
 {
-#ifdef FULL_DEBUG
-    dbglog(DBG_DEBUG, "%s#%02X @%08x o:%06x s:%06x a:%02x f:%08x [%s] [%s]\n",
-	   tag ? "SEC: " : "",
-	   i, shdrs->addr,shdrs->offset, shdrs->size,shdrs->addralign,
-	   shdrs->flags, section_str(shdrs->type), shdrs->name);
-#endif
+  SDMSG(tag ? sysdbg_info : sysdbg_debug,
+	"%s#%02X "
+	"@%08x of:%06x sz:%06x al:%02x "
+	"fl:%08x li:%08x in:%08x "
+	"%02X-[%s] [%s]\n",
+	tag ? "SEC: " : "", i,
+	shdrs->addr, shdrs->offset, shdrs->size, shdrs->addralign,
+	shdrs->flags, shdrs->link, shdrs->info,
+	shdrs->type, section_str(shdrs->type),
+	shdrs->name);
 }
 
 static void display_sections(struct lef_hdr_t *hdr, struct lef_shdr_t *shdrs,
 			     int tag)
 {
   int i;
-#ifdef FULL_DEBUG
-  dbglog(DBG_DEBUG,"--------------------------------------------------\n");
-  dbglog(DBG_DEBUG,"SECTIONS [%d]\n", hdr->shnum);
-  dbglog(DBG_DEBUG,"--------------------------------------------------\n");
+  int lvl = tag ? sysdbg_info : sysdbg_debug;
+
+  lvl = lvl;
+  SDMSG(lvl, "--------------------------------------------------\n");
+  SDMSG(lvl, "SECTIONS [%d]\n", hdr->shnum);
+  SDMSG(lvl, "--------------------------------------------------\n");
   for (i=0; i<hdr->shnum; ++i) {
     display_section(i, shdrs+i, tag);
   }
-  dbglog(DBG_DEBUG,"--------------------------------------------------\n");
-#endif
+  SDMSG(lvl, "--------------------------------------------------\n");
 }
 
 static void display_symbtable(struct lef_sym_t * stab,
 			      struct lef_shdr_t *shdrs, char *stringtab,
 			      int tag)
 {
+  int lvl = tag ? sysdbg_info : sysdbg_debug;
   int stabsz, j;
 
-#ifdef FULL_DEBUG
+  lvl = lvl;
   stabsz = shdrs->size / sizeof(struct lef_sym_t);
-  dbglog(DBG_DEBUG, "--------------------------------------------------\n");
-  dbglog(DBG_DEBUG, "SYMBOL-TABLE [%s] [%s] (%d)\n",
-	 section_str(shdrs->type), shdrs->name, stabsz);
-  dbglog(DBG_DEBUG, "--------------------------------------------------\n");
+  SDMSG(lvl, "--------------------------------------------------\n");
+  SDMSG(lvl, "SYMBOL-TABLE [%s] [%s] (%d)\n",
+	section_str(shdrs->type), shdrs->name, stabsz);
+  SDMSG(lvl, "--------------------------------------------------\n");
   for (j=0; j<stabsz; ++j) {
     display_symb(stab + j, stringtab, tag);
   }
-  dbglog(DBG_DEBUG, "--------------------------------------------------\n");
-#endif
+  SDMSG(lvl, "--------------------------------------------------\n");
 }
 
 /* Finds a given symbol in a relocated ELF symbol table */
@@ -189,6 +198,28 @@ static int find_sym(char *name, struct lef_sym_t* table, int tablelen) {
   return -1;
 }
 
+static int loadfile(int fd, char * img, int sz)
+{
+  //const int block = (16<<10);
+  const int block = (1<<10);
+
+  while (sz) {
+    int n = sz;
+    if (n > block) {
+      n = block;
+    }
+    if (fs_read(fd, img, n) != n) {
+      SDERROR("Read error\n");
+      return -1;
+    }
+    SDDEBUG(".");
+    sz -= n;
+    img += n;
+  }
+  SDDEBUG("\nLoad completed\n");
+  return 0;
+}
+
 /* Pass in a file descriptor from the virtual file system, and the
    result will be NULL if the file cannot be loaded, or a pointer to
    the loaded and relocated executable otherwise. The second variable
@@ -211,21 +242,23 @@ lef_prog_t *lef_load(uint32 fd)
   char                  *sectionname = 0;
   int                   errors = 0;
   int                   warnings = 0;
-  int                   section_copied = 0;
+
+  const int align_lef=256;
+
+  SDDEBUG(">>\n");
+  sysdbg_indent(1, 0);
 
   /* Load the file: needs to change to just load headers */
   sz = fs_total(fd);
-  dbglog(DBG_DEBUG,"** " __FUNCTION__ " : Loading ELF file of size %d\n", sz);
-	
+  SDINFO("Loading ELF file of size %d\n", sz);
   img = calloc(1,sz);
+
   if (!img) {
-    dbglog(DBG_ERROR, 
-	   "!! " __FUNCTION__ " : Can't allocate %d bytes for ELF load\n", sz);
+    SDERROR("Can't allocate %d bytes for ELF load\n", sz);
     goto error;
   }
-  if (fs_read(fd, img, sz) != sz) {
-    dbglog(DBG_ERROR,
-	   "!! " __FUNCTION__ " : Read error\n");
+
+  if (loadfile(fd, img, sz)) {
     goto error;
   }
   fs_close(fd);
@@ -234,21 +267,20 @@ lef_prog_t *lef_load(uint32 fd)
   /* Header is at the front */
   hdr = (struct lef_hdr_t *)(img+0);
   if (hdr->ident[0] != 0x7f || strncmp(hdr->ident+1, "ELF", 3)) {
-    dbglog(DBG_ERROR, "!! " __FUNCTION__ " : Not a valid ELF\n");
+    SDERROR("Not a valid ELF\n");
     hdr->ident[4] = 0;
-    dbglog(DBG_ERROR, "!! " __FUNCTION__ " : hdr->ident is %d/%s\n",
-	   hdr->ident[0], hdr->ident+1);
+    SDERROR("hdr->ident is %d/%s\n",
+	    hdr->ident[0], hdr->ident+1);
     goto error;
   }
   if (hdr->ident[4] != 1 || hdr->ident[5] != 1) {
-    dbglog(DBG_ERROR, "!! " __FUNCTION__ " : Invalid architecture flags\n");
+    SDERROR("Invalid architecture flags\n");
     goto error;
   }
   if (hdr->machine != 0x2a) {
-    dbglog(DBG_ERROR, "!! " __FUNCTION__ " : Invalid machine flags\n");
+    SDERROR("Invalid machine flags\n");
     goto error;
   }
-  dbglog(DBG_DEBUG,"** " __FUNCTION__ " : Indentification test [completed]\n");
 
   shdrs = (struct lef_shdr_t *)(img + hdr->shoff);
   sectionname = (char*)(img + shdrs[hdr->shstrndx].offset);
@@ -256,11 +288,6 @@ lef_prog_t *lef_load(uint32 fd)
   /* Reloc section name names */
   for (i=0; i<hdr->shnum; ++i) {
     shdrs[i].name = (uint32)(sectionname + shdrs[i].name);
-  }
-
-  /* Display sections */
-  if (verbose) {
-    display_sections(hdr,shdrs,0);
   }
 
   /* Display string tables */
@@ -286,26 +313,27 @@ lef_prog_t *lef_load(uint32 fd)
       }
     }
     if (cnt > 1) {
-      dbglog(DBG_ERROR, "!! " __FUNCTION__ 
-	     " : Too many string table [%d]\n", cnt);
+      SDERROR("Too many string table [%d]\n", cnt);
       goto error;
     }
   }
   if (!stringtab) {
-    dbglog(DBG_ERROR, "!! " __FUNCTION__ " : No string table\n");
+    SDERROR("No string table\n");
     goto error;
   }
 
   /* Display symbol tables */
-  for (i=0; i<hdr->shnum; i++) {
-    if (shdrs[i].type != SHT_SYMTAB && shdrs[i].type != SHT_DYNSYM) {
-      continue;
-    }
-    if (verbose) {
+  /*
+  if (verbose) {
+    for (i=0; i<hdr->shnum; i++) {
+      if (shdrs[i].type != SHT_SYMTAB && shdrs[i].type != SHT_DYNSYM) {
+	continue;
+      }
       display_symbtable((struct lef_sym_t *)(img + shdrs[i].offset),
 			shdrs+i, stringtab,0);
     }
   }
+  */
 
   /* Locate the symbol table */
   {
@@ -319,31 +347,27 @@ lef_prog_t *lef_load(uint32 fd)
       }
     }
     if (cnt > 1) {
-      dbglog(DBG_ERROR, "!! " __FUNCTION__
-	     " : Too many symbol tables [%d]\n", cnt);
+      SDERROR("Too many symbol tables [%d]\n", cnt);
       goto error;
     }
   }
 
   if (!symtabhdr) {
-    dbglog(DBG_ERROR, "!! " __FUNCTION__ " : No symbol table\n");
+    SDERROR("No symbol table\n");
     goto error;
   }
 
   if (symtabhdr->entsize != sizeof(struct lef_sym_t)) {
-    dbglog(DBG_ERROR, "!! " __FUNCTION__
-	   " : Symbol table entry size (%d) != struct lef_sym_t (%d)\n",
-	   symtabhdr->entsize, sizeof(struct lef_sym_t));
+    SDERROR("Symbol table entry size (%d) != struct lef_sym_t (%d)\n",
+	    symtabhdr->entsize, sizeof(struct lef_sym_t));
     goto error;
   }
   symtab = (struct lef_sym_t *)(img + symtabhdr->offset);
   symtabsize = symtabhdr->size / sizeof(struct lef_sym_t);
   if (symtabhdr->size % sizeof(struct lef_sym_t)) {
-    dbglog(DBG_ERROR, "!! " __FUNCTION__ " : Not multiple of symbol struct\n");
+    SDERROR("Not multiple of symbol struct\n");
     goto error;
   }
-
-  dbglog(DBG_DEBUG,"** " __FUNCTION__ " : Symbol table test [completed]\n");
 
   /* Build the final memory image */
   sz = 0;
@@ -361,47 +385,40 @@ lef_prog_t *lef_load(uint32 fd)
   /* Alloc final memory image */
   out = calloc(1,sizeof(lef_prog_t));
   if (!out) {
-    dbglog(DBG_ERROR,
-	   "!! " __FUNCTION__ " : Can't alloc %d bytes for prg structure\n",
-	   sizeof(lef_prog_t));
+    SDERROR("Can't alloc %d bytes for prg structure\n", sizeof(lef_prog_t));
     goto error;
   }
   out->ref_count = 0;
-  out->data = imgout = calloc(1,sz);
+  out->data = calloc(1, sz + align_lef - 1);
   if (!out->data) {
-    dbglog(DBG_ERROR,
-	   "!! " __FUNCTION__ "  Can't allocate %d bytes for prg image\n", sz);
+    SDERROR("Can't allocate %d bytes for prg image\n", sz);
     goto error;
   }
   out->size = sz;
+  imgout = (char *)(( (uint32)out->data + align_lef - 1) & ~(align_lef-1));
 
   /* Set section real addres, and copy */
-  dbglog(DBG_DEBUG, "------------------------------------------------\n");
-  dbglog(DBG_DEBUG, "CREATE IMAGE\n");
-  dbglog(DBG_DEBUG, "------------------------------------------------\n");
+  SDDEBUG( "------------------------------------------------\n");
+  SDDEBUG( "CREATE IMAGE\n");
+  SDDEBUG( "------------------------------------------------\n");
   for (i=0; i<hdr->shnum; i++) {
-    shdrs[i].addr += imgout;
+    shdrs[i].addr += (unsigned int)imgout;
     if (shdrs[i].flags & SHF_ALLOC) {
-      //      section_copied |= 1<<i;
       if (shdrs[i].type == SHT_NOBITS) {
 	memset((void *)shdrs[i].addr, 0, shdrs[i].size);
-	dbglog(DBG_DEBUG, "CLEARED ");
+	SDDEBUG( "CLEARED ");
       }
       else {
 	memcpy((void *)shdrs[i].addr, img+shdrs[i].offset, shdrs[i].size);
-	dbglog(DBG_DEBUG, "COPIED  ");
+	SDDEBUG( "COPIED  ");
       }
     } else {
       //section_copied &= ~(1<<i);
-      dbglog(DBG_DEBUG,   "SKIPPED ");
+      SDDEBUG(   "SKIPPED ");
     }
-    display_section(i, shdrs+i,0);
+    display_section(i, shdrs+i, 0);
   }
-  dbglog(DBG_DEBUG,"** " __FUNCTION__ " : Fill Image [completed]\n");
 
-  dbglog(DBG_DEBUG,"***********************************************\n");
-  dbglog(DBG_DEBUG,"***********************************************\n");
-  dbglog(DBG_DEBUG,"***********************************************\n");
   /* Relocate symtab entries for quick access */
   for (i=0; i<symtabsize; i++) {
     symtab[i].name = (uint32)(stringtab + symtab[i].name);
@@ -409,6 +426,7 @@ lef_prog_t *lef_load(uint32 fd)
       symtab[i].value += shdrs[symtab[i].shndx].addr;
     }
   }
+
   if (verbose) {
     display_sections(hdr,shdrs,1);
     display_symbtable(symtab, symtabhdr, 0, 1);
@@ -421,23 +439,22 @@ lef_prog_t *lef_load(uint32 fd)
     int link = shdrs[i].link;
 
     if (shdrs[i].type != SHT_RELA) {
-      dbglog(DBG_DEBUG,"** " __FUNCTION__
-	     " : Section [%s] skipped\n", section_str(shdrs[i].type));
+#ifdef FULL_DEBUG
+      SDDEBUG("Section [%s] skipped\n", section_str(shdrs[i].type));
+#endif
       continue;
     }
     reltab = (struct lef_rela_t *)(img + shdrs[i].offset);
 
     if ( shdrs[i].entsize != sizeof(struct lef_rela_t)) {
-      dbglog(DBG_ERROR,"!! " __FUNCTION__
-	     " : Relocation entry size (%d) != lef_rela_t (%d)\n",
-	     shdrs[i].entsize,sizeof(struct lef_rela_t));
+      SDERROR("Relocation entry size (%d) != lef_rela_t (%d)\n",
+	      shdrs[i].entsize,sizeof(struct lef_rela_t));
       ++errors;
       continue;
     }
     reltabsize = shdrs[i].size / sizeof(struct lef_rela_t);
     if (shdrs[i].size % sizeof(struct lef_rela_t)) {
-      dbglog(DBG_ERROR,"!! " __FUNCTION__
-	     " : Weird relatif table size : not multiple : skip\n");
+      SDERROR("Weird relatif table size : not multiple : skip\n");
       ++errors;
       continue;
     }
@@ -454,15 +471,14 @@ lef_prog_t *lef_load(uint32 fd)
 
     sect = shdrs[i].info;
     if (sect >= hdr->shnum) {
-      dbglog(DBG_ERROR, "!! " __FUNCTION__ " : Bad section %x\n",sect);
+      SDERROR("Bad section %x\n",sect);
       ++errors;
     }
     
     if (! (shdrs[sect].flags & SHF_ALLOC)) {
       /* This is no more considerate as an Error because it could be debug
 	 info. A Warning should be OK. */
-      dbglog(DBG_WARNING, "!! " __FUNCTION__
-	     " : Can't reloc uncopied section : ");
+      SDWARNING("Can't reloc uncopied section : ");
       display_section(sect, shdrs+sect, 0);
       ++warnings;
       continue;
@@ -474,11 +490,11 @@ info = section header index of section to which reloc applies
     */
    
     if (verbose) {
-      dbglog(DBG_DEBUG, "------------------------------------------------\n");
-      dbglog(DBG_DEBUG, "RELOCATON "); display_section(i,shdrs+i,0); 
-      dbglog(DBG_DEBUG, "SECTION   "); display_section(info,shdrs+info,0); 
-      dbglog(DBG_DEBUG, "SYMBOL    "); display_section(link,shdrs+link,0); 
-      dbglog(DBG_DEBUG, "------------------------------------------------\n");
+      SDINFO( "------------------------------------------------\n");
+      SDINFO( "RELOCATON "); display_section(i,shdrs+i,0); 
+      SDINFO( "SECTION   "); display_section(info,shdrs+info,0); 
+      SDINFO( "SYMBOL    "); display_section(link,shdrs+link,0); 
+      SDINFO( "------------------------------------------------\n");
     }
 
     for (j=0; j<reltabsize; j++) {
@@ -487,8 +503,8 @@ info = section header index of section to which reloc applies
       char * name;
 
       if (ELF32_R_TYPE(reltab[j].info) != R_SH_DIR32) {
-	dbglog(DBG_ERROR, "!! " __FUNCTION__ " : Unknown RELA type %02x\n",
-	       ELF32_R_TYPE(reltab[j].info));
+	SDERROR("Unknown RELA type %02x\n",
+		ELF32_R_TYPE(reltab[j].info));
 	++errors;
 	continue;
       }
@@ -496,9 +512,8 @@ info = section header index of section to which reloc applies
       /* Get symbol idx */
       sym = ELF32_R_SYM(reltab[j].info);
       if (sym >= symtabsize) {
-	dbglog(DBG_ERROR, "!! " __FUNCTION__
-	       " : Symbol idx out of range [%d >= %d]\n",
-	       sym, symtabsize);
+	SDERROR("Symbol idx out of range [%d >= %d]\n",
+		sym, symtabsize);
 	++errors;
 	continue;
       }
@@ -506,11 +521,9 @@ info = section header index of section to which reloc applies
       /* Check symbol section */
       if (symtab[sym].shndx >= hdr->shnum
 	  /*&& symtab[sym].shndx != SHN_COMMON*/) {
-	dbglog(DBG_ERROR, "!! " __FUNCTION__
-	       " : Invalid symbol section index : %04x\n", symtab[sym].shndx);
+	SDERROR("Invalid symbol section index : %04x\n", symtab[sym].shndx);
 	++errors;
 	continue;
-	
       }
 
       /* Get name */
@@ -522,8 +535,7 @@ info = section header index of section to which reloc applies
 	/* Undefined symbol must be searched in the main symbol table */
 	main_addr = find_main_sym(name);
 	if (!main_addr) {
-	  dbglog(DBG_ERROR, "!! " __FUNCTION__ 
-		 " : Undefined symbol [%s]\n", name);
+	  SDERROR("Undefined symbol [%s]\n", name);
 	  display_symb(symtab + sym, 0, 0);
 	  ++errors;
 	  continue;	  
@@ -539,13 +551,11 @@ info = section header index of section to which reloc applies
 	break;
       case STT_FILE:
       default:
-	dbglog(DBG_WARNING, "!!  " __FUNCTION__
-	       " : What to do with this symbol ?\n");
+	SDWARNING("What to do with this symbol ?\n");
 	display_symb(symtab + sym, 0, 0);
 	++warnings;
 	continue;
       }
-
 
       {
 	uint32 * addr;
@@ -555,7 +565,6 @@ info = section header index of section to which reloc applies
 	uint32 symbolbase;
 
 	addr = (uint32 *)(shdrs[sect].addr + reltab[j].offset);
-
 
 	if (main_addr) {
 	  symbolbase  = (uint32)main_addr;
@@ -571,18 +580,16 @@ info = section header index of section to which reloc applies
 
 	/* Test address to relocate */
 	if ((uint32)addr<(uint32)imgout || (uint32)addr>=(uint32)imgout+sz) {
-	  dbglog(DBG_ERROR, "!! " __FUNCTION__
-		 " : Relocation patch @%p out of range [%p-%p]\n",
-		 addr,imgout,imgout+sz);
+	  SDERROR("Relocation patch @%p out of range [%p-%p]\n",
+		  addr,imgout,imgout+sz);
 	  ++errors;
 	  continue;
 	}
-	/* Test address to relocate */
+	/* Test relocated address */
 	if (!main_addr &&
 	    ((uint32)rel<(uint32)imgout || (uint32)rel>=(uint32)imgout+sz)) {
-	  dbglog(DBG_ERROR, "!! " __FUNCTION__
-		 " : Relocation @%p out of range [%p-%p]\n",
-		 rel,imgout,imgout+sz);
+	  SDERROR("Relocated @%p out of range [%p-%p]\n",
+		  rel,imgout,imgout+sz);
 	  ++errors;
 	  continue;
 	}
@@ -595,8 +602,7 @@ info = section header index of section to which reloc applies
 /* 	} */
 
 	if (verbose) {
-	  dbglog(DBG_DEBUG,"** " __FUNCTION__
-		 " : %c %c @%08x [=%08x] <= [%08x] [+%08x] [%s]\n" ,
+	  SDINFO("%c %c @%08x [=%08x] <= [%08x] [+%08x] [%s]\n" ,
 		 main_addr ? 'M' : 'L',
 		 bind_chr(ELF32_ST_BIND(symtab[sym].info)),
 		 addr, off, 
@@ -609,22 +615,35 @@ info = section header index of section to which reloc applies
     }
   }
   if (reltab == NULL) {
-    dbglog(DBG_WARNING, "!! " __FUNCTION__ 
-	   " lef_load warning: found no RELA sections; did you forget -r?\n");
+    SDWARNING("No RELA sections found.\n");
     ++warnings;
+  }
+
+  /* Find/Call c-tor init : */
+  if (!errors) {
+    SDDEBUG("Searching ctor sections\n");
+    for (i=0; i<hdr->shnum; i++) {
+      if (!strcmp((char *)shdrs[i].name, ".ctors")) {
+	SDDEBUG( "CTOR "); display_section(i,shdrs+i,0); 
+	for (j=0; j<shdrs[i].size; j+=4) {
+	  uint32 * rout = *(uint32 **)shdrs[i].addr; 
+	  SDDEBUG("-->%p [%p [%08x]]\n", shdrs[i].addr, rout, *rout);
+	  ((void (*)(void))rout)();
+	}
+      }
+    }
   }
   
   /* Look for the kernel negotiation symbols and deal with that */
   {
     int mainsym /*, getsvcsym, notifysym*/;
 
-    mainsym = find_sym("_ko_main", symtab, symtabsize);
+    mainsym = find_sym("_lef_main", symtab, symtabsize);
     if (mainsym < 0) {
-      dbglog(DBG_ERROR, "!! " __FUNCTION__ 
-	     " lef_load: ELF contains no _ko_main\n");
+      SDERROR( "ELF contains no _lef_main\n");
       goto error;
     }
-    out->ko_main = (int (*)(int,char**))(symtab[mainsym].value);
+    out->main = (int (*)(int,char**))(symtab[mainsym].value);
   }
 
   if (errors) {
@@ -635,16 +654,14 @@ info = section header index of section to which reloc applies
   img = 0;
 
   if (warnings) {
-    dbglog(DBG_DEBUG,
-	   "** " __FUNCTION__ " Warnings:%d\n", warnings);
+    SDWARNING(" Warnings:%d\n", warnings);
   }
 
-  dbglog(DBG_DEBUG,
-	 "<< " __FUNCTION__ " image [@%08x, %08x] entry [%08x]\n",
-	 out->data, out->size, out->ko_main);
-  return out;
+  SDDEBUG("image [@%08x, @%08x, %08x] entry [%08x]\n",
+	  out->data, imgout, out->size, out->main);
+  goto end;
 
-  error:
+ error:
   if (fd) {    
     fs_close(fd);
   }
@@ -657,16 +674,21 @@ info = section header index of section to which reloc applies
   if (img) {
     free(img);
   }
-  dbglog(DBG_DEBUG,
-	 "** " __FUNCTION__ " Errors:%d Warnings:%d\n", errors, warnings);
-  dbglog(DBG_DEBUG, "<< " __FUNCTION__ " : Failed\n");
-  return 0;
+  SDINFO(" Errors:%d Warnings:%d\n", errors, warnings);
+  SDINFO(" : Failed\n");
+
+  out = 0;
+ end:
+  sysdbg_indent(-1, 0);
+  return out;
 }
 
 /* Free a loaded ELF program */
 void lef_free(lef_prog_t *prog) {
   if (prog && --prog->ref_count<=0) {
-    free(prog->data);
+    if (prog->data) {
+      free(prog->data);
+    }
     free(prog);
   }
 }

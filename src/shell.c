@@ -12,7 +12,7 @@ static int input_pos;
 
 #define CONSOLE_Y 50
 #define CONSOLE_OUT_Y -600
-static int show_console;
+static int show_console = 0;
 static float console_y = CONSOLE_OUT_Y;
 
 lef_prog_t * shell_lef;
@@ -21,6 +21,14 @@ shell_shutdown_func_t shell_lef_shutdown_func;
 char * shell_lef_fname = "/pc" DREAMMP3_HOME "dynshell/dynshell.lef";
 
 static shell_command_func_t shell_command_func;
+
+
+
+#define MAX_COMMANDS 128
+
+static char * commands[MAX_COMMANDS];
+static int write_command;
+static int read_command;
 
 
 
@@ -82,6 +90,7 @@ void shell_load(const char * fname)
 
   /* Shutdown previously opened shell */
   if (shell_lef) {
+    shell_command_func = 0;
     if (shell_lef_shutdown_func) {
       shell_lef_shutdown_func();
       shell_lef_shutdown_func = 0;
@@ -101,12 +110,34 @@ void shell_load(const char * fname)
   }
 
   if (shell_lef) {
-    shell_lef_shutdown_func = (shell_shutdown_func_t) shell_lef->ko_main(0, 0);
+    shell_lef_shutdown_func = (shell_shutdown_func_t) shell_lef->main(0, 0);
   }
 }
 
+
+
+static void shell_thread(void * param)
+{
+  for (;;) {
+    while (write_command == read_command)
+      thd_pass();
+
+    if (shell_command_func)
+      shell_command_func(commands[read_command]);
+    else
+      printf("shell: don't know what to do with command '%s' (no shell loaded !)\n", commands[read_command]);
+
+    free(commands[read_command]);
+    read_command = (read_command+1)%MAX_COMMANDS;
+ }
+}
+
+
+
 int shell_init()
 {
+
+  thd_create(shell_thread, 0);
 
   shell_load(shell_lef_fname);
   
@@ -125,7 +156,7 @@ void shell_update(float frameTime)
 
 
   /* Console movement handling */
-  if (show_console) {
+  if (show_console || read_command != write_command) {
     console_y += 5 * frameTime * (CONSOLE_Y - console_y);
   } else {
     console_y += 5 * frameTime * (CONSOLE_OUT_Y - console_y);
@@ -144,11 +175,22 @@ void shell_update(float frameTime)
 int shell_command(const char * com)
 {
   //printf("COMMAND <%s>\n", com);
+  int next_com;
 
-  if (shell_command_func)
-    return shell_command_func(com);
-  else
-    return 0;
+  commands[write_command] = strdup(com);
+
+  // increment in atomic way
+  next_com = (write_command+1) % MAX_COMMANDS;
+  write_command = next_com;
+
+  return 0;
+
+}
+
+void shell_wait()
+{
+  while (write_command != read_command)
+    thd_pass();
 }
 
 shell_command_func_t shell_set_command_func(shell_command_func_t func)
