@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/01 
  *
- *  $Id: cdda_driver.c,v 1.2 2003-01-02 18:32:54 ben Exp $
+ *  $Id: cdda_driver.c,v 1.3 2003-01-06 14:54:34 ben Exp $
  */
 
 #include <stdlib.h>
@@ -14,42 +14,22 @@
 #include "fifo.h"
 #include "sysdebug.h"
 
-/* Disk types :
- * $00 CDDA
- * $10 CDROM
- * $20 CDROM/XA
- * $30 CDI $80 GDROM
- */
-
-typedef struct {
-  uint32 number;        /**< Track number.     */
-  uint32 lba_start;     /**< Starting address. */
-  uint32 lba_end;       /**< Ending address.   */
-  uint32 time_ms;       /**< Time in ms.       */
-  uint32 samples;       /**< Approx number of sample. */
-} audio_track_t;
-
-typedef struct {
-  int n;                       /**< Number of audio track. */
-  audio_track_t * cur_track;   /**< Cuurent playing track. */
-  audio_track_t track[1];      /**< Tracks.                */
-} audio_cd_t;
-
 static uint32 sample_cnt;
 static const int zero_size = (44100 / 60);
 static short * zero;
-static audio_cd_t * cdda;
-
-static uint32 entry, entryend;
+static audio_track_t audio_track;
 
 static int info(playa_info_t *info, const char *fname);
+
+static unsigned int time_of_track(const audio_track_t * at) {
+  return (at->samples * 11025u) >> 8;
+}
 
 static int init(any_driver_t * driver)
 {
   SDDEBUG("%s('%s')\n", __FUNCTION__, driver->name);
   zero = 0;
-  entry = entryend = 0;
-  cdda = 0;
+  memset(&audio_track,0,sizeof(audio_track));
   return 0;
 }
 
@@ -94,89 +74,30 @@ static int tracknum(const char *name)
  * DUNNO LBA looks like disk total size, this is probably a number of sector
  */
 
-static audio_cd_t * cdda_content(void)
-{
-  CDROM_TOC toc;
-  int first, last, i, cnt;
-  audio_cd_t * cdda = 0;
-
-  memset(&toc,0,sizeof(toc));
-  cdrom_reinit();
-  if (cdrom_read_toc(&toc,0)) {
-    SDERROR("Error reading CD TOC.\n");
-    goto error;
-  }
-
-  first = TOC_TRACK(toc.first);
-  last = TOC_TRACK(toc.last);
-
-  /* Count audio tracks. */
-  /* $$$ Here I will only scan track control code, ignoring the disk type. */
-  for (i=first, cnt=0; i<=last; ++i) {
-    cnt += TOC_CTRL(toc.entry[i - 1]) == 0;
-  }
-
-  if (!cnt) {
-    /* No audio track. */
-    SDERROR("Can not found an audio track on this disk.\n");
-    goto error;
-  }
-
-  /* Allocation */
-  cdda = malloc(sizeof(*cdda) + (cnt-1) * sizeof(cdda->track));
-  if (!cdda) {
-    SDERROR("audio CD TOC allcation failed.\n");
-    goto error;
-  }
-
-  /* FILL cdda */
-  for (i=first, cnt=0; i<=last; ++i) {
-    uint32 e = toc.entry[i - 1];
-    if (TOC_CTRL(e) == 0) {
-      uint32 end;
-      audio_track_t * track = cdda->track + i - 1;
-      int sectors;
-
-      end = (i == last) ? toc.dunno : toc.entry[i];
-
-      track->lba_start = TOC_LBA(e);
-      track->lba_end = TOC_LBA(end);
-      sectors = track->lba_end - track->lba_start;
-      if (sectors <= 0) {
-	SDWARNING("Weird LBA for track %d: [%08x - %08x], skipping.\n",
-		  i,e,end);
-	continue;
-      }
-      /* $$$ From my calculation there is about audio 2348-2350 bytes
-	 per sector */
-      track->samples = sectors * 587u;
-      track->time_ms = ((unsigned int)sectors * 1365u + 99u) / 100u;
-      track->number = ++cnt;
-
-      SDDEBUG("track #%02d [%06x-%06x] [%d] [%02u:%02u].\n",
-	      track->number, track->lba_start, track->lba_end, sectors,
-	      (track->time_ms>>10)/60u, (track->time_ms>>10)%60u);
-    }
-  }
-  cdda->n = cnt;
-
-  return cdda;
-
- error:
-  if (cdda) free(cdda);
-  return 0;
-}
 
 /* Start playback (implies song load) */
 static int start(const char *fn, int track, playa_info_t *inf)
 {
   int err;
+  int status;
+  audio_track_t at;
 
   SDDEBUG("%s('%s', %d)\n", __FUNCTION__, fn, track);
 
-  cdda = cdda_content();
-  if (!cdda) {
-    goto error;
+  status = cdrom_check();
+  switch (status & 255) {
+  case CDROM_BUSY:
+  case CDROM_PAUSED:
+  case CDROM_STANDBY:
+  case CDROM_PLAYING:
+  case CDROM_SEEKING:
+  case CDROM_SCANING:
+    break;
+    
+  case CDROM_OPEN:  case CDROM_NODISK: default:
+    SDERROR("cdda : No disk.\n");
+    return -1;
+    break;
   }
 
   if (track < 0) {
@@ -184,9 +105,10 @@ static int start(const char *fn, int track, playa_info_t *inf)
   } else {
     ++track;
   }
-  SDDEBUG("CDDA start track [%d]\n",track);
 
-  if (track < 1 || track > cdda->n) {
+  /* Get audio track info. */
+  at.number = -1;
+  if (cdrom_audio_track(track, &at)) {
     SDERROR("cdda : track #%02d out of range.\n", track);
     goto error;
   }
@@ -202,30 +124,25 @@ static int start(const char *fn, int track, playa_info_t *inf)
   /* Run PLAY track command */
   err = cdrom_cdda_play(track, track, 0, CDDA_TRACKS);
   if (err) {
-    SDERROR("cdda : GDR command PLAY failed [%d].\n", err);
+    status = cdrom_check();
+    SDERROR("cdda : GDR command PLAY failed [%s,%s].\n", 
+	    cdrom_statusstr(status), cdrom_drivestr(status));
+    audio_track.number = 0;
     goto error;
   }
-  cdda->cur_track = cdda->track + track - 1;
+  audio_track = at;
+
   info(inf, 0);
   sample_cnt = 0;
   return 0;
 
  error:
-  if (cdda) {
-    free (cdda);
-    cdda = 0;
-  }
-  entry = entryend = 0;
   return -1;
 
 }
 
 static int cdrom_cdda_stop(void)
 {
-/*   $$$ ben : does not work. */
-/*   return cdrom_cdda_play(0, 0, 0, CDDA_TRACKS); */
-/*   return cdrom_reinit(); */
-  entry = entryend = 0;
   return cdrom_spin_down();
 }
 
@@ -236,10 +153,7 @@ static int stop(void)
     free(zero);
     zero = 0;
   }
-  if (cdda) {
-    free(cdda);
-    cdda = 0;
-  }
+  audio_track.number = 0;
   return cdrom_cdda_stop();
 }
 
@@ -253,47 +167,44 @@ static int shutdown(any_driver_t * driver)
 
 static int decoder(playa_info_t * info)
 {
-  int n;
+  int n, status;
 
-#if 0
-  static int buffer[2048*8/4];
-  static int in = 0;
-  static int off = 0;
-  if (!in) {
-    int err;
-    int n = entryend - entry;
-    if (n<=0) {
-      return INP_DECODE_END;
-    }
-    if (n > 8) n = 8;
-
-    err = cdrom_read_sectors(buffer, entry, n);
-    if (err) {
-      SDDEBUG("err = %d\n",err);
-      return INP_DECODE_ERROR;
-    }
-
-    entry += n;
-    in = n * 2048/4;
-    off = 0;
-  }
-
-  n = fifo_write(buffer+off, in);
-  if (n < 0) {
+  if (audio_track.number <= 0) {
     return INP_DECODE_ERROR;
   }
-  off += n;
-  in -= n;
-#else
+
+  status = cdrom_check();
+
+  switch (status & 255) {
+  case CDROM_BUSY:
+  case CDROM_PAUSED:
+  case CDROM_STANDBY:
+  case CDROM_SEEKING:
+  case CDROM_SCANING:
+/*     SDERROR("cdda : CDROM [%s,%s].\n", */
+/* 	    cdrom_statusstr(status), */
+/* 	    cdrom_drivestr(status)); */
+    return 0;
+  case CDROM_PLAYING:
+    break;
+
+  case CDROM_OPEN:  case CDROM_NODISK:
+  default:
+    SDERROR("cdda : CDROM [%s,%s].\n",
+	    cdrom_statusstr(status),
+	    cdrom_drivestr(status));
+    return INP_DECODE_ERROR;
+    break;
+  }
+
   n = fifo_write_mono(zero, zero_size);
   if (n < 0) {
     return INP_DECODE_ERROR;
   }
   sample_cnt += n;
 
-#endif
   return (-(n > 0) & INP_DECODE_CONT)
-    | (-(sample_cnt >= cdda->cur_track->samples) & INP_DECODE_END);
+    | (-(sample_cnt >= audio_track.samples) & INP_DECODE_END);
 }
 
 static int make_info(playa_info_t *info, audio_track_t * track, int tracks)
@@ -303,17 +214,17 @@ static int make_info(playa_info_t *info, audio_track_t * track, int tracks)
   if (!track) {
     return -1;
   }
-  playa_info_time(info, track->time_ms);
+
+  playa_info_time(info, time_of_track(track));
   sprintf(tmp, "CD Audio Track #%02u", (int)track->number);
   playa_info_title(info, tmp);
-  if (!tracks) {
+  if (tracks <= 0) {
     sprintf(tmp,"%02d", (int)track->number);
   } else {
     sprintf(tmp,"%02d/%02d",  (int)track->number, tracks);
   }
   playa_info_track(info,tmp);
-  playa_info_bytes(info, (track->lba_end - track->lba_start) * 2349);
-  playa_info_bytes(info, (track->lba_end - track->lba_start) * 2349);
+  playa_info_bytes(info, track->samples<<2);
 
   return 0;
 }
@@ -326,8 +237,8 @@ static int info(playa_info_t *info, const char *fname)
   playa_info_bps(info, 44100<<5);
 
   if (!fname) {
-    if (cdda) {
-      return make_info(info, cdda->cur_track, cdda->n);
+    if (audio_track.number) {
+      return make_info(info, &audio_track, cdrom_audio_tracks());
     }
   }
   return -1;
