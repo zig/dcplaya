@@ -140,7 +140,7 @@ function vmu_select_create(owner, name, dir, x, y, z)
 
    fl.draw_cursor = function () end
    
-   fl:change_dir(dir or dirlist("-n","/vmu"))
+   fl:change_dir(dir or dirlist("-nh","/vmu"))
 
    return dial
 end
