@@ -19,25 +19,25 @@ Introduction:
     the current file format. By the way, I have tried to make a more
     flexible format so that people can add other information in NSF files
     (like date, ripper ...). Others improvements has been added and will be
-    explain in this documenatation.
+    explain in this documentation.
 
-Protability:
+Portability:
 
     The NSF2 should be backward compatible with NSF1. This means that old
     NSF player should be able to load NSF2 files (without extra
     information).  Obviously NSF2 file loader is able to load either NSF1 or
-    NSF2 files. NSF2 loader can skip unknown additionnal information, so any
-    additionnal information can be added to NSF2 file as soon it respect the
+    NSF2 files. NSF2 loader can skip unknown additional information, so any
+    additional information can be added to NSF2 file as soon it respect the
     format definition.
 
 NSF1 file format:
 
     NSF1 file format starts with a 128 bytes header which is followed by
     song data. The length of the data must be determined by the file length.
-    This can be a probleme if you want to play NSF file thru file transfert
-    protocol that does not handle length.
+    This can be a problem if you want to play NSF file thru file transfer
+    protocol that does not handle stream length.
 
-    Multi byte value are stored in little endian (LSB first).
+    Multi byte values are stored in little endian (LSB first).
     BYTE : 1 byte unsigned (0..255)
     WORD : 2 bytes unsigned (0..65536)
     LONG : 4 bytes unsigned (0..2^32-1)
@@ -77,10 +77,10 @@ NSF1 file format:
 
 NSF2 file format:
 
-    NSF2 file format starts with the same header than NSF1 execepted that
+    NSF2 file format starts with the same header than NSF1 excepted that
     the version number (offset 5) is set to 2 and that the 3 first bytes of
     reserved contains the length in bytes of the data section (stored as a
-    LONG but without the MSB which is reserved for futur used and must be
+    LONG but without the MSB which is reserved for future used and must be
     set to 0).
 
     At the end of the data section, the file may contain extra information
@@ -96,9 +96,9 @@ NSF2 file format:
     000C  SIZE-12               ; Extension data (depends on TYPE)
 
     The number of extra format chunk is unlimited. The loader can skip unknown
-    TYPE because it knowns its size.
+    TYPE because it knows its size.
 
-    Currently only one type has been defined : "TIME". It handles songs
+    Currently only one TYPE has been defined : "TIME". It handles songs
     playing time. The data of "TIME" chunk is an array of LONG which values
     give the song length in frames. The first LONG gives the total number of
     frame for all songs. In most case the size of the array is number of
