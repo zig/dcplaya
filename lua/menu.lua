@@ -177,7 +177,7 @@ function menu_create(owner, name, def, box, x1, y1)
    -- -----------
    function menu_handle(menu, evt)
       -- call the standard dialog handle (manage child autoplacement)
-      evt = gui_dialog_basic_handle(sb, evt)
+      evt = gui_dialog_basic_handle(menu, evt)
       if not evt then
 	 return
       end

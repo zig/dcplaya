@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.51 2003-03-12 15:08:53 ben Exp $
+--- $Id: gui.lua,v 1.52 2003-03-12 17:40:58 zigziggy Exp $
 ---
 
 --
@@ -321,7 +321,8 @@ end
 
 function gui_dialog_basic_handle(app, evt)
    local key = evt.key
-   if (key == evt_app_insert_event or key == evt_app_remove_event) and evt.app.owner == app then
+--   if (key == evt_app_insert_event or key == evt_app_remove_event) and evt.app.owner == app then
+   if key == evt_app_insert_event and evt.app.owner == app then
       gui_child_autoplacement(app)
       return
    end

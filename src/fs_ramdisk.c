@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   RAM disk for KOS file system
  * 
- * $Id: fs_ramdisk.c,v 1.14 2003-03-12 13:22:21 ben Exp $
+ * $Id: fs_ramdisk.c,v 1.15 2003-03-12 17:40:59 zigziggy Exp $
  */
 
 /** @TODO add lock to file-handle. It is not thread-safe right now !!! */
@@ -106,7 +106,7 @@ if (!node_mutex) {\
 
 #else
 # define LOCK_NODE() if (1) {spinlock_lock(&node_mutex);} else
-# define UNLOCK_NODE() if (1) {spinlock_unlock(&node_mutex)} else
+# define UNLOCK_NODE() if (1) {spinlock_unlock(&node_mutex);} else
 #endif
 
 static void dump_node(node_t * node, const char * label);
