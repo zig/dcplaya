@@ -35,55 +35,23 @@ function cd(path)
 	PWD = fullpath(path)
 	if strsub(PWD, -1)~="/" then
 		PWD=PWD.."/"
-	end	
+	end
 	print("PWD="..PWD)
 end
 addhelp(cd, [[print[[cd(path) : set current directory]]]])
 
-
--- classical list files
-function ls(path)
-
-	if not path then
-		path = PWD
-	else
-		path=fullpath(path)
-	end
-
-	local l = strlen(path)
-
-	local list = dirl(path, "", 1)
-	print("Files in "..path)
-
-	local i, j, n, w, h
-	n=getn(list)
-	w,h = consolesize()
-	h = h-2
-	for i=0,n/h, 1 do
-		for j=1, h, 1 do
-			local k = i*h + j
-			if list[k] then
-				print (strsub(list[k], l+2))
-			end
-		end
-		if list[(i+1)*h] then
-			getchar()
-		end
-	end
-
-end
-addhelp(ls, [[print[[ls([path]) : list files into current or given directory]]]])
-
+-- Load the new ls() command
+dofile(home.."lua/ls.lua")
 
 --
 -- reimplement basic io function with relative path support
 --
 
-
 -- template reimplementation function
 --
 -- name is the name of the function to reimplement
--- arglist is the list of index of argument to convert or nil to convert all arguments
+-- arglist is the list of index of argument to convert or nil to convert all
+-- arguments, in that case '-' starting arguments are ignored.
 function fullpath_convert(name, arglist)
 	local new
 	local old = getglobal(name)
@@ -100,7 +68,9 @@ function fullpath_convert(name, arglist)
 		new =	function (...)
 				local i
 				for i=1, arg.n, 1 do
-					arg[i] = fullpath(arg[i])
+					if strsub(arg[i], 1, 1) ~= "-" then
+						arg[i] = fullpath(arg[i])
+					end
 				end
 				return call (%old, arg)
 			end
@@ -118,7 +88,6 @@ Reimplement given function with relative path support by converting its input pa
 ]]]])
 
 
-
 fullpath_convert( "openfile", { 1 } )
 fullpath_convert( "readfrom", { 1 } )
 fullpath_convert( "writeto", { 1 } )
@@ -129,5 +98,7 @@ fullpath_convert( "mkdir" )
 fullpath_convert( "md" )
 fullpath_convert( "unlink" )
 fullpath_convert( "rm" )
+fullpath_convert( "copy" )
+fullpath_convert( "cp" )
 fullpath_convert( "rename" )
 
