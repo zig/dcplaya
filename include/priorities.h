@@ -5,7 +5,7 @@
  * @date     2003/01/19
  * @brief    Thread priority settings.
  * 
- * $Id: priorities.h,v 1.2 2003-04-21 16:26:36 vincentp Exp $
+ * $Id: priorities.h,v 1.3 2003-04-21 20:25:08 vincentp Exp $
  */
 
 
@@ -57,7 +57,10 @@
 #define PLAYA_DECODER_THREAD_PRIORITY 1
 
 /** Playa decoder thread boost priority */
-#define PLAYA_DECODER_THREAD_BOOST_PRIORITY 3
+#define PLAYA_DECODER_THREAD_BOOST1_PRIORITY 9
+
+/** Playa decoder thread boost priority */
+#define PLAYA_DECODER_THREAD_BOOST2_PRIORITY 4
 
 /** Maple thread priority */
 #define MAPLE_THREAD_PRIORITY 3

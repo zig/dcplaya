@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.24 2003-04-21 16:26:37 vincentp Exp $
+ * $Id: playa.c,v 1.25 2003-04-21 20:25:09 vincentp Exp $
  */
 
 #include <kos.h>
@@ -160,13 +160,36 @@ static void * sndstream_callback(int size)
     n = 0;
   } else {
 #ifdef PLAYA_THREAD
+    int used = fifo_used();
+    static int old_jiffies;
+
     /* VP : change priority of the decoder thread with respect to the
-       filled ratio of the fifo */
-    int ratio = fifo_used() * 1000 / fifo_size();
-    if (ratio > 20) {
+       filled ratio of the fifo.
+       This priority boosting cannot happen before MINIMUM_TIME_BEFORE_BOOST
+       seconds since the fifo was empty (so that we don't get a mini slowdown 
+       at the start of a track)
+    */
+#define MINIMUM_TIME_BEFORE_BOOST (1.0f)
+    if (used == 0) {
+      old_jiffies = jiffies;
       playa_thread->prio2 = PLAYA_DECODER_THREAD_PRIORITY;
-    } else {
-      playa_thread->prio2 = PLAYA_DECODER_THREAD_BOOST_PRIORITY;
+    } else if (jiffies - old_jiffies > MINIMUM_TIME_BEFORE_BOOST*HZ) {
+
+      /* eliminate overflow */
+      old_jiffies = jiffies - MINIMUM_TIME_BEFORE_BOOST*HZ;
+
+      /* decoder priority selection */
+      int ratio = used * 1000 / fifo_size();
+      if (ratio > 40) {
+	/* Lowest priority, let's take our time to decode the music :) */
+	playa_thread->prio2 = PLAYA_DECODER_THREAD_PRIORITY;
+      } else if (ratio > 20) {
+	/* Boost the decoder thread ! (mid level) */
+	playa_thread->prio2 = PLAYA_DECODER_THREAD_BOOST2_PRIORITY;
+      } else {
+	/* Boost the decoder thread ! (emergency level) */
+	playa_thread->prio2 = PLAYA_DECODER_THREAD_BOOST1_PRIORITY;
+      }
     }
 #endif
 

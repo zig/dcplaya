@@ -4,7 +4,7 @@
 --- @date     2003
 --- @brief    fifo tracker application.
 ---
---- $Id: fifo_tracker.lua,v 1.2 2003-04-21 16:26:36 vincentp Exp $
+--- $Id: fifo_tracker.lua,v 1.3 2003-04-21 20:25:08 vincentp Exp $
 ---
 
 fifo_tracker_loaded = nil
@@ -50,7 +50,7 @@ function fifo_tracker_create(owner, name)
       end
 
       
-      if percent > 900 then
+      if percent > 900 or percent == 0 then
 	 vc.time_full = vc.time_full + frametime
       else
 	 vc.time_full = 0
@@ -63,13 +63,6 @@ function fifo_tracker_create(owner, name)
       end
 
       local color = { 1, 1, 1, 1 }
-      if vc.time_empty > 1 then
-	 local a = (vc.time_empty - 1) * 60 * 4
-	 a = cos(a)*0.25 + 0.75
-	 color[1] = a
-	 color[3] = a
-      end
-
       if vc.time_full > 0.5 then
 	 if vc.alpha < 0.1 then
 	    vc.alpha = 0
@@ -84,6 +77,13 @@ function fifo_tracker_create(owner, name)
 	 else
 	    vc.alpha = vc.alpha + (1 - vc.alpha) * frametime * 8
 	 end
+      end
+
+      if vc.time_empty > 1 then
+	 local a = (vc.time_empty - 1) * 60 * 4
+	 a = cos(a)*0.25 + 0.75
+	 color[1] = a
+	 color[3] = a
       end
 
       --      dl_set_color(vc.dl, color)
