@@ -1,15 +1,15 @@
-/**
-
-@section intro Introduction
-
-This documentation intends to help developers to use or modify dcplaya
-components. 
-*/
+/* This is dcplaya documentation C API group definition */
 
 /**
-@defgroup dcplaya_devel		dcplaya main code documentation
+@defgroup  dcplaya_devel  C API
+@ingroup   dcplaya
+@author    benjamin gerard <ben@sashipa.com>
+@brief     Programming dcplaya low-level extensions
  **/
 
 /**
-@defgroup dcplaya_plugin_devel	dcplaya plugins documentation
+@defgroup  dcplaya_plugin_devel	Plugin API
+@ingroup   dcplaya_devel
+@author    benjamin gerard <ben@sashipa.com>
+@brief     Programming dcplaya plugins
  **/

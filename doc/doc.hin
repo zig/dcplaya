@@ -1,13 +1,37 @@
+/* This is dcplaya documentation main pag */
+
+/** @defgroup  dcplaya  dcplaya documentation */
+
 /**
 
 @mainpage dcplaya documentation
 
 @section copyright Copyright
 
-Copyright (C) 2002 Ben(jamin) Gerard <ben@sashipa.com>
+Copyright (C) 2002 Benjamin Gerard <ben@sashipa.com>
 
 @section intro Introduction
 
-This documentation intends to help developers to use or modify dcplaya
-components.
+This is dcplaya documentation. 
+
+@subsection dcplaya_devel C API
+
+This section intends to help developers to use or modify dcplaya
+components. It describes both the C API and the plugin API.
+
+@subsection dcplaya_lua_devel LUA API
+
+This section intends to help developers to modify dcplaya and to program
+addons (such as new application). LUA is a high level language use by dcplaya
+to control almost everything in dcplaya. dcplaya has a lot of lua extensions.
+Most of them are included to the dynshell. Others may be added by plugins.
+This is the main purpose of dcplaya executable plugins. Other plugins may
+adds extensions (new functions) to dcplaya too. 
+
+@subsection dcplaya_user User documentation
+
+This section is dcplaya user manual. Unfortunatly this manual is currently
+very poor.
+
+
 */

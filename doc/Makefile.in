@@ -2,34 +2,35 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.8 2002-12-15 02:32:28 ben Exp $
+# $Id: Makefile.in,v 1.9 2003-03-13 23:00:06 ben Exp $
 #
 
 VERSION = @VERSION@
 DOXYGEN = "@DOXYGEN@"
 
-IMGPLUGINDOCDIR := \
-	$(foreach dir,tga jpeg, ../plugins/img/$(dir))
-INPPLUGINDOCDIR := \
-$(foreach dir,mikmod ogg sc68 sidplay spc xing, ../plugins/inp/$(dir))
+ALL_HEADERS		:= $(shell find .. -type f -name '*.h')
+ALL_HEADERS_PATH	:= $(sort . $(dir $(ALL_HEADERS)))
 
-PLUGINDOCDIR := $(IMGPLUGINDOCDIR) $(INPPLUGINDOCDIR)
+HINFILES		:= $(wildcard *.hin)
+DEVDOCFILES		:= $(HINFILES:%.hin=%.h)
 
-DEVDOCDIR  	:= . .. ../include ../libs/draw $(PLUGINDOCDIR)
-DEVDOCFILES	:= doc.h devdoc.h
+LUADOCDIR    := lua_doc
+LUASRCDIR    := ..
 
-LUADOCDIR   := lua
-LUASRCDIR   := ../lua
-LUASRCFILES	:= $(wildcard $(LUASRCDIR)/*.lua)
-LUADOCFILES :=\
- $(LUASRCFILES:$(LUASRCDIR)/%=$(LUADOCDIR)/%)\
- $(LUADOCDIR)/doc.lua
+LUAALLFILES  :=\
+ $(wildcard $(LUASRCDIR)/*.lua)\
+ $(wildcard $(LUASRCDIR)/lua/*.lua)
+LUASRCFILES  := $(LUAALLFILES:$(LUASRCDIR)/%=%)
+LUADOCFILES := $(addprefix $(LUADOCDIR)/,$(LUASRCFILES:%.lua=%.lua) doc.lua) 
 
-DOCINPUTS=$(DEVDOCDIR) $(DEVDOCFILES) $(LUADOCDIR)
+DOCINPUTS=$(ALL_HEADERS_PATH) $(LUADOCDIR) $(LUADOCDIR)/lua
 
 SHASUBST=../utils/shasubst.sh
 LUA2DOX=../utils/lua2dox.sh
 
+vpath
+vpath %.h $(ALL_HEADERS_PATH)
+vpath %.lua .. ../lua
 
 # Build shasubst definition
 #
@@ -88,9 +89,11 @@ Makefile : Makefile.in
 $(LUADOCDIR)/doc.lua : luadoc.h
 	cp -f $< $@
 
-$(LUADOCDIR)/%.lua : $(LUASRCDIR)/%.lua Makefile
-	$(LUA2DOX) < $< > $@
-	[ -s $@ ] || echo "/// @file $(@F)" > $@
+$(LUADOCDIR)/%.lua : %.lua Makefile
+	@echo "make [$@] from [$<]"
+	@mkdir -p $(dir $@)
+	@$(LUA2DOX) < $< > $@
+	@[ -s $@ ] || echo "/// @file $(@F)" > $@
 
 luadoc: $(LUADOCFILES)
 
@@ -109,7 +112,7 @@ clean_local:
 	@rm -f *.dox *.h *~
 
 clean: clean_local
-	@rm -rf html latex man $(LUADOCDIR)/*
+	@rm -rf html latex man `find . -type f -name '*.lua'`
 
 distclean: clean
 	@rm -f Makefile *~

@@ -1,0 +1,15 @@
+/* This is dcplaya user documentation. */
+
+/**
+@defgroup  dcplaya_user  User manual
+@ingroup   dcplaya
+@author    benjamin gerard <ben@sashipa.com>
+@brief     How to make the best with dcplaya
+ **/
+
+/**
+@defgroup  dcplaya_lua_files  File organization
+@ingroup   dcplaya_user
+@author    benjamin gerard <ben@sashipa.com>
+ **/
+

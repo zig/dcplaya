@@ -1,38 +1,37 @@
+/* This is lua api documentation. */
+
 /**
+@defgroup  dcplaya_lua  LUA extensions
+@ingroup   dcplaya
+@author    benjamin gerard <ben@sashipa.com>
+@brief     Programming dcplaya high level extensions.
+ **/
 
-@defgroup dcplaya_lua  dcplaya lua components and extensions documentation
-This documentation intends to help developers to use dcplaya LUA components.
 
-@author benjamin gerard <ben@sashipa.com>
-
+/**
+@defgroup  dcplaya_lua_basics  Basic components
+@ingroup   dcplaya_lua
+@author    benjamin gerard <ben@sashipa.com>
+@brief     LUA low level tool-kit.
  **/
 
 /**
-@defgroup dcplaya_lua_basics	dcplaya lua basic components documentation
-@ingroup  dcplaya_lua
-@author benjamin gerard <ben@sashipa.com>
+@defgroup  dcplaya_lua_gui  GUI components
+@ingroup   dcplaya_lua
+@author    benjamin gerard <ben@sashipa.com>
+@brief     Programming dcplaya graphic user interface.
  **/
 
 /**
-@defgroup dcplaya_lua_files		dcplaya lua file organization documentation
-@ingroup  dcplaya_lua
-@author benjamin gerard <ben@sashipa.com>
+@defgroup  dcplaya_lua_app  Applications
+@ingroup   dcplaya_lua
+@author    benjamin gerard <ben@sashipa.com>
+@brief     Programming dcplaya LUA applications.
  **/
 
 /**
-@defgroup dcplaya_lua_gui		dcplaya lua GUI components documentation
-@ingroup  dcplaya_lua
-@author benjamin gerard <ben@sashipa.com>
- **/
-
-/**
-@defgroup dcplaya_lua_app		dcplaya lua application documentation
-@ingroup  dcplaya_lua
-@author benjamin gerard <ben@sashipa.com>
- **/
-
-/**
-@defgroup dcplaya_lua_event		dcplaya lua event documentation
-@ingroup  dcplaya_lua
-@author benjamin gerard <ben@sashipa.com>
+@defgroup  dcplaya_lua_event  Events
+@ingroup   dcplaya_lua
+@author    benjamin gerard <ben@sashipa.com>
+@brief     Events and messaging system description.
  **/
