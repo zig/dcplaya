@@ -3,7 +3,7 @@
 #
 # by Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.3 2003-02-12 17:53:07 ben Exp $
+# $Id: Makefile,v 1.4 2003-02-12 18:06:00 ben Exp $
 #
 
 CDRECORD	= cdrecord dev=0,0,0 speed=4
@@ -99,7 +99,7 @@ dcplaya-data: id.txt RELEASE.txt README.txt 1ST_READ.BIN
 	| tar cf - -C .. -T - \
 	| tar xf - -C dcplaya
 	@rm -rf `find dcplaya/ -name CVS -o -name '*~' -o -name '.#*'`
-	@cp -a README.txt id.txt RELEASE.txt extra_data/* iso/
+	@cp -RL README.txt id.txt RELEASE.txt extra_data/* iso/
 	@mv dcplaya iso
 
 .PHONY : clean
