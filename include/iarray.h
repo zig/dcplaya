@@ -4,7 +4,7 @@
  *  @date   2002/10/22
  *  @brief  Resizable array of indirect elements of any size.
  *
- *  $Id: iarray.h,v 1.2 2002-10-23 02:09:04 benjihan Exp $
+ *  $Id: iarray.h,v 1.3 2002-10-24 18:58:49 benjihan Exp $
  */
 
 #ifndef _IARRAY_H_
@@ -35,15 +35,19 @@ typedef struct {
 int iarray_create(iarray_t *a,
 				  iarray_alloc_f alloc, iarray_free_f free, void *cookie);
 void iarray_destroy(iarray_t *a);
+int iarray_clear(iarray_t *a);
 
 void * iarray_addrof(iarray_t *a, int idx);
 int iarray_get(iarray_t *a, int idx, void * elt, int eltsize);
-iarray_elt_t * iarray_dup(iarray_t *a, int idx, void * elt, int eltsize);
+iarray_elt_t * iarray_dup(iarray_t *a, int idx);
+int iarray_set(iarray_t *a, int idx, void *elt, unsigned int eltsize);
 int iarray_insert(iarray_t *a, int idx, void *elt, unsigned int eltsize);
 int iarray_remove(iarray_t *a, int idx);
 
 void iarray_lock(iarray_t *a);
 void iarray_unlock(iarray_t *a);
+int iarray_trylock(iarray_t *a);
+int iarray_lockcount(const iarray_t *a);
 
 void iarray_shuffle(iarray_t *a, int idx, int n);
 void iarray_sort(iarray_t *a, iarray_sort_f cmp);

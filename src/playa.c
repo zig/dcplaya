@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.10 2002-10-11 12:09:28 benjihan Exp $
+ * $Id: playa.c,v 1.11 2002-10-24 18:58:49 benjihan Exp $
  */
 
 #include <kos.h>
@@ -260,30 +260,30 @@ static void real_playa_update(void)
       playa_info_t info;
       //      VCOLOR(255,255,0);
       if (!driver) {
-	SDERROR("No driver !\n");
-	status = INP_DECODE_ERROR;
+		SDERROR("No driver !\n");
+		status = INP_DECODE_ERROR;
       } else {
-	memset(&info,0,sizeof(info));
-	status = driver->decode(&info);
+		memset(&info,0,sizeof(info));
+		status = driver->decode(&info);
       }
       //      VCOLOR(0,0,0);
 
       if (status & INP_DECODE_END) {
-	if (driver && status == INP_DECODE_ERROR) {
-	  SDERROR("Driver error\n");
-	}
-	SDDEBUG("STOOOOOOOOP\n");
-	playastatus = PLAYA_STATUS_STOPPING;
-	break;
+		if (driver && status == INP_DECODE_ERROR) {
+		  SDERROR("Driver error\n");
+		}
+		SDDEBUG("STOOOOOOOOP\n");
+		playastatus = PLAYA_STATUS_STOPPING;
+		break;
       }
 
       if (status & INP_DECODE_INFO) {
-	SDDEBUG("Driver change INFO\n");
-	playa_info_update(&info);
+		SDDEBUG("Driver change INFO\n");
+		playa_info_update(&info);
       }
 
       if (! (status & INP_DECODE_CONT)) {
-	thd_pass();
+		thd_pass();
       }
 
     } break;
@@ -294,7 +294,7 @@ static void real_playa_update(void)
   case PLAYA_STATUS_STOPPING:
     {
       if (driver) {
-	driver->stop();
+		driver->stop();
       }
       playa_info_clean();
       playastatus = PLAYA_STATUS_READY;

@@ -63,6 +63,13 @@ static int mutex_trylock(mutex_t * mutex)
   return ret;
 }
 
+/** Returns mutex lock counter.
+ */
+inline static int mutex_lockcount(const mutex_t * mutex)
+{
+  return mutex->count; /** $$$ Atomic op. */
+}
+
 /** Lock a mutex.
  *
  *    If the mutex is currently unlocked or owned by the caller thread,
