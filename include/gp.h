@@ -58,7 +58,7 @@ typedef struct {
 
 int border_setup();
 extern borderuv_t borderuv[];
-extern uint32 bordertex, bordertex2;
+extern uint32 bordertex;
 
 DCPLAYA_EXTERN_C_END
 

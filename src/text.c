@@ -165,6 +165,11 @@ static float size_of_char(const float scalex, int c)
   return myglyph[c].w * scalex;
 }
 
+float measure_poly_char(int c)
+{
+  return (size_of_char(text_xscale, c));
+}
+
 static float size_of_str(const float scalex, const char *s)
 {
   int c;

@@ -1,9 +1,10 @@
+
 /**
  * @file      dreamcast68.c
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.15 2002-09-13 14:48:25 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.11 2002-09-13 16:04:19 zig Exp $
  */
 
 //#define RELEASE
@@ -445,17 +446,15 @@ static int driver_init(void)
   /* Load the default drivers from romdisk */
   {
     const char **p, *paths[] = {
+      /*
       "/pc" DREAMMP3_HOME "plugins/obj",
       "/pc" DREAMMP3_HOME "plugins/vis/lpo",
+      "/pc" DREAMMP3_HOME "plugins/inp/xing",
+      "/pc" DREAMMP3_HOME "plugins/inp/ogg",
+      "/pc" DREAMMP3_HOME "plugins/inp/sc68",*/
       "/pc" DREAMMP3_HOME "plugins/vis/fftvlr",
-      //      "/pc" DREAMMP3_HOME "plugins/inp/xing",
-/*      "/pc" DREAMMP3_HOME "plugins/inp/ogg",
-      "/pc" DREAMMP3_HOME "plugins/inp/sc68",
-*/
       "/pc" DREAMMP3_HOME "plugins/inp/sidplay",
-      /*
       "/pc" DREAMMP3_HOME "plugins/inp/spc",
-*/
       0
     };
 
@@ -612,7 +611,7 @@ void main_thread(void *cookie)
 
   dbglog(DBG_DEBUG, ">> " __FUNCTION__ "\n");
 
-  //  vid_border_color(0,0,0);
+  vid_border_color(0,0,0);
 
   if (songmenu_start() < 0) {
     err = __LINE__;
@@ -624,7 +623,7 @@ void main_thread(void *cookie)
       err = __LINE__;
       goto error;
       }*/
-  playa_loaddisk("/rd/01 Intro.spc", 1);
+  playa_loaddisk("/rd/test.mp3", 1);
   thd_pass(); // $$$ Don't ask me why !!! It removes a bug in intro sound !!!
 
   fade68    = 0.0f;
@@ -681,7 +680,7 @@ void main_thread(void *cookie)
     uint32 elapsed_frames;
     int is_playing = playa_isplaying();
 
-    //    my_vid_border_color(0,0,0);
+    my_vid_border_color(0,0,0);
     ta_begin_render();
 
     pipo_poly(0);
@@ -728,7 +727,7 @@ void main_thread(void *cookie)
     info_render(elapsed_frames, is_playing);
     songmenu_render(elapsed_frames);
     option_render(elapsed_frames);
-    //    my_vid_border_color(255,0,255);
+    my_vid_border_color(255,0,255);
 
     /* Render translucent consoles */
     csl_window_transparent_render_all();
@@ -748,7 +747,7 @@ void main_thread(void *cookie)
     
     ta_finish_frame();
     
-    //    my_vid_border_color(0,0,0);    
+    my_vid_border_color(0,0,0);    
   }
 
   dbglog(DBG_DEBUG, "** "  __FUNCTION__ " : Start exit procedure\n");
@@ -804,12 +803,12 @@ int dreammp3_main(int argc, char **argv)
   /* Do basic setup */
 
   kos_init_all(IRQ_ENABLE | THD_ENABLE, romdisk);
-  //  vid_border_color(0,0,0);
+  vid_border_color(0,0,0);
 
 
   /* Initialize shell and LUA */
   if (shell_init()) {
-    STHROW_ERROR(error);
+    SERROR(error);
   }
 
   /* Initialize the console debugging log facility */

@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.h,v 1.2 2002-09-11 14:29:13 zig Exp $
+ * @version   $Id: console.h,v 1.3 2002-09-13 16:04:19 zig Exp $
  */
 
 
@@ -20,7 +20,22 @@ typedef enum csl_render_mode {
   CSL_RENDER_VMU    = 4,  ///< Render in the VMU
 } csl_render_mode_t;
 
+
+typedef struct csl_window {
+  int x, y;
+  int w, h;
+  float scalex, scaley;
+  float tr, tg, tb, ta;
+  float br1, bg1, bb1, ba1;
+  float br2, bg2, bb2, ba2;
+
+  float cursor_time;
+} csl_window_t;
+
+
 typedef struct csl_console {
+
+  int w, h;
 
   struct csl_console * next; ///< Next console
 
@@ -28,6 +43,8 @@ typedef struct csl_console {
   MUterm_t * term;
 
   csl_render_mode_t render_modes;     ///< Render mode
+
+  csl_window_t window; ///< Window mode settings
 
 } csl_console_t;
 
@@ -42,7 +59,7 @@ void csl_console_destroy(csl_console_t * console);
 
 
 /* Functions to update and render all consoles */
-void csl_update_all();
+void csl_update_all(float frametime);
 
 void csl_basic_render_all();
 
@@ -55,6 +72,9 @@ void csl_vmu_render_all();
 /* Functions to manage consoles */
 void csl_enable_render_mode(csl_console_t * console, int modes);
 void csl_disable_render_mode(csl_console_t * console, int modes);
+
+void csl_window_configure(csl_console_t * console, int x, int y, int w, int h,
+			  float scalex, float scaley);
 
 
 /* Functions to access to a console */

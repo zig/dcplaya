@@ -3,17 +3,17 @@
 #
 # (C) COPYRIGHT 2002 benjamin gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.11 2002-09-13 10:24:02 ben Exp $ 
+# $Id: Makefile,v 1.12 2002-09-13 16:04:19 zig Exp $ 
 #
 TARGETS=dreammp3.elf
 
 SH_LDFLAGS=-ml -m4-single-only -nostartfiles -nostdlib -static  -Wl,-Ttext=0x8c010000
 
-SUBDIRS = arm plugins src data
+SUBDIRS = arm plugins src data lua dynshell
 
-WHOLE_LIBS=-ldreammp3,-ldcutils,-lkallisti
+WHOLE_LIBS=-ldreammp3,-llua,-ldcutils,-lkallisti
 OPT_LIBS= -los -lgcc -lm
-ELF_EXTRA += -L./src -L$(KOS_BASE)/lib\
+ELF_EXTRA += -L./src -L./lua -L$(KOS_BASE)/lib\
  -Wl,--whole-archive,$(WHOLE_LIBS),--no-whole-archive\
  $(OPT_LIBS)
 
