@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.43 2003-03-19 02:14:06 ben Exp $
+--- $Id: textlist.lua,v 1.44 2003-03-21 03:35:55 ben Exp $
 ---
 
 -- DL hierarchy :
@@ -632,7 +632,7 @@ function textlist_create(flparm, owner)
 -- 	 if tt and tt.mode and tt.mode.text_nude then
 -- 	    return tt.mode.text_nude
 -- 	 else
-	    return entry.name or entry.file
+	 return entry.nude or entry.name or entry.file
 -- 	 end
       end
    end

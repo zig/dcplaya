@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  sgml text and gui element formater.
 ---
---- $Id: taggedtext.lua,v 1.27 2003-03-20 21:59:19 ben Exp $
+--- $Id: taggedtext.lua,v 1.28 2003-03-21 03:35:55 ben Exp $
 ---
 
 if not dolib("dirfunc") then return end
@@ -764,7 +764,8 @@ function tt_build(text, mode)
    local len = strlen(text)
 
    -- $$$ added by ben : text without tags
-   local text_nude = ""
+--    if mode.text_nude and type(mode.text_nude) ~= "string"
+--    local text_nude = ""
 
    if mode.font_h ~= 16 then
       tt_insert_block(mode, tt_font_cmd(mode, { size = mode.font_h }))
@@ -890,7 +891,7 @@ function tt_build(text, mode)
 	       dl_measure_text(block.dl, block.text,
 			       block.font_id, block.font_h,
 			       block.font_aspect)
-	    text_nude = text_nude .. block.text
+-- 	    text_nude = text_nude .. block.text
 	    tt_insert_block(mode, block)
 	 end
 	 if newline then
@@ -940,7 +941,7 @@ function tt_build(text, mode)
 
    tt_endline(mode)
 
-   mode.text_nude = text_nude
+--    mode.text_nude = text_nude
 
 --   print("tt_text_nude:".. mode.text_nude)
 

@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.22 2003-03-20 06:05:34 ben Exp $
+--- $Id: control_center.lua,v 1.23 2003-03-21 03:35:55 ben Exp $
 ---
 
 --- @defgroup  dcplaya_lua_cc_app  control center application
@@ -99,7 +99,7 @@ function vmu_save_confirm(vmu)
    if r and r == 1 then
       if not vmu_save_file(vmu, "/ram/dcplaya") then
 	 gui_ask('<img name="vmu" w="48">Failed to write dcplaya file : <br><p><vspace h="8"><font color="#FF0000">'..vmu, { control_center_close_button }, 400, "Write failure")
-      else
+      elseif not vmu_never_confirm_write then
 	 gui_ask('<img name="vmu" w="48">Successfully write dcplaya file : <br><p><vspace h="8"><font color="#00FF00">'..vmu, { control_center_close_button }, 400, "Write success")
 	 return 1
       end
@@ -310,21 +310,19 @@ function control_center_menucreator(target)
 	    sub = {
 	       vmu_visual = ':visual:none{setvmuvis},scope{setvmuvis},fft{setvmuvis},band{setvmuvis}',
 	       vmu_option = ':option:'
-		  .. menu_yesno_menu(cc.vmu_auto_save,'auto-save')
-		  .. '{vmu_autosave},'
-		  .. menu_yesno_menu(not vmu_no_default_file,'use default')
-		  .. '{vmu_deffile},'
-		  .. menu_yesno_menu(not vmu_never_confirm_write,'confirm')
-		  .. '{vmu_confwrite}',
-	    }
+		  .. menu_yesno_menu(cc.vmu_auto_save,
+				     'auto-save','vmu_autosave') .. ','
+		  .. menu_yesno_menu(not vmu_no_default_file,
+				     'use default','vmu_deffile') .. ','
+		  .. menu_yesno_menu(not vmu_never_confirm_write,
+				     'confirm','vmu_confwrite'),
+	    },
 	 },
 	 plugins = plugins,
 	 keyboard = ':keyboard:'
-	       .. menu_yesno_menu(krule == "never",'never') .. '{kbd_rule},'
---	       .. menu_yesno_menu(krule == "always",'always') .. '{kbd_rule},'
-	       .. menu_yesno_menu(krule == "normal",'normal') .. '{kbd_rule},'
-	       .. menu_yesno_menu(krule == "nokbd",'no keyboard')
-	       .. '{kbd_rule}'
+	    .. menu_yesno_menu(krule == "never",'never','kbd_rule') .. ','
+	    .. menu_yesno_menu(krule == "normal",'normal','kbd_rule') .. ','
+	    .. menu_yesno_menu(krule == "nokbd",'no keyboard','kbd_rule'),
       }
    }
    return menu_create_defs(def , target)

@@ -635,9 +635,9 @@ function menu_yesno_image(menu, idx, flag, label, nodraw)
 end
 
 --- Create a yesno menu description string.
-function menu_yesno_menu(flag,label)
+function menu_yesno_menu(flag,label,callback)
    return '{menu_' .. ((flag and 'yes}') or 'no}')
-      .. label
+      .. label .. "{" .. callback .. "}"
 end
 
 --- Create a menu GUI application.
@@ -812,6 +812,7 @@ function menu_create_def(menustr)
 -- 		   tostring(name), tostring(cb), tostring(sub),
 -- 		   (size < 0 and "SUB") or "ENTRY")
 
+	    local nude = name
 	    if type(icon) == "string" then
 	       name = '<img name="'..icon..'">'..name
 	    end
@@ -819,6 +820,7 @@ function menu_create_def(menustr)
 	    tinsert(menu,
 		    {
 		       name=name,
+		       nude = nude,
 		       size=size,
 		       icon=icon,
 		       subname=sub,
