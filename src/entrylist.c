@@ -247,6 +247,8 @@ int entrylist_sort_part(entrylist_t *list,
   return 0;
 }
 
+extern int rand(void);
+
 int entrylist_shuffle(entrylist_t *list, int idx)
 {
   int i,n;

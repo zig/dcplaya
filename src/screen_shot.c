@@ -4,7 +4,7 @@
  * @date    2002/09/14
  * @brief   Takes TGA screen shot.
  * 
- * $Id: screen_shot.c,v 1.5 2003-03-10 22:55:35 ben Exp $
+ * $Id: screen_shot.c,v 1.6 2003-03-18 14:53:26 ben Exp $
  */
 
 //#include <kos/fs.h>
@@ -167,7 +167,7 @@ int screen_shot(const char *basename)
   SDDEBUG("Write TGA identifier string [%s] (%d bytes)\n",
 	  screen_shot_id, sizeof(screen_shot_id));
   //  if (fs_write(fd, screen_shot_id, sizeof(screen_shot_id)) !=
-  if (gzwrite(fd, screen_shot_id, sizeof(screen_shot_id)) !=
+  if (gzwrite(fd, (void *)screen_shot_id, sizeof(screen_shot_id)) !=
       sizeof(screen_shot_id)) {
     SDERROR("Write error.\n");
     goto error;

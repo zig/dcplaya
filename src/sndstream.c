@@ -8,7 +8,7 @@
    +2002/02/12 variable stream size modification by ben(jamin) gerard
 */
 
-static char id[] = "sndserver $Id: sndstream.c,v 1.3 2003-03-10 22:55:35 ben Exp $";
+/* static char id[] = "sndserver $Id: sndstream.c,v 1.4 2003-03-18 14:53:27 ben Exp $"; */
 
 #include <kos.h>
 #include "dcplaya/config.h"

@@ -5,7 +5,7 @@
  * @author    benjamin gerard <ben@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.c,v 1.21 2003-03-18 01:10:10 ben Exp $
+ * @version   $Id: display_list.c,v 1.22 2003-03-18 14:53:26 ben Exp $
  */
 
 #include <malloc.h>
@@ -37,7 +37,9 @@ struct sublist_command_t {
 };
 
 /* For debuggin' */
+#ifdef DEBUG
 static const char * typestr[2] =  { "main", "sub" };
+#endif
 	
 /* List of display list. */
 static dl_lists_t dl_lists[2];

@@ -1,6 +1,7 @@
 /* FIFO */
 
 #include <arch/spinlock.h>
+#include <stdlib.h>
 
 #include "dcplaya/config.h"
 #include "sysdebug.h"

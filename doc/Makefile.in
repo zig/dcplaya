@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.10 2003-03-14 18:44:38 ben Exp $
+# $Id: Makefile.in,v 1.11 2003-03-18 14:53:26 ben Exp $
 #
 
 VERSION = @VERSION@
@@ -70,8 +70,13 @@ DOXDEV	+= -D dox-include_path=..
 DOXDEV	+= -D dox-optimize-output-for-c=YES
 DOXDEV	+= -D dox-enabled-sections=""
 DOXDEV	+= -D dox-generate-html=YES
-DOXDEV	+= -D dox-html-header=
-DOXDEV	+= -D dox-html-footer=
+ifeq "$(strip $(MAKECMDGOALS))" "xml"
+DOXDEV	+= -D dox-generate-xml=YES
+else
+DOXDEV	+= -D dox-generate-xml=NO
+endif
+DOXDEV	+= -D dox-html-header=dcplaya_header.html
+DOXDEV	+= -D dox-html-footer=dcplaya_footer.html
 DOXDEV	+= -D dox-html-stylesheet=dcplaya_doc.css
 DOXDEV	+= -D dox-generate-treeview=NO
 DOXDEV	+= -D dox-generate-man=NO
@@ -81,7 +86,9 @@ DOXDEV	+= -D dox-generate-latex=NO
 # MAKE RULES
 ###################################################
 
+
 all: Makefile devdoc
+xml: all
 
 Makefile : Makefile.in
 	(cd ..; ./config.status) 
@@ -97,13 +104,16 @@ $(LUADOCDIR)/%.lua : %.lua Makefile
 
 luadoc: $(LUADOCFILES)
 
-devdoc: devdoc.dox $(DEVDOCFILES) luadoc
+devdoc: devdoc.dox $(DEVDOCFILES) luadoc dcplaya_header.html dcplaya_footer.html 
 	$(DOXYGEN) $<
 
 devdoc.dox: generic.doxin Makefile
 	cat $< | grep -E -v '^#.*$$' |\
 	grep -E -v '^ *$$' |\
 	$(SHASUBST) $(DOXALL) $(DOXDEV) > $@
+
+%.html : %.htmlin
+	$(SHASUBST) $(DOXALL) $(DOXDEV) < $< > $@
 
 %.h : %.hin
 	cat $< > $@
@@ -112,7 +122,7 @@ clean_local:
 	@rm -f *.dox *.h *~
 
 clean: clean_local
-	@rm -rf html latex man `find . -type f -name '*.lua'`
+	@rm -rf html xml latex man `find . -type f -name '*.lua'`
 
 distclean: clean
 	@rm -f Makefile *~

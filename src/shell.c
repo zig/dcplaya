@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     shell support for dcplaya
- * @version   $Id: shell.c,v 1.16 2003-03-10 22:55:35 ben Exp $
+ * @version   $Id: shell.c,v 1.17 2003-03-18 14:53:27 ben Exp $
  */
 
 #include <kos.h>
@@ -42,9 +42,9 @@ static int read_command;
 
 
 // HISTORY NOT IMPLEMENTED YET HERE (but implemented in LUA shell so who cares)
-static char * history[MAX_COMMANDS];
-static int write_history;
-static int read_history;
+/* static char * history[MAX_COMMANDS]; */
+/* static int write_history; */
+/* static int read_history; */
 
 
 
@@ -181,7 +181,9 @@ static void shell_thread(void * param)
 
 int shell_init()
 {
+#ifdef DEBUG
   char tmp[256];
+#endif
   uint32 old = thd_default_stack_size;
   thd_default_stack_size = 1024*1024;
 

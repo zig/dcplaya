@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile.inc.in,v 1.25 2003-03-10 22:53:06 ben Exp $
+# $Id: Makefile.inc.in,v 1.26 2003-03-18 14:53:26 ben Exp $
 #
 
 .SUFFIXES:
@@ -17,6 +17,9 @@ MASTER=@MASTER@
 RELEASE=@RELEASE@
 DEBUG=@DEBUG@
 export MASTER RELEASE DEBUG
+
+# Liste of rules that discard dependencies rebuild
+NODEP_RULES := clean dependclean depclean clean-depend depend-clean req required maintainer-clean distclean clean_local
 
 # ----------------------------------------------------------------------
 # Setup for KOS
@@ -285,4 +288,6 @@ KOS_INC_RULES=$(KOS_LOCAL_INCS) -I- $(KOS_INCS) -I$(KOS_BASE)/kernel/arch/$(KOS_
 KOS_ARCH_DIR = $(KOS_BASE)/kernel/arch/$(KOS_ARCH)
 KOS_START = $(KOS_ARCH_DIR)/kernel/startup.o
 
+ifeq "$(filter $(NODEP_RULES),$(MAKECMDGOALS))" ""
 -include Makefile.dep
+endif

@@ -87,7 +87,7 @@ int border_customize(texid_t texid, border_def_t def)
   /* 		  border, color16[0], fill, color16[1], link, color16[2]); */
 
   /* Lock the original border texture the time to get its properties. */
-  torg = texture_lock(bordertex_org);
+  torg = texture_fastlock(bordertex_org);
   if (!torg) {
     return -1;
   }
@@ -98,7 +98,7 @@ int border_customize(texid_t texid, border_def_t def)
   texture_release(torg);
 
   /* Lock the custom border texture ...  */
-  t = texture_lock(texid);
+  t = texture_fastlock(texid);
   if (!t || t->width != worg || t->height != horg || (1<<t->wlog2) != lorg) {
     err = -1;
     goto error;
@@ -139,7 +139,8 @@ int border_init(void)
   bordertex = texture_dup(bordertex_org, "bordertile2");
 
   /* Apply texture conversion (+1 for custom). */
-  t = texture_lock(bordertex);
+  /* $$$ Don't need de-twiddle since make_blk don't care about pixel order */
+  t = texture_fastlock(bordertex);
   if (t) {
     make_blk(t->addr, t->width, t->height, 1 << t->wlog2, 2);
     texture_release(t);

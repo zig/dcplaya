@@ -215,7 +215,7 @@ void fftband_update(fftbands_t * bands, const uint16 * fft)
 
   for (i=1; i<bands->n; ++i) {
     fftband_t * b = bands->band + i;
-    int s;
+/*     int s; */
     unsigned int w;
     w = fftband_calc_value(b,fft);
     l += w;

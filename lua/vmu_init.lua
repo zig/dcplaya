@@ -1,7 +1,7 @@
 --- @date 2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  LUA script to initialize dcplaya VMU backup.
---- $Id: vmu_init.lua,v 1.22 2003-03-14 18:51:04 ben Exp $
+--- $Id: vmu_init.lua,v 1.23 2003-03-18 14:53:26 ben Exp $
 ---
 
 -- Unload library
@@ -109,7 +109,7 @@ end
 function vmu_list()
    -- Check available VMU
    local dir = dirlist("-nh", "/vmu")
-   dump(dir,"vmu_list")
+--   dump(dir,"vmu_list")
    if type(dir) ~= "table" or dir.n < 1 then
       print("vmu_list : no VMU found.")
       return
