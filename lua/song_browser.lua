@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.42 2003-03-11 13:39:21 ben Exp $
+--- $Id: song_browser.lua,v 1.43 2003-03-11 14:45:30 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song browser application
@@ -38,52 +38,63 @@ function song_browser_create_sprite(sb)
    sb.sprites = {}
    sb.sprites.texid = tex_exist("dcpsprites") or tex_new("/rd/dcpsprites.tga")
 
-   sb.sprites.logo = sprite("dcplogo",
-			    408/2, 29/2,
-			    408, 29,
-			    0, 0, 408/512, 29/128,
+   local x1,y1,w,h
+
+   x1,y1,w,h = 0,0,408,29
+   sb.sprites.logo = sprite(nil,
+			    w/2, h/2,
+			    w, h,
+			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
 			    sb.sprites.texid)
 
-   sb.sprites.file = sprite("file",	
-			    165/2, 14/2,
-			    165, 14, 0, 31/128, 165/512, 45/128,
+   x1,y1,w,h = 1,31,165,14
+   sb.sprites.file = sprite(nil,
+			    w/2, h/2,
+			    w, h,
+			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
 			    sb.sprites.texid)
 
-   sb.sprites.list = sprite("list",	
-			    249/2, 14/2,
-			    249, 14,
-			    170/512, 31/128, 419/512, 45/128,
+   x1,y1,w,h = 170,31,249,14
+   sb.sprites.list = sprite(nil,
+			    w/2, h/2,
+			    w, h,
+			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
 			    sb.sprites.texid)
 
-   sb.sprites.copy = sprite("copy",	
-			    185/2, 19/2,
-			    185, 19,
-			    0, 48/128, 185/512, 67/128,
+   x1,y1,w,h = 1,46,184,19
+   sb.sprites.copy = sprite(nil,
+			    w/2, h/2,
+			    w, h,
+			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
 			    sb.sprites.texid)
 
-   sb.sprites.url = sprite("url",	
-			   185/2, 19/2,
-			   185, 19,
-			   186/512, 48/128, 371/512, 67/128,
+   x1,y1,w,h = 187,52,186,12
+   sb.sprites.url = sprite(nil,
+			   w/2, h/2,
+			   w, h,
+			   x1/512, y1/128, (x1+w)/512, (y1+h)/128,
 			   sb.sprites.texid)
 
-   sb.sprites.jess = sprite("jess",	
-			    107/2, 53/2,
-			    107, 53,
-			    0/512, 72/128, 107/512, 125/128,
+   x1,y1,w,h = 1,71,107,55
+   sb.sprites.jess = sprite(nil,
+			    w/2, h/2,
+			    w, h,
+			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
 			    sb.sprites.texid)
 
-   sb.sprites.proz = sprite("prozak",	
-			    56/2, 80/2,
-			    56, 80,
-			    453/512, 0/128, 510/512, 80/128,
+   x1,y1,w,h = 454,0,58,81
+   sb.sprites.proz = sprite(nil,
+			    w/2, h/2,
+			    w, h,
+			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
 			    sb.sprites.texid)
 
-   sb.sprites.vmu = sprite("vmu",	
-			   104/2, 62/2,
-			   104, 62,
-			   108/512, 65/128, 212/512, 127/128,
-			   sb.sprites.texid,1)
+   x1,y1,w,h = 109,65,104,63
+   sb.sprites.vmu = sprite(nil,
+			   w/2, h/2,
+			   w, h,
+			   x1/512, y1/128, (x1+w)/512, (y1+h)/128,
+			   sb.sprites.texid)
 
    sb.fl.title_sprite = sb.sprites.file
    sb.fl.icon_sprite = sb.sprites.jess
