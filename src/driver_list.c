@@ -7,6 +7,7 @@
 #include "inp_driver.h"
 #include "filetype.h"
 #include "sysdebug.h"
+#include "lef.h"
 
 driver_list_t inp_drivers;
 driver_list_t obj_drivers;
@@ -245,3 +246,52 @@ inp_driver_t * inp_driver_list_search_by_id(int id)
   return d;
 }
 
+#include <arch/spinlock.h>
+
+int driver_reference(any_driver_t * drv)
+{
+  lef_prog_t * lef;
+  int result = 0;
+
+  spinlock_lock((spinlock_t *) &drv->mutex);
+
+  drv->count++;
+  if (drv->count == 1) {
+    SDDEBUG("Calling init on driver '%s'\n", drv->name);
+    result = drv->init(drv);
+  }
+
+  lef = drv->dll;
+  if (lef) {
+    lef->ref_count++;
+  }
+
+  spinlock_unlock((spinlock_t *) &drv->mutex);
+
+  return result;
+}
+
+void driver_dereference(any_driver_t * drv)
+{
+  lef_prog_t * lef;
+
+  spinlock_lock((spinlock_t *) &drv->mutex);
+
+  drv->count--;
+  if (drv->count == 0) {
+    SDDEBUG("Calling shutdown on driver '%s'\n", drv->name);
+    drv->shutdown(drv);
+  }
+
+  lef = drv->dll;
+  if (lef) {
+    int count = drv->count;
+    lef_free(lef);
+
+    /* past this point, the driver may not exist anymore ... */
+    if (count == 0)
+      return; /* do not release mutex ON PURPOSE */
+  }
+
+  spinlock_unlock((spinlock_t *) &drv->mutex);
+}

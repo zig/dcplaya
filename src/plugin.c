@@ -3,7 +3,7 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: plugin.c,v 1.8 2002-09-21 05:15:47 benjihan Exp $
+ * $Id: plugin.c,v 1.9 2002-09-27 02:01:38 vincentp Exp $
  */
 #include <stdio.h>
 #include <string.h>
@@ -60,7 +60,7 @@ any_driver_t * plugin_load(const char *fname)
       }
       pd = d2;
       /* Add a ref count to lef. */
-      ++prog->ref_count;
+      /*      ++prog->ref_count;*/
       SDDEBUG("+ [%s] [%s] -> [%s]\n", (char *)&d2->type, d2->name, dl->name);
     } else {
       SDERROR("Bad driver type %08x [%c%c%c%c]\n",
@@ -94,9 +94,8 @@ static void remove_driver(driver_list_t * dl, any_driver_t * d)
   SDDEBUG("%s([%s], [%s] : lef:%p count:%d\n", __FUNCTION__,
 	  dl->name, d->name, lef, lef ? lef->ref_count : -666);
   driver_list_unregister(dl, d);
-  SDDEBUG("Running shutdown code\n");
-  d->shutdown(d);
-  lef_free(lef); /* dereference and optionnal free. */
+  SDDEBUG("Dereferencing driver\n");
+  driver_dereference(d);
 }
 
 int plugin_load_and_register(const char *fname)
@@ -137,7 +136,7 @@ int plugin_load_and_register(const char *fname)
       remove_driver(dl, old);
     }
 
-    if (d->init(d) < 0 || driver_list_register(dl, d) < 0) {
+    if (driver_reference(d) < 0 || driver_list_register(dl, d) < 0) {
       SDERROR( "[%s] Init or Registration failed, removed\n", d->name);
       remove_driver(dl, d);
     } else {

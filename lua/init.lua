@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: init.lua,v 1.4 2002-09-25 21:36:44 vincentp Exp $
+-- $Id: init.lua,v 1.5 2002-09-27 02:01:37 vincentp Exp $
 --
 
 
@@ -146,6 +146,7 @@ function update_driver_list(list, force)
 			print("Warning : replacing driver '", d.name, "' in list")
 			new = 1
 		end
+		print (d.name, force, new)
 		driver_list[d.name] = d
 --		print (d.name)
 
@@ -174,11 +175,26 @@ function update_driver_list(list, force)
 end
 
 function update_all_driver_lists(force)
-	driver_list = {}
+	if type(driver_list)~="table" then
+		driver_list = {}
+	end
 	update_driver_list(inp_drivers, force)
 	update_driver_list(vis_drivers, force)
 --	update_driver_list(obj_drivers, force)
 	update_driver_list(exe_drivers, force)
+end
+
+-- this function is called when the shell is shutting down
+function dynshell_shutdown()
+	if type(driver_list)=="table" then
+		local i
+		for i, _ in driver_list do
+			local f = getglobal(i.."_driver_shutdown")
+			if f then
+				f()
+			end
+		end
+	end
 end
 
 update_all_driver_lists(1)

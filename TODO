@@ -1,5 +1,5 @@
 
-$Id: TODO,v 1.13 2002-09-26 02:22:07 benjihan Exp $
+$Id: TODO,v 1.14 2002-09-27 02:01:36 vincentp Exp $
 
 ** TODO :
 
@@ -88,7 +88,13 @@ $Id: TODO,v 1.13 2002-09-26 02:22:07 benjihan Exp $
   It could happen because unlinking a empty dir is a valid op.
   zed *MUST* check the file/dir type before unlinking.
 
-- $d$
+  [2002-09-26 03:16:32 PM, zig] 
+  "zed *MUST* check", or "the filesystem *MUST* check" ?
+
++ [2002-09-26 04:02:59 AM, ben]
   Question ?
   Why display_driver is shutdown and initialized when loading a new driver of
   an other type (inp or vis) ?
+
+  [2002-09-26 03:15:27 PM, zig] 
+  this was a bug, fixed

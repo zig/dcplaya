@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.22 2002-09-25 22:43:07 benjihan Exp $
+ * @version    $Id: dynshell.c,v 1.23 2002-09-27 02:01:36 vincentp Exp $
  */
 
 #include <stdio.h>
@@ -436,6 +436,58 @@ static int lua_driver_load(lua_State * L)
   return 0;
 }
 
+static int lua_thd_pass(lua_State * L)
+{
+  thd_pass();
+
+  return 0;
+}
+
+static int lua_framecounter(lua_State * L)
+{
+  int nparam = lua_gettop(L);
+  static int offset;
+  int ofc;
+  int fc;
+
+  for (;;) {
+    ofc = ta_state.frame_counter;
+    fc = ofc - offset;
+
+    if (fc)
+      break;
+
+    thd_pass();
+  }
+
+  if (nparam && !lua_isnil(L, 1)) {
+    /* reset framecounter */
+    offset = ofc;
+  }
+
+  lua_settop(L, 0);
+  lua_pushnumber(L, fc);
+
+  return 1;
+}
+
+static int lua_peekchar(lua_State * L)
+{
+  int k;
+
+  /* ingnore any parameters */
+  lua_settop(L, 0);
+
+  k = csl_peekchar();
+
+  if (k >= 0) {
+    lua_pushnumber(L, k);
+    return 1;
+  }
+
+  return 0;
+}
+
 static int lua_getchar(lua_State * L)
 {
   int k;
@@ -804,6 +856,16 @@ static luashell_command_description_t commands[] = {
     SHELL_COMMAND_C, lua_driver_load
   },
   { 
+    "peekchar",
+    0,
+
+    "print([["
+    "peekchar() : return input key on keyboard if available and return its value, or nil if none\n"
+    "]])",
+
+    SHELL_COMMAND_C, lua_peekchar
+  },
+  { 
     "getchar",
     "gc",
 
@@ -812,6 +874,32 @@ static luashell_command_description_t commands[] = {
     "]])",
 
     SHELL_COMMAND_C, lua_getchar
+  },
+  {
+    "thd_pass",
+    0,
+
+    "print([["
+    "thd_pass() : sleep for a little while, not consuming CPU time"
+    "]])",
+
+    SHELL_COMMAND_C, lua_thd_pass
+  },
+  {
+    "framecounter",
+    0,
+
+    "print([["
+    "framecounter(clear) : return the screen refresh frame counter, "
+    "if clear is set, then clear the framecounter for next time.\n"
+    "since there is 60 frame per second, it is important to clear the "
+    "framcounter often to avoid numerical imprecision due to use of floating "
+    "point number ! (become imprecise after about 24 hours ...)\n"
+    "also, this function never returns zero, it will do thd_pass() until "
+    "the framecounter is not zero ..."
+    "]])",
+
+    SHELL_COMMAND_C, lua_framecounter
   },
   { 
     "rawprint",
@@ -999,6 +1087,8 @@ void shell_lua_fputs(const char * s)
 static void shutdown()
 {
   printf("shell: Shutting down dynamic shell\n");
+
+  lua_dostring(shell_lua_state, "dynshell_shutdown()");
 
   shell_set_command_func(old_command_func);
 

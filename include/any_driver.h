@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   dcplaya plugin structure.
  *
- * $Id: any_driver.h,v 1.5 2002-09-25 03:21:21 benjihan Exp $ 
+ * $Id: any_driver.h,v 1.6 2002-09-27 02:01:37 vincentp Exp $ 
  */
  
 #ifndef _ANY_DRIVER_H_
@@ -23,8 +23,6 @@ DCPLAYA_EXTERN_C_START
 /**@}*/
 
 #include "driver_option.h"
-
-
 
 struct luashell_command_description;
 
@@ -64,6 +62,19 @@ typedef struct _any_driver_s
 
   /** Lua shell command description list */
   struct luashell_command_description * luacommands;
+
+
+
+  /* WARNING WARNING START OF DYNAMIC VARIABLES */
+  /* THE FOLLOWING ENTRIES SHOULD BE INITIALLY SET TO ZERO */
+  /* NOTE : the dll entry should also be here ... */
+
+  /** Reference counter */
+  int count;
+
+  /** Mutex set during modification of driver state */
+  void * mutex;
+
 } any_driver_t;
 
 

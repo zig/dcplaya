@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.c,v 1.1 2002-09-25 21:38:34 vincentp Exp $
+ * @version   $Id: display_list.c,v 1.2 2002-09-27 02:01:37 vincentp Exp $
  */
 
 
@@ -17,6 +17,8 @@ static dl_lists_t dl_active_lists;
 /** this is the list of non displayed list */
 static dl_lists_t dl_sleeping_lists;
 
+matrix_t dl_trans;
+dl_color_t dl_color;
 
 #define lock(l) spinlock_lock(&(l)->mutex)
 #define unlock(l) spinlock_unlock(&(l)->mutex)
@@ -47,6 +49,11 @@ dl_list_t * dl_new_list(int heapsize, int active)
   l->active = active;
   l->heap = malloc(heapsize);
   l->heap_size = heapsize;
+  l->color[0] = 1.0f;
+  l->color[1] = 1.0f;
+  l->color[2] = 1.0f;
+  l->color[3] = 1.0f;
+  MtxIdentity(l->trans);
 
   locklists();
 
@@ -64,10 +71,7 @@ dl_list_t * dl_new_list(int heapsize, int active)
 void dl_destroy_list(dl_list_t * l)
 {
   locklists();
-  if (l->active)
-    LIST_REMOVE(l, g_list);
-  else
-    LIST_REMOVE(l, g_list);
+  LIST_REMOVE(l, g_list);
   unlocklists();
 
   free(l->heap);
@@ -80,19 +84,21 @@ int dl_set_active(dl_list_t * l, int active)
   int old;
 
   locklists();
+
   old = l->active;
   if (old == active)
     goto done;
-  if (!active) {
-    LIST_REMOVE(l, g_list);
+
+  LIST_REMOVE(l, g_list);
+  if (!active)
     LIST_INSERT_HEAD(&dl_sleeping_lists, l, g_list);
-  } else {
-    LIST_REMOVE(l, g_list);
+  else
     LIST_INSERT_HEAD(&dl_active_lists, l, g_list);
-  }
 
   l->active = active;
+
  done:
+
   unlocklists();
 
   return old;
@@ -103,11 +109,16 @@ int dl_get_active(dl_list_t * l)
   return l->active;
 }
 
+/* must be a power of two */
+#define MIN_ALLOC 8
+
 void * dl_alloc(dl_list_t * dl, size_t size)
 {
   void * r = NULL;
 
   lock(dl);
+
+  size += (-size) & (MIN_ALLOC - 1);
 
   if (dl->heap_pos + size >= dl->heap_size)
     goto fail;
@@ -139,6 +150,8 @@ static void dl_render(int opaque)
 
     lock(l);
 
+    memcpy(dl_trans, l->trans, sizeof(dl_trans));
+    memcpy(dl_color, l->color, sizeof(dl_color));
     c = l->command_list;
     while (c) {
       if (opaque) {
@@ -196,3 +209,25 @@ int dl_shutdown()
 
   return 0;
 }
+
+
+void dl_set_trans(dl_list_t * dl, matrix_t mat)
+{
+  memcpy(dl->trans, mat, sizeof(dl->trans));
+}
+
+float * dl_get_trans(dl_list_t * dl)
+{
+  return dl->trans[0];
+}
+
+void dl_set_color(dl_list_t * dl, dl_color_t col)
+{
+  memcpy(dl->color, col, sizeof(dl->color));
+}
+
+float * dl_get_color(dl_list_t * dl)
+{
+  return dl->color;
+}
+

@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: shell.lua,v 1.6 2002-09-25 21:36:44 vincentp Exp $
+-- $Id: shell.lua,v 1.7 2002-09-27 02:01:37 vincentp Exp $
 --
 
 
@@ -151,9 +151,11 @@ function shell_input(string)
 		elseif key == KBD_KEY_UP then
 			line = max(1, line-1)
 			col = strlen(t[line])+1
+			scrollx = 1
 		elseif key == KBD_KEY_DOWN then
 			line = min(getn(t), line+1)
 			col = strlen(t[line])+1
+			scrollx = 1
 		elseif key == KBD_KEY_F1 then
 			return "exit"
 		elseif key == KBD_KEY_F2 then

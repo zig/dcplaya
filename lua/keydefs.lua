@@ -1,5 +1,8 @@
 -- converted from kos keyboard.h
 
+if not keydefs_included then
+keydefs_included = 1
+
 -- modifier keys
  KBD_MOD_LCTRL		=	(2^0)
  KBD_MOD_LSHIFT		=	(2^1)
@@ -146,3 +149,4 @@ end
  KBD_ENTER	=	13
  KBD_ESC	=	27
 
+end -- it not keydefs_included then

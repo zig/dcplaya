@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.h,v 1.1 2002-09-25 21:38:33 vincentp Exp $
+ * @version   $Id: display_list.h,v 1.2 2002-09-27 02:01:37 vincentp Exp $
  */
 
 
@@ -12,9 +12,15 @@
 
 #include <arch/spinlock.h>
 #include <sys/queue.h>
+#include "matrix.h"
+
+typedef float dl_color_t[4];
 
 struct dl_command;
 
+/** function type to render in opaque list or transparent list ;
+  * its argument is the pointer on the command that contained it.
+  */
 typedef void (*dl_command_func_t)(void *);
 
 /** display list command generic structure */
@@ -29,6 +35,9 @@ typedef struct dl_command {
 typedef struct dl_list {
   LIST_ENTRY(dl_list) g_list;  /**< linked list entry */
 
+  matrix_t   trans;
+  dl_color_t color;
+
   dl_command_t * command_list; /**< first element of the command list */
 
   char * heap;                 /**< command heap */
@@ -42,6 +51,12 @@ typedef struct dl_list {
 } dl_list_t;
 
 typedef LIST_HEAD(dl_lists, dl_list) dl_lists_t;
+
+/** current transformation */
+extern matrix_t dl_trans;
+
+/** current global color */
+extern dl_color_t dl_color;
 
 /* FUNCTION API */
 
@@ -86,6 +101,17 @@ void dl_render_transparent();
 /** insert the given command into the display list, filling the two render functions with given parameters */
 void dl_insert(dl_list_t * dl, void * com, dl_command_func_t opaque_func, dl_command_func_t transparent_func);
 
+/** set the global transformation of given display list */
+void dl_set_trans(dl_list_t * dl, matrix_t mat);
+
+/** get the global transformation of given display list */
+float * dl_get_trans(dl_list_t * dl);
+
+/** set the global color of given display list */
+void dl_set_color(dl_list_t * dl, dl_color_t col);
+
+/** get the global color of given display list */
+float * dl_get_color(dl_list_t * dl);
 
 #endif /* #ifdef _DISPLAY_LIST_H_ */
 

@@ -5,7 +5,7 @@
  * @author  Dan Potter
  * @brief   ELF library loader - Based on elf.c from KallistiOS 1.1.5 
  *
- * @version $Id: lef.c,v 1.12 2002-09-20 17:15:08 benjihan Exp $
+ * @version $Id: lef.c,v 1.13 2002-09-27 02:01:37 vincentp Exp $
  */
 
 #include <malloc.h>
@@ -672,8 +672,8 @@ info = section header index of section to which reloc applies
 
 /* Free a loaded ELF program */
 void lef_free(lef_prog_t *prog) {
-  SDDEBUG("%s(%p)\n", __FUNCTION__, prog);
-  SDINDENT;
+/*  SDDEBUG("%s(%p)\n", __FUNCTION__, prog);
+  SDINDENT; */
   if (!prog) {
     SDERROR("Invalid parameter\n");
   } else if (--prog->ref_count<=0) {
@@ -683,7 +683,7 @@ void lef_free(lef_prog_t *prog) {
     free(prog);
     SDDEBUG("lef removed\n");
   } else {
-    SDDEBUG("remainding lef instance: %d\n", prog->ref_count);
+/*    SDDEBUG("remainding lef instance: %d\n", prog->ref_count); */
   }
-  SDUNINDENT;
+/*  SDUNINDENT; */
 }

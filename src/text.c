@@ -203,6 +203,11 @@ static float size_of_str(const float scalex, const char *s)
   return sum * scalex;
 }
 
+float measure_poly_text(const char * s)
+{
+  return size_of_str(text_xscale, s);
+}
+
 /* Draw one font character (16x16); assumes polygon header already sent */
 static float draw_text_char(float x1, float y1, float z1,
                             float scalex, float scaley,

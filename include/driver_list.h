@@ -1,4 +1,4 @@
-/* $Id: driver_list.h,v 1.6 2002-09-24 13:47:04 vincentp Exp $ */
+/* $Id: driver_list.h,v 1.7 2002-09-27 02:01:37 vincentp Exp $ */
 
 #ifndef _DRIVER_LIST_H_
 #define _DRIVER_LIST_H_
@@ -43,6 +43,15 @@ driver_list_t * driver_list_which(any_driver_t *driver);
 
 any_driver_t * driver_list_search(driver_list_t * dl, const char *name);
 
+/** Make a new reference to the driver, return success (0) or error.
+  * The first reference will call init method of the driver.
+  */
+int driver_reference(any_driver_t * drv);
+
+/** Release one reference to the driver.
+  * If the reference count reach zero, then shutdown is called and driver
+  * is free. */
+void driver_dereference(any_driver_t * drv);
 
 /* input driver function */
 inp_driver_t * inp_driver_list_search_by_extension(const char *ext);
