@@ -3,7 +3,7 @@
 #
 # by Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.5 2003-02-12 18:46:51 ben Exp $
+# $Id: Makefile,v 1.6 2003-02-12 18:55:49 ben Exp $
 #
 
 CDRECORD	= cdrecord dev=0,0,0 speed=4
@@ -92,9 +92,10 @@ test.iso: dcplaya-data
 	@echo "type `umount mnt' to unmount"
 
 .PHONY: burn-data
-burn-data: data.raw burn-audio 
+burn-data: burn-audio data.raw 
 	@echo "[$@]"
-	$(CDRECORD) -xa1 $< && rm -f audio.raw data.raw burn-audio tmp.iso
+	$(CDRECORD) -xa1 data.raw \
+	&& rm -f audio.raw data.raw burn-audio tmp.iso
 
 .PHONY: dcplaya-data
 dcplaya-data: id.txt RELEASE.txt README.txt 1ST_READ.BIN
