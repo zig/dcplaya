@@ -5,7 +5,7 @@
  * @date    2002
  * @brief   Registered driver list.
  *
- * $Id: driver_list.c,v 1.15 2003-03-01 14:53:43 ben Exp $
+ * $Id: driver_list.c,v 1.16 2003-03-03 13:01:27 ben Exp $
  */
 
 #include <string.h>
@@ -241,6 +241,15 @@ static any_driver_t * drv_list_search(driver_list_t *dl, const char *name)
   return d;
 }
 
+static any_driver_t * drv_list_idx(driver_list_t *dl, int idx)
+{
+  any_driver_t * d;
+  int i;
+  for (i=0, d=dl->drivers; d && idx != i; d=d->nxt, ++i)
+    ;
+  return d;
+}
+
 any_driver_t * driver_list_search(driver_list_t *dl, const char *name)
 {
   any_driver_t * d;
@@ -256,6 +265,23 @@ any_driver_t * driver_list_search(driver_list_t *dl, const char *name)
 
   return d;
 }
+
+any_driver_t * driver_list_index(driver_list_t *dl, int idx)
+{
+  any_driver_t * d;
+
+  if (!dl) {
+    return 0;
+  }
+
+  driver_list_lock(dl);
+  d = drv_list_idx(dl, idx);
+  driver_reference(d);
+  driver_list_unlock(dl);
+
+  return d;
+}
+
 
 /***************************************************************
  ** Input driver 

@@ -5,7 +5,7 @@
  * @date    2002
  * @brief   Registered driver list.
  *
- * $Id: driver_list.h,v 1.11 2003-03-01 14:53:43 ben Exp $
+ * $Id: driver_list.h,v 1.12 2003-03-03 13:01:27 ben Exp $
  */
 
 #ifndef _DRIVER_LIST_H_
@@ -164,6 +164,13 @@ driver_list_t * driver_list_which(any_driver_t *driver);
  * @retval 0, on error
  */
 any_driver_t * driver_list_search(driver_list_t * dl, const char *name);
+
+/** Search a driver by index.
+ *
+ * @return driver
+ * @retval 0, on error
+ */
+any_driver_t * driver_list_index(driver_list_t *dl, int idx);
 
 /* @} */
 
