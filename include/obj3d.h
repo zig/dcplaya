@@ -3,7 +3,7 @@
  * @author    Ben(jamin) Gerard <ben@sashipa.com>
  * @date      2001/10/20
  * @brief     Simple 3D objects defintions for 3D-object plugins
- * @version   $Id: obj3d.h,v 1.6 2003-01-21 02:38:16 ben Exp $
+ * @version   $Id: obj3d.h,v 1.7 2003-01-24 04:28:13 ben Exp $
  */
 
 /* Copyright (C) 1998-2001 Ben(jamin) Gerard */
@@ -59,6 +59,9 @@ typedef struct {
 
 /** Build and alloc if neccessary face normals. */
 int obj3d_build_normals(obj_t *o);
+
+/** Verify object consistency. */
+int obj3d_verify(obj_t *o);
 
 /** @} */
 

@@ -4,7 +4,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.9 2003-01-22 19:12:56 ben Exp $
+ * $Id: texture.c,v 1.10 2003-01-24 04:28:13 ben Exp $
  */
 
 #include <stdlib.h>
@@ -127,7 +127,7 @@ int texture_init(void)
 
   texture_locks = 0;
   texture_references = 0;
-  texture = allocator_create(256, sizeof(texture_t));
+  texture = allocator_create(256, sizeof(texture_t), "texture");
   if (!texture) {
     return -1;
   }

@@ -4,7 +4,7 @@
  * @date     2002/10/18
  * @brief    fast allocator for fixed size small buffer.
  * 
- * $Id: allocator.h,v 1.4 2002-10-23 00:00:18 benjihan Exp $
+ * $Id: allocator.h,v 1.5 2003-01-24 04:28:13 ben Exp $
  */
 
 #ifndef _ALLOCATOR_H_
@@ -50,6 +50,7 @@ typedef struct {
   void * realaddress;     /**< Address of big alloc.          */
   allocator_elt_t * used; /**< List of allocated elements.    */
   allocator_elt_t * free; /**< List of free elements.         */
+  const char *name;       /**< allocator name for debug purpose. */
 #ifdef ALLOCATOR_SEM
   semaphore_t *sem;       /**< Access semaphore               */
 #elif defined ALLOCATOR_MUTEX
@@ -76,7 +77,7 @@ typedef struct {
  *
  * @see allocator_destroy()
  */
-allocator_t * allocator_create(int nmemb, int size);
+allocator_t * allocator_create(int nmemb, int size, const char *name);
 
 /** Destroy an allocator.
  *

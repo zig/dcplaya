@@ -4,7 +4,7 @@
 --- @author   benjamin gerard <ben@sashipa.com>
 --- @brief    Directory and filename support.
 ---
---- $Id: dirfunc.lua,v 1.12 2002-12-09 16:26:49 ben Exp $
+--- $Id: dirfunc.lua,v 1.13 2003-01-24 04:28:13 ben Exp $
 ---
 
 PWD=home
@@ -14,36 +14,37 @@ PWD=home
 --- @param    pathname full 
 --- @return   path,leaf
 ---
-function get_path_and_leaf(pathname)
-	if not pathname then return end
-	local start,stop,path,leaf
-	pathname = canonical_path(pathname)
-	start,stop,path,leaf = strfind(pathname,"^(.*/)(.*)")
-	if path then
-		path = fullpath(path)
-	elseif not leaf or leaf == "" then
-		-- Find no path -- leaf only 
-		leaf = pathname
-	end
-	if leaf and leaf == "" then leaf = nil end
-	return path,leaf
+function get_path_and_leaf(pathname,pwd)
+   if not pathname then return end
+   local start,stop,path,leaf
+   pathname = canonical_path(pathname)
+   start,stop,path,leaf = strfind(pathname,"^(.*/)(.*)")
+   if path then
+      path = fullpath(path,pwd)
+   elseif not leaf or leaf == "" then
+      -- Find no path -- leaf only 
+      leaf = pathname
+   end
+   if leaf and leaf == "" then leaf = nil end
+   return path,leaf
 end
 
 --- Create a full path name.
 --- @ingroup  dcplaya_lua_basics
 --- @return   fullpath of given filename
-function fullpath(name)
+function fullpath(name, pwd)
+   pwd = pwd or PWD
    if not name then
-	  return PWD
+      return pwd
    end
    if strsub(name, 1, 1) ~= "/" then
-	  name = PWD.."/"..name
+      name = pwd.."/"..name
    end
    return canonical_path(name)
 end
 
 addhelp(fullpath,
-		[[print[[fullpath(filename): return fullpath of given filename]]]])
+	[[print[[fullpath(filename[,pwd]): return fullpath of given filename]]]])
 
 --- Change current directory.
 --- @ingroup  dcplaya_lua_basics
@@ -74,23 +75,23 @@ function fullpath_convert(name, arglist)
    local old = getglobal(name)
 
    if arglist then
-	  new =	function (...)
-			   local i, v
-			   for i, v in %arglist do
-				  arg[v] = fullpath(arg[v])
-			   end
-			   return call (%old, arg)
-			end
+      new =	function (...)
+		   local i, v
+		   for i, v in %arglist do
+		      arg[v] = fullpath(arg[v])
+		   end
+		   return call (%old, arg)
+		end
    else
-	  new =	function (...)
-			   local i
-			   for i=1, arg.n, 1 do
-				  if strsub(arg[i], 1, 1) ~= "-" then
-					 arg[i] = fullpath(arg[i])
-				  end
-			   end
-			   return call (%old, arg)
-			end
+      new =	function (...)
+		   local i
+		   for i=1, arg.n, 1 do
+		      if strsub(arg[i], 1, 1) ~= "-" then
+			 arg[i] = fullpath(arg[i])
+		      end
+		   end
+		   return call (%old, arg)
+		end
    end
    
    setglobal(name, new)
@@ -104,8 +105,8 @@ function deltree(path)
    path = fullpath(path)
 
    if not test("-d",path) then
-	  print("deltree : [".. tostring(path) .. "] is not a directory.")
-	  return
+      print("deltree : [".. tostring(path) .. "] is not a directory.")
+      return
    end
 
    local d,f = dirlist("-2",path)
@@ -113,16 +114,16 @@ function deltree(path)
 
    -- Unlink files
    for i,v in f do
-	  if type(v) == "string" then
-		 unlink(path .. "/" .. v)
-	  end
+      if type(v) == "string" then
+	 unlink(path .. "/" .. v)
+      end
    end
 
    -- Recurse sub-dir
    for i,v in d do
-	  if type(v) == "string" then
-		 deltree(path .. "/" .. v)
-	  end
+      if type(v) == "string" then
+	 deltree(path .. "/" .. v)
+      end
    end
 
    -- Unlink path

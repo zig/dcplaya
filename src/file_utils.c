@@ -4,7 +4,7 @@
  * @date    2002/09/30
  * @brief   File manipulation utilities.
  *
- * $Id: file_utils.c,v 1.6 2002-12-13 17:06:53 ben Exp $
+ * $Id: file_utils.c,v 1.7 2003-01-24 04:28:13 ben Exp $
  */
 
 /* #include "sysdebug.h" */
@@ -199,6 +199,22 @@ typedef struct _fu_linkeddirentry_s
   fu_dirent_t entry;
 } fu_linkeddirent_t;
 
+static void copy_direntry(fu_dirent_t * entry, const dirent_t *dir)
+{
+  int i,c;
+  const int s1 = sizeof(dir->name);
+  const int s2 = sizeof(entry->name) - 1;
+  const int maxcpy = s1 < s2 ? s1 : s2;
+
+  for (i=0; i<maxcpy && (c=dir->name[i], c); ++i) {
+    entry->name[i] = c;
+  }
+  for (; i<=s2; ++i) {
+    entry->name[i] = 0;
+  }
+  entry->size = dir->size;
+}
+
 static int r_readir(int fd, fu_filter_f filter, fu_linkeddirent_t *elist,
 		    fu_dirent_t ** res) 
 {
@@ -211,8 +227,7 @@ static int r_readir(int fd, fu_filter_f filter, fu_linkeddirent_t *elist,
 /*     SDDEBUG("entry [%s] [%d]\n", dir->name, dir->size); */
 
     memset(&local,0,sizeof(local));
-    strncpy(local.entry.name,dir->name,sizeof(local.entry.name)-1);
-    local.entry.size = dir->size;
+    copy_direntry(&local.entry,dir);
     /* Filter */
     if (filter(&local.entry)) {
       continue;
@@ -306,17 +321,16 @@ int fu_read_dir_cb(const char *dirname, fu_addentry_f addentry, void * cookie)
 /* 	SDDEBUG("[%s] : [%s]\n", __FUNCTION__, dir->name); */
 
     memset(&local,0,sizeof(local));
-    strncpy(local.name,dir->name,sizeof(local.name)-1);
-    local.size = dir->size;
-	err = addentry(&local, cookie);
+    copy_direntry(&local,dir);
+    err = addentry(&local, cookie);
 
 /* 	SDDEBUG("-> %d\n", err); */
 
-	if (err < 0) {
-	  count = err;
-	  break;
-	}
-	count += !!err;
+    if (err < 0) {
+      count = err;
+      break;
+    }
+    count += !!err;
   }
   fs_close(fd);
   return count;

@@ -1,5 +1,5 @@
 /**
- * $Id: draw_object.c,v 1.13 2003-01-22 19:12:56 ben Exp $
+ * $Id: draw_object.c,v 1.14 2003-01-24 04:28:13 ben Exp $
  */
 
 #include <stdio.h>
@@ -48,7 +48,7 @@ static uv_t uvlinks[8][4] =
     /* 7 CBA */  { {U3,U4},   {U3,U3},    {U4,U3},   {0,0} },
   };
 
-static int sature(const float a)
+inline static int sature(const float a)
 {
   int v;
 
@@ -59,7 +59,7 @@ static int sature(const float a)
   return v;
 }
 
-static unsigned int argb255(const vtx_t *color)
+inline static unsigned int argb255(const vtx_t *color)
 {
   return
     (sature(color->w*255.0f) << 24) |
@@ -68,7 +68,7 @@ static unsigned int argb255(const vtx_t *color)
     (sature(color->z*255.0f) << 0);
 }
 
-static unsigned int argb4(const float a, const float r,
+inline static unsigned int argb4(const float a, const float r,
 			  const float g, const float b)
 {
   return
@@ -400,13 +400,8 @@ int DrawObjectFrontLighted(viewport_t * vp, matrix_t local, matrix_t proj,
   float aa, ar, ag, ab;
   float la, lr, lg, lb;
 
-/*   const float m02 = local[0][2]; */
-/*   const float m12 = local[1][2]; */
-/*   const float m22 = local[2][2]; */
-
-/* $$$ test */
-  const float m02 = local[2][0];
-  const float m12 = local[2][1];
+  const float m02 = local[0][2];
+  const float m12 = local[1][2];
   const float m22 = local[2][2];
 
   if (DrawObjectPostProcess(vp, local, proj, o) < 0) {
@@ -448,12 +443,15 @@ int DrawObjectFrontLighted(viewport_t * vp, matrix_t local, matrix_t proj,
       }
 
       coef = m02 * nrm->x + m12 * nrm->y + m22 * nrm->z;
+
       if (coef < 0) {
 /*  	coef *= coef; */
-	coef = 0;
-      }
+	coef = -0.4 * coef;
+	hw->col = 0xFFFF0000;
+      } else {
       hw->col = argb4(aa + coef * la, ar + coef * lr,
 		      ag + coef * lg, ab + coef * lb);
+      }
 	
       lflags  = t[l->a].flags << 0;
       lflags |= t[l->b].flags << 1;

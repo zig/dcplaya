@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.24 2003-01-10 13:00:15 ben Exp $
+--- $Id: song_browser.lua,v 1.25 2003-01-24 04:28:13 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -509,33 +509,57 @@ function song_browser_create(owner, name)
    --    *     - @b 2    if entry is "not confirmed" but change occurs
    --    *     - @b 3    if entry is "confirmed" and change occurs
    function sbfl_confirm(fl, sb)
+      print ("sbfl_confirm")
+      if not sb.actions or not sb.actions.confirm then return end
+
       local entry_path = fl:fullpath()
       if not entry_path then return end
-      print("sbfl_confirm:"..entry_path)
-      local idx = (fl.pos or 0) + 1
-      local entry = fl.dir and fl.dir[idx]
-      if not entry then return end
-      
-      if entry.size and entry.size==-1 then
-	 print(fl.dir[idx].file,entry_path)
-	 local locate_me
-	 if entry.file == "." then
-	    locate_me = "."
-	    if strfind(entry_path,"^/cd.*") then
-	       print("Clear CD cache !")
-	       clear_cd_cache()
-	    end
-	 elseif entry.file == ".." then
-	    local p
-	    p,locate_me = get_path_and_leaf(entry.path or fl.path)
-	 end
-	 song_browser_loaddir(sb, entry_path, locate_me)
-      else
-	 sb.playlist_idx = nil
-	 song_browser_play(sb, entry_path, 0, 1)
-	 return 1
-      end 
+      local ftype, major, minor = filetype(entry_path)
+      print(format("confirm %q [%q,%q]", entry_path, major, minor))
+      local action = sb.actions.confirm[major] or sb.actions.confirm.default
+      if type(action) == "function" then
+	 return action(fl,sb,"confirm",entry_path)
+      end
+      print ("no action!")
    end
+
+   function sbfl_confirm_dir(fl, sb, action, entry_path)
+      if not test("-d", entry_path) then return end
+      local idx = fl:get_pos();
+      local entry = fl.dir[idx];
+      local name = entry and (entry.file or entry.name)
+      if not name then return end
+
+      local locate_me
+      if name == "." then
+	 locate_me = "."
+	 if strfind(entry_path,"^/cd.*") then
+	    clear_cd_cache()
+	 end
+      elseif name == ".." then
+	 local p
+	 p,locate_me = get_path_and_leaf(entry.path or fl.path)
+      end
+      song_browser_loaddir(sb, entry_path, locate_me)
+   end
+
+   function sbfl_confirm_music(fl, sb, action, entry_path)
+      if not test("-f",entry_path) then return end
+       sb.playlist_idx = nil
+      song_browser_play(sb, entry_path, 0, 1)
+      return 1
+   end
+
+   function sbfl_confirm_playlist(fl, sb, action, entry_path)
+      local dir = playlist_load(entry_path)
+      if not dir then return end
+      sb.pl:change_dir(dir)
+      return 1
+   end
+
+   function sbfl_confirm_image(fl, sb, action, entry_path)
+   end
+
 
    function song_browser_stop(sb)
       sb.stopping = 1
@@ -585,6 +609,8 @@ function song_browser_create(owner, name)
 	 local menudef = menu_create_defs()
       end
    end
+
+
 
    function song_browser_entry_confirm(sb, entry, action)
       if not entry then return end
@@ -765,6 +791,22 @@ function song_browser_create(owner, name)
 	 menu.target_pos = pl.pos + 1
       end
    end
+
+   song_browser_default_actions = {
+      confirm = {
+	 dir = sbfl_confirm_dir,
+	 music = sbfl_confirm_music,
+	 image = sbfl_confirm_image,
+	 playlist = sbfl_confirm_playlist,
+	 default = sbfl_confirm_default
+      },
+      select = {
+      },
+      cancel = {
+      },
+   }
+   sb.actions = song_browser_default_actions
+
 
    x = 341
    sb.pl = textlist_create(

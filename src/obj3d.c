@@ -4,7 +4,7 @@
  * @date    2002/02/12
  * @brief   Very simple 3D API.
  *
- * @version $Id: obj3d.c,v 1.7 2003-01-22 19:12:56 ben Exp $
+ * @version $Id: obj3d.c,v 1.8 2003-01-24 04:28:13 ben Exp $
  */
 
 #include <stdio.h>
@@ -25,10 +25,7 @@ static void swap (int *a, int *b) {
 
 static float FaceCosAngle(obj_t *o, int ia, int ib)
 {
-  vtx_t *va = o->nvx + ia;
-  vtx_t *vb = o->nvx + ib;
-  
-  return va->x * vb->x + va->y * vb->y + va->z * vb->z;
+  return vtx_dot_product(o->nvx + ia,o->nvx + ib);
 }
 
 void FaceNormal(float *d, const vtx_t * v, const tri_t *t)
@@ -128,7 +125,7 @@ static int BuildNormals(obj_t *o)
     return -1;
   }
   for (i=0; i<o->nbf; ++i) {
-    FaceNormal((float *)(o->nvx+i),o->vtx,o->tri+i);
+    FaceNormal(&o->nvx[i].x,o->vtx,o->tri+i);
   }
   o->nvx[i].x = o->nvx[i].y = o->nvx[i].z = o->nvx[i].w = 0;
   return 0;
@@ -148,7 +145,7 @@ static void BuildLinks(obj_t *o)
     return;
   }
   
-  /* Make unlinked point to special added faces : -1, invisible -2:visible. */
+  /* Make unlinked point to special added faces : -1:invisible -2:visible. */
   for (i=0; i<o->nbf+1; ++i) {
     int * tlk = &o->tlk[i].a;
     int j;
@@ -156,7 +153,7 @@ static void BuildLinks(obj_t *o)
       if (tlk[j] == -1) {
 	tlk[j] = o->nbf;
       } else if (tlk[j] == 2) {
-	tlk[j] = j; /* visible points on itself. */
+	tlk[j] = i; /* visible points on itself. */
       }
     }
   }
@@ -192,6 +189,149 @@ static void PrepareObject(obj_t *o)
   ResizeAndCenter(o, 1.0f);
   BuildNormals(o);
   BuildLinks(o);
+  // $$$ BEN : Add this test here !
+  obj3d_verify(o);
+}
+
+static int verify_vertrices(obj_t * o)
+{
+  int i,j;
+
+  if (o->nbv <= 0) {
+    SDDEBUG("- Weird number of vertex [%d]\n", o->nbv);
+    return -1;
+  }
+  if (!o->vtx) {
+    SDDEBUG("- No vertrice buffer\n");
+    return -1;
+  }
+  for (i=0; i<o->nbv; ++i) {
+    vtx_t * v = o->vtx + i;
+    float * w = &v->x;
+    if (v->w != 1) {
+      SDDEBUG(" - vtx #%d, W coordinate [%f != 1]\n", i, v->w);
+      return -1;
+    }
+    for (j=0; j<3; ++j) {
+      float a = Fabs(w[j]);
+      if (a > 1000.0f) {
+	SDDEBUG(" - vtx %d, %c coordinate large value [%f]\n", i, 'X'+j, a);
+	return -1;
+      }
+    }
+  }
+  SDDEBUG("- %d vertrices [PASSED]\n", i);
+  return 0;
+}
+
+static int verify_triangles(obj_t * o)
+{
+  int i,j,nbf;
+
+  if (o->nbf <= 0) {
+    SDDEBUG("- Weird number of face [%d]\n", o->nbf);
+    return -1;
+  }
+  if (!o->tri) {
+    SDDEBUG("- No triangle buffer\n");
+    return -1;
+  }
+  nbf = o->nbf + (o->tlk != 0);
+  for (i=0; i<nbf; ++i) {
+    tri_t * t = o->tri + i;
+    int * w = &t->a;
+    for (j=0; j<3; ++j) {
+      if ((unsigned int)w[j] >= (unsigned int)o->nbv) {
+	SDDEBUG("- face %d, vertex %c : out of range [%d,%d]\n",
+		i, 'A'+j, w[j], o->nbv);
+	return -1;
+      }
+    }
+  }
+  SDDEBUG("- %d triangles [PASSED]\n", i);
+  return 0;
+}
+
+static int verify_links(obj_t * o)
+{
+  int i,j;
+  tlk_t * t;
+
+  if (o->nbf <= 0) {
+    SDDEBUG("- Weird number of face [%d]\n", o->nbf);
+    return -1;
+  }
+  if (!o->tlk) {
+    SDDEBUG("- No links buffer\n");
+    return -1;
+  }
+
+  for (i=0, t=o->tlk; i<o->nbf; ++i, ++t) {
+    int * w = &t->a;
+    for (j=0; j<3; ++j) {
+      if ((unsigned int)w[j] > (unsigned int)o->nbf) {
+	SDDEBUG("- face %d, link %c : out of range [%d,%d]\n",
+		i, 'A'+j, w[j], o->nbf);
+	return -1;
+      }
+    }
+  }
+
+  {
+    int * w = &t->a;
+    for (j=0; j<3; ++j) {
+      if ((unsigned int)w[j] != i) {
+	SDDEBUG("- face %d, link %c : not on itself [%d,%d]\n",
+		i, 'A'+j, w[j], i);
+	return -1;
+      }
+    }
+    ++i;
+  }
+
+  SDDEBUG("- %d link [PASSED]\n", i);
+  return 0;
+}
+
+static int verify_normals(obj_t * o)
+{
+  int i;
+
+  if (!o->nvx) {
+    SDDEBUG("- normal [SKIPPED]\n");
+    return 0;
+  }
+  if (o->nbf <= 0) {
+    SDDEBUG("- Weird number of face [%d]\n", o->nbf);
+    return -1;
+  }
+  for (i=0; i<o->nbf; ++i) {
+    float n = vtx_norm(o->nvx+i);
+    if (Fabs(1.0-n) > MF_EPSYLON) {
+      SDDEBUG("- normal #%d : weird lenght [%f]\n", i, n);
+      return -1;
+    }
+  }
+  SDDEBUG("- normal [PASSED]\n");
+  
+  return 0;
+}
+
+int obj3d_verify(obj_t *o)
+{
+  int err = 0;
+  if (!o) {
+    return -1;
+  }
+  SDDEBUG("[obj3d_verify] : [%s]\n", o->name);
+  SDINDENT;
+  err = err || verify_vertrices(o);
+  err = err || verify_triangles(o);
+  err = err || verify_links(o);
+  err = err || verify_normals(o);
+  SDUNINDENT;
+  SDDEBUG("[obj3d_verify] : [%s] : [%s]\n", o->name, !err ? "OK" : "FAILED");
+  return -(!!err);
 }
 
 int obj3d_shutdown(any_driver_t * driver)

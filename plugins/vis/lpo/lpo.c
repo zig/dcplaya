@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.19 2003-01-22 19:12:56 ben Exp $
+ * $Id: lpo.c,v 1.20 2003-01-24 04:28:13 ben Exp $
  */
 
 #include <stdio.h>
@@ -133,6 +133,26 @@ static int change_object(obj_driver_t *o)
     driver_dereference(&curobj->common);
   }
   curobj = o;
+
+  // $$$
+  if (o && o->obj.nvx) {
+    int i, err=0;
+/*     SDDEBUG("Build normals\n"); */
+    for (i=0; i<o->obj.nbf; ++i) {
+      err += (1 - vtx_sqnorm(o->obj.nvx+i)) > MF_EPSYLON;
+    }
+    if (err) {
+      SDDEBUG("[%s] : %d errors in normals !!\n", o->obj.name, err);
+    }
+      
+/*       o->obj.nvx[i].x = 1; */
+/*       o->obj.nvx[i].y = 0; */
+/*       o->obj.nvx[i].z = 0; */
+/*       o->obj.nvx[i].w = 1; */
+//      FaceNormal(&o->obj.nvx[i].x, o->obj.vtx, o->obj.tri+i);
+    
+  }
+
   return 0;
 }
 
@@ -276,11 +296,9 @@ static int anim(unsigned int ms)
 
   const float sec = 0.001f * (float)ms;
 
-  float sax = 1.0f * sec;
-  float say = 1.0f * sec;
-  float saz = 1.0f * sec;
-
+  vtx_t sa;
   float zoom;
+
 
 /*   const int zoom1_analyser = 3 * 2 + 1; */
 /*   const int zoom2_analyser = 3 * 1 + 1; */
@@ -299,6 +317,8 @@ static int anim(unsigned int ms)
   }
   fft_fill_bands(bands);
   update_analysers(&analysers, bands , sec);
+
+  vtx_set(&sa,sec,sec * 0.91,sec * 0.93);
 
   /* Flash */
   flash_latch -= sec;
@@ -354,7 +374,7 @@ static int anim(unsigned int ms)
 /*       zoom += zoom_delta * r; */
 /*     } */
   }
-  r = (zoom > ozoom) ? 0.75f : 0.90f;
+  r = (zoom > ozoom) ? 0.6 : 0.90f;
   ozoom = ozoom * r + zoom * (1.0f-r);
 
   /* Swing ! */
@@ -391,9 +411,9 @@ static int anim(unsigned int ms)
   flash *= 0.95f;
   
   /* Move angle */
-  angle.x += sax * rps_cur;
-  angle.y += say * rps_cur;
-  angle.z += saz * rps_cur;
+
+  vtx_scale(&sa, rps_cur);
+  vtx_inc_angle(&angle, &sa);
 
   // $$$
   pos.z = zoom_max + 1.7;
@@ -528,7 +548,6 @@ static int transparent_render(void)
 
       if (lpo_lighted) {
 	color.w *= 0.75f;
-
 	DrawObjectFrontLighted(&viewport, r->mtx, projmtx,
 			       r->o,
 			       &ambient, &color);

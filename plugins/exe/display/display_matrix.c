@@ -6,7 +6,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, matrix interface
  * 
- * $Id: display_matrix.c,v 1.6 2003-01-21 02:38:16 ben Exp $
+ * $Id: display_matrix.c,v 1.7 2003-01-24 04:28:13 ben Exp $
  */
 
 #include <stdlib.h>
@@ -782,10 +782,12 @@ int display_matrix_shutdown(void)
 int display_matrix_init(void)
 {
   if (!matrixdef_allocator) {
-    matrixdef_allocator = allocator_create(256, sizeof(lua_matrix_def_t));
+    matrixdef_allocator = allocator_create(256, sizeof(lua_matrix_def_t),
+					   "mat_def");
   }
   if (!matrixref_allocator) {
-    matrixref_allocator = allocator_create(256, sizeof(lua_matrix_t));
+    matrixref_allocator = allocator_create(256, sizeof(lua_matrix_t),
+					   "mat_ref");
   }
 
   if (!matrixdef_allocator || !matrixref_allocator) {

@@ -4,7 +4,7 @@
  * @date    2002/09/30
  * @brief   File manipulation utilities.
  *
- * $Id: file_utils.h,v 1.5 2002-12-09 16:26:49 ben Exp $
+ * $Id: file_utils.h,v 1.6 2003-01-24 04:28:13 ben Exp $
  */
 
 #ifndef _FILE_UTILS_H_
@@ -46,9 +46,7 @@ const char * fu_strerr(int err);
 /** Directory entry. */
 typedef struct _fu_dirent_s 
 {
-/*   struct _fu_dirent_s * next;   /\**< Next entry in directory. *\/ */
-/*   struct _fu_dirent_s * subdir; /\**< Subdirectory *\/ */
-  char name[32];                /**< Filename. */
+  char name[36];                /**< Filename. */
   int  size;                    /**< File size (-1 for directory). */
 } fu_dirent_t;
 
