@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/09/03
  * @brief     sidplay input plugin for dcplay
- * @version   $Id: sidplay_driver.cxx,v 1.2 2002-09-08 12:28:09 ben Exp $
+ * @version   $Id: sidplay_driver.cxx,v 1.3 2002-09-13 01:21:33 ben Exp $
  */
 
 /* generated config include */
@@ -100,7 +100,7 @@ static int init(any_driver_t *d)
   engine->getConfig(config);
   // Apply our changes
   config.frequency = 44100;
-  config.channels = SIDEMU_STEREO;
+  config.channels = SIDEMU_MONO;
   config.bitsPerSample = SIDEMU_16BIT;
   config.sampleFormat = SIDEMU_SIGNED_PCM;
   config.emulateFilter = true; //false; //
@@ -260,7 +260,7 @@ static int decoder(decoder_info_t *info)
   }
 
   /* Get fifo free space (in bytes) */
-  n = fifo_free() << 2;
+  n = fifo_free() << 1;
   if (n < 0) {
     return INP_DECODE_ERROR;
   }
@@ -281,9 +281,9 @@ static int decoder(decoder_info_t *info)
   }
 
   /* Get it back to sample */
-  n >>= 2;
+  n >>= 1;
 
-  if (fifo_write(buffer, n) != n) {
+  if (fifo_write_mono((short *)buffer, n) != n) {
     /* This should not happen since we check the fifo above and no other
        thread fill it. */
     return INP_DECODE_ERROR;
@@ -373,7 +373,7 @@ inp_driver_t sidplay_driver =
     0x0100,               /**< Driver version */
     "sidplay",            /**< Driver name */
     "Benjamin Gerard\0",  /**< Driver authors */
-    "C64 music player",  /**< Description */
+    "C64 music player",   /**< Description */
     0,                    /**< DLL handler */
     init,                 /**< Driver init */
     shutdown,             /**< Driver shutdown */
