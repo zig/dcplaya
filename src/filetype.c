@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   Deal with file types and extensions.
  *
- * $Id: filetype.c,v 1.4 2002-09-30 20:06:50 benjihan Exp $
+ * $Id: filetype.c,v 1.5 2002-10-25 01:03:54 benjihan Exp $
  */
 
 #include <string.h>
@@ -36,6 +36,7 @@ int filetype_regular(const char * fname)
       { ".elf", FILETYPE_ELF },
       { ".lef", FILETYPE_LEF },
       { ".lez", FILETYPE_LEF },
+	  { ".gz",  FILETYPE_UNKNOWN | FILETYPE_GZ },
       {      0, FILETYPE_UNKNOWN }
     };
   const char * e;
@@ -43,6 +44,17 @@ int filetype_regular(const char * fname)
   e = fn_ext(fname);
   if (e && e[0]) {
     type = find_ext(e, ext);
+	if (type & FILETYPE_GZ) {
+	  const char * e2;
+	  unsigned int len;
+	  e2 = fn_secondary_ext(fname,0);
+	  if (e[0] && (len = e-e2, len < 7u)) {
+		char tmp[8];
+		memcpy(tmp,e2,len);
+		tmp[len] = 0;
+		type = find_ext(tmp, ext) | FILETYPE_GZ;
+	  }
+	}
   }
   return type;
 }

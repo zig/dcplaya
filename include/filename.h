@@ -4,7 +4,7 @@
  * @date    2002/09/30
  * @brief   filename utilities.
  *
- * $Id: filename.h,v 1.1 2002-09-30 20:03:02 benjihan Exp $
+ * $Id: filename.h,v 1.2 2002-10-25 01:03:54 benjihan Exp $
  */
 
 #ifndef _FILENAME_H_
@@ -19,10 +19,20 @@ DCPLAYA_EXTERN_C_START
  * @param  pathname  File path name
  *
  * @return Pointer to extension in pathname. Address of `.' char.
- * @retval !0  Extension found.
- * @retval  0  Extension not found.
+ * @retval  0  Error.
  */
 const char *fn_ext(const char *pathname);
+
+/** Get secondary extension from file path.
+ *
+ * @param  pathname  File path name
+ * @param  ext       Primary extension or 0 for any. e.g ".gz"
+ *
+ * @return Pointer to extension in pathname. Address of `.' char.
+ * @retval  0  Error.
+ */
+
+const char *fn_secondary_ext(const char *pathname, const char *ext);
 
 /** Get basename (or leafname) of a path.
  *

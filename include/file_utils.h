@@ -4,7 +4,7 @@
  * @date    2002/09/30
  * @brief   File manipulation utilities.
  *
- * $Id: file_utils.h,v 1.3 2002-10-16 23:59:50 benjihan Exp $
+ * $Id: file_utils.h,v 1.4 2002-10-25 01:03:54 benjihan Exp $
  */
 
 #ifndef _FILE_UTILS_H_
@@ -160,11 +160,20 @@ int fu_move(const char * dstname, const char * srcname, int force);
 /** Directory reading filter function.
  *
  *    The fu_filter_f function is call by fu_read_dir() function for each
- *    scanned directory. The fu_filter_f function returns 0 if the entry
+ *    scanned directory entry. The fu_filter_f function returns 0 if the entry
  *    is accepted.
  */
 typedef int (*fu_filter_f)(const fu_dirent_t *);
 
+/** Directory add entry function.
+ *
+ *    The fu_addentry_f function is call by the fu_read_dir_cb() function
+ *    for each scanned directory entry. The fu_addentry_f function returns 1
+ *    if the entry is accepted, 0 if the entry is rejected and a
+ *    fu_error_code_e (minus value) in error. In that case, fu_read_dir_cb()
+ *    will stop scanning the directory and returns with that error.
+ */
+typedef int (fu_addentry_f)(const fu_dirent_t *, void *cookie);
 
 /** Create a new directory.
  *
@@ -188,6 +197,19 @@ int fu_create_dir(const char *dirname);
  * @retval >=0 success, number of entry.
  */
 int fu_read_dir(const char *dirname, fu_dirent_t **res, fu_filter_f filter);
+
+/** Read directory content, callback version.
+ *
+ * @param  dirname  Path of directory to scan.
+ * @param  addentry Callback function for each directory entry read.
+ * @param  cookie   User parameter for the addentry function.
+ *
+ * @return Number of entry read and accepted by addentry function.
+ * @retval <0  fu_error_code_e
+ * @retval >=0 success, number of entry.
+ */
+int fu_read_dir_cb(const char *dirname, fu_addentry_f addentry, void * cookie);
+
 
 /**@}*/
 

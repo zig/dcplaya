@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist.c,v 1.2 2002-10-24 18:57:07 benjihan Exp $
+ * $Id: entrylist.c,v 1.3 2002-10-25 01:03:54 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -67,10 +67,17 @@ int entrylist_remove(el_list_t * el, int idx)
 
 int entrylist_set(el_list_t * el, int idx, el_entry_t * e, int eltsize)
 {
-  printf("setting list:%p idx:%d elt:%p size:%d\n",
-		 el,idx,e,eltsize);
+/*   printf("setting list:%p idx:%d elt:%p size:%d\n", */
+/* 		 el,idx,e,eltsize); */
   return iarray_set(&el->a, idx, e, eltsize);
 }
+
+int entrylist_insert(el_list_t * el, int idx, el_entry_t * e, int eltsize)
+{
+  return iarray_insert(&el->a, idx, e, eltsize);
+}
+
+
 
 EL_FUNCTION_DECLARE(new)
 {

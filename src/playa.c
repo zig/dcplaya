@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.11 2002-10-24 18:58:49 benjihan Exp $
+ * $Id: playa.c,v 1.12 2002-10-25 01:03:54 benjihan Exp $
  */
 
 #include <kos.h>
@@ -146,7 +146,7 @@ static void * sndstream_callback(int size)
   //  VCOLOR(255,0,0);
 
   size >>= 2;
-  if (playa_paused) {
+  if (playa_paused && !fade_v) {
 	n = 0;
   } else {
 	n = fifo_read(out_buffer, size);
@@ -272,13 +272,13 @@ static void real_playa_update(void)
 		if (driver && status == INP_DECODE_ERROR) {
 		  SDERROR("Driver error\n");
 		}
-		SDDEBUG("STOOOOOOOOP\n");
+/* 		SDDEBUG("STOOOOOOOOP\n"); */
 		playastatus = PLAYA_STATUS_STOPPING;
 		break;
       }
 
       if (status & INP_DECODE_INFO) {
-		SDDEBUG("Driver change INFO\n");
+/* 		SDDEBUG("Driver change INFO\n"); */
 		playa_info_update(&info);
       }
 
@@ -619,9 +619,14 @@ int playa_pause(int v)
 {
   int old = playa_paused;
   playa_paused = !!v;
-  if (playa_paused != old) {
-	SDDEBUG("%s playa\n", playa_paused ? "Pause" : "Resume");
+  if (playa_paused) {
+	playa_fade(-1024);
+  } else {
+	playa_fade(1024);
   }
+/*   if (playa_paused != old) { */
+/* 	SDDEBUG("%s playa\n", playa_paused ? "Pause" : "Resume"); */
+/*   } */
   return old;
 }
 

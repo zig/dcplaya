@@ -4,7 +4,7 @@
  * @date    2002/02/10
  * @brief   file and playlist browser
  * 
- * $Id: songmenu.c,v 1.10 2002-10-11 12:09:28 benjihan Exp $
+ * $Id: songmenu.c,v 1.11 2002-10-25 01:03:54 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -188,33 +188,24 @@ static const char *nullstr(const char *s) {
   return s ? s : "<null>";
 }
 
-static int file_type_inp(const char *name)
+static int file_type_inp(const char *name, int type)
 {
-  //  const char *e;
-  int type = FILETYPE_UNKNOWN;
-
-  /* $$$ ben : don't use this becoz it does not handle .gz correctly. */
-  /*
-  e = filetype_ext(name);
-  if (e[0]) {
-  */
-
   inp_driver_t *d = inp_driver_list_search_by_extension(name);
 
   if (d) {
+	SDDEBUG("Driver found '%s'\n",d->common.name);
     type = d->id;
   }
-/*   } */
+  /*   } */
   return type;  
 }
 
 /* */
-static int filter_entry(const char *name)
+static int filter_entry(const char *name, int type)
 {
-  int type = file_type_inp(name);
+  type = file_type_inp(name, type);
  
-  if (option_filter() && type == FILETYPE_UNKNOWN) {
-    SDDEBUG("%s(%s) : FILTER OUT\n", __FUNCTION__, name);
+  if (option_filter() && FILETYPE(type) == FILETYPE_UNKNOWN) {
     return FILETYPE_ERROR;
   }
   return type;
@@ -225,14 +216,14 @@ static int direntry_filetype(const dirent_t *de)
   int type;
 
   type = filetype_get(de->name, de->size);
-  if (type == FILETYPE_UNKNOWN) {
-    type = filter_entry(de->name);
+  if (FILETYPE(type) == FILETYPE_UNKNOWN) {
+    type = filter_entry(de->name, type);
   }
   return type;
 }
 
 static int make_full_path_name(char *d, const char *path, const char *leaf,
-			       int max)
+							   int max)
 {
   int len1, len2;
   
@@ -274,9 +265,9 @@ static void make_mp3_name(char *dst, const char * src, int max)
     dst[i] = 0;
     if (ext2 > 0) {
       if (!stricmp(src+ext, ".gz")) {
-	dst[ext] = 0;
-	ext = ext2;
-	lim += 3;
+		dst[ext] = 0;
+		ext = ext2;
+		lim += 3;
       }
     }
     if (ext>0 && i-ext <= lim) dst[ext] = 0;
@@ -291,7 +282,7 @@ static void locate_file(int selected, const char *verify)
 {
   int move;
   
-//  entrylist_sync(&direntry, 1);
+  //  entrylist_sync(&direntry, 1);
   
   if ((unsigned int)selected >= (unsigned int) direntry.nb) {
     selected = 0;
@@ -310,9 +301,9 @@ static void locate_file(int selected, const char *verify)
       SDDEBUG("'%s' not at #%d\n", verify, selected);
       strncpy(findme.fn, verify, sizeof(findme.fn));
       selected = entrylist_find(&direntry,
-				&findme,
-				(int (*)(const void *, const void *))
-				cmp_entry_fn);
+								&findme,
+								(int (*)(const void *, const void *))
+								cmp_entry_fn);
       if (selected<0) {
         SDDEBUG("'%s' not found.\n", verify);
         selected = 0;
@@ -329,7 +320,7 @@ static void locate_file(int selected, const char *verify)
     dirwin->top = 0;
   }
   
-//  entrylist_sync(&direntry, 0);
+  //  entrylist_sync(&direntry, 0);
 }
 
 
@@ -369,14 +360,14 @@ static int r_load_song_dir(char *dirname)
 
     if (type <= FILETYPE_DIR) {
       /* Skip directory in first pass */
-/*        SDDEBUG(, "** " __FUNCTION__  */
-/*  	     "(%s) : Skip dir [%s] in 1st pass\n", dirname, de->name); */
+	  /*        SDDEBUG(, "** " __FUNCTION__  */
+	  /*  	     "(%s) : Skip dir [%s] in 1st pass\n", dirname, de->name); */
       continue;
     }
 
-/*      SDDEBUG(, "*** " __FUNCTION__  */
-/*  	   "(%s) : [s:%d] ['%s'] [t:%x]\n", */
-/*  	   dirname, de->size, de->name, type); */
+	/*      SDDEBUG(, "*** " __FUNCTION__  */
+	/*  	   "(%s) : [s:%d] ['%s'] [t:%x]\n", */
+	/*  	   dirname, de->size, de->name, type); */
 
     if (type >= FILETYPE_PLAYABLE) {
       staticentry.type = type;
@@ -387,11 +378,11 @@ static int r_load_song_dir(char *dirname)
       staticentry.pos = 0; /* Can't guess without sorting */
       make_mp3_name(staticentry.name,de->name,sizeof(staticentry.name));
       if (add_entry_to_playlist(&staticentry,1) >= 0) {
-	++cnt;
+		++cnt;
       }
     }
     entrylist_sort_part(&playlist, playlist.nb-cnt ,cnt,
-			(int (*)(const void *, const void *))cmp_entry);
+						(int (*)(const void *, const void *))cmp_entry);
   }
   fs_close(d);
 
@@ -406,8 +397,8 @@ static int r_load_song_dir(char *dirname)
     type = direntry_filetype(de);
     if (type != FILETYPE_DIR) {
       /* Only keep dir in 2nd pass, remove self, parent ... */
-/*        SDDEBUG(, "** " __FUNCTION__  */
-/*  	     "(%s) : Skip file [%s] in 2nd pass\n", dirname, de->name); */
+	  /*        SDDEBUG(, "** " __FUNCTION__  */
+	  /*  	     "(%s) : Skip file [%s] in 2nd pass\n", dirname, de->name); */
       continue;
     }
 
@@ -480,8 +471,8 @@ static void load_song_list(int selected)
     d = fs_open(loaddir, O_RDONLY | O_DIR);
     if (!d) {
       if (clear_cache) {
-	SDDEBUG("Can't open %s. Try with /\n", loaddir);
-	strcpy(loaddir, "/");
+		SDDEBUG("Can't open %s. Try with /\n", loaddir);
+		strcpy(loaddir, "/");
       }
       ++clear_cache;
     }
@@ -671,49 +662,48 @@ static int draw_any_listing(entry_window_t * win)
       char * s;
 
       color_idx = ( (top+i == win->play) &&
-		    (win != dirwin || !strcmp(curdir,playdir))
-		    ) << 1;	  
+					(win != dirwin || !strcmp(curdir,playdir))
+					) << 1;	  
       color_idx |= (i==esel);
 
       s = e->name;
       if (e->type == FILETYPE_DIR) {
-	char *d = tmp;
-	*d++ = '['; 
-	while (*s) {
-	  *d++ = *s++;
-	}
-	*d++ = ']'; 
-	*d = 0;
-	s = tmp;
+		char *d = tmp;
+		*d++ = '['; 
+		while (*s) {
+		  *d++ = *s++;
+		}
+		*d++ = ']'; 
+		*d = 0;
+		s = tmp;
       } else if (e->type >= FILETYPE_PLAYABLE) {
-	inp_driver_t *d = inp_driver_list_search_by_id(e->type);
+		inp_driver_t *d = inp_driver_list_search_by_id(e->type);
+		/* 2nd chance : try to find it again */
+		if (!d) {
+		  e->type = file_type_inp(e->fn, FILETYPE_UNKNOWN);
+		  d = inp_driver_list_search_by_id(e->type);
+		}
 
-	/* 2nd chance : try to find it again */
-	if (!d) {
-	  e->type = file_type_inp(e->fn);
-	  d = inp_driver_list_search_by_id(e->type);
-	}
-
-	if (d) {
-	  tmp[0] = 2;
-	  tmp[1] = 0;
-	  //strcpy(tmp, d->extensions);
-	  strcat(tmp, " ");
-	  strcat(tmp, s);
-	  s = tmp;
-	  //SDDEBUG(, "!! driver found for %s\n", s);
-	} else {
-	  SDERROR("Driver not found for [%s]\n", s);
-	}
+		if (d) {
+		  tmp[0] = 2;
+		  tmp[1] = 0;
+		  //strcpy(tmp, d->extensions);
+		  strcat(tmp, " ");
+		  strcat(tmp, s);
+		  s = tmp;
+		  //SDDEBUG(, "!! driver found for %s\n", s);
+		} else {
+		  SDERROR("Driver not found for [%s]\n", s);
+		}
       } else if (e->type == FILETYPE_UNKNOWN) {
-	color_idx = (color_idx & 1) + 4;
+		color_idx = (color_idx & 1) + 4;
       } else if (e->type == FILETYPE_PLAYLIST) {
-	color_idx = (color_idx & 1) + 6;
+		color_idx = (color_idx & 1) + 6;
       }
 
       if (color_idx >= sizeof(colors) / sizeof(*colors)) {
-	SDCRITICAL("Bad color idx:%d\n", color_idx);
-	color_idx = 0;
+		SDCRITICAL("Bad color idx:%d\n", color_idx);
+		color_idx = 0;
       }
 
 	  text_set_color(colors[color_idx].a * halftint, colors[color_idx].r,
@@ -782,12 +772,12 @@ static int add_entry_to_playlist(lst_entry * le, int insert)
   int idx;
 
   idx = insert ? playwin->selected + 1 : -1;
-/*    SDDEBUG(, "** " __FUNCTION__ " : #%d %s ['%s' %d]\n", idx, */
-/*  	 insert ? "INSERT" : "ENQUEUE", le->fn, le->size); */
+  /*    SDDEBUG(, "** " __FUNCTION__ " : #%d %s ['%s' %d]\n", idx, */
+  /*  	 insert ? "INSERT" : "ENQUEUE", le->fn, le->size); */
   idx = entrylist_add(&playlist, le, idx);
   if (idx >= 0) {
-/*      SDDEBUG(, "** " __FUNCTION__ " : ADDED #%03d ['%s' %d]\n", idx, */
-/*  	   le->fn, le->size); */
+	/*      SDDEBUG(, "** " __FUNCTION__ " : ADDED #%03d ['%s' %d]\n", idx, */
+	/*  	   le->fn, le->size); */
     
     if (playwin->play >= 0 && idx <= playwin->play) {
       /* Insert before current playlist, shift */
@@ -798,13 +788,13 @@ static int add_entry_to_playlist(lst_entry * le, int insert)
     }
   } else {
     SDERROR("FAILED #%03d ['%s' %d]\n",
-	    playwin->selected, le->fn, le->size);
+			playwin->selected, le->fn, le->size);
   }
   return idx;
 }
 
 static int m3u_make_filepath(char *path, int max,
-			     const char *fname, const char * m3upath)
+							 const char *fname, const char * m3upath)
 {
   int i = 0;
   int c;
@@ -844,10 +834,10 @@ static int m3u_make_filepath(char *path, int max,
 }
 
 static int m3u_make_listentry(lst_entry *le, const char *m3upath,
-			  const M3Uentry_t * e)
+							  const M3Uentry_t * e)
 {
   SDDEBUG("%s([%s] [[%s] [%s]])\n", __FUNCTION__, m3upath,
-	  nullstr(e->path) , nullstr(e->name));
+		  nullstr(e->path) , nullstr(e->name));
 
   /* Verify */
   if (!e->path || !e->path[0]) {
@@ -859,7 +849,7 @@ static int m3u_make_listentry(lst_entry *le, const char *m3upath,
   le->size = 0; /* $$$ Don't known real size, but it should be ok */
 
   /* Build type */
-  le->type = file_type_inp(e->path);
+  le->type = file_type_inp(e->path, FILETYPE_UNKNOWN);
   if (le->type == FILETYPE_UNKNOWN) {
     /* $$$ Ben: Here entry should not be remove. We could let it a last
        chance when playing starts. */
@@ -896,7 +886,7 @@ static int add_m3u_to_playlist(char *m3ufile, int insert)
   int i;
     
   SDDEBUG(">> %s([%s],[%s])\n", __FUNCTION__, m3ufile,
-	  insert ? "INSERT" : "ENQUEUE");
+		  insert ? "INSERT" : "ENQUEUE");
   SDINDENT;
 
   mycookie = fd = fs_open(m3ufile, O_RDONLY);
@@ -924,7 +914,7 @@ static int add_m3u_to_playlist(char *m3ufile, int insert)
     int err2;
 
     SDDEBUG("#%02d [%s] [%s] [%d]\n", i+1,
-	    nullstr(e->path), nullstr(e->name), e->time);
+			nullstr(e->path), nullstr(e->name), e->time);
     err2 = m3u_make_listentry(&le, m3ufile, e);
     err -= err2<0;
     if (err2<0) {
@@ -1037,7 +1027,7 @@ static void check_controller(entry_window_t * win)
   int top = win->top;
   int bottom = top + FILE_BROWSER_LINES - 1;
   int selected = win->selected;
-/*    int sel_save = selected; */
+  /*    int sel_save = selected; */
 
 
   /* Any move with pad : enable display  */
@@ -1063,7 +1053,7 @@ static void check_controller(entry_window_t * win)
       || controler68.joyx < -64) {
     curwin = wins + 0;
   } else if (controler_pressed(&controler68, CONT_DPAD_RIGHT)
-	     || controler68.joyx > 64) {
+			 || controler68.joyx > 64) {
     curwin = wins + 1;
   }
 
@@ -1082,10 +1072,10 @@ static void check_controller(entry_window_t * win)
 
     if (wait > 0 && (framecnt - up_moved) > wait) {
       if (selected > 0) {
-	selected--;
-	if (selected < top) {
-	  top = selected;
-	}
+		selected--;
+		if (selected < top) {
+		  top = selected;
+		}
       }
       up_moved = framecnt;
     }
@@ -1101,10 +1091,10 @@ static void check_controller(entry_window_t * win)
 
     if (wait > 0 && (framecnt - down_moved) > wait) {
       if (selected < (num_entries - 1)) {
-	selected++;
-	if (selected >= (top + FILE_BROWSER_LINES)) {
-	  top++;
-	}
+		selected++;
+		if (selected >= (top + FILE_BROWSER_LINES)) {
+		  top++;
+		}
       }
       down_moved = framecnt;
     }
@@ -1113,13 +1103,13 @@ static void check_controller(entry_window_t * win)
   if (controler68.ltrig > 127) {
     if ((framecnt - up_moved) > 10) {
       if (selected != top) {
-	selected = top;
+		selected = top;
       } else {
-	selected -= FILE_BROWSER_LINES;
-	if (selected < 0)
-	  selected = 0;
-	if (selected < top)
-	  top = selected;
+		selected -= FILE_BROWSER_LINES;
+		if (selected < 0)
+		  selected = 0;
+		if (selected < top)
+		  top = selected;
       }
       up_moved = framecnt;
       timeout = timemax;
@@ -1128,14 +1118,14 @@ static void check_controller(entry_window_t * win)
   if (controler68.rtrig > 127) {
     if ((framecnt - down_moved) > 10) {
       if (selected != bottom) {
-	selected = bottom;
+		selected = bottom;
       } else {
-	selected += FILE_BROWSER_LINES;
-	if (selected >= num_entries)
-	  selected = num_entries - 1;
-	top = selected - (FILE_BROWSER_LINES - 1);
-	if (top < 0)
-	  top = 0;
+		selected += FILE_BROWSER_LINES;
+		if (selected >= num_entries)
+		  selected = num_entries - 1;
+		top = selected - (FILE_BROWSER_LINES - 1);
+		if (top < 0)
+		  top = 0;
       }
       down_moved = framecnt;
       timeout = timemax;
@@ -1148,7 +1138,7 @@ static void check_controller(entry_window_t * win)
       /* Stop the playback */
       playa_stop(1);
       if (playwin->play >= 0) {
-	playwin->selected = playwin->play;
+		playwin->selected = playwin->play;
       }
       playlist_start_idx = dirwin->play = playwin->play = -1;
     } else {
@@ -1167,28 +1157,28 @@ static void check_controller(entry_window_t * win)
     } else {
       /* Pressed X in playlist-window : Locate file */
       if ((unsigned int) selected < (unsigned int) playlist.nb) {
-	char *s = strrchr(le->fn, '/');
-	if (!s) {
-	  tmpstr[0] = '/';
-	  tmpstr[1] = 0;
-	} else {
-	  int l = s - le->fn;
-	  memcpy(tmpstr, le->fn, l);
-	  tmpstr[l] = 0;
-	}
-	if (!strcmp(curdir, tmpstr)) {
-	  entrylist_sync(&direntry, 1);
-	  locate_file(le->pos, s + 1);
-	  entrylist_sync(&direntry, 0);
-	} else {
-	  /* $$$ MT error, find_entry could be accessed by loader-thread !! */
-	  find_entry.fn[0] = 0;
-	  strcpy(loaddir, tmpstr);
-	  if (s) {
-	    strcpy(find_entry.fn, s + 1);
-	  }
-	  loadlist = ~le->pos;
-	}
+		char *s = strrchr(le->fn, '/');
+		if (!s) {
+		  tmpstr[0] = '/';
+		  tmpstr[1] = 0;
+		} else {
+		  int l = s - le->fn;
+		  memcpy(tmpstr, le->fn, l);
+		  tmpstr[l] = 0;
+		}
+		if (!strcmp(curdir, tmpstr)) {
+		  entrylist_sync(&direntry, 1);
+		  locate_file(le->pos, s + 1);
+		  entrylist_sync(&direntry, 0);
+		} else {
+		  /* $$$ MT error, find_entry could be accessed by loader-thread !! */
+		  find_entry.fn[0] = 0;
+		  strcpy(loaddir, tmpstr);
+		  if (s) {
+			strcpy(find_entry.fn, s + 1);
+		  }
+		  loadlist = ~le->pos;
+		}
       }
     }
   }
@@ -1202,66 +1192,66 @@ static void check_controller(entry_window_t * win)
       find_entry.fn[0] = 0;
 
       if (e->type == FILETYPE_ERROR) {
-	/* Error */
-	strcpy(loaddir, "/");
-	loadlist = ~0;
+		/* Error */
+		strcpy(loaddir, "/");
+		loadlist = ~0;
       } else if (e->type >= FILETYPE_PLAYABLE) {
-	/* Playable */
-	if (playwin->play >= 0) {
-	  /* Alreay playing : enqueue */
-	  add_to_playlist(selected, 0);
-	} else {
-	  /* Start playback */
-	  if (selected >= 0) {
-	    strcpy(tmpstr, curdir);
-	    strcat(tmpstr, "/");
-	    strcat(tmpstr, e->fn);
-	    strcpy(playdir, curdir);
-	    dirwin->play =
-	      playa_start(tmpstr, -1, 1) < 0 ? -1 : selected;
-	  }
-	}
+		/* Playable */
+		if (playwin->play >= 0) {
+		  /* Alreay playing : enqueue */
+		  add_to_playlist(selected, 0);
+		} else {
+		  /* Start playback */
+		  if (selected >= 0) {
+			strcpy(tmpstr, curdir);
+			strcat(tmpstr, "/");
+			strcat(tmpstr, e->fn);
+			strcpy(playdir, curdir);
+			dirwin->play =
+			  playa_start(tmpstr, -1, 1) < 0 ? -1 : selected;
+		  }
+		}
       } else if (e->type >= FILETYPE_PLAYLIST) {
-	/* Playlist : insert/enqueue */
-	add_to_playlist(selected, playwin->play < 0);
+		/* Playlist : insert/enqueue */
+		add_to_playlist(selected, playwin->play < 0);
       } else if (e->type <= FILETYPE_DIR) {
-	/* Directory */
-	SDDEBUG("(A) Entering dir '%s'\n", e->fn);
-	if (e->type == FILETYPE_ROOT) {
-	  loaddir[0] = '/';
-	  loaddir[1] = 0;
-	} else {
-	  strcpy(loaddir, curdir);
+		/* Directory */
+		SDDEBUG("(A) Entering dir '%s'\n", e->fn);
+		if (e->type == FILETYPE_ROOT) {
+		  loaddir[0] = '/';
+		  loaddir[1] = 0;
+		} else {
+		  strcpy(loaddir, curdir);
 
-	  if (e->type == FILETYPE_SELF) {
-	    /* nop */
-	    find_entry.fn[0] = '.';
-	    find_entry.fn[1] = 0;
+		  if (e->type == FILETYPE_SELF) {
+			/* nop */
+			find_entry.fn[0] = '.';
+			find_entry.fn[1] = 0;
 
-	  } else if (e->type == FILETYPE_PARENT) {
-	    char *s;
+		  } else if (e->type == FILETYPE_PARENT) {
+			char *s;
 
-	    s = strrchr(loaddir, '/');
-	    if (!s) {
-	      loaddir[0] = '/';
-	      loaddir[1] = 0;
-	    } else {
-	      *s = 0;
-	      strcpy(find_entry.fn, s + 1);
-	    }
-	  } else {
-	    if (strcmp(loaddir, "/")) {
-	      strcat(loaddir, "/");
-	    }
-	    strcat(loaddir, e->fn);
-	    selected = 0;
-	  }
-	}
-	SDDEBUG("cd '%s'\n", loaddir);
-	loadlist = ~0; //~(selected <= 3 ? selected : 3);
+			s = strrchr(loaddir, '/');
+			if (!s) {
+			  loaddir[0] = '/';
+			  loaddir[1] = 0;
+			} else {
+			  *s = 0;
+			  strcpy(find_entry.fn, s + 1);
+			}
+		  } else {
+			if (strcmp(loaddir, "/")) {
+			  strcat(loaddir, "/");
+			}
+			strcat(loaddir, e->fn);
+			selected = 0;
+		  }
+		}
+		SDDEBUG("cd '%s'\n", loaddir);
+		loadlist = ~0; //~(selected <= 3 ? selected : 3);
       } else {
-	/* Other (should be FILETYPE_UNKNOWN) */
-	SDDEBUG("(A) nothing to do with [%s]\n", e->fn);
+		/* Other (should be FILETYPE_UNKNOWN) */
+		SDDEBUG("(A) nothing to do with [%s]\n", e->fn);
       }
     } else {
       /* A pressed in playlist : start/restart at index */
@@ -1291,16 +1281,16 @@ static void check_controller(entry_window_t * win)
     } else {
       memset(songmenu_selected, 0, sizeof(songmenu_selected));
       if (e = entrylist_addrof(win->list, selected), e) {
-	strcpy(songmenu_selected, e->name);
+		strcpy(songmenu_selected, e->name);
       } else {
-	strcpy(songmenu_selected, "<empty>");
+		strcpy(songmenu_selected, "<empty>");
       }
     }  
   }
 
   if (loadlist) {
     SDDEBUG("Post load list, find '%s' at #%d\n",
-	    find_entry.fn, ~loadlist);
+			find_entry.fn, ~loadlist);
     load_list = loadlist;
   }
   entrylist_sync(win->list, 0);

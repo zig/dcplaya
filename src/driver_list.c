@@ -5,6 +5,7 @@
 
 #include "driver_list.h"
 #include "inp_driver.h"
+#include "filename.h"
 #include "filetype.h"
 #include "sysdebug.h"
 #include "lef.h"
@@ -189,6 +190,7 @@ static int extfind(const char *extlist, const char * ext)
   return extlist == 0;
 }
 
+#if 0
 static const char * get_ext(const char *name)
 {
   const char * e, * p;
@@ -205,16 +207,17 @@ static const char * get_ext(const char *name)
 
     for (e2=e-1; e2 >= name && *e2 != '/'; --e2) {
       if (*e2 == '.') {
-	e = e2;
-	break;
+		e = e2;
+		break;
       }
     }
   }
 
-/*   SDDEBUG("%s([%s] := [%s]\n", __FUNCTION__, name, e); */
+  /*   SDDEBUG("%s([%s] := [%s]\n", __FUNCTION__, name, e); */
 
   return e;
 }
+#endif
 
 inp_driver_t * inp_driver_list_search_by_extension(const char *ext)
 {
@@ -222,10 +225,10 @@ inp_driver_t * inp_driver_list_search_by_extension(const char *ext)
 
   /* Not an extension : get it */
   if (ext && *ext != '.') {
-    ext = get_ext(ext);
+    ext = fn_secondary_ext(ext,".gz");
   }
   if (!ext) {
-    return 0;
+	return 0;
   }
 
   for (d=(inp_driver_t *)inp_drivers.drivers;

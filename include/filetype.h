@@ -3,7 +3,7 @@
  * @author  ben(jamin) gerard <ben@sashipa.com> 
  * @brief   Deal with file types and extensions.
  *
- * $Id: filetype.h,v 1.5 2002-09-30 20:06:50 benjihan Exp $
+ * $Id: filetype.h,v 1.6 2002-10-25 01:03:54 benjihan Exp $
  */
 
 #ifndef _FILETYPE_H_
@@ -39,6 +39,12 @@ DCPLAYA_EXTERN_C_START
 
 /** First available playable (music) filetype. */
 #define FILETYPE_PLAYABLE (256*4)
+
+/** Gzipped file flag. */
+#define FILETYPE_GZ       (1<<31)
+
+/** Get a FILETYPE without flags. */
+#define FILETYPE(TYPE)    ((TYPE)&~FILETYPE_GZ)
 
 /*@}*/
 

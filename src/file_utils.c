@@ -4,7 +4,7 @@
  * @date    2002/09/30
  * @brief   File manipulation utilities.
  *
- * $Id: file_utils.c,v 1.3 2002-10-03 21:43:34 benjihan Exp $
+ * $Id: file_utils.c,v 1.4 2002-10-25 01:03:54 benjihan Exp $
  */
 
 /* #include "sysdebug.h" */
@@ -266,6 +266,42 @@ int fu_read_dir(const char *dirname, fu_dirent_t **res, fu_filter_f filter)
 
   return count;
 }
+
+int fu_read_dir_cb(const char *dirname, fu_addentry_f addentry, void * cookie)
+{
+  dirent_t *dir;
+  int fd, count;
+  fu_dirent_t local;
+
+/*   SDDEBUG("[%s] : [%s]\n", __FUNCTION__, dirname); */
+
+  if (!dirname || !dirname[0] || !addentry) {
+    return FU_INVALID_PARM;
+  }
+
+  fd = fs_open(dirname, O_RDONLY | O_DIR);
+  if (!fd) {
+    return FU_OPEN_ERROR;
+  }
+
+  count = 0;
+  while (dir=fs_readdir(fd), dir) {
+	int err;
+
+    memset(&local,0,sizeof(local));
+    strncpy(local.name,dir->name,sizeof(local.name)-1);
+    local.size = dir->size;
+	err = addentry(&local, cookie);
+	if (err < 0) {
+	  count = err;
+	  break;
+	}
+	count += !!err;
+  }
+  fs_close(fd);
+  return count;
+}
+
 
 int fu_sortdir_by_name_dirfirst(const fu_dirent_t *a, const fu_dirent_t *b)
 {

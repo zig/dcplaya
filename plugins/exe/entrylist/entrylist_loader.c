@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist_loader.c,v 1.1 2002-10-24 18:57:07 benjihan Exp $
+ * $Id: entrylist_loader.c,v 1.2 2002-10-25 01:03:54 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -74,6 +74,29 @@ static int loader_waitnotstatus(loader_status_e status, unsigned int timeout)
 }
 
 
+static int loader_addentry(const fu_dirent_t * dir, void * cookie)
+{
+  el_list_t * el = (el_list_t *)cookie;
+  el_entry_t e;
+  int namelen, eltsize;
+
+  /* Skip '.' and '..' */
+  if (dir->name[0] == '.' &&
+	  (!dir->name[1] || (dir->name[1] == '.' && !dir->name[2]))) {
+	return 0;
+  }
+
+  e.type = filetype_get(dir->name, dir->size);
+  e.size = dir->size;
+  e.iname = 0;
+  e.ifile = 0;
+  namelen = strlen(dir->name)+1;
+  eltsize = sizeof(e) - sizeof(e.buffer) + namelen;
+  memcpy(e.buffer, dir->name, namelen);
+  return entrylist_insert(el, -1, &e, eltsize) < 0 ? -1 : 1;
+}
+
+
 static void loader_thread(void *cookie)
 {
   static loader_status_e old_status = -1;
@@ -106,51 +129,19 @@ static void loader_thread(void *cookie)
 	  break;
 
 	case LOADER_LOADING: {
-	  int err;
-	  fu_dirent_t * dir;
-
-	  printf("entrylist_loader_thread LOADING '%s'\n", loader_el->path);
-	  err = fu_read_dir(loader_el->path, &dir, 0);
-	  if (err < 0) {
-		printf("entrylist_loader_thread '%s' : %s\n",
-			   loader_el->path, fu_strerr(err));
-		loader_el->path = loader_save_path;
+	  if (!fu_is_dir(loader_el->path)) {
+		printf("entrylist_loader_thread : not a directory '%s'\n",
+			   loader_el->path);
+		loader_el->path = loader_save_path;  /* $$$ Atomik op */
 	  } else {
-		int i;
 		entrylist_clear(loader_el);
-		printf("ENTRIES=%d\n", err);
-		for (i=0; i<err; ++i) {
-		  el_entry_t e;
-		  int namelen, eltsize;
-
-		  printf("#%03d '%s' '%d'\n",i, dir[i].name, dir[i].size);
-
-		  wait_a_while(100);
-
-
-		  e.type = filetype_get(dir[i].name, dir[i].size);
-		  e.size = dir[i].size;
-		  e.iname = 0;
-		  e.ifile = 0;
-		  namelen = strlen(dir[i].name)+1;
-		  eltsize = sizeof(e) - sizeof(e.buffer) + namelen;
-		  memcpy(e.buffer, dir[i].name, namelen);
-		  if (entrylist_set(loader_el, i, &e, eltsize) < 0) {
-			printf("entrylist_loader_thread : set entry #%d '%s' failed\n",
-				   i, dir[i].name);
-			break;
-		  }
-		}
+		fu_read_dir_cb(loader_el->path, loader_addentry, loader_el);
 	  }
 	  /* Finish loading. */
-	  loader_el->loading = 0;
+	  loader_el->loading = 0; /* $$$ Atomik op */
 	  loader_path = 0;
 	  loader_save_path = 0;
 	  loader_el = 0;
-
-	  if (dir) {
-		free(dir);
-	  }
 	  loader_status = LOADER_READY;
 	} break;
 

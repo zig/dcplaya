@@ -4,7 +4,7 @@
  * @date    2002/09/30
  * @brief   filename utilities.
  *
- * $Id: filename.c,v 1.1 2002-09-30 20:03:09 benjihan Exp $
+ * $Id: filename.c,v 1.2 2002-10-25 01:03:54 benjihan Exp $
  */
 
 #include <string.h>
@@ -20,6 +20,30 @@ const char *fn_ext(const char *pathname)
   p = strrchr(pathname,'/');
   return (e>p) ? e : pathname + strlen(pathname);
 }
+
+const char *fn_secondary_ext(const char *pathname, const char *ext)
+{
+  const char * e , * p;
+  if (!pathname) {
+    return 0;
+  }
+  e = strrchr(pathname,'.');
+  p = strrchr(pathname,'/');
+  if (e>p && (!ext || !stricmp(e,ext))) {
+	const char * e2;
+	if (!p) {
+	  p = pathname;
+	}
+	for (e2 = e-1; e2 >= p; --e2) {
+	  if (*e2 == '.') {
+		e = e2;
+		break;
+	  }
+	}
+  }
+  return (e>p) ? e : pathname + strlen(pathname);
+}
+
 
 const char *fn_basename(const char *pathname)
 {
