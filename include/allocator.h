@@ -4,7 +4,7 @@
  * @date     2002/10/18
  * @brief    fast allocator for fixed size small buffer.
  * 
- * $Id: allocator.h,v 1.2 2002-10-18 23:16:22 benjihan Exp $
+ * $Id: allocator.h,v 1.3 2002-10-21 14:56:59 benjihan Exp $
  */
 
 #ifndef _ALLOCATOR_H_
@@ -43,7 +43,8 @@ typedef struct {
   allocator_elt_t * used; /**< List of allocated elements.    */
   allocator_elt_t * free; /**< List of free elements.         */
   spinlock_t mutex;       /**< Mutex for thread safety.       */
-  int elt_size;           /**< Size of an element.            */
+  unsigned int elt_size;  /**< Size of an element.            */
+  unsigned int elements;  /**< Number of elements.            */
   char * bufend;          /**< Pointer to this end of buffer. */
   char buffer[16];        /**< Start of elements buffer.      */
 } allocator_t;
@@ -84,7 +85,7 @@ void allocator_destroy(allocator_t * a);
  *
  *    The allocator_alloc() function is thread safe.
  *
- * @return  Pointer to allcoated memory.
+ * @return  Pointer to allocated memory.
  * @retval  0  Error
  *
  * @warning  The returned pointer must NOT be free() directly.
@@ -92,8 +93,41 @@ void allocator_destroy(allocator_t * a);
  *
  * @see allocator_create()
  * @see allocator_free()
+ * @see allocator_alloc_inside();
  */
-void * allocator_alloc(allocator_t * a, int size);
+void * allocator_alloc(allocator_t * a, unsigned int size);
+
+/** Alloc an element inside the allcoator heap. 
+ *
+ *    The allocator_alloc_inside() function tries to alloc an element inside
+ *    the allcoator heap.
+ *
+ * @return Pointer to allocated memory.
+ * @retval 0  Error
+ *
+ * @see allocator_free()
+ * @see allocator_alloc();
+ */
+void * allocator_alloc_inside(allocator_t * a);
+
+/** Check for a memory location inside allocator heap.
+ *
+ *     The allocator_is_inside() function only checks if the data location is
+ *     in the range of the allocator heap.
+ *
+ *     It does not check if the data location is a real allocated blocks.
+ *
+ *  @retval  1  data is in allocator heap.
+ *  @retval  0  data is not in the allocator heap.
+ */
+int allocator_is_inside(const allocator_t * a, const void * data);
+
+/** Get index of a memory location inside allocator heap.
+ *
+ *  @retval  -1   Memory is not in allocator heap.
+ *  @retval  >=0  Index of this block in allocator heap.
+ */
+int allocator_index(const allocator_t * a, const void * data);
 
 /** Free memory via an allocator.
  *
@@ -123,6 +157,23 @@ int allocator_count_used(allocator_t * a);
  */
 int allocator_count_free(allocator_t * a);
 
+/** Find a matching element in allocator used element list.
+ *
+ *     The allocator_match() calls the cmp() function successively for each
+ *     element in used with data as first parameter and element's data as
+ *     second parameter. If cmp() function returns 0 the elements data is 
+ *     returned. If no matching element is found it returns 0.
+ *
+ * @return  Data of matching elements.
+ * @retval  0  No matching element.
+ */
+void * allocator_match(allocator_t * a, const void * data,
+					   int (*cmp)(const void *, const void *));
+
+/** Dump allocator list content.
+ */
+void allocator_dump(allocator_t * a);
+
 /** Lock the allocator. 
  *
  *    The allocator_lock() function locks the allocator list mutex.
@@ -136,7 +187,7 @@ int allocator_count_free(allocator_t * a);
  *
  * @see allocator_unlock()
  */
-void  allocator_lock(allocator_t * a);
+void allocator_lock(allocator_t * a);
 
 /** Unlock the allocator. 
  *

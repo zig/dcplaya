@@ -3,7 +3,7 @@
  * @brief     SHAtranslator "C" wrapper
  * @date      2002/09/27
  * @author    Ben(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAwrapper.cxx,v 1.1 2002-09-27 16:45:07 benjihan Exp $
+ * @version   $Id: SHAwrapper.cxx,v 1.2 2002-10-21 14:57:00 benjihan Exp $
  */
 
 #include "SHAwrapper/SHAwrapper.h"
@@ -17,8 +17,9 @@
 
 static int TotalBytes(SHAtranslatorResult & result)
 {
+  SHAwrapperImage_t *img = 0;
   return 0
-    + sizeof(SHAwrapperImage_t)
+    + sizeof(SHAwrapperImage_t) - sizeof(img->data) + 
     + result.data.image.width * result.data.image.height * 4;
 }
 
@@ -40,10 +41,10 @@ static SHAwrapperImage_t * SHAwrapperLoad(SHAtranslator * t,
     SDERROR("[%s] : [%s]\n", __FUNCTION__, result.ErrorStr());
     return 0;
   }
-//   SDDEBUG("type    : %x\n", result.data.image.type);
-//   SDDEBUG("width   : %d\n", result.data.image.width);
-//   SDDEBUG("height  : %d\n", result.data.image.height);
-//   SDDEBUG("lutSize : %d\n", result.data.image.lutSize);
+//    SDDEBUG("type    : %x\n", result.data.image.type);
+//    SDDEBUG("width   : %d\n", result.data.image.width);
+//    SDDEBUG("height  : %d\n", result.data.image.height);
+//    SDDEBUG("lutSize : %d\n", result.data.image.lutSize);
     
   /* Seek back to start of input stream */
   if (in->SeekTo(pos) == -1) {

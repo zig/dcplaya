@@ -2,7 +2,7 @@
 --
 -- author : vincent penne <ziggy@sashipa.com>
 --
--- $Id: basic.lua,v 1.8 2002-10-18 00:06:49 benjihan Exp $
+-- $Id: basic.lua,v 1.9 2002-10-21 14:57:00 benjihan Exp $
 ---
 
 -- Unload library
@@ -232,13 +232,18 @@ function type_dump(v, name, indent)
 		end
 		s=s..istr.."}"
 	elseif t == "function" then
-		s=s..tostirng(nil) -- getinfo(v).name
+		s=s..tostring(nil) -- getinfo(v).name
 	else
 		local a = tostring(v)
 		if type(a) == "string"  then s=s..a else s=s.."???" end
 	end
 	return s
 end
+
+function dump(v, name, indent)
+	print(type_dump(v,name,indent))
+end
+
 
 function clip_value(v,min,max)
 	if min and v < min then v = min end

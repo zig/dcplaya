@@ -4,7 +4,7 @@
  * @date    2002/09/27
  * @brief   Image definition.
  *
- * $Id: SHAwrapperImage.h,v 1.1 2002-09-27 16:45:07 benjihan Exp $
+ * $Id: SHAwrapperImage.h,v 1.2 2002-10-21 14:57:00 benjihan Exp $
  */
 #ifndef _SHAWRAPPERIMAGE_H_
 #define _SHAWRAPPERIMAGE_H_
@@ -41,6 +41,7 @@ typedef struct {
   int width;
   int height;
   int lutSize;
+  unsigned char data[4];
 } SHAwrapperImage_t;
 
 #endif /* #define _SHAWRAPPERIMAGE_H_ */

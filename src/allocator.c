@@ -4,10 +4,12 @@
  * @date     2002/10/18
  * @brief    fast allocator for fixed size small buffer.
  * 
- * $Id: allocator.c,v 1.3 2002-10-19 18:34:41 benjihan Exp $
+ * $Id: allocator.c,v 1.4 2002-10-21 14:57:00 benjihan Exp $
  */
 
 #include <stdlib.h>
+#include <stdio.h>
+
 #include "allocator.h"
 #include "sysdebug.h"
 
@@ -33,6 +35,7 @@ allocator_t * allocator_create(int nmemb, int size)
   a->free = (allocator_elt_t *) a->buffer;
   spinlock_init(&a->mutex);
   a->elt_size = size;
+  a->elements = nmemb;
   a->bufend = a->buffer + data_size;
   for (p=0, e=a->free, i=0; i<nmemb; ++i) {
 	if (p) {
@@ -53,19 +56,43 @@ allocator_t * allocator_create(int nmemb, int size)
 void allocator_destroy(allocator_t * a)
 {
   if (a && a->realaddress) {
-	SDDEBUG("Destroying an allocator [%d]\n",a->elt_size);
+	SDDEBUG("Destroying an allocator [%dx%d]\n",a->elements, a->elt_size);
 	free(a->realaddress);
   }
 }
 
-void * allocator_alloc(allocator_t * a, int size)
+static void link_used(allocator_t * a, allocator_elt_t *e)
 {
-  allocator_elt_t *e, *n;
+  allocator_elt_t *n;
+  e->prev = 0;
+  a->free = e->next;
+  n = e->next = a->used;
+  if (n) {
+	n->prev = e;
+  }
+  a->used = e;
+}
+
+void * allocator_alloc_inside(allocator_t * a)
+{
+  allocator_elt_t *e;
+  spinlock_lock(&a->mutex);
+  e = a->free;
+
+  if (e) {
+	link_used(a,e);
+  }
+  spinlock_unlock(&a->mutex);
+  return e+1;
+}
+
+void * allocator_alloc(allocator_t * a, unsigned int size)
+{
+  allocator_elt_t *e;
 
   if (size > a->elt_size) {
 	void * p;
 	p = malloc(size);
-/* 	SDDEBUG("Real alloc (%d > %d) := %p\n", size, a->elt_size, p); */
 	return p;
   }
 
@@ -74,19 +101,11 @@ void * allocator_alloc(allocator_t * a, int size)
 	void * p;
 	spinlock_unlock(&a->mutex);
 	p = malloc(size);
-/* 	SDDEBUG("Real alloc (%d, no room) := %p\n", size, p); */
 	return p;
   }
-
-  e->prev = 0;
-  a->free = e->next;
-  n = e->next = a->used;
-  if (n) {
-	n->prev = e;
-  }
-  a->used = e;
+  link_used(a,e);
   spinlock_unlock(&a->mutex);
-  return &e[1];
+  return e+1;
 }
 
 static int allocator_count(allocator_t * a, const allocator_elt_t * e)
@@ -111,10 +130,22 @@ int allocator_count_free(allocator_t * a)
   return allocator_count(a, a->free);
 }
 
-static int allocator_is_room(const allocator_t * a, const void * data)
+int allocator_is_inside(const allocator_t * a, const void * data)
 {
   const allocator_elt_t *me = (const allocator_elt_t *)data - 1;
   return (const char*)me >= a->buffer && (const char*)me < a->bufend;
+}
+
+int allocator_index(const allocator_t * a, const void * data)
+{
+  const char * me = (const char *)((const allocator_elt_t *)data - 1);
+  int idx;
+
+  idx = (me - a->buffer) / (a->elt_size + sizeof(allocator_elt_t));
+  if ((unsigned int)idx >= a->elements) {
+	idx = -1;
+  }
+  return idx;
 }
 
 static int allocator_search(allocator_t * a, const allocator_elt_t * e,
@@ -129,7 +160,7 @@ static int allocator_search(allocator_t * a, const allocator_elt_t * e,
 
 static int allocator_is_used(allocator_t * a, const void * data)
 {
-  if (!allocator_is_room(a,data)) {
+  if (!allocator_is_inside(a,data)) {
 	return 0;
   }
   spinlock_lock(&a->mutex);
@@ -138,7 +169,7 @@ static int allocator_is_used(allocator_t * a, const void * data)
 
 static int allocator_is_free(allocator_t * a, const void * data)
 {
-  if (!allocator_is_room(a,data)) {
+  if (!allocator_is_inside(a,data)) {
 	return 0;
   }
   spinlock_lock(&a->mutex);
@@ -150,7 +181,7 @@ void allocator_free(allocator_t * a, void * data)
   allocator_elt_t * e , * n, * p;
 
 #ifdef DEBUG
-  if (!allocator_is_room(a,data)) {
+  if (!allocator_is_inside(a,data)) {
 /* 	SDDEBUG("allocator real free(%p)\n", data); */
   } else {
 	int err = 0;
@@ -168,7 +199,7 @@ void allocator_free(allocator_t * a, void * data)
   }
 #endif
 
-  if (!allocator_is_room(a,data)) {
+  if (!allocator_is_inside(a,data)) {
 	free(data);
 	return;
   }
@@ -190,6 +221,47 @@ void allocator_free(allocator_t * a, void * data)
 
   e->next = a->free;
   a->free = e;
+  spinlock_unlock(&a->mutex);
+}
+
+void * allocator_match(allocator_t * a, const void * data,
+					   int (*cmp)(const void *, const void *))
+{
+  allocator_elt_t * e;
+  spinlock_lock(&a->mutex);
+  for (e=a->used; e && cmp(data,e+1); e=e->next)
+	; 
+  spinlock_unlock(&a->mutex);
+  return e ? e+1 : 0;
+}
+
+void allocator_dump(allocator_t * a)
+{
+  int i,j;
+  allocator_elt_t *e;
+
+  spinlock_lock(&a->mutex);
+  printf("allocator %p, %d elements of %d bytes\n",
+		 a, a->elements, a->elt_size);
+
+  printf("\nFree elements:\n");
+  for (i=0, e=a->free; e; e=e->next, ++i) {
+	printf("#%03d @:%p, data:%p\n",
+		   ((char *)e-a->buffer) / (a->elt_size+sizeof(*e)),e,e+1);
+  }
+  printf("%d free elements\n", i);
+	
+  printf("\nUsed elements:\n");
+  for (j=0, e=a->used; e; e=e->next, ++j) {
+	printf("#%03d @:%p, data:%p\n",
+		   ((char *)e-a->buffer) / (a->elt_size+sizeof(*e)),e,e+1);
+  }
+  printf("%d used elements\n", j);
+
+  if (j+i != a->elements) {
+	printf("Allocator %p inconsistent  : %d differs from %d\n",
+		   a,i+j,a->elements);
+  }
   spinlock_unlock(&a->mutex);
 }
 

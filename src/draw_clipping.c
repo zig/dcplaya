@@ -4,7 +4,7 @@
  *  @date    2002/10/15
  *  @brief   draw primitive vertex definition.
  *
- * $Id: draw_clipping.c,v 1.4 2002-10-19 18:34:41 benjihan Exp $
+ * $Id: draw_clipping.c,v 1.5 2002-10-21 14:57:00 benjihan Exp $
  */
 
 #include "draw_clipping.h"
@@ -46,17 +46,10 @@ static void vertex_clip(draw_vertex_t *v,
   }
   v->z = of * v0->z + f * v1->z;
 
-  if (DRAW_SHADING(flags) == DRAW_FLAT) {
-	v->a = v0->a;
-	v->r = v0->r;
-	v->g = v0->g;
-	v->b = v0->b;
-  } else {
-	v->a = of * v0->a + f * v1->a;
-	v->r = of * v0->r + f * v1->r;
-	v->g = of * v0->g + f * v1->g;
-	v->b = of * v0->b + f * v1->b;
-  }
+  v->a = of * v0->a + f * v1->a;
+  v->r = of * v0->r + f * v1->r;
+  v->g = of * v0->g + f * v1->g;
+  v->b = of * v0->b + f * v1->b;
 
   if (DRAW_TEXTURE(flags) != DRAW_NO_TEXTURE) {
 	v->u = of * v0->u + f * v1->u;

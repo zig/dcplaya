@@ -4,7 +4,7 @@
  *  @date    2002/10/15
  *  @brief   draw primitive vertex definition.
  *
- * $Id: draw_vertex.h,v 1.2 2002-10-19 18:34:40 benjihan Exp $
+ * $Id: draw_vertex.h,v 1.3 2002-10-21 14:56:59 benjihan Exp $
  */
 
 #ifndef _DRAW_VERTEX_H_
@@ -14,7 +14,7 @@
  *  @{
  */
 #define DRAW_OPACITY_BIT  12 /**< 1st bit of opacity type. */
-#define DRAW_SHADING_BIT  13 /**< 1st bit of shading type. */
+/* #define DRAW_SHADING_BIT  13 /\**< 1st bit of shading type. *\/ */
 #define DRAW_DEBUGIN_BIT  15 /**< User debug bit.          */
 #define DRAW_TEXTURE_BIT  16 /**< 1st bit of texture.      */
 /**@}*/
@@ -50,14 +50,13 @@
  */
 
 /** Shading mask. */
-#define DRAW_SHADING_MASK  (1<<DRAW_SHADING_BIT)
+/* #define DRAW_SHADING_MASK  (1<<DRAW_SHADING_BIT) */
 /** Get shading. */
-#define DRAW_SHADING(F)    ((F)&DRAW_SHADING_MASK)
+/* #define DRAW_SHADING(F)    ((F)&DRAW_SHADING_MASK) */
 /** Value for flat shading. */
-#define DRAW_FLAT          (1<<DRAW_SHADING_BIT)
+/* #define DRAW_FLAT          (1<<DRAW_SHADING_BIT) */
 /** Value for gouraud shading. */
-#define DRAW_GOURAUD       (0<<DRAW_SHADING_BIT)
-
+/* #define DRAW_GOURAUD       (0<<DRAW_SHADING_BIT) */
 /**@}*/
 
 /** Draw primitive vertex. */

@@ -4,7 +4,7 @@
  * @brief     Image translator base class implementation
  * @date      2001/07/19
  * @author    BeN(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAtranslatorImage.cxx,v 1.2 2002-10-05 09:43:58 benjihan Exp $
+ * @version   $Id: SHAtranslatorImage.cxx,v 1.3 2002-10-21 14:56:59 benjihan Exp $
  */
 
 
@@ -31,7 +31,7 @@ int SHAtranslatorImage::WriteHeader(SHAtranslatorResult *result,
   v.height  = result->data.image.height;
   v.lutSize = result->data.image.lutSize;
 
-  err = out->Write(&v, sizeof(v));
+  err = out->Write(&v, sizeof(v) - sizeof(v.data));
   if (err) {
     err = result->Error("Image : Error writing header");
   }

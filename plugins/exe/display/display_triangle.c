@@ -5,11 +5,12 @@
  * @date     2002/10/17
  * @brief    graphics lua extension plugin, triangle interface
  * 
- * $Id: display_triangle.c,v 1.1 2002-10-18 11:42:07 benjihan Exp $
+ * $Id: display_triangle.c,v 1.2 2002-10-21 14:57:00 benjihan Exp $
  */
 
 #include "gp.h"
 #include "display_driver.h"
+#include "display_matrix.h"
 
 struct dl_draw_triangle_command {
   dl_command_t uc;
@@ -66,86 +67,108 @@ void dl_draw_triangle(dl_list_t * dl,
   }
 }
 
+/* i: table index in stack */
+static int vertex_from_table(draw_vertex_t *v, lua_State * L, int i)
+{
+  int j;
+  int top = lua_gettop(L);
+  int n = lua_getn(L,i);
+  float *f = &v->x;
+
+  if (n > 4 + 4 + 2) {
+	n = 4 + 4 + 2;
+  }
+
+  for (j=1; j<n; ++j) {
+	lua_rawgeti(L,i,j);
+	*f++ = lua_tonumber(L,-1);
+  }
+  lua_settop(L,top);
+  return n;
+}
+
+static int vertex_from_floats(draw_vertex_t *v, const float *s, int n)
+{
+  const float * d = s;
+
+  if (n >= 4) {
+	v->x = *s++;  v->y = *s++;  v->z = *s++;  v->w = *s++;
+	n -= 4;
+  }
+  if (n >= 4) {
+	v->a = *s++;  v->r = *s++;  v->g = *s++;  v->b = *s++;
+	n -= 4;
+  } else {
+	v->a = 1;  v->r = 1;  v->g = 1;  v->b = 1;
+  }
+  if (n >= 2) {
+	v->u = *s++;  v->v = *s++;
+  } else {
+	v->u = v->v = 0;
+  }
+
+  return s-d;
+} 
+
 DL_FUNCTION_START(draw_triangle)
 {
   int i, n = lua_gettop(L);
   int flags = 0; /* => DRAW_NO_TEXTURE | DRAW_TRANSLUCENT | DRAW_GOURAUD */
   draw_vertex_t v[3];
+  int n1,n2,n3;
 
-
-/*   lua_matrix_t *m; */
-/*   if ( lua_tag(L, 1) == matrix_tag ) { */
-/* 	GET_MATRIX(m,1,0,0); */
-
-  if (n < 10 || n > 24) {
-	printf("lua_draw_triangle : bad number of arguments\n");
+  if (lua_tag(L, 2) == matrix_tag) {
+	lua_matrix_t *m1, *m2, *m3;
+	lua_matrix_def_t *md1, *md2, *md3;
+	if (lua_tag(L, 3) == matrix_tag) {
+	  GET_VECTOR(m1,md1,2,0);
+	  GET_VECTOR(m2,md2,3,0);
+	  GET_VECTOR(m3,md3,4,0);
+	  n1 = vertex_from_floats(v+0, m1->li, md1->c);
+	  n2 = vertex_from_floats(v+1, m2->li, md2->c);
+	  n3 = vertex_from_floats(v+2, m3->li, md3->c);
+	  i = 5;
+	} else {
+	  int l;
+	  const float * li;
+	  GET_MATRIX_OR_VECTOR(m1,md1,2,0);
+	  
+	  li = m1->li;
+	  if (li) {
+		l = (li - md1->v) >> md1->log2;
+	  } else {
+		li = md1->v;
+		l  = 0;
+	  }
+	  if (l+3 > md1->l) {
+		printf("%s : missing matrix line.\n", __FUNCTION__);
+		return 0;
+	  }
+	  n1 = vertex_from_floats(v+0, li, md1->c);
+	  n2 = vertex_from_floats(v+1, li += md1->c, md1->c);
+	  n3 = vertex_from_floats(v+2, li += md1->c, md1->c);
+	  i = 3;
+	}
+  } else if (lua_type(L,1) == LUA_TTABLE) {
+	printf("%s : table not implemented\n", __FUNCTION__);
+	return 0;
+  } else {
+	printf("%s : bad arguments\n", __FUNCTION__);
 	return 0;
   }
 
-  /* Got 3 vertrices */
-  v[0].x = lua_tonumber(L, 2);
-  v[0].y = lua_tonumber(L, 3);
-  v[0].z = lua_tonumber(L, 4);
-  v[0].w = 1;
-
-  v[1].x = lua_tonumber(L, 5);
-  v[1].y = lua_tonumber(L, 6);
-  v[1].z = lua_tonumber(L, 7);
-  v[1].w = 1;
-
-  v[2].x = lua_tonumber(L, 8);
-  v[2].y = lua_tonumber(L, 9);
-  v[2].z = lua_tonumber(L, 10);
-  v[2].w = 1;
-
-  i = 10;
-  if (i+4 < n) {
-	/* Got a color */
-	v[0].a = lua_tonumber(L, 11);
-	v[0].r = lua_tonumber(L, 12);
-	v[0].g = lua_tonumber(L, 13);
-	v[0].b = lua_tonumber(L, 14);
-	i=14;
-	if (i+8 < n) {
-	  /* Got 2 more colors */
-	  v[1].a = lua_tonumber(L, 15);
-	  v[1].r = lua_tonumber(L, 16);
-	  v[1].g = lua_tonumber(L, 17);
-	  v[1].b = lua_tonumber(L, 18);
-	  v[2].a = lua_tonumber(L, 19);
-	  v[3].r = lua_tonumber(L, 20);
-	  v[4].g = lua_tonumber(L, 21);
-	  v[5].b = lua_tonumber(L, 22);
-	  i = 22;
-	}
-  }
-
-  if (i+1 < n) {
+  if (n >= i) {
 	/* Got a texture */
-	flags |= ((unsigned int)lua_tonumber(L, i+1) << DRAW_TEXTURE_BIT)
+	flags |= ((unsigned int)lua_tonumber(L, i) << DRAW_TEXTURE_BIT)
 				 & DRAW_TEXTURE_MASK;
-	if (i+2 < n) {
+	if (n >= i+1) {
 	  /* Got a opacity mode */
-	  flags |= ((unsigned int)lua_tonumber(L, i+2) << DRAW_OPACITY_BIT)
+	  flags |= ((unsigned int)lua_tonumber(L, i+1) << DRAW_OPACITY_BIT)
 		& DRAW_OPACITY_MASK;
 	}
   }
 
-  /* Determine type of shading depending of number of color arguments */
-  if (i <= 14) {
-	flags |= DRAW_FLAT;
-	/* No color : set a default white */
-	if (i==10) {
-	  v[0].a = v[0].r = v[0].g = v[0].b = 1.0f;
-	}
-	/* Copy color vertex 0 to 1 and 2 */
-	v[1].a = v[2].a = v[0].a;
-	v[1].r = v[2].r = v[0].r;
-	v[1].g = v[2].g = v[0].g;
-	v[1].b = v[2].b = v[0].b;
-  }
   dl_draw_triangle(dl, v, flags);
   return 0;
 }
 DL_FUNCTION_END()
-

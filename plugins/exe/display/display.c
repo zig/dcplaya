@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.11 2002-10-18 23:16:22 benjihan Exp $
+ * $Id: display.c,v 1.12 2002-10-21 14:57:00 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -56,6 +56,12 @@ DL_FUNCTION_DECLARE(get_clipping);
 
 /* display_triangle.c */
 DL_FUNCTION_DECLARE(draw_triangle);
+
+/* display_texture.c */
+DL_FUNCTION_DECLARE(tex_new);
+DL_FUNCTION_DECLARE(tex_destroy);
+DL_FUNCTION_DECLARE(tex_get);
+DL_FUNCTION_DECLARE(tex_info);
 
 /* display list LUA interface */
 int dl_list_tag;
@@ -461,6 +467,43 @@ static luashell_command_description_t display_commands[] = {
 	SHELL_COMMAND_C, lua_get_clipping    /* function */
   },
 
+  /* texture interface */
+
+  {
+	"tex_new", 0,                        /* long and short names */
+	"print [["
+	"tex_new(filename) or tex_new(name,width,heigth,format) :\n"
+	"Create a new texure. Returns texture identifier"
+	"]]",                                /* usage */
+	SHELL_COMMAND_C, lua_tex_new         /* function */
+  },
+
+  {
+	"tex_destroy", 0,                    /* long and short names */
+	"print [["
+	"tex_destroy(texture-name|texture-id) : "
+	"Destroy a teture."
+	"]]",                                /* usage */
+	SHELL_COMMAND_C, lua_tex_destroy     /* function */
+  },
+
+  {
+	"tex_get", 0,                        /* long and short names */
+	"print [["
+	"tex_get(texture-name|texture-id) : "
+	"Get texture identifier."
+	"]]",                                /* usage */
+	SHELL_COMMAND_C, lua_tex_get         /* function */
+  },
+
+  {
+	"tex_info", 0,                        /* long and short names */
+	"print [["
+	"tex_info(texture-name|texture-id) : "
+	"Get texture info structure."
+	"]]",                                /* usage */
+	SHELL_COMMAND_C, lua_tex_info        /* function */
+  },
 
   /* matrix interface */
 
@@ -481,8 +524,9 @@ static luashell_command_description_t display_commands[] = {
   {
     "mat_new", 0,                        /* long and short names */
     "print [["
-	"mat_new([lines, [ columns ] ] ) : make a new matrix. "
+	"mat_new( [ mat | lines, [ columns ] ] ) : make a new matrix. "
 	"Default lines and columns is 4. "
+	"If mat is given the result is a copy of mat. "
 	"If matrix dimension is 4x4 the result is an identity matrix "
 	"else the result matrix is zeroed."
     "]]",                                /* usage */
@@ -526,14 +570,16 @@ static luashell_command_description_t display_commands[] = {
   {
     "mat_mult", 0,                       /* long and short names */
     "print [["
-      "mat_mult(mat1, mat2) : make matrix by apply mat1xmat2"
+	"mat_mult(mat1, mat2) : make matrix by apply mat1xmat2\n"
+	"Where mat2 is 4x4 matrix."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_mat_mult        /* function */
   },
   {
     "mat_mult_self", 0,                  /* long and short names */
     "print [["
-      "mat_mult(mat1, mat2) : mat1=mat1xmat2"
+	"mat_mult([mat0,] mat1, mat2) : returns mat0=mat1xmat2 or mat1=mat1xmat2\n"
+	"Where mat2 is 4x4 matrix."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_mat_mult_self   /* function */
   },
@@ -594,7 +640,8 @@ any_driver_t display_driver =
   EXE_DRIVER,            /**< Driver type                     */      
   0x0100,                /**< Driver version                  */
   DRIVER_NAME,           /**< Driver name                     */
-  "Vincent Penne",       /**< Driver authors                  */
+  "Vincent Penne, "      /**< Driver authors                  */
+  "Benjamin Gerard",
   "Graphical LUA "       /**< Description                     */
   "extension ",
   0,                     /**< DLL handler                     */

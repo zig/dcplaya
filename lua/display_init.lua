@@ -54,7 +54,7 @@ end
 re "dl_draw_box"
 re "dl_draw_box1"
 re "dl_draw_box4"
-re "dl_draw_triangle"
+-- re "dl_draw_triangle"
 re "dl_draw_text"
 re "dl_set_clipping"
 

@@ -4,7 +4,7 @@
  * @brief     Targa (TGA) translator class definition
  * @date      2001/07/11
  * @author    BeN(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAtranslatorTga.h,v 1.2 2002-10-05 09:43:58 benjihan Exp $
+ * @version   $Id: SHAtranslatorTga.h,v 1.3 2002-10-21 14:57:00 benjihan Exp $
  */
 
 #ifndef _SHATRANSLATORTGA_H_
@@ -100,7 +100,9 @@ private:
     GREY     = 3,
     RLEPAL   = 9,
     RLERGB   = 10,
-    RLEGREY  = 11
+    RLEGREY  = 11,
+	HUFF_RLE_DELTA_PAL = 32,
+	HUFF_RLE_DELTA_QTREE_PAL = 33
   };
 
 };

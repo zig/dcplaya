@@ -13,8 +13,11 @@ void ARGB1555toARGB32(void * dst, const void * src, int n);
 void ARGB4444toARGB32(void * dst, const void * src, int n);
 void RGB24toARGB32(void * dst, const void * src, int n);
 void ARGB32toARGB32(void * dst, const void * src, int n);
-
+void ARGB16toARGB16(void * dst, const void * src, int n);
+void GREY8toGREY8(void * dst, const void * src, int n);
 void ARGB32toARGB1555(void * dst, const void * src, int n);
+void ARGB32toRGB565(void * dst, const void * src, int n);
+void ARGB32toARGB4444(void * dst, const void * src, int n);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

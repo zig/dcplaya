@@ -4,10 +4,13 @@
  * @brief     Targa (TGA) translator class implementation
  * @date      2001/07/11
  * @author    BeN(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAtranslatorTga.cxx,v 1.2 2002-10-05 09:43:58 benjihan Exp $
+ * @version   $Id: SHAtranslatorTga.cxx,v 1.3 2002-10-21 14:56:59 benjihan Exp $
  */
 
+extern "C" {
+#include <stdio.h> // $$$
 #include <string.h>
+}
 #include "SHAtranslator/SHAtranslatorTga.h"
 #include "SHAtranslator/SHAtranslatorBlitter.h"
 #include "SHAsys/SHAsysPeek.h"
@@ -32,8 +35,8 @@ static void TGAindirect8(void *dst, const void * src, const void *lut,
     unsigned int index;
     index = *(unsigned char *)src;
     convert(dst, (char *)lut + (index * bpp), 1);
-    dst = (char*)dst + 4;
-    src = (char *)src + 1;
+    dst = (char *) dst + 4;
+    src = (char *) src + 1;
   }
 }
 
@@ -43,8 +46,8 @@ static void TGAindirect16(void *dst, const void * src, const void *lut, int n, i
     unsigned int index;
     index = SHApeekU16(src);
     convert(dst, (char *)lut + (index * bpp), 1);
-    dst = (char*)dst + 4;
-    src = (char *)src + 2;
+    dst = (char *) dst + 4;
+    src = (char *) src + 2;
   }
 }
 
@@ -52,24 +55,6 @@ static void TGAdirect(void *dst, const void * src, const void *lut,
 		      int n, int bpp, TGArgbConvertor_f convert)
 {
   convert(dst, src, n);
-}
-
-static void TGAconvertor_ARGB1555_ARGB32(void *dst, const void *src, int n,
-					 const void *lut)
-{
-  ARGB1555toARGB32(dst,src,n);
-}
-
-static void TGAconvertor_ARGB4444_ARGB32(void *dst, const void *src, int n,
-					 const void *lut)
-{
-  ARGB4444toARGB32(dst,src,n);
-}
-
-static void TGAconvertor_RGB565_ARGB32(void *dst, const void *src, int n,
-				       const void *lut)
-{
-  RGB565toARGB32(dst,src,n);
 }
 
 const char **SHAtranslatorTga::Extension(void) const
@@ -267,6 +252,7 @@ int SHAtranslatorTga::RleLineOffset(SHAtranslatorResult * result,
   for (int y=0; !err && y<height; ++y) {
     int cnt = 0;
 
+
     // Get current pos as line position
     linePos[y] = in->Tell();
     if ((int)linePos[y] < 0) {
@@ -278,7 +264,8 @@ int SHAtranslatorTga::RleLineOffset(SHAtranslatorResult * result,
       // Get RLE control byte
       err = in->Read(&data, 1);
       if (err) {
-        err = result->Error("TGA: Get RLE line position, read control byte failure.");
+        err = result->Error("TGA: Get RLE line position,"
+							" read control byte failure.");
         break;
       }
       int len = (data & 0x7f) + 1;
@@ -291,7 +278,8 @@ int SHAtranslatorTga::RleLineOffset(SHAtranslatorResult * result,
       SHAstreamPos seekOffset = bytePerPix * ((data & 0x80) ? 1 : len);
       err = in->SeekFrom(seekOffset);
       if (err) {
-        err = result->Error("TGA: Get RLE line position, skip RLE data failure.");
+        err = result->Error("TGA: Get RLE line position,"
+							" skip RLE data failure.");
         break;
       }
     }
@@ -332,9 +320,10 @@ int SHAtranslatorTga::ReadRleLine(SHAtranslatorResult * result,
         }
       }
     } else {
+	  int bytes = bytePerPix * len;
       // Raw packet : direct read pix
-      err = in->Read(dest, bytePerPix * len);
-      dest += bytePerPix * len;
+      err = in->Read(dest, bytes);
+      dest += bytes;
       if (err) {
         break;
       }
@@ -611,6 +600,7 @@ int SHAtranslatorTga::GetConvertor(SHAtranslatorResult * result,
     case RLEGREY:
     case GREY:
       *rgbConvertor   = (void *)GREY8toARGB32;
+	  *pixelConvertor = (void *)TGAdirect;
       break;
   }
 

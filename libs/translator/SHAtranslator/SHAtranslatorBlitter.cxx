@@ -48,6 +48,22 @@ void RGB565toARGB32(void * dst, const void * src, int n)
   }
 }
 
+void ARGB32toRGB565(void * dst, const void * src, int n)
+{
+  while (n--) {
+    int v = *(SHAsint32 *)src;
+    int r;
+    // Red
+    r  = (v>>(16+3-11)) & (0x1F<<11);
+    // Green
+    r |= (v>>(8+2-5)) & (0x3F<<5);
+    // Blue
+    r |= (v>>3) & 0x1f;
+    *(SHAuint16 *)dst = r;
+    src = (void *)((char *)src+4);
+    dst = (void *)((char *)dst+2);
+  }
+}
 
 void ARGB1555toARGB32(void * dst, const void * src, int n)
 {
@@ -130,6 +146,20 @@ void ARGB4444toARGB32(void * dst, const void * src, int n)
   }
 }
 
+void ARGB32toARGB4444(void * dst, const void * src, int n)
+{
+  while (n--) {
+    unsigned int v = *(SHAuint32 *)src;
+    *(SHAuint16 *)dst = 0
+	  | ((v>>(28-12)) & 0xF000)
+	  | ((v>>(20- 8)) & 0x0F00)
+	  | ((v>>(12- 4)) & 0x00F0)
+	  | ((v>>( 4- 0)) & 0x000F);
+    src = (void *)((char *)src+4);
+    dst = (void *)((char *)dst+2);
+  }
+}
+
 void RGB24toARGB32(void * dst, const void * src, int n)
 {
   while (n--) {
@@ -142,4 +172,14 @@ void RGB24toARGB32(void * dst, const void * src, int n)
 void ARGB32toARGB32(void * dst, const void * src, int n)
 {
   memcpy(dst, src, 4*n);
+}
+
+void ARGB16toARGB16(void * dst, const void * src, int n)
+{
+  memcpy(dst, src, 2*n);
+}
+
+void GREY8toGREY8(void * dst, const void * src, int n)
+{
+  memcpy(dst, src, n);
 }

@@ -4,7 +4,7 @@
  * @date    2002/10/10
  * @brief   2D drawing primitives.
  *
- * $Id: 3dutils.c,v 1.5 2002-10-19 18:34:40 benjihan Exp $
+ * $Id: 3dutils.c,v 1.6 2002-10-21 14:57:00 benjihan Exp $
  */
 
 #include <stdarg.h>
@@ -14,41 +14,197 @@
 
 #include "draw_clipping.h"
 
+/** @name List type, word 0, bit 24-26.
+ *  @{
+ */
+#define TA_OPACITY_BIT               25
+#define TA_OPAQUE_POLYGON_LIST       (0<<24)
+#define TA_OPAQUE_MODIFIER_LIST      (1<<24)
+#define TA_TRANSLUCENT_POLYGON_LIST  (2<<24)
+#define TA_TRANSLUCENT_MODIFIER_LIST (3<<24)
+#define TA_PUNCHTHRU_LIST            (4<<24)
+/**@}*/
 
-// #if 0
-//   struct poly_hd {
-// 	struct command {
-// 	  int uvformat      : 1;
-// 	  int shading       : 1; /* 0:flat 1:gouraud */
-// 	  int specular      : 1;
-// 	  int texture       : 1;
-// 	  int colortype     : 2; /* 0 : argb 1 : 4-float */
-// 	  int modifier_code : 1;
-// 	  int modifier      : 1;
-// 	  int reserved_080f : 8;
-// 	  int clipmode      : 2;
-// 	  int striplength   : 2;
-// 	  int reserved_1416 : 3;
-// 	  int unknown_17    : 1;
-// 	  int listtype      : 3; /* 2 : transparent */
-// 	  int reserved_1B1C : 2;
-// 	  int command       : 3;
-// 	};
+/** @name strip length, word 0, bit 18-19.
+ *  @{
+ */
+#define TA_STRIP_LENGTH(N) (((N)>>1)<<18)
+#define TA_STRIP_LENGTH1 (0<<18)
+#define TA_STRIP_LENGTH2 (1<<18)
+#define TA_STRIP_LENGTH4 (2<<18)
+#define TA_STRIP_LENGTH6 (3<<18)
+/**@}*/
 
-// 	struct option {
-// 	  int reserved_0013 : 20;
-// 	  int d_exact       : 1; /* 0:approx 1:exact (mipmap) */
-// 	  int reserved_1515 : 1;
-// 	  int uvformat      : 1; /* ??? */    
-// 	  int shading       : 1; /* ??? */    
-// 	  int specular      : 1; /* ??? */
-// 	  int texture       : 1; /* 0:disable */
-// 	  int zwrite        : 1; /* 0:enable */
-// 	  int culling       : 2; /* 0:disable 1:small 2:ccw 3:cw */
-// 	  int depthmode     : 3;
-// 	};
-//   }
-// #endif
+/** @name clip mode, word 0, bit 16-17.
+ *  @{
+ */
+#define TA_CLIP_MODE_DISABLE  (0<<16)
+#define TA_CLIP_MODE_RESERVED (1<<16)
+#define TA_CLIP_MODE_INSIDE   (2<<16)
+#define TA_CLIP_MODE_OUTSIDE  (3<<16)
+/**@}*/
+
+/** @name modifier affect, word 0, bit 7.
+ *  @{
+ */
+#define TA_MODIFIER_AFFECT_DISABLE (0<<7)
+#define TA_MODIFIER_AFFECT_ENABLE  (1<<7) /**< only valid for POLYGON. */
+/**@}*/
+
+/** @name modifier mode, word 0, bit 6.
+ *  @{
+ */
+#define TA_MODIFIER_CHEAP_SHADOW (0<<6)
+#define TA_MODIFIER_NORMAL       (1<<6)
+/**@}*/
+
+/** @name color type, word 0, bit 4-5.
+ *  @{
+ */
+#define TA_COLOR_TYPE_ARGB                    (0<<4)
+#define TA_COLOR_TYPE_FLOAT                   (1<<4)
+#define TA_COLOR_TYPE_INTENSITY               (2<<4)
+#define TA_COLOR_TYPE_INTENSITY_PREVIOUS_FACE (3<<4)
+/**@}*/
+
+/** @name textured, word 0, bit 3.
+ *  @{
+ */
+#define TA_TEXTURE_BIT     3
+#define TA_TEXTURE_DISABLE (0<<3)
+#define TA_TEXTURE_ENABLE  (1<<3)
+/**@}*/
+
+/** @name specular highlight, word 0, bit 2.
+ *  @{
+ */
+#define TA_SPECULAR_DISABLE (0<<2)
+#define TA_SPECULAR_ENABLE  (1<<2)
+/**@}*/
+
+/** @name shading, word 0, bit 1.
+ *  @{
+ */
+#define TA_SHADING_BIT      1
+#define TA_FLAT_SHADING     (0<<1)
+#define TA_GOURAUD_SHADING  (1<<1)
+/**@}*/
+
+/** @name UV format, word 0, bit 0.
+ *  @{
+ */
+#define TA_UV_32  (0<<0)
+#define TA_UV_16  (1<<0)
+/**@}*/
+
+/** @name Depth mode, word 1, bit 29-31.
+ *  @{
+ */
+#define TA_DEPTH_NEVER	       (0<<29)
+#define TA_DEPTH_LESS	       (1<<29)
+#define TA_DEPTH_EQUAL         (2<<29)
+#define TA_DEPTH_LESSEQUAL     (3<<29)
+#define TA_DEPTH_GREATER       (4<<29)
+#define TA_DEPTH_NOTEQUAL	   (5<<29)
+#define TA_DEPTH_GREATEREQUAL  (6<<29)
+#define TA_DEPTH_ALWAYS	       (7<<29)
+/**@}*/
+
+/** @name Culling mode, word 1, bit 27-28.
+ *  @{
+ */
+#define TA_CULLING_DISABLE	(0<<27)
+#define TA_CULLING_SMALL	(1<<27)
+#define TA_CULLING_CCW	    (2<<27)
+#define TA_CULLING_CW	    (3<<27)
+/**@)*/
+
+/** @name Z-write, word 1, bit 26.
+ *  @{
+ */
+#define TA_ZWRITE_DISABLE	(0<<26)
+#define TA_ZWRITE_ENABLE	(1<<26)
+/**@)*/
+
+
+/** @name Mipmap D-calcul, word 1, bit 20
+ *  @{
+ */
+#define TA_DCALC_APPROX (0<<20)
+#define TA_DCALC_EXACT  (1<<20)
+/**@}*/
+
+typedef struct {
+  int word0;
+  int word1;
+  int word2;
+  int word3;
+} ta_hw_poly_t;
+
+/* $$$ shading mode not handled, since I don't know how it works with
+   the TA. */
+static const ta_hw_poly_t poly_table[4] = {
+  /* TO   texture     opacity                        */
+  /* ----------------------------------------------- */
+  /* 00   no         transparent                     */
+  { 0x82840012, 0x90800000, 0x949004c0, 0x00000000 },
+  /* 01   no         opaque                          */
+  { 0x80840012, 0x90800000, 0x20800440, 0x00000000 },
+  /* 10   yes        transparent                     */
+  { 0x8284001a, 0x92800000, 0x949004c0, 0x00000000 },
+  /* 11   yes        opaque                          */
+  { 0x8084001a, 0x90800000, 0x20800440, 0x00000000 },
+};
+
+static const int draw_zwrite  = TA_ZWRITE_ENABLE;
+static const int draw_ztest   = TA_DEPTH_GREATER;
+static const int draw_culling = TA_CULLING_CCW;
+
+static void make_poly_hdr(int flags)
+{
+/*   volatile ta_hw_poly_t * hw = (volatile ta_hw_poly_t *)(0xe0<<24); */
+  const ta_hw_poly_t * p;
+  int texture = DRAW_TEXTURE(flags);
+  int idx;
+  static int oldidx = -1;
+
+  idx = 0
+	| ((texture != DRAW_NO_TEXTURE) << 1)
+	| ((flags >> DRAW_OPACITY_BIT) & 0x1);
+
+  if (idx != oldidx) {
+	printf("Changing poly header type %d\n", oldidx=idx);
+  }
+  
+  p = poly_table + idx;
+
+  if (texture != DRAW_NO_TEXTURE) {
+	/* Set texture info */
+
+  }
+
+  /* Now we cant commit */
+  ta_commit32_inline(p);
+}
+
+static int sature(const float a)
+{
+  int v;
+
+  v = (int)a;
+  v = v & ~(v>>31);
+  v = v | (((255-v)>>31) & 255);
+  return v;
+}
+
+static unsigned int argb255(const draw_vertex_t * v)
+{
+  return
+    (sature(v->a*255.0f) << 24) |
+    (sature(v->r*255.0f) << 16) |
+    (sature(v->g*255.0f) << 8)  |
+    (sature(v->b*255.0f) << 0);
+}
 
 
 void draw_triangle_no_clip(const draw_vertex_t *v1,
@@ -56,8 +212,65 @@ void draw_triangle_no_clip(const draw_vertex_t *v1,
 						   const draw_vertex_t *v3,
 						   int flags)
 {
-  poly_hdr_t poly;
+  make_poly_hdr(flags);
 
+  if (DRAW_TEXTURE(flags) == DRAW_NO_TEXTURE) {
+	/* No texture */
+	volatile struct vargb_s {
+	  int flags;
+	  float x,y,z;
+	  float a,r,g,b;
+	} * v = (void*)(0xe0<<24);
+
+	/* Vertex 1 */
+	v->flags = TA_VERTEX_NORMAL;
+	v->x = v1->x; v->y = v1->y; v->z = v1->z;
+	v->a = v1->a; v->r = v1->r; v->g = v1->g; v->b = v1->b;
+	ta_commit32_nocopy();
+
+	/* Vertex 2 */
+	v->x = v2->x; v->y = v2->y; v->z = v2->z;
+	v->a = v2->a; v->r = v2->r; v->g = v2->g; v->b = v2->b;
+	ta_commit32_nocopy();
+	
+	/* Vertex 3 */
+	v->flags = TA_VERTEX_EOL;
+	v->x = v3->x; v->y = v3->y; v->z = v3->z;
+	v->a = v3->a; v->r = v3->r; v->g = v3->g; v->b = v3->b;
+	ta_commit32_nocopy();
+
+  } else {
+	volatile struct vtargb_s {
+	  int flags;
+	  float x,y,z,u,v;
+	  unsigned int col, addcol;
+	}  * v= (void *)(0xe0<<24);
+
+	/* Vertex 1 */
+	v->flags = TA_VERTEX_NORMAL;
+	v->x = v1->x; v->y = v1->y; v->z = v1->z;
+	v->col = argb255(v1);
+	v->addcol = 0;
+	ta_commit32_nocopy();
+
+	/* Vertex 2 */
+	v->x = v2->x; v->y = v2->y; v->z = v2->z;
+	v->col = argb255(v2);
+	ta_commit32_nocopy();
+	
+	/* Vertex 3 */
+	v->flags = TA_VERTEX_EOL;
+	v->x = v3->x; v->y = v3->y; v->z = v3->z;
+	v->col = argb255(v3);
+	ta_commit32_nocopy();
+  }
+}
+
+void draw_strip_no_clip(const draw_vertex_t *v,
+						int n, int flags)
+{
+  int i;
+  poly_hdr_t poly;
 
   vertex_oc_t vert;
   int ta_flags = 0;
@@ -70,25 +283,17 @@ void draw_triangle_no_clip(const draw_vertex_t *v1,
   ta_commit_poly_hdr(&poly);
 
   vert.flags = TA_VERTEX_NORMAL;
-  vert.x = v1->x; vert.y = v1->y; vert.z = v1->z;
-  vert.a = v1->a; vert.r = v1->r; vert.g = v1->g; vert.b = v1->b;
-  // $$$
-  vert.a = v1->a; vert.r = 0; vert.g = 0; vert.b = 1;
-
-  ta_commit_vertex(&vert, sizeof(vert));
-	
-  vert.x = v2->x; vert.y = v2->y; vert.z = v2->z;
-  vert.a = v2->a; vert.r = v2->r; vert.g = v2->g; vert.b = v2->b;
-  // $$$
-  vert.a = v2->a; vert.r = 0; vert.g = 1; vert.b = 0;
-  ta_commit_vertex(&vert, sizeof(vert));
-	
+  for (i=0; i<n-1; ++i) {
+	vert.x = v->x; vert.y = v->y; vert.z = v->z;
+	vert.a = v->a; vert.r = v->r; vert.g = v->g; vert.b = v->b;
+	ta_commit_vertex(&vert, sizeof(vert));
+  }
   vert.flags = TA_VERTEX_EOL;
-  vert.x = v3->x; vert.y = v3->y; vert.z = v3->z;
-  vert.a = v3->a; vert.r = v3->r; vert.g = v3->g; vert.b = v3->b;
+  vert.x = v->x; vert.y = v->y; vert.z = v->z;
+  vert.a = v->a; vert.r = v->r; vert.g = v->g; vert.b = v->b;
   ta_commit_vertex(&vert, sizeof(vert));
-  
 }
+
 
 /** Calculates clipping flags for a vertex. */
 static int vertex_clip_flags(const draw_vertex_t *v)
@@ -99,6 +304,8 @@ static int vertex_clip_flags(const draw_vertex_t *v)
 	((v->y < clipbox[1]) << 1) |
 	((v->y > clipbox[3]) << 3);
 }
+
+
 
 void draw_triangle(const draw_vertex_t *v1,
 				   const draw_vertex_t *v2,
@@ -152,6 +359,62 @@ void draw_triangle(const draw_vertex_t *v1,
 
 }
 
+void draw_triangle_indirect(const draw_vertex_t *v,
+							int a, int b, int c, int flags)
+{
+  draw_triangle(v+a, v+b, v+c, flags);
+}
+
+void draw_triangles(const draw_vertex_t *v, int n, int flags)
+{
+  while (n--) {
+	draw_triangle(v+0,v+1,v+2,flags);
+	v+=3;
+  }
+}
+
+void draw_triangles_indirect(const draw_vertex_t *v, const int * idx, int n,
+							 int flags)
+{
+  while (n--) {
+	int a = *idx;
+	if (a < 0) return;
+	draw_triangle(v+a,v+idx[1],v+idx[2],flags);
+	idx+=3;
+  }	
+}
+
+void draw_strip(const draw_vertex_t *v, int n, int flags)
+{
+  int i, andf, orrf;
+
+  if (n<3) {
+	return;
+  }
+
+  for (i=0, orrf=0, andf=0xF; i<n; ++i) {
+	int f = vertex_clip_flags(v+i);
+	andf &= f;
+	orrf |= f;
+  }
+
+  /* Clipped out */
+  if (andf) {
+	return;
+  }
+
+  /* No clipping, let's go */
+  if (!orrf) {
+	draw_strip_no_clip(v,n,flags);
+	return;
+  }
+
+  /* $$$ Just split the strip into triangles ! We can do better here. */
+  for (i=0; i<n-2; ++i, ++v) {
+	int j = i&1;
+	draw_triangle(v, v+1+j, v-j+2, flags);
+  }
+}
 
 /* Box points mapping
  * 12

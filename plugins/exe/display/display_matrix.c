@@ -6,10 +6,9 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, matrix interface
  * 
- * $Id: display_matrix.c,v 1.2 2002-10-18 23:16:22 benjihan Exp $
+ * $Id: display_matrix.c,v 1.3 2002-10-21 14:57:00 benjihan Exp $
  */
 
-#include <stdlib.h>
 #include <stdlib.h>
 #include <dc/fmath.h>
 #include "driver_list.h"
@@ -150,7 +149,7 @@ DL_FUNCTION_DECLARE(mat_gettable)
 	} else if (type == LUA_TSTRING) {
 	  const char * s = lua_tostring(L,2);
 	  if (s) {
-		c = (*s) - 'x';
+		c = ((*s) - 'x') & ((1<<md->log2)-1);
 	  }
 	}
 /* 	printf("%s(%d,%d) : m:%p d:%p c:%d\n", __FUNCTION__,  */
@@ -203,7 +202,7 @@ DL_FUNCTION_DECLARE(mat_settable)
 	} else if (type == LUA_TSTRING) {
 	  const char * s = lua_tostring(L,2);
 	  if (s) {
-		c = (*s) - 'x';
+		c = ((*s) - 'x') & ((1<<md->log2)-1);
 	  }
 	}
 /* 	printf("%s(%d,%d) : m:%p d:%p c:%d := %.3f\n", __FUNCTION__, */
@@ -297,11 +296,23 @@ DL_FUNCTION_DECLARE(mat_setglobal)
 }
 #endif 
 
+static void mat_mult(lua_matrix_def_t * rd,
+					lua_matrix_def_t * leftd,
+					lua_matrix_def_t * rightd)
+{
+  int bytes = 1<<(rd->log2+2);
+
+  MtxVectorsMult(rd->v, leftd->v, *(matrix_t*)rightd->v, rd->l, bytes, bytes);
+  /* Copy left matrix remaining data into destination. */
+  if (rd != leftd && rd->log2 > 2) {
+	MtxCopyFlexible(rd->v+4, leftd->v+4, rd->l, rd->c-4, bytes, bytes);
+  }
+}
+
 DL_FUNCTION_DECLARE(mat_mult)
 {
   lua_matrix_t * r, * left, * right;
   lua_matrix_def_t * rd, * leftd, * rightd;
-  int bytes;
 
   CHECK_MATRIX(1);
   CHECK_MATRIX(2);
@@ -310,13 +321,7 @@ DL_FUNCTION_DECLARE(mat_mult)
   GET_MATRIX(left,leftd,1,0,0);
   NEW_MATRIX(r,rd,leftd->l, leftd->log2);
 
-  bytes = 1<<(leftd->log2+2);
-  MtxVectorsMult(rd->v, leftd->v, *(matrix_t*)rightd->v, rd->l, bytes, bytes);
-  /* Copy left matrix remaining data into destination. */
-  if (leftd->log2 > 2) {
-	MtxCopyFlexible(rd->v+4, leftd->v+4, rd->l, rd->c-4, bytes, bytes);
-  }
-
+  mat_mult(rd,leftd,rightd);
   lua_settop(L, 0);
   lua_pushusertag(L, r, matrix_tag);
   return 1;
@@ -324,21 +329,31 @@ DL_FUNCTION_DECLARE(mat_mult)
 
 DL_FUNCTION_DECLARE(mat_mult_self)
 {
-  lua_matrix_t * left, * right;
-  lua_matrix_def_t * leftd, * rightd;
-  int bytes;
+  lua_matrix_t * r, * left, * right;
+  lua_matrix_def_t * rd, * leftd, * rightd;
+  int n = lua_gettop(L);
+
+  if (n < 2 || n > 3) {
+	printf("%s : bad arguments\n", __FUNCTION__);
+  }
 
   CHECK_MATRIX(1);
   CHECK_MATRIX(2);
-
-  GET_MATRIX(right,rightd,2,4,4);
-  GET_MATRIX(left,leftd,1,0,0);
-
-  bytes = 1<<(leftd->log2+2);
-  MtxVectorsMult(leftd->v, leftd->v, *(matrix_t*)rightd->v,
-				 leftd->l, bytes, bytes);
+  if (n == 3) {
+	CHECK_MATRIX(3);
+  }
+	
+  GET_MATRIX(right,rightd,n,4,4);
+  GET_MATRIX(left,leftd,n-1,0,0);
+  if (n == 3) {
+	GET_MATRIX(r,rd,1,leftd->l,leftd->c);
+  } else {
+	r = left;
+	rd = leftd;
+  }
+  mat_mult(rd,leftd,rightd);
   lua_settop(L, 0);
-  lua_pushusertag(L, left, matrix_tag);
+  lua_pushusertag(L, r, matrix_tag);
   return 1;
 }
 
@@ -382,40 +397,49 @@ DL_FUNCTION_DECLARE(mat_new)
 {
   lua_matrix_t * r;
   lua_matrix_def_t * rd;
-  int l = 0, c = 0;
-  int n = lua_gettop(L);
 
-  if (n >= 1) {
-	l = (int) lua_tonumber(L,1);
-  }
-  if (n >= 2) {
-	c = (int) lua_tonumber(L,2);
-  }
-
-  if (!l) {
-	l = 4;
-  }
-  if (!c) {
-	c = 2;
+  if (lua_tag(L,1) == matrix_tag) {
+	lua_matrix_t * m;
+	lua_matrix_def_t * md;
+	GET_MATRIX(m,md,1,0,0);
+	NEW_MATRIX(r, rd, md->l, md->log2);
+	memcpy(rd->v, md->v, rd->l<<(rd->log2+2));
   } else {
-	int i;
-	for (i=2; i<10 && c!=(1<<i); ++i)
-	  ;
-	if (c!=(1<<i)) {
-	  printf("%s : Invalid number of column %d (must be a power of 2 >= 2)\n",
-			 __FUNCTION__, c);
-	  return 0;
+	int l = 0, c = 0;
+	int n = lua_gettop(L);
+
+	if (n >= 1) {
+	  l = (int) lua_tonumber(L,1);
 	}
-	c = i;
-  }
-/*   printf("%s : create a (%d,%d) matrix\n",__FUNCTION__,l,1<<c); */
+	if (n >= 2) {
+	  c = (int) lua_tonumber(L,2);
+	}
 
-  NEW_MATRIX(r, rd, l, c);
+	if (!l) {
+	  l = 4;
+	}
+	if (!c) {
+	  c = 2;
+	} else {
+	  int i;
+	  for (i=2; i<10 && c!=(1<<i); ++i)
+		;
+	  if (c!=(1<<i)) {
+		printf("%s : Invalid number of column %d (mstu be a power of 2 >= 2)\n",
+			   __FUNCTION__, c);
+		return 0;
+	  }
+	  c = i;
+	}
+	/*   printf("%s : create a (%d,%d) matrix\n",__FUNCTION__,l,1<<c); */
 
-  if (l == 4 && c == 2) {
-	MtxIdentity(* (matrix_t *) rd->v);
-  } else {
-	memset(rd->v, 0, sizeof(float)*l<<rd->log2);
+	NEW_MATRIX(r, rd, l, c);
+
+	if (l == 4 && c == 2) {
+	  MtxIdentity(* (matrix_t *) rd->v);
+	} else {
+	  memset(rd->v, 0, sizeof(float)*l<<rd->log2);
+	}
   }
   lua_settop(L, 0);
   lua_pushusertag(L, r, matrix_tag);
@@ -684,7 +708,6 @@ DL_FUNCTION_DECLARE(mat_dump)
   return 0;
 }
 
-
 DL_FUNCTION_DECLARE(mat_stat)
 {
   int i, level = lua_tonumber(L, 1);
@@ -755,10 +778,10 @@ int display_matrix_shutdown(void)
 int display_matrix_init(void)
 {
   if (!matrixdef_allocator) {
-	matrixdef_allocator = allocator_create(16, sizeof(lua_matrix_def_t));
+	matrixdef_allocator = allocator_create(256, sizeof(lua_matrix_def_t));
   }
   if (!matrixref_allocator) {
-	matrixref_allocator = allocator_create(16, sizeof(lua_matrix_t));
+	matrixref_allocator = allocator_create(256, sizeof(lua_matrix_t));
   }
 
   if (!matrixdef_allocator || !matrixref_allocator) {

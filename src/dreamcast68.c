@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.28 2002-10-10 06:05:37 benjihan Exp $
+ * @version   $Id: dreamcast68.c,v 1.29 2002-10-21 14:57:00 benjihan Exp $
  */
 
 //#define RELEASE
@@ -51,6 +51,7 @@
 #include "console.h"
 #include "shell.h"
 #include "display_list.h"
+#include "texture.h"
 
 #include "exceptions.h"
 
@@ -469,6 +470,12 @@ static int no_mt_init(void)
   MtxProjection(projection, 70*2.0*3.14159/360,
 		0.01, (float)SCREEN_W/SCREEN_H,
 		1000);
+
+  /* Texture manager init */
+  if (texture_init() < 0) {
+    err = __LINE__;
+    goto error;
+  }
 
   /* Driver list */
   if (driver_init() < 0) {
