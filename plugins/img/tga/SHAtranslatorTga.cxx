@@ -4,14 +4,14 @@
  * @brief     Targa (TGA) translator class implementation
  * @date      2001/07/11
  * @author    BeN(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAtranslatorTga.cxx,v 1.1 2002-12-14 16:15:36 ben Exp $
+ * @version   $Id: SHAtranslatorTga.cxx,v 1.2 2002-12-15 02:31:46 ben Exp $
  */
 
 extern "C" {
 #include <stdio.h>
 #include <string.h>
 }
-#include "SHAtranslator/SHAtranslatorTga.h"
+#include "SHAtranslatorTga.h"
 #include "SHAtranslator/SHAtranslatorBlitter.h"
 #include "SHAsys/SHAsysPeek.h"
 

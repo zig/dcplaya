@@ -4,9 +4,9 @@
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sasahipa.com>
 #
 #
-# $Id: Makefile,v 1.1 2002-12-14 16:15:36 ben Exp $
+# $Id: Makefile,v 1.2 2002-12-15 02:31:45 ben Exp $
 #
 
-SUBDIRS = tga
+SUBDIRS = tga jpeg
 
 include ../../Makefile.inc

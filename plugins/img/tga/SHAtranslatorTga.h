@@ -1,10 +1,10 @@
 /**
- * @ingroup   SHAtranslatorImage
+ * @ingroup   dcplaya_plugin_img
  * @file      SHAtranslatorTga.h
  * @brief     Targa (TGA) translator class definition
  * @date      2001/07/11
  * @author    BeN(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAtranslatorTga.h,v 1.1 2002-12-14 16:15:36 ben Exp $
+ * @version   $Id: SHAtranslatorTga.h,v 1.2 2002-12-15 02:31:46 ben Exp $
  */
 
 #ifndef _SHATRANSLATORTGA_H_
@@ -14,7 +14,7 @@
 
 /** True-Vision Targa (.TGA) translator class definition.
  *
- * @ingroup   SHAtranslatorImage
+ * @ingroup   dcplaya_plugin_img
  * @author    BeN(jamin) Gerard <ben@sashipa.com>
  */
 class SHAtranslatorTga : public SHAtranslatorImage
