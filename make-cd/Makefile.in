@@ -3,7 +3,7 @@
 #
 # by Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.4 2003-07-31 10:16:10 benjihan Exp $
+# $Id: Makefile.in,v 1.5 2003-08-01 11:11:20 benjihan Exp $
 #
 
 CDRECORD	= @CDRECORD@ dev=$(cdr) $(CDRECORD_FLAGS)
@@ -54,6 +54,7 @@ all help:
 	@echo " test-iso    : Build a test.iso for testing."
 	@echo "               You may try this iso by using loopback mount : "
 	@echo "               'mount -t iso9660 -o loopback test.iso some-dir'"
+	@echo " version     : Build binary distribution."
 	@echo " clean       : Clean"
 	@echo " force-clean : Like clean but don't care about unfinished"
 	@echo "               burning session."
@@ -237,6 +238,21 @@ plugins: dynshell
 distrib:  distrib-doc distrib-devdoc plugins lua
 #distrib: 1ST_READ.BIN plugins lua
 
+dcplaya-bin-$(VERSION): IP.BIN 1ST_READ.BIN iso
+	@echo [$@]
+	@rm -rf $@ && mkdir $@ && \
+	cp -Rf IP.BIN 1ST_READ.BIN iso/* $@
+
+dcplaya-bin-$(VERSION).tar.gz : dcplaya-bin-$(VERSION)
+	@echo [$@]
+	tar czf $@ $< && rm -rf $<
+
+.PHONY: version
+ifneq '@MASTER@@RELEASE@' '01'
+version: invalid-configuration
+else
+version: dcplaya-bin-$(VERSION).tar.gz
+endif
 
 .PHONY: iso
 iso: clean_iso distrib extra-data
@@ -263,7 +279,7 @@ clean_iso:
 .PHONY : clean_file
 clean_file:
 	@echo "[clean files]"
-	@rm -f *.iso *.txt $(1ST_READ) IP.BIN data.raw 1ST_READ.BIN dcplaya.bin
+	@rm -f *.iso *.txt $(1ST_READ) IP.BIN data.raw 1ST_READ.BIN dcplaya.bin dcplaya-*.tar.gz -r dcplaya-$(VERSION)
 
 .PHONY : clean
 clean: clean_audio clean_file clean_iso
