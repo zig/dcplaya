@@ -31,121 +31,139 @@
 
 function indent
 {
-	openstruct=`expr ${openstruct} + 2`
-	istr="`expr substr '                       ' 1 ${openstruct}`"
+    openstruct=`expr ${openstruct} + 2`
+    istr="`expr substr '                       ' 1 ${openstruct}`"
 }
 
 function unindent
 {
-	[ ${openstruct} -ge 2 ] && openstruct=`expr ${openstruct} - 2`
-	istr="`expr substr '                       ' 1 ${openstruct}`"
+    [ ${openstruct} -ge 2 ] && openstruct=`expr ${openstruct} - 2`
+    istr="`expr substr '                       ' 1 ${openstruct}`"
 }
 
 function linetype
 {
-	case "$1" in
-		---*)
-			case "$2" in
-				struct|class)
-					return 2
-					;;
-				'}'*';')
-					return -2
-			esac
-			return 1
-		;;
-		function)
-			return 3
-		;;
-	esac
-	return 0
+    case "$1" in
+	---*)
+	    case "$2" in
+		struct|class)
+		    return 2
+		    ;;
+		'};')
+		    return -2
+		    ;;
+	    esac
+	    return 1
+	    ;;
+	function)
+	    return 3
+	    ;;
+	--:)
+	    return 4
+    esac
+    return 0
 }
 
 function struct
 {
-	shift
-	echo "${istr}$*"
+    shift
+    echo "${istr}$*"
 }
 
 function func
 {
-	shift
-	echo "${istr}$*;"
+    shift
+    echo "${istr}$*;"
+}
+
+function uncomment
+{
+    shift
+    echo "${istr}$*"
 }
 
 function strcomment
 {
-	echo -e "${cb}\n" | sed "s#---##"
+    echo -e "${cb}\n" | sed "s#---##"
 }
 
 function comment
 {
-	if [ ! -z "${cb}" ]; then
-		if [ $1 -ne 0 -a ${openstruct} -ne 0 ]; then
-			echo -e "${cb}\n" | sed "s#[ /]\*[ *]##"
-		else
-			echo -e "${cb}\n${istr} */"
+    if [ ! -z "${cb}" ]; then
+	if [ $1 -ne 0 -a ${openstruct} -ne 0 ]; then
+	    echo -e "${cb}\n" | sed "s#[ /]\*[ *]##"
+	else
+	    echo -e "${cb}\n${istr} */"
 #			echo -e "${cb}" | sed "s#---#///#"
-		fi
-		cb=""
 	fi
+	cb=""
+    fi
 }
 
 function addcomment
 {
-	shift
-	if [ -z "${cb}" ]; then
-		cb="\n${istr}/** ${*}"
-	else
-		cb="${cb}\n${istr} *  ${*}"
-	fi
+    shift
+    if [ -z "${cb}" ]; then
+	cb="\n${istr}/** ${*}"
+    else
+	cb="${cb}\n${istr} *  ${*}"
+    fi
 }
 
 function transform
 {
-	local s w
-	local l e type prevtype
+    local s w
+    local l e type prevtype
 
-	prevtype=0
+    prevtype=0
+    read -a l
+    while [ $? -eq 0 ]; do
+	linetype ${l[@]}
+	type=$?
+	case ${type} in
+	    1) # COMMENTS
+		addcomment "${l[@]}"
+		;;
+	    2) # STRUCTURES
+		comment 0
+		struct "${l[@]}"
+		indent
+		;;
+	    -2) # END OF STRUCTURES
+		comment 1
+		unindent
+		struct "${l[@]}"
+		;;
+	    [34]) # FUNCTIONS or # UNCOMMENT LINE
+		if [ ! -z "${cb}" ]; then
+		    comment 0
+		    if [ ${type} -eq 3 ]; then
+			func "${l[@]}"
+		    else
+			uncomment "${l[@]}"
+		    fi
+		else
+		    type=0
+		fi
+		;;
+	    4) 
+		
+
+		;;
+		
+	    0) # BLANK
+		comment 1
+	esac
+	prevtype=${type}
 	read -a l
-	while [ $? -eq 0 ]; do
-		linetype ${l[@]}
-		type=$?
-		case ${type} in
-			1) # COMMENTS
-				addcomment "${l[@]}"
-				;;
-			2) # STRUCTURES
-				comment 0
-				struct "${l[@]}"
-				indent
-				;;
-			-2) # END OF STRUCTURES
-				comment 1
-				unindent
-				struct "${l[@]}"
-				;;
-			3) # FUNCTIONS
-				if [ ! -z "${cb}" ]; then
-					comment 0
-					func "${l[@]}"
-				else
-					type=0
-				fi
-				;;
-			0) # BLANK
-				comment 1
-		esac
-		prevtype=${type}
-		read -a l
-	done
-	return 0
+    done
+    return 0
 }
 
 cb=""
 istr=""
 openstruct=0
-comment='^[[:space:]]*---.*$'
+comment='^[[:space:]]*--[-:].*$'
 empty='^[[:space:][:cntrl:]]*$'
 function='^[[:space:]]*function[[:space:]]*\w*(.*).*$'
 
