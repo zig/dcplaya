@@ -4,7 +4,7 @@
  * @date    2002/10/20
  * @brief   texture manager
  *
- * $Id: texture.h,v 1.3 2003-01-19 16:45:14 zigziggy Exp $
+ * $Id: texture.h,v 1.4 2003-03-03 08:35:24 ben Exp $
  */
 
 #ifndef _TEXTURE_H_
@@ -13,12 +13,16 @@
 #include <arch/types.h>
 #include "exheap.h"
 
+/*** Texture name maximum length. */
+#define TEXTURE_NAME_MAX 24
+
 /** Texture idetifier type. */
 typedef int texid_t;
 
 /** Texture definition type. */
 typedef struct {
-  char name[16]; /**< Name of texture                */
+  /*** Name of texture. */
+  char name[TEXTURE_NAME_MAX];
   int width;     /**< Texture width in pixel         */
   int height;    /**< Texture height in pixel        */
   int wlog2;     /**< Log2 of texture width in pixel */
@@ -41,11 +45,12 @@ struct _texture_create_s;
  *     function to get the texture bitmap.
  */
 typedef int (*texture_reader_f)(uint8 *buffer, int n,
-								struct _texture_create_s * tc);
+				struct _texture_create_s * tc);
 
 /** Texture creation type. */
 typedef struct _texture_create_s {
-  char name[16];            /**< Name of texture          */
+  /*** Name of texture. */
+  char name[TEXTURE_NAME_MAX];
   int  width;               /**< Width in pixel           */
   int  height;              /**< Height in pixel          */
   const char * formatstr;   /**< @see texture_formatstr() */
@@ -64,6 +69,12 @@ void texture_shutdown(void);
 
 /** Get a texture identifier by name. */
 texid_t texture_get(const char * texture_name);
+
+/** Check if a given texture id is valid.
+ * @return  texid
+ * @retval  -1 on error (texture does nor exist).
+ */
+texid_t texture_exist(texid_t texid);
 
 /** Duplicate a texture.
  *

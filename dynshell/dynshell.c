@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.69 2003-03-01 14:32:59 ben Exp $
+ * @version    $Id: dynshell.c,v 1.70 2003-03-03 08:35:24 ben Exp $
  */
 
 #include "config.h"
@@ -1192,6 +1192,21 @@ static int lua_fade(lua_State * L)
   return 1;
 }
 
+static int lua_volume(lua_State * L)
+{
+  int nparam = lua_gettop(L);
+  int vol = -1;
+
+  if (nparam >= 1 && lua_type(L,1) != LUA_TNIL) {
+    vol = (int)(lua_tonumber(L,1) * 255.0f);
+    if (vol > 255) vol = 255;
+  }
+  vol = playa_volume(vol);
+  lua_settop(L,0);
+  lua_pushnumber(L,(float)vol / 255.0f);
+  return 1;
+}
+
 static int lua_stop(lua_State * L)
 {
   int nparam = lua_gettop(L);
@@ -1613,6 +1628,24 @@ static int lua_set_visual(lua_State * L)
   return lua_gettop(L);
 }
 
+/* $$$ ben : this function does nothing but returning the parameter string of
+   a normal print. This is used to by driver_info to get the usage string
+   since usage is a function not a string. This will not works with usage
+   functions that do not use a print !!
+*/
+
+static char print_wrapper_buffer[1024];
+
+static int print_wrapper(lua_State * L)
+{
+  const char * s = lua_tostring(L,1);
+  print_wrapper_buffer[0] = 0;
+  if (s) {
+    strncpy(print_wrapper_buffer,s,sizeof(print_wrapper_buffer));
+    print_wrapper_buffer[sizeof(print_wrapper_buffer)-1] = 0;
+  }
+  return 1;
+}
 
 /* Create a driver info table.
  * @return stack pos of table
@@ -1626,9 +1659,9 @@ static int lua_driver_info(lua_State * L, any_driver_t * driver)
   table = lua_gettop(L);
 
   /* Type */
-  type[0] = driver->type >> 16;
+  type[0] = driver->type;
   type[1] = driver->type >> 8;
-  type[2] = driver->type;
+  type[2] = driver->type >> 16;
   type[3] = 0;
   lua_pushstring(L,"type");
   lua_pushstring(L,type);
@@ -1682,9 +1715,26 @@ static int lua_driver_info(lua_State * L, any_driver_t * driver)
       }
 
       if (com->usage) {
+	int top,top2;
+	lua_getglobal(L,"print");
 	lua_pushstring(L,"usage");
-	lua_pushstring(L,com->usage);
+	lua_register(L,"print",print_wrapper);
+	top = lua_gettop(L);
+	/* $$$ ben : I don't understand why the string is not returned into
+	   the stack !!! I had to do that ugly not thread safe trick :(
+	*/
+	print_wrapper_buffer[0] = 0;
+	lua_dobuffer(L,com->usage, strlen(com->usage), "print_wrap");
+	top2 = lua_gettop(L);
+	if (top2 == top && print_wrapper_buffer[0]) {
+	  lua_pushstring(L,print_wrapper_buffer);
+	  top2 = lua_gettop(L);
+	}
+	if (top2 != top+1) {
+	  lua_settop(L,top+1);
+	}
 	lua_settable(L,comTable);
+	lua_setglobal(L,"print");
       }
 
       lua_pushstring(L,"type");
@@ -2286,9 +2336,7 @@ static int LUA_getgccount(lua_State * L)
 static int lua_collect(lua_State * L)
 {
   luaC_collect(L, (int) lua_tonumber(L, 1));
-
   //  printf("collect %d\n", (int) lua_tonumber(L, 1));
-
   return 0;
 }
 
@@ -2572,6 +2620,19 @@ static luashell_command_description_t commands[] = {
     " If seconds < 0 starts a fade-out.\n"
     "]])",
     SHELL_COMMAND_C, lua_fade
+  },
+
+  {
+    "playa_volume",
+    "volume",
+    "print([["
+    "volume([volume]) : Get/Set music volume.\n"
+    " volume is a value beetween [0..1].\n"
+    " if volume is ommited, nil or < 0 no change occurs,\n"
+    " else set volume to given value clipped to max (1).\n"
+    " Return previous value in both case."
+    "]])",
+    SHELL_COMMAND_C, lua_volume
   },
 
   {

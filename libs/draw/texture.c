@@ -4,7 +4,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.12 2003-02-01 23:45:30 zigziggy Exp $
+ * $Id: texture.c,v 1.13 2003-03-03 08:35:24 ben Exp $
  */
 
 #include <stdlib.h>
@@ -173,14 +173,43 @@ static texture_t * get_texture(texid_t texid)
   return t->addr ? t : 0;
 }
 
-texid_t texture_get(const char * texture_name)
+static char * texture_built_name(char *name, const char *fname, int max)
 {
-  if (!texture_name) {
-    return -1;
+  const char * fbase, * fext;
+  int len;
+
+  if (!fname) {
+    *name = 0;
+    return 0;
   }
-  return allocator_index(texture, find_name(texture_name));
+
+  fbase = fn_basename(fname);
+  fext  = fn_ext(fname);
+  len   = fext-fbase;
+
+  if (len >= max) {
+    SDWARNING("Texture name truncated [%s]\n", fname);
+    len = max-1;
+  }
+  memcpy(name,fbase,len);
+  name[len] = 0;
+  return name;
 }
 
+texid_t texture_get(const char * texture_name)
+{
+  char name[TEXTURE_NAME_MAX];
+
+  if (!texture_built_name(name, texture_name, sizeof(name))) {
+    return -1;
+  }
+  return allocator_index(texture, find_name(name));
+}
+
+texid_t texture_exist(texid_t texid)
+{
+  return !get_texture(texid) ? -1 : texid;
+}
 
 static void * vid_alloc(texture_t * t, size_t size)
 {
@@ -445,9 +474,7 @@ texid_t texture_create_flat(const char *name, int width, int height,
 
 texid_t texture_create_file(const char *fname, const char * formatstr)
 {
-  const char * fbase, *fext;
   SHAwrapperImage_t *img = 0;
-  int len;
   texture_create_memory_t memcreator;
   texid_t texid = -1;
   int src_format, dst_format;
@@ -469,15 +496,9 @@ texid_t texture_create_file(const char *fname, const char * formatstr)
   }
 
   /* Build texture name from filename */
-  fbase = fn_basename(fname);
-  fext  = fn_ext(fbase);
-  len   = fext-fbase;
-  if (len >= sizeof(memcreator.creator.name)) {
-    SDWARNING("Texture truncated name\n");
-    len = sizeof(memcreator.creator.name)-1;
-  }
   memset(&memcreator, 0, sizeof(memcreator));
-  memcpy(memcreator.creator.name,fbase,len);
+  texture_built_name(memcreator.creator.name, fname,
+		     sizeof(memcreator.creator.name));
 
   /* Look for an existing texture */
   t = find_name(memcreator.creator.name);

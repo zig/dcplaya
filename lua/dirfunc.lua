@@ -4,14 +4,15 @@
 --- @author   benjamin gerard <ben@sashipa.com>
 --- @brief    Directory and filename support.
 ---
---- $Id: dirfunc.lua,v 1.13 2003-01-24 04:28:13 ben Exp $
+--- $Id: dirfunc.lua,v 1.14 2003-03-03 08:35:24 ben Exp $
 ---
 
 PWD=home
 
 --- Get path and leaf from a filename.
 --- @ingroup  dcplaya_lua_basics
---- @param    pathname full 
+--- @param    pathname  full path
+--- @param    pwd       optionnal pwd, if omitted PWD global is used.
 --- @return   path,leaf
 ---
 function get_path_and_leaf(pathname,pwd)
@@ -29,6 +30,26 @@ function get_path_and_leaf(pathname,pwd)
    return path,leaf
 end
 
+addhelp(get_path_and_leaf,
+	[[print[[get_path_and_leaf(pathname[,pwd]): return path,leaf from given filename. pwd is an optionnal pwd. See fullpath.]]]])
+
+--- Get nude name (remove path and extension).
+--- @ingroup  dcplaya_lua_basics
+--- @param    pathname full 
+--- @return   path,leaf
+function get_nude_name(pathname)
+   local path,leaf = get_path_and_leaf(pathname)
+   if not leaf then
+      return
+   else
+      local a,b,name = strfind(leaf,"(.+)[.].*")
+      return name
+   end
+end
+
+addhelp(get_nude_name,
+	[[print[[get_nude_name(pathname): return nude filename (without path nor extension).]]]])
+
 --- Create a full path name.
 --- @ingroup  dcplaya_lua_basics
 --- @return   fullpath of given filename
@@ -44,7 +65,7 @@ function fullpath(name, pwd)
 end
 
 addhelp(fullpath,
-	[[print[[fullpath(filename[,pwd]): return fullpath of given filename]]]])
+	[[print[[fullpath(filename[,pwd]): return fullpath of given filename. Optionnal pwd will be prefixed instead of defaut PWD global variable.]]]])
 
 --- Change current directory.
 --- @ingroup  dcplaya_lua_basics

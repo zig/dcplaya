@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.48 2003-03-01 14:53:43 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.49 2003-03-03 08:35:24 ben Exp $
  */
 
 //#define RELEASE
@@ -836,8 +836,9 @@ void main_thread(void *cookie)
 #if 0
     info_render(elapsed_frames, is_playing);
     songmenu_render(elapsed_frames);
-#endif
     option_render(elapsed_frames);
+#endif
+
     //    my_vid_border_color(255,0,255);
 
     /* Render translucent consoles */

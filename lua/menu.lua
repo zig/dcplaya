@@ -673,7 +673,7 @@ function menu_create_def(menustr)
 	       return
 	    end
 -- 	    printf("menu parse all:%q",tostring(name))
- 	    printf("menu parse main:%q sub:%q", tostring(main), tostring(sub))
+-- 	    printf("menu parse main:%q sub:%q", tostring(main), tostring(sub))
 
 	    substart,subend,icon =
 	       strfind(name,"^{([%w%s._]+)}")
@@ -714,7 +714,7 @@ function menu_create_def(menustr)
 -- 		   (size < 0 and "SUB") or "ENTRY")
 
 	    if type(icon) == "string" then
-	       name = '<img src="'..icon..'" w="20">'..name
+	       name = '<img name="'..icon..'">'..name
 	    end
 
 	    tinsert(menu,

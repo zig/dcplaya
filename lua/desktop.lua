@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.15 2003-01-12 19:48:01 ben Exp $
+--- $Id: desktop.lua,v 1.16 2003-03-03 08:35:24 ben Exp $
 ---
 
 if not dolib("evt") then return end
@@ -35,12 +35,16 @@ end
 function dskt_openmenu(dial, target, x, y)
    dskt_killmenu(dial)
 
+   if tag(sprite_get("stock_button_cancel")) ~= sprite_tag then
+      sprite_simple(nil, "stock_button_cancel.tga")
+   end
+
    local name = target.name or "app"
    local def
    local user_def = menu_create_defs(target.mainmenu_def, target)
    local default_def = menu_create_defs
    ({
-       root=":"..name..":kill{kill}",
+       root=":"..name..":{stock_button_cancel}kill{kill}",
        cb = {
 	  kill = function(menu) 
 		    evt_shutdown_app(%dial)

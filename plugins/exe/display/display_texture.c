@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, texture interface
  * 
- * $Id: display_texture.c,v 1.5 2002-12-20 01:57:33 ben Exp $
+ * $Id: display_texture.c,v 1.6 2003-03-03 08:35:24 ben Exp $
  */
 
 #include <stdio.h>
@@ -16,11 +16,21 @@
 #include "sysdebug.h"
 
 #define GET_TEXID(v,i) \
-  if (lua_type(L,i) == LUA_TNUMBER) v = lua_tonumber(L,1); \
-  else v = texture_get(lua_tostring(L,1)); \
-  if (v == -1) { \
-	printf("%s : missing texture-name or texture-id\n", __FUNCTION__); \
-	return 0; \
+  if (lua_type(L,i) == LUA_TNUMBER) {\
+    int w = lua_tonumber(L,1);\
+    v = (w <= 0) ? -1 : texture_exist(w);\
+    if (v<0) { \
+      printf("%s : invalid texture-id [%d]\n", __FUNCTION__, w);\
+      return 0;\
+    }\
+  } else {\
+    const char * name = lua_tostring(L,1);\
+    v = texture_get(name); \
+    if (v<0) { \
+      printf("%s : invalid texture-name [%s]\n",\
+             __FUNCTION__,name?name:"<null>");\
+      return 0;\
+    }\
   }
 
 

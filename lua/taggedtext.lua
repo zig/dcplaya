@@ -1,10 +1,11 @@
 --- @file   taggedtext.lua
 --- @author Vincent Penne <ziggy@sashipa.com>
---- @brief  sgml text and gui element formater
+--- @brief  sgml text and gui element formater.
 ---
---- $Id: taggedtext.lua,v 1.16 2003-02-27 10:05:26 ben Exp $
+--- $Id: taggedtext.lua,v 1.17 2003-03-03 08:35:24 ben Exp $
 ---
 
+if not dolib("dirfunc") then return end
 if not dolib("sprite") then return end
 if not dolib("color") then return end
 
@@ -28,18 +29,20 @@ function tt_img_draw(block)
 --    end
 end
 
+function tt_img_name(src)
+   return get_nude_name(src) or src
+end
+
 function tt_img_cmd(mode, param)
    local src = param.src
-   local name = param.name or src
+   local name = param.name or tt_img_name(src)
+   if not name then return end
    local spr = sprite_get(name)
    if not spr then
-      if not src then
-	 return
-      end
-
+      if not src then return end
       --local tex = tex_new()
       --print("'"..src.."'")
-      local tex = tex_get(home.."lua/rsc/icons/"..src) or tex_new(home.."lua/rsc/icons/"..src)
+      local tex = tex_get(src) or tex_new(home.."lua/rsc/icons/"..src)
       --print(tex)
       if tex then
 	 local info = tex_info(tex)
@@ -65,7 +68,11 @@ function tt_img_cmd(mode, param)
 	 else
 	    sy = sx
 	 end
+      elseif h then
+	 sy = h/spr.h
+	 sx = param.sx or sy
       end
+
       local block = {
 	 type = "img",
 	 spr = spr,
