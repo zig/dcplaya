@@ -3,7 +3,7 @@
  * @file    fft.c
  * @author  benjamin gerard <ben@sashipa.com>
  * 
- * @version $Id: fft.c,v 1.8 2002-12-30 06:28:18 ben Exp $
+ * @version $Id: fft.c,v 1.9 2002-12-30 12:32:51 ben Exp $
  */
 
 #include <stdlib.h>
@@ -125,8 +125,23 @@ void fft_fill_bands(fftbands_t * bands)
 void fft_fill_pcm(short * pcm, int n)
 {
   short * pcm_src = pcm_F[cur_fft_buf];
-  int i, j, step = (FFT_SIZE << 12) / n;
-  for (i=j=0; i<n; ++i, j += step) {
-    pcm[i] = pcm_src[j>>12];
+  int i, j, k, step = (FFT_SIZE << 12) / n;
+  for (i=j=0; i<n; ++i, j = k) {
+    int ij,ik,v;
+
+    k = j + step;
+    ij = j >> 12;
+    ik = k >> 12;
+    if (ij == ik) {
+      v = pcm_src[ij];
+    } else {
+      v = pcm_src[ij++] * (0x1000 - (j&0xFFF));
+      while (ij<ik) {
+	v += pcm_src[ij++] << 12;
+      }
+      v += pcm_src[ij] * (k&0xFFF);
+      v /= step;
+    }
+    pcm[i] = v;
   }
 }

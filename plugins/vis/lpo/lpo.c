@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.11 2002-12-19 18:43:20 ben Exp $
+ * $Id: lpo.c,v 1.12 2002-12-30 12:32:51 ben Exp $
  */
 
 #include <stdio.h>
@@ -10,7 +10,8 @@
 #include "driver_list.h"
 #include "vis_driver.h"
 #include "obj_driver.h"
-#include "vupeek.h"
+/* #include "vupeek.h" */
+#include "fft.h"
 #include "draw_object.h"
 #include "remanens.h"
 #include "sysdebug.h"
@@ -39,6 +40,7 @@ static vtx_t angle;   /**< Object rotation */
 static float flash;
 static float ozoom;
 static texid_t lpo_texid;
+static fftbands_t * bands;
 
 #define RANDOM_MODE 1
 #define FLASH_MODE 2
@@ -50,11 +52,12 @@ static int change_time = 5*1000;
 
 /* Rotation FX */
 static float rps_min = 0.1f;   /**< Minimum rotation per second */
-static float rps_max = 5.0f;   /**< Maximum rotation per second */
+static float rps_max = 4.0f;   /**< Maximum rotation per second */
 static float rps_cur;          /**< Current rotation speed factor */
 static float rps_goal;         /**< Rotation to reach */
 static float rps_up = 0.25f;   /**< Smooth factor when rpsd_goal > rps_cur */
 static float rps_dw = 0.10f;   /**< Smooth factor when rpsd_goal < rps_cur */
+static float rps_sign;         /**< Rotation sens */
 
 static float zoom_min = 0.0f;
 static float zoom_max = 7.0f;
@@ -78,17 +81,17 @@ static obj_driver_t * find_object(const char *name)
   any_driver_t * d;
 
   if (!name) {
-	return 0;
+    return 0;
   }
   //  SDDEBUG("find '%s'\n",name);
 
   for (d=obj_drivers.drivers; d; d=d->nxt) {
-	//    SDDEBUG("-- '%s'\n",d->name);
+    //    SDDEBUG("-- '%s'\n",d->name);
     
-	if (!strcmp(name, d->name)) {
-	  //      SDDEBUG("OK\n");
-	  return (obj_driver_t *)d;
-	}
+    if (!strcmp(name, d->name)) {
+      //      SDDEBUG("OK\n");
+      return (obj_driver_t *)d;
+    }
   }
   SDERROR("%s(%s) : failed\n", __FUNCTION__, name);
   return 0;
@@ -100,9 +103,9 @@ static obj_driver_t * num_object(int n)
   int i;
 
   for (i=0, d=obj_drivers.drivers; d; d=d->nxt, ++i) {
-	if (i == n) {
-	  return (obj_driver_t *)d;
-	}
+    if (i == n) {
+      return (obj_driver_t *)d;
+    }
   }
   return 0;
 }
@@ -111,19 +114,19 @@ static obj_driver_t * random_object(obj_driver_t * not_this_one)
 {
   obj_driver_t * o;
   if (obj_drivers.n == 0) {
-	return 0;
+    return 0;
   }
   if (obj_drivers.n == 1) {
-	o = (obj_driver_t *)obj_drivers.drivers;
+    o = (obj_driver_t *)obj_drivers.drivers;
   } else {
-	o = num_object(rand() % obj_drivers.n);
-	if (o == not_this_one) {
-	  if (o->common.nxt) {
-		o = (obj_driver_t *)o->common.nxt;
-	  } else {
-		o = (obj_driver_t *)obj_drivers.drivers;
-	  }
-	}
+    o = num_object(rand() % obj_drivers.n);
+    if (o == not_this_one) {
+      if (o->common.nxt) {
+	o = (obj_driver_t *)o->common.nxt;
+      } else {
+	o = (obj_driver_t *)obj_drivers.drivers;
+      }
+    }
   }
 
   return (o == not_this_one) ? 0 : o;
@@ -132,10 +135,61 @@ static obj_driver_t * random_object(obj_driver_t * not_this_one)
 static int change_object(obj_driver_t *o)
 {
   if (!o) {
-	return -1;
+    return -1;
   }
   curobj = o;
   return 0;
+}
+
+extern short int_decibel[];
+
+typedef struct {
+  int maxflag;
+  float max;
+  float val;
+  float old;
+
+  int difmaxflag;
+  float difmax;
+  float difval;
+  float difold;
+  float difacu;
+
+  float difchg;
+
+} peek_info_t;
+
+static void update_peek_info(peek_info_t * info, int v)
+{
+  float r = 0.2f;
+  info->old = info->val;
+  info->val = (float)v / 32767.0f;
+  info->val = info->val * r + info->old * (1.0f-r);
+
+  info->maxflag = (info->maxflag << 1) | (info->val > info->max);
+  if (info->maxflag&1) {
+    info->max = info->val;
+  } else {
+    info->max *= 0.99f;
+    if (info->max < 1E-6) info->max = 0;
+  }
+
+  info->difold = info->difval;
+  info->difval = info->val - info->old;
+  if (same_sign(info->difval,info->difacu)) {
+    info->difacu += info->difval;
+    info->difmaxflag = info->difmaxflag << 1;
+  } else {
+    info->difchg = info->difacu;
+    info->difacu = info->difval;
+    info->difmaxflag = (info->difmaxflag << 1) | (info->difchg > info->difmax);
+    if (info->difmaxflag&1) {
+      info->difmax = info->difchg;
+    } else {
+      info->difmax *= 0.99f;
+      if (info->difmax < 1E-4) info->difmax = 0;
+    }
+  }
 }
 
 static int anim(unsigned int ms)
@@ -145,79 +199,80 @@ static int anim(unsigned int ms)
   float sax = 1.0f * sec;
   float say = 1.0f * sec;
   float saz = 1.0f * sec;
- 
-  float peek;
+
   float zoom;
-  
-  /* analysis parms */
-  float
-    peek_diff,    /* peek/oldpeek delta */
-    peek_avgdiff; /* peek/avgpeek delta */
 
-  int max, diff_max;
+  static struct {
+    peek_info_t lin;
+    peek_info_t db;
+  } info[3];
 
-  /* Read peek values */
-  peek = (float)peek1.dyn / 65536.0f;
-  peek_avgdiff = ((float)peek1.dyn - (float)peek3.dyn) / 65536.0f;
-  peek_diff = peek - opeek;
-  
-  max = peek > peek_max;
-  if (max) {
-    peek_max = peek;
+  peek_info_t * pi;
+  float r;
+
+  int i;
+
+  if (!bands) {
+    return -1;
   }
-  
-  if (same_sign(peek_diff,opeek_diff)) {
-    peek_diff += opeek_diff;
-  } else {
-    diff_max = opeek_diff > peek_diff_max;
-    if (diff_max) {
-      peek_diff_max = opeek_diff;
-      flash = (opeek_diff * 2.60f) + 1.0f;
-	  if (change_mode & FLASH_MODE) {
-		change_object(random_object(curobj));
-		change_cnt = 0;
-	  }
-	}
+  fft_fill_bands(bands);
+
+  for (i=0; i<3; ++i) {
+    int v = bands->band[i].v;
+    if (v > 0x7FFF) v = 0x7FFF;
+    update_peek_info(&info[i].lin, v);
+    update_peek_info(&info[i].db, int_decibel[v]);
+  }
+
+  pi = &info[0].lin;
+  if ((pi->difmaxflag&3) == 2) {
+    flash = (pi->difchg * 2.60f) + 1.0f;
+    if (change_mode & FLASH_MODE) {
+      change_object(random_object(curobj));
+      change_cnt = 0;
+    }
   }
 	
   /* Calculate zoom factor */
   {
-	float r;
-	  
-	zoom = zoom_min;
-	if (peek_max > 1E-4) {
-	  zoom += (zoom_max - zoom_min) * peek / peek_max;
-	}
-	r = (zoom > ozoom) ? 0.75f : 0.90f;
-	ozoom = ozoom * r + zoom * (1.0f-r);
+    float max = 0, val = 0;
+    for (i=0;i<3;++i) {
+      val += pi->val;
+      max += pi->max;
+    }
+    zoom = zoom_min;
+    if (max > 1E-4) {
+      zoom += (zoom_max - zoom_min) * val / max;
+    }
   }
+  r = (zoom > ozoom) ? 0.75f : 0.90f;
+  ozoom = ozoom * r + zoom * (1.0f-r);
 
   /* Calculate rotation speed */
-  {
-	float r;
 
-	if (peek_avgdiff >= 0) {
-	  rps_goal = rps_min;
-	  if (peek_max > 1E-4) {
-		rps_goal += (rps_max - rps_min) * peek / peek_max;
-	  }
-	}
-	r = rps_cur > rps_goal ? rps_up : rps_dw;
-	rps_cur = rps_cur * r + rps_goal * (1.0f - r);
+  pi = &info[2].lin;
+  if ((pi->difmaxflag&3) == 2) {
+    rps_sign = - rps_sign;
   }
 
-  {
-	const float r = 0.99f; 
-	rps_goal = rps_goal * r + rps_min * (1.0-r);
+  pi = &info[1].lin;
+
+  if ((pi->maxflag&3) == 2) {
+    rps_goal = rps_min;
+    if (pi->max > 1E-4) {
+      rps_goal += (rps_max - rps_min) * pi->val / pi->max;
+    }
+    rps_goal *= rps_sign;
+  } else {
+    r = 0.99f;
+    rps_goal = rps_goal * r + rps_min * (1.0-r);
   }
-    
-  peek_max *= 0.9999f;
-  peek_diff_max *= 0.99f;
+  r = (!same_sign(rps_cur,rps_goal) || fabs(rps_goal) > fabs(rps_cur))
+    ? rps_up
+    : rps_dw;
+  rps_cur = rps_cur * r + rps_goal * (1.0f - r);
+
   flash *= 0.9f;
-
-  /* Save for next call */
-  opeek = peek;
-  opeek_diff = peek_diff;  
   
   /* Move angle */
   angle.x += sax * rps_cur;
@@ -258,6 +313,7 @@ static int start(void)
   pos.x = pos.y = pos.z = pos.w = 0;
   rps_cur = 0;
   rps_goal = rps_min;
+  rps_sign = 1;
 
   opeek_diff = 0;
   opeek = 0;
@@ -271,10 +327,10 @@ static int start(void)
   /* $$$ */
 #if DEBUG
   {
-	any_driver_t *d;
-	for (d=obj_drivers.drivers; d; d=d->nxt) {
-	  SDDEBUG("OBJECT: %s\n", d->name);
-	}
+    any_driver_t *d;
+    for (d=obj_drivers.drivers; d; d=d->nxt) {
+      SDDEBUG("OBJECT: %s\n", d->name);
+    }
   }
 #endif
 
@@ -282,16 +338,16 @@ static int start(void)
   /* Select mine_3 as 1st object */
   o = find_object("bebop");
   if (!o) {
-	/* If it does not exist, try another */
-	o = random_object(curobj);
+    /* If it does not exist, try another */
+    o = random_object(curobj);
   }
   /* No object : failed */
   if (!o) {
-	return -1;
+    return -1;
   }
   /* Start this object */
   if (change_object(o)) {
-	return -1;
+    return -1;
   }
 
   return 0;
@@ -306,13 +362,13 @@ static int stop(void)
 static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
 {
   if (!curobj) {
-	return -1;
+    return -1;
   }
 
   curobj->obj.flags = 0
-	| DRAW_NO_FILTER
-	| DRAW_TRANSLUCENT
-	| (lpo_texid << DRAW_TEXTURE_BIT);
+    | DRAW_NO_FILTER
+    | DRAW_TRANSLUCENT
+    | (lpo_texid << DRAW_TEXTURE_BIT);
 
   /* Copy viewport and projection matrix for further use (render) */
   viewport = *vp;
@@ -320,15 +376,15 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
 
   /* Check for object change */
   if ((change_mode&RANDOM_MODE) && (change_cnt += elapsed_ms) >= change_time) {
-	change_cnt -= change_time;
-	change_object(random_object(curobj));
+    change_cnt -= change_time;
+    change_object(random_object(curobj));
   }
 
   anim(elapsed_ms);
 
 
   if (lpo_remanens) {
-	remanens_push(&curobj->obj, mtx, ++lpo_iframe);
+    remanens_push(&curobj->obj, mtx, ++lpo_iframe);
   }
 
   return 0;
@@ -353,41 +409,41 @@ static vtx_t ambient = {
 static int transparent_render(void)
 {
   if (!curobj) {
-	return -1;
+    return -1;
   }
 
   if (lpo_remanens) {
-	int age, f, maxf = 2000; /* Max number of face */
+    int age, f, maxf = 2000; /* Max number of face */
 
-	if (curobj->obj.nbf >= maxf) {
-	  color.w *= 1.5f; 
-	}
+    if (curobj->obj.nbf >= maxf) {
+      color.w *= 1.5f; 
+    }
 
-	for (age=f=0; f<=maxf && color.w > 0.05f; age += 3) {
-	  remanens_t *r = remanens_get(age);
+    for (age=f=0; f<=maxf && color.w > 0.05f; age += 3) {
+      remanens_t *r = remanens_get(age);
 
-	  if (!r) {
-		break;
-	  }
-	  if (!r->o) {
-		SDWARNING("No stacked object\n");
-		break;
-	  }
+      if (!r) {
+	break;
+      }
+      if (!r->o) {
+	SDWARNING("No stacked object\n");
+	break;
+      }
 
-	  f += r->o->nbf;
-	  color.w *= 0.75f;
+      f += r->o->nbf;
+      color.w *= 0.75f;
 
-	  DrawObjectFrontLighted(&viewport, r->mtx, projmtx,
-							 r->o,
-							 &ambient, &color);
+      DrawObjectFrontLighted(&viewport, r->mtx, projmtx,
+			     r->o,
+			     &ambient, &color);
 
-	  /*       DrawObjectSingleColor(&viewport, r->mtx, projmtx, */
-	  /* 			    r->o, &color); */
-	}
-	return 0;
+      /*       DrawObjectSingleColor(&viewport, r->mtx, projmtx, */
+      /* 			    r->o, &color); */
+    }
+    return 0;
   } else {
-	return DrawObjectSingleColor(&viewport, mtx, projmtx,
-								 &curobj->obj, &color);
+    return DrawObjectSingleColor(&viewport, mtx, projmtx,
+				 &curobj->obj, &color);
   }
 }
 
@@ -395,26 +451,37 @@ static int init(any_driver_t *d)
 {
   const char * tname = "lpo_bordertile";
   border_def_t borderdef;
+  static fftband_limit_t limits[] = {
+    {0, 150},
+    {150, 2000},
+    {2000, 44100},
+  }; 
 
   curobj = 0;
   lpo_texid = texture_get(tname);
   if (lpo_texid < 0) {
-	lpo_texid = texture_dup(texture_get("bordertile"), tname);
+    lpo_texid = texture_dup(texture_get("bordertile"), tname);
   }
   border_get_def(borderdef, 1);
   border_customize(lpo_texid, borderdef);
 
-  return -(lpo_texid < 0);;
+  bands = fft_create_bands(3,limits);
+
+  return -(lpo_texid < 0 || !bands);;
 }
 
 static int shutdown(any_driver_t *d)
 {
   stop();
+  if (bands) {
+    free(bands);
+    bands = 0;
+  }
   return 0;
 }
 
 static driver_option_t * options(struct _any_driver_s *driver,
-								 int idx, driver_option_t * opt)
+				 int idx, driver_option_t * opt)
 {
   return opt;
 }
@@ -435,14 +502,14 @@ static int lua_custombordertex(lua_State * L)
   int i;
   int max = lua_gettop(L);
   static border_def_t borderdef = {
-	{1,1,1,1}, {0.5, 0.5, 0.5, 0.5}, {0.7, 0.2, 0.2, 0.2}
+    {1,1,1,1}, {0.5, 0.5, 0.5, 0.5}, {0.7, 0.2, 0.2, 0.2}
   };
 
   if (max > 12) max = 12;
   for (i=0; i<max; ++i) {
-	if (lua_type(L,i+1) != LUA_TNIL) {
-	  ((float *)&borderdef[i>>2])[i&3] = lua_tonumber(L,i+1);
-	}
+    if (lua_type(L,i+1) != LUA_TNIL) {
+      ((float *)&borderdef[i>>2])[i&3] = lua_tonumber(L,i+1);
+    }
   }
   border_customize(lpo_texid,borderdef);
   return 0;
@@ -454,9 +521,9 @@ static void lua_setcolor(lua_State * L, float * c)
   max = lua_gettop(L);
   if (max > 4) max = 4;
   for (i=0; i<max; ++i) {
-	if (lua_type(L,i+1) != LUA_TNIL) {
-	  c[(i-1)&3] = lua_tonumber(L, i+1);
-	}
+    if (lua_type(L,i+1) != LUA_TNIL) {
+      c[(i-1)&3] = lua_tonumber(L, i+1);
+    }
   }
 }
  
@@ -485,7 +552,7 @@ static int lua_setremanens(lua_State * L)
   lpo_remanens = lua_type(L,1) != LUA_TNIL;
   lua_settop(L,0);
   if (remanens) {
-	lua_pushnumber(L,1);
+    lua_pushnumber(L,1);
   }
   return lua_gettop(L);
 }
@@ -498,7 +565,7 @@ static int lua_setchange(lua_State * L)
   change_mode = lua_tonumber(L,1);
   new_time = lua_tonumber(L,2) * 1000.0f;
   if (new_time > 0) {
-	change_time = new_time;
+    change_time = new_time;
   }
   lua_settop(L,0);
   lua_pushnumber(L, mode);
@@ -519,70 +586,70 @@ static int lua_setobject(lua_State * L)
 
 static luashell_command_description_t commands[] = {
   {
-	"lpo_setambient", 0,              /* long and short names */
-	"print [["
-	"lpo_setambient(a, r, g, b) : set ambient color."
-	"]]",                                /* usage */
-	SHELL_COMMAND_C, lua_setambient      /* function */
+    "lpo_setambient", 0,              /* long and short names */
+    "print [["
+    "lpo_setambient(a, r, g, b) : set ambient color."
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_setambient      /* function */
   },
   {
-	"lpo_setbasecolor", 0,         /* long and short names */
-	"print [["
-	"lpo_setbasecolor(a, r, g, b) : set object base color."
-	"]]",                                /* usage */
-	SHELL_COMMAND_C, lua_setbasecolor /* function */
+    "lpo_setbasecolor", 0,         /* long and short names */
+    "print [["
+    "lpo_setbasecolor(a, r, g, b) : set object base color."
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_setbasecolor /* function */
   },
   {
-	"lpo_setflashcolor", 0,         /* long and short names */
-	"print [["
-	"lpo_setflashcolor(a, r, g, b) : set object flash color."
-	"]]",                                /* usage */
-	SHELL_COMMAND_C, lua_setflashcolor /* function */
+    "lpo_setflashcolor", 0,         /* long and short names */
+    "print [["
+    "lpo_setflashcolor(a, r, g, b) : set object flash color."
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_setflashcolor /* function */
   },
   {
-	"lpo_setbordertex", 0,            /* long and short names */
-	"print [["
-	"lpo_setbordertex(num) : set border texture type."
-	"]]",                                /* usage */
-	SHELL_COMMAND_C, lua_setbordertex    /* function */
+    "lpo_setbordertex", 0,            /* long and short names */
+    "print [["
+    "lpo_setbordertex(num) : set border texture type."
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_setbordertex    /* function */
   },
   {
     "lpo_custombordertex", 0,            /* long and short names */
     "print [["
-	"lpo_custombordertex(a1,r1,g1,b1, a2,r2,g2,b2, a3,r3,g3,b3) : "
-	"set custom border texture. Each color componant could be set to nil to "
-	"keep the current value.\n"
-	" a1,r1,g1,b1 : border color\n"
-	" a2,r2,g2,b2 : fill color\n"
-	" a3,r3,g3,b3 : link color\n"
+    "lpo_custombordertex(a1,r1,g1,b1, a2,r2,g2,b2, a3,r3,g3,b3) : "
+    "set custom border texture. Each color componant could be set to nil to "
+    "keep the current value.\n"
+    " a1,r1,g1,b1 : border color\n"
+    " a2,r2,g2,b2 : fill color\n"
+    " a3,r3,g3,b3 : link color\n"
     "]]",                                   /* usage */
     SHELL_COMMAND_C, lua_custombordertex    /* function */
   },
 
 
   {
-	"lpo_setremanens", 0,            /* long and short names */
-	"print [["
-	"lpo_setremanens(boolean) : active/desacitive remanens FX. "
-	"Return old state."
-	"]]",                                /* usage */
-	SHELL_COMMAND_C, lua_setremanens    /* function */
+    "lpo_setremanens", 0,            /* long and short names */
+    "print [["
+    "lpo_setremanens(boolean) : active/desacitive remanens FX. "
+    "Return old state."
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_setremanens    /* function */
   },
   {
-	"lpo_setchange", 0,            /* long and short names */
-	"print [["
-	"lpo_setchange(type [, time]) : Set object change properties. "
-	"type [0,nil:no-change 1:random 2:flash 3 random and flash."
-	"Return old values."
-	"]]",                                /* usage */
-	SHELL_COMMAND_C, lua_setchange    /* function */
+    "lpo_setchange", 0,            /* long and short names */
+    "print [["
+    "lpo_setchange(type [, time]) : Set object change properties. "
+    "type [0,nil:no-change 1:random 2:flash 3 random and flash."
+    "Return old values."
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_setchange    /* function */
   },
   {
-	"lpo_setobject", 0,            /* long and short names */
-	"print [["
-	"lpo_setobject(name) : Set and get current object."
-	"]]",                                /* usage */
-	SHELL_COMMAND_C, lua_setobject    /* function */
+    "lpo_setobject", 0,            /* long and short names */
+    "print [["
+    "lpo_setobject(name) : Set and get current object."
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_setobject    /* function */
   },
 
   {0},                                   /* end of the command list */
@@ -592,19 +659,19 @@ static vis_driver_t driver = {
 
   /* Any driver. */
   {
-	NEXT_DRIVER,          /* Next driver (see any_driver.h) */
-	VIS_DRIVER,           /* Driver type */      
-	0x0100,               /* Driver version */
-	"lpo",                /* Driver name */
-	"Benjamin Gerard\0",  /* Driver authors */
-	"Little "             /**< Description */
-	"Pumping "
-	"Object",
-	0,                    /**< DLL handler */
-	init,                 /**< Driver init */
-	shutdown,             /**< Driver shutdown */
-	options,              /**< Driver options */
-	commands,             /**< Lua shell commands  */
+    NEXT_DRIVER,          /* Next driver (see any_driver.h) */
+    VIS_DRIVER,           /* Driver type */      
+    0x0100,               /* Driver version */
+    "lpo",                /* Driver name */
+    "Benjamin Gerard\0",  /* Driver authors */
+    "Little "             /**< Description */
+    "Pumping "
+    "Object",
+    0,                    /**< DLL handler */
+    init,                 /**< Driver init */
+    shutdown,             /**< Driver shutdown */
+    options,              /**< Driver options */
+    commands,             /**< Lua shell commands  */
   },
 
   start,                  /**< Driver start */

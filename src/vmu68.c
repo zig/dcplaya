@@ -1,5 +1,5 @@
 /**
- * $Id: vmu68.c,v 1.8 2002-12-30 06:28:18 ben Exp $
+ * $Id: vmu68.c,v 1.9 2002-12-30 12:32:51 ben Exp $
  */
 #include "config.h"
 
@@ -279,7 +279,7 @@ static void draw_samples(char *buf)
     int xb = 0x80 >> (x & 7);
     int o1, o2;
 
-    h >>= 11;										// -8 - 8
+    h >>= 11; // -8 - 8
     o1 = xi + (48 / 8) * (h + 8);
     o2 = xi + (48 / 8) * (8);
 		
@@ -305,10 +305,12 @@ static struct {
   int dummy;
 } fft_bar[48];
 
+extern short int_decibel[];
+
 static void draw_fft(unsigned char * buf)
 {
   const int g = 27;
-  const int shift = 9;
+  const int shift = 11;
   int x;
 
   if (!bands) {
@@ -324,7 +326,10 @@ static void draw_fft(unsigned char * buf)
     int o1, hat;
 
     /* New entry */
-    v = bands->band[47-x].v;
+    v = bands->band[47-x].v - 100;
+    if (v<0) v=0;
+    else if (v > 32767) v = 32767;
+    v = int_decibel[v>>3];
 		
     /* Smoothing */
     if (v > fft_bar[x].v) {
@@ -334,86 +339,80 @@ static void draw_fft(unsigned char * buf)
     }
 		
     hat = fft_bar[x].hat;
-    if (v >= hat) {
-      if (0) {
-	fft_bar[x].cnt = 32;
+    if (v > hat) {
+      fft_bar[x].cnt = 0;
+      hat = v;
+      if (v <= fft_bar[x].v) {
+	/* descending */
 	fft_bar[x].fall = 0;
-      } else if (v > fft_bar[x].v) {
+      } else {
+	/* accending */
 	const int min = -g * 70;
+	int dif = v - fft_bar[x].v;
         int fall;
-        const int method = 5;
-		  
-	fft_bar[x].cnt = 0;
+
 	fall = fft_bar[x].fall;
-	if (fall>0) fall = 0;
-		    
-	// $$ hack !!! 
-	hat =  fft_bar[x].v;
-		    
-	switch (method) {
-	case 1: /* Trankil */
-	  fall = - ((v + (v - hat)) >> (shift>>1));
-	  break;
-	case 2: /* Dynamic mais pas trop  */
-	  fall = -(((v + (v - hat)) * g) >> (shift-1));
-	  break;
-	case 3: /* Ca monte haut ! */
-	  fall += -(((v + (v - hat)) * g) >> (shift+1));
-	  break;
-	case 4:
-	  fall += -((((v>>1) + (v - hat)) * g) >> shift);
-	  break;
-	case 5: /* Dynamic mais pas trop  */
-	  fall = -(((((v>>1) + (v - hat)) * g) * 3)  >> shift);
-	  break;
-		      
-	default:
-	  fall = -g * 50;
-	}
+	if (fall > 0) fall = 0;
+	fall += -(dif * g * 4) >> shift;
 	if (fall < min) fall = min;
 	fft_bar[x].fall = fall;
       }
-      hat = v;
     } else {
-      if (fft_bar[x].cnt > 0) {
-	fft_bar[x].cnt--;
-      }
-      if (!fft_bar[x].cnt) {
-	//  		  const int fall_max = 1024;
-	//	  	  const int smooth = 240;
-	int fall;
-		    
-	//		    fall = ((fft_bar[x].fall * smooth) + (fall_max * (256-smooth))) >> 8;
-	//		    fall = ((fft_bar[x].fall * smooth) + (fall_max * (256-smooth))) >> 8;
-        fall = fft_bar[x].fall + g;
-	fft_bar[x].fall = fall;
-	hat -= fall;
-	if (hat <= 0) {
-	  hat = 0;
+      /* Hat is falling ! */
+      int fall, cnt;
+
+      fall = fft_bar[x].fall;
+      cnt = fft_bar[x].cnt;
+      if (!cnt) {
+	/* No tempo */
+	int prevfall = fall;
+	fall += g;
+	if (prevfall < 0 && fall >= 0) {
+	  /* Just reach the top */
 	  fall = 0;
-	} else if(hat > (28<<shift)) {
-	  hat = 28<<shift;
+	  cnt = 10;
 	}
+      } else {
+	/* Wait a while */
+	--cnt;
       }
+
+      hat -= fall;
+      if (hat <= v) {
+	hat = v;
+	fall = 0;
+	cnt = 0;
+      }
+      fft_bar[x].fall = fall;
+      fft_bar[x].cnt = cnt;
     }
+  
+    if (hat < 0) {
+      hat = 0;
+    }  else if (hat > (28<<shift)) {
+      hat = 28<<shift;
+    }
+
+    if (v > (20<<shift)) {
+      v = (20<<shift);
+    }
+    
     fft_bar[x].hat  =   hat;
     hat             >>= shift;
     fft_bar[x].v    =   v;
     v               >>= shift;
-
+    
     o1 = xi;
-    buf[xi+(48/8)*hat] |= xb;
-		
-    if (v>0) {
-      if (v > 20) v = 20;
-      do {
-	buf[o1] |= xb;
-	o1 += 48 / 8;
-      } while (--v);
-    }
-  }
+    buf[xi+(48/8)*(hat)] |= xb;
 
+    while (v--) {
+      buf[o1] |= xb;
+      o1 += 48 / 8;
+    }
+
+  }
 }
+
 
 static int draw_bar(char *buf, int lvl, int h)
 {
