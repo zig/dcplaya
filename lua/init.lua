@@ -1,7 +1,23 @@
 --
--- fundamental stuffs
+-- fundamental lua stuffs
+--
+-- author : Vincent Penne
+--
+-- $Id: init.lua,v 1.2 2002-09-24 13:47:04 vincentp Exp $
 --
 
+
+-- do this file only once !
+if not init_lua then
+init_lua=1
+
+
+-- drivers handling
+
+
+
+
+-- command helps handling
 shell_help_array = {}
 
 function addhelp(fname, help_func)
@@ -43,3 +59,6 @@ usage=help
 
 addhelp(help, [[print [[help(command) : show information about a command\n]]]])
 addhelp(addhelp, [[print [[addhelp(command, string_to_execute) : add usage information about a command\n]]]])
+
+
+end -- if not init_lua then

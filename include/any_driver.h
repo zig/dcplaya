@@ -1,6 +1,6 @@
 /*
  *
- * $Id: any_driver.h,v 1.3 2002-09-12 17:57:31 ben Exp $ 
+ * $Id: any_driver.h,v 1.4 2002-09-24 13:47:04 vincentp Exp $ 
  */
  
 #ifndef _ANY_DRIVER_H_
@@ -17,6 +17,8 @@ DCPLAYA_EXTERN_C_START
 #define EXE_DRIVER  'EXE' /**< Executable plugin */
 
 #include "driver_option.h"
+
+struct luashell_command_description;
 
 /** Shared by any driver */
 typedef struct _any_driver_s
@@ -52,11 +54,15 @@ typedef struct _any_driver_s
   driver_option_t * (*options)(struct _any_driver_s *,
                                int idx, driver_option_t * opt);
 
+  /** Lua shell command description list */
+  struct luashell_command_description * luacommands;
 } any_driver_t;
+
+
 
 /* These #define *MUST* be use to fill the any_driver_t.nxt field. It allows
  * to build a correct linked-list at compile time for a single multi-driver
- * plugin (.klf) file.
+ * plugin (.lef) file.
  */
 #if !defined(FIRST_DRIVER) || (FIRST_DRIVER)
 # define EXPORT_DRIVER(symbol) \

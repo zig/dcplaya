@@ -8,7 +8,7 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.12 2002-09-20 06:08:58 vincentp Exp $
+ * $Id: fftvlr.c,v 1.13 2002-09-24 13:47:04 vincentp Exp $
  */
 
 #include <stdlib.h>
@@ -24,6 +24,8 @@
 
 /* from border.c */
 extern int bordertex, bordertex2, bordertex3;
+
+static int curbordertex;
 
 /* From obj3d.c */
 void FaceNormal(float *d, const vtx_t * v, const tri_t *t);
@@ -333,6 +335,12 @@ static int fftvlr_init(any_driver_t *d)
   nrm = 0;
   tlk = 0;
 
+#ifdef BENSTYLE
+  curbordertex = bordertex;
+#else
+  curbordertex = bordertex3;
+#endif
+
   return 0;
 }
 
@@ -368,11 +376,7 @@ static int fftvlr_process(viewport_t * vp, matrix_t projection, int elapsed_ms)
     vlr_update();
 
 
-#ifdef BENSTYLE
-    fftvlr_obj.flags = bordertex;
-#else
-    fftvlr_obj.flags = bordertex3;
-#endif
+    fftvlr_obj.flags = curbordertex;
     return 0;
   }
   return -1;
@@ -406,6 +410,84 @@ static driver_option_t * fftvlr_options(any_driver_t * d, int idx,
   return o;
 }
 
+#include "luashell.h"
+
+static int lua_setambient(lua_State * L)
+{
+  int nparam = lua_gettop(L);
+  int i;
+  float * ac = (float *) &ambient_color;
+
+  for (i=0; i<4 && i<nparam; i++) {
+    ac[i] = lua_tonumber(L, i+1);
+    //printf("%d %g\n", i, ac[i]);
+  }
+
+  return 0;
+}
+
+static int lua_setdirectionnal(lua_State * L)
+{
+  int nparam = lua_gettop(L);
+  int i;
+  float * ac = (float *) &light_color;
+
+  for (i=0; i<4 && i<nparam; i++) {
+    ac[i] = lua_tonumber(L, i+1);
+    //printf("%d %g\n", i, ac[i]);
+  }
+
+  return 0;
+}
+
+static int lua_setbordertex(lua_State * L)
+{
+  int nparam = lua_gettop(L);
+
+  if (nparam) {
+    switch ((int) lua_tonumber(L, 1)) {
+    case 0:
+      curbordertex = bordertex;
+      break;
+    case 1:
+      curbordertex = bordertex2;
+      break;
+    case 2:
+      curbordertex = bordertex3;
+      break;
+    }
+  }
+
+  return 0;
+}
+
+static luashell_command_description_t fftvlr_commands[] = {
+  {
+    "fftvlr_setambient", 0,              /* long and short names */
+    "print [["
+      "fftvlr_setambient(r, g, b, a) : set ambient color to given (r,g,b,a) "
+      "values (ranging 0..1)"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_setambient      /* function */
+  },
+  {
+    "fftvlr_setdirectionnal", 0,         /* long and short names */
+    "print [["
+      "fftvlr_setdirectionnal(r, g, b, a) : set directionnal light color to given (r,g,b,a) "
+      "values (ranging 0..1)"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_setdirectionnal /* function */
+  },
+  {
+    "fftvlr_setbordertex", 0,            /* long and short names */
+    "print [["
+      "fftvlr_setbordertex(r, g, b, a) : set border texture number (ranging 0..2)"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_setbordertex    /* function */
+  },
+  {0},                                   /* end of the command list */
+};
+
 static vis_driver_t fftvlr_driver =
 {
 
@@ -425,6 +507,7 @@ static vis_driver_t fftvlr_driver =
     fftvlr_init,          /**< Driver init                     */
     fftvlr_shutdown,      /**< Driver shutdown                 */
     fftvlr_options,       /**< Driver options                  */
+    fftvlr_commands,      /**< Lua shell commands              */
   },
 
   fftvlr_start,           /**< Start                           */

@@ -1,9 +1,9 @@
 /**
  * @file      shell.h
  * @author    vincent penne <ziggy@sashipa.com>
- * @date      2002/08/12
+ * @date      2002/09/12
  * @brief     shell support for dcplaya
- * @version   $Id: shell.h,v 1.5 2002-09-20 06:08:58 vincentp Exp $
+ * @version   $Id: shell.h,v 1.6 2002-09-24 13:47:04 vincentp Exp $
  */
 
 

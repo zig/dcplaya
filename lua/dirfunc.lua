@@ -92,6 +92,18 @@ end
 function dofile(filename, ...)
 	return %dofile(fullpath(filename), arg)
 end
+function mkdir(filename, ...)
+	return %mkdir(fullpath(filename), arg)
+end
+function md(filename, ...)
+	return %md(fullpath(filename), arg)
+end
+function unlink(filename, ...)
+	return %unlink(fullpath(filename), arg)
+end
+function rm(filename, ...)
+	return %rm(fullpath(filename), arg)
+end
 function rename(from, to)
 	return %rename(fullpath(from), fullpath(to))
 end

@@ -1,3 +1,5 @@
+#if 0
+
 #include <kos.h>
 
 typedef unsigned int FILE;
@@ -56,4 +58,4 @@ void exit(int status)
     while(1);
 }
 
-
+#endif

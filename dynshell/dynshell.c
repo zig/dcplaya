@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.17 2002-09-23 16:26:42 benjihan Exp $
+ * @version    $Id: dynshell.c,v 1.18 2002-09-24 13:47:03 vincentp Exp $
  */
 
 #include <stdio.h>
@@ -18,6 +18,7 @@
 
 #include "console.h"
 #include "shell.h"
+#include "luashell.h"
 
 #include "plugin.h"
 #include "dcar.h"
@@ -25,7 +26,7 @@
 
 #include "exceptions.h"
 
-
+#include "ds.h"
 
 lua_State * shell_lua_state;
 
@@ -33,21 +34,17 @@ typedef void (* shutdown_func_t)();
 
 static shell_command_func_t old_command_func;
 
+static int song_tag;
+
+static const char * home = "/pc"  DREAMMP3_HOME;
+static const char * initfile = "/pc"  DREAMMP3_HOME "/lua/init.lua";
 
 
-enum shell_command_type_t {
-  SHELL_COMMAND_LUA,
-  SHELL_COMMAND_C,
-};
-
-typedef struct shell_command_description {
-  char * name;       ///< long name of the command
-  char * short_name; ///< short name of the command
-  char * usage;      ///< lua command that should print usage of the command
-  int  type;         ///< type of command : LUA or C
-  lua_CFunction function; ///< function to call (or pointer on lua function in string format)
-} shell_command_description_t;
-
+#define lua_assert(L, test) if (!(test)) lua_assert_func(L, #test); else
+static void lua_assert_func(lua_State * L, const char * msg)
+{
+  lua_error(L, msg);
+}
 
 static int dynshell_command(const char * fmt, ...)
 {
@@ -84,6 +81,169 @@ static int dynshell_command(const char * fmt, ...)
 }
 
 
+/* dynamic structure lua support */
+#define lua_push_entry(L, desc, data, entry) lua_push_entry_func((L), &desc##_DSD, (data), (entry) )
+
+static int lua_push_entry_func(lua_State * L, ds_structure_t * desc, void * data, const char * entryname)
+{
+  ds_entry_t * entry;
+
+  entry = ds_find_entry_func(desc, entryname);
+
+  if (entry) {
+    switch (entry->type) {
+    case DS_TYPE_INT:
+      lua_pushnumber(L, * (int *) ds_data(data, entry));
+      return 1;
+    case DS_TYPE_STRING:
+      lua_pushstring(L, * (char * *) ds_data(data, entry));
+      return 1;
+    case DS_TYPE_LUACFUNCTION:
+      lua_pushcfunction(L, * (lua_CFunction *) ds_data(data, entry));
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+
+
+/* driver type */
+
+#include "driver_list.h"
+
+
+static
+#include "luashell_ds.h"
+
+static int shellcd_tag;
+
+static int lua_shellcd_gettable(lua_State * L)
+{
+  const char * field;
+  luashell_command_description_t * cd;
+
+  cd = lua_touserdata(L, 1);
+  field = lua_tostring(L, 2);
+
+  if (cd->type == SHELL_COMMAND_LUA && !strcmp(field, "function")) {
+    /* cast to lua function */
+
+    // need to read the doc ...
+    
+    return 0;
+  }
+
+  lua_assert(L, field);
+
+  return lua_push_entry(L, luashell_command_description_t, cd, field);
+}
+
+
+
+static
+#include "any_driver_ds.h"
+
+static int driver_tag;
+static int driverlist_tag;
+
+static int lua_driverlist_gettable(lua_State * L)
+{
+  driver_list_t * table = lua_touserdata(L, 1);
+  any_driver_t * driver = NULL;
+  if (lua_isnumber(L, 2)) {
+    // access by number
+    int n = lua_tonumber(L, 2);
+    lua_assert(L, n>=1 && n<=table->n);
+    driver = table->drivers;
+    while (--n)
+      driver = driver->nxt;
+  } else {
+    // access by name
+    const char * name = lua_tostring(L, 2);
+    lua_assert(L, name);
+    driver = driver_list_search(table, name);
+  }
+
+  lua_assert(L, driver);
+  
+  lua_settop(L, 0);
+  lua_pushusertag(L, driver, driver_tag);
+
+  return 1;
+}
+
+static int lua_driver_gettable(lua_State * L)
+{
+  const char * field;
+  any_driver_t * driver;
+
+  driver = lua_touserdata(L, 1);
+  field = lua_tostring(L, 2);
+
+  lua_assert(L, driver);
+  lua_assert(L, field);
+
+  if (driver->luacommands && !strcmp(field, "luacommands")) {
+    /* special case for luacommands field : 
+       return table with all lua commands */
+    int i;
+
+    lua_settop(L, 0);
+    lua_newtable(L);
+
+    for (i=0; driver->luacommands[i].name; i++) {
+      lua_pushnumber(L, i+1);
+      lua_pushusertag(L, driver->luacommands+i, shellcd_tag);
+      lua_settable(L, 1);
+    }
+    
+    return 1;
+  }
+
+  return lua_push_entry(L, any_driver_t, driver, field);
+}
+
+static int lua_driver_settable(lua_State * L)
+{
+  return 0;
+}
+
+static void register_driver_type(lua_State * L)
+{
+
+  shellcd_tag = lua_newtag(L);
+  lua_pushcfunction(L, lua_shellcd_gettable);
+  lua_settagmethod(L, shellcd_tag, "gettable");
+
+
+  driverlist_tag = lua_newtag(L);
+
+  lua_pushcfunction(L, lua_driverlist_gettable);
+  lua_settagmethod(L, driverlist_tag, "gettable");
+
+  lua_pushusertag(L, &inp_drivers, driverlist_tag);
+  lua_setglobal(L, "inp_drivers");
+
+  lua_pushusertag(L, &obj_drivers, driverlist_tag);
+  lua_setglobal(L, "obj_drivers");
+
+  lua_pushusertag(L, &vis_drivers, driverlist_tag);
+  lua_setglobal(L, "vis_drivers");
+
+  lua_pushusertag(L, &exe_drivers, driverlist_tag);
+  lua_setglobal(L, "exe_drivers");
+
+
+  driver_tag = lua_newtag(L);
+
+  lua_pushcfunction(L, lua_driver_gettable);
+  lua_settagmethod(L, driver_tag, "gettable");
+
+  lua_pushcfunction(L, lua_driver_settable);
+  lua_settagmethod(L, driver_tag, "settable");
+}
 
 
 ////////////////
@@ -101,9 +261,6 @@ static int lua_malloc_stats(lua_State * L)
 
 
 #define MAX_DIR 32
-
-static const char * home = "/pc"  DREAMMP3_HOME;
-static const char * initfile = "/pc"  DREAMMP3_HOME "/lua/init.lua";
 
 static int r_path_load(lua_State * L, char *path, unsigned int level, const char * ext, int count)
 {
@@ -243,7 +400,7 @@ static int lua_driver_load(lua_State * L)
   int nparam = lua_gettop(L);
   int i;
 
-  for (i=1; i<= nparam; i++) {
+  for (i=1; i<=nparam; i++) {
     //strcpy(rpath, home);
     strcpy(rpath, lua_tostring(L, i));
     
@@ -575,7 +732,7 @@ static char shell_basic_lua_init[] =
 ;
 #endif
 
-static shell_command_description_t commands[] = {
+static luashell_command_description_t commands[] = {
   { 
     "malloc_stats",
     "ms",
@@ -737,25 +894,40 @@ static shell_command_description_t commands[] = {
 static void shell_register_lua_commands()
 {
   int i;
+  lua_State * L = shell_lua_state;
 
-  lua_dostring(shell_lua_state, 
+  /* Create our user data type */
+
+  register_driver_type(L);
+
+  // song type
+  song_tag = lua_newtag(L);
+
+
+  lua_dostring(L, 
 	       "\n function doshellcommand(string)"
 	       "\n   dostring(string)"
 	       "\n end");
 
   dynshell_command("home = [[%s]]", home);
 
-  //lua_dobuffer(shell_lua_state, shell_basic_lua_init, sizeof(shell_basic_lua_init) - 1, "init");
-  lua_dofile(shell_lua_state, initfile);
+  //lua_dobuffer(L, shell_basic_lua_init, sizeof(shell_basic_lua_init) - 1, "init");
 
+  /* register functions */
   for (i=0; commands[i].name; i++) {
-    lua_register(shell_lua_state, 
+    lua_register(L, 
 		 commands[i].name, commands[i].function);
     if (commands[i].short_name) {
-      lua_register(shell_lua_state, 
+      lua_register(L, 
 		   commands[i].short_name, commands[i].function);
     }
+  }
 
+  /* luanch the init script */
+  lua_dofile(L, initfile);
+
+  /* register helps */
+  for (i=0; commands[i].name; i++) {
     if (commands[i].usage) {
       dynshell_command("addhelp (%s, [[%s]])", commands[i].name, commands[i].usage);
       if (commands[i].short_name)
@@ -764,7 +936,7 @@ static void shell_register_lua_commands()
   }
 
   
-  //lua_register(shell_lua_state, "malloc_stats", lua_malloc_stats);
+  //lua_register(L, "malloc_stats", lua_malloc_stats);
 }
 
 

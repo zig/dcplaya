@@ -1,5 +1,5 @@
 
-$Id: TODO,v 1.8 2002-09-23 03:25:01 benjihan Exp $
+$Id: TODO,v 1.9 2002-09-24 13:46:52 vincentp Exp $
 
 ** TODO :
 
@@ -35,7 +35,7 @@ $Id: TODO,v 1.8 2002-09-23 03:25:01 benjihan Exp $
 
 - cd() command should verify if the path exist and is a dir.
 
-- md() command can't handle relatif path, can it ?
+- md() command can't handle relatif path, can it ? --> NOT YET :)
 
 - Look at the face-border rendering. Sometime some borders seem to be shifted.
 

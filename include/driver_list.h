@@ -1,4 +1,4 @@
-/* $Id: driver_list.h,v 1.5 2002-09-14 02:55:40 ben Exp $ */
+/* $Id: driver_list.h,v 1.6 2002-09-24 13:47:04 vincentp Exp $ */
 
 #ifndef _DRIVER_LIST_H_
 #define _DRIVER_LIST_H_
@@ -19,6 +19,7 @@ typedef struct
   int n;                  /**< Number of driver in list */
   any_driver_t * drivers; /**< First entry */
 } driver_list_t;
+
 
 extern driver_list_t inp_drivers;
 extern driver_list_t obj_drivers;

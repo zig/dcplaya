@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: shell.lua,v 1.4 2002-09-20 06:08:58 vincentp Exp $
+-- $Id: shell.lua,v 1.5 2002-09-24 13:47:04 vincentp Exp $
 --
 
 
@@ -31,7 +31,11 @@ function doshellcommand(string)
         end
 	--print (i, j, beg, e)
         i, j = strfind(string, [[%b]]..beg..e, i)
-        tinsert(list, strsub(string, i+n, j-n))
+	if i then
+	        tinsert(list, strsub(string, i+n, j-n))
+	else
+		print ("unbalanced quotes")
+	end
       else
         tinsert(list, strsub(string, i, j))
       end
@@ -175,8 +179,11 @@ end
 
 -- error exception handling : relaunch the shell !
 -- does not seem necessary actually ... NOT USED
-function shell_error(...)
-	shell_olderror(arg)
+--function shell_error(...)
+--	shell_olderror(arg)
+function shell_error(err)
+	print(err)
+	_ERRORMESSAGE=shell_olderror
 	print [[Returning to shell ...]]
 	shell()
 	print [[Return from shell_error]]
@@ -203,14 +210,14 @@ function shell()
 			done = 1
 		else
 			-- hook our error handling function
---			if error~=shell_error then
---				shell_olderror=error
---				error=shell_error
+--			if _ERRORMESSAGE~=shell_error then
+--				shell_olderror=_ERRORMESSAGE
+--				_ERRORMESSAGE=shell_error
 --			end
 
 			doshellcommand(command)
 
---			error=shell_olderror
+--			_ERRORMESSAGE=shell_olderror
 		end
 
 	until done
