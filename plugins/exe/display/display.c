@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.5 2002-10-12 17:13:50 benjihan Exp $
+ * $Id: display.c,v 1.6 2002-10-14 23:32:11 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -413,6 +413,21 @@ DL_FUNCTION_START(set_active)
 }
 DL_FUNCTION_END()
 
+DL_FUNCTION_START(set_active2)
+{
+  int active = lua_tonumber(L, 3);
+  dl_list_t * dl2;
+
+  if (lua_tag(L, 2) != dl_list_tag) {
+	printf("dl_set_active2 : 2nd parameter is not a list\n");
+	return 0;
+  }
+  dl2 = lua_touserdata(L, 2);
+  lua_settop(L, 0);
+  lua_pushnumber(L, dl_set_active2(dl, dl2, active));
+  return 1;
+}
+DL_FUNCTION_END()
 
 DL_FUNCTION_START(clear)
 {
@@ -890,6 +905,16 @@ static luashell_command_description_t display_commands[] = {
       "dl_set_active(list,state) : set active state"
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_set_active      /* function */
+  },
+  {
+    "dl_set_active2", 0,                  /* long and short names */
+    "print [["
+    "dl_set_active(list1,list2,state) : set active state of 2 lists.\n"
+	" state=0  : desactive both lists.\n"
+	" state!=0 : setted bits toggle state of list.\n"
+	"            bit0 : list1, bit1 : list2\n"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_set_active2     /* function */
   },
   {
     "dl_get_active", 0,                  /* long and short names */
