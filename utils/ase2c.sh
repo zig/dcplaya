@@ -2,7 +2,7 @@
 #
 # Convert .ase file to .c
 #
-# $Id: ase2c.sh,v 1.2 2003-01-22 19:12:56 ben Exp $
+# $Id: ase2c.sh,v 1.3 2003-05-04 12:20:03 benjihan Exp $
 #
 
 function debug
@@ -109,7 +109,7 @@ debug "numface=${numface}" >&2
 rm -f ./mklinks.tmp ./tmpobj.inc >&2
 
 debug "Create tmpobj.inc"
-create_c | shaclean > tmpobj.inc
+create_c | sed -f ${SHACLEAN} > tmpobj.inc
 if [ $? -eq 0 ]; then
     debug "Compile ' ${scriptdir}/mkobjlinks.c' to './mklinks.tmp'"
     if [ -z ${CC} ]; then
