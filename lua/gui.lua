@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.32 2002-12-19 10:59:48 zigziggy Exp $
+--- $Id: gui.lua,v 1.33 2002-12-19 18:47:47 zigziggy Exp $
 ---
 
 --
@@ -807,13 +807,14 @@ function gui_justify(dl, box, z, color, text, mode)
    end
    if not mode.x then mode.x = "center" end
    if not mode.y then mode.y = "center" end
-   mode.dl = dl
    mode.box = box
    mode.z = z
    mode.color = color
    
    mode = tt_build(text, mode)
    tt_draw(mode)
+
+   dl_sublist(dl, mode.dl)
 
    return mode.total_w, mode.total_h
 
@@ -871,16 +872,16 @@ function dialog_test(parent)
    
    -- add some text inside the dialog box
    gui_label(dial, 
-	     [[
-		   Hello World ! 
-		   Ceci est un tres long texte on purpose !!!!
+	     [[ <font size="14">
+Hello World ! 
+Ceci est un tres long texte on purpose !!!!
 	     ]], { y="up" } )
 
    local x = box[1] - 100
    local y = box[2] - 100
    
    -- create a few buttons with labels
-   but = gui_new_button(dial, { x + 150, y + 200, x + 240, y + 235 }, 'OK <img name="dcplaya" src="dcplaya.tga">')
+   but = gui_new_button(dial, { x + 150, y + 200, x + 240, y + 230 }, 'OK <img name="dcplaya" src="dcplaya.tga" scale="0.75">')
    
    -- add a gui_press_event response
    but.event_table[gui_press_event] =
@@ -890,7 +891,7 @@ function dialog_test(parent)
 	 return nil -- block the event
       end
    
-   but = gui_new_button(dial, { x + 250, y + 200, x + 360, y + 235 }, 'CANCEL <img name="colorpicker" src="colorpicker.tga">')
+   but = gui_new_button(dial, { x + 250, y + 200, x + 360, y + 230 }, 'CANCEL <img name="colorpicker" src="colorpicker.tga" scale="0.75">')
    but.event_table[gui_press_event] =
       function(but, evt)
 	 print [[CANCEL !!]]
