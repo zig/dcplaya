@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.30 2003-03-14 22:04:50 ben Exp $
+--- $Id: desktop.lua,v 1.31 2003-03-18 01:08:48 ben Exp $
 ---
 
 if not dolib("evt") then return end
@@ -97,7 +97,8 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 '<macro macro-name="yellow" macro-cmd="font" color="#FFFF00">' ..
 '<macro macro-name="nrm" macro-cmd="font" color="'..col..'">'
 
-   text = text..'<dialog guiref="dialog" label="Desktop" name="switcher">'
+   name = name or "switcher"
+   text = text..'<dialog guiref="dialog" label="Desktop" name="' ..name.. '">'
    text = text..'<linecenter>Running applications'..
       ' :<br><vspace h="8"><hspace w="16"><linedown>'
 
@@ -417,9 +418,7 @@ function dskt_handle(app, evt)
 	 end
 
 	 app.switcher =
-	    dskt_switcher_create(app,
-				 [[<font size="14"> Application Switcher]],
-				 dir)
+	    dskt_switcher_create(app,nil,dir)
       end
 
       return
@@ -519,7 +518,9 @@ function dskt_create()
    app.handle = dskt_handle
    app.update = dskt_update
    if not app.dl then
-      app.dl = dl_new_list(256, 1)
+      app.dl = dl_new_list(256, 1, nil, "desktop.dl")
+   else
+      dl_clear(app.dl)
    end
    app.z = 0
 

@@ -537,7 +537,7 @@ function menu_create(owner, name, def, box)
 
       -- Members
       style = style,
-      dl = dl_new_list(64,0,0),
+      dl = dl_new_list(64,0,0,"menu."..name..".dl"),
       z = 0, --gui_guess_z(owner,z),
       def	= def,
       sub_menu = {},

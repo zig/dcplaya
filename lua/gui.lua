@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.59 2003-03-17 22:24:17 zigziggy Exp $
+--- $Id: gui.lua,v 1.60 2003-03-18 01:08:48 ben Exp $
 ---
 
 --
@@ -173,9 +173,9 @@ function gui_child_autoplacement(app)
    local n = 0
    while i do
       if i.dl and i.dl ~= app.dl then
-	 -- Sub-applcation has its own a dl 
+	 -- Sub-application has its own a dl 
 	 if not i._dl then
-	    i._dl = dl_new_list(256, 1)
+	    i._dl = dl_new_list(256, 1, nil, i.name.."._dl")
 	    dl_sublist(i._dl, i.dl)
 	 end
 	 n = n + 1
@@ -209,8 +209,8 @@ function gui_child_autoplacement(app)
    -- From this point the application has at least one sub app to display
    if not app._dl1 then
 --       print("-> No _dl1, create it")
-      app._dl1 = dl_new_list(256, 0, 1)
-      app._dl2 = dl_new_list(256, 0, 1)
+      app._dl1 = dl_new_list(256, 0, 1, app.name.."._dl1")
+      app._dl2 = dl_new_list(256, 0, 1, app.name.."._dl2")
    else
 --       print("-> clear _dl1")
       dl_clear(app._dl1)
@@ -218,7 +218,7 @@ function gui_child_autoplacement(app)
 
    if not app._dl then
 --       print("-> No _dl, create it")
-      app._dl = dl_new_list(128, 1, 0)
+      app._dl = dl_new_list(128, 1, 0, app.name.."._dl")
    else
       dl_clear(app._dl)
 --       print("-> clear _dl")
@@ -677,22 +677,23 @@ function gui_new_dialog(owner, box, z, dlsize, text, mode, name)
    if not dlsize then
       dlsize = 10*1024
    end
+   name = name or "gui_dialog"
    dial = { 
 
-      name = name or "gui_dialog",
+      name = name,
       version = "0.9",
       
       handle = gui_dialog_handle,
       update = gui_dialog_update,
       
-      dl = dl_new_list(dlsize, 1),
+      dl = dl_new_list(dlsize, 1, nil, nil, name .. ".dl"),
       box = box,
       z = z,
       
-      focusup_dl = dl_new_list(256, 0),
-      focusdown_dl = dl_new_list(256, 0),
-      focusleft_dl = dl_new_list(256, 0),
-      focusright_dl = dl_new_list(256, 0),
+      focusup_dl = dl_new_list(256, 0, 0, name .. ".focusUP.dl"),
+      focusdown_dl = dl_new_list(256, 0, 0, name .. ".focusDW.dl"),
+      focusleft_dl = dl_new_list(256, 0, 0, name .. ".focusLT.dl"),
+      focusright_dl = dl_new_list(256, 0, 0, name .. ".focusRT.dl"),
       focus_box = box,
       focus_time = 0,  -- blinking time
 
@@ -958,7 +959,7 @@ function gui_new_input(owner, box, text, mode, string, z)
       event_table = { },
       flags = { },
       
-      input_dl = dl_new_list(1024, 1)
+      input_dl = dl_new_list(1024, 1, 0 , "input["..owner.name.."]")
       
    }
 
@@ -1011,7 +1012,7 @@ function gui_new_text(owner, box, text, mode, z)
       name = "gui_text",
       version = "1.0",
       handle = gui_minimal_handle,
-      dl = dl_new_list(1024),
+      dl = dl_new_list(1024,nil,nil,nil,"text["..owner.name.."]"),
       box = box,
       z = z,
       event_table = { },
@@ -1029,10 +1030,8 @@ function gui_new_children(owner, name, handle, box, mode, z)
    
    z = gui_guess_z(owner, z)
    
-   if not name then
-      if owner.name then name = "child_of_"..owner.name
-      else name = "gui_child" end
-   end
+   local oname = owner.name or "???"
+   name = name or "gui_child"
    
    if not handle then
       handle = gui_minimal_handle
@@ -1041,7 +1040,7 @@ function gui_new_children(owner, name, handle, box, mode, z)
    app = { 
       name = name,
       handle = handle,
-      dl = dl_new_list(1024),
+      dl = dl_new_list(1024, nil,nil,nil, name.."["..oname.."]"),
       box = box,
       z = z,
       event_table = { },

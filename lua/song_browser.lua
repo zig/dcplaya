@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.50 2003-03-17 15:39:37 ben Exp $
+--- $Id: song_browser.lua,v 1.51 2003-03-18 01:08:48 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song-browser
@@ -715,13 +715,13 @@ function song_browser_create(owner, name)
    end
 
    function sbfl_confirm_plugin(fl, sb, action, entry_path)
-      if not test("-f",entry_path) then return end
-      return driver_load(entry_path)
+--       if not test("-f",entry_path) then return end
+--       return driver_load(entry_path)
    end
 
    function sbfl_confirm_lua(fl, sb, action, entry_path)
-      if not test("-f",entry_path) then return end
-      return dofile(entry_path)
+--       if not test("-f",entry_path) then return end
+--       return dofile(entry_path)
    end
 
    -- ----------------------------------------------------------------------
@@ -821,12 +821,92 @@ function song_browser_create(owner, name)
 
    function sbfl_select_plugin(fl, sb, action, entry_path)
       if not test("-f",entry_path) then return end
-      return driver_load(entry_path)
+      local path,leaf = get_path_and_leaf(entry_path)
+      if not leaf then return end
+
+      local def = {
+	 root = ":"..leaf..":load plugin{load}",
+	 cb = {
+	    load = function (menu, idx)
+		      local root_menu = menu.root_menu
+		      local sb = root_menu.target
+		      local entry_path = root_menu.__entry_path
+		      local text,label,color
+		      if not entry_path then return end
+		      if not driver_load(entry_path) then
+			 label = "error"
+			 color = "#FF0000"
+			 text = '<left>Unable to load the driver file'
+		      else
+			 label = "success"
+			 color = "#00FF00"
+			 text = '<left>Successfully load driver file'
+		      end
+		      text = text ..
+			 '<p><vspace h="4"><center><font color=%q size="12">%s'
+		      gui_ask(format(text,color,entry_path), "<center>close",
+			      nil,
+			      format("Plugin load %s", label))
+		   end,
+	 },
+      }
+      song_browser_contextmenu(sb,"plugin-menu,", fl, def, entry_path)
    end
 
    function sbfl_select_lua(fl, sb, action, entry_path)
       if not test("-f",entry_path) then return end
-      return dofile(entry_path)
+      local path,leaf = get_path_and_leaf(entry_path)
+      if not leaf then return end
+      local def = {
+	 root = ":"..leaf..":execute{exe},load library{loadlib},edit{edit}",
+	 cb = {
+	    exe =
+	       function (menu, idx)
+		  local root_menu = menu.root_menu
+		  local sb = root_menu.target
+		  local entry_path = root_menu.__entry_path
+		  if not entry_path then return end
+		  dofile(entry_path)
+	       end,
+	    loadlib =
+	       function (menu, idx)
+		  local root_menu = menu.root_menu
+		  local sb = root_menu.target
+		  local entry_path = root_menu.__entry_path
+		  local text,label,color
+		  if not entry_path then return end
+		  local path,leaf = get_path_and_leaf(entry_path);
+		  if strsub(path,-4) ~= "/lua" then return end
+		  path = strsub(path,1,-4)
+		  local result = dolib(get_nude_name(leaf),1,path)
+		  if not result then
+		     label = "error"
+		     color = "#FF0000"
+		     text = '<left>Unable to load lua library'
+		  else
+		     printf("result:%d",result)
+		     label = "success"
+		     color = "#00FF00"
+		     text = '<left>Successfully load lua library'
+
+		  end
+		  text = text ..
+		     '<p><vspace h="4"><center><font color=%q size="12">%s'
+		  gui_ask(format(text,color,entry_path), "<center>close",
+			  nil,
+			  format("LUA lib load %s", label))
+	       end,
+	    edit =
+	       function (menu, idx)
+		  local root_menu = menu.root_menu
+		  local sb = root_menu.target
+		  local entry_path = root_menu.__entry_path
+		  if not entry_path then return end
+		  doshellcommand(format("zed(%q)",entry_path))
+	       end,
+	 },
+      }
+      song_browser_contextmenu(sb,"lua-menu,", fl, def, entry_path)
    end
 
    -- ----------------------------------------------------------------------
@@ -1176,6 +1256,9 @@ function song_browser_create(owner, name)
 	 music = sbfl_confirm_music,
 	 image = sbfl_confirm_image,
 	 playlist = sbfl_confirm_playlist,
+	 lua = sbfl_select_lua, -- select on purpose !
+	 plugin = sbfl_select_plugin, -- select on purpose !
+	 text = sbfl_confirm_text,
 	 default = sbfl_confirm_default,
       },
       select = {
@@ -1183,6 +1266,9 @@ function song_browser_create(owner, name)
 	 music = sbfl_select_music,
 	 image = sbfl_select_image,
 	 playlist = sbfl_select_playlist,
+	 lua = sbfl_select_lua,
+	 plugin = sbfl_select_plugin,
+	 text = sbfl_select_text,
 	 default = sbfl_select_default,
       },
       cancel = {
@@ -1275,7 +1361,7 @@ function song_browser_create(owner, name)
 --   sb.cdrom_check_timeout = 0
 
    -- filters
-   sb.el_filter = "DXIMPT"
+   sb.el_filter = "DXIMPTL"
 
    -- Menu
    sb.mainmenu_def = songbrowser_menucreator

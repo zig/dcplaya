@@ -4,7 +4,7 @@
 --- @author   benjamin gerard <ben@sashipa.com>
 --- @brief    Fundamental lua stuff.
 ---
---- $Id: init.lua,v 1.18 2003-03-11 15:07:58 zigziggy Exp $
+--- $Id: init.lua,v 1.19 2003-03-18 01:08:48 ben Exp $
 ---
 
 -- do this file only once !
@@ -220,8 +220,9 @@ if not init_lua then
    -- reimplement driver_load so that it calls update_all_driver_lists()
    -- automatically after
    function driver_load(...)
-      call(%driver_load, arg)
+      local r = call(%driver_load, arg)
       update_all_driver_lists()
+      return r
    end
    dl=driver_load
 

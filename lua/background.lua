@@ -88,7 +88,7 @@ function background_create()
       vtx = mat_new(4,12),
 
       -- Display list
-      dl = dl_new_list(256, 1, 1),
+      dl = dl_new_list(256, 1, 1, "bkg.dl"),
 
       -- Set color method
       set_color = background_set_colors,
@@ -107,7 +107,7 @@ end
 
 background = background_create()
 if background then
-   background_dl = dl_new_list(128,1)
+   background_dl = dl_new_list(128,1,nil,"background_dl")
    background:set_texture("/rd/dcpbkg2.jpg", "scale")
    --   background:set_texture(home.."data/img/dcpbkg2.jpg", "scale")
    --   background:set_texture("/pc/ptest.jpg","tile")

@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.41 2003-03-17 22:24:18 zigziggy Exp $
+--- $Id: textlist.lua,v 1.42 2003-03-18 01:08:48 ben Exp $
 ---
 
 -- DL hierarchy :
@@ -112,6 +112,7 @@ if not dolib("taggedtext") then return end
 --- 
 --- @param  flparm   Optionnal creation structure, with optionnal fields.
 ---                  Most fields are the same than fllist ones.
+--- @param  owner Owner application
 ---
 ---  Exceptions are:
 ---
@@ -122,7 +123,7 @@ if not dolib("taggedtext") then return end
 --- @return textlist object
 --- @retval nil error
 ---
-function textlist_create(flparm)
+function textlist_create(flparm, owner)
    if not flparm then flparm = {} end
 
    --- Change textlist position and size.
@@ -134,7 +135,6 @@ function textlist_create(flparm)
    --- @param  w   New width of textlist box or nil.
    --- @param  h   New height of textlist box or nil.
    --- @param  z   New depth of textlist box or nil.
-   --- @param  owner Owner application
    ---
    function textlist_set_box(fl,x,y,w,h,z)
       if not fl.box then fl.box = {} end
@@ -388,41 +388,45 @@ function textlist_create(flparm)
       -- Display lists :
 
       -- Main-list
-      fl.dl = fl.dl or dl_new_list(128);
+      fl.dl = fl.dl or dl_new_list(128,0,0,"fl.dl");
       dl_set_active(fl.dl,0)
       dl_clear(fl.dl)
 
       -- added by Vincent
-      if fl.owner and fl.owner.dl then
-	 dl_sublist(fl.owner.dl, fl.dl)
+      -- $$$ ben : yes ! but why ?
+      if not nil then
+
+	 if fl.owner and fl.owner.dl then
+	    dl_sublist(fl.owner.dl, fl.dl)
+	 end
+
       end
 
-
       -- background sub-list
-      fl.bdl = fl.bdl or dl_new_list(256,1,1)
+      fl.bdl = fl.bdl or dl_new_list(256,1,1,"fl.bdl")
       dl_clear(fl.bdl)
       dl_set_trans(fl.bdl, mat_scale(1,1,0.25))
 
       -- cursor and item sub-list
-      fl.ldl = fl.ldl or dl_new_list(64,1,1)
+      fl.ldl = fl.ldl or dl_new_list(64,1,1,"fl.ldl")
       dl_clear(fl.ldl)
       dl_set_trans(fl.ldl, mat_scale(1,1,0.5) *
 		   mat_trans(fl.border,fl.border,25))
 
       -- Item sub-list
-      fl.idl = fl.idl or dl_new_list(1024,1,1)
+      fl.idl = fl.idl or dl_new_list(1024,1,1,"fl.idl")
       dl_clear(fl.idl)
       dl_set_trans(fl.idl, mat_scale(1,1,0.5))
 
       -- Cursor sub-list
-      fl.cdl = fl.cdl or dl_new_list(512,1,1)
+      fl.cdl = fl.cdl or dl_new_list(512,1,1,"fl.cdl")
       dl_set_active(fl.cdl,0)
       dl_clear(fl.cdl)
       dl_set_trans(fl.cdl,
 		   mat_scale(1,1,0.5) * mat_trans(0,0,50))
 
       -- User layer sub-list
-      fl.udl = fl.udl or dl_new_list(64,1,0)
+      fl.udl = fl.udl or dl_new_list(64,1,0,"fl.udl")
       dl_set_active(fl.udl,0)
       dl_clear(fl.udl)
       dl_set_trans(fl.udl, mat_scale(1,1,0.25) * mat_trans(0,0,75))
