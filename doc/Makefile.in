@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.11 2003-03-18 14:53:26 ben Exp $
+# $Id: Makefile.in,v 1.12 2003-03-18 23:24:58 ben Exp $
 #
 
 VERSION = @VERSION@
@@ -14,8 +14,11 @@ ALL_HEADERS_PATH	:= $(sort . $(dir $(ALL_HEADERS)))
 HINFILES		:= $(wildcard *.hin)
 DEVDOCFILES		:= $(HINFILES:%.hin=%.h)
 
-LUADOCDIR    := lua_doc
-LUASRCDIR    := ..
+HTML_EXTRA	:= dcplaya_doc.css dcplaya_header.html dcplaya_footer.html 
+
+DOC_DIR 	:= doc
+LUADOCDIR	:= lua_doc
+LUASRCDIR	:= ..
 
 LUAALLFILES  :=\
  $(wildcard $(LUASRCDIR)/*.lua)\
@@ -36,6 +39,37 @@ vpath %.lua .. ../lua
 #
 DATE	:= $(shell date +"%B %Y")
 
+# style sheet configuration
+###################################################
+CSS	:=
+CSS	+= -D "background=\#c4bdac"
+#808080"
+CSS	+= -D "text=\#59564e"
+
+CSS	+= -D "font-family=arial, tahoma, verdana, sans-serif"
+CSS	+= -D "font-size=12pt"
+CSS	+= -D "font-weight=normal"
+
+CSS	+= -D "anchor-color=\#000000"
+#CSS	+= -D "anchor-color=\#e0e0e0"
+CSS	+= -D "hi-color=\#FFFFFF"
+
+CSS	+= -D "barcolor=\#a0937b"
+CSS	+= -D "barcolorlight=\#b7a88d"
+#e59900"
+CSS	+= -D "bartext=\#000000"
+CSS	+= -D "barborder=1px solid"
+CSS	+= -D "barbordercolor=\#000000"
+
+CSS	+= -D "code-text=\#59564e"
+CSS	+= -D "keyword=\#04708e"
+CSS	+= -D "keywordtype=\#035066"
+CSS	+= -D "keywordflow=\#704000"
+CSS	+= -D "comment=\#A05020"
+CSS	+= -D "preprocessor=\#404080"
+CSS	+= -D "stringliteral=\#307030"
+CSS	+= -D "charliteral=\#307030"
+
 # doxygene global configuration
 ###################################################
 
@@ -52,7 +86,7 @@ DOXALL  += -D dox-javadoc_autobrief=yes
 DOXALL  += -D distribute_group_doc=yes
 DOXALL  += -D optimize_output_for_c=yes
 DOXALL	+= -D dox-tab-size=12
-DOXALL	+= -D dox-destination=.
+DOXALL	+= -D dox-destination=$(DOC_DIR)
 DOXALL	+= -D dox-preprocessing=YES
 DOXALL	+= -D dox-macro_expansion=YES
 DOXALL	+= -D dox-sort-member-docs=NO
@@ -104,7 +138,7 @@ $(LUADOCDIR)/%.lua : %.lua Makefile
 
 luadoc: $(LUADOCFILES)
 
-devdoc: devdoc.dox $(DEVDOCFILES) luadoc dcplaya_header.html dcplaya_footer.html 
+devdoc: devdoc.dox $(DEVDOCFILES) luadoc $(HTML_EXTRA)
 	$(DOXYGEN) $<
 
 devdoc.dox: generic.doxin Makefile
@@ -112,17 +146,20 @@ devdoc.dox: generic.doxin Makefile
 	grep -E -v '^ *$$' |\
 	$(SHASUBST) $(DOXALL) $(DOXDEV) > $@
 
-%.html : %.htmlin
-	$(SHASUBST) $(DOXALL) $(DOXDEV) < $< > $@
+%.html : %.htmlin Makefile
+	$(SHASUBST) $(DOXALL) < $< > $@
 
-%.h : %.hin
+%.css : %.cssin Makefile
+	$(SHASUBST) $(CSS) < $< > $@
+
+%.h : %.hin Makefile
 	cat $< > $@
 
 clean_local:
-	@rm -f *.dox *.h *~
+	@rm -f *.dox *.h *~ *.html *.css *.lua
 
 clean: clean_local
-	@rm -rf html xml latex man `find . -type f -name '*.lua'`
+	@rm -rf $(DOC)/html $(DOC)/xml $(DOC)/latex $(DOC)/lsman $(LUADOCDIR)
 
 distclean: clean
 	@rm -f Makefile *~
@@ -130,5 +167,4 @@ distclean: clean
 dep depend depend-clean:
 
 required:
-	@mkdir -p "$(LUADOCDIR)"
-
+	mkdir -p "$(LUADOCDIR)" "$(DOC_DIR)"

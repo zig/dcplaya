@@ -1,0 +1,22 @@
+<hr><small>
+<table align="center" border=0 width="99%">
+<tr>
+<td>
+$projectname documentation version $dox-version$ 
+</td>
+<style>
+td.dcplaya_footer {
+	text-align: right;
+	text-decoration: italic;
+	font-size: 80%;
+}
+</style>
+<td class="dcplaya_footer">
+Generated on $datetime by
+<a href="http://www.doxygen.org/index.html">
+doxygen
+</a>
+$doxygenversion</small>
+</td></tr></table>
+</body>
+</html>

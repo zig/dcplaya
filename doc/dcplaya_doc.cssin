@@ -1,0 +1,187 @@
+BODY {
+	background:	$background$;
+	color:		$text$;
+	font-family:	$font-family$;
+	font-size:	$font-size$;
+	font-weight:	$font-weight$;
+}
+
+H1 {
+      width:		"95%";
+      background:	$barcolor$;
+      color:		$bartext$;
+      border:		$barborder$ $barbordercolor$;
+      padding:		2px;
+      text-align:	center;
+      font-size:	220%;
+      font-weight:	bolder;
+}
+
+
+H2 {
+      width:		"95%";
+      background:	$barcolor$;
+      color:		$bartext$;
+      border:		$barborder$ $barbordercolor$;
+      padding:		2px;
+      text-align:	left;
+      font-size:	150%;
+      font-weight:	bolder;
+}
+
+H3 {
+      width:		"95%";
+      background:	$barcolor$;
+      color:		$bartext$;
+      border:		$barborder$ $barbordercolor$;
+      padding:		2px;
+      text-align:	center;
+      text-size:	125%;
+}
+
+TABLE {
+      width:		"95%";
+      border-collapse:	collapse;
+      border:		none;
+}
+
+CAPTION {
+	font-weight: bolder
+}
+
+A {
+	text-decoration:	none;
+        color:			$bartext$;
+}
+
+A:visited A:link {
+	text-decoration:	none;
+        color:			$anchor-color$;
+}
+
+A:hover {
+	text-decoration:	underline;
+        color:			$hi-color$;
+}
+
+
+A.mail A.mailto {
+	text-decoration:	underline;
+        color:			$barcolor$;
+}
+
+A.qindex {
+	 background	: $barcolor$;
+	 color		: $bartext$;
+	 border		: $barborder$ $barbordercolor$;
+	 padding	: 2px;
+	 margin		: 1px 1px 1px 1px;
+}
+
+P {
+	border:		none;
+	margin-left:	32;
+	text-align:	justify;
+}
+
+//A.qindexRef {}
+A.el { font-weight: bold }
+A.elRef { font-weight: bold }
+//A.code { text-decoration: none; font-weight: normal; color: $anchor-color$ }
+//A.code : hover { text-decoration: underline; color: $hi-color$ }
+//A.codeRef { font-weight: normal; color: #4444ee }
+
+DL.el {
+      margin-left: -1cm
+}
+DIV.fragment {
+	     width		: 100%;
+	     border		: none;
+//	     background-color	: #eeeeee;
+}
+
+DIV.ah {
+//       background-color		: black;
+       font-weight		: bold;
+//       color			: #ffffff;
+       margin-bottom		: 3px;
+       margin-top		: 3px
+}
+
+TD.md {
+      background-color		: $barcolorlight$;
+      font-weight		: bold;
+      border			: none;
+//      border			: 1px solid #000000;
+}
+
+TD.mdname1 {
+//	   background-color	: #f2f2ff;
+	   font-weight		: bold;
+//	   color		: #602020;
+}
+
+TD.mdname {
+//	  background-color	: #f2f2ff;
+	  font-weight		: bold;
+//	  color			: #602020;
+//	  width			: 600px;
+}
+
+DIV.groupHeader {
+		margin-left	: 16px;
+		margin-top	: 12px;
+		margin-bottom	: 6px;
+		font-weight	: bolder
+}
+
+DIV.groupText {
+	      margin-left	: 16px;
+	      font-style	: italic;
+	      font-size		: smaller
+}
+
+TD.indexkey { 
+	    border		: 1px solid #000000;
+	    color		: $bartext$;
+	    background-color	: $barcolorlight$;
+	    font-weight: bolder; 
+	    padding-right  : 10px; 
+	    padding-top    : 2px; 
+	    padding-left   : 10px; 
+	    padding-bottom : 2px; 
+	    margin-left    : 0px; 
+	    margin-right   : 0px; 
+	    margin-top     : 2px; 
+	    margin-bottom  : 2px  
+}
+
+TD.indexvalue { 
+	    border		: 1px solid #000000;
+	    color		: $bartext$;
+	    background-color	: $barcolor$;
+	    font-style		: italic; 
+	    padding-right	: 10px; 
+	    padding-top		: 2px; 
+	    padding-left	: 10px; 
+	    padding-bottom	: 2px; 
+	    margin-left		: 0px; 
+	    margin-right	: 0px; 
+	    margin-top		: 2px; 
+	    margin-bottom	: 2px  
+}
+
+pre {
+	background-color	: $barcolorlight$; 
+	color			: $code-text$;
+	border			: 1px solid #000000;
+}
+
+span.keyword       { font-weight: bolder; color: $keyword$ }
+span.keywordtype   { font-weight: bolder; color: $keywordtype$ }
+span.keywordflow   { font-weight: bolder; color: $keywordflow$ }
+span.comment       { text-decoration:italic; color: $comment$ }
+span.preprocessor  { color: $preprocessor$ }
+span.stringliteral { color: $stringliteral$ }
+span.charliteral   { color: $charliteral$ }
+
