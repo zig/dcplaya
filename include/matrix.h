@@ -63,6 +63,9 @@ void MtxRotateZ(matrix_t m, const float a);
 
 /* Set a matrix that look at a given position (no rolling). */
 void MtxLookAt(matrix_t row, const float x, const float y, const float z);
+void MtxLookAt2(matrix_t row,
+		const float eyes_x, const float eyes_y, const float eyes_z,
+		const float x, const float y, const float z);
 
 void MtxProjection(matrix_t row, const float openAngle, const float fov,
                    const float aspectRatio, const float zFar);

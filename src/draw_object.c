@@ -1,5 +1,5 @@
 /**
- * $Id: draw_object.c,v 1.10 2003-01-17 13:23:28 ben Exp $
+ * $Id: draw_object.c,v 1.11 2003-01-18 14:23:48 ben Exp $
  */
 
 #include <stdio.h>
@@ -191,8 +191,7 @@ int DrawObjectPostProcess(viewport_t * vp, matrix_t local, matrix_t proj,
     return -1;
   }
 
-  MtxCopy(mtx, local);
-  MtxMult(mtx, proj);
+  MtxMult3(mtx, local, proj);
 
   TransformVtx(transform, o, vp, mtx);
   TestVisibleFace(o);

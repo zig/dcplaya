@@ -1,6 +1,13 @@
-/* 2002/02/12 */
+/**
+ * @ingroup dcplaya_devel
+ * @file    matrix.c
+ * @author  ben(jamin) gerard <ben@sashipa.com>
+ * @date    2002/02/12
+ * @brief   4x4 matrix support.
+ */
 
 #include <dc/fmath.h>
+#include <math.h>
 #include "matrix.h"
 
 #define Cos fcos
@@ -161,7 +168,8 @@ static int IsNearZero(const float v)
   return (v > -e && v < e);
 }
 
-void MtxLookAt(matrix_t row, const float x, const float y, const float z)
+
+static void LookAt(matrix_t row, const float x, const float y, const float z)
 {
   if(IsNearZero(x) && IsNearZero(y) && IsNearZero(z)) {
     MtxIdentity(row);
@@ -170,40 +178,76 @@ void MtxLookAt(matrix_t row, const float x, const float y, const float z)
     const float x2 = x*x;
     const float y2 = y*y;
     const float z2 = z*z;
-    const float nxz = fsqrt(x2+z2);
-    const float oonxz = 1.0f / nxz;
-    const float oonxyz= frsqrt(x2+y2+z2);
+    const float nxz = sqrtf(x2+z2);
+    const float oonxz = Inv(nxz);
+    const float oonxyz = Inv(sqrtf(x2+y2+z2));
+
+    /* $$$ ben : buggy ! Back to old school calculation ! */
+    /*     const float nxz = fsqrt(x2+z2); */
+    /*     const float oonxz = 1.0f / nxz; */
+    /*     const float oonxyz= frsqrt(x2+y2+z2); */
+
     {
       const float tmp = oonxz*oonxyz;
       row[0][1] = -y*x*tmp;
       row[1][1] = nxz*oonxyz;
       row[2][1] = -y*z*tmp;
-      row[3][1] = 0;
     }
-    
-    row[0][2] = x * oonxyz;
-    row[1][2] = y * oonxyz;
-    row[2][2] = z * oonxyz;
-    row[3][2] = 0;
-    
+                
+                
     {
-      float tmp = (nxz + y2*oonxz) * oonxyz;
-      row[0][0] =  row[2][2] * tmp;
-      row[2][0] = -row[0][2] * tmp;
-      row[1][0] =
-	row[3][0] = 0;
-    }
+      const float tmp02 = x * oonxyz;
+      const float tmp22 = z * oonxyz;
+      row[0][2] = tmp02;
+      row[1][2] = y * oonxyz;
+      row[2][2] = tmp22;
     
-    row[0][3] =
-      row[1][3] =
-      row[2][3] = 0;
-    row[3][3] = 1;
+      {
+	float tmp = (nxz + y2*oonxz) * oonxyz;
+	row[0][0] =  tmp22 * tmp;
+	row[2][0] = -tmp02 * tmp;
+	row[1][0] = 0;
+	  }
+    }
   }
+  row[0][3] = row[1][3] = row[2][3] = 0;
+  row[3][3] = 1;
+}
+
+void MtxLookAt(matrix_t row, const float x, const float y, const float z)
+{
+  LookAt(row,x,y,z);
+  row[3][0] = row[3][1] = row[3][2] = 0;
+}
+
+void MtxLookAt2(matrix_t row,
+		const float eyes_x, const float eyes_y, const float eyes_z,
+		const float x, const float y, const float z)
+{
+
+/*                 00     01     02      0 */
+/*                  0     11     12      0 */
+/*                 20     21     22      0 */
+/*                  0      0      0      1 */
+/* ---------------------------------------- */
+/* 1     0   0  0| 00     01     02      0 */
+/* 0     1   0  0|  0     11     12      0 */
+/* 0     0   1  0| 20     21     22      0 */
+/* X     Y   Z  1| X.00   X.01   X.02    */
+/* 		Z.20   Y.11   Y.12 */
+/* 		       Z.21   Z.22 */
+
+  LookAt(row, x-eyes_x, y-eyes_y, z-eyes_z);
+
+  row[3][0] = row[0][0] * -eyes_x                       + row[2][0] * -eyes_z;
+  row[3][1] = row[0][1] * -eyes_x + row[1][1] * -eyes_y + row[2][1] * -eyes_z;
+  row[3][2] = row[0][2] * -eyes_x + row[1][2] * -eyes_y + row[2][2] * -eyes_z;
 }
 
 
+
 static void SetProjection(matrix_t row, const float w, const float h,
-						  const float q, const float zNear)
+			  const float q, const float zNear)
 {
   row[0][0] = w;
   row[1][1] = h;
