@@ -29,11 +29,29 @@
 #   --- };
 #
 
+function indent
+{
+	openstruct=`expr ${openstruct} + 2`
+	istr="`expr substr '                       ' 1 ${openstruct}`"
+}
+
+function unindent
+{
+	[ ${openstruct} -ge 2 ] && openstruct=`expr ${openstruct} - 2`
+	istr="`expr substr '                       ' 1 ${openstruct}`"
+}
+
 function linetype
 {
 	case "$1" in
 		---*)
-			if test "$2" = "struct"; then return 2; fi
+			case "$2" in
+				struct|class)
+					return 2
+					;;
+				'}'*';')
+					return -2
+			esac
 			return 1
 		;;
 		function)
@@ -46,40 +64,48 @@ function linetype
 function struct
 {
 	shift
-	case "$1" in
-		"struct"|"};"*)
-			echo "$*"
-			;;
-		"")
-			;;
-		'*'*)
-			echo -n "   $1"
-			shift
-			case "$1" in
-				-*)
-					echo -n "$1" | tr '-' ' '
-					echo -n "  -"
-					shift
-					;;
-			esac
-			echo "  $*"
-			;;
-		*)
-			echo "  $*"
-			;;
-   esac
+	echo "${istr}$*"
 }
 
 function func
 {
 	shift
-	echo "$@;"
+	echo "${istr}$*;"
+}
+
+function strcomment
+{
+	echo -e "${cb}\n" | sed "s#---##"
+}
+
+function comment
+{
+	if [ ! -z "${cb}" ]; then
+		if [ $1 -ne 0 -a ${openstruct} -ne 0 ]; then
+			echo -e "${cb}\n" | sed "s#[ /]\*[ *]##"
+		else
+			echo -e "${cb}\n${istr} */"
+#			echo -e "${cb}" | sed "s#---#///#"
+		fi
+		cb=""
+	fi
+}
+
+function addcomment
+{
+	shift
+	if [ -z "${cb}" ]; then
+		cb="\n${istr}/** ${*}"
+	else
+		cb="${cb}\n${istr} *  ${*}"
+	fi
 }
 
 function transform
 {
 	local s w
 	local l e type prevtype
+
 	prevtype=0
 	read -a l
 	while [ $? -eq 0 ]; do
@@ -87,22 +113,28 @@ function transform
 		type=$?
 		case ${type} in
 			1) # COMMENTS
-				if [ ${prevtype} -ne 2 ]; then
-					echo "${l[*]}" | sed "s#---#///#"
-				else
-					struct "${l[@]}"
-					type=2
-				fi
+				addcomment "${l[@]}"
 				;;
-			2) # STRUTURES
+			2) # STRUCTURES
+				comment 0
+				struct "${l[@]}"
+				indent
+				;;
+			-2) # END OF STRUCTURES
+				comment 1
+				unindent
 				struct "${l[@]}"
 				;;
 			3) # FUNCTIONS
-				[ ${prevtype} -eq 1 ] && func "${l[@]}" || type=0
+				if [ ! -z "${cb}" ]; then
+					comment 0
+					func "${l[@]}"
+				else
+					type=0
+				fi
 				;;
-			0) # BLANK-LINE
-				[ ${prevtype} -ne 0 ] && echo
-				;;
+			0) # BLANK
+				comment 1
 		esac
 		prevtype=${type}
 		read -a l
@@ -110,6 +142,9 @@ function transform
 	return 0
 }
 
+cb=""
+istr=""
+openstruct=0
 comment='^[[:space:]]*---.*$'
 empty='^[[:space:][:cntrl:]]*$'
 function='^[[:space:]]*function[[:space:]]*\w*(.*).*$'

@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.5 2002-10-26 11:42:10 benjihan Exp $
+# $Id: Makefile.in,v 1.6 2002-10-30 20:01:19 benjihan Exp $
 #
 
 VERSION = @VERSION@
@@ -36,7 +36,7 @@ DOXALL	+= -D dox-version=$(VERSION)
 DOXALL	+= -D dox-project="dcplaya"
 DOXALL	+= -D dox-file-patterns='*.h *.lua'
 DOXALL	+= -D dox-quiet=NO
-DOXALL	+= -D dox-warnings=NO
+DOXALL	+= -D dox-warnings=YES
 DOXALL	+= -D dox-extract-all=NO
 DOXALL	+= -D dox-private=NO
 DOXALL	+= -D dox-source-browser=NO
@@ -83,6 +83,7 @@ $(LUADOCDIR)/doc.lua : luadoc.h
 
 $(LUADOCDIR)/%.lua : $(LUASRCDIR)/%.lua Makefile
 	$(LUA2DOX) < $< > $@
+	[ -s $@ ] || echo "/// @file $(@F)" > $@
 
 luadoc: $(LUADOCFILES)
 

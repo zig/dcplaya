@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist_loader.c,v 1.2 2002-10-25 01:03:54 benjihan Exp $
+ * $Id: entrylist_loader.c,v 1.3 2002-10-30 20:01:20 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -138,7 +138,7 @@ static void loader_thread(void *cookie)
 		fu_read_dir_cb(loader_el->path, loader_addentry, loader_el);
 	  }
 	  /* Finish loading. */
-	  loader_el->loading = 0; /* $$$ Atomik op */
+	  loader_el->loading = 2; /* $$$ Atomik op */
 	  loader_path = 0;
 	  loader_save_path = 0;
 	  loader_el = 0;
@@ -160,7 +160,7 @@ static void loader_thread(void *cookie)
 		printf("entrylist_loader_thread : entry-list path alloc error\n");
 		loader_el->path = loader_save_path;
 		loader_save_path = 0;
-		loader_el->loading = 0;
+		loader_el->loading = -1;
 		entrylist_unlock(loader_el);
 		loader_el = 0;
 		loader_status = LOADER_READY;

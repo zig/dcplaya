@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.29 2002-10-21 14:57:00 benjihan Exp $
+ * @version   $Id: dreamcast68.c,v 1.30 2002-10-30 20:01:20 benjihan Exp $
  */
 
 //#define RELEASE
@@ -514,10 +514,12 @@ static int no_mt_init(void)
   }
 
   /* Init song menu */
+#if 0
   if (songmenu_init() < 0) {
     err = __LINE__;
     goto error;
   }
+#endif
   
   /* Init info */
   if (info_setup() < 0) {
@@ -613,10 +615,12 @@ void main_thread(void *cookie)
 
   //  vid_border_color(0,0,0);
 
+#if 0
   if (songmenu_start() < 0) {
     err = __LINE__;
     goto error;
   }
+#endif
 
   /* Load default disk from ROM */
   /*  if (dreamcast68_loaddisk("/rd/test.mp3", 1) < 0) {
@@ -741,7 +745,9 @@ void main_thread(void *cookie)
     render_visual_translucent();
 
     info_render(elapsed_frames, is_playing);
+#if 0
     songmenu_render(elapsed_frames);
+#endif
     option_render(elapsed_frames);
     //    my_vid_border_color(255,0,255);
 
@@ -783,7 +789,9 @@ void main_thread(void *cookie)
   SDDEBUG("SPU disabled\n");
 
   /* Stop songmenu */
+#if 0
   songmenu_kill();
+#endif
   err = 0;
 
   /* Stop controller thread */

@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist.c,v 1.4 2002-10-28 18:53:40 benjihan Exp $
+ * $Id: entrylist.c,v 1.5 2002-10-30 20:01:19 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -158,7 +158,12 @@ EL_FUNCTION_START(gettable)
 	} else if (!strcmp(field, "path")) {
 	  lua_pushstring(L, el->path);
 	} else if (!strcmp(field, "loading")) {
-	  if (el->loading) lua_pushnumber(L, el->loading);
+	  int loading = el->loading;
+	  /* Reading loading stat reset it if loading was finish */
+	  if (loading != 1) {
+		el->loading = 0;
+	  }
+	  if (loading) lua_pushnumber(L, loading);
 	}
 
   }
@@ -292,11 +297,6 @@ EL_FUNCTION_START(gc)
   }
   
   entrylist_destroy(el);
-  if (lists) {
-	allocator_free(lists, el);
-  } else {
-	printf("%s : destroying an entrylist after shutdown !\n", __FUNCTION__);
-  }
   return 0;
 }
 EL_FUNCTION_END()

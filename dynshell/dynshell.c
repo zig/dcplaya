@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.36 2002-10-10 06:08:40 benjihan Exp $
+ * @version    $Id: dynshell.c,v 1.37 2002-10-30 20:01:19 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -342,13 +342,15 @@ static int push_dir_as_2_tables(lua_State * L, fu_dirent_t * dir, int count,
 
   for (k=0; k<2; ++k) {
     lua_newtable(L);
-    for (j=1, i=0; i<count; ++i) {
+    for (j=0, i=0; i<count; ++i) {
       if ( !(k ^ (dir[i].size==-1)) ) continue;
-      ++j;
-      lua_pushnumber(L, j);
+      lua_pushnumber(L, ++j);
       lua_pushstring(L, dir[i].name);
       lua_rawset(L, k+1);
     }
+	lua_pushstring(L, "n");
+	lua_pushnumber(L, j);
+	lua_settable(L, k+1);
   }
   return lua_gettop(L);
 }
@@ -370,6 +372,8 @@ static int push_dir_as_struct(lua_State * L, fu_dirent_t * dir, int count,
 
   lua_newtable(L);
   table = lua_gettop(L);
+
+
   for (i=0; i<count; ++i) {
     int entry;
 
@@ -386,6 +390,9 @@ static int push_dir_as_struct(lua_State * L, fu_dirent_t * dir, int count,
       
     lua_rawset(L, table);
   }
+  lua_pushstring(L, "n");
+  lua_pushnumber(L, i);
+  lua_settable(L, table);
   return lua_gettop(L);
 }
 
