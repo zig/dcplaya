@@ -490,7 +490,7 @@ function menu_create(owner, name, def, box, x1, y1)
       -- Members
       style = style,
       dl = dl_new_list(),
-      z = gui_guess_z(owner,z),
+      z = 0, --gui_guess_z(owner,z),
       def	= def,
       sub_menu = {},
 --      fade = 0,

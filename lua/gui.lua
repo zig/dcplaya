@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.44 2003-03-03 11:32:32 ben Exp $
+--- $Id: gui.lua,v 1.45 2003-03-04 17:27:54 zigziggy Exp $
 ---
 
 --
@@ -23,6 +23,26 @@
 -- "modal"    : the item (usually a dialog box) eats all events except shutdown
 --              (can be dangerous !)
 -- "inactive" : the item cannot be focused
+--
+--
+-- Event translation : (new note as of 04/03/2003)
+-- -------------------
+-- 
+-- The dialog box handle function take care of translating a few events :
+--
+-- * Button A is translated to event gui_evt_confirm
+-- 
+-- * Button X is translated to event gui_evt_select
+--
+-- * Button B is translated to event gui_evt_cancel
+--
+-- These translated events are send ONLY to the focused widget into the dialog.
+-- So if you want a to react only when you are focused, check for these
+-- translated events, if you want to react in any cases, then check for
+-- the untranslated events. (Because untranslated events are STILL sent
+-- to all child of the dialog with usual convention (first to focused child,
+-- then to the dialog itsef, and at last to other children)
+--
 
 
 -- IDEAS :
@@ -306,7 +326,6 @@ function gui_dialog_handle(app, evt)
    end
    
    --	print("dialog key:"..key)
-   local f = app.event_table[key]
    if f then
       return f(app, evt)
    end
@@ -341,18 +360,21 @@ function gui_dialog_handle(app, evt)
       end
 
       if gui_keyconfirm[key] then
-	 evt_send(focused, { key = gui_press_event })
-	 return
+	 if not evt_send(focused, { key = gui_press_event }) then
+	    return
+	 end
       end
 
       if gui_keycancel[key] then
-	 evt_send(focused, { key = gui_cancel_event })
-	 return
+	 if not evt_send(focused, { key = gui_cancel_event }) then
+	    return
+	 end
       end
 
       if gui_keyselect[key] then
-	 evt_send(focused, { key = gui_select_event })
-	 return
+	 if not evt_send(focused, { key = gui_select_event }) then
+	    return
+	 end
       end
 
 

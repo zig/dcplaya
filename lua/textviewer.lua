@@ -3,7 +3,7 @@
 --- @date   2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  hyper text viwer gui
---- $Id: textviewer.lua,v 1.6 2003-03-04 15:26:38 zigziggy Exp $
+--- $Id: textviewer.lua,v 1.7 2003-03-04 17:27:55 zigziggy Exp $
 ---
 
 if not dolib("taggedtext") then return end
@@ -343,30 +343,33 @@ function gui_text_viewer(owner, texts, box, label, mode)
 	 gui_new_focus(app.owner, app.owner.button)
       end
 
-   dial.viewer.event_table[gui_select_event] = 
-      function(app, evt)
-	 local dial = app.owner
-	 if not dial then return end
-	 local name = (dial.name or "textviewer") .. "-menu"
-	 local def = menu_create_defs(gui_text_viewer_menucreator, dial)
-	 dial.menu = gui_menu(dial, name, def)
-	 if tag(dial.menu) == menu_tag then
-	    dial.menu.target = dial
-	 end
-      end
+--   dial.viewer.event_table[gui_select_event] = 
+--      function(app, evt)
+--	 local dial = app.owner
+--	 if not dial then return end
+--	 local name = (dial.name or "textviewer") .. "-menu"
+--	 local def = menu_create_defs(gui_text_viewer_menucreator, dial)
+--	 dial.menu = gui_menu(dial, name, def)
+--	 if tag(dial.menu) == menu_tag then
+--	    dial.menu.target = dial
+--	 end
+--      end
 
-   dial.event_table[gui_select_event] = 
-      function(app, evt)
-	 local dial = app
-	 app = app.viewer
-	 if not dial then return end
-	 local name = (dial.name or "textviewer") .. "-menu"
-	 local def = menu_create_defs(gui_text_viewer_menucreator, dial)
-	 dial.menu = gui_menu(dial, name, def)
-	 if tag(dial.menu) == menu_tag then
-	    dial.menu.target = dial
+   for j, _ in gui_keyselect do
+      dial.event_table[j] = 
+	 function(app, evt)
+	    print("TOTO")
+	    local dial = app
+	    app = app.viewer
+	    if not dial then return end
+	    local name = (dial.name or "textviewer") .. "-menu"
+	    local def = menu_create_defs(gui_text_viewer_menucreator, dial)
+	    dial.menu = gui_menu(dial, name, def)
+	    if tag(dial.menu) == menu_tag then
+	       dial.menu.target = dial
+	    end
 	 end
-      end
+   end
 
    function gui_text_viewer_menucreator(target)
       local dial = target;
@@ -494,6 +497,9 @@ function gui_text_viewer(owner, texts, box, label, mode)
       return tt.guis.dialog.answer
       
    end
+
+   -- make sure the button is focused
+   gui_new_focus(dial, dial.button)
 
    return dial
 end

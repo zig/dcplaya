@@ -4,7 +4,7 @@
 --- @date   2002/10/04
 --- @brief  fileselector gui
 ---
---- $Id: fileselector.lua,v 1.21 2003-01-07 19:40:40 ben Exp $
+--- $Id: fileselector.lua,v 1.22 2003-03-04 17:27:54 zigziggy Exp $
 --
 -- TODO : select item with space 
 --        completion with tab        
@@ -332,6 +332,9 @@ function fileselector(name,path,filename,owner)
    
    name  = name or "File Selector"
    path  = path or PWD
+   -- VP added this to forbid fileselector to be hidden behind other dialogs
+   -- now the fileselector is always an application at desktop level
+   owner = nil
    owner = owner or evt_desktop_app
 
    dial = gui_new_dialog(owner,
