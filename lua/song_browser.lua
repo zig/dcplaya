@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.71 2003-04-06 18:03:34 ben Exp $
+--- $Id: song_browser.lua,v 1.72 2003-07-31 12:06:24 benjihan Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song Browser
@@ -1775,19 +1775,19 @@ function song_browser_create_dcpsprite(sb)
 -- 			   x1/512, y1/128, (x1+w)/512, (y1+h)/128,
 -- 			   sb.sprites.texid)
 
-   x1,y1,w,h = 1,71,107,55
-   sb.sprites.jess = sprite(nil,
-			    0,0,--w/2, h/2,
-			    w, h,
-			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
-			    sb.sprites.texid)
+--    x1,y1,w,h = 1,71,107,55
+--    sb.sprites.jess = sprite(nil,
+-- 			    0,0,--w/2, h/2,
+-- 			    w, h,
+-- 			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
+-- 			    sb.sprites.texid)
 
-   x1,y1,w,h = 454,0,58,81
-   sb.sprites.proz = sprite(nil,
-			    0,0,--w/2, h/2,
-			    w, h,
-			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
-			    sb.sprites.texid)
+--    x1,y1,w,h = 454,0,58,81
+--    sb.sprites.proz = sprite(nil,
+-- 			    0,0,--w/2, h/2,
+-- 			    w, h,
+-- 			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
+-- 			    sb.sprites.texid)
 
    --    x1,y1,w,h = 109,65,104,63
    --    sb.sprites.vmu = sprite(nil,
@@ -1802,9 +1802,9 @@ function song_browser_create_dcpsprite(sb)
    end
 
    sb.fl.title_sprite = sb.sprites.file
-   sb.fl.icon_sprite = sb.sprites.jess
+--   sb.fl.icon_sprite = sb.sprites.jess
    sb.pl.title_sprite = sb.sprites.list
-   sb.pl.icon_sprite = sb.sprites.proz
+--    sb.pl.icon_sprite = sb.sprites.proz
 
 end
 

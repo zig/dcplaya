@@ -165,7 +165,7 @@ if background then
    if tag (background_dl) ~= dl_tag then
       background_dl = dl_new_list(128,nil,nil,"background_dl")
    end
-   background:set_texture("/rd/dcpbkg2.jpg", "scale")
+   background:set_texture("/rd/dcpbkg3.jpg", "scale")
    dl_set_trans(background.dl, mat_scale(640,480,1))
    dl_set_trans(background_dl, mat_trans(0,0,0.0001))
    background:draw(background_dl)
