@@ -4,6 +4,7 @@ print ("Welcome to DCplaya !\n")
 
 print ("Home is set to '", home, "'\n")
 
+
 -- print available commands
 help()
 print("")

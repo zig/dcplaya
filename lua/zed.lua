@@ -3,7 +3,7 @@
 --
 -- (C) 2002 Vincent Penne (aka Ziggy Stardust)
 --
--- $Id: zed.lua,v 1.2 2002-09-16 05:25:08 zig Exp $
+-- $Id: zed.lua,v 1.3 2002-09-16 07:06:19 zig Exp $
 --
 
 rp ("Initializing ZED ... ")
@@ -158,7 +158,8 @@ function zed_readfile(filename, buffer)
 
 	local handle = readfrom(filename)
 	if not handle then
-		print ("Could not open file '", filename, "' for reading ...")
+		print ("Could not open file '"..filename.."' for reading ...")
+		zed_message="*** Could not read file"
 		return nil
 	end
 
@@ -182,15 +183,17 @@ function zed_writefile(filename, buffer)
 
 	local handle = writeto(filename)
 	if not handle then
-		print ("Could not open file '", filename, "' for writing ...")
+		print ("Could not open file '"..filename.."' for writing ...")
+		zed_message="*** Could not write to file"
 		return nil
 	end
 
 	print ("Writing file '", filename, "' ...")
 
-	local i
+	local i=1
 	while buffer[i] do
-		write(buffer[i])
+		write(buffer[i].."\n")
+		i = i+1
 	end
 
 	closefile(handle)
@@ -296,11 +299,20 @@ function zed(filename)
 		end
 
 		-- info line
-		zed_pline(zed_h-1, format("ZED - %s - line %2d    col %2d (%d %d)", file, line, col, scroll, scrollx))
+		if zed_message then
+			zed_pline(zed_h-1, zed_message)
+			zed_message = nil
+		else
+			zed_pline(zed_h-1, format("ZED - %s - line %2d    col %2d (%d %d)", file, line, col, scroll, scrollx))
+		end
 
 		-- place cursor
 		zed_gotoxy(col-scrollx, line-scroll)
 	
+
+		---------------------
+		-- handle user event
+		---------------------
 
 		-- get next key event
 		local key
@@ -334,6 +346,27 @@ function zed(filename)
 			-- force screen refresh
 			oldscroll = -1
 
+		elseif key == KBD_KEY_F3 then
+
+			zed_pline(zed_h-2, "Name of file to read :")
+			local answer = zed_input(filename, zed_h-1)
+
+			if answer then
+				buffer = {}
+				zed_readfile(answer, buffer)
+				filename = answer
+				dir, file = zed_pathsplit(filename)
+
+				-- place cursor position
+				line = 1
+				col = 1
+				scroll = 1
+				scrollx = 1
+			end
+
+			-- force screen refresh
+			oldscroll = -1
+
 		elseif key == KBD_ENTER then
 
 			tinsert(buffer, line+1, strsub(buffer[line], col))
@@ -361,6 +394,8 @@ function zed(filename)
 			scroll = min(getn(buffer), scroll+(zed_h-1))
 
 		else
+
+			-- line level editing
 
 			-- make sure current line exists
 			if not buffer[line] then
@@ -405,6 +440,16 @@ function zed(filename)
 	print("ZED is done")
 
 end
+
+addhelp(zed, [[print[[zed(filename) : This is ZED (Ziggy's Editor).
+
+Usage is pretty standard. 
+
+F10 : Quit
+F2  : Save file
+F3  : Load new file
+
+]]]])
 
 print ("ZED ready !")
 

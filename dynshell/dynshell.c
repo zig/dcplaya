@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.10 2002-09-16 05:25:08 zig Exp $
+ * @version    $Id: dynshell.c,v 1.11 2002-09-16 07:06:19 zig Exp $
  */
 
 #include <stdio.h>
@@ -132,7 +132,8 @@ static int r_path_load(lua_State * L, char *path, unsigned int level, const char
 
     if (type == FILETYPE_DIR) {
       strcpy(dirs[ndirs++], de->name);
-      continue;
+      if (!ext)
+	continue;
     }
 
     if (ext) {
@@ -202,7 +203,7 @@ static int lua_path_load(lua_State * L)
   ext[0] = 0;
   use_ext = 0;
 
-  // get possibly next parameters and guess there meaning
+  // get possibly next parameters and guess their meaning
   for (i=2; i<=nparam; i++) {
     if (lua_isstring(L, i)) { // this is probably the extension parameter
       strcpy(ext, lua_tostring(L, i)/*, sizeof(ext)*/);

@@ -8,9 +8,20 @@ static const int verbose = 0;
 FILE *fopen(const char *name, const char *attr)
 {
   file_t fd;
+  int mode = 0;
   
   if (verbose) dbglog(DBG_DEBUG, ">> " __FUNCTION__ "('%s','%s')\n", name, attr);
-  fd = fs_open(name, O_RDONLY);
+
+  // why isn't it a bitfield ??
+  // makes things more complicated here ...
+  if (strchr(attr, 'w')) {
+    mode |= O_WRONLY;
+    if (strchr(attr, 'r'))
+      mode = O_RDWR;
+  } else if (strchr(attr, 'r'))
+    mode |= O_RDONLY;
+
+  fd = fs_open(name, mode);
   if (verbose) dbglog(DBG_DEBUG, "<< " __FUNCTION__ " [fd=%p]\n", fd);
   return (FILE *) fd;
 }
