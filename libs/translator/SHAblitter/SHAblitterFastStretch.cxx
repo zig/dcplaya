@@ -4,7 +4,7 @@
  * @brief     Soft blitter fast stretching implementation.
  * @date      2001/08/01
  * @author    BeN(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAblitterFastStretch.cxx,v 1.2 2002-12-16 23:39:36 ben Exp $
+ * @version   $Id: SHAblitterFastStretch.cxx,v 1.3 2003-01-31 14:48:30 ben Exp $
  */
 
 #include "SHAblitter/SHAblitter.h"
@@ -16,7 +16,9 @@
 #define SHABLITTER_STRETCH_FIX 16
 
 // nDst <= nSrc
-template <class T> void SHAblitterFastStretchLine(T * dst, T * src, int nDst, int srcOverDst)
+
+template <class T> void SHAblitterFastStretchLine(T * dst, const T * src,
+						  int nDst, int srcOverDst)
 {
   if (nDst) {
     int i = 0;
@@ -40,22 +42,33 @@ template <class T> void SHAblitterFastStretchLine(T * dst, T * src, int nDst, in
     }
     if (rem&1) {
       *dst++ = src[i >> SHABLITTER_STRETCH_FIX];
-      i += srcOverDst;
+      //      i += srcOverDst;
     }
   }
 }
 
-template void SHAblitterFastStretchLine (SHAuint8  * dst, SHAuint8  * src, int nDst, int srcOverDst);
-template void SHAblitterFastStretchLine (SHAuint16 * dst, SHAuint16 * src, int nDst, int srcOverDst);
-template void SHAblitterFastStretchLine (SHAuint32 * dst, SHAuint32 * src, int nDst, int srcOverDst);
-template void SHAblitterFastStretchLine (SHAuint64 * dst, SHAuint64 * src, int nDst, int srcOverDst);
+template static
+void SHAblitterFastStretchLine (SHAuint8  * dst, const SHAuint8  * src,
+				int nDst, int srcOverDst);
+template static
+void SHAblitterFastStretchLine (SHAuint16 * dst, const SHAuint16 * src,
+				int nDst, int srcOverDst);
+template static
+void SHAblitterFastStretchLine (SHAuint32 * dst, const SHAuint32 * src,
+				int nDst, int srcOverDst);
+template static
+void SHAblitterFastStretchLine (SHAuint64 * dst, const SHAuint64 * src,
+				int nDst, int srcOverDst);
 
 static inline void * Inc (const void *v, int nBytes)
 {
   return (void *) ((const char *)v + nBytes);
 }
 
-template <class T> void SHAblitterFastStretch(T * dst, T * src, int dstAdd, int srcAdd, int dstW, int dstH, int srcW, int srcH)
+template <class T> void SHAblitterFastStretch(T * dst, const T * src,
+					      int dstAdd, int srcAdd,
+					      int dstW, int dstH,
+					      int srcW, int srcH)
 {
   if (!(dstH | dstW)) {
     // Some destination pixel : nothing to do
@@ -69,7 +82,8 @@ template <class T> void SHAblitterFastStretch(T * dst, T * src, int dstAdd, int 
 
   if (dstH == srcH) {
     // Fast case : no vertical stretching
-// 	SDDEBUG("Fast case : no vertical stretching\n");
+    SDDEBUG("Fast case [%d]: no vertical stretching src:[%d %d] dst[%d %d]\n",
+	    sizeof(T), srcW,srcAdd,dstW,dstAdd);
     do {
       SHAblitterFastStretchLine (dst, src, dstW, srcOverDst);
       dst = (T *)Inc(dst, dstAdd);
@@ -77,22 +91,19 @@ template <class T> void SHAblitterFastStretch(T * dst, T * src, int dstAdd, int 
     } while (--dstH);
   } else {
     // Vertical streching : see if it is reducing or enlarging.
-// 	SDDEBUG("Vertical streching : see if it is reducing or enlarging.\n");
+    SDDEBUG("Fast case [%d]: vertical stretching src:[%d %d] dst[%d %d]\n",
+	    sizeof(T), srcW,srcAdd,dstW,dstAdd);
 
     int srcAdd2;
     int h = dstH;
     
     if (dstH >= srcH) {
-      // Enlarge
-// 	SDDEBUG("Enlarging.\n");
-	
       srcAdd2 = 0;
     } else {
       // Reduce. Works for enlarge too.
       int nline = srcH / dstH;
       srcAdd2 = srcAdd * nline;
       srcH -= dstH * nline;
-// 	  SDDEBUG("Reducing.\n");
     }
     
     // Bresenham in both emlarge and reduce cases.
@@ -113,10 +124,26 @@ template <class T> void SHAblitterFastStretch(T * dst, T * src, int dstAdd, int 
   }
 }
 
-template void SHAblitterFastStretch(SHAuint8  * dst, SHAuint8  * src, int dstAdd, int srcAdd, int dstW, int dstH, int srcW, int srcH);
-template void SHAblitterFastStretch(SHAuint16 * dst, SHAuint16 * src, int dstAdd, int srcAdd, int dstW, int dstH, int srcW, int srcH);
-template void SHAblitterFastStretch(SHAuint32 * dst, SHAuint32 * src, int dstAdd, int srcAdd, int dstW, int dstH, int srcW, int srcH);
-template void SHAblitterFastStretch(SHAuint64 * dst, SHAuint64 * src, int dstAdd, int srcAdd, int dstW, int dstH, int srcW, int srcH);
+template static
+void SHAblitterFastStretch(SHAuint8  * dst, const SHAuint8  * src,
+			   int dstAdd, int srcAdd,
+			   int dstW, int dstH,
+			   int srcW, int srcH);
+template static
+void SHAblitterFastStretch(SHAuint16 * dst, const SHAuint16 * src,
+			   int dstAdd, int srcAdd,
+			   int dstW, int dstH,
+			   int srcW, int srcH);
+template static
+void SHAblitterFastStretch(SHAuint32 * dst, const SHAuint32 * src,
+			   int dstAdd, int srcAdd,
+			   int dstW, int dstH,
+			   int srcW, int srcH);
+template static
+void SHAblitterFastStretch(SHAuint64 * dst, const SHAuint64 * src,
+			   int dstAdd, int srcAdd,
+			   int dstW, int dstH,
+			   int srcW, int srcH);
 
 
 void SHAblitter::FastStretch(void)

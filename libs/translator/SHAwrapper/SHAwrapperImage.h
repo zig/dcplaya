@@ -5,7 +5,7 @@
  * @date    2002/09/27
  * @brief   Image definition.
  *
- * $Id: SHAwrapperImage.h,v 1.4 2002-12-16 23:39:36 ben Exp $
+ * $Id: SHAwrapperImage.h,v 1.5 2003-01-31 14:48:30 ben Exp $
  */
 #ifndef _SHAWRAPPERIMAGE_H_
 #define _SHAWRAPPERIMAGE_H_
@@ -41,7 +41,11 @@ typedef struct {
   int width;             /**< Image width in pixel.                   */
   int height;            /**< Image heigth in pixel.                  */
   int lutSize;           /**< Number of entry in color look up table. */
-  unsigned char data[4]; /**< Image bitmap data.                      */
+  union {
+    unsigned char data[4]; /**< Image bitmap data.                    */
+    const char * ext;      /**< Image extension (type), only available
+			      when getting image information.         */
+  };
 } SHAwrapperImage_t;
 
 #endif /* #define _SHAWRAPPERIMAGE_H_ */

@@ -4,7 +4,7 @@
  *  @author  benjamin gerard <ben@sashipa.com>
  *  @date    2002/09/27
  *  @brief   Image translators.
- *  $Id: translator.h,v 1.4 2002-12-16 23:39:36 ben Exp $
+ *  $Id: translator.h,v 1.5 2003-01-31 14:48:30 ben Exp $
  */
 
 #ifndef _TRANSLATOR_H_
@@ -22,11 +22,20 @@ typedef void * translator_t;
  *  @{
  */
 
-/** Load an image file. */
-SHAwrapperImage_t * LoadImageFile(const char * fname);
+/** Load an image file.
+ *  @param fname        filename of image to load.
+ *  @param info_only    get image information only.
+ *  @return Image.
+ */
+SHAwrapperImage_t * LoadImageFile(const char * fname, int info_only);
 
-/** Load an image from memory. */
-SHAwrapperImage_t * LoadImageMemory(void *buffer, int size);
+/** Load an image from memory.
+ *  @param bufname      image file buffer.
+ *  @param info_only    get image information only.
+ *  @return Image.
+ */
+SHAwrapperImage_t * LoadImageMemory(const void *buffer, int size,
+				    int info_only);
 
 /** Add a new image translator. */
 int AddTranslator(translator_t translator);

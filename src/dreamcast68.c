@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.44 2003-01-21 02:38:16 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.45 2003-01-31 14:48:30 ben Exp $
  */
 
 //#define RELEASE
@@ -72,6 +72,10 @@ controler_state_t controler68;
 
 static obj_t * curlogo;
 
+static spinlock_t vis_mutex, vmuvis_mutex;
+static vis_driver_t * curvis, * nextvis;
+static int change_vis;
+
 extern void vmu_lcd_update(/*int *b, int n, int cnt*/);
 extern int vmu68_init(void);
 extern int vmu_lcd_title();
@@ -79,7 +83,6 @@ extern int vmu_lcd_title();
 static int warning_splash(void);
 extern void warning_render();
 
-static vis_driver_t * curvis;
 
 #define ANIM_CONT   0
 #define ANIM_CYCLE  1
@@ -488,6 +491,10 @@ static int no_mt_init(void)
   int err = 0;
   SDDEBUG(">> %s\n", __FUNCTION__);
 
+  spinlock_init(&vis_mutex);
+  spinlock_init(&vmuvis_mutex);
+  change_vis = 0;
+
   /* fft init */
   if (fft_init() < 0) {
     SDERROR("fft init failure");
@@ -607,10 +614,35 @@ static void update_fft(void)
 /*   fft(buf, nb, cnt, frq); */
 }
 
+int dcplaya_set_visual(const char * name)
+{
+  int err = 0;
+
+  spinlock_lock(&vis_mutex);
+  if (nextvis) {
+    driver_dereference(&nextvis->common);
+  }
+  if (name) {
+    nextvis = (vis_driver_t *)driver_list_search(&vis_drivers, name);
+    err = -(!nextvis);
+  }
+  change_vis = 1;
+  spinlock_unlock(&vis_mutex);
+
+  return err;
+}
 
 static void process_visual(unsigned int elapsed_frames)
 {
   const float ms = elapsed_frames * (1000.0f / 60.0f);
+
+  spinlock_lock(&vis_mutex);
+  if (change_vis) {
+    option_set_visual(nextvis);
+    nextvis = 0;
+    change_vis = 0;
+  }
+  spinlock_unlock(&vis_mutex);
 
   if (curvis) {
     SDDEBUG("Should not have a visual here !!!\n");

@@ -74,7 +74,7 @@ int option_setup(void)
 
   SDDEBUG("++ VISUALS = %d\n", vis_drivers.n);
   visual = 0;
-  set_visual((vis_driver_t *)vis_drivers.drivers);
+  option_set_visual((vis_driver_t *)vis_drivers.drivers);
   driver_list_unlock(&vis_drivers);
 
   lcd_visual = OPTION_LCD_VISUAL_FFT;
@@ -146,31 +146,19 @@ static int set_visual(vis_driver_t * d)
   return 0;
 }
 
-
-void option_no_visual()
-{
-  spinlock_lock(&visual_mutex);
-  set_visual(0);
-  spinlock_unlock(&visual_mutex);
-}
-
-
-int option_set_visual(const char * name)
+int option_set_visual(vis_driver_t * d)
 {
   int err;
-  vis_driver_t * d;
-  if (!name) {
-    return -1;
-  }
 
-  d = (vis_driver_t *)driver_list_search(&vis_drivers, name);
-  if (!d) {
-    return -1;
-  }
   spinlock_lock(&visual_mutex);
   err = set_visual(d);
   spinlock_unlock(&visual_mutex);
   return err;
+}
+
+void option_no_visual()
+{
+  option_set_visual(0);
 }
 
 int option_lcd_visual()

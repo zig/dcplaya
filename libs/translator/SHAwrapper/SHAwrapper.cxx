@@ -3,7 +3,7 @@
  * @brief     SHAtranslator "C" wrapper
  * @date      2002/09/27
  * @author    Ben(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAwrapper.cxx,v 1.5 2002-12-20 23:38:37 ben Exp $
+ * @version   $Id: SHAwrapper.cxx,v 1.6 2003-01-31 14:48:30 ben Exp $
  */
 
 #include "SHAwrapper/SHAwrapper.h"
@@ -25,7 +25,8 @@ static int TotalBytes(SHAtranslatorResult & result)
 
 
 static SHAwrapperImage_t * SHAwrapperLoad(SHAtranslator * t,
-					  SHAstream * in, SHAstreamPos pos)
+					  SHAstream * in, SHAstreamPos pos,
+					  int info_only)
 {
   int size;
   char *data;
@@ -43,6 +44,21 @@ static SHAwrapperImage_t * SHAwrapperLoad(SHAtranslator * t,
     SDERROR("Translator [%s] : [%s]\n", ext, result.ErrorStr());
     return 0;
   }
+
+  if (info_only) {
+    SHAwrapperImage_t *info  = new SHAwrapperImage_t;
+    if (!info) {
+      SDERROR("[Translator] [%s] : info malloc error.\n", ext);
+    } else {
+      info->type = (SHAwrapperImageFormat_e)result.data.image.type;
+      info->width = result.data.image.width;
+      info->height = result.data.image.height;
+      info->lutSize = result.data.image.lutSize;
+      info->ext = ext;
+    }
+    return info;
+  }
+
 //    SDDEBUG("type    : %x\n", result.data.image.type);
 //    SDDEBUG("width   : %d\n", result.data.image.width);
 //    SDDEBUG("height  : %d\n", result.data.image.height);
@@ -50,7 +66,7 @@ static SHAwrapperImage_t * SHAwrapperLoad(SHAtranslator * t,
     
   /* Seek back to start of input stream */
   if (in->SeekTo(pos) == -1) {
-	SDERROR("Translator [%s] : Can't seek to position [%d].\n", ext, pos);
+    SDERROR("Translator [%s] : Can't seek to position [%d].\n", ext, pos);
     return 0;
   }
   size = TotalBytes(result);
@@ -127,20 +143,9 @@ int SHAwrapperDelTranslator(void * t)
   
 /* Test all translators one by one...
  */
-static SHAwrapperImage_t * SHAwrapperLoad(SHAstream * in)
+static SHAwrapperImage_t * SHAwrapperLoad(SHAstream * in, int info_only)
 {
   translator_list_t * l;
-
-  // Built-in translator(s)
-  // $$$ ben : Do not make them static, it crash !
-//   SHAtranslatorTga translatorTga;
-//   SHAtranslator * translators [] =
-//   {
-//     &translatorTga,
-//     0
-//   };
-//   SHAtranslator ** trans = translators , *t;
-
   SHAtranslator *t;
   SHAstreamPos pos;
 
@@ -153,12 +158,12 @@ static SHAwrapperImage_t * SHAwrapperLoad(SHAstream * in)
 
   SHAwrapperImage_t * img = 0;
   for (l=tlist; l; l=l->next) {
-	t = l->translator;
+    t = l->translator;
 
     const char **ext;
     ext = t->Extension();
  	SDDEBUG("[%s] : translator [%s]\n", __FUNCTION__, ext[0]);
-    img = SHAwrapperLoad(t, in, pos);
+    img = SHAwrapperLoad(t, in, pos, info_only);
     if (img) {
       break;
     }
@@ -166,7 +171,7 @@ static SHAwrapperImage_t * SHAwrapperLoad(SHAstream * in)
   return img;
 }
 
-SHAwrapperImage_t * SHAwrapperLoadFile(const char *fname)
+SHAwrapperImage_t * SHAwrapperLoadFile(const char *fname, int info_only)
 {
   int err;
   SHAstreamFile in;
@@ -174,29 +179,31 @@ SHAwrapperImage_t * SHAwrapperLoadFile(const char *fname)
   /* Open input stream */
   err = in.Open(fname, "rb");
   if (err) {
-	SDERROR("Open file [%s] failed\n",fname);
+    SDERROR("Open file [%s] failed\n",fname);
     return 0;
   }
 
-  return SHAwrapperLoad(&in);
+  return SHAwrapperLoad(&in, info_only);
 }
 
-SHAwrapperImage_t * SHAwrapperLoadMemory(void *buffer, int size)
+
+SHAwrapperImage_t * SHAwrapperLoadMemory(const void *buffer,
+					 int size, int info_only)
 {
   SHAstreamMem in;
 
   /* Open input stream */
   if (in.Open((char *)buffer, size, 1)) {
-	SDERROR("Open memory [%p,%d] failed\n",buffer,size);
+    SDERROR("Open memory [%p,%d] failed\n",buffer,size);
     return 0;
   }
 
-  return SHAwrapperLoad(&in);
+  return SHAwrapperLoad(&in, info_only);
 }
 
 /** Blit an image block. */
 void SHAwrapperBlitz(void *dst, int dw, int dh, int dformat, int dmod,
-					 const void *src, int sw, int sh, int sformat, int smod)
+		     const void *src, int sw, int sh, int sformat, int smod)
 {
   SHAblitter blitter;
 

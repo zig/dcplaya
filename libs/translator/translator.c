@@ -4,21 +4,22 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    Image translator C interface.
  *
- * $Id: translator.c,v 1.4 2002-12-16 23:39:36 ben Exp $
+ * $Id: translator.c,v 1.5 2003-01-31 14:48:30 ben Exp $
  */
 
 #include "translator/translator.h"
 
 /** Load an image file. */
-SHAwrapperImage_t * LoadImageFile(const char * fname)
+SHAwrapperImage_t * LoadImageFile(const char * fname, int info_only)
 {
-  return SHAwrapperLoadFile(fname);
+  return SHAwrapperLoadFile(fname, info_only);
 }
 
 /** Load an image from memory. */
-SHAwrapperImage_t * LoadImageMemory(void *buffer, int size)
+SHAwrapperImage_t * LoadImageMemory(const void *buffer, int size,
+				    int info_only)
 {
-  return SHAwrapperLoadMemory(buffer, size);
+  return SHAwrapperLoadMemory(buffer, size, info_only);
 }
 
 /** Add a new image translator. */
@@ -38,5 +39,5 @@ void Blitz(void *dst, int dw, int dh, int dformat, int dmodulo,
 		   const void *src, int sw, int sh, int sformat, int smodulo)
 {
   SHAwrapperBlitz(dst, dw, dh, dformat, dmodulo,
-				  src, sw, sh, sformat, smodulo);
+		  src, sw, sh, sformat, smodulo);
 }

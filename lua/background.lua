@@ -30,7 +30,7 @@ function background_set_texture(bkg, texture, type)
       set_vertex(bkg.vtx[4],{ 1, 1, 0, 1 })
       vtx = 1
    else
-      local vtx = load_background(texture, type)
+      vtx = load_background(texture, type)
       if vtx then
 	 for i,v in vtx do
 	    set_vertex(bkg.vtx[i],

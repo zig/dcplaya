@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.65 2003-01-28 22:58:18 ben Exp $
+ * @version    $Id: dynshell.c,v 1.66 2003-01-31 14:48:30 ben Exp $
  */
 
 #include <stdio.h>
@@ -1591,21 +1591,25 @@ static int lua_vmu_set_db(lua_State * L)
   return 1;
 }
 
+/* defined in dreamcat68.c */
+extern int dcplaya_set_visual(const char * name);
+
 static int lua_set_visual(lua_State * L)
 {
   vis_driver_t * vis = 0;
 
   if (lua_gettop(L) >= 1) {
-    if (lua_type(L,1) == LUA_TNIL) {
-      option_no_visual();
-    } else {
-      option_set_visual(lua_tostring(L,1));
+    const char *name = lua_tostring(L,1);
+    if (dcplaya_set_visual(name)) {
+      printf("[set_visual] : [%s] no such visual.\n", name ? name : "none");
     }
   }
-  vis = option_visual();
   lua_settop(L,0);
-  if (vis && vis->common.name) {
-    lua_pushstring(L,vis->common.name);
+  vis = option_visual();
+  if (vis) {
+    if(vis->common.name) {
+      lua_pushstring(L,vis->common.name);
+    }
     driver_dereference(&vis->common);
   }
   return lua_gettop(L);
@@ -1753,6 +1757,87 @@ static int lua_intop(lua_State * L)
   return lua_gettop(L);
 }
 
+static const char * image_typestr(int type)
+{
+  switch(type & 255) {
+
+  case SHAPF_IND1: case SHAPF_IND2: case SHAPF_IND4: case SHAPF_IND8:
+    return "indexed";
+  case SHAPF_RGB233:
+    return "argb0233";
+  case SHAPF_GREY8:
+    return "greyscale";
+
+  case SHAPF_ARGB2222:
+    return "argb2222";
+
+  /* 16 bit per pixel */
+  case SHAPF_RGB565:
+     return "argb565";
+
+  case SHAPF_ARGB1555:
+    return "argb1555";
+  case SHAPF_ARGB4444:
+    return "argb4444";
+  case SHAPF_AIND88:
+    return "interlaced-alpha-indexed-88";
+
+
+  /* 32 bit per pixel */
+  case SHAPF_ARGB32:
+    return "argb8888";
+  default:
+    return "?";
+  }
+}
+
+static int lua_image_info(lua_State * L)
+{
+  const char * name = lua_tostring(L,1);
+  SHAwrapperImage_t * img;
+  if (!name || !*name) {
+    printf("[image_info] : missing file parameter\n");
+    return 0;
+  }
+  img = SHAwrapperLoadFile(name, 1);
+  if (!img) {
+    printf("[image_info] : [%s] not an image file.\n", name);
+    return 0;
+  }
+
+  lua_settop(L,0);
+  lua_newtable(L);
+
+  lua_pushstring(L, "format");
+  lua_pushstring(L, img->ext + (img->ext[0] == '.'));
+  lua_settable(L, 1);
+
+  lua_pushstring(L, "w");
+  lua_pushnumber(L, img->width);
+  lua_settable(L, 1);
+
+  lua_pushstring(L, "h");
+  lua_pushnumber(L, img->height);
+  lua_settable(L, 1);
+
+  lua_pushstring(L, "bpp");
+  lua_pushnumber(L, SHAPF_BPP(img->type));
+  lua_settable(L, 1);
+
+  lua_pushstring(L, "type");
+  lua_pushstring(L, image_typestr(img->type));
+  lua_settable(L, 1);
+
+  if (img->lutSize > 0) {
+    lua_pushstring(L, "lut");
+    lua_pushnumber(L, img->lutSize);
+    lua_settable(L, 1);
+  }
+  lua_settop(L,1);
+
+  return lua_gettop(L);
+}
+
 static int greaterlog2(int v)
 {
   int i;
@@ -1763,6 +1848,7 @@ static int greaterlog2(int v)
   }
   return -1;
 }
+
 
 static int lua_load_background(lua_State * L)
 {
@@ -1806,7 +1892,7 @@ static int lua_load_background(lua_State * L)
     }
     break;
   case LUA_TSTRING:
-    img = LoadImageFile(lua_tostring(L,1));
+    img = LoadImageFile(lua_tostring(L,1),0);
     if (img) {
       tmp.width = img->width;
       tmp.height = img->height;
@@ -1825,6 +1911,7 @@ static int lua_load_background(lua_State * L)
     printf("load_background : invalid source image.\n");
     return 0;
   }
+
 
   type = 0;
   typestr = lua_tostring(L,2);
@@ -1856,17 +1943,18 @@ static int lua_load_background(lua_State * L)
   btexture->format = stexture->format;
   finalRatio = dh / dw;
 
-  /*   printf("type:[%s]\n", !type ? "scale" : (type==1?"center":"tile")); */
-  /*   printf("src : [%dx%d] [%dx%d] , modulo:%d, ratio:%0.2f\n", */
-  /* 		 stexture->width,stexture->height, */
-  /* 		 1<<stexture->wlog2, 1<<stexture->hlog2, */
-  /* 		 smodulo, orgRatio); */
+  if (1) {
+    printf("type:[%s]\n", !type ? "scale" : (type==1?"center":"tile"));
+    printf("src : [%dx%d] [%dx%d] , modulo:%d, ratio:%0.2f\n",
+  		 stexture->width,stexture->height,
+  		 1<<stexture->wlog2, 1<<stexture->hlog2,
+  		 smodulo, orgRatio);
 
-  /*   printf("bkg : [%dx%d] [%dx%d], modulo:%d\n", */
-  /* 		 btexture->width,btexture->height, */
-  /* 		 1<<btexture->wlog2,  1<<btexture->hlog2, */
-  /* 		 (1<<btexture->wlog2) - btexture->width); */
-
+    printf("bkg : [%dx%d] [%dx%d], modulo:%d\n",
+  		 btexture->width,btexture->height,
+  		 1<<btexture->wlog2,  1<<btexture->hlog2,
+  		 (1<<btexture->wlog2) - btexture->width);
+  }
   /* $$$ Currently all texture are 16bit. Since blitz don't care about exact
      pixel format blitz is done with ARGB565 format. */
   Blitz(btexture->addr, btexture->width, btexture->height,
@@ -2612,6 +2700,25 @@ static luashell_command_description_t commands[] = {
     "]])",
     SHELL_COMMAND_C, lua_intop
   },
+
+  {
+    "image_info",
+    "imginfo",
+    "print([["
+    "image_info(filename) :\n"
+    " Get image information table :\n"
+    " {\n"
+    "   format  = \"original format\",\n"
+    "   type    = \"pixel description\",\n"
+    "   w       = width-in-pixel,\n"
+    "   h       = height-in-pixel,\n."
+    "   bpp     = bit-per-pixel,\n."
+    "   lut     = number of entry in color table or nil\n"
+    " }\n"
+    "]])",
+    SHELL_COMMAND_C, lua_image_info
+  },
+
 
   {0},
 };

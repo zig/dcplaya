@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.30 2003-01-29 13:49:00 ben Exp $
+--- $Id: song_browser.lua,v 1.31 2003-01-31 14:48:30 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -548,6 +548,25 @@ function song_browser_create(owner, name)
       end
    end
 
+   function songbrowser_info_image(sb, filename)
+      local info = image_info(filename)
+      local path, leaf = get_path_and_leaf(filename)
+      local text
+      
+      if type(info) ~= "table" then
+	 text = '<left><img name="grimley" src="stock_grimley.tga" scale="1.5"><br><center>Can not get information from image file.<br>.'
+      else
+	 text = '<left><img name="smiley" src="stock_smiley.tga" scale="1.5"><br><center>' ..
+	    format("%s image<br>%dx%dx%d, %s<br>",
+		   (info.format or "unknown"),
+		   (info.w or -1),
+		   (info.h or -1),
+		   (info.bpp or -1),
+		   (info.type or "unknown pixel format"))
+      end
+      gui_ask(text, "<center>close", 300, format("info on %s",leaf or ""))
+   end
+
    -- ----------------------------------------------------------------------
    -- filelist "confirm" actions
    -- ----------------------------------------------------------------------
@@ -663,8 +682,38 @@ function song_browser_create(owner, name)
    end
 
    function sbfl_select_image(fl, sb, action, entry_path)
-      song_browser_ask_background_load(sb)
-      songbrowser_load_image(sb, entry_path)
+      local path,leaf = get_path_and_leaf(entry_path)
+      if not leaf then return end
+      
+      local def = {
+	 root = ":"..leaf..":info{info},background>",
+	 cb = {
+	    info = function (menu, idx)
+		      local root_menu = menu.root_menu
+		      local sb = root_menu.target
+		      songbrowser_info_image(sb,root_menu.__entry_path)
+		   end,
+	    bkg = function (menu, idx)
+		     local root_menu = menu.root_menu
+		     local sb = root_menu.target
+		     local entry_path = root_menu.__entry_path or ""
+		     local mode = idx and menu.fl.dir[idx].name
+ 		     song_browser_ask_background_load(sb)
+ 		     songbrowser_load_image(sb,entry_path,mode)
+		  end,
+	 },
+	 sub = {
+	    background = ":background:scale{bkg},center{bkg},tile{bkg}"
+	 }
+      }
+
+      local menudef = menu_create_defs(def, sb)
+      fl.menu = menu_create(sb, "filelist-menu", menudef)
+      if tag(fl.menu) == menu_tag then
+	 fl.menu.target = sb
+	 fl.menu.target_pos = fl.pos + 1
+	 fl.menu.__entry_path = entry_path
+      end
    end
 
    function sbfl_select_plugin(fl, sb, action, entry_path)
@@ -950,7 +999,6 @@ function song_browser_create(owner, name)
 	 sb.sort_func_cache = (type(sb.sort_func_cache) == "table" and
 			       sb.sort_func_cache) or {}
 	 if not nocache and type(sb.sort_func_cache[str]) == "function" then
-	    print("Cached !")
 	    return sb.sort_func_cache[str]
 	 end
 
@@ -963,14 +1011,6 @@ function song_browser_create(owner, name)
 		  sb.sort_func_cache[str] =
 		     function (menu)
 			local sb = menu.root_menu.target
-			print("Calling sort with "..%str)
--- 			dump(%table,"dump of "..%str)
--- 			local i,v
--- 			for i,v in %table do
--- 			   printf("%q=%q",i,tostring(v))
--- 			   if type(v) == "function" then v() end
--- 			end
-
 			sbpl_sort_any(sb, %table)
 		     end
 		  return sb.sort_func_cache[str]
