@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist_driver.h,v 1.1 2002-10-23 02:07:44 benjihan Exp $
+ * $Id: entrylist_driver.h,v 1.2 2002-10-24 18:57:07 benjihan Exp $
  */
 
 #ifndef _ENTRYLIST_DRIVER_H_
@@ -14,10 +14,19 @@
 #include <stdio.h>
 #include "lua.h"
 #include "any_driver.h"
+#include "allocator.h"
+#include "entrylist.h"
 
-extern int dl_list_tag;
-extern any_driver_t display_driver;
+/**< Entrylist user tag. */
+extern int entrylist_tag;
+/**< Holds all entrylist. */
+extern allocator_t * lists;
+/**< Holds standard entries. */
+extern allocator_t * entries;
 
+int lua_entrylist_init(lua_State * L);
+
+/** Entrylist driver name. */
 #define DRIVER_NAME "entrylist"
 
 #define EL_FUNCTION_DECLARE(name) int lua_entrylist_##name(lua_State * L)
@@ -25,12 +34,15 @@ extern any_driver_t display_driver;
 #define EL_FUNCTION_START(name) \
   int lua_entrylist_##name(lua_State * L) \
   { \
-    entrylist_t * el; \
+    el_list_t * el; \
     if (lua_tag(L, 1) != entrylist_tag) { \
       printf("el_" #name " : first parameter is not an entry-list\n"); \
       return 0; \
     } \
-    dl = lua_touserdata(L, 1);
+    if (el = lua_touserdata(L, 1), !el) { \
+      printf("el_" #name " : Null pointer.\n"); \
+      return 0; \
+    }
 
 #define EL_FUNCTION_END() }
 

@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist_driver.c,v 1.1 2002-10-23 02:07:44 benjihan Exp $
+ * $Id: entrylist_driver.c,v 1.2 2002-10-24 18:57:07 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -14,59 +14,25 @@
 #include "luashell.h"
 #include "lef.h"
 #include "driver_list.h"
-
 #include "entrylist_driver.h"
-#include "iarray.h"
+#include "entrylist_loader.h"
+
 
 EL_FUNCTION_DECLARE(new);
 EL_FUNCTION_DECLARE(lock);
 EL_FUNCTION_DECLARE(unlock);
+EL_FUNCTION_DECLARE(gc);
+EL_FUNCTION_DECLARE(gettable);
+EL_FUNCTION_DECLARE(settable);
+EL_FUNCTION_DECLARE(clear);
+EL_FUNCTION_DECLARE(load);
 
-typedef struct {
-  iarray_t a;
-} el_list_t;
-
-int entrylist_tag; /* entrylist user tag */
-static iarray_t lists;    /* hold all entrylist */
-static int init;   /* lus side init flags */
-
-/* The alloc function for lists : alloc el_list_t only ! */
-static void * lists_alloc(unsigned int size, void * cookie)
-{
-  el_list_t * el;
-  
-  if (cookie != &lists) {
-	printf("entrylists_alloc : Not my list !\n");
-	return 0;
-  }
-  if (size != sizeof(el_list_t)) {
-	printf("entrylists_alloc : Size does not match %d differs from %d\n",
-		   size, sizeof(el_list_t));
-	return 0;
-  }
-  el = malloc(size);
-  if (el) {
-	iarray_create(&el->a, 0, 0, cookie); /* $$$ not sure for the cookie */
-  }
-  return el;
-}
-
-/* The free function for lists : destroy el_list_t and free it. */
-static void lists_free(void * addr, void * cookie)
-{
-  if (cookie != &lists) {
-	printf("entrylists_free : Not my list !\n");
-  } else if (!addr) {
-	printf("entrylists_free : Null pointer !\n");
-  } else {
-	el_list_t * el = (el_list_t *) addr;
-	if (!mutex_trylock(&el->a.mutex)) {
-	  printf("entrylists_free : destroying a locked entrylist !!!\n");
-	}
-	iarray_destroy(&el->a);
-	free(el);
-  }
-}
+/**< Entrylist user tag. */
+int entrylist_tag;
+/**< Holds all entrylist. */
+allocator_t * lists;
+/**< Holds standard entries. */
+allocator_t * entries;
 
 /* Iniatilize entrylist user tag. */
 static void lua_init_el_type(lua_State * L)
@@ -78,11 +44,32 @@ static void lua_init_el_type(lua_State * L)
 	lua_pushnumber(L,entrylist_tag);
 	lua_setglobal(L,"entrylist_tag");
   }
+  
+  /* Setup tag functions */
+  lua_pushcfunction(L, lua_entrylist_gc);
+  lua_settagmethod(L, entrylist_tag, "gc");
+  
+  lua_pushcfunction(L, lua_entrylist_gettable);
+  lua_settagmethod(L, entrylist_tag, "gettable");
+
+  lua_pushcfunction(L, lua_entrylist_settable);
+  lua_settagmethod(L, entrylist_tag, "settable");
 }
 
 /* Shutdown  entrylist user tag. */
 static void lua_shutdown_el_type(lua_State * L)
 {
+  /* Unset tag functions */
+  lua_pushnil(L);
+  lua_settagmethod(L, entrylist_tag, "gc");
+  
+  lua_pushnil(L);
+  lua_settagmethod(L, entrylist_tag, "gettable");
+
+  lua_pushnil(L);
+  lua_settagmethod(L, entrylist_tag, "settable");
+
+  /* Unset entrylist user tag */
   lua_pushnil(L);
   lua_setglobal(L,"entrylist_tag");
   entrylist_tag = 0;
@@ -91,20 +78,29 @@ static void lua_shutdown_el_type(lua_State * L)
 /* Driver init : not much to do. */ 
 static int driver_init(any_driver_t *d)
 {
+  printf("driver_init(%s)\n", d->name);
   entrylist_tag = -1;
-  init = 0;
-
-  return 0;
+  lists = 0;
+  entries = 0;
+  return el_loader_init();
 }
 
 /* Driver shutdown : Kill any remaining list any way */
 static int driver_shutdown(any_driver_t * d)
 {
-  iarray_destroy(&lists);
+  el_loader_shutdown();
+  if (lists) {
+	printf(DRIVER_NAME "_driver_shutdown : lua side has not been"
+		   " shutdown correctly.\n");
+	allocator_destroy(lists);
+	lists = 0;
+  }
+  if (entries) {
+	allocator_destroy(entries);
+	entries = 0;
+  }
   return 0;
 }
-
-
 
 static driver_option_t * driver_options(any_driver_t * d, int idx,
                                         driver_option_t * o)
@@ -113,19 +109,26 @@ static driver_option_t * driver_options(any_driver_t * d, int idx,
 }
 
 
-static int lua_entrylist_init(lua_State * L)
+int lua_entrylist_init(lua_State * L)
 {
-  if (init) {
+  if (lists) {
     goto ok;
   }
 
-  if (iarray_create(&lists, lists_alloc, lists_free, &lists)) {
-	printf("entrylist_driver_init : list container creation failed.\n");
+  lists = allocator_create(8, sizeof(el_list_t));
+  if (!lists) {
+	printf("entrylist_driver_init : list allocator creation failed.\n");
+	return 0;
+  }
+  entries = allocator_create(65536 / sizeof(el_entry_t), sizeof(el_entry_t));
+  if (!entries) {
+	printf("entrylist_driver_init : entry allocator creation failed.\n");
+	allocator_destroy(lists);
+	lists = 0;
 	return 0;
   }
 
   lua_init_el_type(L);
-  init = 1;
   printf("entrylist_driver initialized.\n");
 ok:
   lua_settop(L,1);
@@ -135,28 +138,28 @@ ok:
 
 static int lua_entrylist_shutdown(lua_State * L)
 {
-  int force;
+  int force, n;
 
-  if (!init) {
+  if (!lists) {
 	goto ok;
   }
-  iarray_lock(&lists);
   force = lua_tonumber(L,1);
-  if (lists.n)  {
+  if (n=allocator_count_used(lists), n)  {
 	if (!force) {
 	  printf("entrylist_shutdown : %d entrylist in used. "
 			 "May be dangerous to shutdown.\n"
-			 "Use force option to shutdown anyway.\n", lists.n);
+			 "Use force option to shutdown anyway.\n", n);
 	  return 0;
 	} else {
 	  printf("entrylist_shutdown : %d entrylist in used. "
-			 "Force shutdown !!!\n", lists.n);
+			 "Force shutdown !!!\n", n);
 	}
   }
-  iarray_destroy(&lists);
-  init = 0;
+  allocator_destroy(lists);
+  allocator_destroy(entries);
+  lists = 0;
+  entries = 0;
   lua_shutdown_el_type(L);
-  iarray_unlock(&lists);
   printf("entrylist_driver shutdown.\n");
  ok:
   lua_settop(L,0);
@@ -167,7 +170,6 @@ static int lua_entrylist_shutdown(lua_State * L)
 static luashell_command_description_t driver_commands[] = {
 
   /* Internal commands */
-
   {
     DRIVER_NAME"_driver_init", 0,         /* long and short names */
     "print [["
@@ -186,7 +188,60 @@ static luashell_command_description_t driver_commands[] = {
     SHELL_COMMAND_C, lua_entrylist_shutdown  /* function */
   },
 
-  {0},                                       /* end of the command list */
+  /* Creation command. */
+  {
+    DRIVER_NAME"_new", 0,         /* long and short names */
+    "print [["
+	DRIVER_NAME"_new : "
+	"Create a new empty entry-list."
+    "]]",                                 /* usage */
+    SHELL_COMMAND_C, lua_entrylist_new    /* function */
+  },
+
+  /* Lock commands. */
+
+  {
+    DRIVER_NAME"_lock", 0,                /* long and short names */
+    "print [["
+	DRIVER_NAME"_lock(entrylist) : "
+	"Recursive lock of an entry-list. CAUTION : do not forget to unlock"
+	" the entry-list as many times it has been locked."
+    "]]",                                 /* usage */
+    SHELL_COMMAND_C, lua_entrylist_lock   /* function */
+  },
+
+  {
+    DRIVER_NAME"_unlock", 0,              /* long and short names */
+    "print [["
+	DRIVER_NAME"_unlock(entrylist) : "
+	"Unlock an entry-list. CAUTION : Entry-list must be unlocked as many times"
+	" it has been locked. Not more, not less !"
+    "]]",                                 /* usage */
+    SHELL_COMMAND_C, lua_entrylist_unlock /* function */
+  },
+
+  /* clear command */
+  {
+    DRIVER_NAME"_clear", 0,                /* long and short names */
+    "print [["
+	DRIVER_NAME"_clear(entrylist) : "
+	"Clear an entry-list : remove all entries. Keep path and loading stat."
+    "]]",                                 /* usage */
+    SHELL_COMMAND_C, lua_entrylist_clear  /* function */
+  },
+
+  /* load dir command */
+  {
+    DRIVER_NAME"_load", 0,                /* long and short names */
+    "print [["
+	DRIVER_NAME"_load(entrylist, path) : "
+	"Load a directory into entry-list."
+    "]]",                                 /* usage */
+    SHELL_COMMAND_C, lua_entrylist_load   /* function */
+  },
+
+ 
+  {0},                                    /* end of the command list */
 };
 
 static any_driver_t entrylist_driver =
