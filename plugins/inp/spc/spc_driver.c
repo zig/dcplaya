@@ -1,5 +1,5 @@
 /*
- * $Id: spc_driver.c,v 1.2 2002-09-09 12:38:01 ben Exp $
+ * $Id: spc_driver.c,v 1.3 2002-09-12 17:57:31 ben Exp $
  */
 
 #include "config.h"
@@ -90,6 +90,8 @@ static int start(const char *fn, decoder_info_t *info)
     goto error;
   }
   buf_size >>= 2;
+
+  dbglog(DBG_DEBUG, "SPC buffer size = %d\n", buf_size);
 
   if (! SPC_load(fn, &spcinfo)) {
     goto error;

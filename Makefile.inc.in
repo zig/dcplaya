@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile.inc.in,v 1.11 2002-09-11 03:55:57 ben Exp $
+# $Id: Makefile.inc.in,v 1.14 2002-09-12 17:57:31 ben Exp $
 #
 
 TOP_DIR="@TOP_DIR@"
@@ -75,9 +75,19 @@ SRCS = $(S_SRCS) $(C_SRCS) $(CXX_SRCS)
 OBJS = $(S_OBJS) $(C_OBJS) $(CXX_OBJS)
 endif
 
+ifndef DEPS
+DEPS = $(C_OBJS:%.o=.deps/%.d) $(CXX_OBJS:%.o=.deps/%.d)
+endif
+
 ifeq '$(LIBRARY)' 'yes'
 ifndef LIBNAME
 LIBNAME := lib$(shell basename `pwd`).a
+endif
+endif
+
+ifeq '$(LEF)' 'yes'
+ifndef LEFS
+LEFS := $(shell basename `pwd`).lef
 endif
 endif
 
@@ -137,6 +147,7 @@ $(LIBNAME) : $(OBJS)
 	@$(KOS_OBJDUMP) -t $@ | grep '*COM*' || echo ":_) No *COM* found."
 
 %.bin : %.elf
+	@echo "Build [$@] from [$^] [`pwd`]"
 	@$(KOS_OBJCOPY) -O binary $< $@
 
 
@@ -151,68 +162,90 @@ $(patsubst %, _dir_%, $(SUBDIRS)):
 clean_subdirs: $(patsubst %, _clean_dir_%, $(SUBDIRS))
 
 $(patsubst %, _clean_dir_%, $(SUBDIRS)):
-	$(MAKE) -C $(patsubst _clean_dir_%, %, $@) clean
+	@$(MAKE) -s -C $(patsubst _clean_dir_%, %, $@) clean
 
 clean: clean_subdirs clean_local
+	@echo "[$@ (`pwd`)]"
 
 clean_local:
-	rm -f $(LEFS) $(OBJS) *~ $(CLEAN_LOCAL) $(LIBNAME) $(TARGETS) *.map
+	@echo "[$@ (`pwd`)]"
+	@rm -f $(LEFS) $(OBJS) $(CLEAN_LOCAL) $(LIBNAME) $(TARGETS) *.map
 
 distclean: depend-clean clean
+	@echo "[$@ (`pwd`)]"
 	@rm -f TAGS ID
-	@rm -f include/config.h Makefile.inc doc/Makefile
+	@rm -f include/config.h Makefile.inc doc/Makefile#
 	@rm -f config.cache config.log stamp-h stamp-h[0-9]*
-	@find . -name '*~' -exec rm -f {} \;
+	@find . -type f -name '*~' -o -name Makefile.dep -exec rm -f '{}' \;
+	@rm -rf `find . -type d -name '\.deps'`
 
 maintainer-clean: distclean 
-	@rm -rf config.cache config.log config.status configure autom4te.cache
+	@echo "[$@ (`pwd`)]"
+	@(cd $(TOP_DIR) && \
+	rm -rf config.cache config.log config.status configure autom4te.cache;)
 
 # ----------------------------------------------------------------------
 # Dependencies
 # ----------------------------------------------------------------------
-$(patsubst %, _dep_dir_%, $(SUBDIRS)):
-	@$(MAKE) -C $(patsubst _dir_%, %, $@)
+# $(patsubst %, _dep_dir_%, $(SUBDIRS)):
+# 	@$(MAKE) -s -C $(patsubst _dir_%, %, $@)
+
+.deps:
+	@echo "[$@ (`pwd`)]"
+	@mkdir -p .deps
 
 depend_subdirs: $(patsubst %, _depend_dir_%, $(SUBDIRS))
+	@echo "[$@ `pwd`]"
 
 $(patsubst %, _depend_dir_%, $(SUBDIRS)):
-	@$(MAKE) -C $(patsubst _depend_dir_%, %, $@) depend
+	@$(MAKE) -s -C $(patsubst _depend_dir_%, %, $@) depend
 
-.PHONY: .depends
-.depends:
-	$(MAKEDEPEND) -f$@\
-	-Y \
-	$(filter -I%, $(DEPEND_INCS)) \
-	$(filter -D%, $(DEPEND_DEFINES)) \
-	$(OBJS:%.o=%.c) && rm -f $@.bak
-	echo "DEPENDENCIES [$@]"
+dep depend: Makefile.dep  depend_subdirs $(DEPEND_EXTRA)
+	@echo "[$@ `pwd`]"
 
-dep depend: .depends depend_subdirs $(DEPEND_EXTRA)
+Makefile.dep: $(DEPS)
+	@echo "[$@ (`pwd`)]"
+	@cat -s /dev/null $(DEPS) > Makefile.dep
+
 
 $(patsubst %, _depend-clean_dir_%, $(SUBDIRS)):
-	@$(MAKE) -C $(patsubst _depend-clean_dir_%, %, $@) depend-clean
+	@$(MAKE) -s -C $(patsubst _depend-clean_dir_%, %, $@) depend-clean
 
 depend-clean_subdirs: $(patsubst %, _depend-clean_dir_%, $(SUBDIRS))
 
 dependclean depclean clean-depend depend-clean : depend-clean_subdirs
-	@rm -f .depends
-	@touch .depends
+	@echo "[$@ `pwd`]"
+	@rm -f Makefile.dep .deps/*
+	@touch Makefile.dep
 
 # ----------------------------------------------------------------------
 # Required
 # ----------------------------------------------------------------------
+
 $(patsubst %, _required_dir_%, $(SUBDIRS)):
-	@$(MAKE) -C $(patsubst _required_dir_%, %, $@) required
+	@$(MAKE) -s -C $(patsubst _required_dir_%, %, $@) required
 
 required_subdirs: $(patsubst %, _required_dir_%, $(SUBDIRS))
 
-req required: required_subdirs $(REQUIRED_LOCAL)
-	@touch .depends $(addsuffix /.depends, $(SUBDIRS))
+req required: .deps $(REQUIRED_LOCAL) required_subdirs
+	@echo "[$@ (`pwd`)]"
 
 # ----------------------------------------------------------------------
 
 # Remove standard includes, assumes local includes are "" and kos are <>
 KOS_INC_RULES=$(KOS_LOCAL_INCS) -I- $(KOS_INCS) -I$(KOS_BASE)/kernel/arch/$(KOS_ARCH)/include
+
+#CDEP=-MT $@ -MD -MP -MF .deps/$(@:%.o=%.d)
+
+# Build dependency files
+.deps/%.d: %.c .deps
+	@echo "[$@ (`pwd`)]"
+	@$(KOS_CC) $(KOS_CFLAGS) $(KOS_LOCAL_CFLAGS) $(KOS_INC_RULES) -D_arch_$(KOS_ARCH) $<  -M -MP > $@  2> /dev/null || touch $@
+
+.deps/%.d: %.cxx .deps
+	@echo "[$@ (`pwd`)]"
+	@$(KOS_CXX) $(KOS_CXXFLAGS) $(KOS_LOCAL_CXXFLAGS) $(KOS_INC_RULES) -D_arch_$(KOS_ARCH) $<  -M -MP > $@ 2> /dev/null || touch $@
+
 
 # Build rules
 %.o: %.c
@@ -231,3 +264,4 @@ KOS_INC_RULES=$(KOS_LOCAL_INCS) -I- $(KOS_INCS) -I$(KOS_BASE)/kernel/arch/$(KOS_
 KOS_ARCH_DIR = $(KOS_BASE)/kernel/arch/$(KOS_ARCH)
 KOS_START = $(KOS_ARCH_DIR)/kernel/startup.o
 
+-include Makefile.dep

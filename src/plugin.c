@@ -3,7 +3,7 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: plugin.c,v 1.2 2002-09-04 18:54:11 ben Exp $
+ * $Id: plugin.c,v 1.3 2002-09-12 17:57:31 ben Exp $
  */
 #include <stdio.h>
 #include <string.h>
@@ -41,7 +41,7 @@ any_driver_t * plugin_load(const char *fname)
   }
   dbglog(DBG_DEBUG,"** " __FUNCTION__ 
 	 " : Plugin [%s] load success.\n", fname);
-  d = (any_driver_t *)prog->ko_main(0, 0);
+  d = (any_driver_t *)prog->main(0, 0);
   if (!d) {
     dbglog(DBG_ERROR,"** " __FUNCTION__ 
 	 " No driver found in plugin [%s].\n", fname);

@@ -5,18 +5,25 @@
  * @date       2002/09/04
  * @brief      Debug fonctions.
  *
- * @version    $Id: sysdebug.c,v 1.2 2002-09-10 12:55:54 ben Exp $
+ * @version    $Id: sysdebug.c,v 1.3 2002-09-12 17:57:31 ben Exp $
  */
-
-#ifdef DEBUG /* Only compile this if DEBUG is activated */
 
 #include <stdarg.h>
 #include <stdio.h>
-
-extern void dbglogv(int level, const char *fmt, va_list args);
-
 #include "sysdebug.h"
 
+/* From modified kos 1.1.5 */
+extern void dbglogv(int level, const char *fmt, va_list args);
+
+/** Default user message level mask (accept all messages) */
+#define SD_DEFAULT_LEVEL -1
+
+/** The SD_GLOBAL_LEVEL is a compile time message level mask. */
+#if defined(RELEASE)
+# define SD_GLOBAL_LEVEL ((int)sysdbg_critical)
+#else
+# define SD_GLOBAL_LEVEL -1
+#endif
 
 static const char unused[] = "unused";
 
@@ -31,6 +38,7 @@ static sysdbg_debug_level_t sd_levels[32] =
     {0x00000020, ":: ", "debug"},
     {0x00000040, ".. ", unused},
     {0x00000080, ".. ", unused},
+
     {0x00000100, ".. ", unused},
     {0x00000200, ".. ", unused},
     {0x00000400, ".. ", unused},
@@ -41,25 +49,28 @@ static sysdbg_debug_level_t sd_levels[32] =
     {0x00008000, ".. ", unused},
 
     /* user defined level */
-    {0x00010000, "@0 ", "critical"},
-    {0x00020000, "@1 ", "error"},
-    {0x00040000, "@2 ", "warning"},
-    {0x00080000, "@3 ", "notice"},
-    {0x00100000, "@4 ", "info"},
-    {0x00200000, "@5 ", "debug"},
-    {0x00400000, "@6 ", unused},
-    {0x00800000, "@7 ", unused},
-    {0x01000000, "@8 ", unused},
-    {0x02000000, "@9 ", unused},
-    {0x04000000, "@A ", unused},
-    {0x08000000, "@B ", unused},
-    {0x10000000, "@C ", unused},
-    {0x20000000, "@D ", unused},
-    {0x40000000, "@E ", unused},
-    {0x80000000, "@F ", unused},
+    {0x00010000, "@0 ", "user0"},
+    {0x00020000, "@1 ", "user1"},
+    {0x00040000, "@2 ", "user2"},
+    {0x00080000, "@3 ", "user3"},
+    {0x00100000, "@4 ", "user4"},
+    {0x00200000, "@5 ", "user5"},
+    {0x00400000, "@6 ", "user6"},
+    {0x00800000, "@7 ", "user7"},
+    {0x01000000, "@8 ", "user8"},
+    {0x02000000, "@9 ", "user9"},
+    {0x04000000, "@A ", "userA"},
+    {0x08000000, "@B ", "userB"},
+    {0x10000000, "@C ", "userC"},
+    {0x20000000, "@D ", "userD"},
+    {0x40000000, "@E ", "userE"},
+    {0x80000000, "@F ", "userF"},
   };
 
-static int sd_level  = sysdbg_critical;  /**< Accepted debug message */
+/** User defined accepted debug message levels. */
+static int sd_level  = SD_DEFAULT_LEVEL;
+/** Compilation defined accepted debug message levels. */  
+static const int sd_global_level = SD_GLOBAL_LEVEL;
 
 /* Indentation system */
 #define SYSDBG_MAX_INDENT (sizeof(tabs)-1);
@@ -69,13 +80,13 @@ static int sd_indent = 0; /**< Current indentation */
 static int sd_col = 0;    /**< Curent column */
 
 /* Default vprintf like function. */
-static void sysdbg_default_vprintf(void * cookie,
+static void sd_default_vprintf(void * cookie,
 				   const char * fmt, va_list list)
 {
   dbglogv((int)cookie, fmt, list);
 }
 
-static sysdbg_f sd_current = sysdbg_default_vprintf;
+static sysdbg_f sd_current = sd_default_vprintf;
 static void * sd_cookie = 0;
 
 static void sd_print_location(const char *fmt, const char *file, int line, ...)
@@ -93,7 +104,8 @@ void sysdbg_vprintf(const char * file, int line, int level,
   int len, nl_cnt;
 
   /* Wrong or masked level are simply ignored */
-  if ( (unsigned int)level > 31 || ! (sd_level & (1<<level)) ) {
+  if ( (unsigned int)level > 31
+       || ! (sd_level & (1<<level) & sd_global_level)) {
     return;
   }
 
@@ -150,14 +162,40 @@ void sysdbg_printf(const char * file, int line,
   va_end(list);
 }
 
+sysdbg_f sysdbg_set_function(sysdbg_f print, void * cookie)
+{
+  sysdbg_f save = sd_current;
+
+  sd_current = print ? print : sd_default_vprintf;
+  sd_cookie  = cookie;
+  return save;
+}
+
 /** Set debug level mask. */
-void sysdbg_level(int level, int * prev)
+void sysdbg_set_level(int level, int * prev)
 {
   if (prev) {
     *prev = sd_level;
   }
   sd_level = level;
 }
+
+void sysdbg_or_level(int level, int * prev)
+{
+  if (prev) {
+    *prev = sd_level;
+  }
+  sd_level |= level;
+}
+
+void sysdbg_and_level(int level, int * prev)
+{
+  if (prev) {
+    *prev = sd_level;
+  }
+  sd_level &= ~level;
+}
+
 
 /** Change indent level. */
 void sysdbg_indent(int indent, int * prev)
@@ -183,4 +221,3 @@ void sysdbg_register_level(sysdgb_level_e level,
   sd_levels[level].twocc[3] = 0;
 }
 
-#endif /* #ifdef DEBUG */

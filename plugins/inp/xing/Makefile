@@ -4,12 +4,12 @@
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sasahipa.com>
 #
 #
-# $Id: Makefile,v 1.3 2002-09-02 19:14:16 ben Exp $
+# $Id: Makefile,v 1.4 2002-09-12 17:57:31 ben Exp $
 #
 
 SUBDIRS=id3tag mpglib xingmp3
 
-LEFS=$(shell basename `pwd`).lef
+LEF=yes
 LEF_EXTRA := $(foreach dir,$(SUBDIRS),$(dir)/lib$(dir).a) 
 
 #ELFS=$(shell basename `pwd`).elf

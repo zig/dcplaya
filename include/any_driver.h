@@ -1,6 +1,6 @@
 /*
  *
- * $Id: any_driver.h,v 1.2 2002-09-06 23:16:09 ben Exp $ 
+ * $Id: any_driver.h,v 1.3 2002-09-12 17:57:31 ben Exp $ 
  */
  
 #ifndef _ANY_DRIVER_H_
@@ -59,9 +59,8 @@ typedef struct _any_driver_s
  * plugin (.klf) file.
  */
 #if !defined(FIRST_DRIVER) || (FIRST_DRIVER)
-/* # warning "EXPORT_DRIVER include ko_main" */
 # define EXPORT_DRIVER(symbol) \
-    any_driver_t *ko_main(void) { \
+    any_driver_t *lef_main(void) { \
       return (any_driver_t *)&symbol; \
     }
 #else

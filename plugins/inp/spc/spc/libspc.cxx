@@ -20,6 +20,7 @@ unsigned char BackupDSPRAM[128];
 
 int samples_per_mix;
 
+extern "C" void vid_border_color(int,int,int);
 
 // The callback
 
@@ -139,6 +140,7 @@ void SPC_update(unsigned char *buf)
   // APU_LOOP
   int c, ic;
 
+  vid_border_color(0,0,255);
 #if 1
   for (c = 0; c < 2048000 / 32 / RATE; c ++) {
     for (ic = 0; ic < 32; ic ++)
@@ -156,8 +158,10 @@ void SPC_update(unsigned char *buf)
     S9xAPUPackStatus();
   }
 #endif
+  vid_border_color(255,0,0);
 
   S9xMixSamples ((unsigned char *)buf, samples_per_mix);
+  vid_border_color(0,0,0);
 }
 
 /* Restore SPC state

@@ -15,7 +15,7 @@
 #define PLAYA_THREAD
 
 
-#define VCOLOR(R,G,B) //vid_border_color(R,G,B)
+#define VCOLOR(R,G,B) vid_border_color(R,G,B)
 
 static int current_frq, next_frq;
 static int current_stereo;
@@ -105,12 +105,12 @@ static void * sndstream_callback(int size)
   int last_sample = 0;
 
   int n;
-  VCOLOR(255,0,0);
+  //  VCOLOR(255,0,0);
 
   size >>= 2;
   n = fifo_read(out_buffer, size);
 
-  VCOLOR(0,0,0);
+  //  VCOLOR(0,0,0);
   if (n < 0) {
     return 0;
   } else {
@@ -148,7 +148,9 @@ void sndstream_thread(void *cookie)
   streamstatus = PLAYA_STATUS_STARTING;
 
   stream_init(sndstream_callback, 1<<14);
-  stream_start(1200, current_frq=44100, playavolume, current_stereo=1);
+  //  stream_start(1200, current_frq=44100, playavolume, current_stereo=1);
+  // $$$ Aprox sync VBL
+  stream_start(736, current_frq=44100, playavolume, current_stereo=1);
   //  stream_start(256, 44100, playavolume, 1);
 
   streamstatus = PLAYA_STATUS_PLAYING;
@@ -215,8 +217,10 @@ static void real_playa_update(void)
   case PLAYA_STATUS_PLAYING:
     {
       int status;
-
+      //      VCOLOR(255,255,0);
       status = driver ? driver->decode(&decinfo) : INP_DECODE_ERROR;
+      //      VCOLOR(0,0,0);
+
       if (status & INP_DECODE_END) {
 	playastatus = PLAYA_STATUS_STOPPING;
 	break;

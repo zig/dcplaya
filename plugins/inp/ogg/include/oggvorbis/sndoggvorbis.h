@@ -6,7 +6,7 @@
  * An Ogg/Vorbis player library using sndstream and the official Xiphophorus
  * libogg and libvorbis libraries.
  * 
- * last mod: $Id: sndoggvorbis.h,v 1.1 2002-08-26 14:14:35 ben Exp $
+ * last mod: $Id: sndoggvorbis.h,v 1.2 2002-09-12 17:57:31 ben Exp $
  */
 
 int sndoggvorbis_init();

@@ -1,10 +1,9 @@
-
 /**
  * @file      dreamcast68.c
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.10 2002-09-11 14:29:13 zig Exp $
+ * @version   $Id: dreamcast68.c,v 1.13 2002-09-12 17:57:31 ben Exp $
  */
 
 //#define RELEASE
@@ -46,7 +45,9 @@
 #include "viewport.h"
 
 #include "sysdebug.h"
+#include "syserror.h"
 #include "console.h"
+#include "shell.h"
 
 float fade68;
 uint32 frame_counter68 = 0;
@@ -444,15 +445,16 @@ static int driver_init(void)
   /* Load the default drivers from romdisk */
   {
     const char **p, *paths[] = {
-      /*
+ /*
       "/pc" DREAMMP3_HOME "plugins/obj",
       "/pc" DREAMMP3_HOME "plugins/vis/lpo",
-      "/pc" DREAMMP3_HOME "plugins/vis/fftvlr",
       "/pc" DREAMMP3_HOME "plugins/inp/xing",
       "/pc" DREAMMP3_HOME "plugins/inp/ogg",
-      "/pc" DREAMMP3_HOME "plugins/inp/sc68",*/
+      "/pc" DREAMMP3_HOME "plugins/inp/sc68",
+      "/pc" DREAMMP3_HOME "plugins/vis/fftvlr",
       "/pc" DREAMMP3_HOME "plugins/inp/sidplay",
       "/pc" DREAMMP3_HOME "plugins/inp/spc",
+*/
       0
     };
 
@@ -609,7 +611,7 @@ void main_thread(void *cookie)
 
   dbglog(DBG_DEBUG, ">> " __FUNCTION__ "\n");
 
-  vid_border_color(0,0,0);
+  //  vid_border_color(0,0,0);
 
   if (songmenu_start() < 0) {
     err = __LINE__;
@@ -621,7 +623,7 @@ void main_thread(void *cookie)
       err = __LINE__;
       goto error;
       }*/
-  playa_loaddisk("/rd/test.mp3", 1);
+  playa_loaddisk("/rd/01 Intro.spc", 1);
   thd_pass(); // $$$ Don't ask me why !!! It removes a bug in intro sound !!!
 
   fade68    = 0.0f;
@@ -648,6 +650,9 @@ void main_thread(void *cookie)
 	elapsed_frames = frame_counter68 - elapsed_frames;
 	fade(elapsed_frames);
 	controler_read(&controler68, frame_counter68);
+
+	/* Update shell */
+	shell_update(elapsed_frames * 1.0f/60.0f);
       
 	ta_commit_eol();
 
@@ -675,7 +680,7 @@ void main_thread(void *cookie)
     uint32 elapsed_frames;
     int is_playing = playa_isplaying();
 
-    my_vid_border_color(0,0,0);
+    //    my_vid_border_color(0,0,0);
     ta_begin_render();
 
     pipo_poly(0);
@@ -685,6 +690,13 @@ void main_thread(void *cookie)
     elapsed_frames = frame_counter68 - elapsed_frames;
     fade(elapsed_frames);
     controler_read(&controler68, frame_counter68);
+
+    
+    /* Update shell */
+    shell_update(elapsed_frames * 1.0f/60.0f);
+
+    /* Update consoles */
+    csl_update_all(elapsed_frames * 1.0f/60.0f);
 
     /* Update FFT */
     update_fft();
@@ -715,7 +727,10 @@ void main_thread(void *cookie)
     info_render(elapsed_frames, is_playing);
     songmenu_render(elapsed_frames);
     option_render(elapsed_frames);
-    my_vid_border_color(255,0,255);
+    //    my_vid_border_color(255,0,255);
+
+    /* Render translucent consoles */
+    csl_window_transparent_render_all();
 
     /* End of translucent list */
     ta_commit_eol();
@@ -732,7 +747,7 @@ void main_thread(void *cookie)
     
     ta_finish_frame();
     
-    my_vid_border_color(0,0,0);    
+    //    my_vid_border_color(0,0,0);    
   }
 
   dbglog(DBG_DEBUG, "** "  __FUNCTION__ " : Start exit procedure\n");
@@ -788,8 +803,13 @@ int dreammp3_main(int argc, char **argv)
   /* Do basic setup */
 
   kos_init_all(IRQ_ENABLE | THD_ENABLE, romdisk);
-  vid_border_color(0,0,0);
+  //  vid_border_color(0,0,0);
 
+
+  /* Initialize shell and LUA */
+  if (shell_init()) {
+    STHROW_ERROR(error);
+  }
 
   /* Initialize the console debugging log facility */
   csl_init_main_console();
@@ -813,7 +833,20 @@ int dreammp3_main(int argc, char **argv)
 
   /* change main console render mode */
   csl_disable_render_mode(csl_main_console, CSL_RENDER_BASIC);
-  csl_disable_render_mode(csl_main_console, CSL_RENDER_WINDOW);
+  csl_window_configure(csl_main_console, 50, 50, csl_main_console->w * 16, csl_main_console->h * 16, 1, 1);
+  csl_main_console->window.ba1 = 0.5;
+  csl_main_console->window.ba2 = 0.5;
+  csl_main_console->window.br1 = 0.2;
+  csl_main_console->window.bg1 = 0.0;
+  csl_main_console->window.bb1 = 0.0;
+  csl_main_console->window.br2 = 0.2;
+  csl_main_console->window.bg2 = 0.2;
+  csl_main_console->window.bb2 = 0.0;
+  csl_main_console->window.ta = 0.8;
+  csl_main_console->window.tr = 1.0;
+  csl_main_console->window.tg = 1.0;
+  csl_main_console->window.tb = 0.0;
+  csl_enable_render_mode(csl_main_console, CSL_RENDER_WINDOW);
   
   /* WARNING MESSAGE */
   dbglog( DBG_DEBUG, "** " __FUNCTION__ " : starting WARNING screen\n");
@@ -858,6 +891,9 @@ static int warning_splash(void)
     elapsed_frames = frame_counter68 - elapsed_frames;
     fade(elapsed_frames);
     controler_read(&controler68, frame_counter68);
+
+    /* Update shell */
+    shell_update(elapsed_frames * 1.0f/60.0f);
 
     if (controler_released(&controler68, CONT_START)) {
       end_frame = frame_counter68;

@@ -7,7 +7,6 @@
 
 DCPLAYA_EXTERN_C_START
 
-
 #ifndef fixed
 #define fixed short
 #endif

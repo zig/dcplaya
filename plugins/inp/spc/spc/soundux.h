@@ -114,7 +114,7 @@ typedef struct {
     unsigned long sustain_level;
     signed short sample;
   //    signed short decoded [16];
-  int32 decoded [8]; //$$$ BEN
+    int32 decoded [8]; //$$$ BEN
     signed short previous [2];
     signed short *block;
     uint16 sample_number;

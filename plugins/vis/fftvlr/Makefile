@@ -3,10 +3,10 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.2 2002-08-26 20:12:22 ben Exp $
+# $Id: Makefile,v 1.3 2002-09-12 17:57:31 ben Exp $
 #
 
-LEFS=$(shell basename `pwd`).lef
+LEF=yes
 
 KOS_LOCAL_INCS := -I../../../include
 OPTIMIZE = $(OPTIMIZE_FOR_SPEED)
