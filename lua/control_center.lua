@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.29 2003-04-05 16:33:30 ben Exp $
+--- $Id: control_center.lua,v 1.30 2003-07-29 08:30:23 benjihan Exp $
 ---
 
 --- @defgroup  dcplaya_lua_cc_app  Control Center
@@ -401,7 +401,7 @@ end
 --- Kill a control center application.
 ---
 ---   The control_center_kill() function kill the given application by
----   calling sending the evt_shutdown_app() funciton. If the given
+---   calling sending the evt_shutdown_app() function. If the given
 ---   application is nil or control_center the default control center
 ---   (control_center) is killed and the global control_center is set
 ---   to nil.
