@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/14
  *
- *  $Id: hyperpipe.c,v 1.6 2003-01-19 21:36:33 ben Exp $
+ *  $Id: hyperpipe.c,v 1.7 2003-01-20 14:57:24 zigziggy Exp $
  */ 
 
 #include <stdio.h>
@@ -806,7 +806,7 @@ static int init(any_driver_t *d)
     texid  = texture_dup(texture_get("bordertile"), tname);
   }
   texid2 = texture_get(tname2);
-  if (texid2 < 2) {
+  if (texid2 < 0) {
     texid2 = texture_dup(texture_get("bordertile"), tname2);
   }
 

@@ -4,14 +4,13 @@
  * @date     2003/01/19
  * @brief    External heap management.
  * 
- * $Id: exheap.c,v 1.4 2003-01-20 12:03:16 zigziggy Exp $
+ * $Id: exheap.c,v 1.5 2003-01-20 14:57:24 zigziggy Exp $
  */
 
 
 /* IDEA :
+
    
-- Use a binary tree to sort free blocks by size. Will accelerate free block
-searching, and may allow to choose free blocks that suit better.
 
 */
 
@@ -231,19 +230,28 @@ eh_block_t * eh_alloc(eh_heap_t * heap, size_t size)
     size = sizeof(eh_block_t);
 
   /* browse all free blocks */
-  CIRCLEQ_FOREACH(b, &heap->freelist, g_freelist) {
-    eh_block_t * next;
-    next = CIRCLEQ_NEXT(b, g_list);
-    SDDEBUG("%x %x (%x)\n", b, next, &heap->list);
-    if (next != (void *) &heap->list) {
-      sz = next->offset - b->offset;
-    } else {
-      sz = heap->total_sz - b->offset;
-    }
-    if (sz >= size) {
-      /* found a big enough free block ! */
 
-      return do_alloc(heap, b, sz, size);
+#define TRY_FREEBLOCK                                \
+      eh_block_t * next;                             \
+      next = CIRCLEQ_NEXT(b, g_list);                \
+      SDDEBUG("%x %x (%x)\n", b, next, &heap->list); \
+      if (next != (void *) &heap->list) {            \
+	sz = next->offset - b->offset;               \
+      } else {                                       \
+	sz = heap->total_sz - b->offset;             \
+      }                                              \
+      if (sz >= size) {                              \
+	/* found a big enough free block ! */        \
+	return do_alloc(heap, b, sz, size);          \
+      }                                              \
+
+  if (size < heap->small_threshold) {
+    CIRCLEQ_FOREACH_REVERSE(b, &heap->freelist, g_freelist) {
+      TRY_FREEBLOCK;
+    }
+  } else {
+    CIRCLEQ_FOREACH(b, &heap->freelist, g_freelist) {
+      TRY_FREEBLOCK;
     }
   }
 
@@ -290,62 +298,56 @@ eh_block_t * eh_realloc(eh_heap_t * heap, eh_block_t * block, size_t newsize)
 
 void eh_free(eh_heap_t * heap, eh_block_t * b)
 {
+  size_t offset = b->offset;
+  eh_block_t * prev = CIRCLEQ_PREV(b, g_list);
+  eh_block_t * next = CIRCLEQ_NEXT(b, g_list);
+
   SDDEBUG("eh_free(%x)\n", b);
 
-  if (0 && heap->usedblock_alloc == heap->freeblock_alloc) {
-    /* WHAT !!? */
-    CIRCLEQ_REMOVE(&heap->freelist, b, g_freelist);
-    MARK_USED(b);
-  } else {
-    size_t offset = b->offset;
-    eh_block_t * prev = CIRCLEQ_PREV(b, g_list);
-    eh_block_t * next = CIRCLEQ_NEXT(b, g_list);
+  free_usedblock(heap, b);
 
-    free_usedblock(heap, b);
+  if (prev != (void *)&heap->list && IS_FREE(prev)) {
+    if (next != (void *)&heap->list && IS_FREE(next)) {
+      /* both previous and next blocks are free blocks, merge them */
+      free_freeblock(heap, next);
 
-    if (prev != (void *)&heap->list && IS_FREE(prev)) {
-      if (next != (void *)&heap->list && IS_FREE(next)) {
-	/* both previous and next blocks are free blocks, merge them */
-	free_freeblock(heap, next);
-
-      } else {
-	/* nothing to do */
-      }
-    } else if (next != (void *)&heap->list && IS_FREE(next)) {
-      /* just adjust the offset to include the newly freed block */
-      next->offset = offset;
     } else {
+      /* nothing to do */
+    }
+  } else if (next != (void *)&heap->list && IS_FREE(next)) {
+    /* just adjust the offset to include the newly freed block */
+    next->offset = offset;
+  } else {
 
-      /* ok, none of the prev or next blocks were free blocks, need
-         to create a new free block ... */
-      b = new_freeblock(heap, offset);
+    /* ok, none of the prev or next blocks were free blocks, need
+       to create a new free block ... */
+    b = new_freeblock(heap, offset);
       
-      if (b == NULL) {
-	/* NOW WE HAVE A PROBLEM !! The free block will be lost ... 
-	   But the memory might be recovered later if an adjacent used
-	   block is freed. */
+    if (b == NULL) {
+      /* NOW WE HAVE A PROBLEM !! The free block will be lost ... 
+	 But the memory might be recovered later if an adjacent used
+	 block is freed. */
+    } else {
+      if (prev == (void *)&heap->list) {
+	CIRCLEQ_INSERT_HEAD(&heap->list, b, g_list);
+	CIRCLEQ_INSERT_HEAD(&heap->freelist, b, g_freelist);
       } else {
-	if (prev == (void *)&heap->list) {
-	  CIRCLEQ_INSERT_HEAD(&heap->list, b, g_list);
-	  CIRCLEQ_INSERT_HEAD(&heap->freelist, b, g_freelist);
-	} else {
-	  CIRCLEQ_INSERT_AFTER(&heap->list, prev, b, g_list);
+	CIRCLEQ_INSERT_AFTER(&heap->list, prev, b, g_list);
 
-	  /* find first previous free block */
-	  for ( ; ; ) {
-	    prev = CIRCLEQ_PREV(prev, g_list);
-	    if (prev == (void *)&heap->list) {
-	      CIRCLEQ_INSERT_HEAD(&heap->freelist, b, g_freelist);
-	      break;
-	    } else if (IS_FREE(prev)) {
-	      CIRCLEQ_INSERT_AFTER(&heap->freelist, prev, b, g_freelist);
-	      break;
-	    }
+	/* find first previous free block */
+	for ( ; ; ) {
+	  prev = CIRCLEQ_PREV(prev, g_list);
+	  if (prev == (void *)&heap->list) {
+	    CIRCLEQ_INSERT_HEAD(&heap->freelist, b, g_freelist);
+	    break;
+	  } else if (IS_FREE(prev)) {
+	    CIRCLEQ_INSERT_AFTER(&heap->freelist, prev, b, g_freelist);
+	    break;
 	  }
-	  
 	}
-
+	  
       }
+
     }
   }
   dump_freeblock(heap);

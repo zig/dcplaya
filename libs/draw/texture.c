@@ -4,7 +4,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.7 2003-01-20 12:03:16 zigziggy Exp $
+ * $Id: texture.c,v 1.8 2003-01-20 14:57:24 zigziggy Exp $
  */
 
 #include <stdlib.h>
@@ -182,6 +182,33 @@ texid_t texture_get(const char * texture_name)
   return allocator_index(texture, find_name(texture_name));
 }
 
+
+static void * vid_alloc(texture_t * t, size_t size)
+{
+  size = (size + 31) & (~31);
+
+  vid_heap->userdata = &t->ehb;
+  if (eh_alloc(vid_heap, size) == NULL) {
+    return NULL;
+  }
+  t->ta_tex = t->ehb.offset;
+  SDDEBUG("ta_tex = %x\n", t->ta_tex);
+/*  t->ta_tex = ta_txr_allocate(size); */
+  /* $$$ TODO check alloc error */ 
+  t->addr = ta_txr_map(t->ta_tex);
+  /** $$$ Don't know if it is a good things to do ... */
+  t->ta_tex += ta_state.texture_base;
+  
+  return t->addr;
+}
+
+void vid_free(texture_t * t)
+{
+  if (t->ta_tex != ~0) {
+    eh_free(vid_heap, &t->ehb);
+  }
+}
+
 texid_t texture_dup(texid_t texid, const char * name)
 {
   texture_t * ts, * t = 0;
@@ -217,17 +244,10 @@ texid_t texture_dup(texid_t texid, const char * name)
   t->hlog2  = ts->hlog2;
   t->format = ts->format;
   size = t->height << t->wlog2;
-  vid_heap->userdata = &t->ehb;
-  if (eh_alloc(vid_heap, size<<1) == NULL) {
+
+  if (vid_alloc(t, size<<1) == NULL)
     goto error;
-  }
-  t->ta_tex = t->ehb.offset;
-  SDDEBUG("ta_tex = %x\n", t->ta_tex);
-/*  t->ta_tex = ta_txr_allocate(size<<1); */
-  /* $$$ TODO check alloc error */ 
-  t->addr = ta_txr_map(t->ta_tex);
-  /** $$$ Don't know if it is a good things to do ... */
-  t->ta_tex += ta_state.texture_base;
+
   memcpy(t->addr, ts->addr, size<<1);
   texture_release(ts);
   return allocator_index(texture, t);
@@ -297,43 +317,37 @@ texid_t texture_create(texture_create_t * creator)
   t->format = format;
 
   size = creator->height << (wlog2);
-  vid_heap->userdata = &t->ehb;
-  if (eh_alloc(vid_heap, size<<1) == NULL) {
+
+  addr = vid_alloc(t, size<<1);
+  if (addr == NULL)
     goto error;
-  }
-  t->ta_tex = t->ehb.offset;
-  SDDEBUG("ta_tex = %x\n", t->ta_tex);
-/*  t->ta_tex = ta_txr_allocate(size<<1);*/
-  /* $$$ TODO check alloc error */ 
-  addr = ta_txr_map(t->ta_tex);
-  /** $$$ Don't know if it is a good things to do ... */
-  t->ta_tex += ta_state.texture_base;
+
   if (creator->width == 1<<wlog2) {
-	int n;
-	size = creator->reader(addr, n = size, creator);
-	if (size != n) {
-	  size = -1;
-	}
+    int n;
+    size = creator->reader(addr, n = size, creator);
+    if (size != n) {
+      size = -1;
+    }
   } else {
-	int y;
-	int h = creator->height;
-	int pixelperline = creator->width;
-	int bytesperline = 1 << (wlog2 + 1);
-	int n = pixelperline;
-	uint8 * dest = addr;
-	for (y=0;
-		 y<h && n==pixelperline;
-		 ++y, dest+=bytesperline) {
-	  n = creator->reader(dest, pixelperline, creator);
-	}
-	if (n != pixelperline) {
-	  size = -1;
-	}
+    int y;
+    int h = creator->height;
+    int pixelperline = creator->width;
+    int bytesperline = 1 << (wlog2 + 1);
+    int n = pixelperline;
+    uint8 * dest = addr;
+    for (y=0;
+	 y<h && n==pixelperline;
+	 ++y, dest+=bytesperline) {
+      n = creator->reader(dest, pixelperline, creator);
+    }
+    if (n != pixelperline) {
+      size = -1;
+    }
   }
 
   if (size < 0) {
-	SDERROR("Copy texture bitmap failed\n");
-	goto error;
+    SDERROR("Copy texture bitmap failed\n");
+    goto error;
   }
 	
   t->addr = addr;
@@ -579,20 +593,18 @@ int texture_destroy(texid_t texid, int force)
   /* $$$ TODO : Free texture mem !!! */
   allocator_lock(texture);
   if (t=get_texture(texid), t) {
-	if (!force && t->lock) {
-	  err = -2;
-	} else if (!force && t->ref) {
-	  err = -3;
-	} else {
+    if (!force && t->lock) {
+      err = -2;
+    } else if (!force && t->ref) {
+      err = -3;
+    } else {
 
-	  if (t->ta_tex != ~0) {
-	    eh_free(vid_heap, &t->ehb);
-	  }
+      vid_free(t);
 
-	  texture_clean(t);
-	  allocator_free(texture,t);
-	  err = 0;
-	}
+      texture_clean(t);
+      allocator_free(texture,t);
+      err = 0;
+    }
   }
   allocator_unlock(texture);
   return err;

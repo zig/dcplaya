@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.61 2003-01-19 21:44:50 ben Exp $
+ * @version    $Id: dynshell.c,v 1.62 2003-01-20 14:57:24 zigziggy Exp $
  */
 
 #include <stdio.h>
@@ -1604,7 +1604,7 @@ static int lua_set_visual(lua_State * L)
   }
   vis = option_visual();
   lua_settop(L,0);
-  if (vis) {
+  if (vis && vis->common.name) {
     lua_pushstring(L,vis->common.name);
   }
   return lua_gettop(L);
