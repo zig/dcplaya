@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  sgml text and gui element formater
 ---
---- $Id: taggedtext.lua,v 1.9 2002-12-23 14:15:08 zigziggy Exp $
+--- $Id: taggedtext.lua,v 1.10 2003-01-03 06:47:19 zigziggy Exp $
 ---
 
 if not dolib("sprite") then return end
@@ -53,6 +53,17 @@ function tt_img_cmd(mode, param)
       local sx, sy
       sx = param.sx or param.scale
       sy = param.sy or sx
+      local w, h
+      w = param.w
+      h = param.h
+      if w then
+	 sx = w/spr.w
+	 if h then
+	    sy = h/spr.h
+	 else
+	    sy = sx
+	 end
+      end
       local block = {
 	 type = "img",
 	 spr = spr,
@@ -282,6 +293,18 @@ tt_commands = {
    p = function(mode)
 	  tt_endline(mode)
        end,
+
+   lineup = function(mode)
+	     mode.align_line_v = tt_align_line_up
+	  end,
+
+   linedown = function(mode)
+	       mode.align_line_v = tt_align_line_down
+	    end,
+
+   linecenter = function(mode)
+	       mode.align_line_v = tt_align_line_vcenter
+	    end,
 
    left = function(mode)
 	     mode.align_line_h = tt_align_line_left

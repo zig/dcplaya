@@ -1,11 +1,11 @@
 /**
  * @ingroup dcplaya_devel
- * @file    any_driver.h
+ * @file    fftband.h
  * @author  benjamin gerard <ben@sashipa.com>
  * @date    2002/12/29
  * @brief   fft frequency band.
  *
- * $Id: fftband.h,v 1.1 2002-12-30 06:28:18 ben Exp $ 
+ * $Id: fftband.h,v 1.2 2003-01-03 06:47:18 zigziggy Exp $ 
  */
  
 #ifndef _FFTBAND_H_

@@ -4,7 +4,7 @@
  *  @date    2002/10/15
  *  @brief   draw primitive vertex definition.
  *
- * $Id: clipping.c,v 1.2 2002-11-28 20:20:24 ben Exp $
+ * $Id: clipping.c,v 1.3 2003-01-03 06:47:18 zigziggy Exp $
  */
 
 #include "draw/gc.h"
@@ -101,9 +101,9 @@ void draw_triangle_no_clip(const draw_vertex_t *v1,
 /* } */
 
 static void draw_triangle_clip_continue(const draw_vertex_t *v1,
-										const draw_vertex_t *v2,
-										const draw_vertex_t *v3,
-										int flags, int bits)
+					const draw_vertex_t *v2,
+					const draw_vertex_t *v3,
+					int flags, int bits)
 {
   switch (bits) {
   case 0: /* Coming from left clipping. Right clipping flags should be Ok */

@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.19 2002-12-27 04:11:49 zigziggy Exp $
+-- $Id: evt.lua,v 1.20 2003-01-03 06:47:19 zigziggy Exp $
 --
 
 
@@ -308,11 +308,16 @@ function evt_create_console_app()
 		     end
 		  end
 
-		  if evt.key == gui_focus_event and evt.app == app then
+		  if evt.key == evt_shutdown_event or (evt.key == gui_focus_event and evt.app == app) then
 		     if ke_set_active then
 			ke_set_active(1)
 		     end
 		     showconsole()
+
+		     if evt.key == evt_shutdown_event then
+			console_app = nil
+		     end
+
 		     return
 		  end
 		  if evt.key == gui_unfocus_event and evt.app == app then

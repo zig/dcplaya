@@ -283,7 +283,7 @@ function ik()
       while not key or key ~= 27 do
 	 local elapsed_time = frame_to_second(framecounter())
 
-	 Include controler move here !!!
+	 -- Include controler move here !!!
 
 	 -- End of current anim : set "idle"
 	 if player.anim then

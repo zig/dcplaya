@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.38 2002-12-27 04:11:49 zigziggy Exp $
+--- $Id: gui.lua,v 1.39 2003-01-03 06:47:19 zigziggy Exp $
 ---
 
 --
@@ -47,10 +47,12 @@ if not dolib "evt" or not dolib "box3d" or not dolib "taggedtext" then
    return
 end
 
+gui_box_bcolor = { 0.8, 0.2, 0.3, 0.3 }
 gui_box_color1 = { 0.8, 0.2, 0.3, 0.3 }
-gui_box_color2 = { 0.8, 0.1, 0.1, 0.1 }
-gui_button_color1 = { 0.8, 0.2, 0.7, 0.7 }
-gui_button_color2 = { 0.8, 0.1, 0.3, 0.3 }
+gui_box_color2 = { 0.8, 0.1, 0.15, 0.15 }
+gui_button_bcolor = { 0.8, 0.5, 0.7, 0.5 }
+gui_button_color1 = { 0.8, 0.5, 0.7, 0.5 }
+gui_button_color2 = { 0.8, 0.2, 0.4, 0.4 }
 gui_text_color = { 0.9, 1.0, 1.0, 0.7 }
 gui_text_shiftbox = { 5, 5, -5, -5 }
 gui_input_color1 = { 0.8, 0.2, 0.3, 0.3 }
@@ -103,7 +105,7 @@ gui_keycancel = {
    [KBD_CONT4_B] = 1, 
 }
 gui_keymenu = { 
-   [KBD_TAB] = 1, 
+   [KBD_KEY_PRINT] = 1, 
    [KBD_CONT1_Y] = 1, 
    [KBD_CONT2_Y] = 1, 
    [KBD_CONT3_Y] = 1, 
@@ -258,11 +260,15 @@ end
 -- A minimal handle function
 function gui_minimal_handle(app,evt)
    local key = evt.key
+   local f = app.event_table[key]
    if key == evt_shutdown_event then
+      if f then 
+	 -- still call shutdown user response before standard shutdown
+	 f(app, evt) 
+      end
       app.dl = nil
       return evt
    end
-   local f = app.event_table[key]
    if f then
       return f(app, evt)
    end
@@ -289,7 +295,12 @@ function gui_dialog_handle(app, evt)
 
    local focused = app.sub
 
+   local f = app.event_table[key]
    if key == evt_shutdown_event then
+      if f then 
+	 -- still call shutdown user response before standard shutdown
+	 f(app, evt) 
+      end
       gui_dialog_shutdown(app)
       return evt -- pass the shutdown event to next app
    end
@@ -432,7 +443,7 @@ function gui_dialog_update(app, frametime)
    
 end
 
-function gui_dialog_box_draw(dl, box, z, bcolor, color)
+function gui_dialog_box_draw(dl, box, z, bcolor, color1, color2)
    
    if not nil then
       local t, l, b, r = 1.6*bcolor, 0.8*bcolor, 0.2*bcolor, 0.4*bcolor
@@ -446,22 +457,27 @@ function gui_dialog_box_draw(dl, box, z, bcolor, color)
       b3d= box3d(box, 4, nil, t, l, b, r)
       box3d_draw(b3d,dl, mat_trans(0, 0, z))
 
-      b3d= box3d(box + { 4, 4, -4, -4 }, 2, color, b, r, t, l)
+      b3d= box3d(box + { 4, 4, -4, -4 }, 2, nil, b, r, t, l)
       box3d_draw(b3d,dl, mat_trans(0, 0, z))
+
+      dl_draw_box(dl, box + {6,6,-6,-6}, z, color1, color2)
    else
       dl_draw_box(dl, box, z, gui_box_color1, gui_box_color2)
    end
 end
 
-function gui_button_box_draw(dl, box, z, bcolor, color)
+function gui_button_box_draw(dl, box, z, bcolor, color1, color2)
    if not nil then
       local t, l, b, r = 1.6*bcolor, 0.8*bcolor, 0.2*bcolor, 0.4*bcolor
       t[1] = bcolor[1]
       l[1] = bcolor[1]
       b[1] = bcolor[1]
       r[1] = bcolor[1]
-      local b3d = box3d(box, 2, color, t, l, b, r)
+      --local b3d = box3d(box, 2, color1, t, l, b, r)
+      local b3d = box3d(box, 2, nil, t, l, b, r)
       box3d_draw(b3d,dl, mat_trans(0, 0, z))
+
+      dl_draw_box(dl, box+{2,2,-2,-2}, z, color1, color2)
    else
       dl_draw_box(dl, box, z, gui_button_color1, gui_button_color2)
    end
@@ -524,7 +540,7 @@ function gui_new_dialog(owner, box, z, dlsize, text, mode, name)
    end
    
    -- draw surrounding box
-   gui_dialog_box_draw(dial.dl, box, z, gui_box_color1, gui_box_color1)
+   gui_dialog_box_draw(dial.dl, box, z, gui_box_bcolor, gui_box_color1, gui_box_color2)
    
    -- draw the focus cursor
    local focus_dl
@@ -560,12 +576,16 @@ end
 function gui_button_handle(app, evt)
    local key = evt.key
 
+   local f = app.event_table[key]
    if key == evt_shutdown_event then
+      if f then 
+	 -- still call shutdown user response before standard shutdown
+	 f(app, evt) 
+      end
       gui_button_shutdown(app)
       return evt -- pass the shutdown event to next app
    end
 
-   local f = app.event_table[key]
    if f then
       return f(app, evt)
    end
@@ -598,7 +618,7 @@ function gui_new_button(owner, box, text, mode, z)
    }
 
    --dl_draw_box(app.dl, app.box, z, gui_button_color1, gui_button_color2)
-   gui_button_box_draw(app.dl, app.box, z, gui_button_color1, gui_button_color1)
+   gui_button_box_draw(app.dl, app.box, z, gui_button_bcolor, gui_button_color1, gui_button_color2)
 
    if text then
       gui_label(app, text, mode)
@@ -893,6 +913,8 @@ function gui_ask(question, answers, width, label)
 		    )
    
    tt_draw(tt)
+
+   tt.guis.dialog.event_table[evt_shutdown_event] = function(app) app.answer = 1 end
 
    for i=1, getn(answers), 1 do
       tt.guis.dialog.guis[format("%d", i)].event_table[gui_press_event] = function(app, evt)

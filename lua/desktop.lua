@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.10 2002-12-27 04:11:49 zigziggy Exp $
+--- $Id: desktop.lua,v 1.11 2003-01-03 06:47:19 zigziggy Exp $
 ---
 
 if not dolib("evt") then return end
@@ -10,6 +10,7 @@ if not dolib("gui") then return end
 if not dolib("textlist") then return end
 if not dolib("sprite") then return end
 if not dolib("menu") then return end
+if not dolib("taggedtext") then return end
 
 dskt_keytoggle = { 
    [KBD_KEY_PRINT] = 1, 
@@ -24,7 +25,92 @@ function dskt_create_sprites(vs)
    vs.sprites = {}
 end
 
+function dskt_openmenu(dial, target, x, y)
+   if dial.menu then
+      evt_shutdown_app(dial.menu)
+   end
+
+   local def = target.mainmenu_def or {
+      root=":"..target.name..":kill{kill}",
+      cb = {
+	 kill = function(menu) 
+		   evt_shutdown_app(%dial)
+		   evt_shutdown_app(%target)
+		   evt_shutdown_app(menu)
+		end
+      },
+   }
+   dial.menu = gui_menu(dial, "app", menu_create_defs(def), {x, y, 100, 100})
+end
+
 function dskt_switcher_create(owner, name, dir, x, y, z)
+
+   -- Create sprite
+   local texid = tex_get("dcpsprites") or tex_new("/rd/dcpsprites.tga")
+   local vmusprite = sprite("vmu",	
+			    0, 62/2,
+			    104, 62,
+			    108/512, 65/128, 212/512, 127/128,
+			    texid,1)
+
+
+   local text = '<dialog guiref="dialog" label="Desktop" name="desktop dialog">'
+
+   text = text..'<linecenter>Running application ('..strchar(16)..' menu,'..strchar(19)..' switch to) :<br><vspace h="8"><hspace w="16"><linedown>'
+   local i
+   for i=1,dir.n, 1 do
+      text = text..'<button total_w="64" guiref="r'..format("%d", i)..'">'
+      text = text..'<img name="vmu" w="32"><br><center>'..dir[i].app.name
+      text = text..'</button><hspace w="16">'
+   end
+
+   text = text..'<br><vspace h="16"><left><linecenter>Launchable application ('..strchar(16)..' launch,'..strchar(17)..' info) :<br><vspace h="8"><hspace w="16"><linedown>'
+
+   text = text..'</dialog>'
+
+   local box = { 0, 0, 640, 400 }
+   local tt = tt_build(text,	      
+		       { 
+			  x = "center",
+			  y = "center",
+			  box = box,
+			  z = 300
+		       })
+
+   tt_draw(tt)
+
+   for i=1,dir.n, 1 do
+      local idx = format("r%d", i)
+      local but = tt.guis.dialog.guis[idx]
+      if but then
+	 but.target = dir[i].app
+
+	 local oldhandle = but.handle
+	 but.handle = function(app, evt)
+			 local key = evt.key
+
+			 if dskt_keytoggle[key] then
+			    local owner = app.owner.owner
+			    evt_shutdown_app(app.owner)
+			    gui_new_focus(owner, app.target)
+
+			    return
+			 end
+
+			 if key == gui_press_event then
+			    dskt_openmenu(app.owner, app.target, app.box[3], (app.box[2] + app.box[4]) / 2)
+			    return
+			 end
+
+			 return %oldhandle(app, evt)
+		      end
+      end
+   end
+
+   do return tt.guis.dialog end
+   
+
+if nil then
 
    -- Default
    owner = owner or evt_desktop_app
@@ -92,10 +178,11 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 	    evt_shutdown_app(dial.menu)
 	 end
 	 local dir = dial.dir
+	 local dirinfo = dial.vs.fl.dirinfo
 	 --	 print("dir = ", dir)
 	 if dir then
-	    local pos = dial.vs.fl.pos
-	    local target = dir[pos+1].app
+	    local pos = dial.vs.fl.pos+1
+	    local target = dir[pos].app
 	    local def = target.mainmenu_def or {
 	       root=":app:kill{kill}",
 	       cb = {
@@ -106,7 +193,9 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 			 end
 	       },
 	    }
-	    dial.menu = gui_menu(dial, "app", menu_create_defs(def), {400, 200, 100, 100})
+	    local info = dirinfo[pos]
+	    local x, y = dial.vs.box[1] + info.w, dial.vs.fl.box[2] + info.y
+	    dial.menu = gui_menu(dial, "app", menu_create_defs(def), {x, y, 100, 100})
 	 end
 	 return
       elseif key == gui_item_change_event then
@@ -170,32 +259,13 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 
    -- Customize textlist
    local fl = dial.vs.fl
-   fl.vmusprite = vmusprite
-   fl.measure_text = function(fl, entry)
-			local w, h = dl_measure_text(fl.cdl,entry.name)
-			return max(w,fl.vmusprite.w),
-			h+fl.vmusprite.h+2*fl.span
-		     end
-
-   fl.draw_entry = function (fl, dl, idx, x , y, z)
-			  local entry = fl.dir[idx]
-		      local color = fl.dircolor
-		      local wt,ht = dl_measure_text(dl,entry.name)
-		      x = fl.bo2[1] * 0.5 - fl.border
-		      local xt = x - wt * 0.5
-		      dl_draw_text(dl,
-				   xt, y, z+0.1,
-				   color[1],color[2],color[3],color[4],
-				   entry.name)
-		      fl.vmusprite:draw(dl, x, y + ht, z)
-		   end
-
-   fl.draw_cursor = function () end
 
    dial.dir = dir or { }
    fl:change_dir(dial.dir)
 
    return dial
+end
+
 end
 
 
@@ -261,8 +331,8 @@ function dskt_handle(app, evt)
       return
    end
 
-   if key < KBD_USER and key ~= shell_toggleconsolekey then
-      -- prevent event falling back from one top application to the other
+   if console_app and key < KBD_USER and key ~= shell_toggleconsolekey then
+      -- prevent basic input event falling back from one top application to the other
       return
    end
    return evt
