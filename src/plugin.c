@@ -3,7 +3,7 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: plugin.c,v 1.11 2002-12-15 16:15:03 ben Exp $
+ * $Id: plugin.c,v 1.12 2003-01-03 19:05:39 ben Exp $
  */
 #include <stdio.h>
 #include <string.h>
@@ -39,8 +39,6 @@ any_driver_t * plugin_load(const char *fname)
     SDWARNING("No driver found in plugin [%s].\n", fname);
     goto error;
   }
-  /* Attach dll to driver. */
-  d->dll = prog;
 
   SDDEBUG("Driver list in [%s]\n", fname);
 
@@ -48,15 +46,18 @@ any_driver_t * plugin_load(const char *fname)
   for (d1 = pd = 0, d2 = d; d2; d2 = d2->nxt) {
     driver_list_t *dl;
 
+    /* Attach dll to driver. */
+    d2->dll = prog;
+
     dl = driver_list_which(d2);
     if (dl) {
       /* Have a valid driver. */
       if (pd) {
-		/* Link it to previous valid driver. */
-		pd->nxt = d2;
+	/* Link it to previous valid driver. */
+	pd->nxt = d2;
       } else {
-		/* Or set first valid. */
-		d1 = d2;
+	/* Or set first valid. */
+	d1 = d2;
       }
       pd = d2;
       /* Add a ref count to lef. */
@@ -64,9 +65,9 @@ any_driver_t * plugin_load(const char *fname)
       SDDEBUG("+ [%s] [%s] -> [%s]\n", (char *)&d2->type, d2->name, dl->name);
     } else {
       SDERROR("Bad driver type %08x [%c%c%c%c]\n",
-			  d->type,
-			  (d->type&255), (d->type>>8)&255,
-			  (d->type>>16)&255,  (d->type>>24)&255);
+	      d->type,
+	      (d->type&255), (d->type>>8)&255,
+	      (d->type>>16)&255,  (d->type>>24)&255);
     }
   }
   SDUNINDENT;
@@ -78,7 +79,7 @@ any_driver_t * plugin_load(const char *fname)
 
  error:
   if (!d1) {
-    /* No valid driver has be*/
+    /* No valid driver has been found ! */
     lef_free(prog);
   }
   sysdbg_indent(-1,0);
@@ -87,16 +88,14 @@ any_driver_t * plugin_load(const char *fname)
   return d1;
 }
 
-static void remove_driver(driver_list_t * dl, any_driver_t * d)
-{
-  lef_prog_t * lef = (lef_prog_t *) d->dll;
+/* static void remove_driver(driver_list_t * dl, any_driver_t * d) */
+/* { */
+/*   lef_prog_t * lef = (lef_prog_t *) d->dll; */
 
-  SDDEBUG("%s([%s], [%s] : lef:%p count:%d\n", __FUNCTION__,
-		  dl->name, d->name, lef, lef ? lef->ref_count : -666);
-  driver_list_unregister(dl, d);
-  SDDEBUG("Dereferencing driver\n");
-  driver_dereference(d);
-}
+/*   SDDEBUG("%s([%s], [%s] : lef:%p count:%d\n", __FUNCTION__, */
+/* 	  dl->name, d->name, lef, lef ? lef->ref_count : -666); */
+/*   driver_list_unregister(dl, d); */
+/* } */
 
 int plugin_load_and_register(const char *fname)
 {
@@ -109,8 +108,8 @@ int plugin_load_and_register(const char *fname)
     return 0;
   }
   
-  /* We can set the lef here since it is the same for all this drivers */
-  lef = (lef_prog_t *) d->dll;
+  /* We can set the lef here since it is the same for all these drivers */
+  lef = (lef_prog_t *) driver->dll;
 
   SDDEBUG("Scanning lef [%s] driver list\n", fname);
   SDINDENT;
@@ -132,19 +131,24 @@ int plugin_load_and_register(const char *fname)
     old = driver_list_search(dl, d->name);
     if (old) {
       SDDEBUG("Existing driver [%p %s] : [%p %s]\n",
-			  d, d->name, old, old->name);
-      remove_driver(dl, old);
+	      d, d->name, old, old->name);
+      driver_list_unregister(dl, old);
+      driver_dereference(old); /* Becoz search add a reference. */
     }
 
-    if (driver_reference(d) < 0 || driver_list_register(dl, d) < 0) {
+    if (driver_list_register(dl, d)) {
       SDERROR( "[%s] Init or Registration failed, removed\n", d->name);
-      remove_driver(dl, d);
+      /* $$$ Don't need anymore. */
+/*       remove_driver(dl, d); */
     } else {
       SDDEBUG("++ [%s] added to [%s]\n", d->name, dl->name);
       ++count;
     }
   }
   SDUNINDENT;
+
+  /* Unreference original lef reference. */
+  lef_free(lef);
 
   return count;
 }
@@ -179,7 +183,7 @@ static int r_plugin_path_load(char *path, unsigned int level)
     int type;
 
     type = filetype_get(de->name, de->size);
-/* 	SDDEBUG("[%s] : %04x\n", de->name, type); */
+    /* 	SDDEBUG("[%s] : %04x\n", de->name, type); */
 
     if (type == filetype_dir) {
       int cnt;

@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.16 2003-01-03 07:06:32 ben Exp $
+ * $Id: playa.c,v 1.17 2003-01-03 19:05:39 ben Exp $
  */
 
 #include <kos.h>
@@ -69,58 +69,58 @@ static void fade(int *d, int n)
   const int signbit = (sizeof(int)<<3)-1;
 
   if (!current_frq || n <= 0) {
-	return;
+    return;
   }
 
   ms = fade_ms;
   if (!ms) {
-	/* Fade is finished just apply it */
-	if (!fade_v) {
-	  /* Fade-out clears buffer */
-	  do{
-		*d++ = 0;
-	  } while (--n);
-	}
-	/* Fade-in does nothing. */
-	return;
+    /* Fade is finished just apply it */
+    if (!fade_v) {
+      /* Fade-out clears buffer */
+      do{
+	*d++ = 0;
+      } while (--n);
+    }
+    /* Fade-in does nothing. */
+    return;
   }
 
   v = fade_v;
   fade_step = (1<<(16+14)) / (current_frq * ms >> 5);
 
   if (fade_step < 0) {
-	do {
-	  int l,r,m,v2;
-	  l = *d;
-	  r = l>>16;
-	  l = (short)l;
-	  v2 = v>>9;
-	  *d++ = ((r * v2) & 0xFFFF0000) | ((unsigned int)(l*v2) >> 16);
-	  v += fade_step;
-	  m = ~(v>>signbit);
-	  v &= m;
-	  fade_step &= m;
-	} while (--n);
+    do {
+      int l,r,m,v2;
+      l = *d;
+      r = l>>16;
+      l = (short)l;
+      v2 = v>>9;
+      *d++ = ((r * v2) & 0xFFFF0000) | ((unsigned int)(l*v2) >> 16);
+      v += fade_step;
+      m = ~(v>>signbit);
+      v &= m;
+      fade_step &= m;
+    } while (--n);
   } else {
-	do {
-	  const int maxv = fade_max;
-	  int l,r,m,v2;
-	  l = *d;
-	  r = l>>16;
-	  l = (short)l;
-	  v2 = v>>9;
-	  *d++ = ((r * v2) & 0xFFFF0000) | ((unsigned int)(l*v2) >> 16);
-	  v += fade_step;
-	  m = (maxv-v) >> signbit;
-	  v |= m;
-	  v &= maxv;
-	  fade_step &= ~m;
-	} while (--n);
+    do {
+      const int maxv = fade_max;
+      int l,r,m,v2;
+      l = *d;
+      r = l>>16;
+      l = (short)l;
+      v2 = v>>9;
+      *d++ = ((r * v2) & 0xFFFF0000) | ((unsigned int)(l*v2) >> 16);
+      v += fade_step;
+      m = (maxv-v) >> signbit;
+      v |= m;
+      v &= maxv;
+      fade_step &= ~m;
+    } while (--n);
   }
   fade_v = v;
   if (!fade_step) {
-	SDDEBUG("Fade %d stop\n", fade_ms);
-	fade_ms = 0;
+    SDDEBUG("Fade %d stop\n", fade_ms);
+    fade_ms = 0;
   }
 }
 
@@ -153,9 +153,9 @@ static void * sndstream_callback(int size)
 
   size >>= 2;
   if (playa_paused && !fade_v) {
-	n = 0;
+    n = 0;
   } else {
-	n = fifo_read(out_buffer, size);
+    n = fifo_read(out_buffer, size);
   }
 
   //  VCOLOR(0,0,0);
@@ -165,18 +165,18 @@ static void * sndstream_callback(int size)
     int pbs = play_samples_start;
 
     if (pbs) {
-/* 	  SDDEBUG("Real start in %u samples (%d)\n", pbs, n); */
+      /* 	  SDDEBUG("Real start in %u samples (%d)\n", pbs, n); */
       pbs -= n;
       if (pbs < 0) {
         /* We reach the new music in the fifo.
-            We had to change stream_parameters */
+	   We had to change stream_parameters */
         if (next_frq != current_frq) {
           SDDEBUG("[%s] :  On the fly sampling change : %d->%d\n",
-				  __FUNCTION__, current_frq, next_frq);
+		  __FUNCTION__, current_frq, next_frq);
           stream_frq(current_frq = next_frq);
         }
         play_samples = -pbs-n;
-		SDDEBUG("New sample count:%u\n", play_samples+n);
+	SDDEBUG("New sample count:%u\n", play_samples+n);
         pbs = 0;
       }
       play_samples_start = pbs;
@@ -186,7 +186,7 @@ static void * sndstream_callback(int size)
       last_sample = out_buffer[n-1];
     }
     last_sample = fade_out(out_buffer+n, size-n, last_sample);
-	fade(out_buffer,size);
+    fade(out_buffer,size);
   }
   out_samples = size;
   out_count++;
@@ -268,30 +268,33 @@ static void real_playa_update(void)
       playa_info_t info;
       //      VCOLOR(255,255,0);
       if (!driver) {
-		SDERROR("No driver !\n");
-		status = INP_DECODE_ERROR;
+	SDERROR("No driver !\n");
+	status = INP_DECODE_ERROR;
+      } else if (!fifo_free()) {
+/* 	SDDEBUG("Fifo is full ... pass ...\n"); */
+	status = 0;
       } else {
-		memset(&info,0,sizeof(info));
-		status = driver->decode(&info);
+	memset(&info,0,sizeof(info));
+	status = driver->decode(&info);
       }
       //      VCOLOR(0,0,0);
 
       if (status & INP_DECODE_END) {
-		if (driver && status == INP_DECODE_ERROR) {
-		  SDERROR("Driver error\n");
-		}
-/* 		SDDEBUG("STOOOOOOOOP\n"); */
-		playastatus = PLAYA_STATUS_STOPPING;
-		break;
+	if (driver && status == INP_DECODE_ERROR) {
+	  SDERROR("Driver error\n");
+	}
+	/* 		SDDEBUG("STOOOOOOOOP\n"); */
+	playastatus = PLAYA_STATUS_STOPPING;
+	break;
       }
 
       if (status & INP_DECODE_INFO) {
-/* 		SDDEBUG("Driver change INFO\n"); */
-		playa_info_update(&info);
+	/* 		SDDEBUG("Driver change INFO\n"); */
+	playa_info_update(&info);
       }
 
       if (! (status & INP_DECODE_CONT)) {
-		thd_pass();
+	thd_pass();
       }
 
     } break;
@@ -302,7 +305,7 @@ static void real_playa_update(void)
   case PLAYA_STATUS_STOPPING:
     {
       if (driver) {
-		driver->stop();
+	driver->stop();
       }
       playa_info_clean();
       playastatus = PLAYA_STATUS_READY;
@@ -385,7 +388,7 @@ int playa_init()
   streamstatus = PLAYA_STATUS_INIT;
   sndstream_thd = thd_create(sndstream_thread, 0);
   if (sndstream_thd) {
-	thd_set_label(sndstream_thd, "Sound-stream-thd");
+    thd_set_label(sndstream_thd, "Sound-stream-thd");
   }
 
   SDDEBUG("Waiting soundstream thread\n");
@@ -398,7 +401,7 @@ int playa_init()
 #ifdef PLAYA_THREAD
   playa_thread = thd_create(playadecoder_thread, 0);
   if (playa_thread) {
-	thd_set_label(playa_thread, "Playa-thd");
+    thd_set_label(playa_thread, "Playa-thd");
   }
 #endif
   SDDEBUG("Waiting PLAYA decoder thread\n");
@@ -415,6 +418,8 @@ int playa_shutdown()
   int e = 0;
   SDDEBUG(">> %s()\n", __FUNCTION__);
   SDINDENT;
+
+  playa_stop(1);
 
   /* PLAYA decoder */
   SDDEBUG("Decoder stream\n");
@@ -462,16 +467,16 @@ int playa_status() {
 
 const char * playa_statusstr(int status) {
   static const char * statusstr[] =
-  {
-    "INIT",
-    "READY",
-    "STARTING",
-    "PLAYING",
-    "STOPPING",
-    "QUIT",
-    "ZOMBIE",
-    "REINIT",
-  };
+    {
+      "INIT",
+      "READY",
+      "STARTING",
+      "PLAYING",
+      "STOPPING",
+      "QUIT",
+      "ZOMBIE",
+      "REINIT",
+    };
   return (status < 0 || status > 7) ? "???" : statusstr[status];
 }
 
@@ -518,6 +523,8 @@ int playa_stop(int flush)
     fade_ms = 0;
     fade_v  = 0;
   }
+
+  driver_dereference(&driver->common);
   driver = 0;
 
  end:
@@ -532,7 +539,7 @@ int playa_stop(int flush)
 int playa_start(const char *fn, int track, int immediat) {
   int e = -1;
   playa_info_t info;
-  inp_driver_t *d;
+  inp_driver_t *d = 0;
 
   SDDEBUG(">> %s('%s',%d, %d)\n",__FUNCTION__, fn, track, immediat);
   SDINDENT;
@@ -547,7 +554,9 @@ int playa_start(const char *fn, int track, int immediat) {
   /* $$$ Try to find a driver for this file. A quick glance at file extension
      will be suffisant right now. Later the driver should support an is_mine()
      function. */
+  /* This create a reference on the driver. */
   d = inp_driver_list_search_by_extension(fn);
+
   /* $$$ Here, the previous play is not stopped. May be songmenu.c expects
      it is !!! */
   if (!d) {
@@ -568,22 +577,23 @@ int playa_start(const char *fn, int track, int immediat) {
       SDWARNING("fifo used : %d !!!\n", pbs);
       pbs = 0;
     }
-	SDWARNING("Real start in %u samples!!!\n", pbs);
+    SDWARNING("Real start in %u samples!!!\n", pbs);
     play_samples_start = pbs;
   } else {
-	/* */
+    /* */
     play_samples = play_samples_start = 0;
-	fade_ms = 128;
-	fade_v = 0;
+    fade_ms = 128;
+    fade_v = 0;
   }
   
   /* Start playa, get decoder info */
-  driver = d;
-  e = driver->start(fn, track, &info);
+  
+  e = d->start(fn, track, &info);
   if (e) {
-    SDERROR("Driver [%s] error := [%d]\n", driver->common.name, e);
+    SDERROR("Driver [%s] error := [%d]\n", d->common.name, e);
     goto error;
   }
+
 
   // $$$ ben: Validate all fields ? Not sure this is really wise.
   info.update_mask = (1 << PLAYA_INFO_SIZE) - 1;
@@ -603,14 +613,20 @@ int playa_start(const char *fn, int track, int immediat) {
   /* Wait for player thread to be ready */
   wait_playastatus(PLAYA_STATUS_READY);
 
+  /* $$$ Already done by playa_stop() ... It is a safety net. */
+  driver_dereference(&driver->common);
+  driver_reference(&d->common);
+  driver=d;
+
   /* Tell it to start */
   //  playastatus = PLAYA_STATUS_STARTING;
   playastatus = PLAYA_STATUS_PLAYING;
   sem_signal(playa_haltsem);
   //  wait_playastatus(PLAYA_STATUS_STARTING);
-/*   playa_info_dump(&info); */
+  /*   playa_info_dump(&info); */
 
  error:
+  driver_dereference(&d->common);
   SDUNINDENT;
   SDDEBUG("<< %s([%s],%d,%d) := [%d] \n",__FUNCTION__, fn, track, immediat, e);
 
@@ -633,13 +649,13 @@ int playa_pause(int v)
   int old = playa_paused;
   playa_paused = !!v;
   if (playa_paused) {
-	playa_fade(-1024);
+    playa_fade(-1024);
   } else {
-	playa_fade(1024);
+    playa_fade(1024);
   }
-/*   if (playa_paused != old) { */
-/* 	SDDEBUG("%s playa\n", playa_paused ? "Pause" : "Resume"); */
-/*   } */
+  /*   if (playa_paused != old) { */
+  /* 	SDDEBUG("%s playa\n", playa_paused ? "Pause" : "Resume"); */
+  /*   } */
   return old;
 }
 
@@ -647,8 +663,8 @@ int playa_fade(int ms)
 {
   int old = fade_ms;
   if (ms) {
-	fade_ms = ms;
-	SDDEBUG("Start fade [v:%d ms:%d]\n", fade_v, fade_ms);
+    fade_ms = ms;
+    SDDEBUG("Start fade [v:%d ms:%d]\n", fade_v, fade_ms);
   }
   return old;
 }

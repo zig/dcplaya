@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.39 2002-12-30 06:28:18 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.40 2003-01-03 19:05:39 ben Exp $
  */
 
 //#define RELEASE
@@ -420,9 +420,7 @@ static int load_builtin_driver(void)
   };
   for (d=list; *d; ++d) {
     /* Init driver and register it. */
-    if (!(*d)->init(*d)) {
-      driver_register(*d);
-    }
+    driver_register(*d);
   }
   return 0;
 }

@@ -5,7 +5,7 @@
  * @author  Dan Potter
  * @brief   ELF library loader - Based on elf.c from KallistiOS 1.1.5 
  *
- * @version $Id: lef.c,v 1.13 2002-09-27 02:01:37 vincentp Exp $
+ * @version $Id: lef.c,v 1.14 2003-01-03 19:05:39 ben Exp $
  */
 
 #include <malloc.h>
@@ -382,31 +382,41 @@ lef_prog_t *lef_load(const char * fname)
     SDERROR("Out image alloc error\n");
     goto error;
   }
-  out->ref_count = 0;
+  out->ref_count = 1;
   out->data = (void *)(((unsigned int)&out[1] + align_lef - 1) & -align_lef);
   out->size = sz;
   imgout = out->data;
 
   /* Set section real addres, and copy */
-  SDDEBUG( "------------------------------------------------\n");
-  SDDEBUG( "CREATE IMAGE\n");
-  SDDEBUG( "------------------------------------------------\n");
+  if (verbose) {
+    SDDEBUG( "------------------------------------------------\n");
+    SDDEBUG( "CREATE IMAGE\n");
+    SDDEBUG( "------------------------------------------------\n");
+  }
   for (i=0; i<hdr->shnum; i++) {
     shdrs[i].addr += (unsigned int)imgout;
     if (shdrs[i].flags & SHF_ALLOC) {
       if (shdrs[i].type == SHT_NOBITS) {
 	memset((void *)shdrs[i].addr, 0, shdrs[i].size);
-	SDDEBUG( "CLEARED ");
+	if (verbose) {
+	  SDDEBUG( "CLEARED ");
+	}
       }
       else {
 	memcpy((void *)shdrs[i].addr, img+shdrs[i].offset, shdrs[i].size);
-	SDDEBUG( "COPIED  ");
+	if (verbose) {
+	  SDDEBUG( "COPIED  ");
+	}
       }
     } else {
       //section_copied &= ~(1<<i);
-      SDDEBUG(   "SKIPPED ");
+      if (verbose) {
+	SDDEBUG(   "SKIPPED ");
+      }
     }
-    display_section(i, shdrs+i, 0);
+    if (verbose) {
+      display_section(i, shdrs+i, 0);
+    }
   }
 
   /* Relocate symtab entries for quick access */
@@ -611,13 +621,13 @@ info = section header index of section to which reloc applies
 
   /* Find/Call c-tor init : */
   if (!errors) {
-    SDDEBUG("Searching ctor sections\n");
+/*     SDDEBUG("Searching ctor sections\n"); */
     for (i=0; i<hdr->shnum; i++) {
       if (!strcmp((char *)shdrs[i].name, ".ctors")) {
-	SDDEBUG( "CTOR "); display_section(i,shdrs+i,0); 
+/* 	SDDEBUG( "CTOR "); display_section(i,shdrs+i,0);  */
 	for (j=0; j<shdrs[i].size; j+=4) {
 	  uint32 * rout = *(uint32 **)shdrs[i].addr; 
-	  SDDEBUG("-->%p [%p [%08x]]\n", shdrs[i].addr, rout, *rout);
+	  SDDEBUG("CTOR -->%p [%p [%08x]]\n", shdrs[i].addr, rout, *rout);
 	  ((void (*)(void))rout)();
 	}
       }
@@ -675,13 +685,13 @@ void lef_free(lef_prog_t *prog) {
 /*  SDDEBUG("%s(%p)\n", __FUNCTION__, prog);
   SDINDENT; */
   if (!prog) {
-    SDERROR("Invalid parameter\n");
+    SDERROR("[%s] : null pointer\n", __FUNCTION__);
   } else if (--prog->ref_count<=0) {
     if (prog->ref_count < 0) {
-      SDWARNING("minus refcount :%d\n", prog->ref_count);
+      SDWARNING("[%s] : minus refcount [%d]\n", __FUNCTION__, prog->ref_count);
     }
     free(prog);
-    SDDEBUG("lef removed\n");
+    SDDEBUG("[%s] : removed\n", __FUNCTION__);
   } else {
 /*    SDDEBUG("remainding lef instance: %d\n", prog->ref_count); */
   }

@@ -68,9 +68,11 @@ int option_setup(void)
   SDDEBUG("++ VISUALS = %d\n", vis_drivers.n);
 
   visual = (vis_driver_t *) vis_drivers.drivers;
+  driver_reference(&visual->common);
   if (visual) {
     SDDEBUG("++ OPTION VISUAL = %s\n", visual->common.name);
     if (visual->start() < 0) {
+      driver_dereference(&visual->common);
       visual = 0;
     }
   } else {
@@ -204,7 +206,7 @@ void option_render(unsigned int elapsed_frame)
     {
       char tmp[32];
       int v;
-	  float h;
+      float h;
 
       volume += (hmove << 3);
       if (volume < 0) {
@@ -216,8 +218,8 @@ void option_render(unsigned int elapsed_frame)
 
       strcpy(option_str, "Vol ");
       h = text_draw_str_inside(x1, y1, x2, y2, z, "VOLUME");
-	  y1 += h;
-	  y2 += h;
+      y1 += h;
+      y2 += h;
       v = volume * 100;
       sprintf (tmp, "%d.%d%%", v / 255, v % 255 * 9 / 255);
       strcat(option_str,tmp);
@@ -243,36 +245,43 @@ void option_render(unsigned int elapsed_frame)
       vis_driver_t * save = visual;
       char tmp [256];
       
+      driver_list_lock(&vis_drivers);
       if (hmove > 0) {
-		/* Find next visual */
-		if (!visual) {
-		  visual = (vis_driver_t *)vis_drivers.drivers;
-		} else {
-		  visual = (vis_driver_t *) visual->common.nxt;
-		}
+	/* Find next visual */
+	if (!visual) {
+	  visual = (vis_driver_t *)vis_drivers.drivers;
+	} else {
+	  visual = (vis_driver_t *) visual->common.nxt;
+	}
       } else if (hmove < 0) {
-		/* Find previous visual */
-		any_driver_t *p, *v;
+	/* Find previous visual */
+	any_driver_t *p, *v;
 
-		for (p=0, v=vis_drivers.drivers;
-			 v && v != &visual->common;
-			 p=v, v=v->nxt)
-		  ;
-		visual = (vis_driver_t *)p;
+	for (p=0, v=vis_drivers.drivers;
+	     v && v != &visual->common;
+	     p=v, v=v->nxt)
+	  ;
+	visual = (vis_driver_t *)p;
       }
+      driver_reference(&visual->common);
+      driver_list_unlock(&vis_drivers);
 
       /* Do plugin stop/start op */
       if (visual != save) {
-		/* Only if visual changes */
-		if (save) {
-		  /* Stop previous ... if any */
-		  save->stop();
-		}
-		if (visual) {
-		  /* Start new one ... if any */
-		  visual->start();
-		}
+	/* Only if visual changes */
+	if (save) {
+	  /* Stop previous ... if any */
+	  save->stop();
+	}
+	if (visual) {
+	  /* Start new one ... if any */
+	  if (visual->start()) {
+	    driver_dereference(&visual->common);
+	    visual = 0;
+	  }
+	}
       }
+      driver_dereference(&save->common);
 	  
       sprintf(tmp,"Visual %s", !visual ? "OFF" : visual->common.name);
       option_str[sizeof(option_str)-1] = 0;
@@ -284,7 +293,7 @@ void option_render(unsigned int elapsed_frame)
   case OPTION_LCD_VISUAL:
     {
       static const char * str[] =
-		{ "LCD OFF", "LCD Scope", "LCD FFT", "LCD FFT (x2)" };
+	{ "LCD OFF", "LCD Scope", "LCD FFT", "LCD FFT (x2)" };
       lcd_visual = (lcd_visual + hmove) & 3;
       strcpy(option_str,  str[lcd_visual]);
       text_draw_str_inside(x1, y1, x2, y2, z, option_str);

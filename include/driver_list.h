@@ -5,12 +5,13 @@
  * @date    2002
  * @brief   Registered driver list.
  *
- * $Id: driver_list.h,v 1.8 2002-12-14 16:15:36 ben Exp $
+ * $Id: driver_list.h,v 1.9 2003-01-03 19:05:39 ben Exp $
  */
 
 #ifndef _DRIVER_LIST_H_
 #define _DRIVER_LIST_H_
 
+#include <arch/spinlock.h>
 
 #include "extern_def.h"
 
@@ -27,6 +28,7 @@ typedef struct
 {
   const char *name;       /**< Name of driver list.      */
   int n;                  /**< Number of driver in list. */
+  spinlock_t mutex;       /**< Thread safety.            */
   any_driver_t * drivers; /**< First entry.              */
 } driver_list_t;
 
@@ -73,6 +75,12 @@ void driver_list_shutdown(driver_list_t * dl);
  *  @ingroup dcplaya_devel
  *  @{
  */
+
+/** Lock a driver list. */
+void driver_list_lock(driver_list_t *dl);
+
+/** Unlock a driver list. */
+void driver_list_unlock(driver_list_t *dl);
 
 /** Add a driver into a specified driver list.
  *

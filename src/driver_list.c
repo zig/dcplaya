@@ -5,7 +5,7 @@
  * @date    2002
  * @brief   Registered driver list.
  *
- * $Id: driver_list.c,v 1.12 2002-12-15 16:15:03 ben Exp $
+ * $Id: driver_list.c,v 1.13 2003-01-03 19:05:39 ben Exp $
  */
 
 #include <string.h>
@@ -28,6 +28,8 @@ driver_list_t img_drivers;
 int driver_list_init(driver_list_t *dl, const char *name)
 {
   SDDEBUG("%s(%s)\n", __FUNCTION__, name);
+
+  spinlock_init(&dl->mutex);
   dl->n = 0;
   dl->drivers = 0;
   dl->name = name;
@@ -61,6 +63,60 @@ void driver_list_shutdown(driver_list_t *dl)
 {
 }
 
+void driver_list_lock(driver_list_t *dl) {
+  spinlock_lock(&dl->mutex);
+}
+
+void driver_list_unlock(driver_list_t *dl) {
+  spinlock_unlock(&dl->mutex);
+}
+
+static any_driver_t * drv_list_search(driver_list_t *dl, const char *name);
+
+
+static int specific_register(any_driver_t * driver)
+{
+  int err = 0;
+  switch(driver->type) {
+  case INP_DRIVER:
+    {
+      inp_driver_t * d = (inp_driver_t *) driver;
+      d->id = filetype_add(filetype_major_add("music"),
+			   driver->name, d->extensions);
+      SDDEBUG("Driver '%s' : filetype %d\n", driver->name, d->id);
+    } break;
+      
+  case IMG_DRIVER:
+    {
+      img_driver_t * d = (img_driver_t *) driver;
+      /* Add to translator */
+      err = AddTranslator(d->translator);
+      if (!err) {
+	/* Add filetype. */
+	d->id = filetype_add(filetype_major_add("image"),
+			     driver->name, d->extensions);
+	SDDEBUG("Driver '%s' : filetype %d\n", driver->name, d->id);
+      }
+    } break;
+  }
+  return err;
+}
+
+static int specific_unregister(any_driver_t * driver)
+{
+  /* driver type specific */
+  switch(driver->type) {
+  case INP_DRIVER:
+    filetype_del(((inp_driver_t *)driver)->id);
+    break;
+  case IMG_DRIVER:
+    filetype_del(((img_driver_t *)driver)->id);
+    DelTranslator(((img_driver_t *)driver)->translator);
+    break;
+  }
+}
+
+
 int driver_list_register(driver_list_t *dl, any_driver_t * driver)
 {
   const any_driver_t * d;
@@ -69,40 +125,25 @@ int driver_list_register(driver_list_t *dl, any_driver_t * driver)
   if (!dl || !driver) {
     return -1;
   }
-  d = driver_list_search(dl, driver->name);
+
+  driver_list_lock(dl);
+
+  d = drv_list_search(dl, driver->name);
   if (d) {
     SDERROR("%s([%s], [%s]) : Driver already exists.\n",
 	    __FUNCTION__, dl->name, driver->name);
-    return -1;
+    err = -1;
+  } else {
+    err = driver_reference(driver);
+    if (!err) {
+      driver->nxt = dl->drivers;
+      dl->drivers = driver;
+      ++dl->n;
+    }
   }
-  driver->nxt = dl->drivers;
-  dl->drivers = driver;
-  ++dl->n;
+  driver_list_unlock(dl);
 
-  /* $$$ This test should not be here. Drivers have nothing to do with
-     file type. */
-  switch(driver->type) {
-  case INP_DRIVER:
-	{
-	  inp_driver_t * d = (inp_driver_t *) driver;
-	  d->id = filetype_add(filetype_major_add("music"),
-						   driver->name, d->extensions);
-	  SDDEBUG("Driver '%s' : filetype %d\n", driver->name, d->id);
-	} break;
-	
-  case IMG_DRIVER:
-	{
-	  img_driver_t * d = (img_driver_t *) driver;
-	  /* Add to translator */
-	  err = AddTranslator(d->translator);
-	  if (!err) {
-		/* Add filetype. */
-		d->id = filetype_add(filetype_major_add("image"),
-							 driver->name, d->extensions);
-		SDDEBUG("Driver '%s' : filetype %d\n", driver->name, d->id);
-	  }
-	} break;
-  }
+  SDDEBUG("[%s] := [%d]\n",__FUNCTION__, err);
 
   return err;
 }
@@ -143,23 +184,15 @@ int driver_list_unregister(driver_list_t *dl, any_driver_t * driver)
 {
   any_driver_t *d, *p=0;
 
-  if (!dl) {
+  if (!dl || !driver) {
     return -1;
   }
 
-  /* driver type specific */
-  switch(driver->type) {
-  case INP_DRIVER:
-	filetype_del(((inp_driver_t *)driver)->id);
-	break;
-  case IMG_DRIVER:
-	filetype_del(((img_driver_t *)driver)->id);
-	DelTranslator(((img_driver_t *)driver)->translator);
-	break;
-  }
+  driver_list_lock(dl);
 
   for (p=0, d=dl->drivers; d && d != driver; p=d, d=d->nxt)
     ;
+
   if (d) {
     if (p) {
       p->nxt = d->nxt;
@@ -167,22 +200,39 @@ int driver_list_unregister(driver_list_t *dl, any_driver_t * driver)
       dl->drivers = d->nxt;
     }
     --dl->n;
-  }
-  if (!d) {
-    SDERROR("Failed to unregister [%s] from [%s].\n", driver->name, dl->name);
-  } else {
     SDDEBUG("Unregister [%s] from [%s] success\n", driver->name, dl->name);
+    specific_unregister(d);
+    driver_dereference(d);
+  } else {
+    SDERROR("Failed to unregister [%s] from [%s].\n", driver->name, dl->name);
   }
 
+  driver_list_unlock(dl);
+
   return d ? 0 : -1;
+}
+
+static any_driver_t * drv_list_search(driver_list_t *dl, const char *name)
+{
+  any_driver_t * d;
+  for (d=dl->drivers; d && strcmp(d->name, name); d=d->nxt)
+    ;
+  return d;
 }
 
 any_driver_t * driver_list_search(driver_list_t *dl, const char *name)
 {
   any_driver_t * d;
 
-  for (d=dl->drivers; d && strcmp(d->name, name); d=d->nxt)
-    ;
+  if (!dl || !name) {
+    return 0;
+  }
+
+  driver_list_lock(dl);
+  d = drv_list_search(dl, name);
+  driver_reference(d);
+  driver_list_unlock(dl);
+
   return d;
 }
 
@@ -193,13 +243,13 @@ any_driver_t * driver_list_search(driver_list_t *dl, const char *name)
 static int extfind(const char * extlist, const char * ext)
 {
   if (extlist && ext) {
-	int len;
-	while (len = strlen(extlist), len > 0) {
-	  if (!stricmp(ext,extlist)) {
-		return 1;
-	  }
-	  extlist += len+1;
-	}
+    int len;
+    while (len = strlen(extlist), len > 0) {
+      if (!stricmp(ext,extlist)) {
+	return 1;
+      }
+      extlist += len+1;
+    }
   }
   return 0;
 }
@@ -213,13 +263,17 @@ inp_driver_t * inp_driver_list_search_by_extension(const char *ext)
     ext = fn_secondary_ext(ext,".gz");
   }
   if (!ext) {
-	return 0;
+    return 0;
   }
 
+  driver_list_lock(&inp_drivers);
   for (d=(inp_driver_t *)inp_drivers.drivers;
        d && !extfind(d->extensions, ext);
        d=(inp_driver_t *)d->common.nxt)
     ;
+  driver_reference(&d->common);
+  driver_list_unlock(&inp_drivers);
+
   return d;
 }
 
@@ -227,34 +281,45 @@ inp_driver_t * inp_driver_list_search_by_id(int id)
 {
   inp_driver_t * d;
 
+  driver_list_lock(&inp_drivers);
   for (d=(inp_driver_t *)inp_drivers.drivers;
        d && d->id != id;
        d=(inp_driver_t *)d->common.nxt)
     ;
+  driver_reference(&d->common);
+  driver_list_unlock(&inp_drivers);
+
   return d;
 }
 
-#include <arch/spinlock.h>
 
 int driver_reference(any_driver_t * drv)
 {
   lef_prog_t * lef;
   int result = 0;
 
-  spinlock_lock((spinlock_t *) &drv->mutex);
+  if (!drv) return -1;
 
+  spinlock_lock((spinlock_t *) &drv->mutex);
   drv->count++;
   if (drv->count == 1) {
     SDDEBUG("Calling init on driver '%s'\n", drv->name);
     result = drv->init(drv);
+    if (!result) {
+      result = specific_register(drv);
+    } else {
+      SDERROR("[%s] : init failed [%d]\n", drv->name, result);
+    }
   }
-
   lef = drv->dll;
   if (lef) {
     lef->ref_count++;
   }
-
   spinlock_unlock((spinlock_t *) &drv->mutex);
+
+  if (result) {
+    driver_dereference(drv);
+  }
 
   return result;
 }
@@ -262,6 +327,8 @@ int driver_reference(any_driver_t * drv)
 void driver_dereference(any_driver_t * drv)
 {
   lef_prog_t * lef;
+
+  if (!drv) return;
 
   spinlock_lock((spinlock_t *) &drv->mutex);
 

@@ -135,7 +135,7 @@ function menu_create(owner, name, def, box, x1, y1)
       if gui_keyconfirm[key] or gui_keyselect[key] then
 	 local r = menu:confirm()
 	 if gui_keyconfirm[key] then
-	    menu:close()
+	    menu.root_menu:close(1)
 	 end
 	 return r
       elseif gui_keycancel[key] then
@@ -175,7 +175,15 @@ function menu_create(owner, name, def, box, x1, y1)
 
    -- Menu close
    -- ----------
-   function menu_close(menu)
+   function menu_close(menu, close_sub)
+      if close_sub then
+	 local i,v
+	 for i,v in menu.sub_menu do
+	    if tag(v) == menu_tag then
+	       v:close(1)
+	    end
+	 end
+      end
       menu.closed = 1
       menu.fade = -4;
       if menu.owner then
@@ -568,7 +576,12 @@ function menu_create_defs(def,target)
 	 menu.sub = {}
 	 for i,v in def.sub do
 	    menu.sub[i] = menu_create_defs(v, target)
-	    if not menu.sub[i] then return end
+	    if not menu.sub[i] then
+	       print("menu_create_defs : failed to create sub-menu [" ..
+		     tostring(i).."]")
+	       return
+	    end
+	    menu.sub[i].cb = menu.sub[i].cb or menu.cb
 	 end
       end
    end

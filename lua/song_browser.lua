@@ -4,13 +4,15 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.19 2003-01-03 13:39:57 ben Exp $
+--- $Id: song_browser.lua,v 1.20 2003-01-03 19:05:39 ben Exp $
 ---
 
 song_browser_loaded = nil
 if not dolib("textlist") then return end
 if not dolib("gui") then return end
 if not dolib("sprite") then return end
+if not dolib("fileselector") then return end
+if not dolib("playlist") then return end
 
 function song_browser_create_sprite(sb)
    sb.sprites = {}
@@ -211,7 +213,10 @@ function song_browser_create(owner, name)
    --  -------------------
    function song_browser_asleep(sb)
       sb.sleeping = 1
-      sb.cl:close()
+      if not sb.closed then
+	 sb.cl.fade_min = 0.3
+	 sb.cl:close()
+      end
    end
 
    --- Song-Browser awake.
@@ -230,11 +235,9 @@ function song_browser_create(owner, name)
       sb.closed = nil
       if not which then
 	 sb:awake()
-	 if sb.cl == sb.fl then
-	    sb.pl:close()
-	 else
-	    sb.fl:close()
-	 end
+	 local ol = (sb.cl == sb.fl and sb.pl) or sb.fl
+	 ol.fade_min = 0.3
+	 ol:close()
       elseif which == 1 then
 	 sb.fl:open()
       else
@@ -246,13 +249,17 @@ function song_browser_create(owner, name)
    --  ------------------
    function song_browser_close(sb, which)
       if not which then
+	 sb.fl.fade_min = 0
+	 sb.pl.fade_min = 0
 	 sb.fl:close()
 	 sb.pl:close()
 	 sb.closed = 1
 	 sb.idle_time = 0
       elseif which == 1 then
+	 sb.fl.fade_min = 0.3
 	 sb.fl:close()
       else
+	 sb.pl.fade_min = 0.3
 	 sb.pl:close()
       end
    end
@@ -543,23 +550,43 @@ function song_browser_create(owner, name)
    function songbrowser_menucreator(target)
       local sb = target;
       local cb = {
-	 hide = function(menu)
-		   local sb = menu.target
-		   sb:close()
-		end,
-	 show = function(menu)
-		   local sb = menu.target
-		   sb:open()
-		end,
-      }    
+	 toggle = function(menu)
+		     local sb = menu.target
+		     if sb.closed then
+			sb:open()
+		     else
+			sb:close()
+		     end
+		  end,
+	 saveplaylist = function(menu)
+			   local sb = menu.root_menu.target
+			   fs = fileselector("Save playlist",
+					     "/ram/dcplaya/playlists",
+					     "playlist.m3u")
+			   local fname = evt_run_standalone(fs)
+			   if type(fname) ~= "string" then
+			      return
+			   end
 
-      local def = menu_create_defs
-      (
-       {
-	  root=":song-browser:hide{hide},show{show}",
-	  cb = cb,
-       }, target)
-      return def
+			   local result
+			   if test("-d",fname) then
+			   elseif test("-f",fname) then
+			   else
+			      result = playlist_save(fname, sb.pl.dir)
+			   end
+
+			end,
+      }
+      local root = ":" .. target.name .. ":" .. 
+	 "toggle{toggle},playlist >playlist"
+      local def = {
+	 root=root,
+	 cb = cb,
+	 sub = {
+	    playlist = ":playlist:save{saveplaylist}",
+	 }
+      }
+      return menu_create_defs(def , target)
    end
 
    -- Menu

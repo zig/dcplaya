@@ -9,6 +9,9 @@ static int fifo_r; /* FIFO read index   */
 static int fifo_w; /* FIFO write index  */
 static int fifo_s; /* FIFO size (power of 2) - 1 */
 static int fifo_k; /* FIFO bak-buffer index */
+static int fifo_m; /* FIFO bak-buffer threshold */
+
+#define FIFO_BAK_MAX (1<<14)
 
 #define FIFO_USED2(R,W,S) (((W)-(R))&(S))
 #define FIFO_FREE2(R,W,S) (((R)-(W)+(S))&(S))
@@ -26,6 +29,11 @@ int fifo_init(int size)
   if (fifo_buffer) {
     fifo_s = size - 1;
   }
+  fifo_m = size >> 1;
+  if (fifo_m > FIFO_BAK_MAX) {
+    fifo_m = FIFO_BAK_MAX;
+  }
+
   spinlock_unlock(&fifo_mutex);
   return -!fifo_buffer;
 }
@@ -42,6 +50,10 @@ int fifo_resize(int size)
     fifo_r &= fifo_s;
     fifo_w &= fifo_s;
     fifo_k &= fifo_s;
+    fifo_m = size >> 1;
+    if (fifo_m > FIFO_BAK_MAX) {
+      fifo_m = FIFO_BAK_MAX;
+    }
   }
   spinlock_unlock(&fifo_mutex);
   SDDEBUG("[%s] := [%d]\n", __FUNCTION__, fifo_s); 
@@ -203,9 +215,19 @@ int fifo_read(int *buf, int n)
   fifo_state(&r,&w,&k);
   n = fifo_read_any(buf,r,w,n);
   if (n) {
+    int bak_size;
+
     /* Advance read pointer */
     spinlock_lock(&fifo_mutex);
     fifo_r = (fifo_r + n) & fifo_s;
+
+    bak_size = FIFO_USED2(fifo_k, fifo_r, fifo_s);
+    if (bak_size > fifo_m) {
+/*       SDDEBUG("fifo bak-size : %d > %d\n", bak_size, fifo_m); */
+      bak_size -= fifo_m;
+      fifo_k = (fifo_k + bak_size) & fifo_s;
+    }
+
     spinlock_unlock(&fifo_mutex);
   }
   

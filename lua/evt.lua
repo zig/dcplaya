@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.20 2003-01-03 06:47:19 zigziggy Exp $
+-- $Id: evt.lua,v 1.21 2003-01-03 19:05:39 ben Exp $
 --
 
 
@@ -416,6 +416,15 @@ function evt_init()
 
    print [[EVT SYSTEM INITIALIZED]]
    return 1
+end
+
+function evt_run_standalone(app)
+   if type (app) ~= "table" then return end
+   local evt
+   while app.owner do
+      evt = evt_peek()
+   end
+   return app._result
 end
 
 evt_included = 1

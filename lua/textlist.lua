@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.25 2003-01-03 11:01:29 ben Exp $
+--- $Id: textlist.lua,v 1.26 2003-01-03 19:05:39 ben Exp $
 ---
 
 -- Unload the library
@@ -154,18 +154,21 @@ function textlist_create(flparm)
    --- Open textlist (fade in).
    --
    function textlist_open(fl)
-      -- 	  print ("open",fl)
       fl.closed = nil
-      fl.fade = fl.fade_spd or 2
+      fl:fade(fl.fade_max or 1)
       dl_set_active(fl.dl, 1)
    end
 
    --- Close textlist (fade out).
    --
    function textlist_close(fl)
-      -- 	  print ("close",fl)
       fl.closed = 1
-      fl.fade = -(fl.fade_spd or 2)
+      fl:fade(fl.fade_min or 0)
+   end
+
+   function textlist_fade(fl, to, speed)
+      fl.fade_to  = to
+      fl.fade_spd = abs(speed or fl.fade_spd or 2)
    end
 
    --- Center a textlist in a box.
@@ -531,6 +534,7 @@ function textlist_create(flparm)
       set_color		= textlist_set_color,
       open              = textlist_open,
       close             = textlist_close,
+      fade              = textlist_fade,
       update            = textlist_update,
       not_use_tt        = flparm.not_use_tt
    }
@@ -566,31 +570,29 @@ end
 --- Update function.
 --
 function textlist_update(fl, frametime)
-   if fl.fade then
-      local fade = fl.fade * frametime
+
+   if fl.fade_to then
+      local fade = fl.fade_spd * frametime
       local a,r,g,b = dl_get_color(fl.dl)
-      local fademin = fl.fade_min or 0
-      local fademax = fl.fade_max or 1
-      a = a + fade
-      if a < fademin then
-	 a = fademin
-	 fl.fade = nil
-	 -- 		 dl_set_active(fl.dl, 0)
-      elseif a > fademax then
-	 a = fademax
-	 fl.fade = nil
+      if a > fl.fade_to then
+	 a = a - fade
+	 if a <= fl.fade_to then
+	    a = fl.fade_to
+	    fl.fade_to = nil
+	 end
+      else
+	 a = a + fade
+	 if a >= fl.fade_to then
+	    a = fl.fade_to
+	    fl.fade_to = nil
+	 end
+      end
+      
+      if not fl.fade_to then
+	 dl_set_active(fl.dl, a > 0)
       end
       fl:set_color(a,r,g,b)
    end
-
-   --    if fl.fade then
-   -- 	  if fl.fade > 0 then
-   -- 		 fl:set_color(1,1,1,1)
-   -- 	  else  
-   -- 		 fl:set_color(fl.fade_min or 0 ,1,1,1)
-   -- 	  end
-   -- 	  fl.fade = nil
-   --    end
 
    local i
    i = fl.pos+1

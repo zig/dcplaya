@@ -146,13 +146,31 @@ fftbands_t * fftband_create(int n, int fft_size, int sampling,
     float fmin, fmax, j, r;
     float band_width = (float)sampling / (float)fft_size;
 
-    for (i=0, j=0, r=radix, fmin=0; i<n; ++i) {
-      j += r;
-      r *= radix;
-      fmax = band_width * j;
-      fftband_limit(bands->band+i, fmin, fmax);
-      fmin = fmax;
+/*     float V; */
+/*     float Fmax, Fmin; */
+/*     Fmax = (float)sampling/2; */
+/*     Fmin = band_width; */
+/*     V = log(Fmax - Fmin) / n; */
+/*     printf("Radix1:%f Radix2:%f\n", radix, V); */
+
+    if (1) {
+      for (i=0, j=0, r=radix, fmin=0; i<n; ++i) {
+	j += r;
+	r *= radix;
+	fmax = band_width * j;
+	fftband_limit(bands->band+i, fmin, fmax);
+	fmin = fmax;
+      }
+    } else {
+
+      /* 2nd version */
+      for (i=n-1, fmax=sampling/2; i>=0; --i) {
+	fftband_limit(bands->band+i, fmax/2, fmax);
+	fmax /= 2;
+      }
     }
+
+
   }
 
   for (i=0; i<n; ++i) {
