@@ -1,0 +1,14 @@
+1.92c-mls
+
+Merged in the CL-amp plugin for BeOS.  I don't know if it actually works 
+yet, since I don't have BeOS, but hopefully someone will test it and get 
+back to me.
+
+Made it compile in FreeBSD.  I don't know if it actually works, tho, since I only 
+have a shell account.  Someone tell me, please...
+
+1.92b-mls
+
+First sourceforge release.  I've improved the Linux frontend.  Now you can 
+see what channels are enabled, these channels persist over track changes 
+and if you advance past the last track, it loops back to the first.
