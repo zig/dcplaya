@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.72 2003-03-04 15:26:51 ben Exp $
+ * @version    $Id: dynshell.c,v 1.73 2003-03-05 17:48:29 ben Exp $
  */
 
 #include "config.h"
@@ -327,13 +327,16 @@ static void register_driver_type(lua_State * L)
 
   /* driver_list */
   driverlist_tag = lua_newtag(L);
+  lua_pushnumber(L,driverlist_tag);
+  lua_setglobal(L,"driverlist_tag");
 
   lua_pushcfunction(L, lua_driverlist_gettable);
   lua_settagmethod(L, driverlist_tag, "gettable");
 
-
   /* driver */
   driver_tag = lua_newtag(L);
+  lua_pushnumber(L,driver_tag);
+  lua_setglobal(L,"driver_tag");
 
   lua_pushcfunction(L, lua_driver_gc);
   lua_settagmethod(L, driver_tag, "gc");

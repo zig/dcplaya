@@ -3,7 +3,7 @@
 --- @date   2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  hyper text viwer gui
---- $Id: textviewer.lua,v 1.8 2003-03-04 19:44:53 ben Exp $
+--- $Id: textviewer.lua,v 1.9 2003-03-05 17:48:29 ben Exp $
 ---
 
 if not dolib("taggedtext") then return end
@@ -71,8 +71,9 @@ function gui_text_viewer(owner, texts, box, label, mode)
    --
    function gui_text_viewer_set_tt(dial, tt, x, y)
       if type(tt) == "string" then
+	 local mf = "[%w_-%s,./]"
 	 local start, stop, tt_name, hash, tt_anchor =
-	    strfind(tt,"(%w*)(#?)(%w*)")
+	    strfind(tt,"("..mf.."*)(#?)("..mf.."*)")
 	 tt = (type(tt_name) == "string" and
 	       type(dial.tts) == "table" and
 		  dial.tts[tt_name]
@@ -142,7 +143,7 @@ function gui_text_viewer(owner, texts, box, label, mode)
    buth = buth + 8
 
    if not box then
-      box = { 0,0,320,200 }
+      box = { 0,0,320,240 }
       local x,y = (640 - box[3]) * 0.5, (480 - box[4]) * 0.5
       box = box + { x, y, x, y }
    end
@@ -184,8 +185,9 @@ function gui_text_viewer(owner, texts, box, label, mode)
    end
 
    -- Create main-dialog
-   dial = gui_new_dialog(owner, box, nil, nil, label, mode, "gui_viewer")
+   dial = gui_new_dialog(owner, box, nil, nil, label, mode, "text viewer")
    if not dial then return end
+   dial.icon_name = "textviewer"
 
    -- Create view-dialog
    dial.viewer = gui_new_dialog(dial, tbox, nil, nil, nil, nil,
@@ -358,7 +360,6 @@ function gui_text_viewer(owner, texts, box, label, mode)
    for j, _ in gui_keyselect do
       dial.event_table[j] = 
 	 function(app, evt)
-	    print("TOTO")
 	    local dial = app
 	    app = app.viewer
 	    if not dial then return end
@@ -524,5 +525,8 @@ end
 --
 --- @}
 --
+
+-- Create application icon sprite
+sprite_simple(nil,"textviewer.tga")
 
 return 1

@@ -665,9 +665,13 @@ function menu_create_def(menustr)
 	    if not menu.separator then menu.separator = {} end
 	    tinsert(menu.separator, getn(menu))
 	 else
+	    local mf = [[%w%s_.;@~#/\!*]]
 	    local size, sub, cb, main, icon, substart,subend
 	    substart,subend,main,sub =
-	       strfind(name,"([%w%s_.{}]*)(>?[%w_]*)")
+	       strfind(name,"(["..mf.."{}]*)(>?["..mf.."]*)")
+
+--	    printf("main:[%s] sub:[%s]",tostring(main),tostring(sub))
+
 	    if not substart or not main then
 	       print("menu-def creation : invalid string ["..name.."]")
 	       return
@@ -676,13 +680,13 @@ function menu_create_def(menustr)
 -- 	    printf("menu parse main:%q sub:%q", tostring(main), tostring(sub))
 
 	    substart,subend,icon =
-	       strfind(name,"^{([%w%s._]+)}")
+	       strfind(name,"^{(["..mf.."]+)}")
 	    if icon then
 	       main=strsub(main,strlen(icon)+3)
 	    end
 
 	    substart,subend,name,cb =
-	       strfind(main,"([%w%s_]+)(%b{})",1)
+	       strfind(main,"(["..mf.."]+)(%b{})",1)
 
 	    if not substart then
 	       name = strlen(main)>0 and main

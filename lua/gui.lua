@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.45 2003-03-04 17:27:54 zigziggy Exp $
+--- $Id: gui.lua,v 1.46 2003-03-05 17:48:29 ben Exp $
 ---
 
 --
@@ -917,7 +917,7 @@ function gui_ask(question, answers, width, label)
 
    width = width or 300
 
-   local text = '<dialog guiref="dialog" x="center" name="gui_ask"'
+   local text = '<dialog guiref="dialog" x="center" name="gui_ask" icon="daemon"'
 
    if label then
       text = text..' label="'..label..'"'

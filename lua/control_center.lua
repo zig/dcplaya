@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.9 2003-03-05 08:42:44 ben Exp $
+--- $Id: control_center.lua,v 1.10 2003-03-05 17:48:29 ben Exp $
 ---
 
 control_center_loaded = nil
@@ -150,7 +150,13 @@ function control_center_create(owner, name)
 			    set_visual(name)
 			 end
 		     end,
-
+	 plug_info  = function (menu)
+			 local title = menu.def.title or "*"
+			 local name = menu.fl:get_text()
+			 if name then
+			    plugin_viewer(nil,title.."/"..name)
+			 end
+		      end,
       }
 
       -- Read available driver type
@@ -192,9 +198,22 @@ function control_center_create(owner, name)
 	       ((plugins.sub.set_visual and ",") or "")
 	    plugins.root = plugins.root .. "info >info"
 	 end
-
 	 plug_info.root = plug_info.root .. "," .. k .. ">" .. subname
-	 plug_info.sub[subname] = ":"..k..":"
+	 local info_root = nil
+
+	 local j
+	 for j=1, v.n do
+	    local plg = v[j]
+	    if plg then
+-- 	       info_root = ((info_root and (info_root .. ","))
+-- 			    or (":"..k..":")) .. plg.name .. "{plug_info}"
+	       info_root = (info_root or (":"..k..":*{plug_info}"))
+		  .. "," .. plg.name .. "{plug_info}"
+	    end
+	 end
+	 if info_root then
+	    plug_info.sub[subname] = { root = info_root }
+	 end
       end
 
       local def = {

@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.21 2003-03-05 08:42:44 ben Exp $
+--- $Id: desktop.lua,v 1.22 2003-03-05 17:48:29 ben Exp $
 ---
 
 if not dolib("evt") then return end
@@ -97,29 +97,34 @@ function dskt_openmenu(dial, target, x, y)
 end
 
 function dskt_switcher_create(owner, name, dir, x, y, z)
-
-   -- Create sprite
---    local texid = tex_get("dcpsprites") or tex_new("/rd/dcpsprites.tga")
---    local vmusprite = sprite("vmu",	
--- 			    0, 62/2,
--- 			    104, 62,
--- 			    108/512, 65/128, 212/512, 127/128,
--- 			    texid,1)
-
-
-   local text = '<dialog guiref="dialog" label="Desktop" name="desktop dialog">'
-
+   local text = '<dialog guiref="dialog" label="Desktop" name="desktop">'
    text = text..'<linecenter>Running application ('..
       strchar(16)..' switch to,'..strchar(18)..
       ' menu) :<br><vspace h="8"><hspace w="16"><linedown>'
+
    local i
    for i=1,dir.n, 1 do
       local app = dir[i].app
       local icon_name, icon_file
 
-      icon_name = app.icon_name or app.name or "dcplaya"
+      icon_name = app.icon_name or app.name or "app_dcplaya"
       icon_file = app.icon_file or (icon_name .. ".tga")
       
+      local spr
+      spr = sprite_get(icon_name)
+      if tag(spr) ~= sprite_tag then
+	 -- Sprite doesnot exit : create it
+	 sprite_simple(icon_name,icon_file)
+      end
+      -- Test again
+      spr = sprite_get(icon_name)
+      if tag(spr) ~= sprite_tag then
+	 -- Fallback to default sprite
+	 icon_name = "app_dcplaya"
+	 icon_file = "dcplaya.tga"
+      end
+
+
       text = text..'<button total_w="64" guiref="r'..format("%d", i)..'">'
       text = text
 	 .. '<img name="' .. icon_name
@@ -466,6 +471,9 @@ function dskt_create()
 
    return app
 end
+
+-- Create default application sprite
+sprite_simple("app_dcplaya","dcplaya.tga")
 
 -- Load application icons
 for k,v in { "close", "console", "windowmanager" } do

@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  sgml text and gui element formater.
 ---
---- $Id: taggedtext.lua,v 1.20 2003-03-03 17:32:52 zigziggy Exp $
+--- $Id: taggedtext.lua,v 1.21 2003-03-05 17:48:29 ben Exp $
 ---
 
 if not dolib("dirfunc") then return end
@@ -132,6 +132,10 @@ function tt_dialog_draw(block)
    mode.box = box + { 8, 8, -8, -8 }
    dl_set_trans(mode.dl, mat_trans(0, 0, block.z))
    local app = gui_new_dialog(papp, box, nil, nil, mode.label, nil, mode.name)
+   -- $$$ added by ben for application icon support.
+   app.icon_name = mode.icon
+   app.icon_file = mode.src
+
    app.guis = mode.guis
    mode.app = app
    gui_label(app, mode)
