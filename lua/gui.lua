@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.57 2003-03-14 22:04:50 ben Exp $
+--- $Id: gui.lua,v 1.58 2003-03-16 23:09:55 ben Exp $
 ---
 
 --
@@ -165,49 +165,83 @@ end
 -- place child of a dialog box
 dskt_zmin = 100
 dskt_zmax = 200
+-- $$$ ben : make lotsa changes here like cleaning used _dl. 
 function gui_child_autoplacement(app)
---    printf("gui_child_autoplacement %q",app.name)
-   if not app._dl1 then
-      app._dl1 = dl_new_list(256, 1)
-      app._dl2 = dl_new_list(256, 1)
-      dl_sublist(app.dl, app._dl1)
-      dl_sublist(app.dl, app._dl2)
-   else
-      dl_clear(app._dl1)
-   end
+--   printf("gui_child_autoplacement %q",app.name)
 
    local i = app.sub
-   if not i then
-      return
-   end
    local n = 0
    while i do
---       n = n + 1
-      if not i._dl and i.dl and i.dl ~= app.dl then
-	 i._dl = dl_new_list(256, 1)
-	 dl_sublist(i._dl, i.dl)
+      if i.dl and i.dl ~= app.dl then
+	 -- Sub-applcation has its own a dl 
+	 if not i._dl then
+	    i._dl = dl_new_list(256, 1)
+	    dl_sublist(i._dl, i.dl)
+	 end
+	 n = n + 1
+      elseif i._dl then
+	 printf("sub-app %q has no more own dl !",i.name)
+	 i._dl = nil
       end
-
-      -- $$$ ben : only increments if there is a _dl
-      n = n + ((i._dl ~= nil) or 0)
       i = i.next
    end
 
+   -- Application has no sub app, exit and destroy existing _dl1 and _dl2
    if n == 0 then
-      -- $$$ ben : No child, desactive both list
-      dl_set_active2(app._dl1, app._dl2, 0)
+--       print("-> No sub , exit")
+      app._dl1 = nil
+      app._dl2 = nil
+      if app._dl then
+	 if not app.dl then
+	    -- If there is no dl, _dl could be destroy safely.
+	    app._dl = nil
+	    printf("app %q has no more dl !",app.name)
+	 else
+	    -- Else only attach the dl to the _dl.
+	    printf("app %q has no more child dl !",app.name)
+	    dl_clear(app._dl)
+	    dl_sublist(app._dl, app.dl)
+	 end
+      end
       return
    end
+
+   -- From this point the application has at least one sub app to display
+   if not app._dl1 then
+--       print("-> No _dl1, create it")
+      app._dl1 = dl_new_list(256, 0, 1)
+      app._dl2 = dl_new_list(256, 0, 1)
+   else
+--       print("-> clear _dl1")
+      dl_clear(app._dl1)
+   end
+
+   if not app._dl then
+--       print("-> No _dl, create it")
+      app._dl = dl_new_list(128, 1, 0)
+   else
+      dl_clear(app._dl)
+--       print("-> clear _dl")
+   end
+   if app.dl then
+--       print("-> has dl")
+      dl_sublist(app._dl, app.dl)
+   end
+   dl_sublist(app._dl, app._dl1)
+   dl_sublist(app._dl, app._dl2)
    
-   local zpart,z = 200/n, 200
+   -- Attach children _dl to the current _dl and compute its transform matrix
+   local zpart,z = 100/n, 200
    i = app.sub
    while i do
       if i._dl then
 	 z = z - zpart
 	 dl_set_trans(i._dl,
-		      mat_scale(1, 1, 1/n)
+		      mat_scale(1, 1, 0.5/n)
 			 * mat_trans(0, 0, z))
 	 dl_sublist(app._dl1, i._dl)
+-- 	 printf("matrix of %q",i.name)
+-- 	 mat_dump(dl_get_trans(i._dl),1)
       end
       i = i.next
    end

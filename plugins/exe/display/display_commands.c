@@ -5,7 +5,7 @@
  * @date     2002/11/28
  * @brief    graphics lua extension plugin, display list built-in functions
  * 
- * $Id: display_commands.c,v 1.4 2003-03-10 22:55:33 ben Exp $
+ * $Id: display_commands.c,v 1.5 2003-03-16 23:09:56 ben Exp $
  */
 
 #include <string.h>
@@ -26,15 +26,15 @@ static int strtoop(const char *s)
 {
   int op = DL_INHERIT_MUL;
   if (s) {
-	if (!stricmp(s,"parent")) {
-	  op = DL_INHERIT_PARENT;
-	} else if (!stricmp(s,"local")) {
-	  op = DL_INHERIT_LOCAL;
-	} else if (!stricmp(s,"add")) {
-	  op = DL_INHERIT_ADD;
-	} else if (!stricmp(s,"modulate") || !stricmp(s,"mul")) {
-	  op = DL_INHERIT_MUL;
-	}
+    if (!stricmp(s,"parent")) {
+      op = DL_INHERIT_PARENT;
+    } else if (!stricmp(s,"local")) {
+      op = DL_INHERIT_LOCAL;
+    } else if (!stricmp(s,"add")) {
+      op = DL_INHERIT_ADD;
+    } else if (!stricmp(s,"modulate") || !stricmp(s,"mul")) {
+      op = DL_INHERIT_MUL;
+    }
   }
   return op;
 }
@@ -82,8 +82,8 @@ DL_FUNCTION_START(sublist)
   int colorop, transop;
 
   if (lua_tag(L, 2) != dl_list_tag) {
-	printf("dl_sublist : 2nd parameter is not a list\n");
-	return 0;
+    printf("dl_sublist : 2nd parameter is not a list\n");
+    return 0;
   }
   subl = lua_touserdata(L, 2);
   
@@ -94,7 +94,7 @@ DL_FUNCTION_START(sublist)
   rc.trans_inherit = transop;
 
   if (dl_sublist_command(dl, subl, &rc) < 0) {
-	printf("dl_sublist : failure (may be not a valid sub-list).\n");
+    printf("dl_sublist : failure (may be not a valid sub-list).\n");
   }
   return 0;
 }

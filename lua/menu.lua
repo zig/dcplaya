@@ -155,8 +155,11 @@ function menu_create(owner, name, def, box)
       end
 
       if newclose ~= oldclose and newclose == 2 then
+	 printf("menu %q just close : desactive dl", menu.name)
+	 dl_set_active(menu.dl, nil);
 	 menu.closed = newclose>0 and newclose
 	 if menu.owner then
+	    printf("SEND gui_menu_close_event to %q", menu.owner.name)
 	    evt_send(menu.owner, { key = gui_menu_close_event })
 	 end
       end
@@ -494,8 +497,7 @@ function menu_create(owner, name, def, box)
       if not menu then return end
 
       -- $$$
---      print("MENU shutdown:"..tostring(menu.name))
-
+      print("MENU shutdown:"..tostring(menu.name))
 
       local owner = menu.owner
       if tag(owner) == menu_tag then
@@ -507,7 +509,7 @@ function menu_create(owner, name, def, box)
 	 vmu_set_text(nil)
       end
       if menu.dl then
-	 dl_set_active(menu.dl)
+	 dl_set_active(menu.dl, nil)
 	 menu.dl = nil
       end
       -- $$$ test : not sure I have right to do that here

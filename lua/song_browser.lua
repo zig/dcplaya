@@ -4,10 +4,10 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.47 2003-03-14 22:04:50 ben Exp $
+--- $Id: song_browser.lua,v 1.48 2003-03-16 23:09:56 ben Exp $
 ---
 
---- @defgroup dcplaya_lua_sb_app Song browser application
+--- @defgroup dcplaya_lua_sb_app Song-browser
 --- @ingroup dcplaya_lua_app
 ---
 ---  @par song-browser introduction
@@ -284,6 +284,10 @@ function song_browser_create(owner, name)
       elseif key == ioctrl_cdrom_event then
 	 song_browser_update_cdrom(sb, evt)
 	 return
+      elseif key == gui_menu_close_event then
+	 printf("%q gui_menu_close_event",sb.name)
+	 song_browser_contextmenu(sb) -- shutdown menu
+	 return
       end
 
       if sb.closed then
@@ -523,20 +527,21 @@ function song_browser_create(owner, name)
    end
 
    --- Songbrowser contextual menu create.
-   function song_browser_contextmenu(sb, name, fl, def)
-      fl = fl or sb.cl
+   function song_browser_contextmenu(sb, name, fl, def, entry_path)
+      if sb.menu then
+	 printf("Kill old menu : %q",sb.menu.name)
+	 evt_shutdown_app(sb.menu)
+      end
       local menudef = menu_create_defs(def, sb)
       if not menudef then return end
+
+      fl = fl or sb.cl
       local x,y = textlist_screen_coor(fl)
-      if fl.menu then
-	 printf("Kill old menu : %q",fl.menu.name)
-	 evt_shutdown_app(fl.menu)
-      end
-      fl.menu = menu_create(sb, name, menudef, {x,y,0})
-      if tag(fl.menu) == menu_tag then
-	 fl.menu.target = sb
-	 fl.menu.target_pos = fl.pos + 1
-	 fl.menu.__entry_path = entry_path
+      sb.menu = menu_create(sb, name, menudef, {x,y,0})
+      if tag(sb.menu) == menu_tag then
+	 sb.menu.target = sb
+	 sb.menu.target_pos = fl.pos + 1
+	 sb.menu.__entry_path = entry_path
       end
    end
 
@@ -722,7 +727,7 @@ function song_browser_create(owner, name)
    -- filelist "select" actions
    -- ----------------------------------------------------------------------
 
-   function sbfl_select(fl, sb)
+   function sbfl_select(fl, sb, action, entry_path)
       songbrowser_any_action(sb,"select",fl)
    end
    
@@ -781,7 +786,7 @@ function song_browser_create(owner, name)
 		   end,
 	 },
       }
-      song_browser_contextmenu(sb,"playlist-menu,",fl,def)
+      song_browser_contextmenu(sb,"playlist-menu,",fl,def, entry_path)
    end
 
    function sbfl_select_image(fl, sb, action, entry_path)
@@ -810,16 +815,7 @@ function song_browser_create(owner, name)
 	 }
       }
 
-      song_browser_contextmenu(sb, "image-menu", fl, def)
---       local menudef = menu_create_defs(def, sb)
---       if not menudef then return end
---       local x,y = textlist_screen_coor(fl)
---       fl.menu = menu_create(sb, "filelist-menu", menudef, {x,y,0})
---       if tag(fl.menu) == menu_tag then
--- 	 fl.menu.target = sb
--- 	 fl.menu.target_pos = fl.pos + 1
--- 	 fl.menu.__entry_path = entry_path
---       end
+      song_browser_contextmenu(sb, "image-menu", fl, def, entry_path)
    end
 
    function sbfl_select_plugin(fl, sb, action, entry_path)
@@ -835,7 +831,7 @@ function song_browser_create(owner, name)
    -- ----------------------------------------------------------------------
    -- filelist "cancel" actions
    -- ----------------------------------------------------------------------
-   function sbfl_cancel(fl, sb)
+   function sbfl_cancel(fl, sb, action, entry_path)
       songbrowser_any_action(sb,"cancel",fl)
    end
 
@@ -845,7 +841,7 @@ function song_browser_create(owner, name)
       end
    end
 
-   function sbfl_open_menu(fl,sb)
+   function sbfl_open_menu(fl, sb, action, entry_path)
       print("TO DO : File list open menu")
    end
 
@@ -1078,10 +1074,6 @@ function song_browser_create(owner, name)
 
 
    function sbpl_open_menu(pl, sb)
-      if tag(pl.menu) == menu_tag then
-	 pl.menu:close()
-      end
-
       local entry = pl:get_entry()
       if not entry then return end
       local root = ""
@@ -1170,15 +1162,7 @@ function song_browser_create(owner, name)
 	 }
       }
 
-      song_browser_contextmenu(sb, "playlist-menu", pl, def)
---       local menudef = menu_create_defs(def, sb)
---       if not menudef then return end
---       local x,y = textlist_screen_coor(pl)
---       pl.menu = menu_create(sb, "playlist-menu", menudef, {x,y,0})
---       if tag(pl.menu) == menu_tag then
--- 	 pl.menu.target = sb
--- 	 pl.menu.target_pos = pl.pos + 1
---       end
+      song_browser_contextmenu(sb, "playlist-menu", pl, def, entry_path)
    end
 
    function sbpl_select(pl, sb)

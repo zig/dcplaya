@@ -1,10 +1,10 @@
---- @ingroup dcplaya_lua_gui
---- @file    song_info.lua
---- @author  benjamin gerard <ben@sashipa.com>
---- @date    2002/11/29
---- @brief   Song info application.
+--- @ingroup  dcplaya_lua_app
+--- @file     song_info.lua
+--- @author   benjamin gerard <ben@sashipa.com>
+--- @date     2002/11/29
+--- @brief    Song info application.
 ---
---- $Id: song_info.lua,v 1.20 2003-03-11 15:07:58 zigziggy Exp $
+--- $Id: song_info.lua,v 1.21 2003-03-16 23:09:56 ben Exp $
 
 song_info_loaded = nil
 
@@ -14,8 +14,26 @@ if not dolib("box3d") then return end
 if not dolib("sprite") then return end
 if not dolib("style") then return end
 
---- @name song-info functions
---- @ingroup dcplaya_lua_gui
+--- @defgroup dcplaya_lua_si_app Song-info
+--- @ingroup dcplaya_lua_app
+---
+---  @par song-info introduction
+---
+---   The song-info application is used to display current playing music
+---   information. It could be displayed in two modes maximized and
+---   minimized. 
+---
+---   Normal behaviour is to have only one instance of a song-info application.
+---   It is stored in the global variable song_info.
+---
+
+--- Global song_info application
+--- @ingroup dcplaya_lua_si_app
+--: application song_info;
+
+--
+--- @name song-info functions.
+--- @ingroup dcplaya_lua_si_app
 --- @{
 --
 
@@ -119,7 +137,7 @@ function song_info_create(owner, name, style)
 	    dl_set_trans(si.info_comments.dl,mat)
 	    dl_clear(si.info_comments.dl)
 	    local c = si.label_color
-	    dl_draw_text(si.info_comments.dl, 0,0,0,
+	    dl_draw_text(si.info_comments.dl, 0,0,10,
 			 c[1],c[2],c[3],c[4],
 			 si.info.comments)
 	 end
@@ -293,7 +311,7 @@ function song_info_create(owner, name, style)
    --- @internal
    --
    function song_info_draw(si)
-      dl_set_trans(si.dl,mat_trans(0,0,si.z))
+--      dl_set_trans(si.dl,mat_trans(0,0,si.z))
       dl_set_active(si.layer2_dl, not si.minimized)
       local s,x,y
       if si.minimized then
@@ -301,7 +319,7 @@ function song_info_create(owner, name, style)
       else
 	 s,x,y = 16, 60, 35
       end
-      dl_set_trans(si.layer0_dl, mat_scale(s,s,1) * mat_trans(x,y,1))
+      dl_set_trans(si.layer0_dl, mat_scale(s,s,1) * mat_trans(x,y,10))
       dl_set_active(si.layer0_dl,1)
    end
 
@@ -501,7 +519,7 @@ function song_info_create(owner, name, style)
    dl_set_trans(si.layer2_dl,
 		mat_trans((screenw - (outer[3]-outer[1])) * 0.5,
 			  screenh - (outer[4]-outer[2]) - 16,
-			  0))
+			  10))
 
    si.layer2_box:draw(si.layer2_dl, nil, 1)
 
@@ -560,7 +578,7 @@ function song_info_create(owner, name, style)
       field.w = obox[3]-obox[1]
       field.h = obox[4]-obox[2]
       field.dl = dl_new_list(0,1,1)
-      dl_set_trans(field.dl, mat_trans(x,y,1))
+      dl_set_trans(field.dl, mat_trans(x,y,10))
       return field
    end
 
@@ -599,12 +617,12 @@ function song_info_create(owner, name, style)
    si.info_comments.dl = dl_new_list(0,1,1)
    si.info_comments.w = ob[3] - ob[1]
    si.info_comments.h = inner[4] - h*4
-   dl_set_trans(si.info_comments.dl, mat_trans(0, h*4-1, 1))
+   dl_set_trans(si.info_comments.dl, mat_trans(0, h*4-1, 10))
 
    dl_set_active(si.help_dl,0)
 
    dl_set_trans(si.info_dl,
-		mat_trans( (inner[1] + inner[3] - ob[1] - ob[3]) * 0.5, 5, 1))
+		mat_trans( (inner[1] + inner[3] - ob[1] - ob[3]) * 0.5, 5, 10))
 
    local i,v
    for i,v in si.info_fields do
@@ -624,7 +642,28 @@ function song_info_create(owner, name, style)
    return si
 end
 
+--
+--- Kill a song-info application.
+---
+---   The song_info_kill() function kills the given application by
+---   calling sending the evt_shutdown_app() function. If the given
+---   application is nil or song_info the default song-info
+---   (song_info) is killed and the global variable song_info is
+---   set to nil.
+---
+--- @param  sb  application to kill (default to song_info)
+--
+function song_info_kill(si)
+   si = si or song_info
+   if si then
+      evt_shutdown_app(si)
+      if si == song_info then song_info = nil end
+   end
+end
+
+--
 --- @}
+--
 
 -- Load texture for application icon
 local tex = tex_exist("song-info")
@@ -634,15 +673,8 @@ if song_info then
    evt_shutdown_app(song_info)
 end
 
+song_info_kill()
 song_info = song_info_create()
-
-function song_info_kill(si)
-   si = si or song_info
-   if si then
-      evt_shutdown_app(si)
-      if si == song_info then song_info = nil end
-   end
-end
 
 song_info_loaded = 1
 return song_info_loaded
