@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/14
  *
- *  $Id: hyperpipe.c,v 1.1 2003-01-14 10:54:02 ben Exp $
+ *  $Id: hyperpipe.c,v 1.2 2003-01-17 13:17:50 ben Exp $
  */ 
 
 #include <stdio.h>
@@ -27,14 +27,17 @@
 #endif
 
 #define MIN_RAY 0.05
-#define MAX_RAY 0.23
-#define W       64u
+#define MAX_RAY 0.28
+#define W       100u
 #define N       8u
 #define V       (W*N)
 #define T       ((N-2u)*2u + (W-1u) * (2u*N))
 #define X       2.0
 
 extern void FaceNormal(float *d, const vtx_t * v, const tri_t *t);
+
+/* Audio data. */
+static float spl[W]; /* Normalized sample buffer. */
 
 /* VLR 3d-objects */
 static vtx_t *v;   /* Vertex buffer */
@@ -65,20 +68,20 @@ static vtx_t ambient = {
 
 
 static vtx_t pos;     /**< Object position */
-static vtx_t angle;   /**< Object rotation */
-static float flash;
-static float ozoom;
 static texid_t texid;
-static fftbands_t * bands;
+static fftbands_t * allbands;
+static fftbands_t * bands3;
 
 /* Automatic object changes */
+static int mode = 2;
 static int change_mode = 0;
 static int change_cnt;
 static int change_time = 5*1000;
-
 static int use_remanens = 1;
 
 extern short int_decibel[];
+
+static obj_driver_t * light_object;
 
 /* The 3D-object */
 static obj_t hyperpipe_obj =
@@ -101,45 +104,29 @@ static void set_obj_pointer(void)
 
 static void hyperpipe_free(void)
 {
-  SDDEBUG("hyperpipe : free()\n");
   ready = 0;
   if (v) {
     free(v);
     v = 0;
   }
- SDDEBUG("hyperpipe : vtx freed\n");
- 
   if (nrm) {
     free(nrm);
     nrm = 0;
   }
- SDDEBUG("hyperpipe : nrm freed\n");
-
-
   if (tri) {
     free(tri);
     tri = 0;
   }
- SDDEBUG("hyperpipe : tri freed\n");
-
-
   if(tlk) {
     free (tlk);
     tlk = 0;
   }
-  SDDEBUG("hyperpipe : tlk freed\n");
-
   set_obj_pointer();
-  SDDEBUG("hyperpipe : freed()\n");
 }
 
 static int hyperpipe_alloc(void)
 {
   hyperpipe_free(); /* Safety net */
-
-  SDDEBUG("hyperpipe : alloc vtx:%d tri:%d\n",
-	  hyperpipe_obj.nbv,hyperpipe_obj.nbf);
-
   v   = (vtx_t *)malloc(sizeof(vtx_t) * hyperpipe_obj.nbv);
   nrm = (vtx_t *)malloc(sizeof(vtx_t) * hyperpipe_obj.nbf);
   tri = (tri_t *)malloc(sizeof(tri_t) * (hyperpipe_obj.nbf+1));
@@ -163,6 +150,15 @@ static void build_ring(void)
     v->y = sinf(a);
     v->z = 0;
     v->w = 1;
+  }
+}
+
+static void build_normals(void)
+{
+  int i;
+  const int n = hyperpipe_obj.nbf;
+  for (i=0; i<n; ++i) {
+    FaceNormal((float *)(nrm+i),v,tri+i);
   }
 }
 
@@ -204,10 +200,12 @@ static int tesselate(tri_t * tri, tlk_t * tlk, int base, int n)
 
 static int stop(void)
 {
-  SDDEBUG("[hp] : stop()\n");
   ready = 0;
   hyperpipe_free();
-  SDDEBUG("[hp] : stopped()\n");
+  if (light_object) {
+    driver_dereference(&light_object->common);
+    light_object = 0;
+  }
   return 0;
 }
 
@@ -216,21 +214,15 @@ static int start(void)
   int i, j, k, w;
   vtx_t *vy;
 
-  SDDEBUG("[hp] : start()\n");
+  memset(spl,0,sizeof(spl));
 
   ready = 0;
-
-  SDDEBUG("[hp] : ring()\n");
   build_ring();
-
-  SDDEBUG("[hp] : alloc()\n");
 
   /* Alloc buffers */
   if (hyperpipe_alloc()) {
     return -1;
   }
-
-  SDDEBUG("[hp] : vertrices()\n");
 
   /* Build vertrices */
   for(j=0, vy=v; j<W; ++j) {
@@ -241,18 +233,9 @@ static int start(void)
       vy->w = 1.0f;
     }
   }
-  if (vy-v != hyperpipe_obj.nbv) {
-    SDERROR("hyperpipe : wrong number of vtx [%d != %d]\n",
-	    vy-v,hyperpipe_obj.nbv);
-    stop();
-    return -1;
-  }
 
-  SDDEBUG("[hp] : close 1()\n");
   /* First close faces */
   k = tesselate(tri,tlk,0,N);
-
-  SDDEBUG("[hp] : faces() k:=%d\n",k);
 
   /* Build faces and link-faces */
   for(w=j=0; j<W-1; ++j) {
@@ -281,55 +264,15 @@ static int start(void)
       }
       tlk[k+1].b = k1 + ((i+1)%N)*2;
       tlk[k+1].c = k;
-
-      // $$$
-/*       tlk[k+0].a = tlk[k+0].b = tlk[k+0].c =  */
-/* 	tlk[k+1].a = tlk[k+1].b = tlk[k+1].c = T; */
-
     }
   }
-
-  SDDEBUG("[hp] : close end() k:=%d\n",k);
 
   k += tesselate(tri+k,tlk+k,V,N);
-/*   for (;k<T;++k) { */
-/*     tri[k].a = tri[k].b = tri[k].c = T-1; */
-/*     tlk[k].a = tlk[k].b = tlk[k].c = T; */
-/*     tri[k].flags = tlk[k].flags = 0; */
-/*   } */
-
-  if (k != T) {
-    SDERROR("hyperpipe: Init error, wromg number of face %d != %d\n",k,T);
-    stop();
-    return -1;
-  }
-
-  for (i=0;i<T; ++i) {
-    for (j=0; j<3; ++j) {
-      unsigned int * ptr;
-      ptr = ((unsigned int*)(&tri[i].a))+j;
-      if (*ptr >= (unsigned int)V) {
-	printf("Face #%d %c : out of range [%d >= %d]\n",i,'A'+j, *ptr, V);
-	*ptr = 0;
-      }
-      ptr = ((unsigned int*)(&tlk[i].a))+j;
-      if (*ptr > (unsigned int)T) {
-	printf("Link #%d %c : out of range [%d > %d]\n", i,'A'+j, *ptr, T);
-	*ptr = T;
-      }
-    }
-  }
-
-  SDDEBUG("[hp] : finish close()\n");
 
   tri[T].a = tri[T].b = tri[T].c = 0;
   tri[T].flags = 1; /* Setup invisible face */
 
-  for (i=0; i<hyperpipe_obj.nbf; ++i) {
-    FaceNormal((float *)(nrm+i),v,tri+i);
-  }
-
-/*   hyperpipe_obj.nbf = T - (N-2) - N; */
+  build_normals();
 
   /* Setup matrix*/
   MtxIdentity(proj);
@@ -342,106 +285,330 @@ static int start(void)
 /* $$$ Defined in libdcutils */
 extern int rand();
 
-static int anim(unsigned int ms)
+static float inc_angle(float a, const float v)
 {
+  a = a + v;
+  if (a<0) {
+    do { a += 2*PI; } while (a<0);
+  } else if (a>=2*PI) {
+    do { a -= 2*PI; } while (a>=2*PI);
+  }
+  return a;
+}
+
+static void inc_angle_vector(vtx_t *a, const vtx_t * v)
+{
+  int i;
+  for (i=0; i<3; ++i) {
+    float * b = (float *)(&a->x) + i;
+    *b = inc_angle(*b, ((float *)(&v->x))[i]);
+  }
+}
+
+static vtx_t light_orgvtx = { 1,0,0,1 };
+static vtx_t light_vtx;
+static vtx_t light_angle;
+static vtx_t light_speed = { 0.5, 0.431, 0.1237, 0 };
+static matrix_t light_mtx;
+
+static void anim_light(const float seconds)
+{
+  vtx_t speed;
+
+  speed.x = light_speed.x * seconds;
+  speed.y = light_speed.y * seconds;
+  speed.z = light_speed.z * seconds;
+  speed.w = 0;
+
+  inc_angle_vector(&light_angle, &speed);
+
+  MtxIdentity(light_mtx);
+  MtxRotateX(light_mtx, light_angle.x);
+  MtxRotateY(light_mtx, light_angle.y);
+  MtxRotateZ(light_mtx, light_angle.z);
+  MtxVectMult(&light_vtx.x, &light_orgvtx.x, light_mtx);
+}
+
+static void get_pcm(void)
+{
+  int i;
+  short spl2[W];
+  const float scale = 1.0f/32768.0f;
+  const float s0 = 0.75;
+  const float s1 = 1.0 - s0;
+
+  /* PCM */
+  fft_fill_pcm(spl2,W);
+  for (i=0; i<W; ++i) {
+    const float a = (float)spl2[i] * scale;
+    spl[i] = (spl[i] * s0) + (a * s1);
+  }
+}
+
+static void anim_occilo()
+{
+  int i;
+  vtx_t * vy;
+  const float s = (MAX_RAY-MIN_RAY);
+
+  get_pcm();
+
+  for (i=0, vy=v; i<W; ++i) {
+    int j;
+    const float v = spl[i];
+    float s1,s2;
+    s1 = s2 = MIN_RAY;
+    if (v<0) {
+      s2 += sqrtf(-v) * s;
+    } else {
+      s1 += sqrtf(v) * s;
+    }
+
+    for (j=0; j<(N>>1); ++j, ++vy) {
+      vy->y = ring[j].x * s1;
+      vy->z = ring[j].y * s1;
+    }
+    for (; j<N; ++j, ++vy) {
+      vy->y = ring[j].x * s2;
+      vy->z = ring[j].y * s2;
+    }
+  }
+}
+
+static void anim_fft()
+{
+  int i;
+  vtx_t * vy;
+  const float s = (MAX_RAY-MIN_RAY);
+
+  if (!allbands) {
+    for (i=0, vy=v; i<W; ++i) {
+      int j;
+      for (j=0; j<N; ++j, ++vy) {
+	vy->y = ring[j].x * MIN_RAY;
+	vy->z = ring[j].y * MIN_RAY;
+      }
+    }
+  } else {
+    fft_fill_bands(allbands);
+    for (i=0, vy=v; i<W; ++i) {
+      int j;
+      float w = int_decibel[allbands->band[i].v>>3] * (1.0/32768.0);
+      const float v = MIN_RAY + w * s;
+      for (j=0; j<N; ++j, ++vy) {
+	vy->y = ring[j].x * v;
+	vy->z = ring[j].y * v;
+      }
+    }
+  }
+}
+
+static float max(const float a, const float b) {
+  return a > b ? a : b;
+}
+static float min(const float a, const float b) {
+  return a < b ? a : b;
+}
+static float bound(const float a, const float b, const float c) {
+  return a < b ? b : (a > c ? c : a);
+}
+
+static void anim_band()
+{
+  int j;
+  vtx_t * vy;
+
+  static int init=0;
+  static struct {
+    float v,w;
+    float avg,avg2;
+    float max, max2;
+    float thre;
+    float ts;
+    int tacu;
+    float tap[W];
+  } b[2];
+
+  if (!init) {
+    memset(b,sizeof(b),0);
+    for (j=0;j<3;++j) b[j].ts = 0.7;
+    init = 1;
+  }
+
+  if (bands3) {
+    float q;
+
+    fft_fill_bands(bands3);
+   
+    for (j=0; j<2; ++j) {
+      const float avgf  = 0.988514020;
+      const float avgf2 = 0.93303299;
+      const float v = int_decibel[bands3->band[j].v>>3] * (1.0/32768.0);
+      b[j].v = b[j].v * 0.7 + v * 0.3;
+
+      b[j].avg = b[j].avg * avgf + b[j].v * (1.0-avgf);
+      b[j].avg2 = b[j].avg2 * avgf2 + b[j].v * (1.0-avgf2);
+      b[j].max = max(b[j].max,0.1);
+      b[j].max = max(b[j].max,b[j].avg);
+
+      b[j].ts = bound(b[j].ts, 0.1, 0.98);
+      b[j].thre = (b[j].max * b[j].ts) + (b[j].avg * (1.0-b[j].ts));
+
+/*       if (b[j].tacu == -31 || b[j].tacu == 31) { */
+/* 	printf("[%d] c:%d v:%.3f a2:%.3f a:%.3f m:%.3f m2:%.3f th:%.3f ts:%.3f\n", */
+/* 	     j,b[j].tacu, b[j].v, b[j].avg2, b[j].avg, */
+/* 	       b[j].max, b[j].max2, b[j].thre, b[j].ts); */
+/*       } */
+
+      if (b[j].v > b[j].thre) {
+	if (b[j].tacu <= 0) {
+	  b[j].tacu = 1;
+	  b[j].max2 = b[j].v;
+	} else {
+	  ++b[j].tacu;
+	  if (b[j].tacu > 10) {
+	    if (b[j].max2 > b[j].max) {
+	      b[j].max = b[j].max2;
+	    } else {
+	      b[j].ts *= 1.01;
+	    }
+	  }
+	  b[j].max2 = max(b[j].max2,b[j].v);
+	}
+      } else {
+	if (b[j].tacu > 0) {
+	  b[j].max = b[j].max2;
+	  b[j].tacu = 0;
+	  b[j].max2 = b[j].v;
+	}
+	b[j].max2 = max(b[j].max2,b[j].v);
+
+	--b[j].tacu;
+	if (b[j].tacu < -10) {
+	  b[j].max = b[j].max * avgf + b[j].max2 * (1.0f-avgf);
+	  b[j].ts *= 0.99f;
+	}
+      }
+      q = 0;
+      if (b[j].tacu == 3) {
+	q = 1;
+      }
+      b[j].w = q;
+    }
+  } else {
+    for (j=0; j<2; ++j) {
+      b[j].w = 0;
+    }
+  }
+
+  /* Filter */
+  for (j=0; j<2; ++j) {
+    float * dtap=b[j].tap;
+    float s0,s1,s2;
+    static int cnt = 0;
+    float toto = b[j].w;
+    int i;
+
+    if (toto > 0) {
+      dtap[0] = toto;
+    } else {
+      dtap[0] *= 0.4;
+    }
+
+    s1 = dtap[0];
+    for (i=1; i<W-1; ++i) {
+      s0 = s1;
+      s1 = dtap[i];
+/*       dtap[i] = s0 * 0.91 + s1 * 0.09; */
+      dtap[i] = s0 * 0.81 + s1 * 0.192;
+    }
+  }
+
+  /* Convert */
+  {
+    int i;
+    float * t0 = b[0].tap;
+    float * t1 = b[1].tap;
+    
+    for (i=0, vy=v; i<W; ++i) {
+      int j;
+      const float s0 = MIN_RAY + t0[i] * (MAX_RAY-MIN_RAY);
+      const float s1 = MIN_RAY + t1[W-1-i] * (MAX_RAY-MIN_RAY);
+      float s,a,b;
+      if (s0 < s1) {
+	a = 0.3f;
+	b = 1.0;
+      } else {
+	b = 0.3f;
+	a = 1.0;
+      }
+      s = s0 * a + s1 * b;
+      for (j=0; j<N; ++j, ++vy) {
+	vy->y = ring[j].x * s;
+	vy->z = ring[j].y * s;
+      }
+    }
+  }
+
+}
+
+static void (*fct[])() = {
+  anim_occilo, anim_fft, anim_band
+};
+static const unsigned int nfct = sizeof(fct) / sizeof(*fct);
+
+static void anim_object(const float seconds)
+{
+  static float ay, az, paz = 0.01f;
+
+  fct[mode % nfct]();
+
   /* Build local matrix */
   MtxIdentity(mtx);
-/*   MtxRotateX(mtx, angle.x); */
-/*   MtxRotateY(mtx, angle.y); */
-/*   MtxRotateZ(mtx, angle.z); */
-  //MtxScale(mtx, ozoom);
-/*   mtx[3][0] = pos.x; */
-/*   mtx[3][1] = pos.y; */
-/*   mtx[3][2] = pos.z - ozoom; */
+  az = sinf(paz += 0.0433f) * 0.22f;
+  MtxRotateX(mtx, PI/2);
+  MtxRotateY(mtx, ay += 0.014*0.52);
+  MtxRotateX(mtx, 0.4f+ az);
+  if (ay > 2*PI) {ay -= 2*PI;}
+
+  mtx[3][0] = pos.x;
+  mtx[3][1] = pos.y;
+  mtx[3][2] = pos.z;
+
+  build_normals();
+  hyperpipe_obj.flags = 0
+    | DRAW_NO_FILTER
+    | DRAW_TRANSLUCENT
+    | (texid << DRAW_TEXTURE_BIT);
+}
+
+
+
+static int anim(const float seconds)
+{
+  anim_object(seconds);
+  anim_light(seconds);
 
   return 0;
 }
 
 static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
 {
-  static float ay, az, paz = 0.01f;
-
-  matrix_t tmp;
+  const float seconds = elapsed_ms * (1/1000.0f);
 
   if (!ready) {
     return -1;
   }
 
-  {
-    static short spl[W];
-    short spl2[W];
-    int i;
-    vtx_t * vy;
-    //    const float s = (MAX_RAY-MIN_RAY) / 32768.0f;
-    const float s = (MAX_RAY-MIN_RAY) / sqrtf(32768.0f);
-
-    fft_fill_pcm(spl2,W);
-    for (i=0, vy=v; i<W; ++i) {
-      int j,v = spl[i];
-      float s1,s2;
-
-      spl[i] = v = (v+v+v+spl2[i]) >> 2;
-      if (v<0) {
-	s1 = 0;
-	s2 = sqrtf(-(v+1)) * s;
-      } else {
-	s1 = sqrtf(v) * s;
-	s2 = 0;
-      }
-	
-      const float f1 = MIN_RAY + s1;
-      const float f2 = MIN_RAY + s2;
-
-      for (j=0; j<(N>>1); ++j, ++vy) {
-	vy->y = ring[j].x * f1;
-	vy->z = ring[j].y * f1;
-      }
-      for (; j<N; ++j, ++vy) {
-	vy->y = ring[j].x * f2;
-	vy->z = ring[j].y * f2;
-      }
-
-    }
-    {
-      const int n = hyperpipe_obj.nbf;
-      for (i=0; i<n; ++i) {
-	FaceNormal((float *)(nrm+i),v,tri+i);
-      }
-    }
+  if (!light_object) {
+    light_object = (obj_driver_t *)driver_list_search(&obj_drivers,"benright");
   }
-    
 
+  pos.z = X * 0.5 + 1.00;
   viewport = *vp;
   MtxCopy(proj, projection);
+  anim(seconds);
 
-  MtxIdentity(mtx);
-
-/*   MtxRotateZ(mtx, az); */
-  az = sinf(paz += 0.0233f) * 0.22f;
-
-  //  MtxRotateX(mtx, 4.3f * ay);
-  MtxRotateY(mtx, ay += 0.014*0.52);
-  MtxRotateX(mtx, 0.3f + az);
-  mtx[3][2] = X * 0.5 + 1.00;
-  if (ay > 2*PI) {
-    ay -= 2*PI;
-  }
-
-#if 0
-  MtxIdentity(tmp);
-  MtxRotateZ(tmp, 3.14159);
-/*   MtxRotateY(tmp, -0.33468713*ay); */
-  MtxRotateX(tmp, 0.4);
-  MtxTranspose(tmp);
-  MtxVectMult(&tlight_normal, &light_normal, tmp);
-#endif
-
-/*     vlr_update(); */
-
-  hyperpipe_obj.flags = 0
-    | DRAW_NO_FILTER
-    | DRAW_TRANSLUCENT
-    | (texid << DRAW_TEXTURE_BIT);
   return 0;
 }
 
@@ -452,14 +619,49 @@ static int opaque_render(void)
 
 static int transparent_render(void)
 {
+  float lx,ly,lz;
   if (!ready) {
     return -1;
   }
 
   color = base_color;
-  DrawObjectFrontLighted(&viewport, mtx, proj,
-			 &hyperpipe_obj,
-			 &ambient, &color);
+  lx = light_vtx.x;
+  ly = light_vtx.y;
+  lz = light_vtx.z;
+
+  {
+    matrix_t tmp;
+
+    MtxCopy(tmp,mtx);
+    tmp[3][0] = tmp[3][1] = tmp[3][2] = 0;
+    MtxTranspose(tmp);
+    MtxVectMult(&light_vtx.x,&light_vtx.x,tmp);
+/*     DrawObjectLighted(&viewport, mtx, proj, */
+/* 		      &hyperpipe_obj, */
+/* 		      &ambient, &light_vtx, &color); */
+
+    DrawObjectFrontLighted(&viewport, mtx, proj,
+		      &hyperpipe_obj,
+		      &ambient, &color);
+
+  }
+
+  if (light_object) {
+    vtx_t di;
+
+    di.x = color.x; di.y = color.y; di.z = color.z; di.w = 0.9;
+
+    MtxLookAt(light_mtx, -lx, -ly, -lz);
+    MtxScale(light_mtx,0.33);
+    light_mtx[3][0] = pos.x + lx;
+    light_mtx[3][1] = pos.y + ly;
+    light_mtx[3][2] = pos.z + lz;
+
+    light_object->obj.flags = hyperpipe_obj.flags;
+    DrawObjectSingleColor(&viewport, light_mtx, proj,
+			   &light_object->obj, &di);
+  }
+
   return 0;
 }
 
@@ -469,15 +671,14 @@ static int init(any_driver_t *d)
   const char * tname = "pipe_bordertile";
   border_def_t borderdef;
 
-  SDDEBUG("init [%s]\n",d->name);
-/*   static fftband_limit_t limits[] = { */
-/*     {0, 150}, */
-/*     {150, 1500}, */
-/*     {1500, 44100}, */
-/*   };  */
+  static fftband_limit_t limits[] = {
+    {0, 250},
+    {1000, 3500},
+  };
 
   ready = 0;
-  bands = 0;
+  allbands = 0;
+  bands3 = 0;
   v = 0;
   nrm = 0;
   tri = 0;
@@ -489,21 +690,23 @@ static int init(any_driver_t *d)
   }
   border_get_def(borderdef, 1);
   border_customize(texid, borderdef);
-/*   bands = fft_create_bands(3,limits); */
-  SDDEBUG("init [%s] := [%d]\n",d->name, texid);
+  allbands = fft_create_bands(W,0);
+  bands3 = fft_create_bands(2,limits);
 
   return -(texid < 0); // || !bands);;
 }
 
 static int shutdown(any_driver_t *d)
 {
-  SDDEBUG("[hp] shutdown\n");
   stop();
-  if (bands) {
-    free(bands);
-    bands = 0;
+  if (allbands) {
+    free(allbands);
+    allbands = 0;
   }
-  SDDEBUG("[hp] shutdowned\n");
+  if (bands3) {
+    free(bands3);
+    bands3 = 0;
+  }
   return 0;
 }
 
@@ -603,6 +806,20 @@ static int lua_setchange(lua_State * L)
   return 2;
 }
 
+static int lua_setmode(lua_State * L)
+{
+  int omode = mode;
+  int n = lua_gettop(L);
+  
+  if (n>=1 && lua_type(L,1) != LUA_TNIL) {
+    mode = (unsigned int)lua_tonumber(L,1) % nfct;
+  }
+  lua_settop(L,0);
+  lua_pushnumber(L, omode);
+  return 1;
+}
+
+
 static luashell_command_description_t commands[] = {
   {
     "hyperpipe_setambient", 0,              /* long and short names */
@@ -661,6 +878,14 @@ static luashell_command_description_t commands[] = {
     "Return old values."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_setchange    /* function */
+  },
+  {
+    "hyperpipe_setmode", 0,            /* long and short names */
+    "print [["
+    "hyperpipe_setmode([mode]) : Set display mode. "
+    "Return old values."
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_setmode    /* function */
   },
 
   {0},                                   /* end of the command list */
