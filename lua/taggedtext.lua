@@ -3,7 +3,8 @@
 --- @author  vincent penne
 --- @author  benjamin gerard
 --- @brief   tagged text aka zml
---- $Id: taggedtext.lua,v 1.33 2003-03-27 05:48:05 ben Exp $
+---
+--- $Id: taggedtext.lua,v 1.34 2003-03-31 16:52:28 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_tt Tagged Text
@@ -401,7 +402,8 @@ tt_commands = {
 
    p = function(mode, param)
 	  tt_endline(mode)
-	  mode.vspace = param.vspace
+	  mode.vspace = param.vspace and tonumber(param.vspace)
+	  mode.hspace = param.hspace and tonumber(param.hspace)
        end,
 
    pre = function(mode,param)
@@ -724,8 +726,14 @@ function tt_insert_block(mode, block)
       mode.fill_totalw = 0
    end
 
+   if w == 0 and mode.hspace and mode.hspace > 0 then
+      -- $$$ ben : support hspace parameter for <p> , by inserting a fake
+      -- block at each new line 
+      w = mode.hspace
+      tinsert(mode.curline,
+	      { y = mode.h, w = w, h = 0, draw = function() end } )
+   end
    block.y = mode.h
-
    tinsert(mode.curline, block)
    mode.w = w + block.w
    if block.fill_w then
