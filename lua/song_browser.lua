@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.48 2003-03-16 23:09:56 ben Exp $
+--- $Id: song_browser.lua,v 1.49 2003-03-17 03:31:21 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song-browser
@@ -704,6 +704,7 @@ function song_browser_create(owner, name)
    function sbfl_confirm_playlist(fl, sb, action, entry_path)
       local dir = playlist_load(entry_path)
       if not dir then return end
+      sb.playlist_idx = nil
       sb.pl:change_dir(dir)
       return 1
    end

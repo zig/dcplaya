@@ -1,14 +1,70 @@
---
--- keyboard emulation lua module
---
--- author : Vincent Penne
---
--- $Id: keyboard_emu.lua,v 1.17 2003-03-08 13:54:25 ben Exp $
---
+--- @ingroup  dcplaya_lua_app
+--- @file     keyboard_emu.lua
+--- @author   vincent penne <ziggy@sashipa.com>
+--- @date     2002
+--- @brief    keyboard emulator.
+---
+--- $Id: keyboard_emu.lua,v 1.18 2003-03-17 03:31:21 ben Exp $
+---
+
+--- @defgroup dcplaya_lua_ke_app Keyboard emulator
+--- @ingroup dcplaya_lua_app
+--- @brief   keyboard emulator application
+--- 
+---
+---   The keyboard emulator is a special application. It is always the top
+---   application in the event manager (first child of evt_root_app).
+---
+---   There is only one keyboard application running (ke_app).
+---
+
 
 dolib("keydefs")
+dolib("basic")
 dolib("display_init")
 -- dolib("evt")
+
+--
+--- @name emulator global active mode rule.
+--- @ingroup dcplaya_lua_ke_app
+--- @{
+--
+
+--- Keyboard emulator is never active.
+--: #define ke_active_rules_never  "never"
+--- Keyboard emulator is always active.
+--: #define ke_active_rules_always "always"
+--- Keyboard emulator is active only if ke_active is set and no keyboard
+--- controller has been detected.
+--: #define ke_active_rules_nokbd  "nokbd"
+--- Keyboard emulator is active only if ke_active is set.
+--: #define ke_active_rules_normal "normal"
+
+--: #define ke_active_rules_never nil
+--:  ke_active_rules
+
+--- Current keyboard emulator active rule.
+--: string ke_active_rule;
+ke_active_rule = "nokbd"
+
+--- Table of keyboard active rule functions.
+--: table ke_active_rules;
+ke_active_rules = {
+   never = function() return end,
+   always = function() return 1 end,
+   nokbd = function(active) return active and keyboard_present() == 0 end,
+   normal = function(active) return active end,
+}
+
+--
+--- @}
+--
+
+--- Keyboard active status.
+--: boolean ke_active;
+
+--- Keyboard active status without applying active rules.
+--: boolean ke_shadow_active;
 
 ke_box 		= { 20, 330, 640-20, 330+140 }
 ke_z		= 150
@@ -17,7 +73,8 @@ ke_textz	= ke_z + 30
 ke_vanish_y	= -140
 
 if not ke_theme then
-   ke_theme = 2	-- currently 1 .. 3
+--   ke_theme = 2	-- currently 1 .. 4
+   ke_theme = 4	-- currently 1 .. 4
 end
 
 ke_themes = {
@@ -41,7 +98,17 @@ ke_themes = {
       ke_keycolor1	= { 0.8, 0.2, 0.2, 0.7 } 
       ke_keycolor2	= { 0.8, 0.2, 0.2, 0.7 } 
       ke_textcolor	= { 1.0, 0.9, 0.9, 0.2 } 
+   end,
+
+   function()
+      local base = { 1, 1, 1, 0.8 }
+      ke_boxcolor	= base
+      ke_keycolor1	= base * { 1, 0.4, 0.4, 0.4 }
+      ke_keycolor2	= base * { 1, 0.8, 0.8, 0.8 }
+      ke_textcolor	= base * { .5, 1, 1, 1 }
+      ke_cursorcolor    = base * { 1, 0.8, 1.1, 0.8 }
    end
+
 }
 
 ke_keyup	= { [KBD_CONT1_DPAD2_UP]=1 }
@@ -61,6 +128,12 @@ ke_translate	= {
    [KBD_CONT1_DPAD_LEFT] = KBD_KEY_LEFT,
    [KBD_CONT1_DPAD_RIGHT] = KBD_KEY_RIGHT
 }
+
+--
+--- @name keyboard emulator functions.
+--- @ingroup dcplaya_lua_ke_app
+--- @{
+--
 
 function ke_addkeypos(x, y)
    if not ke_addkeycurpos then
@@ -140,16 +213,33 @@ end
 
 function ke_shutdown()
 
-   if not evt_included then
-      return nil
+   if not evt_included or not ke_app then
+      ke_shutdown_all()
+      return
    end
+   evt_shutdown_app(ke_app)
+   ke_app = nil
+end
 
-   if ke_app then
-      evt_shutdown_app(ke_app)
-      -- $$$ added by ben
-      ke_app = nil
+function ke_shutdown_all()
+   ke_app = nil
+   ke_startup_rule = ke_active_rule
+   ke_startup_active = ke_shadow_active
+   if ke_arrays then
+      local array
+      for _, array in ke_arrays do
+	 if type(array)=="table" then
+	    array.dl = nil
+	 end
+      end
+      ke_arrays = { }
    end
-
+   ke_cursor_dl = nil
+   ke_vanishing_arrays = { }
+   ke_arrays = nil
+   ke_array = nil
+   ke_set_active_rule("never")
+   ke_set_active(nil)
 end
 
 function ke_set_keynum(n)
@@ -207,40 +297,18 @@ function ke_handle(app, evt)
    local key = evt.key
 
    if key == evt_shutdown_event then
-
-      ke_app = nil
-
-      if ke_active then
-	 ke_set_active(nil)
---	 cond_connect(1)
-      end
-
-      if ke_arrays then
-	 local array
-	 for _, array in ke_arrays do
-	    if type(array)=="table" then
-	       dl_destroy_list(array.dl)
-	    end
-	 end
-	 ke_arrays = { }
-      end
-
-      if ke_cursor_dl then
-	 dl_destroy_list(ke_cursor_dl)
-	 ke_cursor_dl = nil
-      end
-
-      ke_vanishing_arrays = { }
-      ke_arrays = nil
-
+      ke_shutdown_all()
       return evt -- pass the shutdown event to next app
+   end
 
+   if key == ioctrl_keyboard_event then
+      ke_set_active(ke_shadow_active)
+      return -- Eat that event
    end
 
    -- activating key toggle
    if ke_keyactivate[key] then
-      ke_set_active(not ke_active)
---      cond_connect(not ke_active)
+      ke_set_active(not ke_shadow_active)
       return nil
    end
 
@@ -337,11 +405,42 @@ function ke_handle(app, evt)
    return evt
 end
 
+--- Set/get keyboard emulator active stat rule.
+---
+--- @param  rule  new rule or nil for getting current rule.
+--- @return previous rule
+---
+--- @see ke_active_rule
+--- @see ke_active_rules
+--- @see ke_active_rules_never
+--- @see ke_active_rules_always
+--- @see ke_active_rules_normal
+--- @see ke_active_rules_nokbd
+--
+function ke_set_active_rule(rule)
+   local old_rule = ke_active_rule
+   if type(rule) == "string" and type(ke_active_rules[rule]) == "function" then
+      ke_active_rule = rule
+      ke_active_rules.current = ke_active_rules[rule]
+      ke_set_active(ke_shadow_active)
+   end
+   return old_rule
+end
+
+--- Set keyboard emulator active stat.
+--- @param  s  new state (nil:desactivate KE)
+--
 function ke_set_active(s)
    if not ke_active then
-      ke_cursorbox = 3*ke_box
+      ke_cursorbox = 3*ke_box --- ben : roger that !
       ke_time = 0
    end
+   -- Store the active status before applying rules
+   ke_shadow_active = s
+
+   -- Apply active rule
+   s = ke_active_rules.current(s)
+
    if not s then -- $$$ added by ben for vmu display
       if vmu_set_visual and ke_app then
 	 vmu_set_visual(ke_app.save_vmu_visual)
@@ -351,9 +450,10 @@ function ke_set_active(s)
 	 vmu_set_text(nil)
       end
    end
+
    ke_active = s
-   ke_vanishing_arrays[ke_array] = not s
-   if s then
+   if ke_array then
+      ke_vanishing_arrays[ke_array] = not s
       dl_set_active(ke_array.dl, s)
    end
    dl_set_active(ke_cursor_dl, s)
@@ -417,7 +517,9 @@ function ke_update(app, frametime)
 		   mat_trans(ke_cursorbox[1], ke_cursorbox[2], 0))
 
    local ci = 0.5+0.5*cos(360*ke_time*2)
-   dl_set_color(ke_cursor_dl, ci, 1, ci, ci)
+   local cc = ci * ke_cursorcolor
+
+   dl_set_color(ke_cursor_dl, cc[1], cc[2], cc[3], cc[4])
 
    if vmu_set_text and ke_key and ke_key.text then
       if not app.save_vmu_visual and vmu_set_visual then
@@ -441,25 +543,7 @@ function ke_update(app, frametime)
 
 end
 
-function ke_init()
-
-   if not evt_included then
-      return nil
-   end
-
-   ke_shutdown()
-
-   ke_themes[ke_theme]()
-
-   ke_time = 0
-
-   ke_active = 1
-
-   settagmethod(tag( {} ), "add", table_add)
-   settagmethod(tag( {} ), "sub", table_sub)
-   settagmethod(tag( {} ), "mul", table_mul)
-   settagmethod(tag( {} ), "pow", table_sqrdist)
-
+function ke_draw()
    if not check_display_driver or not check_display_driver() then
       return
    end
@@ -469,17 +553,52 @@ function ke_init()
    ke_cursor_dl	= dl_new_list(1*1024, 1)
 
    dl_clear(ke_cursor_dl)
-   dl_draw_box(ke_cursor_dl, 0, 0, 1, 1, ke_cursorz, 1, 1, 1, 1, 1, 1, 1, 1)
+   dl_draw_box1(ke_cursor_dl, 0, 0, 1, 1, ke_cursorz, 1, 1, 1, 1)
    ke_cursorbox = ke_box
 
    local dl
    for _, dl in { ke_downarray_dl, ke_uparray_dl} do
 
       dl_clear(dl)
-      dl_draw_box(dl, ke_box, ke_z, ke_boxcolor, ke_boxcolor)
+      dl_draw_box1(dl, ke_box, ke_z, ke_boxcolor)
       dl_text_prop(dl, 0, 14)
       
    end
+end
+
+--- Set/Get active theme.
+--- @param  theme  new theme number [1..getn(ke_themes)]
+---                or nil for get current.
+--- @return old theme.
+--
+function ke_set_theme(theme)
+   local old_theme = ke_theme
+   if type(theme) == "number" and type(ke_themes[theme]) == "function" then
+      ke_theme = theme
+      ke_themes[ke_theme]()
+      ke_cursorcolor = ke_cursorcolor or { 1,1,1,1 }
+   end
+   return old_theme
+end
+
+function ke_init()
+
+   if not evt_included then
+      return nil
+   end
+
+   ke_shutdown()
+   ke_set_theme(ke_theme)
+   ke_time = 0
+
+   ke_set_active_rule(ke_startup_rule or "nokbd")
+
+   settagmethod(tag( {} ), "add", table_add)
+   settagmethod(tag( {} ), "sub", table_sub)
+   settagmethod(tag( {} ), "mul", table_mul)
+   settagmethod(tag( {} ), "pow", table_sqrdist)
+
+   ke_draw()
 
    ke_arrays = { }
    ke_vanishing_arrays = { }
@@ -595,24 +714,17 @@ function ke_init()
    ke_set_active_array(1)
    ke_set_keynum(1)
 
-   ke_set_active(1)
-   ke_set_active(0)
-
-
    -- build the application
    ke_app = {
-      
       name = "keyboard_emu",
       version = "0.9",
-      
       handle = ke_handle,
       update = ke_update
-      
    }
 
    -- insert the application in root list
    evt_app_insert_first(evt_root_app, ke_app)
-
+   ke_set_active(ke_startup_active)
 
    print [[KEYBOARD EMU INSTALLED]]
    print [[Press start to toggle it]]
@@ -632,6 +744,5 @@ function keyboard_emu()
 end
 
 keyboard_emu()
-ke_set_active(nil)
 
 keyboard_emu_loaded = 1

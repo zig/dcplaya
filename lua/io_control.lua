@@ -4,7 +4,7 @@
 --- @date     2003/03/08
 --- @brief    IO control application.
 ---
---- $Id: io_control.lua,v 1.3 2003-03-12 13:20:48 ben Exp $
+--- $Id: io_control.lua,v 1.4 2003-03-17 03:31:21 ben Exp $
 ---
 
 if not dolib ("evt") then return end
@@ -41,6 +41,16 @@ if not dolib ("evt") then return end
 --- };
 --
 
+--
+--- Keyboard change event structure.
+--- @ingroup dcplaya_lua_ioctrl_event
+--- @see keyboard_present()
+--- struct keyboard_change_event {
+---  event_key key;      /**< Always ioctrl_keyboard_event.          */
+---  boolean present;    /**< Set if keyboard is present             */
+--- };
+--
+
 --- @defgroup dcplaya_lua_ioctrl_app IO control application
 --- @ingroup dcplaya_lua_app
 ---
@@ -64,12 +74,14 @@ if not dolib ("evt") then return end
 --- @warning Only specific fields are listed.
 --- 
 --- struct ioctrl_app {
----  number cdrom_check_timeout;   /**< Time left before next check.   */
----  number cdrom_check_interval;  /**< Interval between CDROM checks. */
----  number serial_check_timeout;  /**< Idem for serial.               */
----  number serial_check_interval; /**< Idem for serial.               */
----  number ramdisk_check_timeout;  /**< Idem for ramdisk.             */
----  number ramdisk_check_interval; /**< Idem for ramdisk.             */
+---  number cdrom_check_timeout;     /**< Time left before next check.   */
+---  number cdrom_check_interval;    /**< Interval between CDROM checks. */
+---  number serial_check_timeout;    /**< Idem for serial.               */
+---  number serial_check_interval;   /**< Idem for serial.               */
+---  number ramdisk_check_timeout;   /**< Idem for ramdisk.              */
+---  number ramdisk_check_interval;  /**< Idem for ramdisk.              */
+---  number keyboard_check_timeout;  /**< Idem for keyboard.             */
+---  number keyboard_check_interval; /**< Idem for keyboard.             */
 --- };
 --
 
@@ -127,6 +139,22 @@ function ioctrl_update(app, frametime)
       app.ramdisk_check_timeout = timeout
    end
 
+   -- keyboard check (if function is available)
+   if keyboard_present and app.keyboard_check_timeout then
+      local timeout = app.keyboard_check_timeout - frametime
+      if timeout <= 0 then
+	 timeout = app.keyboard_check_interval
+	 local present, change = keyboard_present()
+	 if change and ke_app then
+	    evt_send(ke_app,
+		     {
+			key = ioctrl_keyboard_event,
+			present = present == 1
+		     })
+	 end
+      end
+      app.keyboard_check_timeout = timeout
+   end
 
 end
 
@@ -167,16 +195,19 @@ function io_control()
       cdrom_check_timeout = 0,
       serial_check_timeout = 0,
       ramdisk_check_timeout = 0,
+      keyboard_check_timeout = 0,
 
       cdrom_check_interval = 0.5103, -- not multiple (on purpose)
       serial_check_interval = 1,
       ramdisk_check_interval = 3.007,
+      keyboard_check_interval = 4.017,
    }
 
    -- Create io event
    ioctrl_cdrom_event = ioctrl_cdrom_event or evt_new_code()
    ioctrl_serial_event = ioctrl_serial_event or evt_new_code()
    ioctrl_ramdisk_event = ioctrl_ramdisk_event or evt_new_code()
+   ioctrl_keyboard_event = ioctrl_keyboard_event or evt_new_code()
       
    -- insert the application in root list
    evt_app_insert_last(evt_root_app, ioctrl_app)

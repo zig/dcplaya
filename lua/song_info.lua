@@ -4,7 +4,7 @@
 --- @date     2002/11/29
 --- @brief    Song info application.
 ---
---- $Id: song_info.lua,v 1.21 2003-03-16 23:09:56 ben Exp $
+--- $Id: song_info.lua,v 1.22 2003-03-17 03:31:21 ben Exp $
 
 song_info_loaded = nil
 
@@ -15,9 +15,8 @@ if not dolib("sprite") then return end
 if not dolib("style") then return end
 
 --- @defgroup dcplaya_lua_si_app Song-info
---- @ingroup dcplaya_lua_app
----
----  @par song-info introduction
+--- @ingroup  dcplaya_lua_app
+--- @brief    Display music information.
 ---
 ---   The song-info application is used to display current playing music
 ---   information. It could be displayed in two modes maximized and
