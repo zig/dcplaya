@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.52 2003-03-18 02:44:46 ben Exp $
+--- $Id: song_browser.lua,v 1.53 2003-03-18 17:31:27 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song-browser
@@ -867,8 +867,13 @@ function song_browser_create(owner, name)
       local path,leaf = get_path_and_leaf(entry_path)
       if not leaf then return end
 
-      sprite("sb_bkg", nil, nil, 32, nil,
-	     nil, nil, nil, nil, tex_get("background"))
+      if tag(background) == background_tag then
+	 local spr = sprite("sb_bkg", 0, 0, 32, 24) -- Create pipo sprite
+	 if spr then
+	    spr.vtx = background.vtx * mat_scale(32,24,1); -- Hack vertex
+	    spr.tex = background.tex;
+	 end
+      end
 
       local def = {
 	 root = ":"..leaf..":{sb_info}info{info},{sb_bkg}background>",
