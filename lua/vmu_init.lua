@@ -1,7 +1,7 @@
 --- @date 2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  LUA script to initialize dcplaya VMU backup.
---- $Id: vmu_init.lua,v 1.6 2003-01-12 19:48:01 ben Exp $
+--- $Id: vmu_init.lua,v 1.7 2003-01-12 22:01:32 ben Exp $
 ---
 
 -- Unload library
@@ -95,8 +95,16 @@ function gui_text_viewer(owner, texts, box, label, mode)
 
    function gui_text_viewer_set_tt(dial, tt, x, y)
       if type(tt) == "string" then
-	 tt = type(dial.tts) == "table" and dial.tts[tt]
-	 if not tt then print ("dial=",dial.name) end
+	 local start, stop, tt_name, hash, tt_anchor =
+	    strfind(tt,"(%w*)(#?)(%w*)")
+	 tt = (type(tt_name) == "string" and
+	       type(dial.tts) == "table" and
+		  dial.tts[tt_name]
+	    ) or dial.cur_tt
+	 if tag(tt) == tt_tag and type(tt_anchor) == "string" and
+	    tt.anchors[tt_anchor] then
+	    x,y = -tt.anchors[tt_anchor].x,-tt.anchors[tt_anchor].y
+	 end
       end
       tt = (tag(tt) == tt_tag) and tt
 
@@ -107,8 +115,7 @@ function gui_text_viewer(owner, texts, box, label, mode)
 	 dial.old_tt = dial.cur_tt
 	 dial.cur_tt = tt
       end
-      dial.tt_x = x or 0
-      dial.tt_y = y or 0
+      gui_text_viewer_set_scroll(dial, x, y)
       dial.tt_a = 1
    end
 
@@ -130,14 +137,15 @@ function gui_text_viewer(owner, texts, box, label, mode)
       end
 
       if th > tth then
-	 ymin, ymax = 0
+	 ymin, ymax = 0,0
       else
 	 ymin, ymax = th-tth, 0
       end
 
 --       print("minmax ",xmin,ymin,xmax,ymax)
 --       print("Scroll ","X:"..x,"Y:"..y)
- 
+      x = x or 0
+      y = y or 0
       x = (x < xmin and xmin) or (x > xmax and xmax) or x
       y = (y < ymin and ymin) or (y > ymax and ymax) or y
 
@@ -326,24 +334,19 @@ function gui_text_viewer(owner, texts, box, label, mode)
       local cb = {
 	 settext = function(menu)
 		      local dial, fl = menu.root_menu.target, menu.fl
-		      if not fl or not dial then 
-			 print("no dial fl ",dial,fl)
-			 return
-		      end
+		      if not fl or not dial then return end
 		      local pos = fl:get_pos()
-		      if not pos then
-			 print ("no pos")
-			 return
-		      end
+		      if not pos then return end
 		      local entry = fl.dir[pos]
 		      if entry then
-			 print("CHANGE TO "..entry.name)
-			 gui_text_viewer_set_tt(dial, entry.name)
+			 local tt_name = ((menu.name == "anchor" and "#") or
+					  "") .. entry.name
+			 gui_text_viewer_set_tt(dial, tt_name)
 		      end
 		   end,
       }
       local root = ":" .. target.name .. ":" .. 
-	 "view >view"
+	 "view >view,anchor >anchor"
       local view = ":view:"
       if type(dial.tts) == "table" then
 	 local i,v
@@ -353,11 +356,19 @@ function gui_text_viewer(owner, texts, box, label, mode)
 	    end
 	 end
       end
+      local anchor = ":anchor:"
+      if tag(dial.cur_tt) == tt_tag and 
+	 type(dial.cur_tt.anchors) == "table" then
+	 local i,v
+	 for i,v in dial.cur_tt.anchors do
+	    anchor = anchor .. tostring(i) .. "{settext},"
+	 end
+      end
 
       local def = {
 	 root=root,
 	 cb = cb,
-	 sub = { view = view, }
+	 sub = { view = view, anchor = anchor }
       }
       return menu_create_defs(def , target)
    end
@@ -572,15 +583,20 @@ local warning_text =
 <font size="14">
 <center><font color="#FF9000">Warning
 <vspace h="4"><p><left><font color="#909090">
+<hspace w="8">
 This program is NOT official SEGA production. It is distributed in the
 hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
 implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.<br>
+<vspace h="4"><p>
+<a name="clear">
+<hspace w="8">
 In other words, dcplaya developpers have worked hard to make it possible.
 They have make the best to do a nice program and test it for you during hours.
 This is a lot of work and they made it for FREE. They do not want to be implied
 with any purchasse for anything that happen to you or to anything while using
 this program. Problems may be submit to them but this is without any
 warranty !
+</a>
 ]]
 
 -- [[
@@ -615,6 +631,7 @@ warranty !
 
 gui_text_viewer(nil,
 		{
+		   newbie  = newbie_text,
 		   welcome = welcome_text,
 		   warning = warning_text,
 		} , nil, "Welcome", nil)

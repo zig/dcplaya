@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist_loader.c,v 1.6 2003-01-06 14:54:34 ben Exp $
+ * $Id: entrylist_loader.c,v 1.7 2003-01-12 22:01:32 ben Exp $
  */
 
 #include <stdio.h>
@@ -335,11 +335,16 @@ int el_loader_init(void)
   memset(&loader, 0, sizeof(loader));
   loader_status = LOADER_INIT;
   loader_thd = 0;
-  loader_sem = sem_create(0);
+  printf("entrylist_load_init : create semaphore.\n");
+  loader_sem = sem_create(1);
+  printf("entrylist_load_init : semaphore [%p].\n",loader_sem);
   if (!loader_sem) {
     printf("entrylist_load_init : can not create semaphore.\n");
     return -1;
   }
+  printf("entrylist_load_init : first wait semaphore.\n");
+  sem_wait(loader_sem);
+
   printf("entrylist_load_init : create thread.\n");
   loader_thd = thd_create(loader_thread, loader_sem);
   if (!loader_thd) {
