@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.68 2003-02-27 10:05:25 ben Exp $
+ * @version    $Id: dynshell.c,v 1.69 2003-03-01 14:32:59 ben Exp $
  */
 
 #include "config.h"
@@ -326,10 +326,6 @@ static void register_driver_type(lua_State * L)
 static int lua_malloc_stats(lua_State * L)
 {
   malloc_stats();
-
-  // Testing exception handling ...
-  //* (int *) 1 = 0xdeadbeef;
-
   return 0; // 0 return values
 }
 
@@ -1617,21 +1613,147 @@ static int lua_set_visual(lua_State * L)
   return lua_gettop(L);
 }
 
-#if 0
+
+/* Create a driver info table.
+ * @return stack pos of table
+ */
+static int lua_driver_info(lua_State * L, any_driver_t * driver)
+{
+  int table;
+  char type[4];
+
+  lua_newtable(L);
+  table = lua_gettop(L);
+
+  /* Type */
+  type[0] = driver->type >> 16;
+  type[1] = driver->type >> 8;
+  type[2] = driver->type;
+  type[3] = 0;
+  lua_pushstring(L,"type");
+  lua_pushstring(L,type);
+  lua_settable(L,table);
+
+  /* Version */
+  lua_pushstring(L,"version");
+  lua_pushnumber(L,driver->version);
+  lua_settable(L,table);
+
+  /* Name */
+  if (driver->name) {
+    lua_pushstring(L,"name");
+    lua_pushstring(L,driver->name);
+    lua_settable(L,table);
+  }
+
+  /* Authors */
+  if (driver->authors) {
+    lua_pushstring(L,"authors");
+    lua_pushstring(L,driver->authors);
+    lua_settable(L,table);
+  }
+  
+  /* Description */
+  if (driver->description) {
+    lua_pushstring(L,"description");
+    lua_pushstring(L,driver->description);
+    lua_settable(L,table);
+  }
+  
+  /* Commands */
+  if (driver->luacommands && driver->luacommands->name) {
+    int comsTable;
+    struct luashell_command_description * com;
+    lua_pushstring(L,"commands");
+    lua_newtable(L);
+    comsTable = lua_gettop(L);
+
+    for (com=driver->luacommands; com->name; ++com) {
+      int comTable;
+
+      lua_pushstring(L,com->name);
+      lua_newtable(L);
+      comTable = lua_gettop(L);
+
+      if (com->short_name) {
+	lua_pushstring(L,"short_name");
+	lua_pushstring(L,com->short_name);
+	lua_settable(L,comTable);
+      }
+
+      if (com->usage) {
+	lua_pushstring(L,"usage");
+	lua_pushstring(L,com->usage);
+	lua_settable(L,comTable);
+      }
+
+      lua_pushstring(L,"type");
+      lua_pushstring(L,com->type == SHELL_COMMAND_LUA ? "lua" : "C");
+      lua_settable(L,comTable);
+
+      if (com->registered) {
+	lua_pushstring(L,"registered");
+	lua_pushnumber(L,1);
+	lua_settable(L,comTable);
+      }
+
+      lua_settable(L,comsTable); /* set "name-command" table into "commands" */
+    }
+
+    lua_settable(L,table); /* set "commands" table into table */
+  }
+  return table;
+}
+
+/* Create a driver-list info table.
+ * @return stack pos of table
+ */
+static int lua_driver_list_info(lua_State * L, driver_list_t * dl)
+{
+  int table;
+  any_driver_t *d, *next;
+
+  lua_newtable(L);
+  table = lua_gettop(L);
+
+  next = dl->drivers;
+  while (d = driver_lock(next), d) {
+    lua_pushstring(L,d->name);
+    lua_driver_info(L, d);
+    next = d->nxt;
+    driver_unlock(d);
+    lua_settable(L,table);
+  }
+  return table;
+}
+
+/* Get driver information.
+ * no paramter : return a table indexed by driver list name containing,
+ *               driver info table.
+ */
 static int lua_driver_list(lua_State * L)
 {
   if (lua_gettop(L) < 1) {
+    /* No parameter : return all drivers. */
+    driver_list_reg_t * dl, *next;
+    int table;
     lua_settop(L,0);
-    lua_newtable(L,1);
-    lua_pushsting(L, "");
-    lua_rawseti(L, 2, 1);
-
-    lua_
+    lua_newtable(L);
+    table = lua_gettop(L);
+    for (dl = driver_lists; dl; dl=next) {
+      driver_list_lock(dl->list);
+      lua_pushstring(L, dl->name);
+      lua_driver_list_info(L, dl->list);
+      next = dl->next;
+      driver_list_unlock(dl->list);
+      lua_settable(L,table);
+    }
+    return 1;
+  } else {
+    printf("driver_info : command not implemented !\n");
   }
-    
-  
+  return 0;
 }
-#endif
 
 static int lua_filetype(lua_State * L)
 {
@@ -2721,6 +2843,33 @@ static luashell_command_description_t commands[] = {
     SHELL_COMMAND_C, lua_image_info
   },
 
+  {
+    "driver_info",
+    0,
+    "print([["
+    "driver_info([driver-name]) :\n"
+    " Get driver information. If no driver-name is given, the function returns"
+    " a table indexed by driver type conatining driver info tables indexed by"
+    " driver name.\n"
+    " driver info table contains:\n"
+    " {\n"
+    "   name        = \"driver name\",\n"
+    "   type        = \"type of driver\",\n"
+    "   version     = number version (major*256+minor),\n"
+    "   authors     = authors string coma ',' separated,\n"
+    "   description = a short description string,\n"
+    "   commands    = lua commands table (indexed by command name)\n"
+    " }\n"
+    " command is a table containing:\n"
+    " {\n"
+    "   short_name  = \"short command name\" (optionnal),\n"
+    "   usage       = \"usage command\" (optionnal),\n"
+    "   type        = \"lua\" | \"C\",\n"
+    "   registered  = 1 (set only if command is registered)\n"
+    " }\n"
+    "]])",
+    SHELL_COMMAND_C, lua_driver_list
+  },
 
   {0},
 };
