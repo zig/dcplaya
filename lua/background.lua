@@ -25,6 +25,7 @@
 ---   set_color();   ///< @see background_set_colors()
 ---   set_texture(); ///< @see background_set_texture()
 ---   draw();        ///< @see background_draw()
+---   kill();        ///< @see background_kill()
 ---   
 --- };
 
@@ -119,6 +120,10 @@ function background_create()
       
       -- Draw method
       draw = background_draw,
+
+      -- Kill method
+      kill = background_kill,
+
    }
    settag(bkg, background_tag)
    bkg:set_texture()
@@ -126,9 +131,34 @@ function background_create()
    return bkg
 end
 
+function background_shutdown(bkg)
+   return background_kill(bkg)
+end
+
+--- Kill background.
+---
+---  @param  bkg  background to kill (nil for default background)
+---  
+function background_kill(bkg)
+   bkg = bkg or background
+   if tag(bkg) ~= background_tag then return end
+   bkg.dl = nil
+   if bkg == background then
+      background_dl = nil
+      background = nil
+      print("background killed")
+   end
+end
+
+background_kill()
 background = background_create()
+
 if background then
-   background_dl = dl_new_list(128,1,nil,"background_dl")
+   print("background created")
+
+   if tag (background_dl) ~= dl_tag then
+      background_dl = dl_new_list(128,nil,nil,"background_dl")
+   end
    background:set_texture("/rd/dcpbkg2.jpg", "scale")
    dl_set_trans(background.dl, mat_scale(640,480,1))
    dl_set_trans(background_dl, mat_trans(0,0,0.0001))
