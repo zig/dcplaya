@@ -4,7 +4,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.15 2003-03-10 22:55:32 ben Exp $
+ * $Id: texture.c,v 1.16 2003-03-12 22:03:24 ben Exp $
  */
 
 #include <stdlib.h>
@@ -221,7 +221,6 @@ static void * vid_alloc(texture_t * t, size_t size)
     return NULL;
   }
   t->ta_tex = t->ehb.offset;
-  SDDEBUG("ta_tex = %x\n", t->ta_tex);
   /*  t->ta_tex = ta_txr_allocate(size); */
   /* $$$ TODO check alloc error */ 
   t->addr = ta_txr_map(t->ta_tex);

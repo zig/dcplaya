@@ -1,7 +1,7 @@
 --
 -- This is main DCplaya lua script
 --
--- $Id: dcplayarc.lua,v 1.32 2003-03-10 22:55:32 ben Exp $
+-- $Id: dcplayarc.lua,v 1.33 2003-03-12 22:03:24 ben Exp $
 --
 
 showconsole()
@@ -46,6 +46,16 @@ if type(filetype_add) == "function" then
    filetype_add("text", nil, ".txt\0.doc")
 end
 
+-- Load this driver as soon as possible
+if type(test) == "function" and type(driver_load) == "function" then
+   if type(plug_jpeg) == "string" and test("-f",plug_jpeg) then
+      driver_load(plug_jpeg)
+   end
+   if type(plug_el) == "string" and test("-f",plug_el) then
+      driver_load(plug_el)
+   end
+end
+
 -- Standard stuffs
 dolib ("basic")
 dolib ("evt")
@@ -53,12 +63,27 @@ dolib ("dirfunc")
 dolib ("shell")
 dolib ("zed")
 dolib ("keyboard_emu")
+
+dolib ("sprite")
+
+-- Loading sprite ressource
+if __RELEASE and type(dirlist) == "function" then
+   local path = home.."lua/rsc/icons"
+   printf("Loading icon resources from %q",path)
+   local dir,files = dirlist("-h2",path)
+   if type(files) == "table" then
+      local n,i = getn(files)
+      for i=1,n do
+	 tex_new(path .. "/" .. files[i])
+      end
+   end
+end
+
 dolib ("io_control")
 dolib ("gui")
 
 -- vmu initialisation.
 hideconsole()
-dl(plug_jpeg)
 dolib ("vmu_init")
 if type(ramdisk_init) == "function" then
    ramdisk_init()
@@ -66,7 +91,6 @@ end
 if type(vmu_init) == "function" then
    vmu_init()
 end
-
 showconsole()
 
 -- reading user config
