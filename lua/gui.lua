@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.58 2003-03-16 23:09:55 ben Exp $
+--- $Id: gui.lua,v 1.59 2003-03-17 22:24:17 zigziggy Exp $
 ---
 
 --
@@ -252,6 +252,57 @@ function gui_child_autoplacement(app)
 end
 
 
+if nil then
+-- OLD VERSION
+function gui_child_autoplacement(app)
+   if not app._dl1 then
+      app._dl1 = dl_new_list(256, 1)
+      app._dl2 = dl_new_list(256, 1)
+      dl_sublist(app.dl, app._dl1)
+      dl_sublist(app.dl, app._dl2)
+   else
+      dl_clear(app._dl1)
+   end
+
+   local i = app.sub
+   if not i then
+      return
+   end
+   local n = 0
+   while i do
+      n = n + 1
+      if not i._dl and i.dl and i.dl ~= app.dl then
+	 i._dl = dl_new_list(256, 1)
+	 dl_sublist(i._dl, i.dl)
+      end
+      i = i.next
+   end
+
+   -- $$$ ben : +1 ???
+   n = n+1
+   local scale = 1/n
+   i = app.sub
+--   n = 0
+   while i do
+      n = n - 1
+
+      if i._dl then
+	 dl_set_trans(i._dl,
+		      mat_trans(0, 0, 100/scale + 100*n) *
+			 mat_scale(1, 1, scale/2))
+	 dl_sublist(app._dl1, i._dl)
+      end
+      
+      i = i.next
+   end
+
+   -- swaping display lists
+   dl_set_active2(app._dl1, app._dl2, 1)
+   app._dl1, app._dl2 = app._dl2, app._dl1
+end
+end -- END OLD VERSION
+
+
 -- change focused item
 function gui_new_focus(app, f)
    local of = app.sub
@@ -368,8 +419,8 @@ end
 
 function gui_dialog_basic_handle(app, evt)
    local key = evt.key
---   if (key == evt_app_insert_event or key == evt_app_remove_event) and evt.app.owner == app then
-   if key == evt_app_insert_event and evt.app.owner == app then
+   if (key == evt_app_insert_event or key == evt_app_remove_event) and evt.app.owner == app then
+   --if key == evt_app_insert_event and evt.app.owner == app then
       gui_child_autoplacement(app)
       return
    end

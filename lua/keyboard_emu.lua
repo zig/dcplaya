@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    keyboard emulator.
 ---
---- $Id: keyboard_emu.lua,v 1.19 2003-03-17 05:05:59 ben Exp $
+--- $Id: keyboard_emu.lua,v 1.20 2003-03-17 22:24:17 zigziggy Exp $
 ---
 
 --- @defgroup dcplaya_lua_ke_app Keyboard emulator
@@ -67,14 +67,14 @@ ke_active_rules = {
 --: boolean ke_shadow_active;
 
 ke_box 		= { 20, 330, 640-20, 330+140 }
-ke_z		= 201
+ke_z		= 250
 ke_cursorz	= ke_z + 20
 ke_textz	= ke_z + 30
 ke_vanish_y	= -140
 
 if not ke_theme then
---   ke_theme = 2	-- currently 1 .. 4
-   ke_theme = 4	-- currently 1 .. 4
+   ke_theme = 2	-- currently 1 .. 4
+--   ke_theme = 4	-- currently 1 .. 4
 end
 
 ke_themes = {

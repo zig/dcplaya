@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.40 2003-03-14 22:04:50 ben Exp $
+--- $Id: textlist.lua,v 1.41 2003-03-17 22:24:18 zigziggy Exp $
 ---
 
 -- DL hierarchy :
@@ -472,8 +472,12 @@ function textlist_create(flparm)
       -- Redraw all
       dl_clear(fl.dl)
       dl_text_prop(fl.dl, 0, 16, 1)
+
+      -- bdl
       fl:draw_background(fl.bdl)
       dl_sublist(fl.dl,fl.bdl)
+
+      -- ldl
       dl_clear(fl.ldl)
 
       local ww, wh
