@@ -4,7 +4,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.8 2002-09-06 23:16:48 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.9 2002-09-11 03:22:33 zig Exp $
  */
 
 //#define RELEASE
@@ -44,6 +44,9 @@
 #include "lef.h"
 #include "fft.h"
 #include "viewport.h"
+
+#include "sysdebug.h"
+#include "console.h"
 
 float fade68;
 uint32 frame_counter68 = 0;
@@ -447,9 +450,8 @@ static int driver_init(void)
       "/pc" DREAMMP3_HOME "plugins/vis/fftvlr",
       "/pc" DREAMMP3_HOME "plugins/inp/xing",
       "/pc" DREAMMP3_HOME "plugins/inp/ogg",
-      "/pc" DREAMMP3_HOME "plugins/inp/sc68",
+      "/pc" DREAMMP3_HOME "plugins/inp/sc68",*/
       "/pc" DREAMMP3_HOME "plugins/inp/sidplay",
-      */
       "/pc" DREAMMP3_HOME "plugins/inp/spc",
       0
     };
@@ -788,10 +790,17 @@ int dreammp3_main(int argc, char **argv)
   kos_init_all(IRQ_ENABLE | THD_ENABLE, romdisk);
   vid_border_color(0,0,0);
 
+
+  /* Initialize the console debugging log facility */
+  csl_init_main_console();
+  csl_printf(main_console, "TOTO !\n");
+  //SDWARNING("TOTO !\n");
+
+
   ta_init(TA_LIST_OPAQUE_POLYS | TA_LIST_TRANS_POLYS, TA_POLYBUF_32, 1024*1024);
 /*  ta_set_buffer_config(TA_LIST_OPAQUE_POLYS | TA_LIST_TRANS_POLYS, TA_POLYBUF_32, 1024*1024);
   ta_hw_init();*/
-  
+
 
   frame_counter68 = ta_state.frame_counter;
 
@@ -810,9 +819,12 @@ int dreammp3_main(int argc, char **argv)
   /* MAIN */
   main_thread(0);
 
+  /* Close the console debugging log facility */
+  csl_close_main_console();
+
+
 error:
-  dbglog_set_level(
-DBG_DEBUG);
+  dbglog_set_level(DBG_DEBUG);
   dbglog( DBG_DEBUG, ">> " __FUNCTION__ " : error line [%d]\n", err);
 
   return 0;

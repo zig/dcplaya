@@ -501,7 +501,18 @@ inline void waveCalcCycleLen(struct sidOperator* pVoice)
   //	}  // see above (opening bracket)
 }
 
-/*inline*/ void waveCalcFilter(struct sidOperator* pVoice)
+#ifdef _arch_dreamcast
+// VP : special fix for SH4 FPU ...
+// Too small values cause exception of the FPU ...
+# define FIX_SMALL(v)                               \
+   if ( v > -1e-20 && v < 1e-20)                    \
+     v = 0;                                         \
+   else
+#else
+# define FIX_SMALL(v)
+#endif
+
+inline void waveCalcFilter(struct sidOperator* pVoice)
 {
   if ( pVoice->filtEnabled )
     {
@@ -513,6 +524,7 @@ inline void waveCalcCycleLen(struct sidOperator* pVoice)
 	      filterfloat tmp = (filterfloat)pVoice->filtIO - pVoice->filtLow;
 	      tmp -= pVoice->filtRef * filterResDy;
 	      pVoice->filtRef += ( tmp * (filterDy) );
+	      FIX_SMALL(pVoice->filtRef);
 	      pVoice->filtIO = (sbyte)(pVoice->filtRef-pVoice->filtLow/4);
 	    }
 	  else if (filterType == 0x40)
@@ -521,6 +533,7 @@ inline void waveCalcCycleLen(struct sidOperator* pVoice)
 	      filterfloat tmp = (filterfloat)pVoice->filtIO - pVoice->filtLow;
 	      tmp -= pVoice->filtRef * filterResDy;
 	      pVoice->filtRef += ( tmp * (filterDy) );
+	      FIX_SMALL(pVoice->filtRef);
 	      filterfloat tmp2 = pVoice->filtRef - pVoice->filtIO/8;
 	      if (tmp2 < -128)
 		tmp2 = -128;
@@ -531,10 +544,6 @@ inline void waveCalcCycleLen(struct sidOperator* pVoice)
 	  else
 	    {
 #if 1
-	      // VP : special fix for SH4 FPU ...
-	      // Too small values cause exception of the FPU ...
-	      if (pVoice->filtRef > -1e-20 && pVoice->filtRef < 1e-20)
-		pVoice->filtRef = 0;
 
 	      pVoice->filtLow += ( pVoice->filtRef * filterDy );
 	      filterfloat sample = pVoice->filtIO;
@@ -554,6 +563,7 @@ inline void waveCalcCycleLen(struct sidOperator* pVoice)
 
 	      sample2 -= pVoice->filtRef * filterResDy;
 	      pVoice->filtRef += ( sample2 * filterDy );
+	      FIX_SMALL(pVoice->filtRef);
 	      //	      /*$$$*/      *(int*)(0x1) = 0xDEAD9999;
 			
 	      if ( filterType == 0x10 )
