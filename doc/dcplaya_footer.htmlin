@@ -16,10 +16,10 @@ td.dcplaya_footerr {
 <table align="center" border=0 width="99%">
 <tr>
 <td class="dcplaya_footerl">
-$projectname documentation version $dox-version$ 
+$PROJECT_NAME$ documentation version $PROJECT_NUMBER$
 </td>
 <td class="dcplaya_footerr">
-Generated on $datetime by
+Generated on $DATE$ by
 <a href="http://www.doxygen.org/index.html">
 doxygen
 </a>
