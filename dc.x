@@ -226,5 +226,3 @@ SECTIONS
   /* These must appear regardless of  .  */
 /*_stack = 0x8d000000;*/
 }
-
-test ...
