@@ -4,11 +4,15 @@
  * @date    2002/09/30
  * @brief   File manipulation utilities.
  *
- * $Id: file_utils.c,v 1.1 2002-09-30 20:03:09 benjihan Exp $
+ * $Id: file_utils.c,v 1.2 2002-10-03 02:37:26 benjihan Exp $
  */
+
+/* #include "sysdebug.h" */
 
 #include "file_utils.h"
 #include <kos/fs.h>
+#include <string.h>
+#include <stdlib.h>
 
 const char * fu_strerr(int err)
 {
@@ -21,6 +25,7 @@ const char * fu_strerr(int err)
   case FU_WRITE_ERROR:  return "write error";
   case FU_CREATE_ERROR: return "create error";
   case FU_UNLINK_ERROR: return "unlink error";
+  case FU_ALLOC_ERROR:  return "alloc error";
   case FU_OK:           return "success";
   case FU_ERROR:        return "general error";
   }
@@ -171,4 +176,174 @@ int fu_create_dir(const char *dirname)
     return FU_CREATE_ERROR;
   }
   return fd ? 0 : FU_CREATE_ERROR;
+}
+
+typedef struct _fu_linkeddirentry_s
+{
+  struct _fu_linkeddirentry_s *nxt;
+  fu_dirent_t entry;
+} fu_linkeddirent_t;
+
+static int r_readir(int fd, fu_filter_f filter, fu_linkeddirent_t *elist,
+		    fu_dirent_t ** res) 
+{
+  dirent_t *dir;
+  fu_linkeddirent_t local, *e;
+  int count;
+
+  while (dir=fs_readdir(fd), dir) {
+    /* Copy direntry */
+/*     SDDEBUG("entry [%s] [%d]\n", dir->name, dir->size); */
+
+    memset(&local,0,sizeof(local));
+    strncpy(local.entry.name,dir->name,sizeof(local.entry.name)-1);
+    local.entry.size = dir->size;
+    /* Filter */
+    if (filter(&local.entry)) {
+      continue;
+    }
+/*     SDDEBUG("-->Accepted [%s] [%d]\n", local.entry.name, local.entry.size); */
+
+    local.nxt = elist;
+    /* Continue ... */
+    return r_readir(fd, filter, &local, res);
+  }
+  *res = 0;
+      
+/*   SDDEBUG("count:\n"); */
+  /* Count entries */
+  for (e=elist, count=0; e; ++count, e=e->nxt)
+    ;
+/*   SDDEBUG("-->%d\n", count); */
+
+  if (count) {
+    fu_dirent_t * result;
+
+    result = (fu_dirent_t *)malloc(count * sizeof(fu_dirent_t));
+    if (result) {
+      int i;
+      for (i=count-1, e=elist; e; e=e->nxt, --i) {
+	result[i].size = e->entry.size;
+	memcpy(result[i].name, e->entry.name, sizeof(e->entry.name));
+      }
+      *res = result;
+    } else {
+      count = FU_ALLOC_ERROR;
+    }
+  }
+  return count;
+}
+
+/* Default readdir filter, accept all except null pointer */
+static int readir_default_filter(const fu_dirent_t *dir)
+{
+  return dir ? 0 : -1;
+}
+
+int fu_read_dir(const char *dirname, fu_dirent_t **res, fu_filter_f filter)
+{
+  int fd, count;
+
+/*   SDDEBUG("[%s] : [%s]\n", __FUNCTION__, dirname); */
+
+  if (!dirname || !dirname[0] || !res) {
+    return FU_INVALID_PARM;
+  }
+
+  if (!filter) {
+    filter = readir_default_filter;
+  }
+
+  *res = 0;
+  fd = fs_open(dirname, O_RDONLY | O_DIR);
+  if (!fd) {
+    return FU_OPEN_ERROR;
+  }
+  count = r_readir(fd, filter, 0, res);
+  fs_close(fd);
+
+/*   SDDEBUG("[%s] : [%s] := [%d]\n", __FUNCTION__, dirname, count); */
+
+  return count;
+}
+
+int fu_sortdir_by_name_dirfirst(const fu_dirent_t *a, const fu_dirent_t *b)
+{
+  if (a==b) {
+    return 0;
+  }
+  if (!a) {
+    return -1;
+  }
+  if (!b) {
+    return 1;
+  }
+
+  if ( (a->size ^ b->size) < 0) {
+    /* Comparing dir / regular */
+    return a->size - b->size;
+/*     return (((unsigned int)a->size < (unsigned int) b->size) << 1) - 1; */
+  } else {
+    /* Comparing same type */
+    return strnicmp(a->name, b->name, sizeof(a->name));
+  }
+}
+
+int fu_sortdir_by_name(const fu_dirent_t *a, const fu_dirent_t *b)
+{
+  if (a==b) {
+    return 0;
+  }
+  if (!a) {
+    return -1;
+  }
+  if (!b) {
+    return 1;
+  }
+  return strnicmp(a->name, b->name, sizeof(a->name));
+}
+
+int fu_sortdir_by_descending_size(const fu_dirent_t *a, const fu_dirent_t *b)
+{
+  const int mask = ~(1 << ((sizeof(int)<<3)-1));
+  if (a==b) {
+    return 0;
+  }
+  if (!a) {
+    return -1;
+  }
+  if (!b) {
+    return 1;
+  }
+  return (b->size & mask) - (a->size & mask);
+}
+
+int fu_sortdir_by_ascending_size(const fu_dirent_t *a, const fu_dirent_t *b)
+{
+  if (a==b) {
+    return 0;
+  }
+  if (!a) {
+    return -1;
+  }
+  if (!b) {
+    return 1;
+  }
+  return a->size - b->size;
+}
+
+typedef int (*fu_qsort_f)(const void *, const void *);
+
+int fu_sort_dir(fu_dirent_t *dir, int entries, fu_sortdir_f sortdir)
+{
+  if (!dir || entries<0) {
+    return FU_INVALID_PARM;
+  }
+
+  if (!sortdir) {
+    sortdir = fu_sortdir_by_name_dirfirst;
+  }
+
+  qsort(dir, entries, sizeof(*dir), (fu_qsort_f)sortdir);
+  return FU_OK;
 }
