@@ -71,7 +71,7 @@ int border_customize(texid_t texid, border_def_t def)
   int i, err = 0;
   texture_t * torg, * t = 0;
   uint16 color16[3], * org, * dst;
-  int worg,horg,lorg;
+  int worg,horg,lorg,zorg;
 
   /* Convert colors to ARGB4444. */
   for (i=0;i<3;++i) {
@@ -91,15 +91,27 @@ int border_customize(texid_t texid, border_def_t def)
   if (!torg) {
     return -1;
   }
+  texture_twiddle(torg,1);
   worg = torg->width;
   horg = torg->height;
   lorg = 1 << torg->wlog2;
   org = torg->addr;
+  zorg = torg->twiddled;
   texture_release(torg);
+  torg = 0;
 
   /* Lock the custom border texture ...  */
   t = texture_fastlock(texid);
-  if (!t || t->width != worg || t->height != horg || (1<<t->wlog2) != lorg) {
+  if (!t) {
+    err = -1;
+    goto error;
+  }
+  texture_twiddle(t,1);
+  if (!t
+      || t->width != worg
+      || t->height != horg
+      || (1<<t->wlog2) != lorg
+      || t->twiddled != zorg) {
     err = -1;
     goto error;
   }
@@ -111,6 +123,9 @@ int border_customize(texid_t texid, border_def_t def)
  error:
   if (t) {
     texture_release(t);
+  }
+  if (torg) {
+    texture_release(torg);
   }
   return err;
 }
@@ -135,6 +150,12 @@ int border_init(void)
 
   /* Create original border tile. */
   bordertex_org = texture_create_file(fname,"4444");
+  t = texture_fastlock(bordertex_org);
+  if (t) {
+    texture_twiddle(t,1);
+    texture_release(t);
+  }
+
   /* Create a second version used as standard border. */
   bordertex = texture_dup(bordertex_org, "bordertile2");
 
@@ -143,6 +164,7 @@ int border_init(void)
   t = texture_fastlock(bordertex);
   if (t) {
     make_blk(t->addr, t->width, t->height, 1 << t->wlog2, 2);
+    texture_twiddle(t,1); /* Should already be, anyway is is free cost. */
     texture_release(t);
   }
 

@@ -4,7 +4,7 @@
  * @date    2002/10/20
  * @brief   texture manager
  *
- * $Id: texture.h,v 1.7 2003-03-18 14:48:20 ben Exp $
+ * $Id: texture.h,v 1.8 2003-03-18 16:11:10 ben Exp $
  */
 
 #ifndef _TEXTURE_H_
@@ -172,10 +172,35 @@ int texture_strtoformat(const char * formatstr);
 /** Display statistics about the video memory */
 void texture_memstats();
 
-/** Twiddle or de-twiddle a texture as required */
-void texture_twiddle(texture_t * t, int wanted);
+/** Twiddle or de-twiddle a texture as required.
+ *
+ *   The texture_twiddle() checks if the texture is twiddlable by
+ *   calling the texture_twiddlable() function. If texture is twiddlable
+ *   the fucntion performs neccessary operations to set the texture twiddle
+ *   stat as wanted.
+ *
+ *    @param  t       texture
+ *    @param  wanted  0:De-twiddle 1:Twiddle
+ *
+ *  @return twiddled stat.
+ *
+ *  @see int texture_twiddlable();
+ *  @warning The returned stat is not neccessary the wanted one.
+ */
+int texture_twiddle(texture_t * t, int wanted);
 
-/* Check for twiddlable texture and set twiddlable bit properly. */
+/* Check for twiddlable texture and set twiddlable bit properly.
+ *
+ *   The texture_twiddlable() looks at texture dimension to check if it
+ *   is a twiddable texture and set the twiddable field.
+ *   Currently only texture with power of 2 dimensions and a width greater
+ *   or equal to height are twiddlable.
+ *
+ *    @param  t  texture
+ *    @param  wanted 0:De-twiddle 1:Twiddle
+ *
+ *  @return twiddlable stat.
+ */
 int texture_twiddlable(texture_t * t);
 
 #endif /* #define _TEXTURE_H_ */

@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.84 2003-03-18 14:50:14 ben Exp $
+ * @version    $Id: dynshell.c,v 1.85 2003-03-18 16:11:09 ben Exp $
  */
 
 #include "dcplaya/config.h"
@@ -2129,7 +2129,7 @@ static int greaterlog2(int v)
 
 static int lua_load_background(lua_State * L)
 {
-  texid_t texid;
+  texid_t texid, srctexid = -1;
   texture_t tmp, * btexture, * stexture = 0;
   SHAwrapperImage_t * img = 0;
   int i;
@@ -2153,9 +2153,9 @@ static int lua_load_background(lua_State * L)
 
   switch(lua_type(L,1)) {
   case LUA_TNUMBER:
-    stexture = texture_lock(lua_tonumber(L,1));
+    srctexid = lua_tonumber(L,1);
+    stexture = texture_lock(srctexid);
     if (stexture) {
-      texture_release(stexture);
       smodulo = (1 << stexture->wlog2) - stexture->width;
     }
     break;
@@ -2179,7 +2179,6 @@ static int lua_load_background(lua_State * L)
     printf("load_background : invalid source image.\n");
     return 0;
   }
-
 
   type = 0;
   typestr = lua_tostring(L,2);
@@ -2226,6 +2225,7 @@ static int lua_load_background(lua_State * L)
   btexture->format = stexture->format;
   btexture->twiddled = 0;  /* Force non twiddle */
   texture_twiddlable(btexture);
+
 #if DEBUG
   if (!btexture->twiddable) {
     SDCRITICAL("[background] : texture [%s] not twiddlable [%dx%d] [%dx%d]\n",
@@ -2233,20 +2233,22 @@ static int lua_load_background(lua_State * L)
 	       btexture->width,btexture->height,
 	       1<<btexture->wlog2,  1<<btexture->hlog2);
   }
-  if (1) {
-    printf("type:[%s]\n", !type ? "scale" : (type==1?"center":"tile"));
-    printf("src : [%dx%d] [%dx%d] , modulo:%d, ratio:%0.2f\n",
-  		 stexture->width,stexture->height,
-  		 1<<stexture->wlog2, 1<<stexture->hlog2,
-  		 smodulo, orgRatio);
-
-    printf("bkg : [%dx%d] [%dx%d], modulo:%d\n",
-  		 btexture->width,btexture->height,
-  		 1<<btexture->wlog2,  1<<btexture->hlog2,
-  		 (1<<btexture->wlog2) - btexture->width);
-  }
 #endif
 
+  if (1) {
+    printf("type:[%s]\n", !type ? "scale" : (type==1?"center":"tile"));
+    printf("src : [%dx%d] [%dx%d] , modulo:%d, ratio:%0.2f twid:[%d,%d]\n",
+	   stexture->width,stexture->height,
+	   1<<stexture->wlog2, 1<<stexture->hlog2,
+	   smodulo, orgRatio,
+	   stexture->twiddlable, stexture->twiddled);
+
+    printf("bkg : [%dx%d] [%dx%d], modulo:%d twid:[%d,%d]\n",
+	   btexture->width,btexture->height,
+	   1<<btexture->wlog2,  1<<btexture->hlog2,
+	   (1<<btexture->wlog2) - btexture->width,
+	   btexture->twiddlable, btexture->twiddled);
+  }
 
   /* $$$ Currently all texture are 16bit. Since blitz don't care about exact
      pixel format blitz is done with ARGB565 format. */
@@ -2255,9 +2257,21 @@ static int lua_load_background(lua_State * L)
 	stexture->addr, stexture->width, stexture->height,
 	SHAPF_RGB565, smodulo * 2);
 
+  if (stexture != &tmp) {
+    /* Only twiddled source texture if we really has locked it. */
+    /* $$$ ben : Dangerous ?
+       The texture is not really locked here ! Anyway this should not make
+       crash. In the worse case we'll have a crashed texture while rendering.
+       $$$ ben : Dangerous is back:
+       There was a probleme, the texture could be destroyed if we unlock it.
+       I have removed the above texture_release() and out it here.
+    */
+    texture_twiddle(stexture,1);
+    texture_release(stexture);
+  }
+
   /* Twiddle the texture :) */
   texture_twiddle(btexture,1);
-
   /* Finally unlock the background texture */
   texture_release(btexture);
 

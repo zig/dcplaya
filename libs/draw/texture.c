@@ -5,7 +5,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.18 2003-03-18 14:48:20 ben Exp $
+ * $Id: texture.c,v 1.19 2003-03-18 16:11:10 ben Exp $
  */
 
 #include <stdlib.h>
@@ -168,13 +168,13 @@ int texture_twiddlable(texture_t * t)
 {
   return 
     t->twiddlable = 1
-    && (t->height > t->width)          /* this case is not tested yet      */
-    && ( (t->height - 1) & t->height ) /* the height is not a power of two */
-    && ( (t->width - 1) & t->width )   /* the width is not a power of two  */
+    && !(t->height > t->width)          /* this case is not tested yet      */
+    && !( (t->height - 1) & t->height ) /* the height is not a power of two */
+    && !( (t->width - 1) & t->width )   /* the width is not a power of two  */
     ;
 }
 
-void texture_twiddle(texture_t * t, int wanted)
+int texture_twiddle(texture_t * t, int wanted)
 {
   /* twiddle or de-twiddle the texture, need a temporary buffer,
      this cannot be done in place unfortunatly ... */
@@ -201,6 +201,7 @@ void texture_twiddle(texture_t * t, int wanted)
     free(buf);
     t->twiddled = wanted;
   }
+  return t->twiddled;
 }
 
 

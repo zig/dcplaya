@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, texture interface
  * 
- * $Id: display_texture.c,v 1.9 2003-03-18 14:45:50 ben Exp $
+ * $Id: display_texture.c,v 1.10 2003-03-18 16:11:10 ben Exp $
  */
 
 #include <stdio.h>
@@ -185,10 +185,6 @@ DL_FUNCTION_DECLARE(tex_info)
   lua_settable(L,1);
 
   lua_pushstring(L,"format");
-  lua_pushstring(L,texture_formatstr(t->format));
-  lua_settable(L,1);
-
-  
   lua_pushstring(L,texture_formatstr(t->format));
   lua_settable(L,1);
 
