@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: gui.lua,v 1.10 2002-10-09 00:51:17 benjihan Exp $
+-- $Id: gui.lua,v 1.11 2002-10-11 12:05:21 benjihan Exp $
 --
 
 --
@@ -563,6 +563,35 @@ function gui_new_text(owner, box, text, mode, z)
 	return app
 end
 
+-- Create a dialog child
+function gui_new_children(owner, box, mode, z)
+	local app
+
+	z = gui_guess_z(owner, z)
+	function handle(app,evt)
+		if evt.key == evt_shutdown_event then
+			dl_destroy_list(app.dl)
+		else
+			local f = app.event_table[evt.key]
+				if f then
+					return f(app, evt)
+			end
+		end
+		return evt
+	end
+
+	app = { 
+		handle = handle,
+		dl = dl_new_list(1024),
+		box = box,
+		z = z,
+		event_table = { },
+		flags = {},
+		mode = mode
+	}
+	evt_app_insert_last(owner, app)
+	return app
+end
 
 -- display justified text into given box
 function gui_justify(dl, box, z, color, text, mode)

@@ -3,7 +3,7 @@
 -- author : benjamin gerard <ben@sashipa.com>
 -- date   : 2002/10/04
 --
--- $Id: textlist.lua,v 1.5 2002-10-09 00:51:17 benjihan Exp $
+-- $Id: textlist.lua,v 1.6 2002-10-11 12:05:21 benjihan Exp $
 --
 
 --- textlist object - Display a textlist from a given dir
@@ -123,7 +123,7 @@ function textlist_set_pos(fl,x,y,z)
 	fl.mtx = mat_trans(fl.box[1],fl.box[2],fl.bo2[3])
 	if fl.dl  then dl_set_trans(fl.dl, fl.mtx) end
 	if fl.cdl then
-		if not fl.cmtx then fl.cmtx = mat_new() end
+		if not fl.cmtx then fl.cmtx = mat_trans(0,0,0.5) end
 		dl_set_trans(fl.cdl, mat_mult(fl.mtx,fl.cmtx))
 	end
 --	print("...textlist_set_pos")
@@ -215,10 +215,10 @@ function textlist_reset(fl)
 	if fl.dir then fl.entries = getn(fl.dir) end
 
 	-- Display lists
-	if fl.dl  then dl_shutdown(fl.dl)  end
-	if fl.cdl then dl_shutdown(fl.cdl) end
+	if fl.dl  then dl_destroy_list(fl.dl)  end
+	if fl.cdl then dl_destroy_list(fl.cdl) end
 	fl.dl  		= dl_new_list(2048,0)
-	fl.cdl 		= dl_new_list(128,0)
+	fl.cdl 		= dl_new_list(512,0)
 	w,fl.font_h	= dl_measure_text(fl.dl, "|")
 --	print(format("font_h:%d",fl.font_h))
 
@@ -313,7 +313,7 @@ function textlist_create_dl(fl)
 	
 	-- Compute an approx size for the new display list
 	local i,i
-	local dlsize = 128 -- For the dl_draw_box
+	local dlsize = 256  -- For the dl_draw_box + dl_set_clipping
 
 	local max=fl.top+fl.lines
 	if max > fl.entries then max = fl.entries end
@@ -338,10 +338,30 @@ function textlist_updatecursor(fl)
 	if fl.entries > 0 then
 		dl_clear(fl.cdl)
 		dl_set_trans(fl.cdl, mat_mult(fl.mtx,fl.cmtx)) -- $$$ order ?
+
+		local i = fl.pos+1
+		local color = fl.dircolor
+		if fl.dir[i].size and fl.dir[i].size > 0 then
+			color = fl.filecolor
+		end
+
+		local w,h
+		w,h = dl_measure_text(fl.cdl, fl.dir[i].name)
+		if fl.bo2[1] > w then w = fl.bo2[1] end
+
 		dl_draw_box(fl.cdl,
-				0, 0, fl.bo2[1], fl.font_h+2*fl.span, 0,
+				0, 0, w, fl.font_h+2*fl.span, 0,
 				fl.curcolor[1], fl.curcolor[2],	fl.curcolor[3], fl.curcolor[4],
 				fl.curcolor[5], fl.curcolor[6],	fl.curcolor[7], fl.curcolor[8])
+
+
+
+		dl_draw_text(fl.cdl,
+					 fl.border, 0, 0.1,
+					 color[1]+0.3,color[2],color[3],color[4],
+					 fl.dir[i].name)
+
+
 		dl_set_active(fl.cdl,1)
 	else
 		dl_set_active(fl.cdl,0)
@@ -358,14 +378,6 @@ function textlist_update(fl)
 
 --	print("textlist_update...")
 
-	if not (fl.flags and fl.flags.no_bkg) then
---		print(" > draw_box")
-
-		dl_draw_box(fl.dl,
-				0, 0, fl.bo2[1], fl.bo2[2],	0,
-				fl.bkgcolor[1],fl.bkgcolor[2],fl.bkgcolor[3],fl.bkgcolor[4],
-				fl.bkgcolor[5],fl.bkgcolor[6],fl.bkgcolor[7],fl.bkgcolor[8])
-	end
 
 	local i,y,h
 	local max=fl.top+fl.lines
@@ -387,6 +399,18 @@ function textlist_update(fl)
 					fl.dir[i].name)
 		y = y + h
 	end
+	-- Here because commands are fetched from last to first
+	dl_set_clipping(fl.dl, 0, 0, fl.bo2[1], fl.bo2[2])
+
+	if not (fl.flags and fl.flags.no_bkg) then
+--		print(" > draw_box")
+
+		dl_draw_box(fl.dl,
+				0, 0, fl.bo2[1], fl.bo2[2],	0,
+				fl.bkgcolor[1],fl.bkgcolor[2],fl.bkgcolor[3],fl.bkgcolor[4],
+				fl.bkgcolor[5],fl.bkgcolor[6],fl.bkgcolor[7],fl.bkgcolor[8])
+	end
+
 	dl_set_active(fl.dl,1)
 --	print("..textlist_update")
 end
@@ -412,7 +436,7 @@ function textlist_movecursor(fl,mov)
 		local y
 		y = fl.border + (pos-top) * (fl.font_h + 2*fl.span)
 --		print(format("cursor y = %d",y))
-		fl.cmtx = mat_trans(0,y,0.1)
+		fl.cmtx = mat_trans(0,y,0.5)
 		fl.pos = pos
 		textlist_updatecursor(fl)
 		action = 1
