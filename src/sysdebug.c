@@ -5,7 +5,7 @@
  * @date       2002/09/04
  * @brief      Debug fonctions.
  *
- * @version    $Id: sysdebug.c,v 1.3 2002-09-12 17:57:31 ben Exp $
+ * @version    $Id: sysdebug.c,v 1.4 2002-09-12 19:08:12 ben Exp $
  */
 
 #include <stdarg.h>
@@ -89,12 +89,12 @@ static void sd_default_vprintf(void * cookie,
 static sysdbg_f sd_current = sd_default_vprintf;
 static void * sd_cookie = 0;
 
-static void sd_print_location(const char *fmt, const char *file, int line, ...)
+static void sd_print_location(const char * fmt, ...)
 {
   va_list list;
 
   va_start(list, fmt);
-  sd_current(sd_cookie, fmt, list);
+  sd_current(sd_cookie, "%s:%d", list);
   va_end(list);
 }
 
