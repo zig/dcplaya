@@ -1,6 +1,6 @@
 -- This is main DCplaya lua script
 --
--- $Id: dcplayarc.lua,v 1.10 2002-09-20 00:22:11 benjihan Exp $
+-- $Id: dcplayarc.lua,v 1.11 2002-09-20 01:24:33 vincentp Exp $
 --
 
 showconsole()
@@ -18,13 +18,13 @@ dofile (home.."lua/zed.lua")
 
 -- reading directory on PC is slow through serial port, 
 -- so we precalculate available plugins instead of doing a dir_load command
-plug_spc	= home.."plugins/inp/spc/spc.lef"
-plug_xing	= home.."plugins/inp/xing/xing.lef"
-plug_sidplay	= home.."plugins/inp/sidplay/sidplay.lef"
-plug_sc68   = home.."plugins/inp/sc68/sc68.lef"
-plug_obj	= home.."plugins/obj/obj.lef"
-plug_lpo	= home.."plugins/vis/lpo/lpo.lef"
-plug_fftvlr	= home.."plugins/vis/fftvlr/fftvlr.lef"
+plug_spc	= home.."plugins/inp/spc/spc.lez"
+plug_xing	= home.."plugins/inp/xing/xing.lez"
+plug_sidplay	= home.."plugins/inp/sidplay/sidplay.lez"
+plug_sc68   = home.."plugins/inp/sc68/sc68.lez"
+plug_obj	= home.."plugins/obj/obj.lez"
+plug_lpo	= home.."plugins/vis/lpo/lpo.lez"
+plug_fftvlr	= home.."plugins/vis/fftvlr/fftvlr.lez"
 
 
 

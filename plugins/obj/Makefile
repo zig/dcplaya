@@ -3,7 +3,7 @@
 #
 # (C) COPYRIGHT Ben(jamin) Gerard <ben@sasahipa.com>
 #
-# $Id: Makefile,v 1.2 2002-08-26 20:12:22 ben Exp $
+# $Id: Makefile,v 1.3 2002-09-20 01:24:36 vincentp Exp $
 #
 
 UTILS=../../utils
@@ -20,7 +20,7 @@ NEXT:= $(filter-out $(firstword $(NUDE)), $(NUDE)) 1
 MIXED:=$(join $(addsuffix :,$(NUDE)),$(NEXT))
 FIRST:=$(firstword $(MIXED))
 
-LEFS = $(shell basename `pwd`).lef
+LEFS = $(shell basename `pwd`).lez
 
 ifdef NEXT_DRIVER
 KOS_LOCAL_CFLAGS := -DNXT_DRIVER="$(NEXT_DRIVER)" -DFIRST_DRIVER="$(FIRST_DRIVER)"
@@ -30,7 +30,7 @@ VPATH = src
 
 OPTIMIZE = $(OPTIMIZE_FOR_SIZE)
 KOS_LOCAL_INCS := -I../../include
-CLEAN_LOCAL := *.lef src/*
+CLEAN_LOCAL := *.lez *.lef src/*
 
 
 myall : all

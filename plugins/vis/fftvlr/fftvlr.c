@@ -8,7 +8,7 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.10 2002-09-19 01:32:46 benjihan Exp $
+ * $Id: fftvlr.c,v 1.11 2002-09-20 01:24:36 vincentp Exp $
  */
 
 #include <stdlib.h>
@@ -56,7 +56,7 @@ static vtx_t light_normal = {
 };
 
 static vtx_t tlight_normal;
-
+/*
 static vtx_t light_color = {
     1.5,
     1.1,
@@ -70,21 +70,39 @@ static vtx_t ambient_color = {
   -1.0,
   0.8
 };
+*/
+
+/*static vtx_t light_color = {
+    1.5,
+    1.0,
+    0.5,
+    -0.3
+};
+
+static vtx_t ambient_color = {
+  0,
+  0,
+  0,
+  0.8
+};
+*/
 
 
-/* static vtx_t light_color = { */
-/*     1.5, */
-/*     1.0, */
-/*     0.5, */
-/*     -0.3 */
-/* }; */
+static vtx_t light_color = {
+  0.9,
+  0.90,
+  0.9,
+  0.5
+};
 
-/* static vtx_t ambient_color = { */
-/*   0, */
-/*   0, */
-/*   0, */
-/*   0.8 */
-/* }; */
+static vtx_t ambient_color = {
+  0.5,
+  0.3,
+  0.1,
+  0.5
+};
+
+
 
 
 
@@ -339,7 +357,7 @@ static int fftvlr_process(viewport_t * vp, matrix_t projection, int elapsed_ms)
     vlr_update();
 
 
-    fftvlr_obj.flags = bordertex2;
+    fftvlr_obj.flags = bordertex;
     return 0;
   }
   return -1;
