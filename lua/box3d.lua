@@ -202,25 +202,4 @@ end
 --- @}
 ----
 
-if nil then
-   b=box3d({50,50,200,80},
-	   {-8,-6},
-	   { {1,1,1,1} , {1,1,0,0}, { 0.5,0,1,0}, { 0.5, 0, 1, 1}} ,
-	   {1,1,1,0},
-	   {1,1,0,1},
-	   {1,1,0,0},
-	   {1,0,1,1})
-   
-   dl = dl_new_list(1024,1)
-   dl_set_active(dl,1)
-   box3d_draw(b,dl, mat_trans(0,0,1))
-
-   dump(box3d_inner_box(b),"INNER-BOX")
-   dump(box3d_outer_box(b),"OUTER-BOX")
-   
-   getchar();
-   b = nil
-   dl = nil
-end
-
 return 1

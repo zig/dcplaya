@@ -87,7 +87,7 @@ int border_customize(texid_t texid, border_def_t def)
   /* 		  border, color16[0], fill, color16[1], link, color16[2]); */
 
   /* Lock the original border texture the time to get its properties. */
-  torg = texture_fastlock(bordertex_org);
+  torg = texture_fastlock(bordertex_org,1);
   if (!torg) {
     return -1;
   }
@@ -101,7 +101,7 @@ int border_customize(texid_t texid, border_def_t def)
   torg = 0;
 
   /* Lock the custom border texture ...  */
-  t = texture_fastlock(texid);
+  t = texture_fastlock(texid,1);
   if (!t) {
     err = -1;
     goto error;
@@ -150,7 +150,7 @@ int border_init(void)
 
   /* Create original border tile. */
   bordertex_org = texture_create_file(fname,"4444");
-  t = texture_fastlock(bordertex_org);
+  t = texture_fastlock(bordertex_org, 1);
   if (t) {
     texture_twiddle(t,1);
     texture_release(t);
@@ -161,7 +161,7 @@ int border_init(void)
 
   /* Apply texture conversion (+1 for custom). */
   /* $$$ Don't need de-twiddle since make_blk don't care about pixel order */
-  t = texture_fastlock(bordertex);
+  t = texture_fastlock(bordertex, 1);
   if (t) {
     make_blk(t->addr, t->width, t->height, 1 << t->wlog2, 2);
     texture_twiddle(t,1); /* Should already be, anyway is is free cost. */

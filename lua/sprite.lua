@@ -189,11 +189,16 @@ end
 ---
 function sprite_simple(name, filename)
    name = name or get_nude_name(filename) or filename
+   local fpath = filename
+   if strsub(fpath, 1, 1) ~= "/" then
+      fpath = home .. "lua/rsc/icons/" .. fpath
+   end
+
 --    if not name then
 --       return
 --    end
    local tex = tex_exist(filename)
-      or tex_new(home.."lua/rsc/icons/"..filename)
+      or tex_new(fpath)
    if not tex then return end
 --    local info = tex_info(tex)
 --    if not info then return end

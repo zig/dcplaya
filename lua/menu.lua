@@ -612,13 +612,19 @@ end
 --
 --- Create an icon sprite for menu.
 --
-function menu_create_sprite(name, src, w, h, u1, v1, u2, v2,
-			    rotate)
+function menu_create_sprite(name, src, w, h, u1, v1, u2, v2, rotate)
+   if not name then return end
+   src = src or (name .. ".tga")
    name = "menu_" .. name
-   local spr = sprite_get(sprname)
+
+   if w and w == -1 then w = 22 end
+   if h and h == -1 then h = 22 end
+
+   local spr = sprite_get(name)
    if spr and (not w or w == spr.w) and (not h or h == spr.h) then
       return spr
    end
+
    local tex = tex_exist(src)
       or tex_new(home.."lua/rsc/icons/"..src)
    if not tex then return end
@@ -627,13 +633,30 @@ function menu_create_sprite(name, src, w, h, u1, v1, u2, v2,
    return spr
 end
 
---- Create a taggedtext menu image for yes/no.
-function menu_yesno_image(menu, idx, flag, label, nodraw)
+--- Create a taggedtext menu image.
+function menu_any_image(menu, idx, flag,
+			label_yes, img_yes, label_no, img_no, nodraw)
    menu.fl.dir[idx].name =
       '<img name="menu_'
-      .. ((flag and 'yes') or 'no')
-      .. '">' .. label
-   if not nodraw then menu:draw() end
+      .. (flag and
+	  (img_yes .. '">' .. label_yes)
+	     or (img_no .. '">' .. label_no))
+	  if not nodraw then menu:draw() end
+end
+
+--- Create a taggedtext menu image for yes/no.
+function menu_yesno_image(menu, idx, flag, label, nodraw)
+   return menu_any_image(menu, idx, flag, label, 'yes', label, 'no', nodraw)
+end
+
+--- Create a description string for menu image.
+function menu_any_menu(flag, label_yes, img_yes, label_no, img_no, callback, w)
+   if img_yes then menu_create_sprite(img_yes, nil, w) end
+   if img_no then menu_create_sprite(img_no, nil, w) end
+   return '{menu_' ..
+      (flag and (img_yes ..'}' .. label_yes)
+       or (img_no .. '}' .. label_no))
+      .. "{" .. callback .. "}"
 end
 
 --- Create a yesno menu description string.

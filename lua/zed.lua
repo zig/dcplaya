@@ -3,7 +3,7 @@
 --- @author   vincent penne
 --- @brief    ZED, The Ziggy's Editor
 ---
---- $Id: zed.lua,v 1.13 2003-03-28 14:01:45 ben Exp $
+--- $Id: zed.lua,v 1.14 2003-04-05 16:33:31 ben Exp $
 --
 -- (C) 2002 Vincent Penne (aka Ziggy Stardust)
 --
@@ -104,6 +104,10 @@ function zed_initconsole()
    zed_cls()
    -- warning : not reentrant (global variable !)
    zed_oldconsole = (showconsole() ~= 0)
+   -- added by ben : disable echo of normal print while in zed.
+   zed_oldecho = zed_oldecho or
+      ( type(console_echo) == "function" and (console_echo(0) or 0) )
+   print("[zed] : disabled echo")
 end
 
 
@@ -120,6 +124,14 @@ function zed_desinitconsole()
    else
       hideconsole()
    end
+
+   -- added by ben : warning as above
+   if zed_oldecho then
+      print("[zed] : restore echo")
+      if type(console_echo) == "function" then console_echo(zed_oldecho) end
+      zed_oldecho = nil
+   end
+
 end
 
 

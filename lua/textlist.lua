@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.48 2003-04-01 13:18:56 ben Exp $
+--- $Id: textlist.lua,v 1.49 2003-04-05 16:33:31 ben Exp $
 ---
 
 -- z shift of textlist entry text
@@ -321,21 +321,26 @@ function textlist_create(flparm, owner)
 
    --- Insert an entry.
    function textlist_insert_entry(fl, entry, pos, no_redraw)
-      local y = 0
       if not entry then return end
+      local y,w,h = 0,fl:measure_text(entry)
       if not pos then
-	 local n = fl.dir.n
-	 if n > 0 then
-	    y = fl.dirinfo[n].y + fl.dirinfo[n].h
-	 end
-	 local w,h = fl:measure_text(entry)
-	 tinsert(fl.dir, entry)
-	 tinsert(fl.dirinfo, { y=y, w=w, h=h })
-	 if not no_redraw then
-	    fl:draw()
-	 end
-      else
-	 print("TEXTLIST INSERT NOT IMPLEMENTED")
+	 pos = fl.dir.n + 1
+      end
+      if pos > 1 then
+	 y = fl.dirinfo[pos-1].y + fl.dirinfo[pos-1].h
+      end
+      local dirinfo = fl.dirinfo or { }
+
+      tinsert(fl.dir, pos, entry)
+      tinsert(dirinfo, pos, { y=y, w=w, h=h })
+
+      -- Shift entry position
+      local n,j = getn(fl.dir)
+      for j=pos+1, n do
+	 dirinfo[j].y = dirinfo[j].y + h
+      end
+      if not no_redraw then
+	 fl:draw()
       end
    end
 

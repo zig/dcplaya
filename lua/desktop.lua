@@ -3,7 +3,7 @@
 --- @author vincent penne
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.36 2003-03-28 14:01:44 ben Exp $
+--- $Id: desktop.lua,v 1.37 2003-04-05 16:33:30 ben Exp $
 ---
 
 if not dolib("evt") then return end
@@ -29,24 +29,20 @@ function dskt_killmenu(dial)
 end
 
 function dskt_openmenu(dial, target, x, y)
-   local spr_name, wmm_name = "menu_close", "menu_wmm"
+--    local spr_name, wmm_name = "menu_close", "menu_wmm"
    dskt_killmenu(dial)
-
-   if tag(sprite_get(spr_name)) ~= sprite_tag then
-      sprite(spr_name, 0, 0, 22, 22, 0, 0, 1, 1, "close")
-   end
-   if tag(sprite_get(wmm_name)) ~= sprite_tag then
-      sprite(wmm_name, 0, 0, 22, 22, 0, 0, 1, 1, "windowmanager")
-   end
 
    local name = target.name or "app"
    local def
    local user_def = menu_create_defs(target.mainmenu_def, target)
-   local root = ":" .. name ..":{"
+   local root = ":" .. name ..":"
    if not target.flags or not target.flags.unfocusable then
-      root = root.. wmm_name .. "}switch to{switch},{"
+      root = root ..
+	 menu_any_menu(1, "switch to", "windowmanager", nil, nil, "switch", -1)
+	 .. ","
    end
-   root = root.. spr_name .. "}kill{kill}"
+   root = root ..
+      menu_any_menu(1, "kill", "close", nil, nil, "kill", -1)
    local default_def = menu_create_defs
    ({
        root = root,

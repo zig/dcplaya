@@ -5,7 +5,7 @@
  *  @date    2002/10/22
  *  @brief   Resizable array of indirect elements of any size.
  *
- *  $Id: iarray.h,v 1.5 2003-03-26 23:02:47 ben Exp $
+ *  $Id: iarray.h,v 1.6 2003-04-05 16:33:30 ben Exp $
  */
 
 #ifndef _IARRAY_H_
@@ -32,7 +32,7 @@ typedef void * (*iarray_alloc_f)(unsigned int size, void *cookie);
 /** User provided free function. */
 typedef void (*iarray_free_f)(void * addr, void *cookie);
 /** User provided compare function. */
-typedef int (*iarray_cmp_f)(const void * a, const void * b);
+typedef int (*iarray_cmp_f)(const void * a, const void * b, void * cookie);
 
 /** Array element. */
 typedef struct {
@@ -43,7 +43,7 @@ typedef struct {
 /** Array definition. */
 typedef struct {
   int n;                 /**< Number of elenent stored.              */
-  int max;               /**< Number of element allcocated.          */
+  int max;               /**< Number of element allocated.           */
   iarray_elt_t * elt;    /**< Elements.                              */
   iarray_alloc_f alloc;  /**< Funtion to allocate a new element.     */
   iarray_free_f free;    /**< Funtion to free a element.             */
@@ -75,9 +75,11 @@ void iarray_destroy(iarray_t *a);
 int iarray_clear(iarray_t *a);
 
 void * iarray_addrof(iarray_t *a, int idx);
+iarray_elt_t * iarray_eltof(iarray_t *a, int idx);
 
 int iarray_get(iarray_t *a, int idx, void * elt, int eltsize);
-int iarray_find(iarray_t *a, const void * what, iarray_cmp_f cmp);
+int iarray_find(iarray_t *a, const void * what, iarray_cmp_f cmp,
+		void * cookie);
 iarray_elt_t * iarray_dup(iarray_t *a, int idx);
 int iarray_set(iarray_t *a, int idx, void *elt, unsigned int eltsize);
 int iarray_insert(iarray_t *a, int idx, void *elt, unsigned int eltsize);
@@ -117,18 +119,21 @@ int iarray_lockcount(const iarray_t *a);
 void iarray_shuffle(iarray_t *a, int idx, int n);
 
 /** Sort the whole array.
- *  @param  a    iarray to sort
- *  @param  cmp  compare function.
+ *  @param  a       iarray to sort
+ *  @param  cmp     compare function
+ *  @param  cookie  cookie for cmp function
  */
-void iarray_sort(iarray_t *a, iarray_cmp_f cmp);
+void iarray_sort(iarray_t *a, iarray_cmp_f cmp, void * cookie);
 
 /** Sort a partition of an array.
  *  @param  a    iarray to sort
  *  @param  idx  Index of first (clipped)
  *  @param  n    Number of element (clipped to max).
  *  @param  cmp  compare function.
+ *  @param  cookie  cookie for cmp function
  */
-void iarray_sort_part(iarray_t *a, int idx, int n, iarray_cmp_f cmp);
+void iarray_sort_part(iarray_t *a, int idx, int n, iarray_cmp_f cmp,
+		      void * cookie);
 
 /**@}*/
 

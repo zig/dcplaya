@@ -17,7 +17,7 @@
    ***********************************************************************
 
 
-This is a pre-alpha version of dcplaya ! Please do not copy it.
-
-version number : #*DONTCHANGETHIS*
+Version        : @VERSION@
+Build date     : @BUILT-DATE@
+Version number : #*DONTCHANGETHIS*
 

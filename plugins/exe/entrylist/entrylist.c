@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist.c,v 1.11 2003-03-10 22:55:33 ben Exp $
+ * $Id: entrylist.c,v 1.12 2003-04-05 16:33:31 ben Exp $
  */
 
 #include <stdlib.h>
@@ -90,11 +90,12 @@ int entrylist_clear(el_list_t * el)
 
 int entrylist_remove(el_list_t * el, int idx)
 {
+  /* $$$ ben : this version seems fully buggy !!!! */
   int err = -1;
   iarray_elt_t *ae;
 
   entrylist_lock(el);
-  ae = iarray_addrof(&el->a,idx);
+  ae = iarray_eltof(&el->a,idx);
   if (ae) {
     el_entry_t *e = ae->addr;
     if (e) {
@@ -108,14 +109,12 @@ int entrylist_remove(el_list_t * el, int idx)
 
 int entrylist_set(el_list_t * el, int idx, el_entry_t * e, int eltsize)
 {
-  iarray_elt_t *ae;
+  el_entry_t *oe;
+
   entrylist_lock(el);
-  ae = iarray_addrof(&el->a, idx);
-  if (ae) {
-    el_entry_t *e = ae->addr;
-    if (e) {
-      elpath_del(e->path);
-    }
+  oe = iarray_addrof(&el->a, idx);
+  if (oe) {
+    elpath_del(oe->path);
   }
   idx = iarray_set(&el->a, idx, e, eltsize);
   entrylist_unlock(el);
@@ -125,6 +124,83 @@ int entrylist_set(el_list_t * el, int idx, el_entry_t * e, int eltsize)
 int entrylist_insert(el_list_t * el, int idx, el_entry_t * e, int eltsize)
 {
   return iarray_insert(&el->a, idx, e, eltsize);
+}
+
+static int cmp_str(const char *a, const char * b)
+{
+  int res;
+  if (a) {
+    res = 1;
+    if (b) {
+      res = stricmp(a, b);
+    }
+  } else {
+    res = 0;
+    if (b) {
+      res = -1;
+    }
+  }
+  return res;
+}
+
+static int cmp(const void * a, const void * b, void * cookie)
+{
+
+  int res, o;
+  int reverse = 0;
+  const el_entry_t *e1  = (const el_entry_t *) a;
+  const el_entry_t *e2  = (const el_entry_t *) b;
+  char * order = cookie;
+
+  o = *order;
+  if (o >= 'A' && o <='Z') {
+    o += 'a'-'A';
+    reverse = -1;
+  }
+
+  switch (o) {
+  case 't':
+    res = e1->type - e2->type;
+    break;
+  case 's':
+    res = e1->size - e2->size;
+    break;
+  case 'p':
+    res = cmp_str(e1->path ? e1->path->path : 0,
+		  e2->path ? e2->path->path : 0);
+    break;
+  case 'n':
+    res = cmp_str(e1->buffer + e1->iname, e2->buffer + e2->iname);
+    break;
+  case 'f':
+    res = cmp_str(e1->buffer + e1->ifile, e2->buffer + e2->ifile);
+    break;
+
+  default:
+    return 0;
+  }
+
+  /* Apply a neg if reverse == -1 */
+  res = (res ^ reverse) - reverse; 
+
+  if (!res) {
+    res = cmp(e1,e2,++order);
+  }
+  return res;
+}
+
+int entrylist_sort(el_list_t * el, int idx, int n, const char * order)
+{
+  entrylist_lock(el);
+  if (!order) order = "tpnfs";
+  idx = (idx >= 0) ? idx : 0;
+  n = (n > 0) ? n : el->a.n;
+#ifdef DEBUG
+  printf("entrylist_sort [%d,%d,\"%s\"].\n", idx, n, order);
+#endif
+  iarray_sort_part(&el->a, idx, n, cmp, (void *)order);
+  entrylist_unlock(el);
+  return 0;
 }
 
 EL_FUNCTION_DECLARE(new)
@@ -141,8 +217,10 @@ EL_FUNCTION_DECLARE(new)
   lua_settop(L, 0);
   el = entrylist_create();
   if (el) {
+#ifdef DEBUG
     printf("%s : entrylist [%p,%d] created.\n", __FUNCTION__,
 	   el, allocator_index(lists,el));
+#endif
     lua_pushusertagsz(L, el, entrylist_tag, sizeof(*el));
     return 1;
   }
@@ -157,14 +235,14 @@ EL_FUNCTION_START(lock)
 }
 EL_FUNCTION_END()
 
-     EL_FUNCTION_START(unlock)
+EL_FUNCTION_START(unlock)
 {
   entrylist_unlock(el);
   return 0;
 }
 EL_FUNCTION_END()
 
-     EL_FUNCTION_START(gettable)
+EL_FUNCTION_START(gettable)
 {
   int type = lua_type(L,2);
   const char * field;
@@ -251,7 +329,9 @@ EL_FUNCTION_START(settable)
 
   case LUA_TNIL:
     if (!entrylist_remove(el,idx)) {
+#ifdef DEBUG
       printf("%s : Removing entry #%d\n", __FUNCTION__, idx+1);
+#endif
     } else {
       printf("%s : can't remove entry #%d\n", __FUNCTION__, idx+1);
     }
@@ -348,7 +428,9 @@ EL_FUNCTION_START(settable)
     }
 
     if (e != (el_entry_t *)tmp) {
+#ifdef DEBUG
       printf("free temporary \n");
+#endif
       free(e);
     }
     break;
@@ -470,5 +552,61 @@ EL_FUNCTION_START(load)
   lua_settop(L,0);
   lua_pushnumber(L,1);
   return 1;
+}
+EL_FUNCTION_END()
+
+
+EL_FUNCTION_START(sort)
+{
+  const char * order = lua_tostring(L,2);
+  int idx = lua_tonumber(L,3);
+  int n   = lua_tonumber(L,4);
+  int ok;
+
+  lua_settop(L,0);
+  ok = ! entrylist_sort(el, idx-1, n, order);
+  if (ok) {
+    lua_pushnumber(L,1);
+  }
+  return ok;
+}
+EL_FUNCTION_END()
+
+EL_FUNCTION_START(dump)
+{
+  int level = lua_tonumber(L,2);
+  entrylist_lock(el);
+  printf("entry-list {\n");
+  printf(" entries : %d/%d\n", el->a.n, el->a.max);
+  printf(" loading : %d\n", el->loading);
+  if (el->path) {
+    printf(" path    : %d \"%s\"\n", el->path->refcount, el->path->path);
+  }
+
+  if (level) {
+    int i;
+    for (i=0; i<el->a.n; ++i) {
+/*       iarray_elt_t *ae; */
+      el_entry_t *e;
+      printf ("  entry #%d {\n",i);
+      e = iarray_addrof(&el->a, i);
+      if (/*!ae || (e = ae->addr,*/ !e/*)*/) {
+	printf ("    missing in action !\n");
+      } else {
+	printf ("    type : %04x\n",e->type);
+	printf ("    size : %d\n",e->size);
+	printf ("    name : [%s]\n",e->buffer + e->iname);
+	printf ("    file : [%s]\n",e->buffer + e->ifile);
+	if (e->path) {
+	  printf ("    path : (%d)[%s]\n",e->path->refcount, e->path->path);
+	}
+      }
+      printf ("  }\n");
+    }
+  }
+  printf("}\n");
+
+  entrylist_unlock(el);
+  return 0;
 }
 EL_FUNCTION_END()

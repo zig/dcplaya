@@ -4,7 +4,7 @@
 --- @author  benjamin gerard
 --- @brief   tagged text aka zml
 ---
---- $Id: taggedtext.lua,v 1.34 2003-03-31 16:52:28 ben Exp $
+--- $Id: taggedtext.lua,v 1.35 2003-04-05 16:33:31 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_tt Tagged Text
@@ -480,15 +480,14 @@ tt_commands = {
    font = tt_font_cmd,
 
    vspace = function(mode, param)
-	       local h = param.h or 16
---	       mode.h = mode.h + h
+	       local h = tonumber(param.h) or 16
 	       tt_endline(mode)
 	       tt_insert_block(mode, { w = 0, h = h, draw = function() end })
 	       tt_endline(mode)
 	    end,
 
    hspace = function(mode, param)
-	       local w = param.w or 16
+	       local w = tonumber(param.w) or 16
 --	       mode.w = mode.w + w
 	       return { w = w, h = 0, draw = function() end }
 	    end,
@@ -694,7 +693,10 @@ function tt_endline(mode)
       h = max(h, block.h)
    end
    -- $$$ ben : fix multiple line break.
-   if h == 0 and line.n > 0 and line[1].type and line[1].type == "text" then
+--   if h == 0 and line.n > 0 and line[1].type and line[1].type == "text" then
+   -- $$$ new fix, assume w is 0 too
+   if mode.w == 0 and h == 0 and line.n > 0
+      and line[1].type and line[1].type == "text" then
       h = line[1].font_h or 16
    end
 

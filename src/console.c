@@ -4,7 +4,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.24 2003-03-29 15:33:07 ben Exp $
+ * @version   $Id: console.c,v 1.25 2003-04-05 16:33:31 ben Exp $
  */
 
 
@@ -40,10 +40,14 @@ csl_console_t * csl_ta_console;
 
 static dbgio_printk_func old_printk_func;
 
+/* added by ben for disabling console output in zed */
+int csl_echo = 1;
 
 static void csl_printk_func(const char * s)
 {
-  csl_putstring(csl_main_console, s);
+  if (csl_echo) {
+    csl_putstring(csl_main_console, s);
+  }
 
   /*  if ( !(csl_main_console->render_modes & CSL_RENDER_WINDOW) ) */{
     if (old_printk_func)

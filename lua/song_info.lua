@@ -4,7 +4,7 @@
 --- @date     2002/11/29
 --- @brief    Song info application.
 ---
---- $Id: song_info.lua,v 1.28 2003-03-28 19:57:17 ben Exp $
+--- $Id: song_info.lua,v 1.29 2003-04-05 16:33:31 ben Exp $
 
 song_info_loaded = nil
 
@@ -313,6 +313,18 @@ function song_info_create(owner, name, style)
       si:draw()
    end
 
+   --- Default song-info minimize/maximize toggle.
+   --- @internal
+   --
+   function song_info_toggle(si)
+      if si.minimized then
+	 si:maximize()
+      else
+	 si:minimize()
+      end
+   end
+
+
    --- Default song-info set color.
    --- @internal
    --
@@ -363,19 +375,15 @@ function song_info_create(owner, name, style)
       local cb = {
 	 toggle = function(menu, idx)
 		     local si = menu.target
-		     if si.minimized then
-			menu.fl.dir[idx].name = "minimize"
-			si:maximize()
-		     else
-			menu.fl.dir[idx].name = "maximize"
-			si:minimize()
-		     end
-		     menu:draw()
+		     si:toggle()
+		     menu_any_image(menu, idx, si.minimized,
+				 'maximize', 'minimize',
+				 'minimize', 'minimize')
 		  end,
       }
-      local root = ":" .. target.name .. ":" ..
-	 ((si.minimized and "maximize") or "minimize") .. "{toggle}"
-
+      local root = ":" .. target.name .. ":"
+	 .. menu_any_menu(si.minimized, 'maximize',
+			  'minimize', 'minimize', 'minimize', 'toggle', -1)
       local def = menu_create_defs
       (
        {
@@ -402,6 +410,7 @@ function song_info_create(owner, name, style)
       set_color = song_info_set_color,
       minimize = song_info_minimize,
       maximize = song_info_maximize,
+      toggle = song_info_toggle,
 
       -- members
       time_elapsed = 0,

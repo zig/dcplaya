@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.94 2003-04-01 13:18:55 ben Exp $
+ * @version    $Id: dynshell.c,v 1.95 2003-04-05 16:33:30 ben Exp $
  */
 
 #include "dcplaya/config.h"
@@ -827,6 +827,22 @@ static int lua_consolesize(lua_State * L)
   lua_pushnumber(L, csl_main_console->h);
 
   return 2;
+}
+
+
+extern int csl_echo; /* console.c */
+
+static int lua_consoleecho(lua_State * L)
+{
+  int old = csl_echo;
+  if (lua_gettop(L) >= 1) {
+    csl_echo = lua_tonumber(L,1);
+  }
+  lua_settop(L,0);
+  if (old) {
+    lua_pushnumber(L,1);
+  }
+  return lua_gettop(L);
 }
 
 static int lua_toggleconsole(lua_State * L)
@@ -2077,6 +2093,19 @@ static int lua_get_driver_lists(lua_State * L)
   return 1;
 }
 
+static int lua_filesize(lua_State * L)
+{
+  const char *fname = lua_tostring(L,1);
+  lua_settop(L,0);
+  if (fname) {
+    int len = fu_size(fname);
+    if (len >= 0) {
+      lua_pushnumber(L,len);
+    }
+  }
+  return lua_gettop(L);
+}
+
 static int lua_filetype(lua_State * L)
 {
   const char * major_name, * minor_name;
@@ -2333,9 +2362,13 @@ static int lua_load_background(lua_State * L)
   switch(lua_type(L,1)) {
   case LUA_TNUMBER:
     srctexid = lua_tonumber(L,1);
-    stexture = texture_lock(srctexid);
-    if (stexture) {
-      smodulo = (1 << stexture->wlog2) - stexture->width;
+    if (srctexid == texid) {
+      printf("load_background : using __background__ as source texture.\n");
+    } else {
+      stexture = texture_lock(srctexid,1);
+      if (stexture) {
+	smodulo = (1 << stexture->wlog2) - stexture->width;
+      }
     }
     break;
   case LUA_TSTRING:
@@ -2403,7 +2436,7 @@ static int lua_load_background(lua_State * L)
   }
 
   /* Don't need de-twiddle since we are going to commando that texture */
-  btexture = texture_fastlock(texid);
+  btexture = texture_fastlock(texid, 1);
   if (!btexture) {
     /* Safety net ... */
     return 0;
@@ -2430,7 +2463,6 @@ static int lua_load_background(lua_State * L)
 	       btexture->width,btexture->height,
 	       1<<btexture->wlog2,  1<<btexture->hlog2);
   }
-#endif
 
   if (1) {
     printf("type:[%s]\n", !type ? "scale" : (type==1?"center":"tile"));
@@ -2446,6 +2478,7 @@ static int lua_load_background(lua_State * L)
 	   (1<<btexture->wlog2) - btexture->width,
 	   btexture->twiddlable, btexture->twiddled);
   }
+#endif
 
   /* $$$ Currently all texture are 16bit. Since blitz don't care about exact
      pixel format blitz is done with ARGB565 format. */
@@ -2987,6 +3020,12 @@ static luashell_command_description_t commands[] = {
     ,
     SHELL_COMMAND_C, lua_filetype_add
   },
+  {
+    "filesize",0,0,
+    "filesize(filename) : return regular file size.\n"
+    ,
+    SHELL_COMMAND_C, lua_filesize
+  },
 
   /* IO commands */
   { 
@@ -3068,6 +3107,12 @@ static luashell_command_description_t commands[] = {
     " 3 colors."
     ,
     SHELL_COMMAND_C, lua_console_setcolor
+  },
+  { 
+    "console_echo","conecho",0,
+    "console_echo([echo]) : set and get console echo status.\n"
+    "return old status.",
+    SHELL_COMMAND_C, lua_consoleecho
   },
 
   /* Player commands */
@@ -3404,7 +3449,7 @@ static void shell_register_lua_commands()
     char format[128];
     strcpy(format,"addhelp ([[%s]],");
     strcat(format,commands[i].short_name ? "[[%s]]" : "%s");
-    strcat(format,",[[%s]],[[%s]])");
+    strcat(format,",[[%s]],[[ %s ]])"); /* Add white-space on purpose */
 
     if (commands[i].usage) {
       dynshell_command(format,

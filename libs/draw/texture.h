@@ -6,7 +6,7 @@
  * @date     2002/10/20
  * @brief    texture manager
  *
- * $Id: texture.h,v 1.10 2003-03-26 23:02:48 ben Exp $
+ * $Id: texture.h,v 1.11 2003-04-05 16:33:30 ben Exp $
  */
 
 #ifndef _TEXTURE_H_
@@ -160,10 +160,10 @@ int texture_reference(texid_t texid, int count);
 
 /** Get a pointer on a texture definition and make sure pixels
     are not twiddled. */
-texture_t * texture_lock(texid_t texid);
+texture_t * texture_lock(texid_t texid, int wait);
 
 /** Get a pointer on a texture definition without de-twiddling. */
-texture_t * texture_fastlock(texid_t texid);
+texture_t * texture_fastlock(texid_t texid, int wait);
 
 /** Release a previously locked texture. */
 void texture_release(texture_t * t);

@@ -5,7 +5,7 @@
  * @date     2002/11/22
  * @brief    draw tile accelarator interface
  *
- * $Id: ta.c,v 1.6 2003-03-26 23:02:48 ben Exp $
+ * $Id: ta.c,v 1.7 2003-04-05 16:33:30 ben Exp $
  */
 
 /* $$$ ben hacks :
@@ -59,7 +59,7 @@ static void make_poly_hdr(ta_hw_poly_t * poly, int flags)
   t = 0;
   texid = DRAW_TEXTURE(flags);
   if (texid != DRAW_NO_TEXTURE) {
-    t = texture_fastlock(texid);
+    t = texture_fastlock(texid, 0);
   }
 
   idx = 0

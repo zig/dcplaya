@@ -4,7 +4,7 @@
 --- @author  benjamin gerard
 --- @brief   hyper text viewer gui.
 ---
---- $Id: textviewer.lua,v 1.21 2003-04-01 13:18:56 ben Exp $
+--- $Id: textviewer.lua,v 1.22 2003-04-05 16:33:31 ben Exp $
 ---
 
 if not dolib("taggedtext") then return end
@@ -212,7 +212,7 @@ function gui_text_viewer(owner, texts, box, label, mode, help)
    -- Create main-dialog
    dial = gui_new_dialog(owner, box, nil, nil, label, mode, "text viewer")
    if not dial then return end
-   dial.icon_name = "textviewer"
+   dial.icon_name = "view"
 
    -- Create view-dialog
    dial.viewer = gui_new_dialog(dial, tbox, nil, nil, nil, nil,
@@ -513,6 +513,6 @@ end
 ---
 
 -- Create application icon sprite
-sprite_simple(nil,"textviewer.tga")
+sprite_simple(nil,"view.tga")
 
 return 1

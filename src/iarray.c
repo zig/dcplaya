@@ -4,7 +4,7 @@
  *  @date   2002/10/22
  *  @brief  Resizable array of indirect elements of any size.
  *
- *  $Id: iarray.c,v 1.5 2003-03-26 23:02:51 ben Exp $
+ *  $Id: iarray.c,v 1.6 2003-04-05 16:33:31 ben Exp $
  *
  *  @TODO Add callback for copy, clear ... operations
  */
@@ -105,6 +105,18 @@ void * iarray_addrof(iarray_t *a, int idx)
   iarray_unlock(a);
   return addr;
 }
+
+iarray_elt_t * iarray_eltof(iarray_t *a, int idx)
+{
+  iarray_elt_t * addr = 0;
+  iarray_lock(a);
+  if ((unsigned int)idx < a->n) {
+    addr = a->elt + idx;
+  }
+  iarray_unlock(a);
+  return addr;
+}
+
 
 int iarray_get(iarray_t *a, int idx, void * elt, int maxsize)
 {
@@ -297,12 +309,13 @@ int iarray_remove(iarray_t *a, int idx)
   return idx;
 }
 
-int iarray_find(iarray_t *a, const void * what, iarray_cmp_f cmp)
+int iarray_find(iarray_t *a, const void * what, iarray_cmp_f cmp,
+		void * cookie)
 {
   int i;
 
   iarray_lock(a);
-  for (i=0; i<a->n && cmp(what, a->elt[i].addr) ; ++i)
+  for (i=0; i<a->n && cmp(what, a->elt[i].addr, cookie) ; ++i)
     ;
   if (i >= a->n) {
     i = -1;
@@ -350,21 +363,24 @@ void iarray_shuffle(iarray_t *a, int idx, int n)
   iarray_unlock(a);
 }
 
-static int find_max(const iarray_elt_t * e, int n, iarray_cmp_f cmp)
+static int find_max(const iarray_elt_t * e, int n, iarray_cmp_f cmp,
+		    void * cookie)
 {
   int i, k=0;
-  const iarray_elt_t * ek = e;
+  const void * ek = e->addr;
   
   for (i=1, ++e; i<n; ++i, ++e) {
-    if (cmp(e, ek) > 0) {
+    const void * ea = e->addr;
+    if (cmp(ea, ek, cookie) > 0) {
       k = i;
-      ek = e;
+      ek = ea;
     }
   }
   return k; 
 }
 
-static void sort_part(iarray_t *a, int idx, int n, iarray_cmp_f cmp)
+static void sort_part(iarray_t *a, int idx, int n, iarray_cmp_f cmp,
+		      void * cookie)
 {
   iarray_elt_t * e;
 
@@ -384,19 +400,20 @@ static void sort_part(iarray_t *a, int idx, int n, iarray_cmp_f cmp)
   }
   
   for (; n>0; --n) {
-    int k = find_max(e, n, cmp);
+    int k = find_max(e, n, cmp, cookie);
     swap(e+k, e+n-1);
   }
 }
 
-void iarray_sort(iarray_t *a, iarray_cmp_f cmp)
+void iarray_sort(iarray_t *a, iarray_cmp_f cmp, void * cookie)
 {
   iarray_lock(a);
-  sort_part(a, 0, a->n, cmp);
+  sort_part(a, 0, a->n, cmp, cookie);
   iarray_unlock(a);
 }
 
-void iarray_sort_part(iarray_t *a, int idx, int n, iarray_cmp_f cmp)
+void iarray_sort_part(iarray_t *a, int idx, int n, iarray_cmp_f cmp,
+		      void * cookie)
 {
   iarray_lock(a);
   if (idx < 0) {
@@ -407,7 +424,7 @@ void iarray_sort_part(iarray_t *a, int idx, int n, iarray_cmp_f cmp)
   if (n+idx > a->n) {
     n = a->n-idx;
   }
-  sort_part(a, idx, n, cmp);
+  sort_part(a, idx, n, cmp, cookie);
   iarray_unlock(a);
 }
 

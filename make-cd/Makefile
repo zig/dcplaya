@@ -3,7 +3,7 @@
 #
 # by Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.15 2003-03-29 15:33:07 ben Exp $
+# $Id: Makefile,v 1.16 2003-04-05 16:33:31 ben Exp $
 #
 # This makefile is pretty ugly. Sorry :( I'll try to make a clean one
 # when I get some time.
@@ -24,6 +24,7 @@ TOUCH		= touch
 ELF_TARGET	= ../dreammp3.elf
 OBJCOPY		= /opt/sh-elf/bin/sh-elf-objcopy
 DATE		:= $(shell date +%Y/%m/%d)
+VERSION         := $(shell cat ../VERSION)
 
 ifeq "$(strip $(filter minimal,$(MAKECMDGOALS)))" "minimal"
 EXTRA_DATA_DIR  := extra_data_minimal
@@ -43,14 +44,20 @@ success: $(1ST_READ) IP.BIN burn
 .PHONY: burn
 burn: burn-audio burn-data
 
-.PHONY: RELEASE
+.PHONY: RELEASE.txt
 RELEASE.txt:
 	@echo "[$@]"
-	@(echo "dcplaya alpha version"; date) > $@
+	@(\
+	echo -n   "version  : dcplaya ";\
+	cat ../VERSION;\
+	echo -e "\nbuild by : `id -un` @ `uname --nodename`";\
+	echo      "date     : $(DATE)";\
+	) > $@
 
-README.txt: ../README
+.PHONY: README.txt
+README.txt: ../README ../VERSION
 	@echo "[$@]"
-	@cp $< $@
+	@sed -e "s#@BUILT-DATE@#${DATE}#" -e "s#@VERSION@#${VERSION}#" $< > $@
 
 $(ELF_TARGET):
 	@echo "[$@]"
@@ -61,9 +68,20 @@ $(1ST_READ): $(ELF_TARGET)
 	@$(OBJCOPY) -R .stack -S -O binary $< $@ \
 	|| ( rm -f $(1ST_READ) && test -z 1 )
 
-audio.raw:
+AUDIOFROM := "$(EXTRA_DATA_DIR)/Jess Lysen/Jess Lysen - B1 - Revival.mp3"
+zero:
+	echo "Making audio from " $(AUDIOFROM);
+	if [ -f $(AUDIOFROM) -a ! -z "`which mpg123`" ] ; then\
+	echo "Making audio from " $(AUDIOFROM);\
+	mpg123 -t -s $(AUDIOFROM) > zero;\
+	else \
+	echo "Make audio from /dev/zero";\
+	$(DD) if=/dev/zero of=zero bs=2352 count=300;\
+	fi
+
+audio.raw: zero
 	@echo "[$@]"
-	@$(DD) if=/dev/zero of=audio.raw bs=2352 count=300
+	@$(DD) if=zero of=audio.raw bs=2352 count=300
 
 burn-audio: audio.raw
 	@echo "[$@]"
@@ -116,7 +134,7 @@ burn-data: burn-audio data.raw
 .PHONY: dcplaya-docs
 dcplaya-docs :
 	@echo "[$@]"
-	@$(MAKE) -C ../doc txt
+	@$(MAKE) -C ../doc txt zml
 
 extra-data:
 	@echo "[$@] from [$(EXTRA_DATA_DIR)]"
@@ -174,6 +192,7 @@ dcplaya-data: clean_dir distrib extra-data
 
 clean_audio:
 	@echo "[clean audio]"
+	@rm -f zero
 	@if [ -e burn-audio ]; \
 		then echo -e "Existing [burn-audio] file.\nPrevious burn has not been successfully complete.\nRun make force_clean to remove it."; test -z 1; \
 	else rm -f audio.raw; fi
@@ -194,6 +213,6 @@ clean: clean_audio clean_file clean_dir
 .PHONY: force_clean
 force_clean: clean_file
 	@echo "[force clean]"
-	@rm -f audio.raw burn-audio
+	@rm -f zero audio.raw burn-audio
 
 include ../Makefile.inc

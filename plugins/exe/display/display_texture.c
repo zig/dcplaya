@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, texture interface
  * 
- * $Id: display_texture.c,v 1.11 2003-03-19 05:16:16 ben Exp $
+ * $Id: display_texture.c,v 1.12 2003-04-05 16:33:31 ben Exp $
  */
 
 #include <stdio.h>
@@ -153,9 +153,9 @@ DL_FUNCTION_DECLARE(tex_info)
 
   GET_TEXID(texid,1,1);
 
-  if (t = texture_fastlock(texid), !t) {
-	printf("%s : invalid texture\n", __FUNCTION__);
-	return 0;
+  if (t = texture_fastlock(texid,1), !t) {
+    printf("%s : invalid texture\n", __FUNCTION__);
+    return 0;
   }
   /* Copy the texture so that it can be release as fast as possible. */
   tmp = *t;

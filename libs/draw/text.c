@@ -5,7 +5,7 @@
  * @date    2002/02/11
  * @brief   drawing and formating text primitives
  *
- * $Id: text.c,v 1.12 2003-03-21 03:37:13 ben Exp $
+ * $Id: text.c,v 1.13 2003-04-05 16:33:30 ben Exp $
  */
 
 #include <stdarg.h>
@@ -111,7 +111,8 @@ static void bounding(uint16 * img, int w, int h, int bpl, int *box)
   }
 }
 
-fontid_t text_new_font(texid_t texid, int wc, int hc, int fixed, float wspace, float wadd)
+fontid_t text_new_font(texid_t texid, int wc, int hc, int fixed,
+		       float wspace, float wadd)
 {
   font_t * fnt = 0;
   texture_t * t = 0;
@@ -125,7 +126,7 @@ fontid_t text_new_font(texid_t texid, int wc, int hc, int fixed, float wspace, f
     goto error;
   }
 
-  t = texture_lock(texid);
+  t = texture_lock(texid, 1);
   if (!t) {
     goto error;
   }

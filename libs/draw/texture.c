@@ -5,7 +5,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.21 2003-03-26 23:02:48 ben Exp $
+ * $Id: texture.c,v 1.22 2003-04-05 16:33:30 ben Exp $
  */
 
 #include <stdlib.h>
@@ -311,7 +311,7 @@ texid_t texture_dup(texid_t texid, const char * name)
     goto error;
   }
 
-  ts = texture_fastlock(texid);
+  ts = texture_fastlock(texid, 1);
   if (!ts) {
     SDERROR("Texture [#%d] not found.\n", texid);
     goto error;
@@ -714,28 +714,40 @@ int texture_reference(texid_t texid, int count)
 }
 
 
-texture_t * texture_fastlock(texid_t texid)
+texture_t * texture_fastlock(texid_t texid, int wait)
 {
   texture_t *t;
 
   allocator_lock(texture);
-  if (t=get_texture(texid), t) {
-    if (t->lock) {
-      SDERROR("[%s] : #%d [%s] already locked\n",
-	      __FUNCTION__, texid, t->name);
-      t = 0;
+  for (;;) {
+    if (t=get_texture(texid), !t) {
+      break;
     } else {
-      t->lock = 1;
-      texture_locks++;
+      if (t->lock) {
+	if (!wait) {
+	  SDNOTICE("[%s] : #%d [%s] already locked\n",
+		   __FUNCTION__, texid, t->name);
+	  t = 0;
+	  break;
+	} else {
+	  allocator_unlock(texture);
+	  thd_pass();
+	  allocator_lock(texture);
+	}
+      } else {
+	t->lock = 1;
+	texture_locks++;
+	break;
+      }
     }
   }
   allocator_unlock(texture);
   return t;
 }
 
-texture_t * texture_lock(texid_t texid)
+texture_t * texture_lock(texid_t texid, int wait)
 {
-  texture_t * t = texture_fastlock(texid);
+  texture_t * t = texture_fastlock(texid, wait);
   if (t)
     /* make sure the texture is not twiddled */
     texture_twiddle(t, 0);

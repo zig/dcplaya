@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.69 2003-03-29 15:33:06 ben Exp $
+--- $Id: song_browser.lua,v 1.70 2003-04-05 16:33:31 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song Browser
@@ -71,6 +71,7 @@ function song_browser_update_loaddir(sb, frametime)
 		       sb.loaded_dir.loading) or 2
       if loading == 2 then
 	 local i
+	 entrylist_sort(sb.loaded_dir, sb.sort_order)
 	 if type(sb.locatedir) == "string" then
 	    i = sb.loaded_dir.n
 	    while i >= 1 and sb.loaded_dir[i].file ~= sb.locatedir do
@@ -126,7 +127,7 @@ function song_browser_update_recloader(sb, frametime)
 	 while i < dir.n do
 	    i = i + 1
 	    local typ,major,minor = filetype(dir[i].file,dir[i].size)
-	    -- Only enqueue rnnable types
+	    -- Only enqueue runnable types
 	    if type(sb.pl.actions.run[major]) ==
 	       "function" then
 	       sbpl_insert(sb, dir[i],nil,1)
@@ -154,6 +155,7 @@ function song_browser_update_playlist(sb, frametime)
       sb.playlist_idx = sb.playlist_start_pos
       sb.playlist_start_pos = nil
       sb.playlist_wait = nil
+      sb.playlist_first_failure = nil
    end
 
    if not sb.playlist_idx then
@@ -168,7 +170,13 @@ function song_browser_update_playlist(sb, frametime)
 
    --   while (Infinite loop and best display !)
    if not wait then
+      -- anti infinite loop on failure
+      if nxt and sb.playlist_first_failure
+	 and sb.playlist_first_failure == nxt then
+	 nxt = nil
+      end
       sb.playlist_idx = nxt
+
       if nxt then
 	 nxt = sb.pl:get_pos(nxt + 1)
 	    or (sb.playlist_loop_pos and sb.pl:get_pos(sb.playlist_loop_pos))
@@ -176,15 +184,18 @@ function song_browser_update_playlist(sb, frametime)
 	 sb.playlist_wait = nil -- Clear wait method
 	 
 	 local path = sb.pl:fullpath(sb.pl.dir[sb.playlist_idx])
-	 print(path)
+-- 	 print(path)
 	 if path then
 	    local ty, major, minor = filetype(path)
 	    local f = sb.pl.actions.run[major]
+	    local r
 	    if type(f) == "function" then
-	       f(sb.pl, sb, path, nxt)
-	    else
+	       r = f(sb.pl, sb, path, nxt)
+	    elseif __DEBUG then
 	       printf("skipping [%s] : no run action [%s]\n",path,major)
 	    end
+	    sb.playlist_first_failure = not r
+	       and (sb.playlist_first_failure or sb.playlist_idx)
 	 end
 	 sb.pl:draw()
       end
@@ -250,7 +261,6 @@ function song_browser_handle(sb, evt)
       song_browser_update_cdrom(sb, evt)
       return
    elseif key == gui_menu_close_event then
-      --	 printf("%q gui_menu_close_event",sb.name)
       song_browser_contextmenu(sb) -- shutdown menu
       return
    end
@@ -415,9 +425,28 @@ end
 function song_browser_list_draw_background(fl, dl)
    local sb = fl.owner
    if not sb then return end
+
    local b3d = sb.fl_box;
    if not b3d then return end
+   local box=box3d_inner_box(b3d)
+   if fl.title_sprite then
+      fl.title_sprite:draw(dl,
+			   (box[1]+box[3]-fl.title_sprite.w) * 0.5,
+			   (box[2]-fl.title_sprite.h-7),
+			   10
+			)
+   end
+   if fl.icon_sprite then
+      fl.icon_sprite:draw(dl,
+			  (box[3] - fl.icon_sprite.w - 4),
+			  (box[4] - fl.icon_sprite.h - 4),
+			  10
+		       )
+   end
+
    b3d:draw(dl, mat_trans(0, 0, 50))
+
+
 end
 
 --- Set Song-Browser color.
@@ -451,13 +480,17 @@ end
 
 --- Create contextual menu.
 --- @internal
-function song_browser_contextmenu(sb, name, fl, def, entry_path)
+
+function song_browser_contextmenu(sb, name, fl, def, def2, entry_path)
    if sb.menu then
       evt_shutdown_app(sb.menu)
    end
-   local menudef = menu_create_defs(def, sb)
+   local menudef,menudef2 = menu_create_defs(def, sb)
    if not menudef then return end
-
+   if def2 then
+      menudef2 = menu_create_defs(def2, sb)
+   end
+   menudef = menu_merge_def(menudef,menudef2)
    fl = fl or sb.cl
    local x,y = textlist_screen_coor(fl)
    sb.menu = menu_create(sb, name, menudef, {x,y,0})
@@ -701,9 +734,10 @@ end
 --- @return error-code
 --- @retval nil on error
 --
-function songbrowser_load_image(sb, filename, mode)
+function song_browser_load_image(sb, filename, mode)
    sb = sb or song_browser
    if not sb then return end
+   filename = canonical_path(filename)
    if not background_tag or tag(background) ~= background_tag then
       gui_ask('The background library is not available, you will not be able to display background images.<br><img name="grimley" src="stock_grimley.tga" scale="1.5">',"close",256,"background error")
       return
@@ -717,30 +751,80 @@ function songbrowser_load_image(sb, filename, mode)
    return 1
 end
 
---- Display a dialog with image information.
+--- Display a dialog with file information.
 ---
 ---  @param  sb        Unused
----  @param  filename  Image file.
+---  @param  filename  file.
 --
-function songbrowser_info_image(sb, filename)
+function song_browser_info_file(sb, filename)
    sb = sb or song_browser
    if not sb then return end
-   local info = image_info(filename)
+   if type(filename) ~= "string" then return end
+   filename = canonical_path(filename)
+   local ty,ma,mi = filetype(filename)
+   -- $$$ fix cdda file open error 
+   if (ma..mi) ~= "musiccdda" and not test("-e",filename) then
+      return
+   end
+   local fsize = filesize(filename)
+   if fsize then
+      if fsize >= 2^30 then
+	 fsize = format("%.2f Gb", fsize / (2^30))
+      elseif fsize >= 2^20 then
+	 fsize = format("%.2f Mb", fsize / (2^20))
+      elseif fsize >= 1024 then
+	 fsize = format("%.2f Kb", fsize / 1024)
+      else
+	 fsize = format("%d bytes", fsize)
+      end
+   end
+
    local path, leaf = get_path_and_leaf(filename)
    local text
-   
-   if type(info) ~= "table" then
-      text = '<left><img name="grimley" src="stock_grimley.tga" scale="1.5"><br><center>Can not get information from image file.<br>.'
-   else
-      text = '<left><img name="smiley" src="stock_smiley.tga" scale="1.5"><br><center>' ..
-	 format("%s image<br>%dx%dx%d, %s<br>",
-		(info.format or "unknown"),
-		(info.w or -1),
-		(info.h or -1),
-		(info.bpp or -1),
-		(info.type or "unknown pixel format"))
+
+   local i,v,sprname
+   for i,v in { "type_"..mi, "type_"..ma, "info" } do
+      if sprite_get(v) or sprite_simple(v, v .. ".tga") then
+	 sprname = v
+	 break
+      end
    end
-   gui_ask(text, "<center>close", 300, format("info on %s",leaf or ""))
+   sprname = sprname or "info"
+
+   text = '<left><img name="'..sprname..'" w="48"><br>'
+      .. '<macro macro-name="top" macro-cmd="p">'
+      .. '<macro macro-name="topf" macro-cmd="font" size="14" color="green">'
+      .. '<macro macro-name="topspc" macro-cmd="vspace" h="4">'
+      .. '<macro macro-name="cont" macro-cmd="p" hspace="16">'
+      .. '<macro macro-name="contf" macro-cmd="font" size="14" color="text_color">'
+
+   if leaf then
+      text = text
+	 .. '<topspc><top><topf>File:'
+	 .. '<cont><contf>'.. leaf or ""
+   end
+   text = text
+      .. '<topspc><top><topf>Type:'
+      .. '<cont><contf>'.. ma .. "/" .. mi .. format(" (%04x)", ty)
+
+   if fsize then 
+      text = text
+	 .. '<topspc><top><topf>Size:'
+	 .. '<cont><contf>' .. fsize
+   end
+
+   if ma == "image" then
+      local info = image_info(filename)
+      if type(info) == "table" then
+	 text = text
+	    .. '<topspc><top><topf>Format:<cont><contf>'
+	    .. (info.format or "unknown")
+	    .. format('<topspc><top><topf>Resolution:<cont><contf>%dx%dx%d, %s', info.w or -1, info.h or -1, info.bpp or -1, info.type or "????")
+      end
+   elseif ma == "music" then
+      -- $$$ TO DO music info !!!
+   end
+   gui_ask(text, '<p hspace="0"><center>close', 350, format("info on %s",leaf or ""))
 end
 
 --- View a file.
@@ -749,6 +833,7 @@ function song_browser_view_file(sb, entry_path)
    sb = sb or song_browser
    if not sb then return end
    if type(entry_path) ~= "string" then return end
+   entry_path = canonical_path(entry_path)
    if not test("-f",entry_path) then return end
    local typ,major,minor = filetype(entry_path)
    local path,leaf = get_path_and_leaf(entry_path)
@@ -761,7 +846,6 @@ function song_browser_view_file(sb, entry_path)
 			 '<center><font color="text_color">'
 			    .. '\018 .. Context menu (goto function)<br>'
 		      )
--- 	 local toto = luacolor_file(entry_path)
 	 return
       end
       preformatted = 8
@@ -803,6 +887,7 @@ function song_browser_edit_file(sb, entry_path)
    sb = sb or song_browser
    if not sb then return end
    if type(entry_path) ~= "string" then return end
+   entry_path = canonical_path(entry_path)
    if console_app then
       evt_app_insert_first(console_app.owner, console_app)
    end
@@ -820,39 +905,27 @@ end
 -- filelist "confirm" actions
 -- ----------------------------------------------------------------------
 
-function songbrowser_any_action(sb, action, fl)
+function song_browser_any_action(sb, action, fl)
    if type(action) ~= "string" then return end
    fl = fl or sb.cl
    if not fl then return end
    if not fl.actions or type(fl.actions[action]) ~= "table" then
-      printf("[songbrowser] : unknown action %q\n", action)
+      if __DEBUG then
+	 printf("[song_browser] : unknown action %q\n", action)
+      end
       return
    end
    local pos = fl:get_pos()
    if not pos then return end
    local entry=fl.dir[pos]
 
-   -- $$$$
-   if __DEBUG then
-      dump(entry,action)
-   end
-
    local entry_path = fl:fullpath(entry)
    if not entry_path then return end
    local ftype, major, minor = filetype(entry_path, entry.size)
 
-   -- $$$
-   if __DEBUG then
-      printf("%q on %q [%q,%q]\n", action, entry_path, major, minor)
-   end
-
    local func = fl.actions[action][major] or fl.actions[action].default
    if type(func) == "function" then
       return func(fl,sb,action,entry_path,entry)
-   end
-   -- $$$
-   if __DEBUG then
-      printf("No %q action for %q\n", action, entry_path)
    end
 end
 
@@ -862,7 +935,7 @@ end
 --    *     - @b 2    if entry is "not confirmed" but change occurs
 --    *     - @b 3    if entry is "confirmed" and change occurs
 function sbfl_confirm(fl, sb)
-   return songbrowser_any_action(sb, "confirm", fl)
+   return song_browser_any_action(sb, "confirm", fl)
 end
 
 function sbfl_confirm_dir(fl, sb, action, entry_path, entry)
@@ -920,7 +993,6 @@ function sbfl_confirm_lua(fl, sb, action, entry_path, entry)
 end
 
 function sbfl_confirm_text(fl, sb, action, entry_path, entry)
-   if not test("-f",entry_path) then return end
    song_browser_view_file(sb,entry_path)
 end
 
@@ -929,28 +1001,120 @@ end
 -- ----------------------------------------------------------------------
 
 function sbfl_select(fl, sb, action, entry_path, entry)
-   songbrowser_any_action(sb,"select",fl)
+   song_browser_any_action(sb,"select",fl)
 end
 
-function sbfl_select_dir(fl, sb, action, entry_path, entry)
-
-   print("sbfl_select_dir:"..entry_path)
-
-   if not test("-d", entry_path) then return end
-
-   print("sbfl_select_dir is dir")
+function sbfl_make_default_menudef(fl, sb, action, entry_path, entry)
+   local except = { confirm = 1, select = 1, cancel = 1, menu = 1, }
+   if type(fl.actions) ~= "table" then return end
 
    local path,leaf = get_path_and_leaf(entry_path)
+   local ty,major,minor = filetype(entry_path, entry.size)
 
-   print("sbfl_select_dir:",path,leaf)
-
-   if not leaf then return end
-   
    local def = {
-      root = ":"
-	 .. leaf
-	 .. ":enter{enter},load{load},enqueue{enqueue},append{append},"
-	 .. menu_yesno_menu(sb.recursive_mode,"recursive",'recurse'),
+      root = ":" .. leaf,
+      cb = {}
+   }
+   local sep = ":"
+
+   if sb.pl.actions.run[major] then
+      local i,v 
+      for i,v in { "insert", "enqueue" } do
+	 def.root = def.root .. sep ..
+	    menu_any_menu(1, v,  v, nil, nil, v, -1)
+	 sep = ","
+	 def.cb[v] = getglobal("sbfl_" .. v .. "_menu_cb")
+      end
+   end
+
+   for i,v in fl.actions do
+      local cb = not except[i] and (v[major] or v.default)
+
+      if cb then
+	 local sprname = major.."_"..i
+	 if not menu_create_sprite(sprname, sprname..".tga",-1) then
+	    sprname = i
+	    menu_create_sprite(sprname, sprname..".tga",-1)
+	 end
+	 def.root = def.root
+	    .. sep
+	    .. "{" .. "menu_" .. sprname .. "}"
+	    .. i
+	    .. "{" .. i .. "}"
+	 sep = ","
+	 def.cb[i] = function (menu, idx)
+			if type(%cb) == "function" then
+			   local root_menu = menu.root_menu
+			   local sb = root_menu.target
+			   local entry_path = root_menu.__entry_path or ""
+			   local fl = sb.fl
+			   local idx = fl:get_pos(root_menu.target_pos);
+			   local entry = idx and fl.dir[idx];
+			   %cb(fl, sb, "menu", entry_path, entry)
+			end
+		     end
+      end
+   end
+
+   if sep == ":" then
+      -- No action added, close menu title
+      def.root = def.root .. ":"
+   end
+
+   local def2
+   if fl.actions.menu and fl.actions.menu[major] then
+      def2 = fl.actions.menu[major](fl, sb, action, entry_path, entry)
+   end
+
+   return def, def2
+end
+
+
+function sbfl_insert_menu_cb (menu, idx)
+   local root_menu = menu.root_menu
+   local sb = root_menu.target
+   local entry_path = root_menu.__entry_path or ""
+   local fl = sb.fl
+   local idx = fl:get_pos(root_menu.target_pos);
+   local entry = idx and fl.dir[idx];
+   if entry then
+      return sbpl_insert(sb, entry, sb.pl:get_pos())
+   end
+end
+
+function sbfl_enqueue_menu_cb (menu, idx)
+   local root_menu = menu.root_menu
+   local sb = root_menu.target
+   local entry_path = root_menu.__entry_path or ""
+   local fl = sb.fl
+   local idx = fl:get_pos(root_menu.target_pos);
+   local entry = idx and fl.dir[idx];
+   if entry then
+      return sbpl_insert(sb, entry)
+   end
+end
+
+function sbfl_select_default(fl, sb, action, entry_path, entry)
+   -- Create default menu def depending on avaiable action
+   local def,def2 =
+      sbfl_make_default_menudef(fl, sb, action, entry_path, entry)
+   if def then
+      song_browser_contextmenu(sb, "context-menu,", fl, def, def2, entry_path)
+   end
+end
+
+function sbfl_menu_dir(fl, sb, action, entry_path, entry)
+   local def = {
+      root =
+	 menu_any_menu(1, "enter", "enter", nil, nil, "enter", -1)
+	 .. "," ..
+	 menu_any_menu(1, "load", "insert", nil, nil, "load", -1)
+	 .. "," ..
+-- 	 menu_any_menu(1, "append", "enqueue", nil, nil, "append", -1)
+-- 	 .. "," ..
+	 menu_any_menu(1, "enqueue", "enqueue", nil, nil, "enqueue", -1)
+	 .. "," ..
+	 menu_yesno_menu(sb.recursive_mode,"recursive",'recurse'),
       cb = {
 	 enter = function (menu, idx)
 		    local root_menu = menu.root_menu
@@ -966,12 +1130,12 @@ function sbfl_select_dir(fl, sb, action, entry_path, entry)
 		    sbpl_insertdir(sb, entry_path)
 		 end,
 
-	 append =  function (menu, idx)
-		      local root_menu = menu.root_menu
-		      local sb = menu.root_menu.target
-		      local entry_path = root_menu.__entry_path or ""
-		      sbpl_insertdir(sb, entry_path)
-		   end,
+	 enqueue =  function (menu, idx)
+		       local root_menu = menu.root_menu
+		       local sb = menu.root_menu.target
+		       local entry_path = root_menu.__entry_path or ""
+		       sbpl_insertdir(sb, entry_path)
+		    end,
 	 
 	 recurse = function (menu, idx)
 		      local sb = menu.root_menu.target
@@ -981,27 +1145,22 @@ function sbfl_select_dir(fl, sb, action, entry_path, entry)
 		   end,
       },
    }
-   song_browser_contextmenu(sb, "directory-menu,", fl, def, entry_path)
+   return def
 end
 
-function sbfl_select_music(fl, sb, action, entry_path, entry)
-   -- $$$ problem with cdda ... 
-   -- if not test("-f",entry_path) then return end
-   if not entry then
-      local pos = fl:get_pos()
-      entry = pos and fl.dir[pos]
-   end
-   if entry then
-      return sbpl_insert(sb, entry)
-   end
+function sbfl_menu_music(fl, sb, action, entry_path, entry)
+--    if not entry then
+--       local pos = fl:get_pos()
+--       entry = pos and fl.dir[pos]
+--    end
+--    if entry then
+--       return sbpl_insert(sb, entry)
+--    end
 end
 
-function sbfl_select_playlist(fl, sb, action, entry_path, entry)
-   local path,leaf = get_path_and_leaf(entry_path)
-   if not leaf then return end
-   
+function sbfl_menu_playlist(fl, sb, action, entry_path, entry)
    local def = {
-      root = ":" .. leaf .. ":load{load},insert{load},append{load},{menu_textviewer}view{view}",
+      root = "load{load},insert{load},append{load}",
       cb = {
 	 load = function (menu, idx)
 		   local root_menu = menu.root_menu
@@ -1035,22 +1194,12 @@ function sbfl_select_playlist(fl, sb, action, entry_path, entry)
 		      return 1
 		   end
 		end,
-	 view =
-	    function (menu, idx)
-	       local root_menu = menu.root_menu
-	       song_browser_view_file(root_menu.target,
-				      root_menu.__entry_path)
-	    end,
-
       },
    }
-   song_browser_contextmenu(sb,"playlist-menu,",fl,def, entry_path)
+   return def
 end
 
-function sbfl_select_image(fl, sb, action, entry_path, entry)
-   local path,leaf = get_path_and_leaf(entry_path)
-   if not leaf then return end
-
+function sbfl_menu_image(fl, sb, action, entry_path, entry)
    if tag(background) == background_tag then
       local spr = sprite("menu_bkg", 0, 0, 32, 24) -- Create pipo sprite
       if spr then
@@ -1060,15 +1209,9 @@ function sbfl_select_image(fl, sb, action, entry_path, entry)
    end
 
    local def = {
-      root = ":" .. leaf
-	 .. ":{menu_info}info{info},{menu_bkg}background>"
+      root = "{menu_bkg}background>"
       ,
       cb = {
-	 info = function (menu, idx)
-		   local root_menu = menu.root_menu
-		   local sb = root_menu.target
-		   songbrowser_info_image(sb,root_menu.__entry_path)
-		end,
 	 bkg = function (menu, idx)
 		  local root_menu = menu.root_menu
 		  local sb = root_menu.target
@@ -1084,16 +1227,12 @@ function sbfl_select_image(fl, sb, action, entry_path, entry)
       }
    }
 
-   song_browser_contextmenu(sb, "image-menu", fl, def, entry_path)
+   return def
 end
 
-function sbfl_select_plugin(fl, sb, action, entry_path, entry)
-   if not test("-f",entry_path) then return end
-   local path,leaf = get_path_and_leaf(entry_path)
-   if not leaf then return end
-
+function sbfl_menu_plugin(fl, sb, action, entry_path, entry)
    local def = {
-      root = ":"..leaf..":load plugin{load}",
+      root = "load plugin{load}",
       cb = {
 	 load = function (menu, idx)
 		   local root_menu = menu.root_menu
@@ -1118,15 +1257,13 @@ function sbfl_select_plugin(fl, sb, action, entry_path, entry)
 		end,
       },
    }
-   song_browser_contextmenu(sb,"plugin-menu,", fl, def, entry_path)
+   return def
 end
 
-function sbfl_select_lua(fl, sb, action, entry_path, entry)
-   if not test("-f",entry_path) then return end
-   local path,leaf = get_path_and_leaf(entry_path)
-   if not leaf then return end
+function sbfl_menu_lua(fl, sb, action, entry_path, entry)
    local def = {
-      root = ":"..leaf..":execute{exe},load library{loadlib},{menu_textviewer}view{view},{menu_textedit}edit{edit}",
+      root =
+      "execute{exe},load library{loadlib}",
       cb = {
 	 exe =
 	    function (menu, idx)
@@ -1160,53 +1297,20 @@ function sbfl_select_lua(fl, sb, action, entry_path, entry)
 		       nil,
 		       format("LUA lib load %s", label))
 	    end,
-	 view =
-	    function (menu, idx)
-	       local root_menu = menu.root_menu
-	       song_browser_view_file(root_menu.target,
-				      root_menu.__entry_path)
-	    end,
-	 edit =
-	    function (menu, idx)
-	       local root_menu = menu.root_menu
-	       song_browser_edit_file(root_menu.target,
-				      root_menu.__entry_path)
-	    end,
       },
    }
-   song_browser_contextmenu(sb,"lua-menu,", fl, def, entry_path)
+   return def
 end
 
 
-function sbfl_select_text(fl, sb, action, entry_path, entry)
-   if not test("-f",entry_path) then return end
-   local path,leaf = get_path_and_leaf(entry_path)
-   if not leaf then return end
-   local def = {
-      root = ":"..leaf..":{menu_textviewer}view{view},{menu_textedit}edit{edit}",
-      cb = {
-	 view =
-	    function (menu, idx)
-	       local root_menu = menu.root_menu
-	       song_browser_view_file(root_menu.target,
-				      root_menu.__entry_path)
-	    end,
-	 edit =
-	    function (menu, idx)
-	       local root_menu = menu.root_menu
-	       song_browser_edit_file(root_menu.target,
-				      root_menu.__entry_path)
-	    end,
-      },
-   }
-   song_browser_contextmenu(sb,"text-menu,", fl, def, entry_path)
+function sbfl_menu_text(fl, sb, action, entry_path, entry)
 end
 
 -- ----------------------------------------------------------------------
 -- filelist "cancel" actions
 -- ----------------------------------------------------------------------
 function sbfl_cancel(fl, sb, action, entry_path, entry)
-   songbrowser_any_action(sb,"cancel",fl)
+   song_browser_any_action(sb,"cancel",fl)
 end
 
 function sbfl_cancel_default(fl, sb, action, entry_path, entry)
@@ -1215,13 +1319,16 @@ function sbfl_cancel_default(fl, sb, action, entry_path, entry)
    end
 end
 
-function sbfl_view_lua(fl, sb, action, entry_path, entry)
-end
-
 function sbfl_view_text(fl, sb, action, entry_path, entry)
+   sb:view_file(entry_path)
 end
 
 function sbfl_edit_file(fl, sb, action, entry_path, entry)
+   sb:edit_file(entry_path)
+end
+
+function sbfl_info_file(fl, sb, action, entry_path, entry)
+   sb:info_file(entry_path)
 end
 
 function sbpl_clear(sb)
@@ -1545,7 +1652,7 @@ function sbpl_select(pl, sb)
    pl:open_menu(sb)
 end
 
-function songbrowser_menucreator(target)
+function song_browser_menucreator(target)
    local sb = target;
    local cb = {
       toggle = function(menu, idx)
@@ -1555,17 +1662,19 @@ function songbrowser_menucreator(target)
 		  else
 		     sb:close()
 		  end
-		  menu.fl.dir[idx].name = (sb.closed and "show") or "hide"
-		  menu:draw()
+		  menu_any_image(menu, idx, sb.closed,
+				 'show', 'minimize',
+				 'hide', 'minimize')
 	       end,
       saveplaylist = function(menu, idx)
 			local sb = menu.root_menu.target
 			sbpl_save(sb,menu)
 		     end,
    }
-   local root = ":" .. target.name .. ":" .. 
-      ((sb.closed and "show") or "hide") ..
-      "{toggle},playlist >playlist"
+   local root = ":" .. target.name .. ":"
+      .. menu_any_menu(sb.closed, 'show',
+		       'minimize', 'hide', 'minimize', 'toggle', -1)
+      .. ",{menu_playlist}playlist >playlist"
    local def = {
       root=root,
       cb = cb,
@@ -1591,15 +1700,16 @@ function song_browser_create_sprites(sb)
       song_browser_create_dcpsprite(sb)
    end
 
-   -- filetypes
-   menu_create_sprite("ft_dir", "folder.tga",32)
-   menu_create_sprite("ft_file", "type_file.tga",32)
-   menu_create_sprite("ft_cdda", "type_cdda.tga",32)
-   menu_create_sprite("floppy", "floppy2.tga", 32)
-   menu_create_sprite("info", "info.tga", 32)
-   menu_create_sprite("textviewer", "textviewer.tga", 32)
-   menu_create_sprite("yes", "stock_button_apply.tga", 20)
-   menu_create_sprite("no", "stock_button_cancel.tga", 20)
+   menu_create_sprite("enter", "type_dir.tga", -1)
+   menu_create_sprite("insert", nil, -1)
+   menu_create_sprite("enqueue", nil, -1)
+   menu_create_sprite("info", nil, -1)
+   menu_create_sprite("view",nil, -1)
+   menu_create_sprite("edit", nil, -1)
+   menu_create_sprite("minimize", nil, -1)
+   menu_create_sprite("playlist", "type_playlist.tga", -1)
+   menu_yesno_menu(nil,"","")
+
 end
 
 --- Creates some sprites.
@@ -1607,54 +1717,55 @@ end
 function song_browser_create_dcpsprite(sb)
    sb.sprites = {}
    sb.sprites.texid = tex_exist("dcpsprites") or tex_new("/rd/dcpsprites.tga")
+   if not sb.sprites.texid then return end
 
    local x1,y1,w,h
 
    x1,y1,w,h = 0,0,408,29
-   sb.sprites.logo = sprite(nil,
-			    w/2, h/2,
-			    w, h,
-			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
-			    sb.sprites.texid)
+--    sb.sprites.logo = sprite(nil,
+-- 			    w/2, h/2,
+-- 			    w, h,
+-- 			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
+-- 			    sb.sprites.texid)
 
    x1,y1,w,h = 1,31,165,14
    sb.sprites.file = sprite(nil,
-			    w/2, h/2,
+			    0,0,--w/2, h/2,
 			    w, h,
 			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
 			    sb.sprites.texid)
 
    x1,y1,w,h = 170,31,249,14
    sb.sprites.list = sprite(nil,
-			    w/2, h/2,
+			    0,0, --w/2, h/2,
 			    w, h,
 			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
 			    sb.sprites.texid)
 
-   x1,y1,w,h = 1,46,184,19
-   sb.sprites.copy = sprite(nil,
-			    w/2, h/2,
-			    w, h,
-			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
-			    sb.sprites.texid)
+--    x1,y1,w,h = 1,46,184,19
+--    sb.sprites.copy = sprite(nil,
+-- 			    w/2, h/2,
+-- 			    w, h,
+-- 			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
+-- 			    sb.sprites.texid)
 
-   x1,y1,w,h = 187,52,186,12
-   sb.sprites.url = sprite(nil,
-			   w/2, h/2,
-			   w, h,
-			   x1/512, y1/128, (x1+w)/512, (y1+h)/128,
-			   sb.sprites.texid)
+--    x1,y1,w,h = 187,52,186,12
+--    sb.sprites.url = sprite(nil,
+-- 			   w/2, h/2,
+-- 			   w, h,
+-- 			   x1/512, y1/128, (x1+w)/512, (y1+h)/128,
+-- 			   sb.sprites.texid)
 
    x1,y1,w,h = 1,71,107,55
    sb.sprites.jess = sprite(nil,
-			    w/2, h/2,
+			    0,0,--w/2, h/2,
 			    w, h,
 			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
 			    sb.sprites.texid)
 
    x1,y1,w,h = 454,0,58,81
    sb.sprites.proz = sprite(nil,
-			    w/2, h/2,
+			    0,0,--w/2, h/2,
 			    w, h,
 			    x1/512, y1/128, (x1+w)/512, (y1+h)/128,
 			    sb.sprites.texid)
@@ -1665,6 +1776,11 @@ function song_browser_create_dcpsprite(sb)
    -- 			   w, h,
    -- 			   x1/512, y1/128, (x1+w)/512, (y1+h)/128,
    -- 			   sb.sprites.texid,1)
+
+   local col,i,v = sb.style.file_color
+   for i,v in sb.sprites do
+      sprite_set_color(v, 1, col[2], col[3],col[4])
+   end
 
    sb.fl.title_sprite = sb.sprites.file
    sb.fl.icon_sprite = sb.sprites.jess
@@ -1779,8 +1895,8 @@ function song_browser_create(owner, name)
       loaddir = song_browser_loaddir,
 
       -- Extra file action
-      load_image = songbrowser_load_image,
-      info_image = songbrowser_info_image,
+      load_image = song_browser_load_image,
+      info_file = song_browser_info_file,
       view_file =song_browser_view_file,
       edit_file =song_browser_edit_file,
       
@@ -1879,8 +1995,6 @@ function song_browser_create(owner, name)
 					 0.6*colora[1],colora[2],
 					 colora[3],colora[4],
 					 entry.name)
-			    --			    dl_text_prop(dl,nil,14)
-			    --			    dl_text_prop(dl,nil,16)
 			 else
 			    color = colora or colorb or color
 			    dl_draw_text(dl,
@@ -1900,31 +2014,34 @@ function song_browser_create(owner, name)
 
    song_browser_filelist_actions = {
       confirm = {
-	 dir = sbfl_confirm_dir,
-	 music = sbfl_confirm_music,
-	 image = sbfl_confirm_image,
-	 playlist = sbfl_confirm_playlist,
-	 lua = sbfl_select_lua, -- select on purpose !
-	 plugin = sbfl_select_plugin, -- select on purpose !
-	 text = sbfl_confirm_text,
 	 default = sbfl_confirm_default,
+	 dir = sbfl_confirm_dir,
+	 image = sbfl_confirm_image,
+	 lua = sbfl_select_default, -- select on purpose !
+	 music = sbfl_confirm_music,
+	 playlist = sbfl_confirm_playlist,
+	 plugin = sbfl_select_default, -- select on purpose !
+	 text = sbfl_confirm_text,
       },
       select = {
-	 dir = sbfl_select_dir,
-	 music = sbfl_select_music,
-	 image = sbfl_select_image,
-	 playlist = sbfl_select_playlist,
-	 lua = sbfl_select_lua,
-	 plugin = sbfl_select_plugin,
-	 text = sbfl_select_text,
 	 default = sbfl_select_default,
       },
       cancel = {
 	 default = sbfl_cancel_default,
       },
+
+      menu = {
+	 dir = sbfl_menu_dir,
+	 image = sbfl_menu_image,
+	 lua = sbfl_menu_lua,
+	 music = sbfl_menu_music,
+	 playlist = sbfl_menu_playlist,
+	 plugin = sbfl_menu_plugin,
+	 text = sbfl_menu_text,
+      },
       view = {
 	 image = sbfl_confirm_image,
-	 lua = sbfl_view_lua,
+	 lua = sbfl_view_text,
 	 text = sbfl_view_text,
 	 playlist = sbfl_view_text,
       },
@@ -1934,9 +2051,6 @@ function song_browser_create(owner, name)
 	 playlist = sbfl_edit_file,
       },
       info = {
-	 image = sbfl_info_image,
-	 plugin = sbfl_info_plugin,
-	 plugin = sbfl_info_music,
 	 default = sbfl_info_file,
       },
    }
@@ -1961,7 +2075,6 @@ function song_browser_create(owner, name)
 			  sb.slide_show_timeout = sb.slide_show_speed or 10
 		       end
 		    end
-		    print("song_browser_playlist_actions : image")
 		    -- Put a wait forever function to avoid
 		    -- update method to call next playlist file
 		    -- while running the ask dialog !
@@ -2013,7 +2126,7 @@ function song_browser_create(owner, name)
    sb.el_filter = "DXIMPTL"
 
    -- Menu
-   sb.mainmenu_def = songbrowser_menucreator
+   sb.mainmenu_def = song_browser_menucreator
 
    -- Create options table
    sb.options = {

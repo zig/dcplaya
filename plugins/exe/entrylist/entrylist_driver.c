@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist_driver.c,v 1.9 2003-03-28 14:01:45 ben Exp $
+ * $Id: entrylist_driver.c,v 1.10 2003-04-05 16:33:31 ben Exp $
  */
 
 #include <stdlib.h>
@@ -28,6 +28,8 @@ EL_FUNCTION_DECLARE(gettable);
 EL_FUNCTION_DECLARE(settable);
 EL_FUNCTION_DECLARE(clear);
 EL_FUNCTION_DECLARE(load);
+EL_FUNCTION_DECLARE(sort);
+EL_FUNCTION_DECLARE(dump);
 
 /** Entrylist user tag. */
 int entrylist_tag;
@@ -201,7 +203,7 @@ static luashell_command_description_t driver_commands[] = {
   /* Creation command. */
   {
     /* long names, short names and topic */
-    DRIVER_NAME"_new", 0, 0,
+    DRIVER_NAME"_new", "el_new", 0,
     /* usage */
     DRIVER_NAME"_new() : "
     "Create a new empty entry-list.",
@@ -213,7 +215,7 @@ static luashell_command_description_t driver_commands[] = {
 
   {
     /* long names, short names and topic */
-    DRIVER_NAME"_lock", 0, 0,
+    DRIVER_NAME"_lock", "el_lock", 0,
     /* usage */
     DRIVER_NAME"_lock(entrylist) : "
     "Recursive lock of an entry-list. CAUTION : do not forget to unlock"
@@ -224,7 +226,7 @@ static luashell_command_description_t driver_commands[] = {
 
   {
     /* long names, short names and topic */
-    DRIVER_NAME"_unlock", 0, 0,
+    DRIVER_NAME"_unlock", "el_unlock", 0,
     /* usage */
     DRIVER_NAME"_unlock(entrylist) : "
     "Unlock an entry-list. CAUTION : Entry-list must be unlocked as many times"
@@ -236,7 +238,7 @@ static luashell_command_description_t driver_commands[] = {
   /* clear command */
   {
     /* long names, short names and topic */
-    DRIVER_NAME"_clear", 0, 0,
+    DRIVER_NAME"_clear", "el_clear", 0,
     /* usage */
     DRIVER_NAME"_clear(entrylist) : "
     "Clear an entry-list : remove all entries. Keep path and loading stat.",
@@ -247,7 +249,7 @@ static luashell_command_description_t driver_commands[] = {
   /* load dir command */
   {
     /* long names, short names and topic */
-    DRIVER_NAME"_load", 0, 0,
+    DRIVER_NAME"_load", "el_load", 0,
     /* usage */
     DRIVER_NAME"_load(entrylist, path [,filter]) : "
     "Load a directory into entry-list.\n"
@@ -265,6 +267,36 @@ static luashell_command_description_t driver_commands[] = {
     /* function */   
     SHELL_COMMAND_C, lua_entrylist_load
   },
+
+  /* sort command */
+  {
+    /* long names, short names and topic */
+    DRIVER_NAME"_sort", "el_sort", 0,
+    /* usage */
+    DRIVER_NAME"_sort(entrylist [,order [,start [,len  ] ] ]) : "
+    "Sort an entry-list in given order.\n"
+    "order string should be composed with chars among :\n"
+    " <f> file name (leaf)\n"
+    " <n> entry name (leaf)\n"
+    " <p> path (full path name)\n"
+    " <s> size\n"
+    " <t> type\n"
+    "Uppercase letters invert sorting direction.",
+    /* function */   
+    SHELL_COMMAND_C, lua_entrylist_sort
+  },
+
+  /* dump command */
+  {
+    /* long names, short names and topic */
+    DRIVER_NAME"_dump", "el_dump", 0,
+    /* usage */
+    DRIVER_NAME"_dump(entrylist [,level]) : "
+    "Dump an entry-list.\n",
+    /* function */   
+    SHELL_COMMAND_C, lua_entrylist_dump
+  },
+
  
   {0},                                    /* end of the command list */
 };

@@ -3,7 +3,7 @@
 #
 # (C) COPYRIGHT 2002 benjamin gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.23 2003-03-28 14:01:43 ben Exp $ 
+# $Id: Makefile,v 1.24 2003-04-05 16:33:30 ben Exp $ 
 #
 TARGETS=dreammp3.elf
 
@@ -62,11 +62,13 @@ $(TARGETS): force_$(TARGETS) $(OBJS)
 	@$(KOS_STRIP) -v $@
 
 send:
-	$(MAKEDATA)
 #	@clear
 	@dc-tool -x $(TARGETS) | tee debug.log
 
-r: send
+make-data:
+	$(MAKEDATA)
+
+r: make-data send
 
 run: my_all send
 
@@ -101,7 +103,7 @@ depend_extra:
 include Makefile.inc
 
 ifeq '$(MASTER)' '1'
-MAKEDATA=$(MAKE) -C make-cd dcplaya-data
+MAKEDATA=$(MAKE) -C make-cd minimal dcplaya-data
 else
 MAKEDATA=@echo "NO make data"
 endif

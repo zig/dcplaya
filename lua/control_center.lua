@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.28 2003-03-29 15:33:06 ben Exp $
+--- $Id: control_center.lua,v 1.29 2003-04-05 16:33:30 ben Exp $
 ---
 
 --- @defgroup  dcplaya_lua_cc_app  Control Center
@@ -91,8 +91,7 @@ function control_center_create_sprites(cc)
    menu_create_sprite("vmu", "vmu32.tga",32)
    menu_create_sprite("vol", "volume2.tga", 32)
    menu_create_sprite("kbd", "keyboard.tga", 32)
-   menu_create_sprite("yes", "stock_button_apply.tga", 20)
-   menu_create_sprite("no", "stock_button_cancel.tga", 20)
+   menu_yesno_menu(1,"","")
 end
 
 function vmu_save_confirm(vmu)

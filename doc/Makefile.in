@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.19 2003-04-01 13:18:55 ben Exp $
+# $Id: Makefile.in,v 1.20 2003-04-05 16:33:30 ben Exp $
 #
 
 VERSION = @VERSION@
@@ -41,7 +41,11 @@ LUAALLFILES  :=\
  $(wildcard $(LUASRCDIR)/*.lua)\
  $(wildcard $(LUASRCDIR)/lua/*.lua)
 LUASRCFILES:=$(LUAALLFILES:$(LUASRCDIR)/%=%)
-LUADOCFILES:=$(addprefix $(LUADOCDIR)/,$(LUASRCFILES:%.lua=%.lua) userconf.lua)
+LUADOCFILES:=$(addprefix $(LUADOCDIR)/,$(LUASRCFILES:%.lua=%.lua)\
+ userconf.lua\
+ dcplayarc.lua\
+ autorun.lua\
+)
 
 DOCINPUTS=$(ALL_HEADERS_PATH) $(LUADOCDIR) $(LUADOCDIR)/lua
 
@@ -194,7 +198,7 @@ txt4zml_only:
 	@for i in `find $(DOC_DIR)/html4zml -type f -name '*.html'`; do\
 	lynx -width=4096 -dump $$i \
 	> $(DOC_DIR)/text4zml/`basename $$i .html`.txt;\
-	done
+	done; rm -rf "$(DOC_DIR)/html4zml"
 
 zml_only:
 	@mkdir -p $(DOC_DIR)/zml
@@ -202,7 +206,7 @@ zml_only:
 	echo "[`basename "$$i"`]";\
 	cat zmlheader.zml > $(DOC_DIR)/zml/`basename "$$i" .txt`.zml; \
 	$(TXT2ZML) "$$i" >> $(DOC_DIR)/zml/`basename "$$i" .txt`.zml;\
-	done
+	done; rm -rf "$(DOC_DIR)/text4zml"
 
 
 Makefile : Makefile.in
@@ -212,19 +216,13 @@ Makefile : Makefile.in
 # 	cp -f $< $@
 
 $(LUADOCDIR)/userconf.lua : $(LUASRCDIR)/userconf-release.lua # Makefile
-#	@echo "make [$@] from [$<]"
-#	@mkdir -p $(dir $@)
-	@$(LUA2DOX) > $@
-
-$(LUADOCDIR)/lua/testdoc.lua : $(LUASRCDIR)/lua/testdoc.lua
-#	@mkdir -p $(dir $@)
-#	@echo "make [$@] from [$<]"
-#	sed --silent -f $(LUASRCDIR)/lua/doc.sed $< > $@
+	@echo "make [$@] from [$<]"
+	@mkdir -p $(dir $@)
 	@$(LUA2DOX) > $@
 
 $(LUADOCDIR)/%.lua : %.lua  # Makefile
-#	@mkdir -p $(dir $@)
-#	@echo "make [$@] from [$<]"
+	@mkdir -p $(dir $@)
+	@echo "make [$@] from [$<]"
 	@$(LUA2DOX) > $@
 
 luadoc: $(LUADOCFILES)
