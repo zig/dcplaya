@@ -6,7 +6,7 @@ PWD=home
 function fullpath(name)
 
 	if not name then
-		return nil
+		return PWD
 	end
 
 	if strsub(name, 1, 1) ~= "/" then
@@ -17,7 +17,7 @@ function fullpath(name)
 	local i, j
 	-- remove relative parts
 	repeat
-		i, j=strfind(name, "/[ %w]+/%.%.")
+		i, j=strfind(name, "/[^/]+/%.%.")
 		if i then
 			name = strsub(name, 1, i-1) .. strsub(name, j+1)
 --			print ("Found pair ", i, j, name)
@@ -48,9 +48,28 @@ function ls(path)
 		path=fullpath(path)
 	end
 
-	local list = dirl(path, "", 2)
+	local l = strlen(path)
+
+	local list = dirl(path, "", 1)
 	print("Files in "..path)
-	call(print, list)
+	local i
+	local j
+	local n=getn(list)
+	local w
+	local h
+	w,h = consolesize()
+	h = h-2
+	for i=0,n/h, 1 do
+		for j=1, h, 1 do
+			local k = i*h + j
+			if list[k] then
+				print (strsub(list[k], l+2))
+			end
+		end
+		if list[(i+1)*h] then
+			getchar()
+		end
+	end
 
 end
 addhelp(ls, [[print[[ls([path]) : list files into current or given directory]]]])
@@ -75,3 +94,4 @@ end
 function rename(from, to)
 	return %rename(fullpath(from), fullpath(to))
 end
+

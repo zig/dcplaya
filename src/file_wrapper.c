@@ -15,9 +15,13 @@ FILE *fopen(const char *name, const char *attr)
   // why isn't it a bitfield ??
   // makes things more complicated here ...
   if (strchr(attr, 'w')) {
-    mode |= O_WRONLY;
     if (strchr(attr, 'r'))
       mode = O_RDWR;
+    else {
+      if (!strchr(attr, "+"))
+	fs_unlink(name);
+      mode |= O_WRONLY;
+    }
   } else if (strchr(attr, 'r'))
     mode |= O_RDONLY;
 

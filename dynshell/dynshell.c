@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.11 2002-09-16 07:06:19 zig Exp $
+ * @version    $Id: dynshell.c,v 1.12 2002-09-16 23:57:11 zig Exp $
  */
 
 #include <stdio.h>
@@ -149,7 +149,7 @@ static int r_path_load(lua_State * L, char *path, unsigned int level, const char
 
     strcpy(path_end+1, de->name);
     count++;
-    printf("%d %s\n", count, path);
+    //printf("%d %s\n", count, path);
     lua_pushnumber(L, count);
     lua_pushstring(L, path);
     lua_settable(L, 1);
@@ -204,13 +204,16 @@ static int lua_path_load(lua_State * L)
   use_ext = 0;
 
   // get possibly next parameters and guess their meaning
-  for (i=2; i<=nparam; i++) {
-    if (lua_isstring(L, i)) { // this is probably the extension parameter
-      strcpy(ext, lua_tostring(L, i)/*, sizeof(ext)*/);
-      use_ext = 1;
-    } else { // otherwise we assume max_recurse parameter
-      max_recurse = lua_tonumber(L, i);
-    }
+  i = 2;
+  if (i<=nparam && lua_isstring(L, i)) {
+    strcpy(ext, lua_tostring(L, i)/*, sizeof(ext)*/);
+    use_ext = 1;
+  } 
+
+  i = 3;
+  if (i<=nparam && lua_isnumber(L, i)) {
+    max_recurse = lua_tonumber(L, i);
+    //printf("i = %d\n", i);
   }
 
   lua_settop(L, 0);
