@@ -25,6 +25,7 @@ function ik()
    if not ik_anim_defs then return end
 
    if not dofile("addons/ik/ik_anim.lua") then return end
+   if not dofile("addons/ik/ik_colide.lua") then return end
 
    local ik_sprites = {}
    local ik_anims = {}
@@ -77,7 +78,7 @@ function ik()
 	 for ia,va in %ik_target_boxes do
 	    if in_box(box, va) then
 	       if not %ik_sprites[i].targets then
-		  print ("creating targets for "..i)
+--		  print ("creating targets for "..i)
 		  %ik_sprites[i].targets = {}
 	       end
 	       %ik_sprites[i].targets[ia] =  va - { x1+x,y1+y,0,0,0 }
@@ -186,6 +187,51 @@ function ik()
 	 ik_anim_play(anim, frame_to_second(framecounter()))
       end
    end
+
+   function rand(n)
+      return abs(random(n))
+   end
+
+
+   function ik_create_ball()
+      local x = 200
+      local y = -rand(50) --- $$$ rand() fix sign bug (should be now ok)
+      
+      local w,h = rand(7)+8
+      local color = {1,0,0,1}
+      local box = { -w+x, -w+y, 2*w, 2*w, 1 }
+      local speed = rand(10)+30
+
+      function ik_move_ball(ball, elapsed_time)
+	 local speed = ball.speed * elapsed_time
+	 local x,y = ball.dx*speed, ball.dy*speed
+	 ball.attack[1], ball.attack[2] = ball.attack[1]+x, ball.attack[2]+y
+      end
+
+      function ik_draw_ball(ball,dl)
+	 dl_draw_box1(dl,
+		      ball.attack[1], ball.attack[2],
+		      ball.attack[1]+ball.attack[3],
+		      ball.attack[2]+ball.attack[4],
+		      ball.z,
+		      ball.color[1], ball.color[2],
+		      ball.color[3],ball.color[4])
+      end
+
+      local ball = {
+	 z = 30,
+	 dx = -1,
+	 dy = 0,
+	 attack = box,
+	 targets = { box },
+	 color = color,
+	 speed = speed,
+	 update = ik_move_ball,
+	 draw = ik_draw_ball,
+      }
+
+      return ball
+   end
    
    function ik_test_anim()
       local key
@@ -200,6 +246,7 @@ function ik()
       dl_draw_box1(dl,-128,1,128,3,0, 1,1,0,0)
 
       cond_connect(1)
+      local balls = { n=0 }
 
       local player = {
 	 id = 2,
@@ -207,9 +254,22 @@ function ik()
 	 status = "salut",
 	 anim = nil,
       }
+
+      player.cont = controler_read(player.id)
+      if not player.cont then
+	 player.id = 1
+	 cond_connect(0)
+	 player.cont = controler_read(player.id)
+	 if not player.cont then
+	    print("No controler found")
+	    cond_connect(-1)
+	    return
+	 end
+      end
+
       player.anim = ik_anim_start(%ik_anims[player.status], 0.1)
-      print("init : "..player.anim.ref.name)
-      print(framecounter())
+--      print("init : "..player.anim.ref.name)
+--      print(framecounter())
       evt_peekchar() -- Reset time counter
 
       -- wait a while.
@@ -281,6 +341,54 @@ function ik()
 	    print("starting ["..tostring(player.status).."]")
 	 end
 
+
+
+	 -- Generate new balls
+	 ball_generate_time = (ball_generate_time or 0) - elapsed_time
+	 if balls.n < 5 and ball_generate_time < 0 then
+	    ball_generate_time = rand(1)+0.5
+	    dlist_insert(balls, "first", "last",
+			 ik_create_ball()
+			 , "prev", "next", "owner")
+	    balls.n = balls.n+1
+	 end
+
+	 -- Colision
+	 local i,ball
+	 local player_sprite = player.anim.ref[player.anim.cur_key].sprite
+	 local player_attack = player_sprite.attack
+	 local player_targets = player_sprite.targets
+
+	 if player_attack then
+	    ball=balls.first
+	    while ball do
+	    local next = ball.next
+--	       dump(ball.targets[1])
+	       local colide = ik_colides(player_attack, ball.targets)
+	       if colide then
+--		  dump(colide)
+-- 		  dlist_remove("first", "last", ball, "prev", "next", "owner")
+ 		  balls.n = balls.n-1
+		  ball.dx = -ball.dx
+		  ball.targets = nil
+		  ball.color = ball.color * 0.5
+	       end
+	       ball = next
+	    end
+	 end
+
+	 if player_targets then
+	    ball=balls.first
+	    while ball do
+	       local colide = ik_colides(ball.attack, player_targets)
+	       if colide then
+ 		  balls.n = balls.n-1
+		  ball.color = {0.5, 1, 0, 0}
+	       end
+	       ball = ball.next
+	    end
+	 end
+				      
 	 -- Draw sprite
 	 dl_clear(dl1)
 	 if player.anim then
@@ -288,17 +396,31 @@ function ik()
 			 format("%q %.2f", player.anim.ref.name,
 				elapsed_time * 60))
 	    ik_anim_draw(player.anim, dl1,1,1,1)
-	    dl_set_active2(dl1,dl2,1)
-	    dl1,dl2 = dl2,dl1
 	    ik_anim_play(player.anim, elapsed_time)
 	 end
+	 
+	 -- Draw balls
+	 ball=balls.first
+	 while ball do
+	    local next = ball.next
+	    ball:draw(dl1)
+	    ball:update(elapsed_time)
+	    if ball.attack[1] < -10 or ball.attack[1] > 300 then
+	       dlist_remove("first", "last", ball, "prev", "next", "owner")
+	       balls.n = balls.n-1
+	    end
+
+	    ball = next
+	 end
+
+	 dl_set_active2(dl1,dl2,1)
+	 dl1,dl2 = dl2,dl1
 	 
 	 key = evt_peekchar()
       end
 
       cond_connect(-1)
    end
-
 
    ik_dl = nil
    if not ik_create_sprites() then return end
