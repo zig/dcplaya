@@ -416,9 +416,6 @@ static void shell_register_lua_commands()
   }
 
   
-  dynshell_command("dofile (home..[[dcplayarc.lua]])");
-
-
   //lua_register(shell_lua_state, "malloc_stats", lua_malloc_stats);
 }
 
