@@ -3,7 +3,7 @@
  * @brief     SHAtranslator "C" wrapper
  * @date      2002/09/27
  * @author    Ben(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAwrapper.cxx,v 1.4 2002-12-16 23:39:36 ben Exp $
+ * @version   $Id: SHAwrapper.cxx,v 1.5 2002-12-20 23:38:37 ben Exp $
  */
 
 #include "SHAwrapper/SHAwrapper.h"
@@ -31,14 +31,16 @@ static SHAwrapperImage_t * SHAwrapperLoad(SHAtranslator * t,
   char *data;
   SHAtranslatorResult result;
   SHAstreamMem out;
+  const char * ext = t->Extension()[0];
 
   if (in->SeekTo(pos) == -1) {
+	SDERROR("Translator [%s] : Can't seek to position [%d].\n", ext, pos);
     return 0;
   }
 
   /* Get image info */
   if (t->Info(in, &result) < 0) {
-    SDERROR("[%s] : [%s]\n", __FUNCTION__, result.ErrorStr());
+    SDERROR("Translator [%s] : [%s]\n", ext, result.ErrorStr());
     return 0;
   }
 //    SDDEBUG("type    : %x\n", result.data.image.type);
@@ -48,24 +50,27 @@ static SHAwrapperImage_t * SHAwrapperLoad(SHAtranslator * t,
     
   /* Seek back to start of input stream */
   if (in->SeekTo(pos) == -1) {
+	SDERROR("Translator [%s] : Can't seek to position [%d].\n", ext, pos);
     return 0;
   }
   size = TotalBytes(result);
   data = new char[size];
   if (!data) {
-    SDERROR("[%s] : malloc error\n", __FUNCTION__);
+    SDERROR("Translator [%s] : malloc (%d bytes) error.\n", ext, size);
     return 0;
   }
 
   /* Open memory stream in write mode */
   if (out.Open(data, size, 2)) {
+    SDERROR("Translator [%s] : Open output memory [%p,%d] error.\n",
+			ext,data,size);
     delete [] data;
     return 0;
   }
 
   /* Try to load image */
   if (t->Load(&out, in, &result) < 0) {
-    SDERROR("[%s] : [%s]\n", __FUNCTION__, result.ErrorStr());
+    SDERROR("Translator [%s] : [%s]\n", ext, result.ErrorStr());
     delete [] data;
     data = 0;
   }
@@ -142,6 +147,7 @@ static SHAwrapperImage_t * SHAwrapperLoad(SHAstream * in)
   /* Save input stream starting position. */
   pos = in->Tell();
   if (pos == -1) {
+ 	SDERROR("[%s] : Can't get file pointer position.\n", __FUNCTION__);
     return 0;
   }
 
@@ -168,6 +174,7 @@ SHAwrapperImage_t * SHAwrapperLoadFile(const char *fname)
   /* Open input stream */
   err = in.Open(fname, "rb");
   if (err) {
+	SDERROR("Open file [%s] failed\n",fname);
     return 0;
   }
 
@@ -180,6 +187,7 @@ SHAwrapperImage_t * SHAwrapperLoadMemory(void *buffer, int size)
 
   /* Open input stream */
   if (in.Open((char *)buffer, size, 1)) {
+	SDERROR("Open memory [%p,%d] failed\n",buffer,size);
     return 0;
   }
 

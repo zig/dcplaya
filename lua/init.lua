@@ -4,7 +4,7 @@
 --- @author   benjamin gerard <ben@sashipa.com>
 --- @brief    Fundamental lua stuff.
 ---
---- $Id: init.lua,v 1.13 2002-12-16 13:21:54 zigziggy Exp $
+--- $Id: init.lua,v 1.14 2002-12-20 23:38:37 ben Exp $
 ---
 
 -- do this file only once !
@@ -229,6 +229,11 @@ end -- if not init_lua then
 --- the libpath parameter allows to override the default LIBRARY_PATH
 --
 function dolib(name,force,libpath)
+   -- Create global loaded library table if not exists.
+   if not loaded_libraries then
+	  loaded_libraries = {}
+   end
+
 	if not libpath then
 		libpath=LIBRARY_PATH
 	end
@@ -239,33 +244,31 @@ function dolib(name,force,libpath)
 		print("dolib : bad arguments")
 		return
 	end
---	print(type_dump(libpath,"libpath"))
-
-	local test = "return "..name.."_loaded"
-	local reset = name.."_loaded=nil"
 
 	function loadlib()
-		local i,p
-		for i,p in %libpath do
---			print(format("searching in %q", tostring(p)))
-			if type(p) == "string" then
-				p = p.."lua/"..%name..".lua"
-			        if dofile(p) and dostring(%test) then
-					return p
-				end
-			end
-		end
+	   local i,p
+	   loaded_libraries[%name] = 2
+	   for i,p in %libpath do
+		  --			print(format("searching in %q", tostring(p)))
+		  if type(p) == "string" then
+			 p = canonical_path(p.."lua/"..%name..".lua")
+			 if dofile(p) then
+				loaded_libraries[%name] = 1
+				return p
+			 end
+		  end
+	   end
+	   loaded_libraries[%name] = 1
 	end
-
-
-	if dostring(test) and not force then
-		print(format("Library %q already loaded",name))
-		return 1
+	
+	if loaded_libraries[name] and not force then
+	   print(format("Library %q " ..
+					((loaded_libraries[name] == 1 and "already loaded") or
+					 "currently loading"),name))
+	   return 1
 	end
 	print(format("Loading library %q",name))
-	dostring(reset)
-	local path
-	path = loadlib()
+	local path = loadlib()
 	if not path then
 		print(format("Load library %q failed", name))
 		return

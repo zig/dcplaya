@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.8 2002-12-19 10:59:48 zigziggy Exp $
+--- $Id: desktop.lua,v 1.9 2002-12-20 23:38:37 ben Exp $
 ---
 
 if not dolib("evt") then return end
@@ -256,6 +256,4 @@ function dskt_create()
    return app
 end
 
-dskt_create()
-
-desktop_loaded = 1
+return dskt_create() ~= nil

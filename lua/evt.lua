@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.16 2002-12-16 13:21:54 zigziggy Exp $
+-- $Id: evt.lua,v 1.17 2002-12-20 23:38:37 ben Exp $
 --
 
 
@@ -405,33 +405,25 @@ function evt_init()
    evt_create_console_app()
 
    print [[EVT SYSTEM INITIALIZED]]
-
    return 1
-
 end
 
 evt_included = 1
 evt_loaded = 1
 
-evt_init()
+if not evt_init() then return end
 
 -- enhance the desktop application with the application switcher
-dolib("desktop", 1)
-
+if not dolib("desktop", 1) then return end
 
 if nil then
-
    -- some tests
-
    evt_peek()
-
-
    print (evt_desktop_app.owner)
    evt_app_remove(evt_desktop_app)
    evt_app_remove(evt_desktop_app)
    evt_app_insert_first(evt_root_app, evt_desktop_app)
-
-
    getchar()
-
 end
+
+return 1

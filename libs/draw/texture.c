@@ -4,7 +4,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.2 2002-12-16 23:39:36 ben Exp $
+ * $Id: texture.c,v 1.3 2002-12-20 23:38:37 ben Exp $
  */
 
 #include <stdlib.h>
@@ -360,6 +360,7 @@ texid_t texture_create_file(const char *fname, const char * formatstr)
   texture_t * t;
 
   if (!fname) {
+	SDERROR("Invalid NULL filename\n");
 	return -1;
   }
 
@@ -394,6 +395,7 @@ texid_t texture_create_file(const char *fname, const char * formatstr)
   /* Load image file to memory. */
   img = LoadImageFile(fname);
   if (!img) {
+	SDERROR("Load image file [%s] failed\n", fname);
     goto error;
   }
   SDDEBUG("type    : %x\n", img->type);
