@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist_driver.h,v 1.3 2002-10-28 18:53:41 benjihan Exp $
+ * $Id: entrylist_driver.h,v 1.4 2002-11-04 22:41:53 benjihan Exp $
  */
 
 #ifndef _ENTRYLIST_DRIVER_H_
@@ -47,5 +47,15 @@ int lua_entrylist_init(lua_State * L);
     }
 
 #define EL_FUNCTION_END() }
+
+#define GET_ENTRYLIST(EL,N) \
+    if (lua_tag(L, N) != entrylist_tag) { \
+      printf("%s : parameter #%d is not an entry-list\n",__FUNCTION__, N); \
+      return 0; \
+    } \
+    if ((EL) = lua_touserdata(L, 1), !(EL)) { \
+      printf("%s : parameter #%d, null pointer.\n", __FUNCTION__, N); \
+      return 0; \
+    }
 
 #endif /* #define _ENTRYLIST_DRIVER_H_ */

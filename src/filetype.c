@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   Deal with file types and extensions.
  *
- * $Id: filetype.c,v 1.5 2002-10-25 01:03:54 benjihan Exp $
+ * $Id: filetype.c,v 1.6 2002-11-04 22:41:53 benjihan Exp $
  */
 
 #include <string.h>
@@ -15,6 +15,40 @@ typedef struct {
   int type;
 } _ext_list_t;
 
+#define MAX_PLAY_TYPES 16u
+static const char * playables[MAX_PLAY_TYPES];
+
+static int filetype_findfree(void)
+{
+  int i;
+  for (i=0; i<MAX_PLAY_TYPES; ++i) {
+	if (!playables[i]) {
+	  return i;
+	}
+  }
+  return -1;
+}
+
+int filetype_add(const char *exts)
+{
+  int i;
+  i = filetype_findfree();
+  if (i < 0) {
+	return i;
+  }
+  playables[i] = exts;
+  return i + FILETYPE_PLAYABLE;
+}
+
+void filetype_del(int type)
+{
+  type -= FILETYPE_PLAYABLE;
+  if ((unsigned int)type >= MAX_PLAY_TYPES) {
+	return;
+  }
+  playables[type] = 0;
+}
+
 /* Find extension ext in extension list exts */
 static int find_ext(const char *ext, const _ext_list_t *exts)
 {
@@ -23,6 +57,32 @@ static int find_ext(const char *ext, const _ext_list_t *exts)
   for (i=0; exts[i].ext && stricmp(ext, exts[i].ext); ++i)
     ;
   return exts[i].type;
+}
+
+static int extfind(const char * extlist, const char * ext)
+{
+  if (extlist && ext) {
+	int len;
+	while (len = strlen(extlist), len > 0) {
+	  if (!stricmp(ext,extlist)) {
+		return 1;
+	  }
+	  extlist += len+1;
+	}
+  }
+  return 0;
+}
+
+static int find_playable(const char *ext)
+{
+  int i;
+
+  for (i=0; i<MAX_PLAY_TYPES; ++i) {
+	if (extfind(playables[i], ext)) {
+	  return FILETYPE_PLAYABLE + i;
+	}
+  }
+  return FILETYPE_UNKNOWN;
 }
 
 /* Get type for a regular file (not a dir!) */
@@ -44,7 +104,15 @@ int filetype_regular(const char * fname)
   e = fn_ext(fname);
   if (e && e[0]) {
     type = find_ext(e, ext);
-	if (type & FILETYPE_GZ) {
+	if (FILETYPE(type) == FILETYPE_UNKNOWN) {
+	  int playtype;
+	  playtype = find_playable(e);
+	  if (playtype) {
+		type = (type & FILETYPE_GZ) | playtype;
+	  }
+	}
+
+	if (type == (FILETYPE_GZ | FILETYPE_UNKNOWN)) {
 	  const char * e2;
 	  unsigned int len;
 	  e2 = fn_secondary_ext(fname,0);

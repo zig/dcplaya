@@ -5,7 +5,7 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist_driver.c,v 1.3 2002-10-28 18:53:41 benjihan Exp $
+ * $Id: entrylist_driver.c,v 1.4 2002-11-04 22:41:53 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -15,6 +15,7 @@
 #include "lef.h"
 #include "driver_list.h"
 #include "entrylist_driver.h"
+#include "entrylist_path.h"
 #include "entrylist_loader.h"
 
 
@@ -91,6 +92,9 @@ static int driver_init(any_driver_t *d)
   entries = 0;
   init = 0;
 
+  if (elpath_init()) {
+	goto error;
+  }
   lists = allocator_create(8, sizeof(el_list_t));
   if (!lists) {
 	printf(DRIVER_NAME "_driver_init : list allocator creation failed.\n");
@@ -123,6 +127,8 @@ static int driver_shutdown(any_driver_t * d)
 	allocator_destroy(entries);
 	entries = 0;
   }
+  elpath_shutdown();
+
   return 0;
 }
 
@@ -234,7 +240,7 @@ static luashell_command_description_t driver_commands[] = {
   {
     DRIVER_NAME"_load", 0,                /* long and short names */
     "print [["
-	DRIVER_NAME"_load(entrylist, path) : "
+	DRIVER_NAME"_load(entrylist, path [,filter]) : "
 	"Load a directory into entry-list."
     "]]",                                 /* usage */
     SHELL_COMMAND_C, lua_entrylist_load   /* function */

@@ -4,7 +4,7 @@
  *  @date   2002/10/22
  *  @brief  Resizable array of indirect elements of any size.
  *
- *  $Id: iarray.h,v 1.3 2002-10-24 18:58:49 benjihan Exp $
+ *  $Id: iarray.h,v 1.4 2002-11-04 22:41:53 benjihan Exp $
  */
 
 #ifndef _IARRAY_H_
@@ -14,7 +14,7 @@
 
 typedef void * (*iarray_alloc_f)(unsigned int size, void *cookie);
 typedef void (*iarray_free_f)(void * addr, void *cookie);
-typedef int (*iarray_sort_f)(const void * a, const void * b);
+typedef int (*iarray_cmp_f)(const void * a, const void * b);
 
 typedef struct {
   int size;
@@ -39,6 +39,7 @@ int iarray_clear(iarray_t *a);
 
 void * iarray_addrof(iarray_t *a, int idx);
 int iarray_get(iarray_t *a, int idx, void * elt, int eltsize);
+int iarray_find(iarray_t *a, const void * what, iarray_cmp_f cmp);
 iarray_elt_t * iarray_dup(iarray_t *a, int idx);
 int iarray_set(iarray_t *a, int idx, void *elt, unsigned int eltsize);
 int iarray_insert(iarray_t *a, int idx, void *elt, unsigned int eltsize);
@@ -50,7 +51,7 @@ int iarray_trylock(iarray_t *a);
 int iarray_lockcount(const iarray_t *a);
 
 void iarray_shuffle(iarray_t *a, int idx, int n);
-void iarray_sort(iarray_t *a, iarray_sort_f cmp);
-void iarray_sort_part(iarray_t *a, int idx, int n, iarray_sort_f cmp);
+void iarray_sort(iarray_t *a, iarray_cmp_f cmp);
+void iarray_sort_part(iarray_t *a, int idx, int n, iarray_cmp_f cmp);
 
 #endif /* #define _IARRAY_H_ */

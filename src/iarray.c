@@ -4,7 +4,9 @@
  *  @date   2002/10/22
  *  @brief  Resizable array of indirect elements of any size.
  *
- *  $Id: iarray.c,v 1.3 2002-10-24 18:58:49 benjihan Exp $
+ *  $Id: iarray.c,v 1.4 2002-11-04 22:41:53 benjihan Exp $
+ *
+ *  @TODO Add callback for copy, clear ... operations
  */
 
 #include <stdlib.h>
@@ -295,6 +297,20 @@ int iarray_remove(iarray_t *a, int idx)
   return idx;
 }
 
+int iarray_find(iarray_t *a, const void * what, iarray_cmp_f cmp)
+{
+  int i;
+
+  iarray_lock(a);
+  for (i=0; i<a->n && cmp(what, a->elt[i].addr) ; ++i)
+	;
+  if (i >= a->n) {
+	i = -1;
+  }
+  iarray_unlock(a);
+  return i;
+}
+
 static void swap(iarray_elt_t * a, iarray_elt_t * b)
 {
   iarray_elt_t tmp = *a;
@@ -327,7 +343,7 @@ void iarray_shuffle(iarray_t *a, int idx, int n)
   iarray_unlock(a);
 }
 
-static int find_max(const iarray_elt_t * e, int n, iarray_sort_f cmp)
+static int find_max(const iarray_elt_t * e, int n, iarray_cmp_f cmp)
 {
   int i, k=0;
   const iarray_elt_t * ek = e;
@@ -341,7 +357,7 @@ static int find_max(const iarray_elt_t * e, int n, iarray_sort_f cmp)
   return k; 
 }
 
-static void sort_part(iarray_t *a, int idx, int n, iarray_sort_f cmp)
+static void sort_part(iarray_t *a, int idx, int n, iarray_cmp_f cmp)
 {
   iarray_elt_t * e;
 
@@ -366,14 +382,14 @@ static void sort_part(iarray_t *a, int idx, int n, iarray_sort_f cmp)
   }
 }
 
-void iarray_sort(iarray_t *a, iarray_sort_f cmp)
+void iarray_sort(iarray_t *a, iarray_cmp_f cmp)
 {
   iarray_lock(a);
   sort_part(a, 0, a->n, cmp);
   iarray_unlock(a);
 }
 
-void iarray_sort_part(iarray_t *a, int idx, int n, iarray_sort_f cmp)
+void iarray_sort_part(iarray_t *a, int idx, int n, iarray_cmp_f cmp)
 {
   iarray_lock(a);
   if (idx < 0) {

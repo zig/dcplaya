@@ -3,7 +3,7 @@
  * @author  ben(jamin) gerard <ben@sashipa.com> 
  * @brief   Deal with file types and extensions.
  *
- * $Id: filetype.h,v 1.6 2002-10-25 01:03:54 benjihan Exp $
+ * $Id: filetype.h,v 1.7 2002-11-04 22:41:53 benjihan Exp $
  */
 
 #ifndef _FILETYPE_H_
@@ -41,7 +41,7 @@ DCPLAYA_EXTERN_C_START
 #define FILETYPE_PLAYABLE (256*4)
 
 /** Gzipped file flag. */
-#define FILETYPE_GZ       (1<<31)
+#define FILETYPE_GZ       (1<<16)
 
 /** Get a FILETYPE without flags. */
 #define FILETYPE(TYPE)    ((TYPE)&~FILETYPE_GZ)
@@ -76,6 +76,17 @@ int filetype_regular(const char * fname);
  * @return FILETYPE
  */
 int filetype_dir(const char * fname);
+
+/** Add a new "playable" type.
+ *
+ * @return FILETYPE
+ */
+int filetype_add(const char *exts);
+
+/** Remove a "playable" type.
+ * @see filetype_add()
+ */
+void filetype_del(int type);
 
 DCPLAYA_EXTERN_C_END
 

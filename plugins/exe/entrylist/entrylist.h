@@ -5,27 +5,29 @@
  * @date     2002/10/23
  * @brief    entry-list lua extension plugin
  * 
- * $Id: entrylist.h,v 1.2 2002-10-25 01:03:54 benjihan Exp $
+ * $Id: entrylist.h,v 1.3 2002-11-04 22:41:53 benjihan Exp $
  */
 
 #ifndef _ENTRYLIST_H_
 #define _ENTRYLIST_H_
 
 #include "iarray.h"
+#include "entrylist_path.h"
 
 /** Entrylist standard entries as provided by entries allocator. */
 typedef struct {
-  int  type;        /**< File Type.                                 */ 
-  int  size;        /**< Size of entry in bytes (-1 for dir).       */
-  int  iname;       /**< Name (displayed). Points into buffer.      */
-  int  ifile;       /**< Filename (leaf only).  Points into buffer. */
-  char buffer[128]; /**< String buffer.                             */ 
+  int  type;         /**< File Type.                                 */
+  int  size;         /**< Size of entry in bytes (-1 for dir).       */
+  int  iname;        /**< Name (displayed). Points into buffer.      */
+  int  ifile;        /**< Filename (leaf only).  Points into buffer. */
+  el_path_t * path ; /**< Entry path.                                */
+  char buffer[128];  /**< String buffer.                             */ 
 } el_entry_t;
 
 /** Entrylist type. */
 typedef struct {
   iarray_t a;         /**< Holds entrylist elements.                */
-  const char * path;        /**< The path used to fill this entry list.   */
+  el_path_t * path ;  /**< The path used to fill this entry list.   */
   int loading;        /**< Set if currently loading.                */ 
 } el_list_t;
 

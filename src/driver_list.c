@@ -15,8 +15,6 @@ driver_list_t obj_drivers;
 driver_list_t exe_drivers;
 driver_list_t vis_drivers;
 
-static int file_type;
-
 /** Initialize a driver list */
 int driver_list_init(driver_list_t *dl, const char *name)
 {
@@ -35,7 +33,6 @@ int driver_list_init_all()
   err |= driver_list_init(&obj_drivers, "obj");
   err |= driver_list_init(&exe_drivers, "exe");
   err |= driver_list_init(&vis_drivers, "vis");
-  file_type = FILETYPE_PLAYABLE;
 
   return err;
 }
@@ -74,10 +71,10 @@ int driver_list_register(driver_list_t *dl, any_driver_t * driver)
   /* $$$ This test should not be here. Drivers have nothing to do with
      file type. */
   if (driver->type == INP_DRIVER) {
-    ((inp_driver_t *)driver)->id = file_type++;
+	inp_driver_t * d = (inp_driver_t *) driver;
+	d->id = filetype_add(d->extensions);
+    SDDEBUG("Driver '%s' : filetype %d\n", driver->name, d->id);
   }
-
-/*   SDDEBUG("List [%s] : added #%d [%s]\n", dl->name, dl->n, dl->drivers->name); */
 
   return 0;
 }
@@ -120,6 +117,10 @@ int driver_list_unregister(driver_list_t *dl, any_driver_t * driver)
     return -1;
   }
 
+  if (dl == &inp_drivers) {
+	filetype_del(((inp_driver_t *)driver)->id);
+  }
+
   for (p=0, d=dl->drivers; d && d != driver; p=d, d=d->nxt)
     ;
   if (d) {
@@ -152,72 +153,20 @@ any_driver_t * driver_list_search(driver_list_t *dl, const char *name)
  ** Input driver 
  **************************************************************/
 
-static int ToUpper(int c)
+static int extfind(const char * extlist, const char * ext)
 {
-  if (c>='a' && c<='z') c += 'A'-'a';
-  return c;
+  if (extlist && ext) {
+	int len;
+	while (len = strlen(extlist), len > 0) {
+	  if (!stricmp(ext,extlist)) {
+		return 1;
+	  }
+	  extlist += len+1;
+	}
+  }
+  return 0;
 }
 
-/** $$$ Ben: apparemant ya un bug ici : .lef_ est pris contre .lef !! */
-static const char * extcmp(const char * extlist, const char * ext)
-{
-  int a,b;
-
-  a = ToUpper(*extlist++);
-  b = ToUpper(*ext++);
-  while (a && a==b) {
-    a = ToUpper(*extlist++);
-    b = ToUpper(*ext++);
-  }
-
-  if (!a) {
-    if (!b) {
-      /* Both are null : found it */
-      extlist = 0;
-    }
-  } else {
-    while( *extlist++ )
-      ;
-  }
-  return extlist;
-}
-
-static int extfind(const char *extlist, const char * ext)
-{
-  while (extlist && *extlist) {
-    extlist = extcmp(extlist, ext);
-  }
-  return extlist == 0;
-}
-
-#if 0
-static const char * get_ext(const char *name)
-{
-  const char * e, * p;
-  if (!name) {
-    return 0;
-  }
-  e = strrchr(name,'.');
-  p = strrchr(name,'/');
-  if (e<p) {
-    e = 0;
-  } else if (ToUpper(e[1]) == 'G' && ToUpper(e[2]) == 'Z' && !e[3]) {
-    /* .gz found, try to find secondary extension. */
-    const char *e2;
-
-    for (e2=e-1; e2 >= name && *e2 != '/'; --e2) {
-      if (*e2 == '.') {
-		e = e2;
-		break;
-      }
-    }
-  }
-
-  /*   SDDEBUG("%s([%s] := [%s]\n", __FUNCTION__, name, e); */
-
-  return e;
-}
-#endif
 
 inp_driver_t * inp_driver_list_search_by_extension(const char *ext)
 {

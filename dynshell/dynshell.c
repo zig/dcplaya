@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.37 2002-10-30 20:01:19 benjihan Exp $
+ * @version    $Id: dynshell.c,v 1.38 2002-11-04 22:41:53 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -1201,6 +1201,101 @@ static int lua_stop(lua_State * L)
   return 1;
 }
 
+static int convert_info(lua_State * L, playa_info_t * info)
+{
+  char * r = (char *)-1;
+
+  if (!info || !info->valid) {
+	return 0;
+  }
+  
+  lua_settop(L,0);
+  lua_newtable(L);
+
+  lua_pushstring(L,"valid");
+  lua_pushnumber(L, info->valid);
+  lua_settable(L,1);
+  
+  lua_pushstring(L,"bits");
+  lua_pushnumber(L, 1<<(playa_info_bits(info, -1)+3));
+  lua_settable(L,1);
+
+  lua_pushstring(L,"stereo");
+  lua_pushnumber(L, playa_info_stereo(info, -1));
+  lua_settable(L,1);
+
+  lua_pushstring(L,"frq");
+  lua_pushnumber(L, playa_info_frq(info, -1));
+  lua_settable(L,1);
+
+  lua_pushstring(L,"time_ms");
+  lua_pushnumber(L, (float)playa_info_time(info, -1) / 1024.0f);
+  lua_settable(L,1);
+
+  lua_pushstring(L,"bps");
+  lua_pushnumber(L, playa_info_bps(info, -1));
+  lua_settable(L,1);
+
+  lua_pushstring(L,"bytes");
+  lua_pushnumber(L, playa_info_bytes(info, -1));
+  lua_settable(L,1);
+
+  lua_pushstring(L,"description");
+  lua_pushstring(L,playa_info_desc(info, r));
+  lua_settable(L,1);
+
+  lua_pushstring(L,"artist");
+  lua_pushstring(L,playa_info_artist(info, r));
+  lua_settable(L,1);
+
+  lua_pushstring(L,"album");
+  lua_pushstring(L,playa_info_album(info, r));
+  lua_settable(L,1);
+
+  lua_pushstring(L,"track");
+  lua_pushstring(L,playa_info_track(info, r));
+  lua_settable(L,1);
+
+  lua_pushstring(L,"title");
+  lua_pushstring(L,playa_info_title(info, r));
+  lua_settable(L,1);
+
+  lua_pushstring(L,"year");
+  lua_pushstring(L,playa_info_year(info, r));
+  lua_settable(L,1);
+
+  lua_pushstring(L,"genre");
+  lua_pushstring(L,playa_info_genre(info, r));
+  lua_settable(L,1);
+
+  lua_pushstring(L,"comments");
+  lua_pushstring(L,playa_info_comments(info, r));
+  lua_settable(L,1);
+
+  lua_pushstring(L,"format");
+  lua_pushstring(L,playa_info_format(info));
+  lua_settable(L,1);
+
+  lua_pushstring(L,"time");
+  lua_pushstring(L,playa_info_timestr(info));
+  lua_settable(L,1);
+
+  return 1;
+}
+
+/* [file, [track]] */ 
+static int lua_music_info(lua_State * L)
+{
+  int err;
+  playa_info_t * info;
+
+  info = playa_info_lock();
+  err = convert_info(L,info);
+  playa_info_release(info);
+
+  return err;
+}
+
 /* THIS IS REALLY DIRTY AND TEMPORARY :)) */
 #include "controler.h"
 /* defined in controler.c */
@@ -1591,7 +1686,14 @@ static luashell_command_description_t commands[] = {
     SHELL_COMMAND_C, lua_fade
   },
 
-
+  {
+    "info",
+    0,
+    "print([["
+    "info([filename, [track]]) :\n"
+    "]])",
+    SHELL_COMMAND_C, lua_music_info
+  },
 
   { 
     "cond_connect",
