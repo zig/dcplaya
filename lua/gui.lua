@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.30 2002-12-15 23:24:19 zigziggy Exp $
+--- $Id: gui.lua,v 1.31 2002-12-16 21:37:07 zigziggy Exp $
 ---
 
 --
@@ -990,7 +990,7 @@ function dialog_test(parent)
    return dial
 end
 
-if 1 then
+if nil then
    dial = dialog_test()
    dialog_test(dial)
 end
