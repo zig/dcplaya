@@ -5,7 +5,7 @@
  * @date       2002/09/04
  * @brief      Debug fonctions.
  *
- * @version    $Id: sysdebug.c,v 1.5 2002-09-12 19:18:41 ben Exp $
+ * @version    $Id: sysdebug.c,v 1.6 2002-09-13 00:27:11 ben Exp $
  */
 
 #include <stdarg.h>
@@ -130,8 +130,8 @@ void sysdbg_vprintf(const char * file, int line, int level,
     sd_current(sd_cookie, sd_levels[level].twocc, list);
 
     if (!indent) {
-      /* Print "file:line" if no indentation requested */
-      sd_print_location("%s:%d ",file, line);
+      /* Print "file:line: " if no indentation requested */
+      sd_print_location("%s:%d: ",file, line);
     } else {
       /* Or print indentation string */
       sd_current(sd_cookie, &tabs[max_indent-indent], list);

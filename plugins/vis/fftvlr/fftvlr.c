@@ -8,7 +8,7 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.5 2002-09-10 17:36:06 ben Exp $
+ * $Id: fftvlr.c,v 1.6 2002-09-13 00:27:11 ben Exp $
  */
 
 #include <stdlib.h>
@@ -185,13 +185,9 @@ static int fftvlr_start(void)
 
 static void vlr_update(void)
 {
-  const int stp = ((1<<(FFT_LOG_2-1))<<12) / VLR_W;
-  int i,j;
-  const float f0 = VLR_Y / 65536.0f;
-  const float f1 = f0 * 44100.0f / (float)(1<<(FFT_LOG_2-1));
-  const float f  = (f1-f0) / VLR_W;
-  float f2;
+  const float f0 = VLR_Y / 32768.0f;
   vtx_t *vy;
+  int i,j,stp;
 
   /* Scroll FFT towards Z axis */
   for (i=0,vy=v; i<VLR_W*(VLR_H-1); ++i, ++vy) {
@@ -202,11 +198,11 @@ static void vlr_update(void)
 
   /* Update first VLR row with FFT data */
   vy = v + (VLR_H-1) * VLR_W;
-  for (f2=f0, i=j=0; i<VLR_W; ++i, j += stp, f2 += f) {
+  for (i=j=0, stp=(1<<(FFT_LOG_2-1+12))/VLR_W; i<VLR_W; ++i, j += stp) {
     int w = fft_F[j>>12];
-    const float r = 0.85f;
+    const float r = 0.45f;
 
-    vy[i].y = (float)(w * f2 * (1.0f-r)) +  (vy[i-VLR_W].y * r);
+    vy[i].y = (float)(w * f0 * (1.0f-r)) +  (vy[i-VLR_W].y * r);
   }
 
   /* Face normal calculation */

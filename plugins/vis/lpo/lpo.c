@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.3 2002-09-04 18:54:11 ben Exp $
+ * $Id: lpo.c,v 1.4 2002-09-13 00:27:11 ben Exp $
  */
 
 #include <stdio.h>
@@ -12,6 +12,9 @@
 #include "obj_driver.h"
 #include "vupeek.h"
 #include "draw_object.h"
+
+/* $$$ Defined in libdcutils */
+extern int rand();
 
 static obj_driver_t * curobj; /**< Current 3D-object */
 static viewport_t viewport;   /**< Current viewport */
