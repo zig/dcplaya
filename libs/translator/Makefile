@@ -1,6 +1,6 @@
 LIBRARY=yes
 SUBDIRS= SHAblitter SHAR SHAtk SHAtranslator SHAwrapper
-KOS_LOCAL_INCS = -I. -I../../include
+KOS_LOCAL_INCS = -I.. -I../../include
 
 LIB_EXTRA := \
  ./SHAtk/SHAstreamFile.o\

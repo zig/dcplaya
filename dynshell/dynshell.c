@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.39 2002-11-14 23:40:27 benjihan Exp $
+ * @version    $Id: dynshell.c,v 1.40 2002-11-25 20:31:39 ben Exp $
  */
 
 #include <stdio.h>
@@ -1395,8 +1395,6 @@ static int lua_vmutools(lua_State * L)
   return err ? -1 : 0;
 }
 
-	
-
 static int lua_vcolor(lua_State * S)
 {
   vid_border_color(lua_tonumber(S, 1), lua_tonumber(S, 1), lua_tonumber(S, 1));
@@ -1404,7 +1402,11 @@ static int lua_vcolor(lua_State * S)
   return 0;
 }
 
-
+static int lua_clear_cd_cache(lua_State * L)
+{
+  iso_ioctl(0,0,0);  /* clear CD cache ! */
+  return 0;
+}
 
 
 #if 0
@@ -1736,6 +1738,14 @@ static luashell_command_description_t commands[] = {
     "vcolor(r, g, b, a)\n"
     "]])",
     SHELL_COMMAND_C, lua_vcolor
+  },
+  {
+	"clear_cd_cache",
+	0,
+    "print([["
+    "clear_cd_cache()\n"
+    "]])",
+    SHELL_COMMAND_C, lua_clear_cd_cache
   },
 
   {0},

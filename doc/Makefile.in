@@ -2,13 +2,13 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.6 2002-10-30 20:01:19 benjihan Exp $
+# $Id: Makefile.in,v 1.7 2002-11-25 20:31:39 ben Exp $
 #
 
 VERSION = @VERSION@
 DOXYGEN = "@DOXYGEN@"
 
-DEVDOCDIR  	:= . .. ../include
+DEVDOCDIR  	:= . .. ../include  ../libs/draw
 DEVDOCFILES	:= doc.h devdoc.h
 
 LUADOCDIR   := lua
