@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.1 2002-09-03 15:06:07 ben Exp $
+ * $Id: lpo.c,v 1.2 2002-09-04 02:41:05 ben Exp $
  */
 
 #include <stdio.h>
@@ -11,23 +11,42 @@
 #include "vis_driver.h"
 #include "obj_driver.h"
 #include "vupeek.h"
+#include "draw_object.h"
 
 static obj_driver_t * curobj; /**< Current 3D-object */
 static viewport_t viewport;   /**< Current viewport */
+static matrix_t mtx;          /**< Current local matrix */
 static matrix_t projmtx;      /**< Current projection matrix */
+static vtx_t color;           /**< Final Color */
+static vtx_t base_color =      /**< Original color */
+  {
+    0.8f, 0.8f, 0.2f, 0.5f
+  };
+static vtx_t flash_color =     /**< Flashing color */
+  {
+    0.5f, 0.5f, 1.0f, 0.8f
+  };
 
 static vtx_t pos;     /**< Object position */
 static vtx_t angle;   /**< Object rotation */
-static float rspd;    /**< Current rotation speed factor */
 static float flash;
 static float ozoom;
 
-/* Effects parms */
+/* Automatic object changes */
 static int random_mode = 1;
 static int change_cnt;
 static int change_time = 10000;
-static float min_rps = 0.1f;
-static float max_rps = 5.0f;
+
+/* Rotation FX */
+static float rps_min = 0.1f;   /**< Minimum rotation per second */
+static float rps_max = 5.0f;   /**< Maximum rotation per second */
+static float rps_cur;          /**< Current rotation speed factor */
+static float rps_goal;         /**< Rotation to reach */
+static float rps_up = 0.25f;   /**< Smooth factor when rpsd_goal > rps_cur */
+static float rps_dw = 0.1f;    /**< Smooth factor when rpsd_goal < rps_cur */
+
+static float zoom_min = 1.0f;
+static float zoom_max = 5.0f;
 
 /* Previous analysis parms */
 static float opeek_diff;
@@ -43,10 +62,7 @@ static int same_sign(float a, float b)
 static int anim(unsigned int ms)
 {
   const float sec = 0.001f * (float)ms;
-  
-  const float rspd_max = 2.7f;
-  const float rspd_min = 0.2f;  
- 
+
   float sax = 1.0f * sec;
   float say = 1.0f * sec;
   float saz = 1.0f * sec;
@@ -56,93 +72,86 @@ static int anim(unsigned int ms)
   
   /* analysis parms */
   float
-    peek_fact,    /* full range scale factor */
     peek_diff,    /* peek/oldpeek delta */
-    peek_avgdiff, /* peek/avgpeek delta */
-    peek_norm;    /* peek normalized to full range */
+    peek_avgdiff; /* peek/avgpeek delta */
 
-  int
-    max=0,
-    diff_max=0; /* True when respectively peek/peek_diff becomes max */
-   
-  zoom = 0.3f;
+  int max, diff_max;
 
-  /* scale factor */
-
-  if (peek3.dyn) {
-    peek_fact = 1.0f / (float)peek3.dyn;
-  } else {
-    peek_fact = 1.0f;
-  }
-  peek_norm = (float)peek1.dyn * peek_fact;
-
+  /* Read peek values */
   peek = (float)peek1.dyn / 65536.0f;
+  peek_avgdiff = ((float)peek1.dyn - (float)peek3.dyn) / 65536.0f;
   peek_diff = peek - opeek;
+
   max = peek > peek_max;
   if (max) {
     peek_max = peek;
-    //    dbglog(DBG_DEBUG,"+%.2f+ ", peek);
-  } else {
-    peek_max *= 0.9999999f;
   }
-
-  peek_avgdiff = ((float)peek1.dyn - (float)peek3.dyn) / 65536.0f;
 
   if (same_sign(peek_diff,opeek_diff)) {
     peek_diff += opeek_diff;
   } else {
-
     diff_max = opeek_diff > peek_diff_max;
     if (diff_max) {
       peek_diff_max = opeek_diff;
-    } 
-    //if (opeek_diff > 0)
-    //      dbglog(DBG_DEBUG,"[%.2f %.2f] ", opeek_diff, peek_diff_max);
-
-    if (diff_max) {
       flash = opeek_diff * 2.60f;
-      //      dbglog(DBG_DEBUG," *");
-    
-
-      if (opeek_diff >= 0.30f) {
-	zoom += 0.3f;
-	//a->flash = -a->flash;
-	//dbglog(DBG_DEBUG,"$");
-      }
     }
   }
-  peek_diff_max *= 0.995f;
 
-  flash *= 0.9f;
-  if (flash < 0 && flash > -1E-3) {
-    flash = 0;
-  }
-   
-  zoom += peek_norm * 0.5f + peek * 1.1f;
-  //  if (zoom > 100.0f) zoom = 100.0f;
-  
-  if (peek > opeek) {
-    float f = (peek-opeek) * 0.95f;
-    rspd = f * rspd_max + (1.0f-f) * rspd;
-  } else if (peek < opeek) {
-    float f = opeek-peek;
-    rspd = f * rspd_min + (1.0f-f) * rspd;
-  } else {
-    rspd = 0.05f * rspd_min + .95f * rspd;
-  }
-
-  opeek = peek;
-  opeek_diff = peek_diff;  
-
+  /* Calculate zoom factor */
   {
     float r;
+
+    zoom = zoom_min;
+    if (peek_max > 1E-4) {
+      zoom += (zoom_max - zoom_min) * peek / peek_max;
+    }
     r = (zoom > ozoom) ? 0.75f : 0.90f;
     ozoom = ozoom * r + zoom * (1.0f-r);
   }
-  angle.x += sax * rspd;
-  angle.y += say * rspd;
-  angle.z += saz * rspd;
+
+  /* Calculate rotation speed */
+  {
+    float r;
+
+    if (peek_avgdiff >= 0) {
+      rps_goal = rps_min;
+      if (peek_diff_max > 1E-4) {
+	rps_goal += (rps_max - rps_min) * opeek_diff / peek_diff_max;
+      }
+    }
+    r = rps_cur > rps_goal ? rps_up : rps_dw;
+    rps_cur = rps_cur * r + rps_goal * (1.0f - r);
+  } 
+    
+  peek_max *= 0.99f;
+  peek_diff_max *= 0.99f;
+  flash *= 0.9f;
+
+  /* Save for next call */
+  opeek = peek;
+  opeek_diff = peek_diff;  
   
+  /* Move angle */
+  angle.x += sax * rps_cur;
+  angle.y += say * rps_cur;
+  angle.z += saz * rps_cur;
+
+  /* Build local matrix */
+  MtxIdentity(mtx);
+  MtxRotateX(mtx, angle.x);
+  MtxRotateY(mtx, angle.y);
+  MtxRotateZ(mtx, angle.z);
+  MtxScale(mtx, ozoom);
+  mtx[3][0] = pos.x;
+  mtx[3][1] = pos.y;
+  mtx[3][2] = pos.z;
+  
+  /* Build render color : blend base and flash color */
+  color.x = base_color.x * (1.0f-flash) + flash_color.x * flash;
+  color.y = base_color.y * (1.0f-flash) + flash_color.y * flash;
+  color.z = base_color.z * (1.0f-flash) + flash_color.z * flash;
+  color.w = base_color.w * (1.0f-flash) + flash_color.w * flash;
+
   return 0;
 }
 
@@ -210,7 +219,8 @@ static int start(void)
 
   angle.x = angle.y = angle.z = angle.z = 0;
   pos.x = pos.y = pos.z = pos.w = 0;
-  rspd = 0;
+  rps_cur = 0;
+  rps_goal = rps_min;
 
   opeek_diff = 0;
   opeek = 0;
@@ -274,7 +284,11 @@ static int opaque_render(void)
 
 static int transparent_render(void)
 {
-  return 0;
+  if (!curobj) {
+    return -1;
+  }
+  return DrawObjectSingleColor(&viewport, mtx, projmtx,
+			       &curobj->obj, &color);
 }
 
 static int init(any_driver_t *d)
