@@ -84,9 +84,11 @@ function sprite(name, x, y, w, h, u1, v1, u2, v2, texture, rotate)
 	set_vertex(spr.vtx[3], { 0, h, 0, 1, 1,1,1,1, u1, v2 } )
 	set_vertex(spr.vtx[4], { w, h, 0, 1, 1,1,1,1, u2, v2 } )
 
+	local org
 	local mat
 	if not rotate then
 	   mat = mat_trans(-x, -y, 0)
+	   org = 1
 	else
 	   local tr = mat_new()
 	   tr[1][1] = 0
@@ -95,14 +97,15 @@ function sprite(name, x, y, w, h, u1, v1, u2, v2, texture, rotate)
 	   tr[2][2] = 0
 	   mat = mat_trans(-w,0,0) * tr * mat_trans(-y, -x, 0)
 	   w,h = h,w
+	   org = 2
 	end
 
 	mat_mult_self(spr.vtx, mat)
-	spr.x = x
-	spr.y = y
+
+	spr.x = -spr.vtx[org].x
+	spr.y = -spr.vtx[org].y
 	spr.w = w
 	spr.h = h
-	spr.rotate = rotate
 
 	settag(spr, sprite_tag)
 

@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  sgml text and gui element formater
 ---
---- $Id: taggedtext.lua,v 1.11 2003-01-10 13:00:15 ben Exp $
+--- $Id: taggedtext.lua,v 1.12 2003-01-10 16:08:08 ben Exp $
 ---
 
 if not dolib("sprite") then return end
@@ -21,11 +21,11 @@ function tt_img_draw(block)
       lx = lx * sx
       ly = ly * sy
    end
-   if block.spr.rotate then
-      sprite_draw(block.spr, block.dl, block.x+ly, block.y+lx, block.z, sx, sy)
-   else
-      sprite_draw(block.spr, block.dl, block.x+lx, block.y+ly, block.z, sx, sy)
-   end
+--    if block.spr.rotate then
+--       sprite_draw(block.spr, block.dl, block.x+ly, block.y+lx, block.z, sx, sy)
+--    else
+   sprite_draw(block.spr, block.dl, block.x+lx, block.y+ly, block.z, sx, sy)
+--    end
 end
 
 function tt_img_cmd(mode, param)
@@ -46,7 +46,8 @@ function tt_img_cmd(mode, param)
 	 local w, h = info.w, info.h
 	 local orig_w, orig_h = info.orig_w, info.orig_h
 	 rotate = param.rotate
-	 spr = sprite(name, 0, 0, orig_w, orig_h, 0, 0, orig_w/w, orig_h/h, tex, rotate)
+	 spr = sprite(name, 0, 0, orig_w, orig_h,
+		      0, 0, orig_w/w, orig_h/h, tex, rotate)
       end
    end
 
