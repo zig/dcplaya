@@ -46,10 +46,12 @@ function linetype
     case "$1" in
 	---*)
 	    case "$2" in
-		struct|class)
+		struct|class|enum|union)
+		    # Opening case 2 (struct|class|enum|union..)
 		    return 2
 		    ;;
 		'};')
+		    # Closing case 2 (struct|class|enum|union..)
 		    return -2
 		    ;;
 	    esac
@@ -58,9 +60,10 @@ function linetype
 	function)
 	    return 3
 	    ;;
-	--:)
+	--:) # Line starting by are interpreted as is (for variable doc)
 	    return 4
     esac
+    # Unknown or blank
     return 0
 }
 
@@ -87,6 +90,9 @@ function strcomment
     echo -e "${cb}\n" | sed "s#---##"
 }
 
+# If a comment block exist then
+#  0 : open comment block.
+#  1 : close comment block
 function comment
 {
     if [ ! -z "${cb}" ]; then
@@ -94,7 +100,6 @@ function comment
 	    echo -e "${cb}\n" | sed "s#[ /]\*[ *]##"
 	else
 	    echo -e "${cb}\n${istr} */"
-#			echo -e "${cb}" | sed "s#---#///#"
 	fi
 	cb=""
     fi
@@ -106,7 +111,7 @@ function addcomment
     if [ -z "${cb}" ]; then
 	cb="\n${istr}/** ${*}"
     else
-	cb="${cb}\n${istr} *  ${*}"
+	cb="${cb}\n${istr}  * ${*}"
     fi
 }
 
@@ -125,6 +130,7 @@ function transform
 		addcomment "${l[@]}"
 		;;
 	    2) # STRUCTURES
+		comment 1
 		comment 0
 		struct "${l[@]}"
 		indent
@@ -146,11 +152,6 @@ function transform
 		    type=0
 		fi
 		;;
-	    4) 
-		
-
-		;;
-		
 	    0) # BLANK
 		comment 1
 	esac
