@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/14
  *
- *  $Id: hyperpipe.c,v 1.3 2003-01-17 20:57:24 ben Exp $
+ *  $Id: hyperpipe.c,v 1.4 2003-01-17 22:39:23 ben Exp $
  */ 
 
 #include <stdio.h>
@@ -661,6 +661,8 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
 	change_cnt -= change_time;
 	result |= 3;
       }
+    } else {
+      change_cnt = 0;
     }
 
     if (mode_latch) --mode_latch;
