@@ -4,7 +4,7 @@
 --- @author   benjamin gerard
 --- @brief    Fundamental lua stuff.
 ---
---- $Id: init.lua,v 1.24 2003-03-28 14:01:44 ben Exp $
+--- $Id: init.lua,v 1.25 2003-03-28 19:57:16 ben Exp $
 ---
 
 --- @defgroup  dcplaya_lua_basics_library  LUA libraries
@@ -83,28 +83,28 @@ end
 --- @return error-code
 --- @retval nil on error
 --
-function addhelp(name, short_name, topics, help)
+function addhelp(name, short_name, topic, help)
    if type(help)  ~= "string" then return end
    if type(name)=="function" then -- $$$ ben : little bit hacky, isn't it ?
       fname=getinfo(name).name
    end
    if type(name) ~= "string" then return end
-   if type(topics) ~= "string" then topics = "general" end
-   if type(help_topics[topics]) ~= "table" then
+   if type(topic) ~= "string" then topic = "general" end
+   if type(help_topics[topic]) ~= "table" then
       if __DEBUG then
-	 print("Creating new topics : "..topics)
+	 print("Creating new topic : "..topic)
       end
-      help_topics[topics] = {}
+      help_topics[topic] = {}
    end
    if __DEBUG then
-      print("Add "..name.." to "..topics)
+      print("Add "..name.." to "..topic)
    end
-   help_topics[topics][name] = {
+   help_topics[topic][name] = {
       short_name = short_name,
       help = help
    }
    if short_name then 
-      help_topics[topics][short_name] = name
+      help_topics[topic][short_name] = name
       local n,s = getglobal(name), getglobal(short_name)
       if type(n) == "function" and type(s) == "nil" then
 	 if __DEBUG then
@@ -112,6 +112,56 @@ function addhelp(name, short_name, topics, help)
 	 end
 	 setglobal(short_name,n)
       end
+   end
+   return 1
+end
+
+--- Remove help.
+---
+---   The remove_help() function removes help message for given commands.
+---   Either long or short name or both can be removed. If topic is nil
+---   "general" topic is used. If no more command remains in topic, the
+---   topic is removed.
+---
+--- @param  name        long name of command to remove
+--- @param  short_name  short name  of command to remove
+--- @param  topic       topic in which is command has been add
+---                     (defaut "general")
+--- @return error-code
+--- @retval nil on error
+function remove_help(name, short_name, topic)
+   if type(name)=="function" then -- $$$ ben : little bit hacky, isn't it ?
+      fname=getinfo(name).name
+   end
+   if type(topic) ~= "string" then topic = "general" end
+
+   if type(help_topics[topic]) ~= "table" then return end
+   local r
+   if type(name) == "string" then
+      if __DEBUG then
+	 print("Remove "..name.." from "..topic)
+      end
+      r = r or help_topics[topic][name] ~= nil
+      help_topics[topic][name] = nil
+   end
+   if type(short_name) == "string" then 
+      if __DEBUG then
+	 print("Remove "..short_name.." from "..topic)
+      end
+      r = r or help_topics[topic][short_name] ~= nil
+      help_topics[topic][short_name] = nil
+   end
+   local used
+   local i,v
+   for i,v in help_topics[topic] do
+      used = 1
+      break
+   end
+   if not used then
+      if __DEBUG then
+	 print("Remove topics "..topic)
+      end
+      help_topics[topic] = nil
    end
    return 1
 end
@@ -437,24 +487,50 @@ the `|` means OR. the [ ] mean optional. Commands are displayed in fully qualifi
 --- @ingroup dcplaya_lua_basics_driver
 --- @internal
 --
---- $$$ ben I don't see what is the reason for this command !!!
---- commands exist as soon as the driver is loaded and there is no need
---- to register them
-function register_commands(driver_name, dd, commands, force)
-   if not commands then
+function register_commands(driver, force)
+   if tag(driver) ~= driver_tag then
+      print("[register_commands] : not a driver")
       return
    end
-   local topic = driver_name
+   local commands = driver.luacommands
+   if not commands then return end
+
+   local topic = driver.name
    local i, c
    for i, c in commands do
       if force or c.registered == 0 then
 	 if __DEBUG then
-	    print ("Registering new command ", c.name)
+	    print ("Register new command ", c.name)
 	 end
 	 setglobal(c.name, c["function"])
+	 if c.short_name then setglobal(c.short_name, c["function"]) end
 	 topic = c.topic or topic
 	 addhelp(c.name, c.short_name, topic, c.usage)
 	 c.registered = 1
+      end
+   end
+end
+
+function unregister_commands(driver, force)
+   if tag(driver) ~= driver_tag then
+      print("[unregister_commands] : not a driver")
+      return
+   end
+   local commands = driver.luacommands
+   if not commands then return end
+
+   local topic = driver.name
+   local i, c
+   for i, c in commands do
+      if force or c.registered ~= 0 then
+	 if __DEBUG then
+	    print ("Unregister command ", c.name)
+	 end
+	 setglobal(c.name, nil)
+	 if c.short_name then setglobal(c.short_name, nil) end
+	 topic = c.topic or topic
+	 remove_help(c.name, c.short_name, topic)
+	 c.registered = 0
       end
    end
 end
@@ -482,21 +558,23 @@ function update_driver_list(list, force)
 	 end
 	 new = 1
       end
-      --	 print (d.name, force, new)
-      driver_list[d.name] = d
-      --		print (d.name)
 
+      driver_list[d.name] = d
       if new then
 	 -- if a shutdown function exists, then call it
-	 local shut
-	 shut = getglobal(d.name.."_driver_shutdown")
-	 if shut then
-	    shut()
+
+	 if old_d then
+	    local shut
+	    shut = getglobal(old_d.name.."_driver_shutdown")
+	    unregister_commands(old_d, force)
+	    if shut then
+	       shut()
+	    end
+	    old_d = nil
 	 end
-	 
+
 	 -- register commands
-	 local commands = d.luacommands
-	 register_commands(d.name, driver_list[d.name], commands, force)
+	 register_commands(d, force)
 	 
 	 -- if an init function exists, then call it
 	 local init
@@ -505,9 +583,7 @@ function update_driver_list(list, force)
 	    init()
 	 end
       end
-      
    end
-
 end
 
 --- Update all driver lists.

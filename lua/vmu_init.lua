@@ -1,7 +1,7 @@
 --- @date 2002/12/06
 --- @author benjamin gerard
 --- @brief  LUA script to initialize dcplaya VMU backup.
---- $Id: vmu_init.lua,v 1.26 2003-03-26 23:02:50 ben Exp $
+--- $Id: vmu_init.lua,v 1.27 2003-03-28 19:57:17 ben Exp $
 ---
 
 -- Unload library
@@ -192,25 +192,22 @@ function welcome(standalone)
    -- Read info
    -- $$$ todo : add localisation folder...
    local rscpath = home .. "lua/rsc/text/"
-   local newbie_text = rscpath .. "newbie.txt"
    local introduction_text = rscpath .. "introduction.txt"
    local plugins_text = rscpath .. "plugins.txt"
-   local welcome_text = rscpath .. "welcome.txt"
    local warning_text = rscpath .. "warning.txt"
    local greetings_text = rscpath .. "greetings.txt"
    local authors_text = rscpath .. "authors.txt"
    local tv =
       gui_text_viewer(nil,
 		      {
-			 newbie    = newbie_text,
-			 welcome   = welcome_text,
 			 warning   = warning_text,
+			 introduction = introduction_text,
 			 plugins   = plugins_text,
 			 greetings = greetings_text,
 			 authors   = authors_text,
-		      } , nil, "Welcome", nil)
+		      } , 500, "Welcome", nil)
    if (tv) then
-      gui_text_viewer_set_tt(tv,"welcome");
+      gui_text_viewer_set_tt(tv,"warning");
       if not standalone then
 	 return tv
       end

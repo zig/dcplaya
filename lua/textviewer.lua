@@ -4,7 +4,7 @@
 --- @author  benjamin gerard
 --- @brief   hyper text viewer gui.
 ---
---- $Id: textviewer.lua,v 1.19 2003-03-26 23:02:50 ben Exp $
+--- $Id: textviewer.lua,v 1.20 2003-03-28 19:57:17 ben Exp $
 ---
 
 if not dolib("taggedtext") then return end
@@ -52,9 +52,10 @@ end
 --- @param  box    application box
 --- @param  label  dialog label (optionnal)
 --- @param  mode   label mode.
+--- @param  help   optionnal tagged text for help
 --- @return dialog application
 ---
-function gui_text_viewer(owner, texts, box, label, mode)
+function gui_text_viewer(owner, texts, box, label, mode, help)
 
    if type(box) == "number" then
       box = (640-box) / 2
@@ -180,6 +181,8 @@ function gui_text_viewer(owner, texts, box, label, mode)
 
    local ttbox0 = { 0,0,tw,th }
    
+   text_viever_tt_build(texts, { box = ttbox0 })
+
    if type(texts) == "string" then
       tts[1] = text_viever_tt_build(texts, { box = ttbox0 })
    elseif type(texts) == "table" then
@@ -193,6 +196,19 @@ function gui_text_viewer(owner, texts, box, label, mode)
       end
    end
 
+   -- Create help
+   if type(help) ~= "string" then
+      help = '<center><font color="text_color">'
+	 .. '\017 .. Toggle focus<br>'
+	 .. '\018 .. Context menu (change text or go to mark)<br>'
+   end
+   local help_w,help_h,help_y = 0,0,0
+   local help_tt = tt_build(help, { box = ttbox0 } )
+   if help_tt then
+      help_w, help_h = help_tt.total_w, help_tt.total_h + 6
+      help_y = tbox[4] + 3
+      box[4] = box[4] + help_h
+   end
    -- Create main-dialog
    dial = gui_new_dialog(owner, box, nil, nil, label, mode, "text viewer")
    if not dial then return end
@@ -202,11 +218,21 @@ function gui_text_viewer(owner, texts, box, label, mode)
    dial.viewer = gui_new_dialog(dial, tbox, nil, nil, nil, nil,
 				"viewer_area", {transparent=1})
    if not dial.viewer then return end
-
    dial.tbox = ttbox0
 
+   -- Display help 
+   if help_tt then
+      local b = dial.viewer.box
+      if b then
+	 tt_draw(help_tt)
+ 	 dl_set_trans(help_tt.dl,
+ 		      mat_trans(tbox[1], help_y, 10))
+	 dl_sublist(dial.dl,help_tt.dl)
+      end
+   end
+
    -- Create button
-   local bbox = {( box[1] + box[3] - butw) * 0.5, (box[4]-buth-border) }
+   local bbox = {( box[1] + box[3] - butw) * 0.5, (box[4] - buth - border) }
    bbox[3] = bbox[1] + butw
    bbox[4] = bbox[2] + buth
    dial.button = gui_new_button(dial, bbox, buttext , mode, nil, "close")
@@ -220,6 +246,7 @@ function gui_text_viewer(owner, texts, box, label, mode)
       function(app, evt)
 	 gui_new_focus(app.owner, app.owner.viewer)
       end
+   
    
    -- Display tagged-texts
    local tt_dl = dl_new_list(256,1,1) -- For clipping
@@ -354,17 +381,17 @@ function gui_text_viewer(owner, texts, box, label, mode)
 	 gui_new_focus(app.owner, app.owner.button)
       end
 
---   dial.viewer.event_table[gui_select_event] = 
---      function(app, evt)
---	 local dial = app.owner
---	 if not dial then return end
---	 local name = (dial.name or "textviewer") .. "-menu"
---	 local def = menu_create_defs(gui_text_viewer_menucreator, dial)
---	 dial.menu = gui_menu(dial, name, def)
---	 if tag(dial.menu) == menu_tag then
---	    dial.menu.target = dial
---	 end
---      end
+   --   dial.viewer.event_table[gui_select_event] = 
+   --      function(app, evt)
+   --	 local dial = app.owner
+   --	 if not dial then return end
+   --	 local name = (dial.name or "textviewer") .. "-menu"
+   --	 local def = menu_create_defs(gui_text_viewer_menucreator, dial)
+   --	 dial.menu = gui_menu(dial, name, def)
+   --	 if tag(dial.menu) == menu_tag then
+   --	    dial.menu.target = dial
+   --	 end
+   --      end
 
    for j, _ in gui_keyselect do
       dial.event_table[j] = 
@@ -427,86 +454,12 @@ function gui_text_viewer(owner, texts, box, label, mode)
       return menu_create_defs(def , target)
    end
 
-
    -- Install new update 
    dial.tv_old_update = dial.update
    dial.update = gui_text_viewer_update
 
    -- Install menu
    dial.mainmenu_def = gui_text_viewer_menucreator
-
-   if nil then
-      local header,footer
-
-      header = '<dialog guiref="dialog"'
-      header = header .. ' x="center"'
-      header = header .. ' name="gui_viewer"'
-      header = header .. ' hint_w="500"'
-      header = header .. '>'
-
-      footer = '<p><center><button guiref="close" name="close">close</button></dialog>'
-
-      text = '<dialog guiref="text" x="center" name="gui_viewer_text">' ..
-	 text .. '</dialog>'
-
-      text = header..text..footer
-
-      local tt = tt_build(text, {
-			     x = "center",
-			     y = "center",
-			     box = { 0, 0, 640, 400 },
-			  }
-		       )
-      tt_draw(tt)
-      tt.guis.dialog.event_table[evt_shutdown_event] =
-	 function(app)
-	    app.answer = "shutdown"
-	 end
-
-      local i,v 
-      for i,v in tt.guis.dialog.guis do
-	 print (i,tostring(v))
-      end
-
-      tt.guis.dialog.guis["close"].event_table[gui_press_event] =
-	 function(app, evt)
-	    evt_shutdown_app(app.owner)
-	    app.owner.answer = "close"
-	    return evt
-	 end
-
-      tt.guis.dialog.guis["text"].event_table[gui_press_event] =
-	 function(app, evt)
-	    print("press")
-	    return
-	 end
-
-
-      function gui_text_viewer_up_evt(app, evt)
-	 print(app.owner.name, app.name, "up")
-      end
-
-      function gui_text_viewer_down_evt(app, evt)
-	 print("down")
-      end
-
-      local i,v
-      for i,v in gui_keyup do
-	 tt.guis.dialog.guis["text"].event_table[i] = gui_text_viewer_up_evt
-      end
-      for i,v in gui_keydown do
-	 tt.guis.dialog.guis["text"].event_table[i] = gui_text_viewer_down_evt
-      end
-
-      while not tt.guis.dialog.answer do
-	 evt_peek()
-      end
-
-      print("answer="..tt.guis.dialog.answer)
-
-      return tt.guis.dialog.answer
-      
-   end
 
    -- make sure the button is focused
    gui_new_focus(dial, dial.button)

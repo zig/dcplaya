@@ -4,7 +4,7 @@
 --- @author   benjamin gerard
 --- @brief    Directory and filename support.
 ---
---- $Id: dirfunc.lua,v 1.19 2003-03-28 14:01:44 ben Exp $
+--- $Id: dirfunc.lua,v 1.20 2003-03-28 19:57:16 ben Exp $
 ---
 
 --- Current path.
@@ -70,7 +70,7 @@ function fullpath(name, pwd)
 end
 
 addhelp
-("fullpath",nil,"shell",
+("fullpath",nil,"file",
  [[fullpath(filename[,pwd]) : return fullpath of given filename. Optionnal `pwd` will be prefixed instead of defaut `PWD` global variable.]])
 
 --- Change current directory.
@@ -93,7 +93,7 @@ function chdir(path)
    return PWD
 end
 
-addhelp (cd,nil,"shell", 'cd([path]) : set/get current directory')
+addhelp("cd",nil,"shell",'cd([path]) : set/get current directory')
 
 --
 -- reimplement basic io function with relative path support

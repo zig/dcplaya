@@ -3,7 +3,7 @@
 #
 # by Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.13 2003-03-26 23:02:50 ben Exp $
+# $Id: Makefile,v 1.14 2003-03-28 19:57:17 ben Exp $
 #
 # This makefile is pretty ugly. Soory :( I'll try to make a clean one
 # when I get some time.
@@ -118,13 +118,12 @@ dcplaya-data: id.txt RELEASE.txt README.txt 1ST_READ.BIN dcplaya-docs
 	@sed -e "s#@BUILT-DATE@#${DATE}#" ../userconf-release.lua > dcplaya/userconf.lua
 	@cp -a ../dynshell/dynshell.lez dcplaya/dynshell
 	@cp -a ../lua dcplaya
-	@find dcplaya -type d -name '.xvpics' -print0 | xargs -0 -e rm -rv
-	@find dcplaya -type f -name '*~' -print0 | xargs -0 -e rm -v
+	find dcplaya -type d -name '.xvpics' -print0 | xargs -0 -e rm -rv
+	find dcplaya -name CVS -o -name '*~' -o -name '.#*' -print0 | xargs -0 -e rm -rv
 	@cp -a ../doc/doc dcplaya
 	@(cd ..; find plugins -type f -name '*.lez') \
 	| tar cf - -C .. -T - \
 	| tar xf - -C dcplaya
-	@rm -rf `find dcplaya/ -name CVS -o -name '*~' -o -name '.#*'`
 	@cp -RL README.txt id.txt RELEASE.txt extra_data/* iso/
 	@mv dcplaya iso
 

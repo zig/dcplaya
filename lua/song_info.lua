@@ -4,7 +4,7 @@
 --- @date     2002/11/29
 --- @brief    Song info application.
 ---
---- $Id: song_info.lua,v 1.27 2003-03-28 14:01:44 ben Exp $
+--- $Id: song_info.lua,v 1.28 2003-03-28 19:57:17 ben Exp $
 
 song_info_loaded = nil
 
@@ -114,9 +114,6 @@ function song_info_create(owner, name, style)
 
    function song_set_time_str(si, s)
       if not si.info_time or s ~= si.info_time then
-	 if __DEBUG then
-	    printf ("si update time [%s]",s)
-	 end
 	 si.info_time = s
 	 dl_clear(si.time_dl)
 	 dl_text_prop(si.time_dl, 1, 2, 0.75, 0)
@@ -147,9 +144,6 @@ function song_info_create(owner, name, style)
 	    if (si.info_fields[i]) then
 	       if type(v) ~= type(si.info_fields[i].value) or
 		  v ~= si.info_fields[i].value then
-		  if __DEBUG then
-		     printf("si: %s [%s]",i,v)
-		  end
 		  si.info_fields[i].value = v
 		  song_info_draw_field(si,si.info_fields[i])
 	       end
@@ -167,7 +161,6 @@ function song_info_create(owner, name, style)
 	       si.info.comments = si.sinfo_default_comments
 	    end
 	    if si.info.comments then
-	       print("update comments", si.info.comments)
 	       local x
 	       local w,h = dl_measure_text(si.info_comments.dl,
 					   si.info.comments)
@@ -185,7 +178,8 @@ function song_info_create(owner, name, style)
 	 if si.info.track or new_music then
 	    si.info_track = si.info.track
 	 end
-	 fs = (si.info_track and (si.info_track .. " ") or "")
+	 fs = (si.info_track and si.info_track ~= "N/A" and
+	       (si.info_track .. " ") or "")
 	    .. (fs or "??:??")
 	 dl_clear(si.time_dl)
 	 dl_text_prop(si.time_dl, 1, 2, 0.75, 0)
@@ -271,7 +265,9 @@ function song_info_create(owner, name, style)
 	 end
 	 return
       elseif ke_keyactivate and ke_keyactivate[key] then
-	 print("toggle help:", si.help_timeout)
+	 if __DEBUG then
+	    print("toggle help:", si.help_timeout)
+	 end
 	 song_info_toggle_help(si, (not si.help_timeout and 5))
 	 return
       end
@@ -594,7 +590,6 @@ function song_info_create(owner, name, style)
 	 if w <= maxw then
 	    dl_draw_text(field.dl, 0,y,10, c[1],c[2],c[3],c[4], field.label)
 	 else
-	    print(w,maxw)
 	    dl_set_clipping(field.dl,0,0,maxw,-1)
 	    dl_draw_scroll_text(field.dl, 0,y,10, c[1],c[2],c[3],c[4],
 				field.label, maxw, 0.5, 2)

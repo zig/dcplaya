@@ -3,7 +3,7 @@
  *  @author  benjamin gerard
  *  @date    2003/01/14
  *
- *  $Id: hyperpipe.c,v 1.15 2003-03-28 14:01:45 ben Exp $
+ *  $Id: hyperpipe.c,v 1.16 2003-03-28 19:57:17 ben Exp $
  */
 
 #include <stdio.h>
@@ -48,21 +48,42 @@ static viewport_t viewport;   /**< Current viewport */
 static matrix_t mtx;          /**< Current local matrix */
 static matrix_t proj;         /**< Current projection matrix */
 static vtx_t color;           /**< Final Color */
-static vtx_t base_color =     /**< Original color */
+
+static float flash;
+
+static const float min_rps = 0.4f;
+static const float max_rps = 1.0f;
+static float sign_rps = 1.0f;
+static float cur_rps;
+static float goal_rps;
+
+#if 0
+static vtx_t base_color =
   {
     1.5f, 0.5f, -1.5f, -0.7f
   };
-
-static vtx_t flash_color =    /**< Original color */
+static vtx_t flash_color =
   {
     1.5f, 1.5f, 1.5f, -0.4f
   };
-static float flash;
-
-/* Ambient color */
 static vtx_t ambient = {
   0.0,0.5,0.8,1.3
 };
+#else
+/* Funky colors */
+static vtx_t base_color =     /**< Original color */
+  {
+    0.9, -2.2, -1.9, 0.2
+  };
+static vtx_t flash_color =    /**< Flashing color */
+  {
+    0.7, 1, -3.3, 0.2
+  };
+static vtx_t ambient = {      /**< Ambient color */
+  0.2, 1.3, 1.5, 0.75
+};
+#endif
+
 
 static vtx_t pos;     /**< Object position */
 static texid_t texid, texid2;
@@ -323,11 +344,13 @@ static int start(void)
 
   build_normals();
 
+#ifdef DEBUG
   if (obj3d_verify(&hyperpipe_obj)) {
     printf("[hyperpipe] : verify failed\n");
     hyperpipe_free();
     return -1;
   }
+#endif
 
   /* Setup matrix*/
   MtxIdentity(proj);
@@ -554,8 +577,8 @@ static int analyse()
   r = (b[0].w>0) | ((b[1].w>0)<<1);
   if (r) {
     r |= 0x100
-      & -(b[0].tacu>=3 && b[0].tacu<20)
-      & -(b[1].tacu>=3 && b[1].tacu<20);
+      & -(b[0].tacu>=2 && b[0].tacu<30)
+      & -(b[1].tacu>=2 && b[1].tacu<30);
   }
 
   return r;
@@ -567,6 +590,8 @@ static void anim_band(const float seconds)
   vtx_t * vy;
 
   if (!change_mode) {
+    goal_rps = (min_rps + max_rps) * 0.5;
+    sign_rps = 1;
     /* Process analyse if no change mode has been selected. Else it
        has already be done by process().
     */
@@ -620,7 +645,6 @@ static void anim_band(const float seconds)
       }
     }
   }
-
 }
 
 static void (*fct[])(const float) = {
@@ -632,16 +656,25 @@ static const unsigned int nfct = sizeof(fct) / sizeof(*fct);
 static void anim_object(const float seconds)
 {
   static float ay, az, paz = 0.01f;
-
+  float goal;
+  const float s = 0.8;
   fct[mode % nfct](seconds);
+
+  goal = sign_rps * goal_rps;
+  goal = goal * s + cur_rps * (1.0-s);
+  cur_rps = goal;
+  goal *= seconds;
 
   /* Build local matrix */
   MtxIdentity(mtx);
   az = Sin(paz += 0.0433f) * 0.22f;
   MtxRotateX(mtx, MF_PI/2);
-  MtxRotateY(mtx, ay += 0.014*0.52);
-  MtxRotateX(mtx, 0.4f+ az);
+  MtxRotateY(mtx, ay += goal);
+  MtxRotateX(mtx, 0.4f + az);
   if (ay > 2*MF_PI) {ay -= 2*MF_PI;}
+  else if (ay < 2*MF_PI) {ay += 2*MF_PI;}
+  if (paz > 2*MF_PI) {paz -= 2*MF_PI;}
+  else if (paz < 2*MF_PI) {paz += 2*MF_PI;}
 
   mtx[3][0] = pos.x;
   mtx[3][1] = pos.y;
@@ -713,7 +746,39 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
       flash = 0;
     }
 
+    /* Rotation */
+    if (1) {
+      static struct {
+	int max;
+	float cur;
+	int cnt;
+      } latch[2] = { {5,1} , {7,1} };
+      float sign = sign_rps;
+      int i;
+      if (result & 0x100) sign_rps = -sign;
+
+      for (i=0; i<2; ++i) {
+	latch[i].cnt += (result>>i) & 1;
+	if (latch[i].cnt>=latch[i].max) {
+	  latch[i].cnt = 0;
+	  sign_rps = latch[i].cur = -latch[i].cur;
+	}
+      }
+    }
+    goal_rps = min_rps + ((b[0].v+b[1].v+b[0].w+b[1].w) * (max_rps-min_rps));
+
+    /* Build render color : blend base and flash color */
+    {
+      const float f = flash > 1.0f ? 1.0f : flash;
+      color.x = base_color.x * (1.0f-f) + flash_color.x * f;
+      color.y = base_color.y * (1.0f-f) + flash_color.y * f;
+      color.z = base_color.z * (1.0f-f) + flash_color.z * f;
+      color.w = base_color.w * (1.0f-f) + flash_color.w * f;
+    }
+
+
   }
+
 
   if (!light_object) {
     light_object = (obj_driver_t *)driver_list_search(&obj_drivers,"spaceship1");

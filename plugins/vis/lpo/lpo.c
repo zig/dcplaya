@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.27 2003-03-28 14:01:45 ben Exp $
+ * $Id: lpo.c,v 1.28 2003-03-28 19:57:17 ben Exp $
  */
 
 #include <stdio.h>
@@ -55,7 +55,7 @@ static vtx_t flash_color =    /**< Flashing color */
     15, 5, -0.8, -0.15
   };
 static vtx_t ambient = {      /**< Ambient color */
-  -9, -4, 0.4, 0.4
+  -9, -4, 0.4, 0.75
 };
 #endif
 
@@ -195,6 +195,7 @@ static int change_object(obj_driver_t *o)
     driver_dereference(&curobj->common);
   }
   curobj = o;
+#if 0  
 
   // $$$
   if (0 && o && o->obj.nvx) {
@@ -229,7 +230,7 @@ static int change_object(obj_driver_t *o)
     }
     obj3d_build_normals(&o->obj);
   }
-
+#endif
   return 0;
 }
 
@@ -614,7 +615,10 @@ static int stop(void)
 static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
 {
   if (!curobj) {
-    return -1;
+    change_object(random_object(0));
+    if (!curobj) {
+      return -1;
+    }
   }
 
   /* Copy viewport and projection matrix for further use (render) */

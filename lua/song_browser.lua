@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.67 2003-03-28 14:01:44 ben Exp $
+--- $Id: song_browser.lua,v 1.68 2003-03-28 19:57:17 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song Browser
@@ -606,7 +606,7 @@ end
 function song_browser_playlist(sb, path, insert, run)
    sb = sb or song_browser
    if not sb then return end
-   local dir = entry_path and playlist_load(entry_path)
+   local dir = path and playlist_load(path)
    local odir = type(insert) == "number" and sb.pl.dir
    local insert_point
 
@@ -617,8 +617,8 @@ function song_browser_playlist(sb, path, insert, run)
 	    insert_point = 1
 	 end
       else
-	 -- No dir, if no entry_path, it is not an error
-	 insert_point = entry_path == nil
+	 -- No dir, if no path, it is not an error
+	 insert_point = path == nil
       end
    else
       -- There is an insert point and a old dir !
@@ -761,7 +761,10 @@ function song_browser_view_file(sb, entry_path)
    if major == "lua" then
       if not sb.no_lua_colorize and type(luacolor_file) == "function" then
  	 gui_text_viewer(nil, { [leaf] = luacolor_file(entry_path) },
- 			 width, leaf)
+ 			 width, leaf, nil,
+			 '<center><font color="text_color">'
+			    .. '\018 .. Context menu (goto function)<br>'
+		      )
 -- 	 local toto = luacolor_file(entry_path)
 	 return
       end
@@ -1556,7 +1559,7 @@ function songbrowser_menucreator(target)
 		  else
 		     sb:close()
 		  end
-		  menu.fl.dir[idx].name = (sb.closed and "open") or "close"
+		  menu.fl.dir[idx].name = (sb.closed and "show") or "hide"
 		  menu:draw()
 	       end,
       saveplaylist = function(menu, idx)
@@ -1565,7 +1568,7 @@ function songbrowser_menucreator(target)
 		     end,
    }
    local root = ":" .. target.name .. ":" .. 
-      ((sb.closed and "open") or "close") ..
+      ((sb.closed and "show") or "hide") ..
       "{toggle},playlist >playlist"
    local def = {
       root=root,

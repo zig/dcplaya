@@ -463,7 +463,7 @@ function menu_create(owner, name, def, box)
 	 if type(cb) == "function" then
 -- 	    dump({cbname,cb},"exec")
 	    cb(menu, idx)
-	 else
+	 elseif __DEBUG then
 	    print("[menu_confirm] : wrong callback type:"..type(cb))
 	 end
       end
@@ -501,8 +501,9 @@ function menu_create(owner, name, def, box)
    function menu_shutdown(menu)
       if not menu then return end
 
-      -- $$$
-      print("MENU shutdown:"..tostring(menu.name))
+      if __DEBUG then
+	 print("MENU shutdown:"..tostring(menu.name))
+      end
 
       local owner = menu.owner
       if tag(owner) == menu_tag then
