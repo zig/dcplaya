@@ -4,7 +4,7 @@
 --- @date    2002/11/29
 --- @brief   Song info application.
 ---
---- $Id: song_info.lua,v 1.9 2002-12-17 07:12:38 ben Exp $
+--- $Id: song_info.lua,v 1.10 2002-12-17 23:30:25 ben Exp $
 
 song_info_loaded = nil
 
@@ -12,6 +12,7 @@ if not dolib("basic") then return end
 if not dolib("evt") then return end
 if not dolib("box3d") then return end
 if not dolib("sprite") then return end
+if not dolib("style") then return end
 
 --- @name song-info functions
 --- @ingroup dcplaya_lua_gui
@@ -261,6 +262,7 @@ function song_info_create(owner, name)
    --- @internal
    --
    function song_info_shutdown(si)
+	  dl_set_active(si.dl,0)
 	  si.dl = nil
 	  si.icons_dl = nil
 	  si.layer1_dl = nil
@@ -317,30 +319,81 @@ function song_info_create(owner, name)
    dl_sublist(si.dl, si.layer1_dl)
    dl_sublist(si.dl, si.layer2_dl)
 
+   
+   local bstyle = style_get()
+   local fcol, tcol, lcol, bcol, rcol
+
+   fcol = bstyle:get_color(0)
+   tcol = bstyle:get_color(1,0)
+   lcol = bstyle:get_color(1,0) * { 1, 0.7, 0.7, 0.7 }
+   bcol = bstyle:get_color(0,1)
+   rcol = bstyle:get_color(0,1) * { 1, 0.7, 0.7, 0.7 }
+
+   local mf, mt, ml, mr, mb
+   mf = { 0.5, 1, 1, 1 }
+   mt = { 1, 1, 1, 1 }
+   ml = { 1, 0.7, 0.7, 0.7 }
+   mb = { 1, 0.5, 0.5, 0.5 }
+   mr = { 1, 0.4, 0.4, 0.4 }
+
+   -- 1  2
+   --  34
+   --  56
+   -- 7  8
+   local borcol = {
+	  bstyle:get_color(1,0),     --1 
+	  bstyle:get_color(0.5,1),   --2
+	  bstyle:get_color(1,0.5),   --3
+	  bstyle:get_color(1,1),     --4
+	  bstyle:get_color(1,1),     -- 5
+	  bstyle:get_color(1,0),     -- 6
+	  bstyle:get_color(0.5,1),   --7
+	  bstyle:get_color(0,1),     --8
+   }
+
+   fcol = {
+	  mf * bstyle:get_color(0.5,0.5),
+	  mf * bstyle:get_color(0.25,0.25),
+	  nil,
+	  mf * bstyle:get_color(0)
+   }
+
+   tcol = {
+	  mt * borcol[1],
+	  mt * borcol[2],
+	  mt * borcol[3],
+	  mt * borcol[4],
+   }
+
+   lcol = {
+	  ml * borcol[1],
+	  ml * borcol[3],
+	  ml * borcol[7],
+	  ml * borcol[5],
+   }
+
+   bcol = {
+	  mb * borcol[5],
+	  mb * borcol[6],
+	  mb * borcol[7],
+	  mb * borcol[8],
+   }
+
+   rcol = {
+	  mr * borcol[4],
+	  mr * borcol[2],
+	  mr * borcol[6],
+	  mr * borcol[8],
+   }
+   
    local color = color_new(1, 1, 1, 1)
 
-   local ct, cl, cb, cr
-   ct = { 1, 0.9, 0.9, 0.0 }
-   cl = { 1, 0.7, 0.7, 0.0 }
-   cb = { 1, 0.5, 0.0, 0.0 }
-   cr = { 1, 0.4, 0.0, 0.0 }
-
-   local bcol1,bcol2 = {0.5, 0.4, 0.0, 0.0}, {0.5, 0.3, 0.3, 0.3}
-   
-
-   local bcol = { bcol1,0.5*bcol1+0.5*bcol2,nil,bcol2 }
-
-
-   si.label_color = color_new(1, 1, 1, 0)
-   si.text_color  = color_new(1, 1, 0.8, 0)
+   si.label_color = bstyle:get_color(1,0)
+   si.text_color  = bstyle:get_color(1,1)
    
    si.layer2_box = box3d({0,0,550,120},
-						 -4,
-						 bcol,
-						 color * ct,
-						 color * cl,
-						 color * cr,
-						 color * cb)
+						 -4, fcol, tcol, lcol, bcol, rcol)
+
    si.layer2_ibox = box3d_inner_box(si.layer2_box)
    si.layer2_obox = box3d_outer_box(si.layer2_box)
 
@@ -422,16 +475,16 @@ function song_info_create(owner, name)
 
    local bcol1,bcol2 = {0.8, 0.4, 0.0, 0.0},{0.8, 0.3, 0.3, 0.3}
 
-   local bcol = nil --{ bcol1,0.5*bcol1+0.5*bcol2,nil,bcol2 }
+   local fcol = nil --{ bcol1,0.5*bcol1+0.5*bcol2,nil,bcol2 }
 
    lbox = box3d({0,0,lw,h}, -2,
-				bcol, color * cb, color * cr, color * cl, color * ct)
+				fcol, bcol, rcol, tcol, lcol)
 
    mbox = box3d({0,0,mw,h}, -2,
-				bcol, color * cb, color * cr, color * cl, color * ct)
+				fcol, bcol, rcol, tcol, lcol)
 
    sbox = box3d({0,0,sw,h}, -2,
-				bcol, color * cb, color * cr, color * cl, color * ct)
+				fcol, bcol, rcol, tcol, lcol)
   
    si.info_fields = {}
    local ob = box3d_outer_box(lbox)
