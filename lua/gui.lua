@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.52 2003-03-12 17:40:58 zigziggy Exp $
+--- $Id: gui.lua,v 1.53 2003-03-13 04:21:47 zigziggy Exp $
 ---
 
 --
@@ -36,8 +36,8 @@
 --
 -- * Button B is translated to event gui_evt_cancel
 --
--- These translated events are send ONLY to the focused widget into the dialog.
--- So if you want a to react only when you are focused, check for these
+-- These translated events are sent ONLY to the focused widget into the dialog.
+-- So if you want to react only when you are focused, check for these
 -- translated events, if you want to react in any cases, then check for
 -- the untranslated events. (Because untranslated events are STILL sent
 -- to all child of the dialog with usual convention (first to focused child,
@@ -45,9 +45,10 @@
 --
 
 
--- IDEAS :
+-- IDEAS : (these ideas are now implemented)
 --
 -- * Auto layout of items based on a generalized text justifying algorithm
+--   (this is now the taggedtext)
 --
 -- * A general gui_ask function to build easy choose dialog boxes
 --
@@ -124,7 +125,8 @@ gui_keycancel = {
    [KBD_CONT3_B] = 1, 
    [KBD_CONT4_B] = 1, 
 }
-gui_keymenu = { 
+gui_keymenu = {
+   -- (WARNING : the name is not correct, it does not open a menu in most case)
    [KBD_KEY_PRINT] = 1, 
    [KBD_CONT1_Y] = 1, 
    [KBD_CONT2_Y] = 1, 

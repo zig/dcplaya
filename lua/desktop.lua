@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.27 2003-03-12 13:20:49 ben Exp $
+--- $Id: desktop.lua,v 1.28 2003-03-13 04:21:46 zigziggy Exp $
 ---
 
 if not dolib("evt") then return end
@@ -12,28 +12,11 @@ if not dolib("sprite") then return end
 if not dolib("menu") then return end
 if not dolib("taggedtext") then return end
 
-dskt_keytoggle = { 
-   [KBD_KEY_PRINT] = 1, 
-   [KBD_CONT1_Y] = 1, 
-   [KBD_CONT2_Y] = 1, 
-   [KBD_CONT3_Y] = 1, 
-   [KBD_CONT4_Y] = 1
-}
+dskt_keytoggle = gui_keymenu
 
-dskt_keyswitchto = { 
-   [KBD_CONT1_A] = 1, 
-   [KBD_CONT2_A] = 1, 
-   [KBD_CONT3_A] = 1, 
-   [KBD_CONT4_A] = 1
-}
+dskt_keyswitchto = gui_keyconfirm
 
-dskt_keymenu = { 
-   [KBD_CONT1_X] = 1, 
-   [KBD_CONT2_X] = 1, 
-   [KBD_CONT3_X] = 1, 
-   [KBD_CONT4_X] = 1
-}
-
+dskt_keymenu = gui_keyselect
 
 function dskt_create_sprites(vs)
    vs.sprites = {}
@@ -115,7 +98,7 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 '<macro macro-name="nrm" macro-cmd="font" color="'..col..'">'
 
    text = text..'<dialog guiref="dialog" label="Desktop" name="desktop">'
-   text = text..'<linecenter>Running application'..
+   text = text..'<linecenter>Running applications'..
       ' :<br><vspace h="8"><hspace w="16"><linedown>'
 
    local i

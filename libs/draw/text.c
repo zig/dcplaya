@@ -5,7 +5,7 @@
  * @date    2002/02/11
  * @brief   drawing and formating text primitives
  *
- * $Id: text.c,v 1.9 2003-03-10 22:55:32 ben Exp $
+ * $Id: text.c,v 1.10 2003-03-13 04:21:46 zigziggy Exp $
  */
 
 #include <stdarg.h>
@@ -486,7 +486,7 @@ static float draw_text_char(float x1, float y1, float z1,
   /* Clip left out and top out */
   if (x1 >= current_gc->clipbox.x2 || y1 >= current_gc->clipbox.y2 ||
       x2 <= current_gc->clipbox.x1 || y2 <= current_gc->clipbox.y1) {
-    return x2;
+    return x2 + curfont->wadd * scalex * 0.5;
   }
 
   /* Compute UV */
@@ -550,10 +550,8 @@ static float draw_text_char(float x1, float y1, float z1,
   ta_commit32_nocopy();
 
 
-  /* Shift by wadd/2 */
-  x2 += curfont->wadd * scalex * 0.5;
-	
-  return x2;
+  /* Return and shift by wadd/2 */
+  return x2 + curfont->wadd * scalex * 0.5;
 }
 
 static int do_escape(int c, va_list *list)
