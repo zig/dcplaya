@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.13 2003-03-08 18:30:44 ben Exp $
+--- $Id: control_center.lua,v 1.14 2003-03-09 11:16:36 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_cc_app Control center application
@@ -111,7 +111,7 @@ function control_center_create_sprite(cc, name, src, w, h, u1, v2, u2, v2, rotat
    end
    printf("spr %q %q not exist",name,src)
    
-   local tex = tex_get(src)
+   local tex = tex_exist(src)
       or tex_new(home.."lua/rsc/icons/"..src)
 
    if not tex then
@@ -400,8 +400,8 @@ end
 -- Load application icon
 for k,v in { "dcplaya", "vmu32", "volume", "control-center" } do
 
-   local tex = tex_get(v) or
-		    tex_new(home .. "lua/rsc/icons/" .. v .. ".tga")
+   local tex = tex_exist(v) or
+      tex_new(home .. "lua/rsc/icons/" .. v .. ".tga")
 end
 
 --

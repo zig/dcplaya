@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  sgml text and gui element formater.
 ---
---- $Id: taggedtext.lua,v 1.23 2003-03-07 15:36:28 ben Exp $
+--- $Id: taggedtext.lua,v 1.24 2003-03-09 11:16:36 ben Exp $
 ---
 
 if not dolib("dirfunc") then return end
@@ -42,7 +42,7 @@ function tt_img_cmd(mode, param)
       if not src then return end
       --local tex = tex_new()
       --print("'"..src.."'")
-      local tex = tex_get(src) or tex_new(home.."lua/rsc/icons/"..src)
+      local tex = tex_exist(src) or tex_new(home.."lua/rsc/icons/"..src)
       --print(tex)
       if tex then
 	 local info = tex_info(tex)

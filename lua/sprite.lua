@@ -66,9 +66,18 @@ function sprite(name, x, y, w, h, u1, v1, u2, v2, texture, rotate)
    spr.name = name
    spr.vtx  = mat_new(4,12);
    spr.tra  = mat_new(spr.vtx);
-   spr.tex  = tex_get(texture)
-   if not spr.tex and type(texture) == "string" then
-      spr.tex = tex_new(texture)
+   if not texture then
+      spr.tex = nil -- $$$ Sprite can has no textute !
+   else
+      if type(texture) == "string" then
+	 spr.tex  = tex_exist(texture) or tex_new(texture)
+      else
+	 spr.tex = tex_get(texture)
+      end
+      if not spr.tex then
+	 print("sprite : invalid texture")
+	 return
+      end
    end
    spr.draw = sprite_draw
    spr.set_color = sprite_set_color
@@ -103,9 +112,15 @@ function sprite(name, x, y, w, h, u1, v1, u2, v2, texture, rotate)
 
    settag(spr, sprite_tag)
 
-   if spr.tex then
-      local info = tex_info(spr.tex)
+--    if spr.tex then
+--       local info = tex_info(spr.tex)
+--       sprite_list[spr.name] = spr
+--    end
+   if spr.name then
       sprite_list[spr.name] = spr
+   else
+      spr.name = "anonymous"
+      print("sprite : warning unnamed sprite (added to sprite_list).")
    end
 
    return spr
@@ -123,10 +138,10 @@ end
 ---
 function sprite_simple(name, filename)
    name = name or get_nude_name(filename) or filename
-   if not name then
-      return
-   end
-   local tex = tex_get(filename)
+--    if not name then
+--       return
+--    end
+   local tex = tex_exist(filename)
       or tex_new(home.."lua/rsc/icons/"..filename)
    if not tex then return end
    local info = tex_info(tex)

@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.24 2003-03-09 01:00:15 ben Exp $
+--- $Id: desktop.lua,v 1.25 2003-03-09 11:16:36 ben Exp $
 ---
 
 if not dolib("evt") then return end
@@ -51,10 +51,10 @@ function dskt_openmenu(dial, target, x, y)
    dskt_killmenu(dial)
 
    if tag(sprite_get(spr_name)) ~= sprite_tag then
-      sprite(spr_name, 0, 0, 22, 22, 0, 0, 1, 1, tex_get("close"))
+      sprite(spr_name, 0, 0, 22, 22, 0, 0, 1, 1, "close")
    end
    if tag(sprite_get(wmm_name)) ~= sprite_tag then
-      sprite(wmm_name, 0, 0, 22, 22, 0, 0, 1, 1, tex_get("windowmanager"))
+      sprite(wmm_name, 0, 0, 22, 22, 0, 0, 1, 1, "windowmanager")
    end
 
    local name = target.name or "app"
@@ -477,7 +477,7 @@ sprite_simple("app_dcplaya","dcplaya.tga")
 
 -- Load application icons
 for k,v in { "close", "console", "windowmanager" } do
-   local tex = tex_get(v) or
+   local tex = tex_exist(v) or
       tex_new(home .. "lua/rsc/icons/" .. v .. ".tga")
 end
 

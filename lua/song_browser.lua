@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.39 2003-03-09 01:00:15 ben Exp $
+--- $Id: song_browser.lua,v 1.40 2003-03-09 11:16:36 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song browser application
@@ -36,7 +36,7 @@ if not dolib("playlist") then return end
 --- @internal
 function song_browser_create_sprite(sb)
    sb.sprites = {}
-   sb.sprites.texid = tex_get("dcpsprites") or tex_new("/rd/dcpsprites.tga")
+   sb.sprites.texid = tex_exist("dcpsprites") or tex_new("/rd/dcpsprites.tga")
 
    sb.sprites.logo = sprite("dcplogo",
 			    408/2, 29/2,
@@ -1278,7 +1278,7 @@ if not entrylist_tag and plug_el and test("-f",plug_el) then
 end
 
 -- Load texture for application icon
-local tex = tex_get("song-browser")
+local tex = tex_exist("song-browser")
    or tex_new(home .. "lua/rsc/icons/song-browser.tga")
 
 if song_browser then

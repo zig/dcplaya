@@ -57,7 +57,7 @@ function vmu_select_create(owner, name, dir, x, y, z)
    end
 
    -- Create sprite
-   local texid = tex_get("dcpsprites") or tex_new("/rd/dcpsprites.tga")
+   local texid = tex_exist("dcpsprites") or tex_new("/rd/dcpsprites.tga")
    local vmusprite = sprite("vmu",	
 			    0, 62/2,
 			    104, 62,

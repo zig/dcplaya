@@ -4,7 +4,7 @@
 --- @date    2002/11/29
 --- @brief   Song info application.
 ---
---- $Id: song_info.lua,v 1.18 2003-03-03 18:11:45 ben Exp $
+--- $Id: song_info.lua,v 1.19 2003-03-09 11:16:36 ben Exp $
 
 song_info_loaded = nil
 
@@ -626,7 +626,7 @@ end
 --- @}
 
 -- Load texture for application icon
-local tex = tex_get("song-info")
+local tex = tex_exist("song-info")
    or tex_new(home .. "lua/rsc/icons/song-info.tga")
 
 if song_info then

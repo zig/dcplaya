@@ -79,7 +79,7 @@ end
 function background_create()
    local bkg
 
-   if not tex_get("background") then
+   if not tex_exist("background") then
       tex_new("background", 1024,512, 1, 0, 0, 0)
    end
 
