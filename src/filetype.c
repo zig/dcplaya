@@ -4,7 +4,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   Deal with file types and extensions.
  *
- * $Id: filetype.c,v 1.8 2002-12-13 17:06:53 ben Exp $
+ * $Id: filetype.c,v 1.9 2002-12-13 19:29:13 ben Exp $
  */
 
 #include <stdlib.h>
@@ -15,10 +15,11 @@
 #include "sysdebug.h"
 
 typedef struct minor_type_s {
-  struct minor_type_s * next; /* Next in list */
-  int type;                   /* File type */
+  struct minor_type_s * next; /* Next in list  */
+  int type;                   /* File type     */
   const char * name;          /* Filetype name */
   const char * exts;          /* Extension list (double '\0' terminated) */
+  char buffer[4];
 } minor_type_t;
 
 typedef struct major_type_s {
@@ -124,7 +125,7 @@ int filetype_major(const char * name)
 {
   int i;
   for (i = 0; i < 16; ++i) {
-	if (!stricmp(name, major[i].name)) {
+	if ( ! stricmp(name, major[i].name)) {
 	  return (i << 12);
 	}
   }
@@ -183,11 +184,9 @@ int filetype_major_add(const char * name)
 	}
 	for (i = 0; i < 16; ++i) {
 	  if (!major[i].name) {
-		major[i].name = name;
+		major[i].name = strdup(name);
 		major[i].minor = 0;
-
 		SDDEBUG("Add Major type [%04x, %s]\n", i<<12, name); 
-
 		return i << 12;
 	  }
 	}
@@ -211,40 +210,56 @@ void filetype_major_del(int type)
   maj->minor = 0;
 }
 
+static const char * default_exts = "\0";
+
 int filetype_add(int major_type, const char * name, const char *exts)
 {
   int i;
   minor_type_t * m;
+  int namelen, extslen;
+  const char * e;
 
   if (major_type == -1) {
 	return -1;
   }
-  exts = exts ? exts : "\0";
+
+  exts = exts ? exts : default_exts;
   name = name ? name : (exts + (exts[0]=='.'));
 
   major_type = FILETYPE_MAJOR_NUM(major_type);
   m = find_minor_name(major[major_type].minor, name);
   if (m) {
-	SDDEBUG("Replacing filetype [%04x, %s:%s]\n",
-			m->type, major[major_type].name, name);
-	m->exts = exts;
-	return m->type;
+	return -1;
+/* 	SDDEBUG("Replacing filetype [%04x, %s:%s]\n", */
+/* 			m->type, major[major_type].name, name); */
+/* 	m->exts = exts; */
+/* 	return m->type; */
   }
 
   i = findfree_minor(major_type);
   if (i < 0) {
 	return -1;
   }
-  m = malloc(sizeof(*m));
+
+  for (e = exts; e[0] || e[1]; ++e)
+	;
+
+  extslen = (e - exts) + 2;
+  namelen = strlen(name) + 1;
+
+  m = malloc(sizeof(*m) - sizeof(m->buffer) + extslen + namelen);
   if (!m) {
 	return -1;
   }
   m->type = i;
-  m->name = name;
-  m->exts = exts;
+  m->name = m->buffer;
+  m->exts = m->buffer + namelen;
+  memcpy((void*)m->name, name, namelen);
+  memcpy((void*)m->exts, exts, extslen);
+
   insert_minor(m);
   SDDEBUG("Adding filetype [%04x, %s:%s]\n",
-		  m->type, major[major_type].name, name); 
+		  m->type, major[major_type].name, m->name); 
 
   return i;
 }

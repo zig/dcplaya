@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.47 2002-12-13 17:06:53 ben Exp $
+ * @version    $Id: dynshell.c,v 1.48 2002-12-13 19:29:13 ben Exp $
  */
 
 #include <stdio.h>
@@ -1571,6 +1571,76 @@ static int lua_vmu_set_visual(lua_State * L)
   return 1;
 }
 
+static int lua_filetype(lua_State * L)
+{
+  const char * major_name, * minor_name;
+  int type;
+  const char * fname;
+
+  fname = lua_tostring(L,1);
+  if (!fname) {
+	return 0;
+  }
+
+  if (fu_is_dir(fname)) {
+	type = filetype_directory(fname);
+  } else {
+	type = filetype_regular(fname);
+  }
+  if (type < 0) {
+	return 0;
+  }
+
+  if (filetype_names(type, &major_name, &minor_name) < 0) {
+	return 0;
+  }
+
+  lua_settop(L,0);
+  lua_pushnumber(L,type);
+  lua_pushstring(L,major_name);
+  lua_pushstring(L,minor_name);
+  return lua_gettop(L);
+}
+
+static int lua_filetype_add(lua_State * L)
+{
+  const char * major_name = 0, * minor_name = 0, * ext_list;
+  int type;
+
+  type = lua_type(L,1);
+  if (type == LUA_TNUMBER) {
+	major_name = filetype_major_name(lua_tonumber(L,1));
+  } else if (type == LUA_TSTRING) {
+	major_name = lua_tostring(L,1);
+  }
+
+  if (!major_name || !major_name[0]) {
+	printf("filetype_add : bad or missing major type.\n");
+	return 0;
+  }
+
+  type = filetype_major_add(major_name);
+  if (type < 0) {
+	printf("filetype_add : error creating major type [%s]\n", major_name);
+	return 0;
+  }
+
+  minor_name = lua_tostring(L,2);
+  ext_list = lua_tostring(L,3);
+
+  if (minor_name || ext_list) {
+	type = filetype_add(type, minor_name, ext_list);
+	if (type < 0) {
+	  printf("filetype_add : error creating minor type\n");
+	  return 0;
+	}
+  }
+
+  lua_settop(L,0);
+  lua_pushnumber(L,type);
+  return 1;
+}
+
 #if 0
 static char shell_basic_lua_init[] = 
 "\n shell_help_array = {}"
@@ -1963,12 +2033,30 @@ static luashell_command_description_t commands[] = {
     SHELL_COMMAND_C, lua_vmu_set_text
   },
   { 
-	"lua_vmu_set_visual",
+	"vmu_set_visual",
 	0,
     "print([["
-    "lua_vmu_set_visual(<effects-number>) : set/get vmu display effects.\n"
+    "vmu_set_visual(<effects-number>) : set/get vmu display effects.\n"
     "]])",
     SHELL_COMMAND_C, lua_vmu_set_visual
+  },
+
+  {
+	"filetype",
+	0,
+    "print([["
+    "filetype(filename) : get type, major-name, minor-name of given file.\n"
+    "]])",
+    SHELL_COMMAND_C, lua_filetype
+  },
+
+  {
+	"filetype_add",
+	0,
+	"print([["
+    "filetype_add(major [, minor ] ) : add and return a filetype.\n"
+    "]])",
+    SHELL_COMMAND_C, lua_filetype_add
   },
 
   {0},
