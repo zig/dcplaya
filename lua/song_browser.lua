@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.65 2003-03-26 23:02:50 ben Exp $
+--- $Id: song_browser.lua,v 1.66 2003-03-27 05:48:05 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song Browser
@@ -757,8 +757,9 @@ function song_browser_view_file(sb, entry_path)
 
    if major == "lua" then
       if not sb.no_lua_colorize and type(luacolor_file) == "function" then
-	 gui_text_viewer(nil, { [leaf] = luacolor_file(entry_path) },
-			 width, leaf)
+ 	 gui_text_viewer(nil, { [leaf] = luacolor_file(entry_path) },
+ 			 width, leaf)
+-- 	 local toto = luacolor_file(entry_path)
 	 return
       end
       preformatted = 8

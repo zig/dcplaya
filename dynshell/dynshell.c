@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.90 2003-03-22 00:34:47 ben Exp $
+ * @version    $Id: dynshell.c,v 1.91 2003-03-27 05:48:05 ben Exp $
  */
 
 #include "dcplaya/config.h"
@@ -1704,6 +1704,8 @@ static int lua_set_visual(lua_State * L)
 static char * print_wrapper_buffer = 0;
 static int print_wrapper_buffer_size = 0;
 static int print_wrapper_pos = 0;
+static float print_wrapper_policy = 0;
+static const int print_wrapper_nl = 0;
 
 static void print_wrapper_kill(void)
 {
@@ -1727,13 +1729,28 @@ static void print_wrapper_alloc(int needed)
 {
   if (needed > print_wrapper_buffer_size) {
     char * p;
-    int size = (needed + 2048) & - 1024;
+    int size;
+
+    SDDEBUG("cur-size:[%d] needed:[%d]\n",
+	    print_wrapper_buffer_size, needed);
+    if (print_wrapper_policy > 0) {
+      size = print_wrapper_buffer_size + print_wrapper_policy;
+    } else {
+      size = (int)((float)print_wrapper_buffer_size
+		   * -print_wrapper_policy
+		   + 1.0f);
+    }
+    SDDEBUG("policy -> [%d]\n", size);
+    if (size < needed) {
+      size = needed;
+    }
+    SDDEBUG("real -> [%d]\n", size);
     p = realloc(print_wrapper_buffer, size);
-/*     printf("print_wrapper_alloc(%d) := %d,%p,%p\n", */
-/* 	   needed, size,print_wrapper_buffer,p); */
     if (p) {
       print_wrapper_buffer = p;
       print_wrapper_buffer_size = size;
+    } else {
+      SDERROR("failure\n");
     }
   }
 }
@@ -1741,56 +1758,55 @@ static void print_wrapper_alloc(int needed)
 static int print_wrapper(lua_State * L)
 {
   int i, n = lua_gettop(L);
-  
-/*   printf("print_wrapper(%d) [enter] %p, %d %d\n",n, */
-/* 	 print_wrapper_buffer,print_wrapper_pos, print_wrapper_buffer_size); */
 
   for (i=1; i<=n; ++i) {
     const char * s;
     int len ,need;
 
-    
     s = lua_tostring(L,i);
     if (!s || !s[0]) {
-/*       printf("print_wrapper [skip] #%d [not a string]\n",i); */
       continue;
     }
-
-/*     printf("print_wrapper [add] #%d, [%s]\n",i,s); */
     
-    /* Got a string, calc length +1 for additionnal '\n' */
+    /* Got a string, calc length +1 for additionnal '\0' */
     len = strlen(s) + 1;
-    need = print_wrapper_pos + len + 1; /* +1 for '\0' */
+    need = print_wrapper_pos + len + print_wrapper_nl; /* +1 for '/n' */
     print_wrapper_alloc(need);
     if (need > print_wrapper_buffer_size) {
-/*       printf("print_wrapper : Skip [%s] (alloc failed)\n", s); */
       continue;
     }
-/*     printf("print_wrapper : [%s]\n", s); */
     memcpy(print_wrapper_buffer + print_wrapper_pos,
 	   s, len - 1);
     print_wrapper_pos += len - 1;
-    print_wrapper_buffer[print_wrapper_pos++] = '\n';
+    if (print_wrapper_nl) {
+      print_wrapper_buffer[print_wrapper_pos++] = '\n';
+    }
     print_wrapper_buffer[print_wrapper_pos] = 0;
   }
-
-  lua_settop(L,0);
-  if (print_wrapper_buffer) {
-/*     printf("print_wrapper : [return] [%s]\n", print_wrapper_buffer); */
-    lua_pushstring(L,print_wrapper_buffer);
-  }
-  return lua_gettop(L);
+  return 0;
 }
 
 static int lua_dostring_print(lua_State * L)
 {
   const char * s;
   int print_pos;
+  int n = lua_gettop(L);
+  float policy;
+  int   orgsize;
 
   /* Want a string ! */
-  if (lua_type(L,1) != LUA_TSTRING) {
+  if (n < 1 || lua_type(L,1) != LUA_TSTRING) {
     return 0;
   }
+  /* get alloc policy : >0 added < -1.01 multiplier 0:default */
+  policy = lua_tonumber(L,2);
+  if (policy > -1.01 && policy <= 0) {
+    policy = 2048;
+  }
+  print_wrapper_policy = policy;
+  /* get original original buffer size */
+  orgsize = lua_tonumber(L,3);
+
   /* Discard other parameters */
   lua_settop(L,1);
 
@@ -1808,6 +1824,9 @@ static int lua_dostring_print(lua_State * L)
 
   /* Do our dobuffer call $$$ Not thread safe... */
   print_wrapper_reset();
+  if (orgsize > 0) {
+    print_wrapper_alloc(orgsize);
+  }
   lua_dobuffer(L, s, strlen(s), "dostring_print");
 
   /* restore old print */
@@ -1816,6 +1835,10 @@ static int lua_dostring_print(lua_State * L)
 
   /* Finally return the print_wrapper_buffer */
   lua_settop(L,0);
+
+  SDDEBUG("used:%d size:%d\n",
+	  print_wrapper_pos,print_wrapper_buffer_size);
+
   if (print_wrapper_buffer && print_wrapper_buffer[0]) {
     lua_pushstring(L,print_wrapper_buffer);
   }
@@ -3468,7 +3491,6 @@ static int setgcthreshold(lua_State * L)
 /*  lua_setgcthreshold(L, v + 100);*/
   lua_setgcthreshold(L, 4000);
 }
-
 
 static void shell_register_lua_commands()
 {

@@ -3,7 +3,7 @@
 --- @author  vincent penne
 --- @author  benjamin gerard
 --- @brief   tagged text aka zml
---- $Id: taggedtext.lua,v 1.32 2003-03-26 23:02:50 ben Exp $
+--- $Id: taggedtext.lua,v 1.33 2003-03-27 05:48:05 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_tt Tagged Text
@@ -372,9 +372,6 @@ end
 
 function tt_a_cmd(mode, param)
    if param.name then
-
-      print("Create anchor "..param.name)
-
       local block = {
 	 type = "anchor",
 	 w = 0,
@@ -411,8 +408,10 @@ tt_commands = {
 	    if param.color then
 	       mode.color = tt_tocolor(param.color)
 	    end
-	    if mode.preformatted then
+	    
+	    if __DEBUG and mode.preformatted and not mode.preformatted_err then
 	       print ("ERROR NESTED <PRE>")
+	       mode.preformatted_err = 1
 	    end
 	    mode.preformatted = 1
 	    -- Preformatted default don't wrap
@@ -424,8 +423,10 @@ tt_commands = {
 	 end,
 
    ["/pre"] = function(mode,param)
-		 if not mode.preformatted then
+		 if __DEBUG and not mode.preformatted
+		    and not mode.preformatted_warn then
 		    print ("WARNING TT </PRE> without <PRE>")
+		    mode.preformatted_warn = 1
 		 end
 		 mode.preformatted = nil
 	      end,
@@ -903,9 +904,9 @@ function tt_build(text, mode)
 	 end
       end
 
-      if tag and tag == "p" then
-	 print ("p in " .. ((mode.preformatted and "PRE") or "/PRE") )
-      end
+--       if tag and tag == "p" then
+-- 	 print ("p in " .. ((mode.preformatted and "PRE") or "/PRE") )
+--       end
 
 
       -- Create text block
@@ -1066,13 +1067,6 @@ function tt_draw(tt)
 	 block:draw()
       end
    end
-
-   if __DEBUG and tag(tt.dl) == dl_tag then
-      dump(dl_info(tt.dl),"tt_draw")
---       printf("[tt_draw] : display list info : heap[%d/%d]",
--- 	     dl_heap_used(tt.dl), dl_heap_size(tt.dl))
-   end
-
 end
 
 -- Add filetype for text and zml (Ziggy Markup Language)

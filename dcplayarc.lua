@@ -5,7 +5,7 @@
 --- @date     2002
 --- @brief    Main dcplaya lua script.
 ---
---- $Id: dcplayarc.lua,v 1.41 2003-03-26 23:02:47 ben Exp $
+--- $Id: dcplayarc.lua,v 1.42 2003-03-27 05:48:04 ben Exp $
 ---
 ---   The @b home.."dcplayarc.lua" file is dcplaya main script.
 ---   It is executed after the dynshell has been loaded.
@@ -53,8 +53,8 @@
 --- @warning This script or/and scripts called assumes the dynshell to be
 ---          loaded for proper execution.
 ---
---
-
+--- @par Content
+--- @code
 showconsole()
 
 -- Display some welcome text
@@ -108,7 +108,7 @@ function scrolltext(dl, msg, txtcolor, bkgcolor, z)
 
    dl_text_prop(dl,0,size)
    local w,h = dl_measure_text(dl, msg, 1 ,size)
-   w = max(w * 1.5, 512)
+   w = min(w * 1.5, 512)
 
    local x,y = (640-w) * 0.5, (480-h) * 0.5
    dl_set_clipping(dl, x, y-3, x+w, y+h+3)
@@ -139,6 +139,15 @@ if not dcplayarc_vmu_loading and
    return
 end
 
+-- Standard libraries
+dolib ("basic")
+dolib("display_init")
+if type(scrolltext) == "function" then
+   scroll_dl = scrolltext(scroll_dl,
+			  "Welcome to dcplaya " .. __VERSION
+			     .. ". Please wait while loading resources ...")
+end
+
 -- Add filetype some useful filetypes.
 if type(filetype_add) == "function" then
    filetype_add("lua")
@@ -157,14 +166,6 @@ if type(test) == "function" and type(driver_load) == "function" then
    end
 end
 
--- Standard libraries
-dolib ("basic")
-dolib("display_init")
-if type(scrolltext) == "function" then
-   scroll_dl = scrolltext(scroll_dl,
-			  "Welcome to dcplaya " .. __VERSION
-			     .. ". Please wait while loading resources ...")
-end
 
 dolib ("evt")
 dolib ("dirfunc")
@@ -246,3 +247,4 @@ end
 help()  -- print available commands
 shell() -- launch the enhanced shell
 hideconsole()
+--- @endcode

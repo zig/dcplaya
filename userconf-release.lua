@@ -47,7 +47,8 @@
 ---     -# Randomly set a vmu visual.
 ---     -# Randomly set a visual plugin if none is set.
 ---
---
+--- @par Content
+--- @code
 
 print()
 print("Executing "..home.."userconf.lua")
@@ -118,3 +119,4 @@ if __RELEASE then
 
 end
 
+---@endcode
