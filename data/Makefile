@@ -1,12 +1,16 @@
 # Makefile - dcplaya - data
 #
-# $Id: Makefile,v 1.11 2003-04-01 13:18:55 ben Exp $
+# $Id: Makefile,v 1.12 2003-05-04 12:35:31 benjihan Exp $
 #
 
 TARGETS=
-CLEAN_LOCAL=tmp/* romdisk/* romdisk.* vmu_header.bin
-
+CLEAN_LOCAL=tmp/* romdisk/* romdisk.* vmu_header.bin $(HEADERS)
 REQUIRED_LOCAL=req_local
+
+HEADERS= ../include/vmu_dcplaya.h ../include/vmu_dcplaya4.h ../include/vmu_font.h
+
+MKVMUHEADER=$(UTILS_DIR)/mkvmuheader
+
 
 my_all: vmuimg romdisk
 
@@ -17,7 +21,7 @@ fntimg : romdisk/font16x16.tga romdisk/font8x14.tga
 bdrimg : romdisk/bordertile.tga romdisk/dcpsprites.tga romdisk/dcpbkg2.jpg
 	@echo "[$@] from [$^]"
 
-vmuimg : ../include/vmu_dcplaya.h ../include/vmu_dcplaya4.h ../include/vmu_font.h
+vmuimg : $(HEADERS)
 	@echo "[$@]"
 
 .INTERMEDIATE: romimg fntimg bdrimg
@@ -53,9 +57,12 @@ romdisk/vmu_header.bin : vmu_header.bin
 	@echo "[$@]"
 	@cp -f $< $@
 
-vmu_header.bin:
+$(MKVMUHEADER):
+	$(MAKE) -C ../utils/ mkvmuheader
+
+vmu_header.bin: $(MKVMUHEADER)
 	@echo "[$@]"
-	@$(UTILS_DIR)/mkvmuheader \
+	@$(MKVMUHEADER) \
 	"dcplaya "$(DCPLAYA_VERSION) \
 	"dcplaya user data (playlist...)" \
 	"dcplaya "$(DCPLAYA_VERSION) \
