@@ -1,6 +1,9 @@
-
--- basic things used into other library (evy, keyboard_emu, gui)
-
+-- basic things used into other library (evt, keyboard_emu, gui)
+--
+-- author : vincent penne <ziggy@sashipa.com>
+--
+-- $Id: basic.lua,v 1.3 2002-10-09 00:51:17 benjihan Exp $
+---
 
 
 -- doubly linked list support
@@ -122,3 +125,4 @@ settagmethod(tag( {} ), "sub", table_sub)
 settagmethod(tag( {} ), "mul", table_mul)
 settagmethod(tag( {} ), "pow", table_sqrdist)
 
+basic_loaded=1

@@ -58,5 +58,6 @@ re "dl_draw_text"
 -- set it at the end so that it is not set if something failed before !
 init_display_driver = 1
 
+display_init_loaded = 1
 
 end -- if not init_display_driver then

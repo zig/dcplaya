@@ -1,7 +1,12 @@
 -- implement directory support
+--
+-- authors : vincent penne <ziggy@sashipa.com>
+--           benjamin gerard <ben@sashipa.com>
+--
+-- $Id: dirfunc.lua,v 1.9 2002-10-09 00:51:17 benjihan Exp $
+---
 
 PWD=home
-
 
 -- return path,leaf
 -- 
@@ -58,7 +63,8 @@ end
 addhelp(cd, [[print[[cd(path) : set current directory]]]])
 
 -- Load the new ls() command
-dofile(home.."lua/ls.lua")
+
+dolib("ls")
 
 --
 -- reimplement basic io function with relative path support
@@ -119,3 +125,4 @@ fullpath_convert( "copy" )
 fullpath_convert( "cp" )
 fullpath_convert( "rename" )
 
+dirfunc_loaded=1

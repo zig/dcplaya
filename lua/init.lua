@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: init.lua,v 1.7 2002-09-29 00:49:14 vincentp Exp $
+-- $Id: init.lua,v 1.8 2002-10-09 00:51:17 benjihan Exp $
 --
 
 
@@ -11,13 +11,10 @@
 if not init_lua then
 init_lua=1
 
-
 -- simple doshellcommand (reimplemented in shell.lua)
 function doshellcommand(string)
-	dostring(string)
+	return dostring(string)
 end
-
-
 
 
 -- command helps handling
@@ -208,8 +205,34 @@ function driver_load(...)
 end
 dl=driver_load
 
+-- Load a lua library in {HOME}/lua/{NAME}.lua
+-- Library must set the {NAME}_loaded variable when loaded successfully
+-- If force parameter is set, the function ignore the {NAME}_loaded value
+-- and try to reload the library anyway.
+--
+-- TODO : Add a libpath parameter
+--
+function dolib(name,force)
+	if not name then return end
 
---dofile(home.."lua/evt.lua")
+	local test = "return "..name.."_loaded"
+	local reset = name.."_loaded=nil"
 
+	if dostring(test) and not force then
+		print(format("Library '%s' already loaded",name))
+		return 1
+	end
+	print(format("Loading library '%s'...",name))
+	dostring(reset)
+	dofile(home.."lua/"..name..".lua")
+	if not dostring(test) then
+		print(format("Load library '%s' failed",name))
+		return
+	end
+	print(format("Library '%s' loaded",name))
+	return 1
+end
+
+--dolib("evt")
 
 end -- if not init_lua then

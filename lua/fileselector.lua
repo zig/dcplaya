@@ -3,15 +3,17 @@
 -- author : benjamin gerard <ben@sashipa.com>
 -- date   : 2002/10/04
 --
--- $Id: fileselector.lua,v 1.8 2002-10-08 20:48:34 benjihan Exp $
+-- $Id: fileselector.lua,v 1.9 2002-10-09 00:51:17 benjihan Exp $
 --
 -- TODO : select item with space 
 --        completion with tab        
 --
 
-if not filelist_loaded then
-	dofile("lua/filelist.lua")
-end
+-- Load required libraries
+--
+dolib("gui")
+dolib("textlist") -- Bug when nested !!
+dolib("filelist")
 
 --
 --
@@ -118,13 +120,23 @@ function fileselector(name,path,filename)
 		return
 	end
 
-	function but_locate_handle(but,evt)
---		print("BUTTON LOCATE")
-		local dial,fl,path,leaf
-		dial = but.owner
-		fl = dial.flist.fl
-		path,leaf = get_path_and_leaf(dial.input.input)
+	function wildcard_to_regexpr(wc)
+		if not wc then return end
+		local res = wc
+		res = gsub(res,"%%","%%")
+		res = gsub(res,"%.","\%.")
+		res = gsub(res,"%*",".*")
+		res = gsub(res,"?",".")
+		res = "^"..res.."$"
+--		print("wildcard:"..wc.."->"..res)
+		return res
+	end
 
+	function locate(dial,text)
+		local path,leaf,fl
+		if not dial then return end
+		fl = dial.flist.fl
+		path,leaf = get_path_and_leaf(text)
 		if path then
 --			print("path="..path.."  "..fl.pwd="..fl.pwd)
 			if path ~= fl.pwd then
@@ -140,13 +152,23 @@ function fileselector(name,path,filename)
 
 		if leaf then
 --			print(format("try to locate '%s' in '%s'",leaf, fl.pwd))
-			if textlist_find_entry_expr(fl,"^"..leaf.."$") then
+			if textlist_find_entry_expr(fl,wildcard_to_regexpr(leaf)) then
 				status(dial,fl.pwd..leaf.." found")
 			else
 				status(dial,fl.pwd..leaf.." not found")
 			end
 			return
 		end
+		return
+	end
+
+
+	function but_locate_handle(but,evt)
+--		print("BUTTON LOCATE")
+		local dial,fl
+		dial = but.owner
+		fl = dial.flist.fl
+		locate(dial,dial.input.input)
 	end
 
 ----------------
@@ -405,7 +427,6 @@ function fileselector(name,path,filename)
 end
 
 fileselector_loaded = 1
-print("loaded fileselector.lua")
 
 dial = nil
 if not nil then

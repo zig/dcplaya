@@ -3,19 +3,12 @@
 --
 -- author : Vincent Penne
 --
--- $Id: keyboard_emu.lua,v 1.10 2002-10-07 23:28:02 vincentp Exp $
+-- $Id: keyboard_emu.lua,v 1.11 2002-10-09 00:51:17 benjihan Exp $
 --
 
-
-if not keydefs_included then
-	dofile(home.."lua/keydefs.lua")
-end
-if not init_display_driver then
-	dofile(home.."lua/display_init.lua")
-end
---if not evt_included then
---	dofile(home.."lua/evt.lua")
---end
+dolib("keydefs")
+dolib("display_init")
+-- dolib("evt")
 
 ke_box 		= { 20, 330, 640-20, 330+140 }
 ke_z		= 150
@@ -601,3 +594,4 @@ end
 
 keyboard_emu()
 
+keyboard_emu_loaded = 1

@@ -2,7 +2,7 @@
 --
 -- by benjamin gerard <ben@sashipa.com>
 --
--- $Id: ls.lua,v 1.2 2002-10-03 21:43:34 benjihan Exp $
+-- $Id: ls.lua,v 1.3 2002-10-09 00:51:17 benjihan Exp $
 --
 
 -- Display a directory in optimized column format.
@@ -179,3 +179,4 @@ addhelp(
 	print[[ -d : display for each directory a content summary. This option is autimatically set if more than one directory is given.]]
 	 ]])
 
+ls_loaded=1

@@ -1,4 +1,9 @@
 -- converted from kos keyboard.h
+--
+-- author : vincent penne <ziggy@sashipa.com>
+--
+-- $Id: keydefs.lua,v 1.6 2002-10-09 00:51:17 benjihan Exp $
+--
 
 if not keydefs_included then
 keydefs_included = 1
@@ -222,3 +227,5 @@ end
  KBD_ESC	=	27
 
 end -- it not keydefs_included then
+
+keydefs_loaded=1

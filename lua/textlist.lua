@@ -3,7 +3,7 @@
 -- author : benjamin gerard <ben@sashipa.com>
 -- date   : 2002/10/04
 --
--- $Id: textlist.lua,v 1.4 2002-10-08 20:48:34 benjihan Exp $
+-- $Id: textlist.lua,v 1.5 2002-10-09 00:51:17 benjihan Exp $
 --
 
 --- textlist object - Display a textlist from a given dir
@@ -606,7 +606,6 @@ function textlist_standalone_run(fl)
 end
 
 textlist_loaded = 1
-print("Loaded textlist.lua")
 
 if nil then
 print("Run test (y/n) ?")

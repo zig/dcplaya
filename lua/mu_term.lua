@@ -70,3 +70,4 @@
  MT_WRAPON	=     "\027v"
  MT_WRAPOFF	=    "\027w"
 
+mu_term_loaded=1

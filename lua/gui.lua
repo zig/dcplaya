@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: gui.lua,v 1.9 2002-10-08 20:48:34 benjihan Exp $
+-- $Id: gui.lua,v 1.10 2002-10-09 00:51:17 benjihan Exp $
 --
 
 --
@@ -199,7 +199,7 @@ function gui_dialog_handle(app, evt)
 
 	local focused = app.sub
 	if focused then
-		if gui_keyconfirm[key] and then
+		if gui_keyconfirm[key] then
 			evt_send(focused, { key = gui_press_event })
 			return
 		end
@@ -671,6 +671,8 @@ function gui_init()
 end
 
 gui_init()
+
+gui_loaded = 1
 
 ----------------------------------------------------------------------
 ----------------------------------------------------------------------

@@ -3,7 +3,7 @@
 -- author : benjamin gerard <ben@sashipa.com>
 -- date   : 2002/10/04
 --
--- $Id: filelist.lua,v 1.4 2002-10-08 20:48:34 benjihan Exp $
+-- $Id: filelist.lua,v 1.5 2002-10-09 00:51:17 benjihan Exp $
 --
 
 --- filelist object - Extends textlist
@@ -12,9 +12,9 @@
 -- "filter"  dirlist filter function
 -- "pwd"     Current path
 
-if not textlist_loaded then
-	dofile("lua/textlist.lua")
-end
+-- Load required libraries
+--
+dolib("textlist")
 
 function filelist_dump(fl)
 	textlist_dump(fl)
@@ -118,7 +118,6 @@ function gui_filelist(owner, flparm)
 end
 
 filelist_loaded = 1
-print("Loaded filelist.lua")
 
 if nil then
 print("Run test (y/n) ?")

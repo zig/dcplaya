@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: shell.lua,v 1.7 2002-09-27 02:01:37 vincentp Exp $
+-- $Id: shell.lua,v 1.8 2002-10-09 00:51:17 benjihan Exp $
 --
 
 
@@ -65,21 +65,13 @@ function doshellcommand(string)
 
 end
 
-
 function check_zed()
-	if not zed_edline then
-		-- load zed
-		dofile (home.."lua/zed.lua")
-	end
-
-	if not zed_edline then
+	if not dolib("zed") then
 		print ("You need to install ZED before using the shell")
 		return nil
 	end
-
 	return 1
 end
-
 
 -- function to input a string on one line
 -- this handles command recall too
@@ -226,3 +218,5 @@ function shell()
 
 
 end
+
+shell_loaded=1

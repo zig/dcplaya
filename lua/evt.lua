@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.6 2002-10-08 08:22:34 benjihan Exp $
+-- $Id: evt.lua,v 1.7 2002-10-09 00:51:17 benjihan Exp $
 --
 
 
@@ -51,13 +51,8 @@
 
 
 
-if not keydefs_included then
-	dofile(home.."lua/keydefs.lua")
-end
-if not init_display_driver then
-	dofile(home.."lua/display_init.lua")
-end
-
+dolib("keydefs")
+dolib("display_init")
 
 -- create a new event code
 function evt_new_code()
@@ -275,6 +270,7 @@ end
 evt_init()
 
 evt_included = 1
+evt_loaded = 1
 
 if nil then
 

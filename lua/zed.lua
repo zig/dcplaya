@@ -3,13 +3,13 @@
 --
 -- (C) 2002 Vincent Penne (aka Ziggy Stardust)
 --
--- $Id: zed.lua,v 1.8 2002-09-20 06:08:58 vincentp Exp $
+-- $Id: zed.lua,v 1.9 2002-10-09 00:51:17 benjihan Exp $
 --
 
 rp ("Initializing ZED ... ")
 
-dofile (home.."lua/mu_term.lua")
-dofile (home.."lua/keydefs.lua")
+dolib("mu_term",1)
+dolib("keydefs",1)
 
 zed_w, zed_h	=	consolesize()
 
@@ -460,6 +460,8 @@ F2  : Save file
 F3  : Load new file
 
 ]]]])
+
+zed_loaded=1
 
 print ("ZED ready !")
 
