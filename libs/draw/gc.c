@@ -4,7 +4,7 @@
  * @author   ben(jamin) gerard <ben@sashipa.com>
  * @brief    graphic context interface.
  *
- * $Id: gc.c,v 1.6 2002-12-12 00:08:04 ben Exp $
+ * $Id: gc.c,v 1.7 2002-12-24 04:07:54 ben Exp $
  */
 
 #include "draw/gc.h"
@@ -31,9 +31,11 @@ void gc_default(void)
   gc->clipbox.y2 = draw_screen_height;
 
   /* Default colors. */
+#ifndef GC_NO_COLOR
   for (i=0; i< sizeof(gc->colors)/ sizeof(*gc->colors); ++i) {
-	gc->colors[i].a = gc->colors[i].r = gc->colors[i].g = gc->colors[i].b = 1;
+    gc->colors[i].a = gc->colors[i].r = gc->colors[i].g = gc->colors[i].b = 1;
   }
+#endif
 
   /* Default text properties. */
   text_set_color(1,1,1,1);
@@ -115,6 +117,7 @@ static void gc_copy(gc_t * dst, const gc_t * src, int flags)
   }
 
   /* Restore background colors. */
+#ifndef GC_NO_COLOR
   if (flags & GC_RESTORE_COLORS_0) {
 	dst->colors[0] = src->colors[0];
   }
@@ -127,6 +130,7 @@ static void gc_copy(gc_t * dst, const gc_t * src, int flags)
   if (flags & GC_RESTORE_COLORS_3) {
 	dst->colors[3] = src->colors[3];
   }
+#endif
 
   /* Restore clipping box. */
   if (flags & GC_RESTORE_CLIPPING) {
@@ -157,17 +161,21 @@ int gc_pop(int flags)
 
 void draw_set_color(int idx, const draw_color_t * color)
 {
+#ifndef GC_NO_COLOR
   const unsigned int max =
 	sizeof(current_gc->colors) / sizeof(current_gc->colors[0]);
 
   if ((unsigned int)idx < max) {
 	current_gc->colors[idx] = *color;
   }
+#endif
 }
 
 void draw_set_argb(int idx, const draw_argb_t argb)
 {
+#ifndef GC_NO_COLOR
   draw_color_t color;
   draw_color_argb_to_float(&color, argb);
   draw_set_color(idx, &color);
+#endif
 }

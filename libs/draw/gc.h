@@ -4,11 +4,14 @@
  * @author   ben(jamin) gerard <ben@sashipa.com>
  * @brief    Graphic context interface
  *
- * $Id: gc.h,v 1.5 2002-12-12 00:08:04 ben Exp $
+ * $Id: gc.h,v 1.6 2002-12-24 04:07:54 ben Exp $
  */
 
 #ifndef _GC_H_
 #define _GC_H_
+
+/* $$$ colors currently not used */
+#define GC_NO_COLOR 1
 
 #include "draw/color.h"
 #include "draw/clipping.h"
@@ -61,7 +64,9 @@ typedef struct {
   draw_clipbox_t clipbox;
 
   /** Graphic context back ground colors [LT/RT/LB/RB] */
+#ifndef GC_NO_COLOR
   draw_color_t colors[4];
+#endif
 
 } gc_t;
 
