@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.45 2002-12-11 14:18:50 ben Exp $
+ * @version    $Id: dynshell.c,v 1.46 2002-12-12 18:35:24 zigziggy Exp $
  */
 
 #include <stdio.h>
@@ -87,23 +87,23 @@ static int dynshell_command(const char * fmt, ...)
     while (lua_getstack(L, n, &ar)) {
       lua_getinfo (L, "lnS", &ar);
       printf("[%d] "
-			 "currentline = %d, "
-			 "name = %s, "
-			 "namewhat = %s, "
-			 "nups = %d, "
-			 "linedefined = %d, "
-			 "what = %s, "
-			 "source = %s, "
-			 "short_src = %s\n",
-			 n,
-			 ar.currentline,
-			 ar.name,
-			 ar.namewhat,
-			 ar.nups,
-			 ar.linedefined,
-			 ar.what,
-			 ar.source,
-			 ar.short_src);
+	     "currentline = %d, "
+	     "name = %s, "
+	     "namewhat = %s, "
+	     "nups = %d, "
+	     "linedefined = %d, "
+	     "what = %s, "
+	     "source = %s, "
+	     "short_src = %s\n",
+	     n,
+	     ar.currentline,
+	     ar.name,
+	     ar.namewhat,
+	     ar.nups,
+	     ar.linedefined,
+	     ar.what,
+	     ar.source,
+	     ar.short_src);
       n++;
       break; /* crash if going too far ... */
     }

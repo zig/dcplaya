@@ -3,7 +3,7 @@
 #
 # (C) COPYRIGHT 2002 benjamin gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.18 2002-11-25 20:31:39 ben Exp $ 
+# $Id: Makefile,v 1.19 2002-12-12 18:35:23 zigziggy Exp $ 
 #
 TARGETS=dreammp3.elf
 
@@ -63,7 +63,7 @@ $(TARGETS): force_$(TARGETS) $(OBJS)
 	@$(KOS_STRIP) -v $@		
 
 send:
-	@clear
+#	@clear
 	@dc-tool -x $(TARGETS) | tee debug.log
 
 r: send

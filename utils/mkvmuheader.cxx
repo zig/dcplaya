@@ -4,7 +4,7 @@
  *  @date   2002/10/02
  *  @brief  Make a SEGA VMS file header, including icon data
  *
- *  $Id: mkvmuheader.cxx,v 1.2 2002-10-16 23:59:50 benjihan Exp $
+ *  $Id: mkvmuheader.cxx,v 1.3 2002-12-12 18:35:24 zigziggy Exp $
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -645,6 +645,10 @@ static int palette(img_t *img, pix32_t * pal, int n)
   return 0;
 
 }
+
+// VP : added this because basename is already defined in string.h with my 
+// version of glibc
+#define basename mybasename
 
 static const char * basename(const char *name)
 {

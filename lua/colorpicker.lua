@@ -4,7 +4,7 @@
 --- @date    2002/10/11
 --- @brief   Colorpicker GUI.
 ---
---- $Id: colorpicker.lua,v 1.8 2002-12-10 15:20:42 ben Exp $
+--- $Id: colorpicker.lua,v 1.9 2002-12-12 18:35:24 zigziggy Exp $
 
 -- Load required libraries
 --
@@ -515,7 +515,7 @@ function colorpicker(owner, name, pos, color)
 	  local f = cbox.event_table[key]
 	  if f then return f(cbox, evt) end
 
-	  if gui_is_focus(dial, cbox) then
+	  if gui_is_focus(cbox) then
 		 local newx = cbox.x
 		 local newy = cbox.y
 		 if gui_keyleft[key] then
@@ -592,7 +592,7 @@ function colorpicker(owner, name, pos, color)
 	  local f = app.event_table[key]
 	  if f then return f(app, evt) end
 
-	  if gui_is_focus(dial, app) then
+	  if gui_is_focus(app) then
 		 local newvalue = app.value
 		 if gui_keydown[key] then
 			newvalue = clip_value(newvalue+(1/255),0,1)

@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.25 2002-12-09 13:03:48 zigziggy Exp $
+--- $Id: gui.lua,v 1.26 2002-12-12 18:35:24 zigziggy Exp $
 ---
 
 --
@@ -131,6 +131,15 @@ end
 
 -- place child of a dialog box
 function gui_child_autoplacement(app)
+   if not app._dl1 then
+      app._dl1 = dl_new_list(256, 1)
+      app._dl2 = dl_new_list(256, 1)
+      dl_sublist(app.dl, app._dl1)
+      dl_sublist(app.dl, app._dl2)
+   else
+      dl_clear(app._dl1)
+   end
+
    local i = app.sub
    if not i then
       return
@@ -142,7 +151,6 @@ function gui_child_autoplacement(app)
       if not i._dl and i.dl and i.dl ~= app.dl then
 	 i._dl = dl_new_list(256, 1)
 	 dl_sublist(i._dl, i.dl)
-	 dl_sublist(app.dl, i._dl)
       end
 
       i = i.next
@@ -154,11 +162,16 @@ function gui_child_autoplacement(app)
    while i do
       if i._dl then
 	 dl_set_trans(i._dl, mat_scale(1, 1, scale) * mat_trans(0, 0, 100*n*scale))
+	 dl_sublist(app._dl1, i._dl)
       end
       
       n = n - 1
       i = i.next
    end
+
+   -- swaping
+   dl_set_active2(app._dl1, app._dl2, 1)
+   app._dl1, app._dl2 = app._dl2, app._dl1
 end
 
 
@@ -167,24 +180,21 @@ function gui_new_focus(app, f)
    local of = app.sub
    if f and f~=of then
       if of then
-	 evt_send(of, { key = gui_unfocus_event })
+	 evt_send(of, { key = gui_unfocus_event, app = of })
       end
       evt_app_remove(f)
       evt_app_insert_first(app, f)
-      evt_send(f, { key = gui_focus_event })
+      evt_send(f, { key = gui_focus_event, app = f })
       app.focus_time = 0
-
-      gui_child_autoplacement(app)
 
       return 1
    end
 end
 
 
--- test focus item. Can test if no focus if f is nil.
-function gui_is_focus(app, f)
-   if not app or f ~= app.sub then return end
-   return 1
+-- test focus item
+function gui_is_focus(f)
+   return f == f.owner.sub
 end
 
 function gui_less(b1, b2, i)
@@ -254,7 +264,7 @@ end
 
 function gui_dialog_shutdown(app)
    if app.sub then
-      evt_send(app.sub, { key = gui_unfocus_event })
+      evt_send(app.sub, { key = gui_unfocus_event, app = app.sub })
    end
    dl_destroy_list(app.dl)
    dl_destroy_list(app.focusup_dl)
@@ -279,6 +289,11 @@ function gui_dialog_handle(app, evt)
    local f = app.event_table[key]
    if f then
       return f(app, evt)
+   end
+
+   if (key == evt_app_insert_event or key == evt_app_remove_event) and evt.app.owner == app then
+      gui_child_autoplacement(app)
+      return
    end
    
    if focused then
@@ -336,7 +351,7 @@ end
 
 function gui_dialog_update(app, frametime)
    local focused = app.sub
-   if focused and gui_is_focus(app.owner, app) then
+   if focused and gui_is_focus(app) then
       -- handle focus cursor
       
       -- converge to focused item box
@@ -375,8 +390,11 @@ function gui_dialog_update(app, frametime)
       
    else
       -- no focus cursor
-      if app.focus_dl then 
-	 dl_set_active(app.focus_dl, nil)
+      if app.focusup_dl then 
+	 local focus_dl
+	 for _, focus_dl in { app.focusup_dl, app.focusdown_dl, app.focusleft_dl, app.focusright_dl } do
+	    dl_set_active(focus_dl, nil)
+	 end
       end
    end
    
@@ -504,8 +522,7 @@ end
 --
 function gui_input_shutdown(app)
    if app then
-      local i,v
-      for i,v in app do app[i] = 0 end
+      app.input_dl = nil
    end
 end
 
@@ -547,11 +564,11 @@ function gui_input_handle(app, evt)
       end
    end
 
-   if key == gui_focus_event and ke_set_active then
+   if key == gui_focus_event and gui_is_focus(app) and ke_set_active then
       ke_set_active(1)
       return nil
    end
-   if key == gui_unfocus_event and ke_set_active then
+   if key == gui_unfocus_event and gui_is_focus(app) and ke_set_active then
       ke_set_active(nil)
       return nil
    end
@@ -910,3 +927,5 @@ if 1 then
    dial = dialog_test()
    dialog_test(dial)
 end
+
+

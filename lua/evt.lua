@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.13 2002-12-06 13:19:27 zigziggy Exp $
+-- $Id: evt.lua,v 1.14 2002-12-12 18:35:24 zigziggy Exp $
 --
 
 
@@ -68,14 +68,14 @@ end
 
 
 -- send an event to an application and its sub applications
-function evt_send(app, evt)
+function evt_send(app, evt, not_to_child, not_to_owner)
 
    --	if not evt then
    --		print (format("[H] [%s]", name))
    --	end
 
    local i = app.sub
-   if i then
+   if not not_to_child and i then
       local n = i.next
       evt = evt_send(i, evt)
       if not evt then
@@ -89,20 +89,22 @@ function evt_send(app, evt)
    --	if app.name then name = app.name end
    --	print (format("[S] [%d] [%s]",evt.key, name))
 
-   if app.handle then
+   if not not_to_owner and app.handle then
       evt = app:handle(evt)
       if not evt then
 	 return
       end
    end
    
-   while i do
-      local n = i.next
-      evt = evt_send(i, evt)
-      if not evt then
-	 return
+   if not not_to_child then
+      while i do
+	 local n = i.next
+	 evt = evt_send(i, evt)
+	 if not evt then
+	    return
+	 end
+	 i = n
       end
-      i = n
    end
    
    --	print (format("[R] [%d] [%s]", evt.key, name))
@@ -188,22 +190,56 @@ function evt_getchar()
    return evt.key
 end
 
+do
+
+   evt_debug_table_tag = newtag()
+   local om = gettagmethod(tag( {} ), "settable")
+
+   local table_settable = function(t, i, v)
+			     if i == "handle" and type(v) == "number" then
+				local a
+				a()
+			     else
+				rawset(t, i, v)
+			     end
+			  end
+
+   settagmethod(evt_debug_table_tag, "settable", table_settable)
+
+end
+
+
 -- add a sub application to an application at the beginning of its sub list
 function evt_app_insert_first(parent, app)
+
+   --settag(app, evt_debug_table_tag)
+
    evt_app_remove(app)
    dlist_insert(parent, "sub", "sublast", app, "prev", "next", "owner")
+
+   evt_send(parent, { key = evt_app_insert_event, app = app })
 end
 
 -- add a sub application to an application at the end of its sub list
 function evt_app_insert_last(parent, app)
+
+   --settag(app, evt_debug_table_tag)
+
    evt_app_remove(app)
    dlist_insert(parent, "sublast", "sub", app, "next", "prev", "owner")
+
+   evt_send(parent, { key = evt_app_insert_event, app = app })
 end
 
 
 -- remove a sub application from an application sub list
 function evt_app_remove(app)
-   dlist_remove("sub", "sublast", app, "prev", "next", "owner")
+   local owner = app.owner
+   if owner then
+      evt_send(owner, { key = evt_app_remove_event, app = app })
+      
+      dlist_remove("sub", "sublast", app, "prev", "next", "owner")
+   end
 end
 
 
@@ -265,6 +301,8 @@ function evt_init()
 
    -- create basic event type
    evt_shutdown_event = evt_new_code()
+   evt_app_insert_event = evt_new_code()
+   evt_app_remove_event = evt_new_code()
 
 
    evt_command_queue = { n=0 }

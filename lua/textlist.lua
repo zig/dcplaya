@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.19 2002-12-10 15:20:42 ben Exp $
+--- $Id: textlist.lua,v 1.20 2002-12-12 18:35:24 zigziggy Exp $
 ---
 
 -- Unload the library
@@ -648,7 +648,7 @@ function textlist_create_gui(fl, owner)
 		 return evt
 	  end
 
-	  if dir.n < 1 or not gui_is_focus(app.owner,app) then
+	  if dir.n < 1 or not gui_is_focus(app) then
 		 -- No dir loaded or no focus, ignore event --
 --  		 print("NOFOCUUUUS:", dir.n)
 		 return evt;
