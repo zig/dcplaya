@@ -56,7 +56,7 @@ extern "C" {
  *  slowdown mode)
  *
  */
-#define TIMER_SLOWDOWN 16
+#define TIMER_SLOWDOWN 8
 
 #ifdef NO_INLINE_SET_GET
 uint8 S9xAPUGetByteZ (uint8 address);

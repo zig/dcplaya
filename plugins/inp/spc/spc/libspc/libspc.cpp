@@ -128,6 +128,9 @@ int SPC_set_state(SPC_Config *cfg)
     return so.buffer_size;
 }
 
+//#define BCOLOR vid_border_color
+#define BCOLOR
+
 #include <kos.h>
 
 /* get samples
@@ -137,22 +140,23 @@ void SPC_update(unsigned char *buf)
   // APU_LOOP
   int c, ic, oc;
 
-  vid_border_color(255, 0, 0);
+  BCOLOR(255, 0, 0);
 #if 1
   for (c = 0; c < 2048000 / RATE; ) {
     oc = c;
-    if (IAPU.Slowdown > 0) {
-      /* VP : in slowdown mode, SPC executes 32 times slower */
-      c += 8 * S9xAPUCycleLengths [*IAPU.PC];
+    for (ic = c + 256; c < ic; ) {
+      int cycles;
+      cycles = S9xAPUCycleLengths [*IAPU.PC];
       (*S9xApuOpcodes[*IAPU.PC]) ();
       //APU_EXECUTE1();
-      IAPU.Slowdown --;
-    } else {
-      /* VP : no slowdown, normal speed of the SPC */
-      for (ic = c + 256; c < ic; ) {
-	c += S9xAPUCycleLengths [*IAPU.PC];
-	(*S9xApuOpcodes[*IAPU.PC]) ();
-	//APU_EXECUTE1();
+
+      if (IAPU.Slowdown > 0) {
+	/* VP : in slowdown mode, SPC executes x times slower */
+	c += 16 * cycles;
+	IAPU.Slowdown --;
+      } else {
+	/* VP : no slowdown, normal speed of the SPC */
+	c += cycles;
       }
     }
 
@@ -174,9 +178,9 @@ void SPC_update(unsigned char *buf)
   }
 #endif
 
-  vid_border_color(255, 255, 0);
+  BCOLOR(255, 255, 0);
   S9xMixSamples ((unsigned char *)buf, samples_per_mix);
-  vid_border_color(0, 0, 0);
+  BCOLOR(0, 0, 0);
 
 }
 
