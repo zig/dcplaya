@@ -27,6 +27,7 @@ export KOS_ARCH KOS_BASE KOS_INCS
 # Make utility
 @SET_MAKE@
 KOS_MAKE=$(MAKE)
+MAKEDEPEND=@MAKEDEPEND@
 
 # Dreamcast loader utility
 KOS_LOADER=@KOS_LOADER@
@@ -41,21 +42,23 @@ export KOS_MAKE KOS_LOADER KOS_BIN2O
 
 # SH-4 compile tools
 KOS_CC=@SH_CC@
-KOS_CCPLUS=@SH_CXX@
+KOS_CXX=@SH_CXX@
 KOS_AS=@SH_AS@
 KOS_LD=@SH_LD@
-export KOS_CC KOS_CCPLUS KOS_AS KOS_LD
+export KOS_CC KOS_CXX KOS_AS KOS_LD
 
 # SH-4 bin utils
 KOS_AR=@SH_AR@
 KOS_RANLIB=@SH_RANLIB@
 KOS_OBJCOPY=@SH_OBJCOPY@
+KOS_OBJDUMP=@SH_OBJDUMP@
 KOS_NM=@SH_NM@
-export KOS_AR KOS_RANLIB KOS_OBJCOPY KOS_NM
+KOS_STRIP=@SH_STRIP@
+export KOS_AR KOS_RANLIB KOS_OBJCOPY KOS_OBJDUMP KOS_NM KOS_STRIP
 
 # SH-4 compile flags
-KOS_CFLAGS=-Wall -g -ml -m4-single-only -O2 -fno-builtin -fno-strict-aliasing -fomit-frame-pointer
-KOS_CPPFLAGS=-fno-operator-names -fno-rtti
+KOS_CFLAGS=@SH_CFLAGS@
+KOS_CXXFLAGS=@SH_CXXFLAGS@
 KOS_AFLAGS=-little
 KOS_LDFLAGS=-ml -m4-single-only -nostartfiles -nostdlib -Wl,-Ttext=0x8c010000
 export KOS_CFLAGS KOS_CPPFLAGS KOS_AFLAGS KOS_LDFLAGS
@@ -80,8 +83,14 @@ export DC_ARM7AFLAGS=@ARM_AFLAGS@
 
 
 ifndef OBJS
-SRCS = $(wildcard *.c) 
-OBJS = $(SRCS:%.c=%.o)
+C_SRCS = $(wildcard *.c) 
+CXX_SRCS = $(wildcard *.cxx) 
+
+C_OBJS = $(C_SRCS:%.c=%.o)
+CXX_OBJS = $(CXX_SRCS:%.cxx=%.o)
+
+SRCS = $(C_SRCS) $(CXX_SRCS)
+OBJS = $(C_OBJS) $(CXX_OBJS)
 endif
 
 ifeq '$(LIBRARY)' 'yes'
@@ -133,7 +142,7 @@ $(LIBNAME) : $(OBJS)
 	@echo "Build library [$@]"
 	@rm -f $@
 	@$(KOS_AR) r $@ $^
-	@sh-elf-ranlib $@
+	@$(KOS_RANLIB) $@
 
 %.elf : $(OBJS)
 	@echo "Build [$@] from [$^]"
@@ -141,13 +150,9 @@ $(LIBNAME) : $(OBJS)
 
 %.lef : $(OBJS) #lib%.a
 	@echo "Build [$@] from [$^]"
-	@$(KOS_LD) --format elf32-little -EL -r -x -O -S $^ $(LEF_EXTRA) -o $@
-	@sh-elf-strip --strip-unneeded $@
-
-#%.lef : %.o
-#	@echo "Build [$@] from [$<]"
-#	@$(KOS_LD)  -export-dynamic --format elf32-little -EL -r -x -O -S $< -o $@
-#	@sh-elf-nm $@
+	@$(KOS_LD) --format elf32-little -d -O 3 -EL -r --cref -M -Map $*.map -x -O -S $^ $(LEF_EXTRA) -o $@
+	@$(KOS_STRIP) --strip-unneeded $@
+	@$(KOS_OBJDUMP) -t $@ | grep '*COM*' || echo ":_) No *COM* found."
 
 %.bin : %.elf
 	@$(KOS_OBJCOPY) -O binary $< $@
@@ -169,15 +174,16 @@ $(patsubst %, _clean_dir_%, $(SUBDIRS)):
 clean: clean_subdirs clean_local
 
 clean_local:
-	rm -f $(LEFS) $(OBJS) *~ $(CLEAN_LOCAL) $(LIBNAME) $(TARGETS)
+	rm -f $(LEFS) $(OBJS) *~ $(CLEAN_LOCAL) $(LIBNAME) $(TARGETS) *.map
 
 distclean: depend-clean clean
-	@rm -f include/config.h configure Makefile.inc
+	@rm -f TAGS ID
+	@rm -f include/config.h Makefile.inc
+	@rm -f config.cache config.log stamp-h stamp-h[0-9]*
 	@find . -name '*~' -exec rm -f {} \;
 
 maintainer-clean: distclean 
-	@rm -f config.cache config.log config.status
-	@find . -name .depends -exec rm -f {} \;
+	@rm -f config.cache config.log config.status configure
 
 # ----------------------------------------------------------------------
 # Dependencies
@@ -192,12 +198,12 @@ $(patsubst %, _depend_dir_%, $(SUBDIRS)):
 
 .PHONY: .depends
 .depends:
-	makedepend -f$@\
+	$(MAKEDEPEND) -f$@\
 	-Y \
 	$(filter -I%, $(DEPEND_INCS)) \
 	$(filter -D%, $(DEPEND_DEFINES)) \
 	$(OBJS:%.o=%.c) && rm -f $@.bak
-	echo "DEPENDENCIES $@"
+	echo "DEPENDENCIES [$@]"
 
 dep depend: .depends depend_subdirs $(DEPEND_EXTRA)
 
@@ -218,7 +224,7 @@ $(patsubst %, _required_dir_%, $(SUBDIRS)):
 
 required_subdirs: $(patsubst %, _required_dir_%, $(SUBDIRS))
 
-req required: required_subdirs
+req required: required_subdirs $(REQUIRED_LOCAL)
 	@touch .depends $(addsuffix /.depends, $(SUBDIRS))
 
 # ----------------------------------------------------------------------
@@ -230,8 +236,8 @@ KOS_INC_RULES=$(KOS_LOCAL_INCS) -I- -I. $(KOS_INCS) -I$(KOS_BASE)/kernel/arch/$(
 %.o: %.c
 	$(KOS_CC) $(KOS_CFLAGS) $(KOS_LOCAL_CFLAGS) $(KOS_INC_RULES) -D_arch_$(KOS_ARCH) -c $< -o $@
 
-%.o: %.cc
-	$(KOS_CCPLUS) $(KOS_CFLAGS) $(KOS_LOCAL_CFLAGS) $(KOS_INC_RULES) -D_arch_$(KOS_ARCH) $(KOS_CPPFLAGS)  -c $< -o $@
+%.o: %.cxx
+	$(KOS_CXX) $(KOS_CXXFLAGS) $(KOS_LOCAL_CXXFLAGS) $(KOS_INC_RULES) -D_arch_$(KOS_ARCH) -c $< -o $@
 
 %.o: %.s
 	$(KOS_AS) $(KOS_AFLAGS) $< -o $@

@@ -80,13 +80,21 @@ fi
 if test -z "$SH_OBJCOPY"; then
     AC_PATH_PROG(SH_OBJCOPY,  ${SHPREFIX}objcopy,  echo, [$PATH])
 fi
+if test -z "$SH_OBJDUMP"; then
+    AC_PATH_PROG(SH_OBJDUMP,  ${SHPREFIX}objdump,  echo, [$PATH])
+fi
 if test -z "$SH_LD"; then
     AC_PATH_PROG(SH_LD,       ${SHPREFIX}ld,       echo, [$PATH])
 fi
 if test -z "$SH_NM"; then
     AC_PATH_PROG(SH_NM,       ${SHPREFIX}nm,       echo, [$PATH])
 fi
-REQUIRED_SH_TOOLS="$SH_CC $SH_AS $SH_AR $SH_RANLIB $SH_LD $SH_NM $SH_OBJCOPY"
+if test -z "$SH_STRIP"; then
+    AC_PATH_PROG(SH_STRIP,    ${SHPREFIX}strip,    echo, [$PATH])
+fi
+REQUIRED_SH_TOOLS="$SH_AS $SH_CC $SH_LD"
+REQUIRED_SH_TOOLS="$REQUIRED_SH_TOOLS $SH_AR $SH_RANLIB"
+REQUIRED_SH_TOOLS="$REQUIRED_SH_TOOLS $SH_NM $SH_OBJCOPY $SH_OBJDUMP $SH_STRIP"
 
 if test -z "$ARM_CC"; then
     AC_PATH_PROG(ARM_CC,       ${ARMPREFIX}gcc,      echo, [$PATH])
@@ -123,10 +131,12 @@ for i in $REQUIRED_DC_TOOLS; do
 done
 
 SH_CFLAGS="-Wall -O4"
+if test $DEBUG -ne 0; then
+    SH_CFLAGS="$SH_CFLAGS -g"
+fi
 SH_CFLAGS="$SH_CFLAGS -ml -m4-single-only"
 SH_CFLAGS="$SH_CFLAGS -fno-builtin -fno-strict-aliasing -fomit-frame-pointer"
-SH_CFLAGS="$SH_CFLAGS -I. -I.."
-
+SH_CXXFLAGS="$SH_CFLAGS -fno-operator-names -fno-rtti -fno-exceptions"
 SH_ASFLAGS="-little"
 SH_ARFLAGS="cr"
 SH_LDFLAGS="-ml -m4-single-only -nostartfiles -nostdlib -static -Wl,-Ttext=0x8c010000"
@@ -136,6 +146,10 @@ ARM_AFLAGS="-marm7"
 
 if test -z "$MAKE"; then
     AC_PATH_PROG(MAKE, make, echo, [$PATH])
+fi
+
+if test -z "$MAKEDEPEND"; then
+    AC_PATH_PROG(MAKEDEPEND, makedepend, echo, $PATH)
 fi
 
 
@@ -165,9 +179,9 @@ AC_MSG_RESULT([--------------------------------------])
 
 
 CC="$SH_CC"
-CFLAGS="$SH_CFLAGS"
+CFLAGS="$SH_CFLAGS -I."
 CXX="$SH_CXX"
-CXXFLAGS="$SH_CXXFLAGS"
+CXXFLAGS="$SH_CXXFLAGS -I."
 AS="$SH_AS"
 ASFLAGS="$SH_ASFLAGS"
 AR="$SH_AR"
@@ -184,17 +198,22 @@ AC_PROG_MAKE_SET
 AC_SUBST(DREAMMP3URL)
 AC_SUBST(TOP_DIR)
 AC_SUBST(LIBCOMMAND)
-AC_SUBST(MAKEDEPEND)
 AC_SUBST(DEL)
 
+AC_SUBST(SH_AS)
 AC_SUBST(SH_CC)
 AC_SUBST(SH_CXX)
-AC_SUBST(SH_AS)
+AC_SUBST(SH_LD)
+
 AC_SUBST(SH_AR)
 AC_SUBST(SH_RANLIB)
+
 AC_SUBST(SH_OBJCOPY)
-AC_SUBST(SH_LD)
+AC_SUBST(SH_OBJDUMP)
+AC_SUBST(SH_STRIP)
+
 AC_SUBST(MAKE)
+AC_SUBST(MAKEDEPEND)
 
 AC_SUBST(SH_CFLAGS)
 AC_SUBST(SH_CXXFLAGS)
@@ -202,11 +221,13 @@ AC_SUBST(SH_ASFLAGS)
 AC_SUBST(SH_ARFLAGS)
 AC_SUBST(SH_LDFLAGS)
 
+AC_SUBST(ARM_AS)
 AC_SUBST(ARM_CC)
 AC_SUBST(ARM_CXX)
-AC_SUBST(ARM_AS)
+
 AC_SUBST(ARM_AR)
 AC_SUBST(ARM_RANLIB)
+
 AC_SUBST(ARM_OBJCOPY)
 AC_SUBST(ARM_LD)
 
@@ -233,25 +254,11 @@ echo "$reply" >&6
 AC_MSG_RESULT([**************************************])
 AC_MSG_RESULT([* Compilation options summary:])
 AC_MSG_RESULT([*   debug-mode          : $DEBUG])
-AC_MSG_RESULT([*   browse-info         : $BROWSE_INFO])
-if test "x$DREAMCAST" = "xyes"; then
-AC_MSG_RESULT([*      ------------------------------])
-AC_MSG_RESULT([*   dreamcast           : $DREAMCAST])
-AC_MSG_RESULT([* - sh (core) target    : $SHTARGET])
-AC_MSG_RESULT([* - arm (audio) target  : $ARMTARGET])
-AC_MSG_RESULT([* - kos                 : $KOS_BASE])
-
-elif test "x$XMMS_CONFIG" != "xno"; then
-AC_MSG_RESULT([*   xmms input plugin : $XMMS_INPUT_PLUGIN_DIR])
-else
-AC_MSG_RESULT([*      ------------------------------])
-AC_MSG_RESULT([*   xmms-config not found in your exec path.])
-AC_MSG_RESULT([*   sc68 xmms plugin will *NOT* be installed.])
-AC_MSG_RESULT([*   Get xmms-devel package or source code xmms.])
-AC_MSG_RESULT([*            <http://www.xmms.org>])
-fi
+AC_MSG_RESULT([*   sh (core) prefix    : $SHPREFIX])
+AC_MSG_RESULT([*   arm (audio) prefix  : $ARMPREFIX])
+AC_MSG_RESULT([*   kos                 : $KOS_BASE])
 AC_MSG_RESULT([**************************************])
 
 dnl#
-dnl# End of "$Id: configure.in,v 1.2 2002-08-26 20:12:22 ben Exp $".
+dnl# End of "$Id: configure.in,v 1.3 2002-09-02 19:14:16 ben Exp $".
 dnl#

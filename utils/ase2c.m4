@@ -1,5 +1,5 @@
 
-static obj_driver_t ASENAME =
+obj_driver_t ASENAME =
 {
   /* any_driver_t */
   {
