@@ -4,16 +4,14 @@
 #
 # Convert lua file to fake C file for doxygen documentation.
 #
-# Very simple but still working if this rules are respected :
+# Very limited but still working if these rules are respected :
 #
-# - All lines which 1st word is `---' is considered as a documentaion comment.
-#   In this lines all `---' sequence are transformed to '///'. The
-#   consequence of is that '---<' are transformed to '///<' which is used to
-#   document the left side of the line in structure documentation. Original
-#   "C" comments could be use too.
+# - All lines which 1st word is ``---'' is considered as a documentation
+#   comment. It will be transformed to ``///''. The rest of the line is copied
+#   ``as is''. Standard comments should be used inside lua comments.
+#
 #   e.g.:
 #
-#   --- toto; ---< Documents toto
 #   --- titi; ///< Documents toto
 #   --- tata; /**< Documents tata */
 
@@ -22,6 +20,7 @@
 #
 # - Structures documentation looks like that:
 #
+#   --- This is an example of structure documentation.
 #   --- struct name_of_struct {
 #   ---   field1; ---< Documentation of field1
 #   ---   /** Documentation of field2 */
@@ -29,7 +28,6 @@
 #     ... more fields ...
 #   --- };
 #
-# - 
 
 function linetype
 {
@@ -49,13 +47,25 @@ function struct
 {
 	shift
 	case "$1" in
-		"struct"|"};*")
-			echo "$*" | sed "y#---#///#"
+		"struct"|"};"*)
+			echo "$*"
 			;;
 		"")
 			;;
+		'*'*)
+			echo -n "   $1"
+			shift
+			case "$1" in
+				-*)
+					echo -n "$1" | tr '-' ' '
+					echo -n "  -"
+					shift
+					;;
+			esac
+			echo "  $*"
+			;;
 		*)
-			echo "  $*" | sed "y#---#///#"
+			echo "  $*"
 			;;
    esac
 }
@@ -63,7 +73,7 @@ function struct
 function func
 {
 	shift
-	echo "$@;" | sed "y#---#///#"
+	echo "$@;"
 }
 
 function transform
@@ -71,28 +81,28 @@ function transform
 	local s w
 	local l e type prevtype
 	prevtype=0
-	s="[[:space:]]*"
-	w="[_[:alnum:]]*"
 	read -a l
 	while [ $? -eq 0 ]; do
 		linetype ${l[@]}
 		type=$?
-#		echo "type:$type"
 		case ${type} in
-			1) #COMMENT
+			1) # COMMENTS
 				if [ ${prevtype} -ne 2 ]; then
-					echo "${l[*]}" | sed "y#---#///#"
+					echo "${l[*]}" | sed "s#---#///#"
 				else
 					struct "${l[@]}"
 					type=2
 				fi
-			;;
-			2) struct "${l[@]}"
-			;;
-			3) [ ${prevtype} -eq 1 ] && func "${l[@]}" || type=0
-			;;
-			0) [ ${prevtype} -ne 0 ] && echo
-			;;
+				;;
+			2) # STRUTURES
+				struct "${l[@]}"
+				;;
+			3) # FUNCTIONS
+				[ ${prevtype} -eq 1 ] && func "${l[@]}" || type=0
+				;;
+			0) # BLANK-LINE
+				[ ${prevtype} -ne 0 ] && echo
+				;;
 		esac
 		prevtype=${type}
 		read -a l

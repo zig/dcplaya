@@ -1,9 +1,9 @@
---- fileselector.lua
--- 
--- author : benjamin gerard <ben@sashipa.com>
--- date   : 2002/10/04
---
--- $Id: fileselector.lua,v 1.10 2002-10-14 19:10:06 benjihan Exp $
+--- @file   fileselector.lua
+--- @author benjamin gerard <ben@sashipa.com>
+--- @date   2002/10/04
+--- @brief  fileselector gui
+---
+--- $Id: fileselector.lua,v 1.11 2002-10-25 21:07:43 benjihan Exp $
 --
 -- TODO : select item with space 
 --        completion with tab        
@@ -18,8 +18,13 @@ dolib("gui")
 dolib("textlist") -- Bug when nested !!
 dolib("filelist")
 
---
---
+--- Create a fileselector GUI application.
+---
+--- @param  name      Fileselector label.
+--- @param  path      Fileselector current path. nil for current.
+--- @param  filename  Default input filename.
+---
+--- @return gui application handle
 function fileselector(name,path,filename)
 	local dial,but,input
 
@@ -58,9 +63,9 @@ function fileselector(name,path,filename)
 -- ^ ^                                                   ^ ^      ^ ^  
 -- X X1                                                 X5 X4    X3 X2
 
----------------------------
+-- ------------------------
 -- BUTTONS' EVENT HANDLERS
----------------------------
+-- ------------------------
 	function but_cancel_handle(but,evt)
 --		print("BUTTON CANCEL")
 		local dial = but.owner 
@@ -174,9 +179,9 @@ function fileselector(name,path,filename)
 		locate(dial,dial.input.input)
 	end
 
-----------------
+-- --- --- --- -
 -- BUILD LAYOUT
-----------------
+-- --- --- --- -
 	local butdef = {
 		{ name="CANCEL",	handle=but_cancel_handle	},
 		{ name="MKDIR", 	handle=but_mkdir_handle 	},
@@ -222,9 +227,9 @@ function fileselector(name,path,filename)
 	y2 = y7+spany
 	h  = y2-y
 		 
-----------------
+-- --- --- --- -
 -- MAIN DIALOG
----------------
+-- --- --- ----
 
 	-- Set status text
 	function status(dial,text)
@@ -364,9 +369,9 @@ function fileselector(name,path,filename)
 	  	but.event_table[gui_press_event] = p.handle
 	end
 
----------------
+-- --- --- ----
 -- ALL BUTTONS
----------------
+-- --- --- ----
 	dial.buttons = {}
 	local i, b, yb
 	i = 1
@@ -378,28 +383,28 @@ function fileselector(name,path,filename)
 		i = i + 1
 	end
 
---------------
+-- --- --- ---
 -- FILE INPUT
---------------
+-- --- --- ---
 	local iname = path
 	if filename then iname = iname.."/"..filename end
 	dial.input = gui_new_input(dial, { x1, y4, x3, y3 }, nil,nil,iname)
 
------------------
+-- --- --- --- --
 -- COMMAND INPUT
------------------
+-- --- --- --- --
 	dial.command = gui_new_input(dial, { x1, y8, x3, y9 })
 
-----------
+-- --- ---
 -- STATUS
-----------
+-- --- ---
 	-- create an input item
 	dial.status = gui_new_text(dial, { x1, y6, x3, y7 }, nil,
 		{x="left"})
 
-------------
+-- --- --- -
 -- FILELIST
-------------
+-- --- --- -
 
 	function confirm(fl)
 --		print("FILESELECTOR-CONFIRM")

@@ -1,5 +1,5 @@
 /**
- *  @name  mutex.h
+ *  @file    mutex.h
  *  @author  benjamin gerard <ben@sashipa.com>
  *  @date    2002/10/23
  *  @brief   Implements recursive mutex (mutual exclusion) over spinlock.
@@ -14,7 +14,7 @@
 typedef struct {
   volatile kthread_t * owner; /**< Owner thread. 0 if orphelan.     */
   volatile int count;         /**< Number of lock.                  */
-  spinlock_t lock;   /**< Mutex of mutex object.           */
+  spinlock_t lock;            /**< Mutex of mutex object.           */
 } mutex_t;
 
 /** Initialize mutex object.

@@ -1,59 +1,65 @@
---- textlist.lua
--- 
--- author : benjamin gerard <ben@sashipa.com>
--- date   : 2002/10/04
---
--- $Id: textlist.lua,v 1.8 2002-10-15 06:02:47 benjihan Exp $
---
+--- @file   textlist.lua
+--- @author benjamin gerard <ben@sashipa.com>
+--- @date   2002/10/04
+--- @brief  Manage and display a list of text.
+---
+--- $Id: textlist.lua,v 1.9 2002-10-25 21:07:43 benjihan Exp $
+---
 
 -- Unload the library
 textlist_loaded = nil
 
 if not dolib("basic") then return end
 
---- textlist object - Display a textlist from a given dir
---
--- components :
--- "dir"     	Current fllist object
--- "pos"     	Current select item
--- "top"     	Top displayed line
--- "lines"   	Computed max displayed lines
--- "maxlines"   Real maximum od displayed lines
--- "entries" 	Number of entry in "dir"
---
--- "dl"      	Current display list
--- "cdl"     	Cursor display list
--- "mtx"     	Current transform matrix
--- "cmtx"    	Cursor transform matrix (local, need to be multiply by mtx)
---
--- "box"     	Display bounding box {x1,y1,x2,y2}
--- "bo2"        Extended box info {w,h,z}
--- "border"  	Size of border. Default 3.
--- "span"    	Size of separator line (up and down). Default 1.
---
--- "filecolor"	Color to display flentry with size >= 0
--- "dircolor"	Color to display flentry with size < -1
--- "bkgcolor"	Color of background box
--- "curcolor"	Color of cursor box
---
--- "confirm"	bool function(textlist). This function is call when confirm
---              button is pressed.
---              Returns :	- nil if action failed
---							- 0 ok but no change
---							- 1 if entry is "confirmed"
---							- 2 if entry is "not confirmed" but change occurs
---                          - 3 if entry is "confirmed" and change occurs
--- "flags"		{ no_bkg align=["left"|"center"|"right"] }
---              	no_bkg : Do not display background box
---               	align  : Entry text horizontal alignment. default="left"
+
+--- Entry displayed in textlist.
+--- struct flentry {
+---   name; ///< Displayed text
+---   size; ///< Optionnal. -1 for highlight (directories).
+--- };
 
 
-
---- fllist object - List of object to display in textlist.
---  fllist := { flentry ... }
-
---- flentry - Element displayed in textlist
---  flentry := { name=STRING ... }
+--- textlist object definition
+--- struct textlist {
+---
+--- flentry dir[]; ///< Current fllist object
+--- pos;       ///< Current select item
+--- top;       ///< Top displayed line
+--- lines;     ///< Computed max displayed lines
+--- maxlines;  ///< Real maximum od displayed lines
+--- entries;   ///< Number of entry in "dir"
+--- dl;        ///< Current display list
+--- cdl;       ///< Cursor display list
+--- mtx;       ///< Current transform matrix
+--- cmtx;      ///< Cursor transform matrix (local, need to be multiply by mtx)
+--- box;       ///< Display bounding box {x1,y1,x2,y2}
+--- bo2;       ///< Extended box info {w,h,z}
+--- border;    ///< Size of border. Default 3.
+--- span;      ///< Size of separator line (up and down). Default 1.
+--- filecolor; ///< Color to display flentry with size >= 0
+--- dircolor;  ///< Color to display flentry with size < -1
+--- bkgcolor;  ///< Color of background box
+--- curcolor;  ///< Color of cursor box
+--- /** bool function(textlist).
+---  *   This function is call when confirm button is pressed.
+---  *   @return
+---  *     - @b nil  if action failed
+---  *     - @b 0    ok but no change
+---  *     - @b 1    if entry is "confirmed"
+---  *     - @b 2    if entry is "not confirmed" but change occurs
+---  *     - @b 3    if entry is "confirmed" and change occurs
+---  */
+--- confirm;
+--- /** Some flags.
+---  *  flags are :
+---  *  - @b no_bkg   Do not display background box.
+---  *  - @b align    Entry text horizontal alignment :
+---  *  -- "left". This is the default.
+---  *  -- "center".
+---  *  -- "right".
+---  */
+--- flags;
+--- };
 
 
 function textlist_dump(fl)
@@ -235,17 +241,20 @@ function textlist_reset(fl)
 --	print("...textlist_reset")
 end
 
--- Textlist create function :
--- 
--- flparm : Optionnal creation structure, with optionnal fields. Most fields
---          are the same than fllist ones.
---
---  Exceptions are:
---
---        pos : { x, y, z }. Each component is optionnal. Default {100,100,100}
---        box : { min_width, max_width, min_heigth, max_height }
---				display box min/max Default={0,0,400, size for 8 entries)
---
+--- Create a textlist objects.
+--- 
+--- @param  flparm   Optionnal creation structure, with optionnal fields.
+---                  Most fields are the same than fllist ones.
+---
+---  Exceptions are:
+---
+---    - pos : { x, y, z }. Each component is optionnal. Default {100,100,100}
+---    - box : { min_width, max_width, min_heigth, max_height }
+---          display box min/max Default={0,0,400, size for 8 entries)
+---
+--- @return textlist object
+--- @retval nil error
+---
 function textlist_create(flparm)
 	local fl = {}
 
