@@ -4,7 +4,7 @@
  * @date    2002/02/18
  * @brief   music info and help layer.
  *
- * $Id: info.c,v 1.5 2002-10-11 12:09:28 benjihan Exp $
+ * $Id: info.c,v 1.6 2002-10-23 00:03:43 benjihan Exp $
  */
 
 #include <kos/thread.h>
@@ -249,7 +249,6 @@ static void render_diskinfo(const float xs, const float ys)
   y = 340.0f;
   
   /* Track time */  
-
   if (info->valid && info->info[PLAYA_INFO_TIMESTR].s) {
     float tw, th; 
     const char * timestr = info->info[PLAYA_INFO_TIMESTR].s;
@@ -287,10 +286,8 @@ static void render_diskinfo(const float xs, const float ys)
 
   /* Format */	
   if (info->valid && info->info[PLAYA_INFO_FORMAT].s) {
-	draw_set_clipping(x,y,x+313,y+16);
 	text_set_color(rgb[0], rgb[1], rgb[2], rgb[3]);
     text_draw_str(x, y, 100.0f, info->info[PLAYA_INFO_FORMAT].s);
-	draw_set_clipping(0,0,640,480);
   }
 
   y = 363;
