@@ -6,6 +6,8 @@
 
 menu_loaded=nil
 if not dolib("textlist") then return end
+if not dolib("style") then return end
+if not dolib("box3d") then return end
 
 if not menu_tag then
    menu_tag = newtag()
@@ -89,16 +91,67 @@ function menu_create(owner, name, def, box, x1, y1)
    -- Menu default style
    -- ------------------
    local style = {
-      bkg_color		= { 1, 0.7, 0.7, 0.7,  1, 0.3, 0.3, 0.3 },
-      title_color	= { 1,1,1,1 },
-      titlebar_color	= { 1, 0, 0, 0.2,  1, 0, 0, 0.7, 2},
-      titlebar_type	= 2,
       border		= 5,
       span              = 1,
-      file_color	= { 1, 0, 0, 0 },
-      dir_color		= { 1, 0, 0, .4 },
-      cur_color		= { 1, 1, 1, 1,  1, 0.1, 0.4, 0.5 },
    }
+
+   local menu_style = style_get(def.style)
+   if tag(menu_style) == style_tag then
+      local col0, col1, col2, col3
+      local cc = function (a,b) 
+		    local i,j,v,r
+		    r = {}
+		    j = 1
+		    for i,v in a do
+		       r[j] = v
+		       j = j + 1
+		    end
+		    for i,v in b do
+		       r[j] = v
+		       j = j + 1
+		    end
+		    return r
+		 end
+
+      -- title bar
+      col0 = menu_style:get_color(0,1)
+      col3 = menu_style:get_color(0,0.5)
+      col1 = (col0+col3) * 0.5
+      col2 = col1
+
+      style.titlebar_textcolor   = menu_style:get_color(1,0)
+
+      style.titlebar_topcolor    = menu_style:get_color(0,1)
+      style.titlebar_leftcolor   = menu_style:get_color(0,0.7)
+      style.titlebar_rightcolor  = menu_style:get_color(0,0.2)
+      style.titlebar_bottomcolor = menu_style:get_color(0,0.1)
+
+      col0 = menu_style:get_color(0,0.6)
+      col3 = menu_style:get_color(0,0.3)
+      col1 = col0 * 0.7 + col3 * 0.3
+      col2 = col0 * 0.3 + col3 * 0.7
+      style.titlebar_bkgcolor    = { col0,col1,col2,col3 }
+
+      -- menu body 
+      local o = 0.3
+
+      style.body_topcolor    = menu_style:get_color(1,o)
+      style.body_leftcolor   = menu_style:get_color(0.7,o)
+      style.body_rightcolor  = menu_style:get_color(0.2,0.1)
+      style.body_bottomcolor = menu_style:get_color(0.1,0)
+
+      col0 = menu_style:get_color(0.6,o)
+      col3 = menu_style:get_color(0.3,o)
+      col1 = col0 * 0.7 + col3 * 0.3
+      col2 = col0 * 0.3 + col3 * 0.7
+      style.body_bkgcolor    =  { col0,col1,col2,col3 }
+
+      style.body_filecolor   = menu_style:get_color(1,1)
+      style.body_dircolor    = style.body_filecolor
+      style.body_curcolor    = cc(menu_style:get_color(0.2,0.3),
+				  menu_style:get_color(0.2,0.5))
+   end
+
 
    -- Menu update (handles fade in / fade out)
    -- -----------
@@ -126,6 +179,11 @@ function menu_create(owner, name, def, box, x1, y1)
       if key == evt_shutdown_event then
 	 menu:shutdown()
 	 return evt
+      end
+
+      if key == gui_focus_event then
+	 menu:open()
+	 return
       end
 
       if menu.closed then
@@ -200,78 +258,76 @@ function menu_create(owner, name, def, box, x1, y1)
 
    -- Menu draw
    -- ---------
-   function menu_draw(menu)
-      local fl  = menu.fl
 
-      local dl  = fl.dl
-      dl_clear(dl)
-
-      -- Draw textlist $$$ ben : Add this here but it does not seem to work !
-      fl:draw()
-
-      local dl  = fl.dl
-      local def = menu.def
+   function menu_draw_border(menu, dl)
+      local fl = menu.fl
+      local box = { 0, 0, fl.bo2[1], fl.bo2[2] }
       local style = menu.style
-      local w,h,col
-      local active = dl_set_active(dl,0)
---      dl_clear(dl)
-      w = fl.bo2[1]
 
+      -- Draw menu border
+      local b3d = box3d(box, 2,
+			style.body_bkgcolor,
+			style.body_topcolor,
+			style.body_leftcolor,
+			style.body_bottomcolor,
+			style.body_rightcolor)
+      b3d:draw(dl)
+   end
+
+
+   function menu_draw_titlebar(menu,dl)
+      local def = menu.def
+      if not def.title then return end
+
+      local fl = menu.fl
+      local style = menu.style
+      local w,w2,h2,yt,w3
+
+      w = fl.bo2[1]
+      w2,h2 = dl_measure_text(dl, def.title)
+      w3 = w2 + 2*fl.border
+      if w3 > w then
+	 fl:set_box(nil,nil,w3,nil,nil)
+	 w = fl.bo2[1]
+      end
+
+      h = h2 + style.span+style.border
+      yt = -h --+style.border
+
+      local b3d = box3d({0 , yt, w, yt+h}, 2,
+			style.titlebar_bkgcolor,
+			style.titlebar_topcolor,
+			style.titlebar_leftcolor,
+			style.titlebar_bottomcolor,
+			style.titlebar_rightcolor)
+      b3d:draw(dl)
+
+      -- Draw title 
+      col = style.titlebar_textcolor
+      if col then
+	 dl_draw_text(dl, (w-w2)*0.5, yt+(h-h2)*0.5 , 0.1,
+		      col[1],col[2],col[3],col[4], def.title)
+      end
+
+      -- Create a new box to include title box.
+      menu.box = fl.box + {0, -h, 0, 0 }
+   end
+
+   function menu_draw_background(menu, dl)
       -- Default box is the same than textlist one. It will change if 
       -- there is a title, since the box will grow.
-      menu.box = fl.box
+      menu.box = menu.fl.box
+      menu_draw_titlebar(menu,dl)
+      menu_draw_border(menu, dl)
+   end
 
-      -- Draw title bar
-      h = 0
-      if def.title then
-	 local w2,h2,yt,w3
-	 w2,h2 = dl_measure_text(dl, def.title)
-	 w3 = w2 + 2*fl.border
-	 if w3 > w then
-	    fl:set_box(nil,nil,w3,nil,nil)
-	    w = fl.bo2[1]
-	 end
-	 h = h2 + style.span+style.border
-	 def.title_h = h
-	 yt = -h+style.border
-	 col = style.titlebar_color
-	 if col then
-	    dl_draw_box(dl, 0 , yt, w, yt+h, 0,
-			col[1],col[2],col[3],col[4],
-			col[5],col[6],col[7],col[8],
-			style.titlebar_type)
-	 end
-	 col = style.title_color
-	 if col then
-	    dl_draw_text(dl, (w-w2)*0.5, yt+(h-h2)*0.5 , 0.1,
-			 col[1],col[2],col[3],col[4], def.title)
-	 end
-	 -- Create a new box to include title box.
-	 menu.box = fl.box + {0, -h, 0, 0 }
-      end
+   function menufl_draw_background(fl, dl)
+      menu_draw_background(fl.owner, dl)
+   end
 
 
-      -- Draw menu background
-      col = style.bkg_color
-      if col then
-	 local bkgtype = style.bkg_type
-	 local i,max
-	 max=fl.pos+fl.dir.n
-	 if max > fl.dir.n then max = fl.dir.n end
-	 for i=fl.pos+1, max do
-	    local e = fl.dir[i]
-	    local info = fl.dirinfo[i]
-	    dl_draw_box(dl, 0, info.y+5, w, info.y+5+info.h, -0.1,
-			col[1],col[2],col[3],col[4],
-			col[5],col[6],col[7],col[8],
-			bkgtype)
-	 end
-      end
-
-
---      dl_set_clipping(dl,0,0,w,0)
---      dl_set_trans(dl, fl.mtx)
-      dl_set_active(dl,active)
+   function menu_draw(menu)
+      menu.fl:draw()
    end
 
    -- Menu confirm
@@ -359,13 +415,22 @@ function menu_create(owner, name, def, box, x1, y1)
 				pos=box,
 				flags=nil,
 				dir=menu.def,
-				filecolor = menu.style.file_color,
-				dircolor  = menu.style.dir_color,
+				filecolor = menu.style.body_filecolor,
+				dircolor  = menu.style.body_dircolor,
 				bkgcolor  = nil,
-				curcolor  = menu.style.cur_color,
+				curcolor  = menu.style.body_curcolor,
 				border    = menu.style.border,
 				span      = menu.style.span,
 			     } )
+
+   menu.fl.draw_background = menufl_draw_background
+
+--       draw_list         = textlist_draw_list,
+--       draw_background   = textlist_draw_background,
+--       draw_cursor       = textlist_draw_cursor,
+--       draw_entry	= textlist_draw_entry,
+--       draw              = textlist_draw,
+
 
    if not box then
       textlist_center(menu.fl, 0, 0, 640, 480)

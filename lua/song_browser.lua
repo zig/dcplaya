@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.22 2003-01-07 19:40:40 ben Exp $
+--- $Id: song_browser.lua,v 1.23 2003-01-08 17:10:00 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -103,6 +103,34 @@ function song_browser_create(owner, name)
    --- Song-Browser update (handles fade in / fade out).
    --  ------------------------------------------------
    function song_browser_update(sb, frametime)
+
+      local timeout = sb.cdrom_check_timeout - frametime
+      if timeout <= 0 then
+	 timeout = 0.5
+	 local st,ty,id = cdrom_status(1)
+
+	 if id == 0 or sb.cdrom_id == 0 then
+	    local path = (sb.fl.dir and sb.fl.dir.path) or "/"
+	    local incd = strsub(path,1,3) == "/cd"
+
+	    if id == 0 and incd and st == "nodisk" then
+	       print("Drive empty")
+	       song_browser_loaddir(sb,"/")
+	    elseif id ~= sb.cdrom_id then
+	       if id ~= 0 then
+		  print(format("New CD detected #%X", id))
+		  if incd then song_browser_loaddir(sb,"/cd") end
+	       else
+		  print("No more CD in drive")
+	       end
+	    end
+	 end
+	 sb.cdrom_stat, sb.cdrom_type, sb.cdrom_id = st, ty, id
+--	 print("CD:"..sb.cdrom_stat..","..sb.cdrom_type..","..sb.cdrom_id)
+      end
+      sb.cdrom_check_timeout = timeout
+
+
       if sb.loaddir then
 	 local loading = (tag(sb.loaddir) == entrylist_tag and
 			  sb.loaddir.loading) or 2
@@ -745,12 +773,19 @@ function song_browser_create(owner, name)
       return menu_create_defs(def , target)
    end
 
+   -- cdrom
+   sb.cdrom_stat, sb.cdrom_type, sb.cdrom_id = cdrom_status(1)
+   sb.cdrom_check_timeout = 0
+
    -- Menu
    sb.mainmenu_def = songbrowser_menucreator
 
    sb:set_color(0, 1, 1, 1)
    sb:draw()
    sb:open()
+
+
+
    evt_app_insert_first(owner, sb)
 
    return sb

@@ -170,12 +170,15 @@ static void controler_thread(void * dummy)
       static int report = 0;
       int oldfunc;
 
+      /* $$$ ben : Try to add this code in lua ... */
+#if 0
       /* $$$ ben : add this here because I am too lazy for creating another
 	 thread. */
       if ((check_cdrom+=elapsed_frame) > 10) {
 	check_cdrom = 0;
 	cdrom_check();
       }
+#endif
 
       spinlock_lock(&controler_mutex);
 
