@@ -5,7 +5,7 @@
  * @date    2002
  * @brief   Registered driver list.
  *
- * $Id: driver_list.h,v 1.12 2003-03-03 13:01:27 ben Exp $
+ * $Id: driver_list.h,v 1.13 2003-03-04 15:26:51 ben Exp $
  */
 
 #ifndef _DRIVER_LIST_H_
@@ -39,12 +39,18 @@ typedef struct _driver_list_reg_s {
   struct _driver_list_reg_s * next; /**< Next registered driver type. */
   const char * name;                /**< Name of driver list.         */
   int type;                         /**< Type id.                     */
+  /** Shutdown function. This function must do everything when a driver list
+      is unregistred. This include freeing memory, removing filetypes ...
+      When this function is called, the driver list is locked.
+  */
+  void (*shutdown)(struct _driver_list_reg_s * driver_list);
   driver_list_t * list;             /**< Driver list.                 */
 } driver_list_reg_t;
 
 /** @name Global driver lists.
  *  @ingroup dcplaya_devel
  *  @{
+ *  @todo Remove this. Use clean driver_lists api instead.
  */
 
 /** List of input driver. */
@@ -58,25 +64,41 @@ extern driver_list_t exe_drivers;
 /** List of image driver. */
 extern driver_list_t img_drivers;
 
-/** Table of all driver lists. */
-extern driver_list_reg_t * driver_lists;
+/* Table of all driver lists. */
+/*extern driver_list_reg_t * driver_lists;*/
 
 /*@}*/
 
 
-/** @name Driver list initialization.
+/** @name Driver lists management.
  *  @ingroup dcplaya_devel
+ *
+ *  Driver lists referes to the list all driver type available.
+ *  User can add new driver type (e.g a video driver type should be welcome.)
+ *
  *  @{
  */
 
 /** Init all driver lists. */
-int driver_list_init_all();
+int driver_lists_init(void);
 
 /** Shutdown all driver lists. */
-void driver_list_shutdown_all(void);
+void driver_lists_shutdown(void);
 
-/** Initialize a driver list. */
-int driver_list_init(driver_list_t * dl, const char *name);
+/** Add a new driver type. */
+int driver_lists_add(driver_list_reg_t * reg);
+
+/** Remove a driver type. */
+int driver_lists_remove(driver_list_reg_t * reg);
+
+/** Lock and get a pointer to the list of regitered driver type. */
+driver_list_reg_t * driver_lists_lock(void);
+
+/** Unlock a previously locked list of registered driver type. */
+void driver_lists_unlock(driver_list_reg_t * reg);
+
+/* Initialize a driver list. */
+/*int driver_list_init(driver_list_t * dl, const char *name);*/
 
 /** Shutdown a driver list. */
 void driver_list_shutdown(driver_list_t * dl);

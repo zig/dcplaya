@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.49 2003-03-03 08:35:24 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.50 2003-03-04 15:26:51 ben Exp $
  */
 
 //#define RELEASE
@@ -444,7 +444,7 @@ static int driver_init(void)
 
   /* Init driver list */
   SDDEBUG("Init decoder driver list\n");
-  err = driver_list_init_all();
+  err = driver_lists_init();
   if (err < 0) {
     goto error;
   }
@@ -938,7 +938,7 @@ int dreammp3_main(int argc, char **argv)
   cdrom_reinit();
 
   /* From this point the number of jiffies must be some what different...
-     I hope */
+     I hope so ! */
   srandom(jiffies);
   if (shell_init()) {
     STHROW_ERROR(error);

@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.6 2003-03-03 18:11:45 ben Exp $
+--- $Id: control_center.lua,v 1.7 2003-03-04 15:26:51 ben Exp $
 ---
 
 control_center_loaded = nil
@@ -123,7 +123,6 @@ function control_center_create(owner, name)
    end
 
    function control_center_menucreator(target)
-
       control_center_create_sprites(cc)
 
       local root = ":" .. target.name .. ":" .. 
@@ -139,6 +138,46 @@ function control_center_create(owner, name)
 			vmu_set_visual(pos)
 		     end
       }
+
+      -- Read available driver type
+      local drlist = get_driver_lists()
+      if type(drlist) ~= "table" then drlist = {} end
+
+      local plugins = {
+	 root = ":plugins:",
+	 sub  = {}
+      }
+      local plug_info
+      local cur_inp = set_visual() or "none"
+
+      -- Inp driver type exist ? (should be always the case)
+
+      print(drlist.inp)
+
+      if drlist.inp then
+	 plugins.root = plugins.root .. "set visual >set_visual"
+	 plugins.sub.set_visual = ":visual:none{set_visual}"
+      end
+
+      -- Fill the info submenu with all available driver types.
+      local k,v
+      for k,v in drlist do
+	 local subname = "inf_" .. k
+	 if not plug_info then
+	    plug_info = {
+	       root = ":info:help{plug_help}",
+	       sub = {},
+	    }
+	    plugins.sub.info = plug_info
+	    plugins.root = plugins.root ..
+	       ((plugins.sub.set_visual and ",") or "")
+	    plugins.root = plugins.root .. "info >info"
+	 end
+
+	 plug_info.root = plug_info.root .. "," .. k .. ">" .. subname
+	 plug_info.sub[subname] = ":"..k..":"
+      end
+
       local def = {
 	 root=root,
 	 cb = cb,
@@ -149,7 +188,7 @@ function control_center_create(owner, name)
 		  vmu_visual = ":visual:none{setvmuvis},scope{setvmuvis},fft{setvmuvis},band{setvmuvis}"
 	       }
 	    },
-	    plugins = ":plugins:",
+	    plugins = plugins,
 	 }
       }
       return menu_create_defs(def , target)

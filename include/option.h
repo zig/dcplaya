@@ -7,7 +7,6 @@
 
 DCPLAYA_EXTERN_C_START
 
-
 #include "vis_driver.h"
 
 typedef enum {
@@ -17,17 +16,12 @@ typedef enum {
   OPTION_LCD_VISUAL_BAND,
 } option_lcd_visual_e;
 
-int option_volume();
-int option_filter();
+int option_setup(void);
+
 vis_driver_t * option_visual();
 void option_no_visual();
 int option_set_visual(vis_driver_t * vis);
 int option_lcd_visual();
-int option_shuffle();
-
-int option_setup(void);
-
-void option_render(unsigned int elapsed_frame);
 
 DCPLAYA_EXTERN_C_END
 

@@ -5,7 +5,7 @@
  * @date    2002
  * @brief   Registered driver list.
  *
- * $Id: driver_list.c,v 1.16 2003-03-03 13:01:27 ben Exp $
+ * $Id: driver_list.c,v 1.17 2003-03-04 15:26:52 ben Exp $
  */
 
 #include <string.h>
@@ -18,58 +18,162 @@
 #include "sysdebug.h"
 #include "lef.h"
 
+/* $$$ ben : Should be remove to use clean interface */
 driver_list_t inp_drivers;
 driver_list_t obj_drivers;
 driver_list_t exe_drivers;
 driver_list_t vis_drivers;
 driver_list_t img_drivers;
 
-driver_list_reg_t * driver_lists;
+static spinlock_t driver_lists_mutex;
+static driver_list_reg_t * driver_lists;
+
+static void fake_shutdown(driver_list_reg_t * dl)
+{
+  SDNOTICE("Shutdowning driver list type [%s]\n",dl->name);
+}
 
 static driver_list_reg_t registered_lists[] = {
-  { 0, "inp", INP_DRIVER, &inp_drivers },
-  { 0, "obj", OBJ_DRIVER, &obj_drivers },
-  { 0, "exe", EXE_DRIVER, &exe_drivers },
-  { 0, "vis", VIS_DRIVER, &vis_drivers },
-  { 0, "img", IMG_DRIVER, &img_drivers },
+  { 0, "inp", INP_DRIVER, &fake_shutdown, &inp_drivers },
+  { 0, "obj", OBJ_DRIVER, &fake_shutdown, &obj_drivers },
+  { 0, "exe", EXE_DRIVER, &fake_shutdown, &exe_drivers },
+  { 0, "vis", VIS_DRIVER, &fake_shutdown, &vis_drivers },
+  { 0, "img", IMG_DRIVER, &fake_shutdown, &img_drivers },
 };
 
-/** Initialize a driver list */
-int driver_list_init(driver_list_t *dl, const char *name)
+
+static driver_list_reg_t * lists_search(driver_list_reg_t * lists,
+					int type,
+					const char * name)
 {
-  SDDEBUG("[driver_list] : init list [%s]\n", name);
+  driver_list_reg_t * l;
+
+  for (l=lists; l; l=l->next) {
+    if (type && type == l->type) {
+      break;
+    }
+    if (name && l->list && !stricmp(l->list->name, name)) {
+      break;
+    }
+  }
+  if (l) {
+    driver_list_lock(l->list);
+  }
+  return l;
+}
+
+driver_list_reg_t * driver_lists_lock(void)
+{
+  spinlock_lock(&driver_lists_mutex);
+  return driver_lists;
+}
+
+void driver_lists_unlock(driver_list_reg_t * reg)
+{
+  if (reg == driver_lists) {
+    spinlock_unlock(&driver_lists_mutex);
+  }
+}
+
+int driver_lists_add(driver_list_reg_t * reg)
+{
+  int err = -1;
+  driver_list_reg_t * lists;
+
+  /* Check parameter */
+  if (!reg || !reg->type || !reg->name || !reg->shutdown || !reg->list) {
+      SDERROR("[%s] : bad parameters\n", __FUNCTION__);
+    return -1;
+  }
+  reg->next = 0;
+
+  SDDEBUG("[%s] : adding [%s,%08x] to registered driver type list.\n",
+	  __FUNCTION__, reg->name, reg->type);
+
+  lists = driver_lists_lock();
+  if (lists == driver_lists) {
+    driver_list_reg_t * l, * p;
+
+    /* Cannot add a list with the same name or the same type. */
+    l = lists_search(lists,reg->type, reg->name);
+    if (l) {
+      SDERROR("[%s] : [%s,%08x] already exists as [%s,%08x].\n",
+	      __FUNCTION__, reg->name, reg->type, l->name, l->type);
+      driver_list_unlock(l->list);
+    } else {
+      /* Find last. */
+      for (p=0,l=lists; l; p=l, l=l->next)
+	;
+
+      if (!p) {
+	driver_lists = lists = reg;
+	SDDEBUG("[%s] : [%s,%08x] has been registered as first\n",
+		__FUNCTION__, reg->name, reg->type);
+      } else {
+	p->next = reg;
+	SDDEBUG("[%s] : [%s,%08x] has been registered after [%s,%08x]\n",
+		__FUNCTION__, reg->name, reg->type, p->name, p->type);
+      }
+      err = 0;
+    }
+  }
+  driver_lists_unlock(lists);
+  return err;
+}
+
+int driver_lists_remove(driver_list_reg_t * reg)
+{
+  if (reg) {
+    SDERROR("[%s] : not implemented :(\n",__FUNCTION__);
+    return -1;
+  }
+  return 0;
+}
+
+/* Initialize a driver list. */
+static void list_init(driver_list_t *dl, const char *name)
+{
   spinlock_init(&dl->mutex);
   dl->n = 0;
   dl->drivers = 0;
   dl->name = name;
-  return 0;
 }
 
-/** Init all driver list */
-int driver_list_init_all()
+/** Init everything for the driver manager. */
+int driver_lists_init(void)
 {
   int i, err = 0;
   const int n = sizeof(registered_lists) / sizeof(*registered_lists);
 
+  spinlock_init(&driver_lists_mutex);
   driver_lists = 0;
   for (i=0; i<n; ++i) {
     driver_list_reg_t * reg = registered_lists + i;
-    if (!driver_lists) {
-      driver_lists = reg;
-    }
-    err |= driver_list_init(reg->list, reg->name);
-    reg->next = (i == n-1) ? 0 :  reg+1;
-  }
 
-  return err;
+    if (driver_lists_add(reg) < 0) {
+      SDERROR("[%s] : [%s,%08x] registration failed.\n",
+	      __FUNCTION__, reg->name, reg->type);
+      ++ err;
+    } else {
+      /* $$$ ben : careful ! driver list will not been initiliazed if
+	 the registration failed. This couls be dangerous since we used
+	 extern driver list. This could be ok as soon as these extern be
+	 removed.
+      */
+      list_init(reg->list, reg->name);
+      SDDEBUG("[%s] : [%s,%08x] initialized.\n",
+	      __FUNCTION__, reg->name, reg->type);
+    }
+  }
+  return -err;
 }
 
 /** Shutddown all driver list */
-void driver_list_shutdown_all(void)
+void driver_lists_shutdown(void)
 {
   driver_list_reg_t * reg, * next;
 
-  for (reg=driver_lists; reg; reg=next) {
+  for (reg=driver_lists_lock(); reg; reg = next) {
     next = reg->next;
     driver_list_shutdown(reg->list);
   }
@@ -77,19 +181,29 @@ void driver_list_shutdown_all(void)
   SDDEBUG("[driver_list : all lists shutdowned\n");
 }
 
-/** Shutdown driver list : nothing to do ! */
+/** Shutdown driver list : $$$ ben : we need to do thing here !! */
 void driver_list_shutdown(driver_list_t *dl)
 {
-  spinlock_lock(&dl->mutex);
-  SDDEBUG("[driver_list] : shutdown list [%s]\n", dl->name);
+  if (dl) {
+    spinlock_lock(&dl->mutex);
+    SDDEBUG("[%s] : shutdown list [%s]\n", __FUNCTION__, dl->name);
+    if (dl->n) {
+      SDDEBUG("[%s] : %d remaining driver in [%s]\n",
+	      __FUNCTION__, dl->n, dl->name);
+    }
+  }
 }
 
 void driver_list_lock(driver_list_t *dl) {
-  spinlock_lock(&dl->mutex);
+  if (dl) {
+    spinlock_lock(&dl->mutex);
+  }
 }
 
 void driver_list_unlock(driver_list_t *dl) {
-  spinlock_unlock(&dl->mutex);
+  if (dl) {
+    spinlock_unlock(&dl->mutex);
+  }
 }
 
 static any_driver_t * drv_list_search(driver_list_t *dl, const char *name);

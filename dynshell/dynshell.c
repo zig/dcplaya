@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.71 2003-03-03 17:32:51 zigziggy Exp $
+ * @version    $Id: dynshell.c,v 1.72 2003-03-04 15:26:51 ben Exp $
  */
 
 #include "config.h"
@@ -270,13 +270,9 @@ static int lua_driver_is_same(lua_State * L)
 
 static int lua_driver_gc(lua_State * L)
 {
-  const char * field;
   any_driver_t * * pdriver;
-
   pdriver = lua_touserdata(L, 1);
-
   driver_dereference(*pdriver);
-
   free(pdriver);
 
   return 0;
@@ -1815,12 +1811,13 @@ static int lua_driver_list(lua_State * L)
 {
   if (lua_gettop(L) < 1) {
     /* No parameter : return all drivers. */
-    driver_list_reg_t * dl, *next;
-    int table;
+    driver_list_reg_t * reg, * dl, *next;
+    int table, n;
     lua_settop(L,0);
     lua_newtable(L);
     table = lua_gettop(L);
-    for (dl = driver_lists; dl; dl=next) {
+    reg = driver_lists_lock();
+    for (dl = reg, n=0; dl; dl=next, ++n) {
       driver_list_lock(dl->list);
       lua_pushstring(L, dl->name);
       lua_driver_list_info(L, dl->list);
@@ -1828,6 +1825,7 @@ static int lua_driver_list(lua_State * L)
       driver_list_unlock(dl->list);
       lua_settable(L,table);
     }
+    driver_lists_unlock(reg);
     return 1;
   } else {
     printf("driver_info : command not implemented !\n");
@@ -1843,12 +1841,13 @@ static int lua_driver_list(lua_State * L)
 static int lua_get_driver_lists(lua_State * L)
 {
   /* return all driver types. */
-  driver_list_reg_t * dl, *next;
-  int table;
+  driver_list_reg_t * reg, * dl, *next;
+  int table, n;
   lua_settop(L,0);
   lua_newtable(L);
   table = lua_gettop(L);
-  for (dl = driver_lists; dl; dl=next) {
+  reg = driver_lists_lock();
+  for (dl = reg; dl; dl=next, ++n) {
     driver_list_lock(dl->list);
     lua_pushstring(L, dl->name);
     /*lua_driver_list_info(L, dl->list); */
@@ -1857,6 +1856,8 @@ static int lua_get_driver_lists(lua_State * L)
     driver_list_unlock(dl->list);
     lua_settable(L,table);
   }
+  driver_lists_unlock(reg);
+
   return 1;
 }
 
