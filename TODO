@@ -1,5 +1,5 @@
 
-$Id: TODO,v 1.17 2002-09-27 15:51:22 vincentp Exp $
+$Id: TODO,v 1.18 2002-09-27 16:53:25 benjihan Exp $
 
 ** TODO :
 
@@ -54,7 +54,9 @@ $Id: TODO,v 1.17 2002-09-27 15:51:22 vincentp Exp $
 
 - Just a idea for later : Karaoke mode with jumping ball...
 
-- Change info in inp plugin API. It is such a mess.
++ Change info in inp plugin API. It is such a mess.
+  [2002-09-27 10:32:34 AM, ben]
+  Done ! 
 
 - Ignore joypad move when awaking browser display
 
@@ -108,5 +110,15 @@ $Id: TODO,v 1.17 2002-09-27 15:51:22 vincentp Exp $
   draw_poly_text and draw_poly_box ... Also I find easier
   to handle value between 0 and 1 than value between 0 and ff :)
 
-- [2002-09-26 06:18:36 PM, ben]
+  [2002-09-27 10:28:59 AM, ben]
+
++ [2002-09-26 06:18:36 PM, ben]
   Add commit and update target to Makefile
+
+  [2002-09-27 10:35:11 AM, ben]
+  Done. Currently `make commit' and `make update' depends on TODO target,
+  which rebuild the TODO file (this file) with `[2002-09-27 10:35:11 AM, ben]' substitution.
+
+- [2002-09-27 10:46:59 AM, ben]
+  Executing ke_shutdown() after a keyboard_emu() kills the keyboard emulator
+  but do not give back controler control.
