@@ -1,5 +1,5 @@
 /*
-** $Id: lauxlib.h,v 1.2 2002-09-14 00:47:13 zig Exp $
+** $Id: lauxlib.h,v 1.3 2003-01-05 18:08:39 zigziggy Exp $
 ** Auxiliary functions for building Lua libraries
 ** See Copyright Notice in lua.h
 */
@@ -70,7 +70,7 @@ LUALIB_API int luaL_findstring (const char *name, const char *const list[]);
 # define BUFSIZ 1024
 #endif
 #ifndef LUAL_BUFFERSIZE
-#define LUAL_BUFFERSIZE	  BUFSIZ
+# define LUAL_BUFFERSIZE	  BUFSIZ
 #endif
 
 

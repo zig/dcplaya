@@ -1,5 +1,5 @@
 /*
-** $Id: lbaselib.c,v 1.2 2002-12-19 21:20:56 ben Exp $
+** $Id: lbaselib.c,v 1.3 2003-01-05 18:08:39 zigziggy Exp $
 ** Basic library
 ** See Copyright Notice in lua.h
 */
@@ -7,7 +7,6 @@
 
 
 #include <ctype.h>
-#include "tmp_ctype.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,8 +16,6 @@
 #include "lauxlib.h"
 #include "luadebug.h"
 #include "lualib.h"
-
-
 
 static int digit(int c, unsigned int base)
 {
@@ -41,8 +38,8 @@ static int digit(int c, unsigned int base)
 
 
 
-/*unsigned */
-long strtol(const char * s, char * * end, unsigned int base)
+unsigned 
+long strtoul(const char * s, char * * end, unsigned int base)
 {
   const char * start = s;
   unsigned long v = 0;
@@ -104,18 +101,16 @@ long strtol(const char * s, char * * end, unsigned int base)
   return neg ? -(signed long)v : v;
 }
 
-/* Added by DP */
-void (*luaB_fputs)(const char *s) = (void (*)(const char *))printf;
-void luaB_set_fputs(void (*f)(const char *)) {
-	luaB_fputs = f;
-}
+
+#define fputs printf /* VP : I think Ben has defined an equivalent of fputs in kos now, but what it is called ? */
+
 
 /*
 ** If your system does not support `stderr', redefine this function, or
 ** redefine _ERRORMESSAGE so that it won't need _ALERT.
 */
 static int luaB__ALERT (lua_State *L) {
-  luaB_fputs(luaL_check_string(L, 1));
+  fputs(luaL_check_string(L, 1), stderr);
   return 0;
 }
 
@@ -166,11 +161,11 @@ static int luaB_print (lua_State *L) {
     s = lua_tostring(L, -1);  /* get result */
     if (s == NULL)
       lua_error(L, "`tostring' must return a string to `print'");
-    if (i>1) luaB_fputs("\t");
-    luaB_fputs(s);
+    if (i>1) fputs("\t", stdout);
+    fputs(s, stdout);
     lua_pop(L, 1);  /* pop result */
   }
-  luaB_fputs("\n");
+  fputs("\n", stdout);
   return 0;
 }
 
@@ -187,16 +182,9 @@ static int luaB_tonumber (lua_State *L) {
   else {
     const char *s1 = luaL_check_string(L, 1);
     char *s2;
-	// $$$ ben : Since our internal numbers are float with a 24 bit mantissa,
-	// we don't need unsignde long precision and could keep the sign. This is
-	// an "enhancement" that does not match the tonumber() function
-	// documentationlua in lua reference manual.
-	
-	// unsigned long n;
-    long n;
+    unsigned long n;
     luaL_arg_check(L, 2 <= base && base <= 36, 2, "base out of range");
-
-    n = strtol(s1, &s2, base);
+    n = strtoul(s1, &s2, base);
     if (s1 != s2) {  /* at least one valid digit? */
       while (isspace((unsigned char)*s2)) s2++;  /* skip trailing spaces */
       if (*s2 == '\0') {  /* no invalid trailing characters? */
@@ -263,7 +251,7 @@ static int luaB_globals (lua_State *L) {
 static int luaB_rawget (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
   luaL_checkany(L, 2);
-  lua_rawget(L, -2);
+  lua_rawget(L, 1);
   return 1;
 }
 
@@ -271,7 +259,7 @@ static int luaB_rawset (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
   luaL_checkany(L, 2);
   luaL_checkany(L, 3);
-  lua_rawset(L, -3);
+  lua_rawset(L, 1);
   return 1;
 }
 
@@ -355,7 +343,7 @@ static int luaB_dostring (lua_State *L) {
   int oldtop = lua_gettop(L);
   size_t l;
   const char *s = luaL_check_lstr(L, 1, &l);
-  if (*s == '\27')  /* binary files start with ESC... */
+  if (*s == '\33')  /* binary files start with ESC... */
     lua_error(L, "`dostring' cannot run pre-compiled code");
   return passresults(L, lua_dobuffer(L, s, l, luaL_opt_string(L, 2, s)), oldtop);
 }

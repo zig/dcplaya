@@ -1,11 +1,10 @@
 /*
-** $Id: lobject.c,v 1.1 2002-09-13 16:02:36 zig Exp $
+** $Id: lobject.c,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
 ** Some generic functions over Lua objects
 ** See Copyright Notice in lua.h
 */
 
 #include <ctype.h>
-#include "tmp_ctype.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,7 +24,6 @@ const TObject luaO_nilobject = {LUA_TNIL, {NULL}};
 const char *const luaO_typenames[] = {
   "userdata", "nil", "number", "string", "table", "function"
 };
-
 
 
 // VP : limited version of strcspn (DON'T USE IT !!!!)
@@ -83,6 +81,10 @@ float strtod(char * s, char * * end)
 
   return neg? -v:v;
 }
+
+
+
+
 
 /*
 ** returns smaller power of 2 larger than `n' (minimum is MINPOWER2) 

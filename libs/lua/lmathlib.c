@@ -1,5 +1,5 @@
 /*
-** $Id: lmathlib.c,v 1.3 2002-12-26 07:14:41 ben Exp $
+** $Id: lmathlib.c,v 1.4 2003-01-05 18:08:39 zigziggy Exp $
 ** Standard mathematical library
 ** See Copyright Notice in lua.h
 */
@@ -168,16 +168,8 @@ static int math_max (lua_State *L) {
 static int math_random (lua_State *L) {
   /* the '%' avoids the (rare) case of r==1, and is needed also because on
      some systems (SunOS!) "rand()" may return a value larger than RAND_MAX */
-
-#if 1
-# warning "TODO !!"
-# define RAND_MAX 0xFFFFFFu
+#if 0
   double r = (double)(rand()%RAND_MAX) / (double)RAND_MAX;
-#else
-  double r = 0;
-#endif
-
-
   switch (lua_gettop(L)) {  /* check number of arguments */
     case 0: {  /* no arguments */
       lua_pushnumber(L, r);  /* Number between 0 and 1 */
@@ -198,16 +190,13 @@ static int math_random (lua_State *L) {
     }
     default: lua_error(L, "wrong number of arguments");
   }
+#endif
   return 1;
 }
 
 
 static int math_randomseed (lua_State *L) {
-#if 0
-  srand(luaL_check_int(L, 1));
-#else
-# warning "TODO !!!"
-#endif
+/*  srand(luaL_check_int(L, 1)); */
   return 0;
 }
 

@@ -1,5 +1,5 @@
 /*
-** $Id: lobject.h,v 1.1 2002-09-13 16:02:36 zig Exp $
+** $Id: lobject.h,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
 ** Type definitions for Lua objects
 ** See Copyright Notice in lua.h
 */
@@ -43,6 +43,26 @@
 #define is_T_MARK(t)	((t) == LUA_TMARK)
 
 
+/* GCValue is a struct type for other garbage collectable types to
+   cast into it. They include: TString, Proto, Hash, Closure */
+struct GCValue;
+
+#define LUA_VTNumber	0
+#define LUA_VTString 	1
+#define LUA_VUdata 	2
+#define LUA_VClosure 	3
+#define LUA_VHash 	4
+#define LUA_VProto 	5
+
+#define vttype(o)	(o->value.any->vtype)
+
+typedef struct GCValue {
+  short vtype; 			/* the value type, useful for casting */
+  short marked;			/* either 0 or 1, or value>1, which means never GC */
+  struct GCValue *gcnext;	/* pointers  to the prev/next GCValue, which eventually shall */
+  struct GCValue *gcprev;	/* 	cover all garbage collectable values */
+} GCValue;
+
 typedef union {
   struct TString *ts;	/* LUA_TSTRING, LUA_TUSERDATA */
   struct Closure *cl;	/* LUA_TFUNCTION */
@@ -80,6 +100,10 @@ typedef struct lua_TObject {
 #define TSPACK	((int)sizeof(int))
 
 typedef struct TString {
+  short vtype;
+  short marked;
+  struct GCValue *gcnext;
+  struct GCValue *gcprev;
   union {
     struct {  /* for strings */
       unsigned long hash;
@@ -92,7 +116,6 @@ typedef struct TString {
   } u;
   size_t len;
   struct TString *nexthash;  /* chain for hash table */
-  int marked;
   char str[TSPACK];   /* variable length string!! must be the last field! */
 } TString;
 
@@ -101,6 +124,10 @@ typedef struct TString {
 ** Function Prototypes
 */
 typedef struct Proto {
+  short vtype;
+  short marked;
+  struct GCValue *gcnext;
+  struct GCValue *gcprev;
   Number *knum;  /* Number numbers used by the function */
   int nknum;  /* size of `knum' */
   struct TString **kstr;  /* strings used by the function */
@@ -112,8 +139,6 @@ typedef struct Proto {
   short numparams;
   short is_vararg;
   short maxstacksize;
-  short marked;
-  struct Proto *next;
   /* debug information */
   int *lineinfo;  /* map from opcodes to source lines */
   int nlineinfo;  /* size of `lineinfo' */
@@ -135,12 +160,14 @@ typedef struct LocVar {
 ** Closures
 */
 typedef struct Closure {
+  short vtype;
+  short marked;
+  struct GCValue *gcnext;
+  struct GCValue *gcprev;
   union {
     lua_CFunction c;  /* C functions */
     struct Proto *l;  /* Lua functions */
   } f;
-  struct Closure *next;
-  struct Closure *mark;  /* marked closures (point to itself when not marked) */
   short isC;  /* 0 for Lua functions, 1 for C functions */
   short nupvalues;
   TObject upvalue[1];
@@ -157,19 +184,22 @@ typedef struct Node {
 } Node;
 
 typedef struct Hash {
+  short vtype;
+  short marked;
+  struct GCValue *gcnext;
+  struct GCValue *gcprev;
   Node *node;
   int htag;
   int size;
   Node *firstfree;  /* this position is free; all positions after it are full */
-  struct Hash *next;
-  struct Hash *mark;  /* marked tables (point to itself when not marked) */
 } Hash;
 
 
 /* unmarked tables and closures are represented by pointing `mark' to
 ** themselves
 */
-#define ismarked(x)	((x)->mark != (x))
+#define isfullymarked(x)	((x)->mark > 0)
+#define ishalfmarked(x)		((x)->mark < 0)
 
 
 /*
@@ -199,6 +229,5 @@ int luaO_str2d (const char *s, Number *result);
 
 void luaO_verror (lua_State *L, const char *fmt, ...);
 void luaO_chunkid (char *out, const char *source, int len);
-
 
 #endif

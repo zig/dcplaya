@@ -1,5 +1,5 @@
 /*
-** $Id: lstring.c,v 1.1 2002-09-13 16:02:36 zig Exp $
+** $Id: lstring.c,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
 ** String table (keeps all strings handled by Lua)
 ** See Copyright Notice in lua.h
 */
@@ -13,7 +13,7 @@
 #include "lobject.h"
 #include "lstate.h"
 #include "lstring.h"
-
+#include "lgc.h"
 
 /*
 ** type equivalent to TString, but with maximum alignment requirements
@@ -86,19 +86,20 @@ static void newentry (lua_State *L, stringtable *tb, TString *ts, int h) {
     luaS_resize(L, tb, tb->size*2);
 }
 
-
-
 TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
   unsigned long h = hash_s(str, l);
   int h1 = h & (L->strt.size-1);
   TString *ts;
   for (ts = L->strt.hash[h1]; ts; ts = ts->nexthash) {
-    if (ts->len == l && (memcmp(str, ts->str, l) == 0))
-      return ts;
+    if (ts->len == l && (memcmp(str, ts->str, l) == 0)) {
+      greymark(L, ts);	/* whenver string is used, it is marked */
+      return ts;      
+    }
   }
   /* not found */
   ts = (TString *)luaM_malloc(L, sizestring(l));
-  ts->marked = 0;
+  ts->vtype = LUA_VTString;
+  mark_newvalue(L, ts);
   ts->nexthash = NULL;
   ts->len = l;
   ts->u.s.hash = h;
@@ -115,11 +116,15 @@ TString *luaS_newudata (lua_State *L, size_t s, void *udata) {
   union L_UTString *uts = (union L_UTString *)luaM_malloc(L,
                                 (lint32)sizeof(union L_UTString)+s);
   TString *ts = &uts->ts;
-  ts->marked = 0;
+  ts->vtype = LUA_VUdata;
+  mark_newvalue(L, ts);
   ts->nexthash = NULL;
   ts->len = s;
   ts->u.d.tag = 0;
-  ts->u.d.value = (udata == NULL) ? uts+1 : udata;
+
+  /* version 4.0.1 */
+  ts->u.d.value = (s > 0) ? uts+1 : udata; /*(udata == NULL) ? uts+1 : udata; */
+
   L->nblocks += sizestring(s);
  /* insert it on table */
   newentry(L, &L->udt, ts, IntPoint(ts->u.d.value) & (L->udt.size-1));

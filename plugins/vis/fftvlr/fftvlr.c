@@ -8,7 +8,7 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.22 2002-12-30 06:28:18 ben Exp $
+ * $Id: fftvlr.c,v 1.23 2003-01-05 18:08:39 zigziggy Exp $
  */
 
 #include <stdlib.h>
@@ -36,8 +36,8 @@ void FaceNormal(float *d, const vtx_t * v, const tri_t *t);
 #define VLR_Y (0.5f)
 /*#define VLR_W 32
 #define VLR_H 96*/
-#define VLR_W 40
-#define VLR_H 20
+#define VLR_W 30
+#define VLR_H 30
 
 /* Resulting number of triangles */
 #define VLR_TPL ((VLR_W-1)*2)

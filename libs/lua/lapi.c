@@ -1,5 +1,5 @@
 /*
-** $Id: lapi.c,v 1.1 2002-09-13 16:02:36 zig Exp $
+** $Id: lapi.c,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
 ** Lua API
 ** See Copyright Notice in lua.h
 */
@@ -290,8 +290,9 @@ LUA_API int lua_getref (lua_State *L, int ref) {
   if (ref == LUA_REFNIL)
     ttype(L->top) = LUA_TNIL;
   else if (0 <= ref && ref < L->refSize &&
-          (L->refArray[ref].st == LOCK || L->refArray[ref].st == HOLD))
+          (L->refArray[ref].st == LOCK || L->refArray[ref].st == HOLD)) {
     *L->top = L->refArray[ref].o;
+  }
   else
     return 0;
   api_incr_top(L);
@@ -331,6 +332,10 @@ LUA_API void lua_rawset (lua_State *L, int index) {
   StkId t = Index(L, index);
   LUA_ASSERT(ttype(t) == LUA_TTABLE, "table expected");
   *luaH_set(L, hvalue(t), L->top-2) = *(L->top-1);
+
+  markobject(L->top - 1, L, 0);
+  markobject(L->top - 2, L, 0);
+
   L->top -= 2;
 }
 
@@ -339,6 +344,9 @@ LUA_API void lua_rawseti (lua_State *L, int index, int n) {
   StkId o = Index(L, index);
   LUA_ASSERT(ttype(o) == LUA_TTABLE, "table expected");
   *luaH_setint(L, hvalue(o), n) = *(L->top-1);
+
+  markobject(L->top - 1, L, 0);
+
   L->top--;
 }
 
@@ -367,6 +375,8 @@ LUA_API int lua_ref (lua_State *L,  int lock) {
     }
     L->refArray[ref].o = *(L->top-1);
     L->refArray[ref].st = lock ? LOCK : HOLD;
+
+    markobject(&L->refArray[ref].o, L, 0);
   }
   L->top--;
   return ref;
@@ -402,8 +412,9 @@ LUA_API int lua_getgccount (lua_State *L) {
 LUA_API void lua_setgcthreshold (lua_State *L, int newthreshold) {
   if (newthreshold > GCscale(ULONG_MAX))
     L->GCthreshold = ULONG_MAX;
-  else
+  else {
     L->GCthreshold = GCunscale(newthreshold);
+  }
   luaC_checkGC(L);
 }
 
@@ -443,7 +454,7 @@ LUA_API int lua_next (lua_State *L, int index) {
   LUA_ASSERT(ttype(t) == LUA_TTABLE, "table expected");
   n = luaH_next(L, hvalue(t), luaA_index(L, -1));
   if (n) {
-    *(L->top-1) = *key(n);
+    *(L->top-1) = *key(n);    
     *L->top = *val(n);
     api_incr_top(L);
     return 1;
@@ -485,10 +496,14 @@ LUA_API void lua_concat (lua_State *L, int n) {
 
 
 LUA_API void *lua_newuserdata (lua_State *L, size_t size) {
-  TString *ts = luaS_newudata(L, size, NULL);
+/*  TString *ts = luaS_newudata(L, size, NULL); */
+  TString *ts = luaS_newudata(L, (size==0) ? 1 : size, NULL); /* change in version 4.0.1 reported by VP */
   tsvalue(L->top) = ts;
   ttype(L->top) = LUA_TUSERDATA;
   api_incr_top(L);
   return ts->u.d.value;
 }
 
+LUA_API void lua_collectgarbage (lua_State *L, int step) {
+  luaC_collect(L, step);
+}

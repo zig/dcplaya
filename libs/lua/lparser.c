@@ -1,5 +1,5 @@
 /*
-** $Id: lparser.c,v 1.1 2002-09-13 16:02:36 zig Exp $
+** $Id: lparser.c,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
 ** LL(1) Parser and code generator for Lua
 ** See Copyright Notice in lua.h
 */
@@ -20,6 +20,7 @@
 #include "lstate.h"
 #include "lstring.h"
 
+#include "lgc.h"
 
 /*
 ** Constructors descriptor:
@@ -125,6 +126,7 @@ static int string_constant (FuncState *fs, TString *s) {
                     "constant table overflow", MAXARG_U);
     c = f->nkstr++;
     f->kstr[c] = s;
+    adjust_mark(fs->L, f, s);
     s->u.s.constindex = c;  /* hint for next time */
   }
   return c;
@@ -154,6 +156,7 @@ static int luaI_registerlocalvar (LexState *ls, TString *varname) {
   Proto *f = ls->fs->f;
   luaM_growvector(ls->L, f->locvars, f->nlocvars, 1, LocVar, "", MAX_INT);
   f->locvars[f->nlocvars].varname = varname;
+  adjust_mark(ls->L, f, varname);
   return f->nlocvars++;
 }
 
@@ -296,7 +299,9 @@ static void pushclosure (LexState *ls, FuncState *func) {
     luaK_tostack(ls, &func->upvalues[i], 1);
   luaM_growvector(ls->L, f->kproto, f->nkproto, 1, Proto *,
                   "constant table overflow", MAXARG_A);
-  f->kproto[f->nkproto++] = func->f;
+  f->kproto[f->nkproto] = func->f;
+  adjust_mark(ls->L, f, func->f);
+  f->nkproto++;
   luaK_code2(fs, OP_CLOSURE, f->nkproto-1, func->nupvalues);
 }
 
@@ -997,7 +1002,7 @@ static void retstat (LexState *ls) {
   /* stat -> RETURN explist */
   FuncState *fs = ls->fs;
   next(ls);  /* skip RETURN */
-  if (!block_follow(ls->t.token))
+  if (!block_follow(ls->t.token) && ls->t.token != ';')
     explist1(ls);  /* optional return values */
   luaK_code1(fs, OP_RETURN, ls->fs->nactloc);
   fs->stacklevel = fs->nactloc;  /* removes all temp values */

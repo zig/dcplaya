@@ -1,5 +1,5 @@
 /*
-** $Id: ltable.c,v 1.1 2002-09-13 16:02:36 zig Exp $
+** $Id: ltable.c,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
 ** Lua tables (hash)
 ** See Copyright Notice in lua.h
 */
@@ -25,7 +25,7 @@
 #include "lstate.h"
 #include "lstring.h"
 #include "ltable.h"
-
+#include "lgc.h"
 
 #define gcsize(L, n)	(sizeof(Hash)+(n)*sizeof(Node))
 
@@ -176,9 +176,8 @@ static void setnodevector (lua_State *L, Hash *t, lint32 size) {
 Hash *luaH_new (lua_State *L, int size) {
   Hash *t = luaM_new(L, Hash);
   t->htag = TagDefault;
-  t->next = L->roottable;
-  L->roottable = t;
-  t->mark = t;
+  t->vtype = LUA_VHash;
+  mark_newvalue(L, t);
   t->size = 0;
   L->nblocks += gcsize(L, 0);
   t->node = NULL;
@@ -267,7 +266,7 @@ TObject *luaH_set (lua_State *L, Hash *t, const TObject *key) {
       mp = n;
     }
   }
-  mp->key = *key;
+  mp->key = *key;  
   for (;;) {  /* correct `firstfree' */
     if (ttype(&t->firstfree->key) == LUA_TNIL)
       return &mp->val;  /* OK; table still has a free place */

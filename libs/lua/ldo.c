@@ -1,21 +1,8 @@
 /*
-** $Id: ldo.c,v 1.3 2002-09-15 15:31:04 zig Exp $
+** $Id: ldo.c,v 1.4 2003-01-05 18:08:39 zigziggy Exp $
 ** Stack and Call structure of Lua
 ** See Copyright Notice in lua.h
 */
-
-
-#define LIMITED
-
-
-#ifdef LIMITED
-#include <kos.h>
-#endif
-
-
-#include "file_wrapper.h"
-
-#include "sysdebug.h"
 
 
 #include "setjmp.h"
@@ -257,12 +244,15 @@ static int protectedparser (lua_State *L, ZIO *z, int bin) {
   unsigned long old_blocks;
   int status;
   p.z = z; p.bin = bin;
-  luaC_checkGC(L);
+   luaC_checkGC(L);
+  /* before parsing, give a (good) chance to GC (version 4.0.1) */
+/*  if (L->nblocks/8 >= L->GCthreshold/10)
+    luaC_collectgarbage(L);*/
   old_blocks = L->nblocks;
   status = luaD_runprotected(L, f_parser, &p);
   if (status == 0) {
     /* add new memory to threshold (as it probably will stay) */
-    L->GCthreshold += (L->nblocks - old_blocks);
+/*    L->GCthreshold += (L->nblocks - old_blocks); */
   }
   else if (status == LUA_ERRRUN)  /* an error occurred: correct error code */
     status = LUA_ERRSYNTAX;
@@ -275,33 +265,24 @@ static int parse_file (lua_State *L, const char *filename) {
   int status;
   int bin;  /* flag for file mode */
   int c;    /* look ahead char */
-  FILE *f = 
-#ifndef LIMITED
-    (filename == NULL) ? stdin : 
-#endif
-    fopen(filename, "r");
+  FILE *f = (filename == NULL) ? stdin : fopen(filename, "r");
   if (f == NULL) return LUA_ERRFILE;  /* unable to open file */
   c = fgetc(f);
   ungetc(c, f);
   bin = (c == ID_CHUNK);
-#ifndef LIMITED
-  if (bin
-      && f != stdin
-      ) {
+  if (bin && f != stdin) {
     f = freopen(filename, "rb", f);  /* set binary mode */
     if (f == NULL) return LUA_ERRFILE;  /* unable to reopen file */
   }
-#endif
   lua_pushstring(L, "@");
   lua_pushstring(L, (filename == NULL) ? "(stdin)" : filename);
   lua_concat(L, 2);
-  filename = lua_tostring(L, -1);  /* filename = '@'..filename */
-  lua_pop(L, 1);  /* OK: there is no GC during parser */
+  lua_remove(L, c);  /* remove `filename' from the stack */
+  c = lua_gettop(L);
+  filename = lua_tostring(L, c);  /* filename = '@'..filename */
   luaZ_Fopen(&z, f, filename);
   status = protectedparser(L, &z, bin);
-#ifndef LIMITED
   if (f != stdin)
-#endif
     fclose(f);
   return status;
 }
@@ -325,13 +306,9 @@ static int parse_buffer (lua_State *L, const char *buff, size_t size,
 
 
 LUA_API int lua_dobuffer (lua_State *L, const char *buff, size_t size, const char *name) {
-  
-  //SDDEBUG("Calling parse_buffer ...\n");
   int status = parse_buffer(L, buff, size, name);
-  if (status == 0) { /* parse OK? */
-    //SDDEBUG("Calling lua_call ...\n");
+  if (status == 0)  /* parse OK? */
     status = lua_call(L, 0, LUA_MULTRET);  /* call main */
-  }
   return status;
 }
 
@@ -383,12 +360,7 @@ void luaD_breakrun (lua_State *L, int errcode) {
   else {
     if (errcode != LUA_ERRMEM)
       message(L, "unable to recover; exiting\n");
-#ifdef LIMITED
-    // VP : KOS specific
-    thd_exit();
-#else
     exit(EXIT_FAILURE);
-#endif
   }
 }
 

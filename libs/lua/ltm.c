@@ -1,5 +1,5 @@
 /*
-** $Id: ltm.c,v 1.1 2002-09-13 16:02:36 zig Exp $
+** $Id: ltm.c,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
 ** Tag methods
 ** See Copyright Notice in lua.h
 */
@@ -15,7 +15,7 @@
 #include "lobject.h"
 #include "lstate.h"
 #include "ltm.h"
-
+#include "lgc.h"
 
 const char *const luaT_eventname[] = {  /* ORDER TM */
   "gettable", "settable", "index", "getglobal", "setglobal", "add", "sub",
@@ -154,6 +154,7 @@ LUA_API void lua_settagmethod (lua_State *L, int t, const char *event) {
       break;
     case LUA_TFUNCTION:
       luaT_gettm(L, t, e) = clvalue(L->top - 1);
+      greymark(L, clvalue(L->top - 1));
       break;
     default:
       lua_error(L, "tag method must be a function (or nil)");

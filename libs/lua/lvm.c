@@ -1,5 +1,5 @@
 /*
-** $Id: lvm.c,v 1.1 2002-09-13 16:02:36 zig Exp $
+** $Id: lvm.c,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
 ** Lua virtual machine
 ** See Copyright Notice in lua.h
 */
@@ -29,6 +29,8 @@
 #define strcoll(a,b)	strcmp(a,b)
 #endif */
 #define strcoll(a,b)	strcmp(a,b)
+
+
 
 
 
@@ -80,7 +82,7 @@ static void traceexec (lua_State *L, StkId base, StkId top, lua_Hook linehook) {
   if (newline != ci->line || pc <= ci->lastpc) {
     ci->line = newline;
     L->top = top;
-    luaD_lineHook(L, base-2, newline, linehook);
+    luaD_lineHook(L, base-1, newline, linehook);
   }
   ci->lastpc = pc;
 }
@@ -136,6 +138,7 @@ const TObject *luaV_gettable (lua_State *L, StkId t) {
     luaD_checkstack(L, 2);
     *(L->top+1) = *(L->top-1);  /* key */
     *L->top = *t;  /* table */
+
     clvalue(L->top-1) = tm;  /* tag method */
     ttype(L->top-1) = LUA_TFUNCTION;
     L->top += 2;
@@ -156,8 +159,13 @@ void luaV_settable (lua_State *L, StkId t, StkId key) {
   int tg;
   if (ttype(t) == LUA_TTABLE &&  /* `t' is a table? */
       ((tg = hvalue(t)->htag) == LUA_TTABLE ||  /* with default tag? */
-        luaT_gettm(L, tg, TM_SETTABLE) == NULL)) /* or no TM? */
+        luaT_gettm(L, tg, TM_SETTABLE) == NULL)) { /* or no TM? */
     *luaH_set(L, hvalue(t), key) = *(L->top-1);  /* do a primitive set */
+
+    markobject(key, L, 0);
+    markobject(L->top - 1, L, 0);
+
+  }
   else {  /* try a `settable' tag method */
     Closure *tm = luaT_gettmbyObj(L, t, TM_SETTABLE);
     if (tm != NULL) {
@@ -208,6 +216,10 @@ void luaV_setglobal (lua_State *L, TString *s) {
       ttype(&key) = LUA_TSTRING;
       tsvalue(&key) = s;
       *luaH_set(L, L->gt, &key) = *(L->top - 1);
+
+      markobject(&key, L, 0);
+      markobject(L->top - 1, L, 0);
+
     }
   }
   else {
@@ -323,8 +335,12 @@ void luaV_strconc (lua_State *L, int total, StkId top) {
 static void luaV_pack (lua_State *L, StkId firstelem) {
   int i;
   Hash *htab = luaH_new(L, 0);
-  for (i=0; firstelem+i<L->top; i++)
+  for (i=0; firstelem+i<L->top; i++) {
     *luaH_setint(L, htab, i+1) = *(firstelem+i);
+
+    markobject(firstelem+i, L, 0);
+
+  }
   /* store counter in field `n' */
   luaH_setstrnum(L, htab, luaS_new(L, "n"), i);
   L->top = firstelem;  /* remove elements from the stack */
@@ -498,8 +514,12 @@ StkId luaV_execute (lua_State *L, const Closure *cl, StkId base) {
         int n = GETARG_B(i);
         Hash *arr = hvalue(top-n-1);
         L->top = top-n;  /* final value of `top' (in case of errors) */
-        for (; n; n--)
+        for (; n; n--) { 
           *luaH_setint(L, arr, n+aux) = *(--top);
+
+          markobject(top, L, 0);
+
+        }
         break;
       }
       case OP_SETMAP: {
@@ -510,6 +530,10 @@ StkId luaV_execute (lua_State *L, const Closure *cl, StkId base) {
         for (; n; n--) {
           top-=2;
           *luaH_set(L, arr, top) = *(top+1);
+
+	  markobject(top, L, 0);
+	  markobject(top + 1, L, 0);
+
         }
         break;
       }

@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.56 2002-12-27 04:11:48 zigziggy Exp $
+ * @version    $Id: dynshell.c,v 1.57 2003-01-05 18:08:38 zigziggy Exp $
  */
 
 #include <stdio.h>
@@ -2389,6 +2389,18 @@ static luashell_command_description_t commands[] = {
   {0},
 };
 
+
+static int setgcthreshold(lua_State * L)
+{
+  int v = lua_getgccount(L);
+
+  printf("GCCOUNT = %d\n", v);
+
+/*  lua_setgcthreshold(L, v + 100);*/
+  lua_setgcthreshold(L, 4000);
+}
+
+
 static void shell_register_lua_commands()
 {
   int i;
@@ -2401,11 +2413,16 @@ static void shell_register_lua_commands()
   // song type
   song_tag = lua_newtag(L);
 
+  /* New garbage collection threshold adaptative behaviour */
+/*  lua_pushcfunction(L, setgcthreshold);
+  lua_settagmethod(L, LUA_TNIL, "gc");*/
+  
+
 
   lua_dostring(L, 
-			   "\n function doshellcommand(string)"
-			   "\n   dostring(string)"
-			   "\n end");
+	       "\n function doshellcommand(string)"
+	       "\n   dostring(string)"
+	       "\n end");
 
   dynshell_command("home = [[%s]]", home);
 

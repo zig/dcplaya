@@ -1,5 +1,5 @@
 /*
-** $Id: lfunc.c,v 1.1 2002-09-13 16:02:36 zig Exp $
+** $Id: lfunc.c,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
 ** Auxiliary functions to manipulate prototypes and closures
 ** See Copyright Notice in lua.h
 */
@@ -13,6 +13,7 @@
 #include "lmem.h"
 #include "lstate.h"
 
+#include "lgc.h"
 
 #define sizeclosure(n)	((int)sizeof(Closure) + (int)sizeof(TObject)*((n)-1))
 
@@ -20,9 +21,8 @@
 Closure *luaF_newclosure (lua_State *L, int nelems) {
   int size = sizeclosure(nelems);
   Closure *c = (Closure *)luaM_malloc(L, size);
-  c->next = L->rootcl;
-  L->rootcl = c;
-  c->mark = c;
+  c->vtype = LUA_VClosure;
+  mark_newvalue(L, c);
   c->nupvalues = nelems;
   L->nblocks += size;
   return c;
@@ -42,15 +42,14 @@ Proto *luaF_newproto (lua_State *L) {
   f->numparams = 0;
   f->is_vararg = 0;
   f->maxstacksize = 0;
-  f->marked = 0;
+  f->vtype = LUA_VProto;
+  mark_newvalue(L, f);
   f->lineinfo = NULL;
   f->nlineinfo = 0;
   f->nlocvars = 0;
   f->locvars = NULL;
   f->lineDefined = 0;
   f->source = NULL;
-  f->next = L->rootproto;  /* chain in list of protos */
-  L->rootproto = f;
   return f;
 }
 

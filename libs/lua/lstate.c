@@ -1,5 +1,5 @@
 /*
-** $Id: lstate.c,v 1.1 2002-09-13 16:02:36 zig Exp $
+** $Id: lstate.c,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
 ** Global State
 ** See Copyright Notice in lua.h
 */
@@ -33,7 +33,7 @@ void luaB_opentests (lua_State *L);
 static int errormessage (lua_State *L) {
   const char *s = lua_tostring(L, 1);
   if (s == NULL) s = "(no message)";
-  printf("error: %s\n", s);
+  fprintf(stderr, "error: %s\n", s);
   return 0;
 }
 
@@ -73,15 +73,17 @@ LUA_API lua_State *lua_open (int stacksize) {
   L->udt.hash = NULL;
   L->Mbuffer = NULL;
   L->Mbuffsize = 0;
-  L->rootproto = NULL;
-  L->rootcl = NULL;
-  L->roottable = NULL;
   L->TMtable = NULL;
   L->last_tag = -1;
   L->refArray = NULL;
   L->refSize = 0;
   L->refFree = NONEXT;
   L->nblocks = sizeof(lua_State);
+  L->gcalloc = L->last_gcalloc = 0;
+  L->gcroot = NULL;
+  L->gcptr = NULL;
+  L->gcstage = 0;
+  L->gcTM = 0;
   L->GCthreshold = MAX_INT;  /* to avoid GC during pre-definitions */
   L->callhook = NULL;
   L->linehook = NULL;
@@ -98,11 +100,10 @@ LUA_API lua_State *lua_open (int stacksize) {
 
 
 LUA_API void lua_close (lua_State *L) {
-  LUA_ASSERT(L != lua_state || lua_gettop(L) == 0, "garbage in C stack");
-  luaC_collect(L, 1);  /* collect all elements */
-  LUA_ASSERT(L->rootproto == NULL, "list should be empty");
-  LUA_ASSERT(L->rootcl == NULL, "list should be empty");
-  LUA_ASSERT(L->roottable == NULL, "list should be empty");
+/*  LUA_ASSERT(L != lua_state || lua_gettop(L) == 0, "garbage in C stack"); */
+  luaC_collect(L, -1);  /* collect all elements */
+  LUA_ASSERT(L->gcroot == NULL, "GC root should be empty");
+  LUA_ASSERT(L->gcalloc == 0, "GC alloc should be 0");
   luaS_freeall(L);
   if (L->stack)
     L->nblocks -= (L->stack_last - L->stack + 1)*sizeof(TObject);

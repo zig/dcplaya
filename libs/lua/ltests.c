@@ -1,5 +1,5 @@
 /*
-** $Id: ltests.c,v 1.1 2002-09-13 16:02:36 zig Exp $
+** $Id: ltests.c,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
 ** Internal Module for Debugging of the Lua Implementation
 ** See Copyright Notice in lua.h
 */
@@ -225,7 +225,7 @@ static int string_query (lua_State *L) {
     lua_pushnumber(L ,tb->size);
     return 2;
   }
-  else if (s < tb->size) {
+  else if (tb == &L->strt && s < tb->size) {
     TString *ts;
     int n = 0;
     for (ts = tb->hash[s]; ts; ts = ts->nexthash) {

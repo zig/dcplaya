@@ -1,5 +1,5 @@
 /*
-** $Id: lmem.c,v 1.1 2002-09-13 16:02:36 zig Exp $
+** $Id: lmem.c,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
 ** Interface to Memory Manager
 ** See Copyright Notice in lua.h
 */
@@ -133,15 +133,12 @@ void *luaM_growaux (lua_State *L, void *block, size_t nelems,
 */
 void *luaM_realloc (lua_State *L, void *block, lint32 size) {
   if (size == 0) {
-    free(block);  /* block may be NULL; that is OK for free */
+    if (block) free(block);  /* block may be NULL; that is OK for free */
     return NULL;
   }
   else if (size >= MAX_SIZET)
     lua_error(L, "memory allocation error: block too big");
-  if (block == NULL)
-    block = malloc(size);
-  else
-    block = realloc(block, size);
+  block = realloc(block, size);
   if (block == NULL) {
     if (L)
       luaD_breakrun(L, LUA_ERRMEM);  /* break run without error message */

@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.13 2003-01-03 11:46:27 ben Exp $
+--- $Id: desktop.lua,v 1.14 2003-01-05 18:08:39 zigziggy Exp $
 ---
 
 if not dolib("evt") then return end
@@ -72,7 +72,9 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 
    local text = '<dialog guiref="dialog" label="Desktop" name="desktop dialog">'
 
-   text = text..'<linecenter>Running application ('..strchar(16)..' menu,'..strchar(19)..' switch to) :<br><vspace h="8"><hspace w="16"><linedown>'
+   text = text..'<linecenter>Running application ('..
+      strchar(16)..' menu,'..strchar(19)..
+      ' switch to) :<br><vspace h="8"><hspace w="16"><linedown>'
    local i
    for i=1,dir.n, 1 do
       text = text..'<button total_w="64" guiref="r'..format("%d", i)..'">'
@@ -80,18 +82,13 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
       text = text..'</button><hspace w="16">'
    end
 
-   text = text..'<br><vspace h="16"><left><linecenter>Launchable application ('..strchar(16)..' launch,'..strchar(17)..' info) :<br><vspace h="8"><hspace w="16"><linedown>'
+   text = text..'<br><vspace h="16"><left><linecenter>'..
+      'Launchable application ('..strchar(16)..' launch,'..strchar(17)..
+      ' info) :<br><vspace h="8"><hspace w="16"><linedown>'
 
    text = text..'</dialog>'
 
-   local box = { 0, 0, 640, 400 }
-   local tt = tt_build(text,	      
-		       { 
-			  x = "center",
-			  y = "center",
-			  box = box,
-			  z = 300
-		       })
+   local tt = tt_build(text, {x="center", y="center"})
 
    tt_draw(tt)
 

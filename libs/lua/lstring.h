@@ -1,5 +1,5 @@
 /*
-** $Id: lstring.h,v 1.1 2002-09-13 16:02:36 zig Exp $
+** $Id: lstring.h,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
 ** String table (keep all strings handled by Lua)
 ** See Copyright Notice in lua.h
 */
@@ -32,6 +32,5 @@ void luaS_freeall (lua_State *L);
 TString *luaS_newlstr (lua_State *L, const char *str, size_t l);
 TString *luaS_new (lua_State *L, const char *str);
 TString *luaS_newfixed (lua_State *L, const char *str);
-
 
 #endif

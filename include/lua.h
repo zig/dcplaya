@@ -1,5 +1,5 @@
 /*
-** $Id: lua.h,v 1.1 2002-09-12 17:24:18 zig Exp $
+** $Id: lua.h,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
 ** Lua - An Extensible Extension Language
 ** TeCGraf: Grupo de Tecnologia em Computacao Grafica, PUC-Rio, Brazil
 ** e-mail: lua@tecgraf.puc-rio.br
@@ -11,10 +11,8 @@
 #ifndef lua_h
 #define lua_h
 
-
 /* definition of `size_t' */
 #include <stddef.h>
-
 
 /* mark for all API functions */
 #ifndef LUA_API
@@ -184,6 +182,9 @@ LUA_API int   lua_getn (lua_State *L, int index);
 LUA_API void  lua_concat (lua_State *L, int n);
 
 LUA_API void *lua_newuserdata (lua_State *L, size_t size);
+
+/* do the GC for a number of steps */
+LUA_API void lua_collectgarbage (lua_State *L, int step);
 
 
 /* 

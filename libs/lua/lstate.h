@@ -1,5 +1,5 @@
 /*
-** $Id: lstate.h,v 1.1 2002-09-13 16:02:36 zig Exp $
+** $Id: lstate.h,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
 ** Global State
 ** See Copyright Notice in lua.h
 */
@@ -54,9 +54,6 @@ struct lua_State {
   char *Mbuffer;  /* global buffer */
   size_t Mbuffsize;  /* size of Mbuffer */
   /* global state */
-  Proto *rootproto;  /* list of all prototypes */
-  Closure *rootcl;  /* list of all closures */
-  Hash *roottable;  /* list of all tables */
   stringtable strt;  /* hash table for strings */
   stringtable udt;   /* hash table for udata */
   Hash *gt;  /* table for globals */
@@ -65,6 +62,11 @@ struct lua_State {
   struct Ref *refArray;  /* locked objects */
   int refSize;  /* size of refArray */
   int refFree;  /* list of free positions in refArray */
+  GCValue *gcroot;  /* all garbage collectable values form a linked list */
+  GCValue *gcptr;  /* current gc traversal pointer */
+  short gcstage;  /* current gc stage */
+  short gcTM;  /* remember last collected tag */
+  int gcalloc, last_gcalloc;  /* it is used to calculate the rate of mem allocation */
   unsigned long GCthreshold;
   unsigned long nblocks;  /* number of `bytes' currently allocated */
   lua_Hook callhook;

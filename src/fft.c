@@ -3,7 +3,7 @@
  * @file    fft.c
  * @author  benjamin gerard <ben@sashipa.com>
  * 
- * @version $Id: fft.c,v 1.11 2003-01-03 07:06:32 ben Exp $
+ * @version $Id: fft.c,v 1.12 2003-01-05 18:08:39 zigziggy Exp $
  */
 
 #include <stdlib.h>
@@ -16,7 +16,8 @@
 
 
 #define FFT_SIZE (1 << FFT_LOG_2)
-#define FFT_FRQ  16000
+/*#define FFT_FRQ  16000*/
+#define FFT_FRQ  12000
 #define PCM_SIZE (FFT_SIZE * 50000 / FFT_FRQ)
 
 
