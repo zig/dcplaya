@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.54 2002-12-23 09:01:36 ben Exp $
+ * @version    $Id: dynshell.c,v 1.55 2002-12-23 22:33:10 ben Exp $
  */
 
 #include <stdio.h>
@@ -1843,25 +1843,32 @@ static void controler_button_to_table(lua_State * L, int buttons)
 {
   int m,i,table;
   static const char * button_name[16] = {
-	"c", "b", "a", "start",
-	"up", "down", "left", "right",
-	"z", "y", "x", "d",
-	"up2", "down2", "left2", "right2"
+    "c", "b", "a", "start",
+    "up", "down", "left", "right",
+    "z", "y", "x", "d",
+    "up2", "down2", "left2", "right2"
   };
-
+  
   lua_newtable(L);
   table = lua_gettop(L);
   for (i=0, m=1; i<16; ++i, m <<= 1) {
-	if (buttons & m) {
-	  lua_pushstring(L,button_name[i]);
-	  lua_pushnumber(L,1);
-	  lua_rawset(L,table);
-	}
+    if (buttons & m) {
+      lua_pushstring(L,button_name[i]);
+      lua_pushnumber(L,1);
+      lua_rawset(L,table);
+    }
+  }
+  
+  if (!(buttons &
+	(CONT_DPAD_LEFT | CONT_DPAD_RIGHT | CONT_DPAD_UP | CONT_DPAD_DOWN))) {
+    lua_pushstring(L,"center");
+    lua_pushnumber(L,1);
+    lua_rawset(L,table);
   }
 }
 
 static void controler_state_to_table(lua_State * L,
-									 const controler_state_t * state)
+				     const controler_state_t * state)
 {
   int table;
 
@@ -1905,24 +1912,24 @@ static int lua_read_controler(lua_State * L)
   controler_state_t state;
 
   if (lua_gettop(L) > 0) {
-	int num = lua_tonumber(L,1);
-	lua_settop(L,0);
-	if (!controler_read(&state, num-1)) {
-	  controler_state_to_table(L, &state);
-	}
+    int num = lua_tonumber(L,1);
+    lua_settop(L,0);
+    if (!controler_read(&state, num-1)) {
+      controler_state_to_table(L, &state);
+    }
   } else {
-	int i;
-	lua_settop(L,0);
-	lua_newtable(L);
-	for (i=0; ; ++i) {
-	  int err = controler_read(&state, i);
-	  if (err < 0) {
-		break;
-	  } else if (!err) {
-		controler_state_to_table(L, &state);
-		lua_rawseti(L, 1, i+1);
-	  }
-	}
+    int i;
+    lua_settop(L,0);
+    lua_newtable(L);
+    for (i=0; ; ++i) {
+      int err = controler_read(&state, i);
+      if (err < 0) {
+	break;
+      } else if (!err) {
+	controler_state_to_table(L, &state);
+	lua_rawseti(L, 1, i+1);
+      }
+    }
   }
   return lua_gettop(L);
 }
