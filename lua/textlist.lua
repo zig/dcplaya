@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.16 2002-12-06 12:15:56 ben Exp $
+--- $Id: textlist.lua,v 1.17 2002-12-06 15:18:35 zigziggy Exp $
 ---
 
 -- Unload the library
@@ -642,8 +642,8 @@ function textlist_create_gui(fl, owner)
 	  local fl = app.fl
 	  local dir = fl.dir
 
- 	  print("owner:"..app.owner.name)
- 	  print("TL-EVT:"..key)
+-- 	  print("owner:"..app.owner.name)
+-- 	  print("TL-EVT:"..key)
 
 	  if key == evt_shutdown_event then
 		 fl:shutdown()

@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.23 2002-12-06 13:19:27 zigziggy Exp $
+--- $Id: gui.lua,v 1.24 2002-12-06 15:18:35 zigziggy Exp $
 ---
 
 --
@@ -138,6 +138,13 @@ function gui_child_autoplacement(app)
    local n = 0
    while i do
       n = n + 1
+
+      if not i._dl and i.dl and i.dl ~= app.dl then
+	 i._dl = dl_new_list(256, 1)
+	 dl_sublist(i._dl, i.dl)
+	 dl_sublist(app.dl, i._dl)
+      end
+
       i = i.next
    end
 
@@ -163,6 +170,8 @@ function gui_new_focus(app, f)
       evt_app_insert_first(app, f)
       evt_send(f, { key = gui_focus_event })
       app.focus_time = 0
+
+      gui_child_autoplacement(app)
 
       return 1
    end
@@ -258,13 +267,6 @@ function gui_dialog_handle(app, evt)
 
    local focused = app.sub
 
-   if focused then
-      evt_send(focused, evt)
-      if not evt then
-	 return
-      end
-   end
-
    if key == evt_shutdown_event then
       gui_dialog_shutdown(app)
       return evt -- pass the shutdown event to next app
@@ -290,7 +292,7 @@ function gui_dialog_handle(app, evt)
       if gui_keyup[key] then
 	 if gui_new_focus(app, 
 			  gui_closest(app, focused.box, 
-				      gui_closestcoef_vertical, gui_less, 4)) then
+				      gui_closestcoef_horizontal, gui_less, 4)) then
 	    return
 	 end
       end
@@ -298,7 +300,7 @@ function gui_dialog_handle(app, evt)
       if gui_keydown[key] then
 	 if gui_new_focus(app, 
 			  gui_closest(app, focused.box, 
-				      gui_closestcoef_vertical, gui_more, 2)) then
+				      gui_closestcoef_horizontal, gui_more, 2)) then
 	    return
 	 end
       end
@@ -331,7 +333,7 @@ end
 
 function gui_dialog_update(app, frametime)
    local focused = app.sub
-   if focused then
+   if focused and gui_is_focus(app.owner, app) then
       -- handle focus cursor
       
       -- converge to focused item box
@@ -826,7 +828,7 @@ function dialog_test(parent)
    end
 
    -- create a dialog box with a label outside of the box
-   local box = { 100, 100, 400, 300 }
+   local box = { 100, 100, 400, 360 }
    if parent.box then
       box[1] = box[1] + parent.box[1] + 100
       box[2] = box[2] + parent.box[2]
@@ -882,10 +884,31 @@ function dialog_test(parent)
    -- create an input item
    input = gui_new_input(dial, { x + 120, y + 160, x + 380, y + 190 }, "Login :",
 			 { x = "left", y="upout" }, "ziggy")
+
+
+   -- create subdialog
+   local subdial = gui_new_dialog(dial, { x + 120, y + 300, x + 180, y + 350 }, 0, nil, "Sub dialog", { x = "left", y="upout" })
+   but = gui_new_button(subdial, { x + 130, y + 310, x + 180, y + 340 }, "TOTO")
+   but.event_table[gui_press_event] =
+      function(but, evt)
+	 print [[TOTO !!]]
+	 return nil -- block the event
+      end
+
+   x = x + 180
+   subdial = gui_new_dialog(dial, { x + 120, y + 300, x + 180, y + 350 }, 0, nil, "Sub dialog", { x = "left", y="upout" })
+   but = gui_new_button(subdial, { x + 130, y + 310, x + 160, y + 340 }, "TOTO")
+   but.event_table[gui_press_event] =
+      function(but, evt)
+	 print [[TOTO !!]]
+	 return nil -- block the event
+      end
+   
+
    return dial
 end
 
-if nil then
+if 1 then
    dial = dialog_test()
    dialog_test(dial)
 end
