@@ -4,7 +4,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.22 2003-03-17 22:24:18 zigziggy Exp $
+ * @version   $Id: console.c,v 1.23 2003-03-21 03:38:01 ben Exp $
  */
 
 
@@ -232,7 +232,7 @@ void csl_window_transparent_render(csl_console_t * c)
 
   //spinlock_lock(&c->mutex);
   
-  text_set_properties(1,8,1,1);
+  text_set_properties(1,16,1,1);
   /*   oldfont = text_set_font(1); // Select fixed spacing font */
   /*   oldsize = text_set_font_size(8); */
   /*   oldaspect = text_set_font_aspect(1); // Select fixed spacing font */
