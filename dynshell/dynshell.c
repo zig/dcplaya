@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.25 2002-09-27 06:33:54 vincentp Exp $
+ * @version    $Id: dynshell.c,v 1.26 2002-09-28 05:41:14 vincentp Exp $
  */
 
 #include <stdio.h>
@@ -14,6 +14,7 @@
 #include "filetype.h"
 
 #include "lua.h"
+#include "luadebug.h"
 #include "lualib.h"
 
 #include "console.h"
@@ -72,6 +73,36 @@ static int dynshell_command(const char * fmt, ...)
 
 /*  printf("CATCHING EXCEPTION IN SHELL !\n");
   irq_dump_regs(0, 0); */
+
+  {
+    lua_Debug ar;
+    lua_State * L = shell_lua_state;
+    int n = 0;
+    while (lua_getstack(L, n, &ar)) {
+      lua_getinfo (L, "lnS", &ar);
+      printf("[%d] "
+	     "currentline = %d, "
+	     "name = %s, "
+	     "namewhat = %s, "
+	     "nups = %d, "
+	     "linedefined = %d, "
+	     "what = %s, "
+	     "source = %s, "
+	     "short_src = %s\n",
+	     n,
+	     ar.currentline,
+	     ar.name,
+	     ar.namewhat,
+	     ar.nups,
+	     ar.linedefined,
+	     ar.what,
+	     ar.source,
+	     ar.short_src);
+      n++;
+      break; /* crash if going too far ... */
+    }
+  }
+
 
   EXPT_GUARD_END;
 
@@ -471,6 +502,17 @@ static int lua_framecounter(lua_State * L)
   return 1;
 }
 
+/* we use different keycodes than kos :
+ * raw key codes are simply translated by 256, instead of behing MULTIPLIED !
+ * this save a lot of other key code possibilites for later use ... */
+static int convert_key(int k)
+{
+  if (k >= 256)
+    return (k>>8) + 256;
+  else
+    return k;
+}
+
 static int lua_peekchar(lua_State * L)
 {
   int k;
@@ -481,7 +523,7 @@ static int lua_peekchar(lua_State * L)
   k = csl_peekchar();
 
   if (k >= 0) {
-    lua_pushnumber(L, k);
+    lua_pushnumber(L, convert_key(k));
     return 1;
   }
 
@@ -497,7 +539,7 @@ static int lua_getchar(lua_State * L)
 
   k = csl_getchar();
 
-  lua_pushnumber(L, k);
+  lua_pushnumber(L, convert_key(k));
 
   return 1;
 }
@@ -783,6 +825,7 @@ static int lua_stop(lua_State * L)
   return 0;
 }
 
+/* defined in controler.c */
 extern int cond_disconnected;
 static int lua_cond_connect(lua_State * L)
 {
@@ -1123,7 +1166,7 @@ shutdown_func_t lef_main()
 
   //luaB_set_fputs(shell_lua_fputs);
 
-  shell_lua_state = lua_open(0);  
+  shell_lua_state = lua_open(10*1024);  
   if (shell_lua_state == NULL) {
     printf("shell: error initializing LUA state\n");
     return 0;

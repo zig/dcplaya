@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: keyboard_emu.lua,v 1.4 2002-09-27 17:20:49 vincentp Exp $
+-- $Id: keyboard_emu.lua,v 1.5 2002-09-28 05:41:19 vincentp Exp $
 --
 
 
@@ -13,11 +13,15 @@ end
 if not init_display_driver then
 	dofile(home.."lua/display_init.lua")
 end
+--if not evt_included then
+--	dofile(home.."lua/evt.lua")
+--end
 
 ke_box 		= { 20, 330, 640-20, 330+140 }
 ke_z		= 150
 ke_cursorz	= ke_z + 20
 ke_textz	= ke_z + 30
+ke_vanish_y	= -140
 
 if not ke_theme then
 	ke_theme = 2	-- currently 1 .. 3
@@ -46,8 +50,6 @@ ke_themes = {
 	ke_textcolor	= { 1.0, 0.9, 0.9, 0.2 } 
 	end
 }
-
-ke_themes[ke_theme]()
 
 ke_keyup	= { [KBD_CONT1_DPAD2_UP]=1 }
 ke_keydown	= { [KBD_CONT1_DPAD2_DOWN]=1 }
@@ -196,6 +198,15 @@ function ke_addkey(down, downcode, up, upcode, spacing)
 end
 
 function ke_shutdown()
+	if ke_app then
+		evt_app_remove(ke_app)
+		ke_app = nil
+	end
+
+	if ke_active then
+		ke_set_active(nil)
+	end
+
 	if ke_arrays then
 		local array
 		for _, array in ke_arrays do
@@ -205,22 +216,21 @@ function ke_shutdown()
 		end
 		ke_arrays = { }
 	end
+
 	if ke_cursor_dl then
 		dl_destroy_list(ke_cursor_dl)
 		ke_cursor_dl = nil
 	end
+
+	ke_vanishing_arrays = { }
 	ke_arrays = nil
 
-	if ke_origgetchar then
-		getchar = ke_origgetchar
-		peekchar = ke_origpeekchar
-		framecounter = ke_origframecounter
-	end
 end
 
 function ke_set_keynum(n)
 	ke_keynum = n
 	ke_key = ke_array[n]
+	ke_time = 0
 end
 
 ke_closest_coef = { 1, 1, 1, 1 }
@@ -243,14 +253,21 @@ function ke_closest_key(array, box, coef)
 			min = d
 		end
 	end
+
+--	print (min)
 	
 	return imin
 end
 
 function ke_set_active_array(n)
-	dl_set_active(ke_arrays[ke_arraynum].dl, 0)
+--	dl_set_active(ke_arrays[ke_arraynum].dl, 0)
+	ke_vanishing_arrays[ke_arrays[ke_arraynum]] = 1
+	if ke_arraynum ~= n then
+		ke_arrays[n].ypos = -ke_vanish_y
+	end
 	ke_arraynum = n
 	ke_array = ke_arrays[n]
+	ke_vanishing_arrays[ke_array] = nil
 	dl_set_active(ke_arrays[ke_arraynum].dl, 1)
 	ke_set_keynum(ke_closest_key(ke_array, ke_cursorbox))
 end
@@ -260,12 +277,24 @@ function ke_framecounter()
 	return ke_curframecounter
 end
 
-function ke_handle(frametime, k)
+function ke_handle(app, evt)
+
+	local key = evt.key
+
+	-- activating key toggle
+	if ke_keyactivate[key] then
+		ke_set_active(not ke_active)
+		return nil
+	end
+
+	-- stop here if not active
+	if not ke_active then
+		return evt
+	end
 
 	-- first : automatically remap joypad > 1 to first one !
-	local key = k
-	while key >=  KBD_CONT2_C do
-		key = key - 16*256
+	while key >=  KBD_CONT2_C and key <= KBD_CONT4_DPAD2_RIGHT do
+		key = key - 16
 	end
 
 	if ke_keynext[key] then
@@ -291,9 +320,11 @@ function ke_handle(frametime, k)
 	if ke_keyright[key] then
 		local n = ke_keynum+1
 		if n > ke_array.n then
-			n = 1
+			n = ke_array.n
 		end
-		ke_set_keynum(n)
+		if ke_key.box ^ ke_array[n].box < 60000 then
+			ke_set_keynum(n)
+		end
 
 		return nil
 	end
@@ -301,9 +332,11 @@ function ke_handle(frametime, k)
 	if ke_keyleft[key] then
 		local n = ke_keynum-1
 		if n < 1 then
-			n = ke_array.n
+			n = 1
 		end
-		ke_set_keynum(n)
+		if ke_key.box ^ ke_array[n].box < 60000 then
+			ke_set_keynum(n)
+		end
 
 		return nil
 	end
@@ -328,102 +361,99 @@ function ke_handle(frametime, k)
 	end
 
 	if ke_keyselect[key] then
-		return ke_key.code
+		return { key = ke_key.code }
 	end
 
 	if ke_keyconfirm[key] then
-		return KBD_ENTER
+		return { key = KBD_ENTER }
 	end
 
 	if ke_keycancel[key] then
-		return KBD_ESCAPE
+		return { key = KBD_ESCAPE }
 	end
 
 	local trans = ke_translate[key]
 	if trans then
-		return trans
+		return { key = trans }
 	end
 
-	return k
+	return evt
 end
 
 function ke_set_active(s)
+	if not ke_active then
+		ke_cursorbox = 3*ke_box
+		ke_time = 0
+	end
 	ke_active = s
 	cond_connect(not s)
-	dl_set_active(ke_array.dl, s)
+	ke_vanishing_arrays[ke_array] = not s
+	if s then
+		dl_set_active(ke_array.dl, s)
+	end
 	dl_set_active(ke_cursor_dl, s)
 end
 
-function ke_update(key)
+function ke_update(app, frametime)
 
-	ke_curframecounter = ke_origframecounter(1)
-
-	-- activating key toggle
-	if key and ke_keyactivate[key] then
-		ke_set_active(not ke_active)
-		return nil
-	end
-
-	if not ke_active then
-		return key
-	end
-
-	-- calculate frame time
-	local frametime = ke_curframecounter/60
 	ke_time = ke_time + frametime
 --	rp (frametime .. "\n")
 	if frametime > 0.1 then
 		frametime = 0.1
 	end
 
-	-- do collect garbage once per frame for smoother animation
-	collectgarbage()
-
-	-- handle key if there is any
-	if key then
-		key = ke_handle(frametime, key)
+	-- handle vanishing arrays
+	local a
+	local newvanish = { }
+	for a, _ in ke_vanishing_arrays do
+		a.ypos = a.ypos + (ke_vanish_y - a.ypos) * 8 * frametime
+		a.alpha = a.alpha * (1 - 8*frametime)
+		if a.alpha < 0.01 then
+			a.ypos = -ke_vanish_y
+			dl_set_active(a.dl, nil)
+		else
+			dl_set_trans(a.dl, mat_trans(0, a.ypos, (a.alpha-1)*50))
+			dl_set_color(a.dl, a.alpha, 1, 1, 1)
+			newvanish[a] = 1
+		end
 	end
+	ke_vanishing_arrays = newvanish
+
+	-- stop here if not active
+	if not ke_active then
+		return
+	end
+
+	-- do collect garbage once per frame for smoother animation
+--	collectgarbage()
+
+	-- update active array position and color
+	if abs(ke_array.ypos) < 0.001 then
+		ke_array.ypos = 0
+		ke_array.alpha = 1
+	else
+		ke_array.ypos = ke_array.ypos * (1 - 10 * frametime)
+		ke_array.alpha = (ke_array.alpha - 1) * (1 - 10*frametime) + 1
+	end
+	dl_set_trans(ke_array.dl, mat_trans(0, ke_array.ypos, 0))
+	dl_set_color(ke_array.dl, ke_array.alpha, 1, 1, 1)
 
 	-- update cursor position and color
 	ke_cursorbox = ke_cursorbox + 
 			20 * frametime * (ke_key.box - ke_cursorbox)
 
+--	dl_set_trans(ke_cursor_dl, mat_scale(ke_cursorbox[3] - ke_cursorbox[1], ke_cursorbox[4] - ke_cursorbox[2], 1) * mat_trans(ke_cursorbox[1], ke_cursorbox[2] + ke_array.ypos, 0))
 	dl_set_trans(ke_cursor_dl, mat_scale(ke_cursorbox[3] - ke_cursorbox[1], ke_cursorbox[4] - ke_cursorbox[2], 1) * mat_trans(ke_cursorbox[1], ke_cursorbox[2], 0))
-	dl_set_color(ke_cursor_dl, 0.5+0.5*sin(360*ke_time*2), 1, 1, 1)
+	local ci = 0.5+0.5*cos(360*ke_time*2)
+	dl_set_color(ke_cursor_dl, ci, 1, ci, ci)
 
-	return key
-end
-
-function ke_peekchar()
-	local key
-
-	key = ke_origpeekchar()
-
-	key = ke_update(key)
-
-	return key
-end
-
-function ke_getchar()
-	local key
-	repeat
-		key = ke_peekchar()
-	until key
-
-	return key
 end
 
 function ke_init()
 
 	ke_shutdown()
 
-	if not ke_origgetchar then
-		-- get original getchar and peekchar
-		-- the keyboard emulator will replace these two variables later
-		ke_origgetchar = getchar
-		ke_origpeekchar = peekchar
-		ke_origframecounter = framecounter
-	end
+	ke_themes[ke_theme]()
 
 	ke_time = 0
 
@@ -455,9 +485,10 @@ function ke_init()
 	end
 
 	ke_arrays = { }
-	ke_downarray = { dl = ke_downarray_dl }
+	ke_vanishing_arrays = { }
+	ke_downarray = { dl = ke_downarray_dl, ypos = ke_vanish_y, yaim = ke_vanish_y, alpha = 0 }
 	tinsert(ke_arrays, ke_downarray)
-	ke_uparray = { dl = ke_uparray_dl }
+	ke_uparray = { dl = ke_uparray_dl , ypos = ke_vanish_y, yaim = ke_vanish_y, alpha = 0}
 	tinsert(ke_arrays, ke_uparray)
 
 	ke_addkeypos(5, 5)
@@ -562,11 +593,27 @@ function ke_init()
 	ke_set_keynum(1)
 
 	ke_set_active(1)
+	ke_set_active(0)
 
-	-- last step : replace getchar and cie
-	getchar = ke_getchar
-	peekchar = ke_peekchar
-	framecounter = ke_framecounter
+
+	-- build the application
+	ke_app = {
+	
+		name = "keyboard_emu",
+		version = "0.9",
+		
+		handle = ke_handle,
+		update = ke_update
+	
+	}
+
+	-- insert the application in root list
+	evt_app_insert_first(evt_root_app, ke_app)
+
+
+	print [[KEYBOARD EMU INSTALLED]]
+	print [[Press start to toggle it]]
+
 
 	return 1
 end

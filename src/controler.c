@@ -125,7 +125,7 @@ int controler_thread(void * dummy)
       maple_rescan_unit(0, report, 0);
       if (maple_device_func(report, 0) != oldfunc) {
 	int unit;
-	/* rescan also other units of same porte is some change happened */
+	/* rescan also other units of same port is some change happened */
 	for (unit=1; unit<6; unit++)
 	  maple_rescan_unit(0, report, unit);
       }

@@ -37,7 +37,7 @@ function keycode(s)
 		v = v * 16 + c
 	end
 
-	return v*256
+	return v + 256
 end
 
 
@@ -211,6 +211,9 @@ end
  KBD_CONT4_DPAD2_LEFT	=	keycode[[be]]
  KBD_CONT4_DPAD2_RIGHT	=	keycode[[bf]]
 
+
+-- first free key ID
+ KBD_USER		=	1024
 
 
 -- standard keys

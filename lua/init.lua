@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: init.lua,v 1.5 2002-09-27 02:01:37 vincentp Exp $
+-- $Id: init.lua,v 1.6 2002-09-28 05:41:19 vincentp Exp $
 --
 
 
@@ -208,6 +208,8 @@ function driver_load(...)
 end
 dl=driver_load
 
+
+dofile(home.."lua/evt.lua")
 
 
 end -- if not init_lua then
