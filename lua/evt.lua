@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.12 2002-12-06 13:08:12 zigziggy Exp $
+-- $Id: evt.lua,v 1.13 2002-12-06 13:19:27 zigziggy Exp $
 --
 
 
@@ -39,7 +39,8 @@
 -- return an unused ID
 
 -- In the event chaining process, events are always first sent to the 
--- sub list before the application itself. The sub list is typically used
+-- first element of the sub list before the application itself. 
+-- The sub list is typically used
 -- for an application that want to create a new dialog box : It inserts
 -- the dialog box into its own sublist, the dialog box will then receives
 -- events in priority until it is closed (removed from the sub list)
@@ -74,7 +75,7 @@ function evt_send(app, evt)
    --	end
 
    local i = app.sub
-   while i do
+   if i then
       local n = i.next
       evt = evt_send(i, evt)
       if not evt then
@@ -82,7 +83,7 @@ function evt_send(app, evt)
       end
       i = n
    end
-   
+
    -- $$$
    --	local name = "unknown"
    --	if app.name then name = app.name end
@@ -93,6 +94,15 @@ function evt_send(app, evt)
       if not evt then
 	 return
       end
+   end
+   
+   while i do
+      local n = i.next
+      evt = evt_send(i, evt)
+      if not evt then
+	 return
+      end
+      i = n
    end
    
    --	print (format("[R] [%d] [%s]", evt.key, name))
