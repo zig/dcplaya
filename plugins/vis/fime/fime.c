@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/17
  *  @brief   Fly Into a Musical Environment
- *  $Id: fime.c,v 1.7 2003-02-03 19:37:13 ben Exp $
+ *  $Id: fime.c,v 1.8 2003-02-04 15:07:34 ben Exp $
  */ 
 
 #include <stdio.h>
@@ -30,6 +30,7 @@
 #include "fime_ship.h"
 #include "fime_bees.h"
 #include "fime_ground.h"
+#include "fime_star.h"
 
 #ifndef PI
 # define PI 3.14159265359
@@ -73,10 +74,15 @@ static float inc_angle(float a, const float v)
   return a;
 }
 
+
+static fime_star_field_t * starfield;
+
 static int stop(void)
 {
   ready = 0;
 
+  fime_star_shutdown(starfield);
+  starfield = 0;
   fime_ground_shutdown();
   fime_bees_shutdown();
   fime_ship_shutdown();
@@ -94,6 +100,9 @@ static int start(void)
   int err = 0;
   ready = 0;
 
+  SDDEBUG("[fime] starting\n");
+  SDINDENT;
+
   camera_pos.x = 1.31;
   camera_pos.y = 1.2;
   camera_pos.z = -1.5;
@@ -104,6 +113,16 @@ static int start(void)
   err = err || fime_ship_init();
   err = err || fime_bees_init();
   err = err || fime_ground_init(4,20,6,20);
+
+  {
+    static const char * names[] = { "star", "asteroid_low", 0 }; 
+    fime_star_box_t box = { -6, 6, -4, -1, 0, 20 };
+
+    starfield = fime_star_init(32, names, &box, 0);
+    err = err || (!starfield);
+  }
+
+  SDUNINDENT;
 
   ready = !err;
 
@@ -138,6 +157,7 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
   fime_bees_set_target((const vtx_t *)shipmtx[3]);
   fime_bees_update();
   fime_ground_update(seconds);
+  fime_star_update(starfield, seconds);
 
   {
     const float s = 0.7, o = 1.0 - s;
@@ -181,11 +201,18 @@ static int opaque_render(void)
     return -1;
   }
 
+  static vtx_t color = { 1,1,0,1};
+
   err = err || fime_bees_render(&viewport, camera, proj);
   err = err || fime_ship_render(&viewport, camera, proj,
 				0, 0, 0, 1);
   err = err || fime_ground_render(&viewport, camera, proj, 1);
 
+  err = err || fime_star_render(starfield,
+				&viewport, camera, proj,
+				&color,
+				&color,
+				0,1);
   return -(!!err);
 }
 
@@ -196,39 +223,7 @@ static int transparent_render(void)
   if (!ready) {
     return -1;
   }
-
-/*   printf("[%f %f %f %f]\n" */
-/* 	  "[%f %f %f %f]\n" */
-/* 	  "[%f %f %f %f]\n" */
-/* 	  "[%f %f %f %f]\n", */
-
-/* 	  camera[0][0], */
-/* 	  camera[0][1], */
-/* 	  camera[0][2], */
-/* 	  camera[0][3], */
-
-/* 	  camera[1][0], */
-/* 	  camera[1][1], */
-/* 	  camera[1][2], */
-/* 	  camera[1][3], */
-
-/* 	  camera[2][0], */
-/* 	  camera[2][1], */
-/* 	  camera[2][2], */
-/* 	  camera[2][3], */
-
-/* 	  camera[3][0], */
-/* 	  camera[3][1], */
-/* 	  camera[3][2], */
-/* 	  camera[3][3] */
-
-/* 	  ); */
-
-  err = err || fime_ship_render(&viewport, camera, proj,
-				0, 0, 0, 0);
   return -(!!err);
-
-  return 0;
 }
 
 static int init(any_driver_t *d)

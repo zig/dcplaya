@@ -258,5 +258,5 @@ int fime_ground_render(viewport_t *vp, matrix_t camera, matrix_t proj,
   MtxMult3(tmtx,mtx,camera);
   err = DrawObject(vp, tmtx, proj, &grd_obj, &grd_ambient, &grd_diffuse, 0);
 
-  return -!!err;
+  return -!!(err<0);
 }
