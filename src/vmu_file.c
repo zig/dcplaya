@@ -4,7 +4,7 @@
  * @date    2003/03/10
  * @brief   VMU file load and save function.
  *
- * $Id: vmu_file.c,v 1.1 2003-03-10 22:51:48 ben Exp $
+ * $Id: vmu_file.c,v 1.2 2003-03-11 13:37:16 ben Exp $
  */
 
 #include <kos/thread.h>
@@ -21,27 +21,58 @@
 static volatile vmu_trans_hdl_t hdl, next_hdl;
 static spinlock_t mutex;
 static kthread_t * thd; 
-static volatile vmu_trans_status_e cur_status;
+static volatile vmu_trans_status_e cur_status = VMU_TRANSFERT_INIT_ERROR;
+static int header_size;
+static const char header_name[] = "/rd/vmu_header.bin";
+static volatile int init = 0;
 
 extern volatile int vmu_access_right;
 
+int vmu_file_header_size(void)
+{
+  return (!init) ? -1 : header_size;
+}
+
 int vmu_file_init(void)
 {
+  int err = 0;
+  if (init) return 0;
+
   next_hdl = hdl = 0;
   spinlock_init(&mutex);
   thd = 0;
-  cur_status = VMU_TRANSFERT_ERROR;
-  return 0;
+  cur_status = VMU_TRANSFERT_INIT_ERROR;
+  header_size = 0;
+  err = fu_size(header_name);
+  if (err < 0) {
+    SDERROR("[vmu_file_init] : [%s] [%s]\n",
+	    header_name, fu_strerr(err));
+  } else {
+    header_size = err;
+    err = 0;
+  }
+
+  if (!err) {
+    cur_status = VMU_TRANSFERT_ERROR; /* set a global error */
+    init = 1;
+    if (header_size != 1664) {
+      SDNOTICE("[vmu_file_init] : !! Weird !! [%s] [%d bytes]\n",
+	       header_name, header_size);
+    }
+  }
+  return init-1;
 }
 
 /** Shutdown the vmu file module. */
 void vmu_file_shutdown(void)
 {
+  if (!init) return;
   spinlock_lock(&mutex);
   if (thd) {
   }
   cur_status = VMU_TRANSFERT_ERROR;
   thd = 0;
+  init = 0;
 }
 
 vmu_trans_hdl_t vmu_file_save(const char * fname, const char * path)
@@ -52,6 +83,8 @@ vmu_trans_hdl_t vmu_file_save(const char * fname, const char * path)
   char tmpfile[64];
   int save_right;
   const char * headerfile = "/rd/vmu_header.bin";
+
+  if (!init) return 0;
 
   tmpfile[0] = 0;
 
@@ -91,7 +124,7 @@ vmu_trans_hdl_t vmu_file_save(const char * fname, const char * path)
   opt.in.verbose = 1;
 #endif
   opt.in.compress = 9;
-  opt.in.skip = 1664;
+  opt.in.skip = header_size;
   err = dcar_archive(tmpfile, path, &opt);
   if (err < 0) {
     SDERROR("[vmu_file_save] : error creating archive file [%s]\n",
@@ -128,6 +161,8 @@ vmu_trans_hdl_t vmu_file_load(const char * fname, const char * path)
   dcar_option_t opt;
   int err;
 
+  if (!init) return 0;
+
   spinlock_lock(&mutex);
   if (hdl) {
     SDERROR("[vmu_file_load] : already transferring [hdl:%08x].\n", hdl);
@@ -143,7 +178,7 @@ vmu_trans_hdl_t vmu_file_load(const char * fname, const char * path)
 #ifdef DEBUG
   opt.in.verbose = 1;
 #endif
-  opt.in.skip = 1664;
+  opt.in.skip = header_size;
   err = dcar_extract(fname, path, &opt);
   if (err < 0) {
     printf("[vmu_load_file] failed [%s]\n",opt.errstr);
@@ -161,6 +196,9 @@ vmu_trans_hdl_t vmu_file_load(const char * fname, const char * path)
 
 vmu_trans_status_e vmu_file_status(vmu_trans_hdl_t transfer)
 {
+  if (!init) {
+    return VMU_TRANSFERT_INIT_ERROR;
+  }
   if (transfer && transfer == next_hdl) {
     return cur_status;
   }
@@ -186,6 +224,9 @@ const char * vmu_file_statusstr(vmu_trans_status_e status)
     break;
   case VMU_TRANSFERT_INVALID_HANDLE:
     s = "invalid handle";
+    break;
+  case VMU_TRANSFERT_INIT_ERROR:
+    s = "not initialized";
     break;
   case VMU_TRANSFERT_ERROR:
     s = "error";

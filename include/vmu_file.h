@@ -5,7 +5,7 @@
  * @date    2003/03/10
  * @brief   VMU file load and save function.
  *
- * $Id: vmu_file.h,v 1.1 2003-03-10 22:51:48 ben Exp $
+ * $Id: vmu_file.h,v 1.2 2003-03-11 13:37:16 ben Exp $
  */
 
 #ifndef _VMU_FILE_H_
@@ -16,25 +16,26 @@
  */
 
 /** VMU transfert status code.
- *  @ingroup dcplaya_devel
+ *  @ingroup dcplaya_vmu_file_devel
  */
 typedef enum {
-  VMU_TRANSFERT_SUCCESS = 0,
-  VMU_TRANSFERT_READ = 1,
-  VMU_TRANSFERT_WRITE = 2,
-  VMU_TRANSFERT_BUSY = 4,
+  VMU_TRANSFERT_SUCCESS = 0, /**< The transfert has finished successfully. */
+  VMU_TRANSFERT_READ = 1,    /**< A read transfert is running. */
+  VMU_TRANSFERT_WRITE = 2,   /**< A write transfert is running. */
+  VMU_TRANSFERT_BUSY = 4,    /**< Transfert is busy ? (unused !) */
 
-  VMU_TRANSFERT_INVALID_HANDLE = -2,
-  VMU_TRANSFERT_ERROR = -1
+  VMU_TRANSFERT_INVALID_HANDLE = -3, /**< Invalid transfert handle. */
+  VMU_TRANSFERT_INIT_ERROR = -2,     /**< Module not initialized. */
+  VMU_TRANSFERT_ERROR = -1           /**< Undefined error in transfert. */
 } vmu_trans_status_e;
 
 /** VMU transfert handle type.
- *  @ingroup dcplaya_devel
+ *  @ingroup dcplaya_vmu_file_devel
  */
 typedef unsigned int vmu_trans_hdl_t;
 
 /** @name VMU file init functions.
- *  @ingroup dcplaya_devel
+ *  @ingroup dcplaya_vmu_file_devel
  *  @{
  */
 
@@ -52,9 +53,20 @@ void vmu_file_shutdown(void);
 /**@}*/
 
 /** @name VMU file functions.
- *  @ingroup dcplaya_devel
+ *  @ingroup dcplaya_vmu_file_devel
  *  @{
  */
+
+/** Get vmu files header size.
+ *
+ *    The vmu_file_header_size() returns the size of the vmu header
+ *    file which contains appliciation information, icon bitmap and animation
+ *    and other stuff.
+ *
+ *  @return vmu header (in bytes).
+ *  @retval -1  Error (module not initialized / file not found ?)
+ */
+int vmu_file_header_size(void);
 
 /** Create dcplaya save file.
  *
