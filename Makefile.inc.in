@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile.inc.in,v 1.15 2002-09-20 00:22:11 benjihan Exp $
+# $Id: Makefile.inc.in,v 1.16 2002-09-21 05:15:42 benjihan Exp $
 #
 
 TOP_DIR="@TOP_DIR@"
@@ -137,10 +137,10 @@ all : subdirs $(TARGETS)
 	@echo "Target project [$(TARGETS)] has been build"
 endif
 
-$(LIBNAME) : $(OBJS)
+$(LIBNAME) : $(OBJS) $(LIB_EXTRA)
 	@echo "Build library [$@]"
 	@rm -f $@
-	@$(KOS_AR) r $@ $^
+	@$(KOS_AR) crs $@ $^ 
 	@$(KOS_RANLIB) $@
 
 %.elf : $(OBJS)
@@ -164,7 +164,7 @@ $(LIBNAME) : $(OBJS)
 subdirs: $(patsubst %, _dir_%, $(SUBDIRS))
 
 $(patsubst %, _dir_%, $(SUBDIRS)):
-	$(MAKE) -C $(patsubst _dir_%, %, $@)
+	@$(MAKE) -s -C $(patsubst _dir_%, %, $@)
 
 # ----------------------------------------------------------------------
 # Clean rules

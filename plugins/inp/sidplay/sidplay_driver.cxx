@@ -2,8 +2,8 @@
  * @file      sidplay_driver.cxx
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/09/03
- * @brief     sidplay input plugin for dcplay
- * @version   $Id: sidplay_driver.cxx,v 1.3 2002-09-13 01:21:33 ben Exp $
+ * @brief     sidplay input plugin for dcplaya
+ * @version   $Id: sidplay_driver.cxx,v 1.4 2002-09-21 05:15:47 benjihan Exp $
  */
 
 /* generated config include */
@@ -20,8 +20,6 @@ extern "C" {
 #include <stdlib.h>
 #include <string.h>
 #include <kos/fs.h>
-
-#include "file_wrapper.h"
 };
 
 #include "player.h"

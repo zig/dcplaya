@@ -1,5 +1,5 @@
 
-$Id: TODO,v 1.5 2002-09-20 17:14:59 benjihan Exp $
+$Id: TODO,v 1.6 2002-09-21 05:15:42 benjihan Exp $
 
 ** TODO :
 
@@ -34,3 +34,8 @@ $Id: TODO,v 1.5 2002-09-20 17:14:59 benjihan Exp $
 
 - Look at the face-border rendering. Sometime some borders seem to be shifted.
 
+- Japanese support (encoding / display)
+
+- Remove .gz for file detection
+
+- Just a idea for later : Karaoke mode with jumping ball...

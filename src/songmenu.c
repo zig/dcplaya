@@ -4,7 +4,7 @@
  * @date    2002/02/10
  * @brief   file and playlist browser
  * 
- * $Id: songmenu.c,v 1.4 2002-09-20 17:15:08 benjihan Exp $
+ * $Id: songmenu.c,v 1.5 2002-09-21 05:15:47 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -674,6 +674,13 @@ static int draw_any_listing(entry_window_t * win)
 	s = tmp;
       } else if (e->type >= FILETYPE_PLAYABLE) {
 	inp_driver_t *d = inp_driver_list_search_by_id(e->type);
+
+	/* 2nd chance : try to find it again */
+	if (!d) {
+	  e->type = file_type_inp(e->fn);
+	  d = inp_driver_list_search_by_id(e->type);
+	}
+
 	if (d) {
 	  tmp[0] = 2;
 	  tmp[1] = 0;

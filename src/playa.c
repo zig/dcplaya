@@ -1,5 +1,6 @@
 #include <kos.h>
 
+#include "sysdebug.h"
 #include "playa.h"
 #include "inp_driver.h"
 #include "sndstream.h"
@@ -63,6 +64,13 @@ playa_info_t * playa_info_lock() {
 void playa_info_release(playa_info_t *i) {
   if (i == &curinfo) {
     unlockinfo();
+  }
+}
+
+static void clean_info(playa_info_t *i)
+{
+  if (i) {
+    memset(i,0,sizeof(*i));
   }
 }
 
@@ -143,7 +151,7 @@ static void * sndstream_callback(int size)
 
 void sndstream_thread(void *cookie)
 {
-  dbglog(DBG_DEBUG, ">> " __FUNCTION__"()\n");
+  SDDEBUG(">> %s()\n", __FUNCTION__);
 
   streamstatus = PLAYA_STATUS_STARTING;
 
@@ -180,7 +188,7 @@ void sndstream_thread(void *cookie)
   stream_shutdown();
 
   streamstatus = PLAYA_STATUS_ZOMBIE;
-  dbglog(DBG_DEBUG, "<< " __FUNCTION__"()\n");
+  SDDEBUG("<< %s()\n", __FUNCTION__);
 }
 
 
@@ -194,14 +202,11 @@ static void real_playa_update(void)
     break;
 
   case PLAYA_STATUS_READY:
-    dbglog(DBG_DEBUG,
-	   "** " __FUNCTION__ " : sndserver: waiting on semaphore\r\n");
+    SDDEBUG("%s() : waiting on semaphore\n", __FUNCTION__);
 #ifdef PLAYA_THREAD
     sem_wait(playa_haltsem);
 #endif
-    dbglog(DBG_DEBUG,
-	   "** " __FUNCTION__
-	   " : sndserver: released from semaphore\r\n");
+    SDDEBUG("%s() : released from semaphore\n", __FUNCTION__);
     break;
 
   case PLAYA_STATUS_STARTING:
@@ -277,18 +282,17 @@ void playa_update(void)
 #ifdef PLAYA_THREAD
 void playadecoder_thread(void *blagh)
 {
-  int quit = 0;
   int oldstatus = playastatus;
 
   playa_thread = thd_current;
 
-  dbglog(DBG_DEBUG, ">> " __FUNCTION__ "\n");
+  SDDEBUG(">> %s()\n", __FUNCTION__);
 
   /* Main command loop */
   while (playastatus != PLAYA_STATUS_QUIT) {
     if (playastatus != oldstatus) {
-      dbglog(DBG_DEBUG, "** " __FUNCTION__ " : STATUS [%s] -> [%s]\r\n",
-	     playa_statusstr(oldstatus), playa_statusstr(playastatus));
+      SDDEBUG("%s() : STATUS [%s] -> [%s]\n", __FUNCTION__,
+	      playa_statusstr(oldstatus), playa_statusstr(playastatus));
       oldstatus = playastatus;
     }
     real_playa_update();
@@ -296,51 +300,55 @@ void playadecoder_thread(void *blagh)
 
   /* Done: clean up */
   playastatus = PLAYA_STATUS_ZOMBIE;
-  dbglog(DBG_DEBUG, "<< " __FUNCTION__ "\n");
+  SDDEBUG("<< %s()\n", __FUNCTION__);
 }
 #endif
 
 int playa_init()
 {
   int e = 0;
-  dbglog(DBG_DEBUG, ">> " __FUNCTION__"\n");
+  SDDEBUG(">> %s()\n", __FUNCTION__);
+  SDINDENT;
 
   pcm_buffer_init(0,0);
 
-  memset(&curinfo, 0, sizeof(curinfo));
+  clean_info(&curinfo);
   spinlock_init(&infomutex);
   fifo_init();
   playa_haltsem = sem_create(0);
 
-  dbglog(DBG_DEBUG, "** " __FUNCTION__ " : Create soundstream thread\n");
+  SDDEBUG("Create soundstream thread\n");
   streamstatus = PLAYA_STATUS_INIT;
   thd_create(sndstream_thread, 0);
-  dbglog(DBG_DEBUG, "** " __FUNCTION__ " : Waiting soundstream thread\n");
+  SDDEBUG("Waiting soundstream thread\n");
   while (streamstatus != PLAYA_STATUS_PLAYING)
     thd_pass();
-  dbglog(DBG_DEBUG, "** " __FUNCTION__ " : READY soundstream thread\n");
+  SDDEBUG("READY soundstream thread\n");
 
-  dbglog(DBG_DEBUG, "** " __FUNCTION__ " : Create PLAYA decoder thread\n");
+  SDDEBUG("Create PLAYA decoder thread\n");
   playastatus = PLAYA_STATUS_INIT;
 #ifdef PLAYA_THREAD
   thd_create(playadecoder_thread, 0);
 #endif
-  dbglog(DBG_DEBUG, "** " __FUNCTION__ " : Waiting PLAYA decoder thread\n");
-  while (playastatus != PLAYA_STATUS_READY)
+  SDDEBUG("Waiting PLAYA decoder thread\n");
+  while (playastatus != PLAYA_STATUS_READY) {
     playa_update();
-  dbglog(DBG_DEBUG, "** " __FUNCTION__ " : READY PLAYA decoder thread\n");
+  }
+  SDDEBUG("READY PLAYA decoder thread\n");
 
-  dbglog(DBG_DEBUG, "<< " __FUNCTION__ " := %d\n", e);
+  SDUNINDENT;
+  SDDEBUG("<< %s() := [%d]\n",__FUNCTION__, e);
   return e;
 }
 
 int playa_shutdown()
 {
   int e = 0;
-  dbglog(DBG_DEBUG, ">> " __FUNCTION__"\n");
+  SDDEBUG(">> %s()\n", __FUNCTION__);
+  SDINDENT;
 
   /* PLAYA decoder */
-  dbglog(DBG_DEBUG, "** " __FUNCTION__" : Decoder stream\n");
+  SDDEBUG("Decoder stream\n");
   playastatus = PLAYA_STATUS_QUIT;
   sem_signal(playa_haltsem);
   while (playastatus != PLAYA_STATUS_ZOMBIE)
@@ -348,13 +356,13 @@ int playa_shutdown()
   sem_destroy(playa_haltsem);
 
   /* Sound Stream */
-  dbglog(DBG_DEBUG, "** " __FUNCTION__" : Shutdown sound stream\n");
+  SDDEBUG("Shutdown sound stream\n");
   if (streamstatus == PLAYA_STATUS_PLAYING) {
-    dbglog(DBG_DEBUG, ">> " __FUNCTION__" : Waiting sound stream stop\n");
+    SDDEBUG("Waiting sound stream stop\n");
     streamstatus = PLAYA_STATUS_STOPPING;
     while (streamstatus != PLAYA_STATUS_ZOMBIE)
       ;
-    dbglog(DBG_DEBUG, ">> " __FUNCTION__" : STOPPED\n");
+    SDDEBUG("STOPPED\n");
   }
 
   /* $$$ May be it is not the better place to do that :
@@ -371,7 +379,9 @@ int playa_shutdown()
   lockinfo();
   free_info(&curinfo);
   unlockinfo();
-  dbglog(DBG_DEBUG, "<< " __FUNCTION__" := %d\n", e);
+
+  SDUNINDENT;
+  SDDEBUG("<< %s() := [%d]\n",__FUNCTION__, e);
 
   return e;
 }
@@ -442,19 +452,27 @@ static char * frq_1000(int frq, const char *append)
   return s;
 }
 
-
 int playa_info(playa_info_t * info, const char *fn)
 {
-  return driver ? driver->info(info, fn) : -1;
+  int err;
+  clean_info(info);
+  err = driver ? driver->info(info, fn) : -1;
+  if (err < 0) {
+    /* $$$ ben: Safety net to be sure the driver does not trash it ... 
+     * Memory leaks are possible anyway ... 
+     */
+    clean_info(info);
+  }
+  return err;
 }
 
 int playa_stop(int flush)
 {
-  dbglog(DBG_DEBUG, ">> " __FUNCTION__"\n");
-
+  SDDEBUG(">> %s()\n", __FUNCTION__);
+  
   /* Already stopped */
   if (playastatus == PLAYA_STATUS_READY) {
-    return 0;
+    goto end;;
   }
 
   /* Ask thread to stop */
@@ -468,7 +486,11 @@ int playa_stop(int flush)
     play_samples = play_samples_start = 0;
   }
   driver = 0;
-  dbglog(DBG_DEBUG, "<< " __FUNCTION__"\n");
+
+ end:
+
+  SDUNINDENT;
+  SDDEBUG("<< %s() := [0]\n", __FUNCTION__);
 
   return 0;
 }
@@ -549,11 +571,12 @@ static void make_global_info(playa_info_t * info)
 }
 
 int playa_start(const char *fn, int immediat) {
-  int e;
-  playa_info_t        info;
+  int e = -1;
+  playa_info_t info;
   inp_driver_t *d;
 
-  dbglog(DBG_DEBUG, ">> " __FUNCTION__" ('%s',%d)\n",fn,immediat);
+  SDDEBUG(">> %s('%s',%d)\n",__FUNCTION__, fn, immediat);
+  SDINDENT;
 
   /* $$$ Try to find a driver for this file. A quick glance at file extension
      will be suffisant right now. Later the driver should support an is_mine()
@@ -562,11 +585,10 @@ int playa_start(const char *fn, int immediat) {
   /* $$$ Here, the previous play is not stopped. May be songmenu.c expects
      it is !!! */
   if (!d) {
-    dbglog(DBG_DEBUG, "!! " __FUNCTION__ ": No driver for this file !\n");
-    return -1;
+    SDWARNING("No driver for this file !\n");
+    goto error;
   } else {
-    dbglog(DBG_DEBUG, "!! " __FUNCTION__ ": Driver [%s] found\n",
-	   d->common.name);
+    SDDEBUG("Driver [%s] found\n", d->common.name);
   }
 
   // Can't start again if already playing
@@ -577,7 +599,7 @@ int playa_start(const char *fn, int immediat) {
     int pbs = fifo_used();
 
     if (pbs < 0) {
-      dbglog(DBG_DEBUG,"**** " __FUNCTION__ "() : fifo used : %d !!!\n", pbs);
+      SDWARNING("fifo used : %d !!!\n", pbs);
       pbs = 0;
     }
     play_samples_start = pbs;
@@ -640,7 +662,10 @@ int playa_start(const char *fn, int immediat) {
 
  error:
   dump_info();
-  dbglog(DBG_DEBUG, "<< " __FUNCTION__" ('%s',%d) := %d \n",fn, immediat, e);
+
+  SDUNINDENT;
+  SDDEBUG("<< %s([%s],%d) := [%d] \n",__FUNCTION__, fn, immediat, e);
+
   return e;
 }
 
@@ -703,7 +728,7 @@ static void make_default_name(char * dest, int max, const char *fn)
 static void free_info(playa_info_t *info)
 {
   if(info->info)      free(info->info);
-  if(info->format )   free(info->format);
+  if(info->format)    free(info->format);
   if(info->time)      free(info->time);
   if(info->album)     free(info->album);
   if(info->title)     free(info->title);
@@ -712,7 +737,7 @@ static void free_info(playa_info_t *info)
   if(info->genre)     free(info->genre);
   if(info->track)     free(info->track);
   if(info->comments)  free(info->comments);
-  memset(info,0,sizeof(playa_info_t));
+  clean_info(info);
 }
 
 
@@ -726,16 +751,19 @@ static void dump_info() {
   lockinfo();
   if (info->valid) {
 
-    dbglog(DBG_DEBUG,  " FORMAT   : %s\n", null(info->format));
-    dbglog(DBG_DEBUG,  " TIME     : %s\n", null(info->time));
+    SDDEBUG(" FORMAT   : %s\n", null(info->format));
+    SDDEBUG(" TIME     : %s\n", null(info->time));
 
-    dbglog(DBG_DEBUG,  " ALBUM    : %s\n", null(info->album));
-    dbglog(DBG_DEBUG,  " TITLE    : %s\n", null(info->title));
-    dbglog(DBG_DEBUG,  " ARTIST   : %s\n", null(info->artist));
-    dbglog(DBG_DEBUG,  " YEAR     : %s\n", null(info->year));
-    dbglog(DBG_DEBUG,  " GENRE    : %s\n", null(info->genre));
-    dbglog(DBG_DEBUG,  " TRACK    : %s\n", null(info->track));
-    dbglog(DBG_DEBUG,  " COMMENTS : %s\n", null(info->comments));
+    SDDEBUG(" ALBUM    : %s\n", null(info->album));
+    SDDEBUG(" TITLE    : %s\n", null(info->title));
+    SDDEBUG(" ARTIST   : %s\n", null(info->artist));
+    SDDEBUG(" YEAR     : %s\n", null(info->year));
+    SDDEBUG(" GENRE    : %s\n", null(info->genre));
+    SDDEBUG(" TRACK    : %s\n", null(info->track));
+    SDDEBUG(" COMMENTS : %s\n", null(info->comments));
+  } else {
+    SDDEBUG("Invalid info\n");
   }
+
   unlockinfo();
 }

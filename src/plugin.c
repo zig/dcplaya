@@ -3,7 +3,7 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: plugin.c,v 1.7 2002-09-20 00:22:15 benjihan Exp $
+ * $Id: plugin.c,v 1.8 2002-09-21 05:15:47 benjihan Exp $
  */
 #include <stdio.h>
 #include <string.h>
@@ -94,6 +94,8 @@ static void remove_driver(driver_list_t * dl, any_driver_t * d)
   SDDEBUG("%s([%s], [%s] : lef:%p count:%d\n", __FUNCTION__,
 	  dl->name, d->name, lef, lef ? lef->ref_count : -666);
   driver_list_unregister(dl, d);
+  SDDEBUG("Running shutdown code\n");
+  d->shutdown(d);
   lef_free(lef); /* dereference and optionnal free. */
 }
 
