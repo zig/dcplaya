@@ -1,7 +1,7 @@
 --
 -- This is main DCplaya lua script
 --
--- $Id: dcplayarc.lua,v 1.21 2002-12-16 23:39:35 ben Exp $
+-- $Id: dcplayarc.lua,v 1.22 2003-01-07 19:40:40 ben Exp $
 --
 
 showconsole()
@@ -36,6 +36,7 @@ plug_el		= home.."plugins/exe/entrylist/entrylist.lez"
 plug_sc68	= home.."plugins/inp/sc68/sc68.lez"
 plug_mikmod	= home.."plugins/inp/mikmod/mikmod.lez"
 plug_ogg	= home.."plugins/inp/ogg/ogg.lez"
+plug_cdda	= home.."plugins/inp/cdda/cdda.lez"
 
 plug_obj	= home.."plugins/obj/obj.lez"
 plug_lpo	= home.."plugins/vis/lpo/lpo.lef"

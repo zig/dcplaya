@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.26 2003-01-03 19:05:39 ben Exp $
+--- $Id: textlist.lua,v 1.27 2003-01-07 19:40:40 ben Exp $
 ---
 
 -- Unload the library
@@ -226,9 +226,6 @@ function textlist_create(flparm)
 	 fl.dirinfo[i].y = y
 	 fl.dirinfo[i].w = w2
 	 fl.dirinfo[i].h = h2
-
-	 --		 dump(fl.dir[i])
-	 --		 dump(fl.dirinfo[i])
 	 y = y + h2
       end
       return w, h
@@ -292,6 +289,21 @@ function textlist_create(flparm)
       end
    end
 
+   function textlist_remove_entry(fl, pos)
+      if not fl.dir then return end
+      pos = pos or (fl.pos+1)
+      local n = fl.dir.n
+      if pos <= 0 or pos > n then return end
+      if type(fl.dir) == "table" then
+	 tremove(fl.dir, pos)
+      else
+	 fl.dir[pos] = nil --- $$$ For entry list !
+      end
+      local newpos = fl.pos - ((pos-1 < fl.pos) or 0)
+      fl:change_dir(fl.dir, newpos + 1)
+      return pos
+   end
+
    --- Reset textlist.
    --
    function textlist_reset(fl)
@@ -334,10 +346,9 @@ function textlist_create(flparm)
 
    --- Change the textlist content.
    --
-   function textlist_change_dir(fl,dir)
-      if not dir then dir = {} end
-      if not dir.n then dir.n = getn(fl.dir) end
-      if not dir.n then dir.n = 0 end
+   function textlist_change_dir(fl, dir, pos)
+      dir = dir or {}
+      if not dir.n then dir.n = getn(dir) or 0 end
       fl.dir = dir
       fl.dirinfo = {}
 
@@ -346,11 +357,10 @@ function textlist_create(flparm)
       fl:set_box(nil,nil,
 		 2*fl.border + w,
 		 2*fl.border + h, nil)
-      fl.pos = 0
-      -- 	  fl:close()
+      pos = (pos or 1) - 1
+      pos = (pos < dir.n and pos) or (dir.n - 1)
+      fl.pos = (pos >= 0 and pos) or 0
       fl:draw()
-      -- 	  fl:open()
-
       return 1
    end
 
@@ -413,7 +423,22 @@ function textlist_create(flparm)
 	 return
       end
       dl_clear(dl)
-      local i = fl.pos+1
+      local i = (fl.pos or 0) + 1
+      if not fl.dirinfo or not fl.dirinfo[i] then
+	 -- $$$ There is a bug here ...
+	 print("-------------------------")
+	 print("-------------------------")
+	 print("textlist draw_cursor BUGS:")
+	 print("fl.pos="..tostring(fl.pos))
+	 print("fl.dirinfo="..tostring(fl.dirinfo))
+	 if fl.dirinfo then
+	    print("fl.dirinfo[fl.pos]="..tostring(fl.dirinfo[i]))
+	 end
+	 print("-------------------------")
+	 print("-------------------------")
+	 return
+      end
+
       local y,w,h = fl.dirinfo[i].y, fl.dirinfo[i].w, fl.dirinfo[i].h
       local ww = fl.bo2[1] - 2 * fl.border
       if ww > w then w = ww end
@@ -431,10 +456,10 @@ function textlist_create(flparm)
    function textlist_draw_list(fl, dl)
       local dl = fl.idl
       local i
-      local max = getn(fl.dirinfo)
       dl_clear(dl)
       --- $$$ Added by ben for updating TT drawing
       textlist_measure(fl)
+      local max = getn(fl.dirinfo)
       for i=1, max, 1 do
 	 fl:draw_entry(dl, i, 0, fl.dirinfo[i].y+fl.span, 0)
       end
@@ -471,6 +496,20 @@ function textlist_create(flparm)
       for i,v in xentry do e[i] = v end
       for i,v in eentry do e[i] = v end
       return e
+   end
+
+   --- Get entry fullpath
+   --
+   function textlist_fullpath(fl, entry)
+      if not entry then 
+	 entry = fl and fl.dir and fl.dir[(fl.pos or 0)+1]
+	 if not entry then return end
+      end
+      local leaf = entry.file or entry.name
+      local path = entry.path or (fl and fl.path) or "/"
+      if type(leaf) == "string" and type(path) == "string" then
+	 return canonical_path(path.."/"..leaf)
+      end
    end
 
    --- Locate an entry which name matches a regular expression.
@@ -518,9 +557,11 @@ function textlist_create(flparm)
       confirm		= textlist_confirm,
       move_cursor	= textlist_move_cursor,
       get_entry		= textlist_get_entry,
+      fullpath          = textlist_fullpath,
       locate_entry_expr	= textlist_locate_entry_expr,
       locate_entry	= textlist_locate_entry,
       insert_entry      = textlist_insert_entry,
+      remove_entry      = textlist_remove_entry,
       measure_text	= textlist_measure_text,
       set_box		= textlist_set_box,
       set_pos		= textlist_set_pos,

@@ -4,7 +4,7 @@
 --- @date   2002/10/04
 --- @brief  fileselector gui
 ---
---- $Id: fileselector.lua,v 1.20 2003-01-03 19:05:39 ben Exp $
+--- $Id: fileselector.lua,v 1.21 2003-01-07 19:40:40 ben Exp $
 --
 -- TODO : select item with space 
 --        completion with tab        
@@ -34,8 +34,9 @@ if not dolib("filelist") then return end
 ---
 ---  @return dialog application
 
-function fileselector(name,path,filename)
+function fileselector(name,path,filename,owner)
    local dial,but,input
+
 
    -- FILESECTOR LAYOUT
    --
@@ -329,9 +330,11 @@ function fileselector(name,path,filename)
       return evt
    end
    
-   if not name then name="File Selector" end
-   if not path then path=PWD end
-   dial = gui_new_dialog(evt_desktop_app,
+   name  = name or "File Selector"
+   path  = path or PWD
+   owner = owner or evt_desktop_app
+
+   dial = gui_new_dialog(owner,
 			 {x, y, x2, y2 }, nil, nil, name,
 			 { x = "left", y = "up" }, "fileselector" )
    dial.event_table = {

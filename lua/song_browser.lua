@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.21 2003-01-06 19:41:13 ben Exp $
+--- $Id: song_browser.lua,v 1.22 2003-01-07 19:40:40 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -103,9 +103,21 @@ function song_browser_create(owner, name)
    --- Song-Browser update (handles fade in / fade out).
    --  ------------------------------------------------
    function song_browser_update(sb, frametime)
-      local loading = sb.fl.dir.loading
-      if loading == 2 then
-	 sb.fl:change_dir(sb.fl.dir)
+      if sb.loaddir then
+	 local loading = (tag(sb.loaddir) == entrylist_tag and
+			  sb.loaddir.loading) or 2
+	 if loading == 2 then
+	    local i
+	    if type(sb.locatedir) == "string" then
+	       i = sb.loaddir.n
+	       while i >= 1 and sb.loaddir[i].file ~= sb.locatedir do
+		  i = i - 1
+	       end
+	    end
+	    sb.locatedir = nil
+	    sb.fl:change_dir(sb.loaddir, i)
+	    sb.loaddir = nil
+	 end
       end
 
       if not sb.sleeping then
@@ -125,29 +137,26 @@ function song_browser_create(owner, name)
       end
 
       if sb.stopping and playa_fade() == 0 then
-	 print("REAL STOP")
 	 playa_stop()
 	 sb.stopping = nil
 	 sb.playlist_idx = nil
       elseif sb.playlist_idx then
-	 local n = sb.pl.dir.n
-	 while playa_play() == 0 and sb.playlist_idx < n do
-	    sb.playlist_idx = sb.playlist_idx + 1
-	    local path = sb.pl.dir[sb.playlist_idx].path
-	    local leaf = sb.pl.dir[sb.playlist_idx].file
-	    if leaf then 
+	 if not sb.pl.dir or not sb.pl.dir.n then
+	    sb.playlist_idx = nil
+	 else 
+	    local n = sb.pl.dir.n
+	    while playa_play() == 0 and sb.playlist_idx < n do
+	       sb.playlist_idx = sb.playlist_idx + 1
+	       local path = sb.pl:fullpath(sb.pl.dir[sb.playlist_idx])
 	       if path then
-		  leaf = path .. "/" .. leaf
+		  print("PLAY-LIST ADVANCE: #"..sb.playlist_idx.." "..path)
+		  song_browser_play(sb, path, 0, 0)
 	       end
-	       path = fullpath(leaf)
-	       print("PLAY-LIST ADVANCE: #"..sb.playlist_idx.." "..path)
-	       song_browser_play(sb, path,0,0)
 	    end
-	    
-	 end
-	 if sb.playlist_idx > n then
-	    print("END OF PLAY-LIST")
-	    song_browser_stop(sb)
+	    if playa_play() == 0 then
+	       print("END OF PLAY-LIST")
+	       song_browser_stop(sb)
+	    end
 	 end
       end
 
@@ -350,6 +359,21 @@ function song_browser_create(owner, name)
       sb.pl:set_color(a,r,g,b)
    end
 
+   function song_browser_loaddir(sb,path,locate)
+      if not test("-d",path) or sb.loaddir then
+	 return
+      end
+      sb.loaddir = entrylist_new()
+      if sb.loaddir then
+	 if entrylist_load(sb.loaddir,path) then
+	    sb.locatedir = locate
+	    return 1
+	 end
+      end
+      sb.locatedir = nil
+      sb.loaddir = nil
+   end
+
    --- Song-Browser confirm.
    --
    function song_browser_confirm(sb)
@@ -409,19 +433,27 @@ function song_browser_create(owner, name)
    --    *     - @b 2    if entry is "not confirmed" but change occurs
    --    *     - @b 3    if entry is "confirmed" and change occurs
    function sbfl_confirm(fl, sb)
-      print("sbfl_confirm")
-      local idx = fl.pos+1
-      local entry = fl.dir[idx]
-      local entry_path = fl.dir.path or "/"
-      entry_path = canonical(entry_path .. "/" .. fl.dir[idx].file)
+      local entry_path = fl:fullpath()
+      if not entry_path then return end
+      print("sbfl_confirm:"..entry_path)
+      local idx = (fl.pos or 0) + 1
+      local entry = fl.dir and fl.dir[idx]
+      if not entry then return end
       
       if entry.size and entry.size==-1 then
 	 print(fl.dir[idx].file,entry_path)
-	 if strfind(entry_path,"^/cd.*") and fl.dir[idx].file == "."  then
-	    clear_cd_cache()
+	 local locate_me
+	 if entry.file == "." then
+	    locate_me = "."
+	    if strfind(entry_path,"^/cd.*") then
+	       print("Clear CD cache !")
+	       clear_cd_cache()
+	    end
+	 elseif entry.file == ".." then
+	    local p
+	    p,locate_me = get_path_and_leaf(entry.path or fl.path)
 	 end
-	 entrylist_load(fl.dir,entry_path)
-	 fl:change_dir(fl.dir)
+	 song_browser_loaddir(sb, entry_path, locate_me)
       else
 	 sb.playlist_idx = nil
 	 song_browser_play(sb, entry_path, 0, 1)
@@ -443,17 +475,65 @@ function song_browser_create(owner, name)
       playa_fade(2)
    end
 
-   function sbfl_cancel(fl, sb)
-      print("sbfl_cancel")
-      if playa_play() == 1 then
-	 song_browser_stop(sb);
-      else
-	 evt_shutdown_app(sb)
+--    function song_browser_exec(sb, path, option)
+--       local t,major,minor = filetype(path)
+--       if not major then return end
+--       if major == "music" then
+-- 	 if type(option) == "string" and option == "immediat"
+	 
+--       elseif major == "playlist" then
+--       elseif major == "plugin" then
+--       elseif major == "image" then
+-- 	 return song_browser_exec_image(sb,path)
+--       elseif major == "dir" then
+--       end
+--    end
+
+   function song_browser_loadbackground(sb, fpath, mode)
+      if not background_tag or tag(background) ~= background_tag then
+	 return
+      end
+      if test("-f", fpath) then
+	 background:set_texture(fpath, mode)
       end
    end
 
+   function song_browser_image_action(sb, fpath, action)
+      if not background_tag or tag(background) ~= background_tag then
+	 return
+      end
+
+      if action == "confirm" then
+	 background:set_texture(fpath, "scale")
+      elseif action == "select" then
+	 local menudef = menu_create_defs()
+      end
+   end
+
+   function song_browser_entry_confirm(sb, entry, action)
+      if not entry then return end
+      local fname = entry.file or entry.name
+      if type(fname) ~= "string" then return end
+      local ftype,fmajor,fminor = filetype(fname)
+      if not ftype then return end
+      print(Format("Ftype:%d,%s,%s"),ftype,fmajor,fminor)
+      local act = sb.type_actions[fmajor] and sb.type_actions[fmajor][action]
+      if type(act) == "function" then
+	 return act(sb, entry, action)
+      end
+   end
+
+   function sbfl_cancel(fl, sb)
+      if playa_play() == 1 then
+	 song_browser_stop(sb);
+      end
+   end
+
+
    function sbfl_select(fl, sb)
-      print("sbfl_select")
+      local path = fl:fullpath()
+      if not path then return end
+      print("sbfl_select("..path..")")
       return sbpl_insert(sb, fl:get_entry())
    end
 
@@ -482,23 +562,114 @@ function song_browser_create(owner, name)
 
    sb.fl.curplay_color = {1,1,0,0}
 
+   sb.type_action = {
+      dir      = { accept = 1 },
+      file     = { accept = 0 },
+      music    = { accept = 1 },
+      image    = { accept = 1 },
+      lua      = { accept = 1 },
+      plugin   = { accept = 1 },
+      playlist = { },
+   }
+
+   function sbpl_clear(sb)
+      sb.pl:change_dir(nil)
+   end
+
    function sbpl_insert(sb, entry)
       sb.pl:insert_entry(entry)
    end
 
-   function sbpl_confirm(pl, sb)
-      if pl.dir.n and pl.dir.n >= 1 then
+   function sbpl_stop(sb)
+      song_browser_stop(sb)
+   end
+
+   function sbpl_run(sb,pos)
+      local pl = sb.pl
+      pos = (pos and pos-1) or pl.pos
+      if pl.dir.n and pos < pl.dir.n then
 	 playa_stop()
-	 sb.playlist_idx = pl.pos
+	 sb.playlist_idx = pos
       end
    end
 
+   function sbpl_remove(sb,pos)
+      pos = pos or (sb.pl.pos + 1)
+      if pos > 0 and pos <= sb.pl.dir.n then
+	 if sb.playlist_idx and pos <= sb.playlist_idx then
+	    sb.playlist_idx = sb.playlist_idx - 1
+	 end
+	 sb.pl:remove_entry()
+      end
+   end
+
+   function sbpl_save(sb,owner)
+      owner = owner or sb
+      local fs = fileselector("Save playlist",
+			      "/ram/dcplaya/playlists",
+			      "playlist.m3u",owner)
+      local fname = evt_run_standalone(fs)
+      if type(fname) ~= "string" then
+	 return
+      end
+      local result
+      if test("-d",fname) then
+      elseif test("-f",fname) then
+      else
+	 result = playlist_save(fname, sb.pl.dir)
+      end
+      return result
+   end
+
+
+   function sbpl_confirm(pl, sb)
+      sbpl_run(sb)
+   end
+
    function sbpl_cancel(pl, sb)
-      sb:close()
-      --	   evt_shutdown_app(sb)
+      sbpl_remove(sb)
    end
 
    function sbpl_select(pl, sb)
+      local entry = pl:get_entry()
+      if not entry then return end
+      local root = ""
+      local fname = entry.file or entry.name
+      if type(fname) == "string" then root = ":"..fname..":" end
+      root = root.."run{run},remove{remove},shuffle{shuffle},sort>sort,clear{clear},save{save}"
+      local cb = {
+	 run = function (menu)
+		  local sb = menu.root_menu.target
+		  sbpl_run(sb)
+	       end,
+	 remove = function (menu)
+		     local sb = menu.root_menu.target
+		     sbpl_remove(sb)
+		  end,
+	 clear = function (menu)
+		    local sb = menu.root_menu.target
+		    sbpl_clear(sb)
+		 end,
+	 save = function (menu)
+		   local sb = menu.root_menu.target
+		   sbpl_save(sb,menu)
+		end,
+      }
+	 
+      local def = {
+	 root=root,
+	 cb = cb,
+	 sub = {
+	    sort = ":sort:by name{sort_by_name},by type{sort_by_type}",
+	 }
+      }
+
+      local menudef = menu_create_defs(def, sb)
+      local menu = menu_create(sb, "playlist-menu", menudef)
+      if tag(menu) == menu_tag then
+	 menu.target = sb
+	 menu.target_pos = pl.pos + 1
+      end
    end
 
    x = 341
@@ -542,8 +713,9 @@ function song_browser_create(owner, name)
    sb.cl = sb.fl
 
    song_browser_create_sprite(sb)
-   entrylist_load(sb.fl.dir,"/")
-   sb.fl:change_dir(sb.fl.dir)
+   song_browser_loaddir(sb,"/","cd")
+--    sb.fl:change_dir(sb.fl.dir)
+
 
    function songbrowser_menucreator(target)
       local sb = target;
@@ -558,21 +730,7 @@ function song_browser_create(owner, name)
 		  end,
 	 saveplaylist = function(menu)
 			   local sb = menu.root_menu.target
-			   fs = fileselector("Save playlist",
-					     "/ram/dcplaya/playlists",
-					     "playlist.m3u")
-			   local fname = evt_run_standalone(fs)
-			   if type(fname) ~= "string" then
-			      return
-			   end
-
-			   local result
-			   if test("-d",fname) then
-			   elseif test("-f",fname) then
-			   else
-			      result = playlist_save(fname, sb.pl.dir)
-			   end
-
+			   sbpl_save(sb,menu)
 			end,
       }
       local root = ":" .. target.name .. ":" .. 
