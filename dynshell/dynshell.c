@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.27 2002-09-30 02:51:13 vincentp Exp $
+ * @version    $Id: dynshell.c,v 1.28 2002-09-30 06:42:49 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -23,6 +23,7 @@
 
 #include "plugin.h"
 #include "dcar.h"
+#include "gzip.h"
 #include "playa.h"
 
 #include "exceptions.h"
@@ -840,6 +841,87 @@ static int lua_cond_connect(lua_State * L)
   return 0;
 }
 
+/* vmu_tools : 2 commands
+ * 1) [ b , vmupath, file ] backup vmu to file ]
+ * 2) [ r , vmupath, file ] restore file into vmu ]
+ */
+static int lua_vmutools(lua_State * L)
+{
+  char success[32];
+  char *buffer = 0;
+  char * err = 0;
+  int len;
+  int nparam = lua_gettop(L);
+  const char * command, * vmupath, * file;
+
+  if (nparam != 3) {
+    err = "Bad number of argument";
+    goto error;
+  }
+  
+  command = lua_tostring(L, 1);
+  vmupath = lua_tostring(L, 2);
+  file    = lua_tostring(L, 3);
+
+  if (!command || !vmupath || !file) {
+    err = "Bad argument";
+    goto error;
+  }
+
+  if ((command[0] != 'b' && command[0] != 'r') || command[1]) {
+    err = "Bad <command> argument";
+    goto error;
+  }
+
+  if (command[0] == 'r') {
+    /* Restore */
+    printf("vmu_tools : Restoring [%s] from [%s]...\n", vmupath, file);
+
+    buffer = gzip_load(file, &len);
+    if (!buffer) {
+      err = "File read error";
+      goto error;
+    }
+    if (len != (128<<10)) {
+      err = "Bad file size (not 128Kb)";
+      goto error;
+    }
+    if (fs_vmu_restore(vmupath, buffer)) {
+      err = "Restore failure";
+      goto error;
+    }
+
+  } else {
+    printf("vmu_tools : Backup [%s] into [%s]...\n",
+	   vmupath, file);
+
+    buffer = malloc(128<<10);
+    if (!buffer) {
+      err = "128K buffer allocation failure";
+      goto error;
+    }
+    if (fs_vmu_backup(vmupath, buffer)) {
+      err = "Backup failure";
+      goto error;
+    }
+    if (len = gzip_save(file, buffer, 128<<10), len < 0) {
+      err = "File write error";
+      goto error;
+    }
+  }
+
+  sprintf(success, "compression: %d", (len * 100) >> 17);
+
+ error:
+  if(buffer) {
+    free(buffer);
+  }
+  printf("vmu_tools : [%s].\n", err ? err : success);
+
+  return err ? -1 : 0;
+}
+
+
 #if 0
 static char shell_basic_lua_init[] = 
 "\n shell_help_array = {}"
@@ -1083,7 +1165,15 @@ static luashell_command_description_t commands[] = {
 
     SHELL_COMMAND_C, lua_cond_connect
   },
-
+  {
+    "vmu_tools",
+    "vmu",
+    "print([["
+    "vmu_tools b vmupath file : Backup VMU to file.\n"
+    "vmu_tools r vmupath file : Restore file into VMU.\n"
+    "]])",
+    SHELL_COMMAND_C, lua_vmutools
+  },
 
   {0},
 };
