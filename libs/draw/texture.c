@@ -4,7 +4,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.11 2003-01-31 14:48:30 ben Exp $
+ * $Id: texture.c,v 1.12 2003-02-01 23:45:30 zigziggy Exp $
  */
 
 #include <stdlib.h>
@@ -121,9 +121,7 @@ int texture_init(void)
   vid_heap->usedblock_alloc = usedblock_alloc;
   vid_heap->usedblock_free = usedblock_free;
   vid_heap->sbrk = vid_sbrk;
-  //  vid_heap->small_threshold = 10*1024; /* small allocs are at the end of memory */
-  // $$$ BEN TEST
-  vid_heap->small_threshold = 0;
+  vid_heap->small_threshold = 10*1024; /* small allocs are at the end of memory */
 
   texture_locks = 0;
   texture_references = 0;

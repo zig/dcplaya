@@ -4,13 +4,15 @@
  * @date     2003/01/19
  * @brief    External heap management.
  * 
- * $Id: exheap.c,v 1.5 2003-01-20 14:57:24 zigziggy Exp $
+ * $Id: exheap.c,v 1.6 2003-02-01 23:45:30 zigziggy Exp $
  */
 
 
-/* IDEA :
+/* NOTES :
 
-   
+   The algorithm used is very simple, currently it is slow both in alloc and
+   free. It is easy to make is faster in allocation, a bit more difficult
+   to make it faster in free.
 
 */
 
@@ -230,6 +232,7 @@ eh_block_t * eh_alloc(eh_heap_t * heap, size_t size)
     size = sizeof(eh_block_t);
 
   /* browse all free blocks */
+  /* NOTE : this is the slow part of alloc */
 
 #define TRY_FREEBLOCK                                \
       eh_block_t * next;                             \
@@ -335,6 +338,7 @@ void eh_free(eh_heap_t * heap, eh_block_t * b)
 	CIRCLEQ_INSERT_AFTER(&heap->list, prev, b, g_list);
 
 	/* find first previous free block */
+	/* NOTE : this is the slow part of free */
 	for ( ; ; ) {
 	  prev = CIRCLEQ_PREV(prev, g_list);
 	  if (prev == (void *)&heap->list) {

@@ -224,5 +224,5 @@ SECTIONS
   .debug_varnames  0 : { *(.debug_varnames) }
 /*  .stack 0x8c00f400 : { _stack = .; *(.stack) }*/
   /* These must appear regardless of  .  */
-_stack = 0x8d000000;
+/*_stack = 0x8d000000;*/
 }
