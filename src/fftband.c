@@ -202,23 +202,46 @@ static unsigned int fftband_calc_value(fftband_t * band, const uint16 * fft)
 
 void fftband_update(fftbands_t * bands, const uint16 * fft)
 {
-  unsigned int w, l;
-  int i;
-/*   int previdx = bands->tapidx; */
-/*   int idx = (previdx+1) & 3; */
-/*   bands->tapidx = idx; */
-  if (!bands) return;
+  unsigned int l, min, max;
+  int i, imin, imax;
 
-  for (i=0,l=0; i<bands->n; ++i) {
+  if (!bands || bands->n<1) return;
+
+  l = fftband_calc_value(bands->band,fft);
+  bands->band->v = (l + bands->band->v) >> 1;
+
+  imin = imax = 0;
+  min = max = l;
+
+  for (i=1; i<bands->n; ++i) {
     fftband_t * b = bands->band + i;
+    int s;
+    unsigned int w;
     w = fftband_calc_value(b,fft);
-/*     b->tapacu -= b->tap[idx]; */
-/*     w = (w + b->tap[previdx]) >> 1; */
-/*     b->tap[idx] = w; */
-/*     b->tapacu += w; */
-
-    b->v = (w + b->v) >> 1;
     l += w;
+    b->v = w = (w + b->v) >> 1;
+
+/*     s = ((int)w - (int)min) >> 31; */
+/*     min = (min & ~s) | (w & s); */
+/*     imin = (imin & ~s) | (i & s) ; */
+
+/*     s = ((int)max - (int)w) >> 31; */
+/*     max = (max & ~s) | (w & s); */
+/*     imax = (imax & ~s) | (i & s) ; */
+
+    if (w < min) {
+      min = w;
+      imin = i;
+    } else if (w > max) {
+      max = w;
+      imax = i;
+    }
+
   }
   bands->loudness = (bands->loudness + l/bands->n) >> 1;
+  bands->imin = imin;
+  bands->imax = imax;
+
+/*   printf("fftband: [%d %d] [%d %d] [%d %d]\n",imin,imax,min,max, */
+/* 	 bands->band[imin].v,bands->band[imax].v); */
 }

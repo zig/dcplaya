@@ -4,7 +4,7 @@
  * @author   ben(jamin) gerard <ben@sashipa.com>
  * @brief    draw color definitions.
  *
- * $Id: color.h,v 1.3 2003-01-22 19:12:56 ben Exp $
+ * $Id: color.h,v 1.4 2003-01-25 11:37:44 ben Exp $
  */
 
 #ifndef _DRAW_COLOR_H_
@@ -94,16 +94,23 @@ void draw_color_add_clip(draw_color_t *d,
 			 const draw_color_t *a, const draw_color_t *b);
 
 /** Creates a color by multiplying two colors,
- *	with result in the range [0..1].
+ *  with result in the range [0..1].
  */
 void draw_color_mul_clip(draw_color_t *d,
 			 const draw_color_t *a, const draw_color_t *b);
 
-/** Creates a color by multiplying two colors, 
- *	without clipping.
+/** Creates a color by multiplying two colors, without clipping.
+ *  
  */
 void draw_color_mul(draw_color_t *d,
 		    const draw_color_t *a, const draw_color_t *b);
+
+/** Creates a color by multiplying a color by a constant factor,
+ *  without clipping.
+ */
+void draw_color_scale(draw_color_t *d,
+		      const draw_color_t *a, const float b);
+
 
 /**@}*/
 

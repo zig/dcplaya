@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.21 2003-01-24 10:37:18 ben Exp $
+ * $Id: lpo.c,v 1.22 2003-01-25 11:37:44 ben Exp $
  */
 
 #include <stdio.h>
@@ -544,6 +544,7 @@ static int start(void)
 
 static int stop(void)
 {
+  lpo_set_controler(-1);
   if (curobj) {
     driver_dereference(&curobj->common);
     curobj = 0;
@@ -695,7 +696,6 @@ static int shutdown(any_driver_t *d)
     free(bands);
     bands = 0;
   }
-  lpo_set_controler(-1);
   return 0;
 }
 

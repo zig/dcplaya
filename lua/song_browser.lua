@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.25 2003-01-24 04:28:13 ben Exp $
+--- $Id: song_browser.lua,v 1.26 2003-01-25 11:37:44 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -162,7 +162,8 @@ function song_browser_create(owner, name)
 		  local subel = entrylist_new()
 		  if subel then
 		     entrylist_load(subel,
-				    canonical(dir.path.."/"..entry.file))
+				    canonical(dir.path.."/"..entry.file),
+				    sb.el_filter)
 		     sb.recloader.cur2 = i
 		     sb.recloader = {
 			parent = sb.recloader,
@@ -441,7 +442,7 @@ function song_browser_create(owner, name)
       end
       sb.loaddir = entrylist_new()
       if sb.loaddir then
-	 if entrylist_load(sb.loaddir,path) then
+	 if entrylist_load(sb.loaddir,path,sb.el_filter) then
 	    sb.locatedir = locate
 	    return 1
 	 end
@@ -545,7 +546,7 @@ function song_browser_create(owner, name)
 
    function sbfl_confirm_music(fl, sb, action, entry_path)
       if not test("-f",entry_path) then return end
-       sb.playlist_idx = nil
+      sb.playlist_idx = nil
       song_browser_play(sb, entry_path, 0, 1)
       return 1
    end
@@ -558,8 +559,16 @@ function song_browser_create(owner, name)
    end
 
    function sbfl_confirm_image(fl, sb, action, entry_path)
+      if not background_tag or tag(background) ~= background_tag then
+	 print ("no background !!")
+	 return
+      end
+      if test("-f", entry_path) then
+	 background:set_texture(entry_path,sb.background_mode)
+      else 
+	 print ("no file")
+      end
    end
-
 
    function song_browser_stop(sb)
       sb.stopping = 1
@@ -696,7 +705,7 @@ function song_browser_create(owner, name)
 	    cur = 0,
 	    cur2 = 0,
 	 }
-	 entrylist_load(dir,path)
+	 entrylist_load(dir,path,sb.el_filter,"DM")
       end
    end
 
@@ -885,6 +894,9 @@ function song_browser_create(owner, name)
    -- cdrom
    sb.cdrom_stat, sb.cdrom_type, sb.cdrom_id = cdrom_status(1)
    sb.cdrom_check_timeout = 0
+
+   -- filer
+   sb.el_filter = "DXIMP"
 
    -- Menu
    sb.mainmenu_def = songbrowser_menucreator

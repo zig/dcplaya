@@ -39,21 +39,21 @@ void MtxCopyFlexible(float *d, const float *s, int nline, int ncol,
 					 int dsize, int ssize)
 {
   if (nline > 0 && ncol > 0) {
-	if ( ncol*sizeof(float) == dsize && dsize == ssize) {
-	  unsigned int words = (unsigned int)dsize / sizeof(float);
-	  do {
-		*d++ = *s++;
-	  } while(--words);
-	}
+    if ( ncol*sizeof(float) == dsize && dsize == ssize) {
+      unsigned int words = (unsigned int)dsize / sizeof(float);
+      do {
+	*d++ = *s++;
+      } while(--words);
+    }
 
-	do  {
-	  int i;
-	  for (i=0; i<ncol; ++i) {
-		d[i] = s[i];
-	  }
-	  d = (float *) ((char *)d + dsize);
-	  s = (const float *) ((const char *)s + ssize);
-	} while (--nline);
+    do  {
+      int i;
+      for (i=0; i<ncol; ++i) {
+	d[i] = s[i];
+      }
+      d = (float *) ((char *)d + dsize);
+      s = (const float *) ((const char *)s + ssize);
+    } while (--nline);
   }
 }
 

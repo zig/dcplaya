@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/17
  *  @brief   FIME : bees 
- *  $Id: fime_bees.c,v 1.6 2003-01-22 19:12:56 ben Exp $
+ *  $Id: fime_bees.c,v 1.7 2003-01-25 11:37:44 ben Exp $
  */ 
 
 #include <stdlib.h>
@@ -11,6 +11,7 @@
 #include "math_float.h"
 
 #include "fime_bees.h"
+#include "fime_analysis.h"
 
 #include "driver_list.h"
 #include "obj_driver.h"
@@ -147,11 +148,15 @@ static void move_target(matrix_t mtx)
   update_target(mtx);
 }
 
+//static matrix_t beat_matrix;
+static float beatf;
+
 static void bee_matrix(fime_bee_t * bee, matrix_t mtx, const vtx_t * axe)
 {
   MtxLookAt(mtx, axe->x, axe->y, axe->z);
+  //MtxInvMult(mtx,beat_matrix);
   MtxTranspose3x3(mtx);
-  MtxScale(mtx,bee->scale);
+  MtxScale(mtx,bee->scale*(1.0+beatf*2));
   MtxTranslate(mtx, bee->pos.x, bee->pos.y, bee->pos.z);
 }
 
@@ -165,7 +170,7 @@ static void bee_update(matrix_t leader_mtx, matrix_t mtx, fime_bee_t * bee)
   /* Get leader position */
   leader_pos = *(vtx_t *)leader_mtx[3];
 
-  /* Compute target position. */
+  
   MtxVectMult(&tgt.x, &bee->rel_pos.x, leader_mtx);
 
   /* Compute move axis. */
@@ -186,7 +191,7 @@ static void bee_update(matrix_t leader_mtx, matrix_t mtx, fime_bee_t * bee)
     float a;
     const float f = 0.2f;
     vtx_t new_axe;
-    const float spd_max = 0.02;
+    const float spd_max = 0.014;
 
     vtx_scale3(&mov, &axe, id);
     a = vtx_dot_product(&mov,&bee->axe);
@@ -408,10 +413,29 @@ int fime_bees_update(void)
   if (!bees) {
     return -1;
   }
+
+  /* Compute target position. */
+  {
+    const fime_analyser_t * a = fime_analysis_get(1);
+    float b = (a->v * 0.00 + a->w * 1.0);
+    float f = b > beatf ? 0.3 : 0.90;
+    beatf =  beatf * f + b * (1.0-f);
+  }
+
   move_target(target_mtx);
   bee_update_tree(target_mtx, bees);
 
   return -(!!err);
+}
+
+const char * cflagsstr(int f)
+{
+  int i;
+  static char t[7], t2[] = "ZzYyXx";
+  for (i=0; i<6; ++i) {
+    t[i] = (f&(1<<i)) ? t2[i] : '.';
+  }
+  return t;
 }
 
 static int render_it(viewport_t *vp, matrix_t mtx, matrix_t proj,
@@ -425,8 +449,10 @@ static int render_it(viewport_t *vp, matrix_t mtx, matrix_t proj,
     | (texid << DRAW_TEXTURE_BIT);
 
   flags = DrawObject(vp, mtx, proj, cur_obj, ambient, diffuse, 0);
-  if (flags)
-    printf("%x ",flags);
+/*   if (flags>0) { */
+/*     printf("[%s ", cflagsstr(flags>>6)); */
+/*     printf("%s]", cflagsstr(flags)); */
+/*   } */
   return -(flags<0);
 /*     return DrawObjectFrontLighted(vp, mtx, proj, */
 /* 				  cur_obj, */
@@ -442,6 +468,9 @@ static int bee_render(fime_bee_t * bee,
   matrix_t mtx;
 
   MtxMult3(mtx, bee->mtx, camera);
+
+  vtx_scale(&color, beatf * 0.5 + 0.5);
+
   err = render_it(vp, mtx, proj, &ambient, &color);
 
   return -!!err;
@@ -511,7 +540,7 @@ int fime_bees_init(void)
   bees = create_bee(4);
   bee_dump(bees,0);
   {
-    reset_target(target_mtx, 0, 0, 4);
+    reset_target(target_mtx, 0, 0, 3);
     fime_bee_reset_position(bees, target_mtx);
   }
 

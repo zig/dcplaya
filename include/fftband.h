@@ -5,7 +5,7 @@
  * @date    2002/12/29
  * @brief   fft frequency band.
  *
- * $Id: fftband.h,v 1.3 2003-01-03 07:05:58 ben Exp $ 
+ * $Id: fftband.h,v 1.4 2003-01-25 11:37:44 ben Exp $ 
  */
  
 #ifndef _FFTBAND_H_
@@ -41,8 +41,11 @@ typedef struct {
   unsigned int fftsize;  /**< Number of sample in FFT buffer */
   unsigned int sampling; /**< Sampling frequency. */
   unsigned int loudness; /**< Loudness (linear). */
-/*   int tapidx;            /\**< Index of current value in band_t::tap[]. *\/ */
-  fftband_t band[1];     /**<Frequency band buffer. */
+  unsigned int imin;     /**< index of minimal band */
+  unsigned int imax;     /**< index of maximal band */
+
+  /* Keep at end of struct ! */
+  fftband_t band[1];     /**< Frequency band buffer. */
 } fftbands_t;
 
 fftbands_t * fftband_create(int n, int fft_size, int sampling,

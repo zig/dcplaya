@@ -5,7 +5,7 @@
  * @date    2002/11/22
  * @brief   drawing system
  *
- * $Id: draw.c,v 1.3 2002-11-29 08:29:41 ben Exp $
+ * $Id: draw.c,v 1.4 2003-01-25 11:37:44 ben Exp $
  */
 
 #include "draw/draw.h"
@@ -32,7 +32,7 @@ int draw_init(const float screen_width, const float screen_height)
 
   /* Set default viewport */
   SDDEBUG("Set viewport.\n");
-  viewport_set(&draw_viewport, 0, 0, screen_width, screen_width, 1.0f);
+  viewport_set(&draw_viewport, 0, 0, screen_width, screen_height, 1.0f);
 
   /* Set default projection. */
   SDDEBUG("Set projection.\n");

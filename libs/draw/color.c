@@ -4,7 +4,7 @@
  * @author   ben(jamin) gerard <ben@sashipa.com>
  * @brief    draw color functions.
  *
- * $Id: color.c,v 1.2 2002-11-27 09:58:09 ben Exp $
+ * $Id: color.c,v 1.3 2003-01-25 11:37:44 ben Exp $
  */
 
 #include "draw/color.h"
@@ -22,19 +22,19 @@ static inline int clip255(int v)
 draw_argb_t draw_color_float_to_argb(const draw_color_t * col)
 {
   return DRAW_ARGB(clip255(col->a * 255.0f),
-				   clip255(col->r * 255.0f),
-				   clip255(col->g * 255.0f),
-				   clip255(col->b * 255.0f));
+		   clip255(col->r * 255.0f),
+		   clip255(col->g * 255.0f),
+		   clip255(col->b * 255.0f));
 }
 
 /** Create a draw_argb_t from 4 float componants. */
 draw_argb_t draw_color_4float_to_argb(const float a, const float r,
-									  const float g, const float b)
+				      const float g, const float b)
 {
   return DRAW_ARGB(clip255(a * 255.0f),
-				   clip255(r * 255.0f),
-				   clip255(g * 255.0f),
-				   clip255(b * 255.0f));
+		   clip255(r * 255.0f),
+		   clip255(g * 255.0f),
+		   clip255(b * 255.0f));
 }
 
 /** Create a draw_color_float_t from a draw_argb_t. */
@@ -80,7 +80,7 @@ void draw_color_neg(draw_color_t *d)
 }
 
 void draw_color_add(draw_color_t *d,
-					const draw_color_t *a, const draw_color_t *b)
+		    const draw_color_t *a, const draw_color_t *b)
 {
   d->a = a->a + b->a;
   d->r = a->r + b->r;
@@ -89,7 +89,7 @@ void draw_color_add(draw_color_t *d,
 }
 
 void draw_color_add_clip(draw_color_t *d,
-						 const draw_color_t *a, const draw_color_t *b)
+			 const draw_color_t *a, const draw_color_t *b)
 {
   d->a = a->a + b->a;
   if (d->a < 0) d->a = 0;
@@ -109,7 +109,7 @@ void draw_color_add_clip(draw_color_t *d,
 }
 
 void draw_color_mul_clip(draw_color_t *d,
-						 const draw_color_t *a, const draw_color_t *b)
+			 const draw_color_t *a, const draw_color_t *b)
 {
   d->a = a->a * b->a;
   if (d->a < 0) d->a = 0;
@@ -129,7 +129,7 @@ void draw_color_mul_clip(draw_color_t *d,
 }
 
 void draw_color_mul(draw_color_t *d,
-					const draw_color_t *a, const draw_color_t *b)
+		    const draw_color_t *a, const draw_color_t *b)
 {
   d->a = a->a * b->a;
   d->r = a->r * b->r;
@@ -137,3 +137,11 @@ void draw_color_mul(draw_color_t *d,
   d->b = a->b * b->b;
 }
 
+void draw_color_scale(draw_color_t *d,
+		      const draw_color_t *a, const float b)
+{
+  d->a = a->a * b;
+  d->r = a->r * b;
+  d->g = a->g * b;
+  d->b = a->b * b;
+}

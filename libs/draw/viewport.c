@@ -5,15 +5,15 @@
  * @date    2002/02/21
  * @brief   viewport definition.
  *
- * $Id: viewport.c,v 1.1 2002-11-25 16:42:28 ben Exp $
+ * $Id: viewport.c,v 1.2 2003-01-25 11:37:44 ben Exp $
  */
 
 #include "draw/viewport.h"
 
 void viewport_set(viewport_t *v,
-				  int posX, int posY,
-				  int width, int height,
-				  const float scale)
+		  int posX, int posY,
+		  int width, int height,
+		  const float scale)
 {
   v->tx = (float)(posX + (width>>1));
   v->ty = (float)(posY + (height>>1));
@@ -22,9 +22,9 @@ void viewport_set(viewport_t *v,
 }
 
 void viewport_apply(viewport_t *v,
-					float *d, int dbytes,
-					const float *s, int sbytes,
-					int nb)
+		    float *d, int dbytes,
+		    const float *s, int sbytes,
+		    int nb)
 {
   if (nb) {
     const float mx = v->mx;

@@ -8,7 +8,7 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.24 2003-01-22 19:12:56 ben Exp $
+ * $Id: fftvlr.c,v 1.25 2003-01-25 11:37:44 ben Exp $
  */
 
 #include <stdlib.h>
@@ -25,6 +25,8 @@
 
 //#define BENSTYLE
 
+extern short int_decibel[];
+
 static int db_scaling;
 static fftbands_t * bands;
 
@@ -32,9 +34,9 @@ static fftbands_t * bands;
 void FaceNormal(float *d, const vtx_t * v, const tri_t *t);
 
 /* Here are the constant (for now) parameters */
-#define VLR_X 0.5f
-#define VLR_Z 0.5f
-#define VLR_Y (0.5f)
+#define VLR_X 1.0f
+#define VLR_Z 1.0f
+#define VLR_Y 0.2f
 /*#define VLR_W 32
 #define VLR_H 96*/
 #define VLR_W 30
@@ -54,10 +56,11 @@ static tlk_t *tlk; /* Triangle link buffer */
 
 volatile int ready;
 
-static viewport_t viewport;  /* Graphic viewport */
-static matrix_t fftvlr_proj; /* Projection matrix */
-static matrix_t fftvlr_mtx;  /* Local matrix */
-static texid_t fftvlr_texid; /* Custom texid. */
+static viewport_t viewport;   /* Graphic viewport */
+static matrix_t fftvlr_proj;  /* Projection matrix */
+static matrix_t fftvlr_mtx;   /* Local matrix */
+static texid_t fftvlr_texid;  /* Custom texid. */
+static int fftvlr_opacity = 0; /* Opaque/translucent rendering */
 
 static vtx_t light_normal = { 
   0.8,
@@ -115,11 +118,6 @@ static vtx_t ambient_color = {
   0.8
 };
 */
-
-
-
-
-
 
 /* The 3D-object */
 static obj_t fftvlr_obj =
@@ -290,7 +288,6 @@ static unsigned int argb4(const float a, const float r,
 
 static void vlr_update(void)
 {
-  const float f0 = (VLR_Y / 32768.0f) * (db_scaling ? 0.2 : 1.0);
   vtx_t *vy;
   int i;
 
@@ -305,59 +302,73 @@ static void vlr_update(void)
 
   /* Update first VLR row with FFT data */
   vy = v + (VLR_H-1) * VLR_W;
-  
 
-  for (i=0; i<VLR_W; ++i) {
-    //    int w = fft_F[j>>12];
-    const float r = 0;//0.45f;
-    float w = f0 * (float)bands->band[i].v; //  (float)fft[i];
-    vy[i].y = (float)(w * (1.0f-r)) +  (vy[i-VLR_W].y * r);
+  if (!db_scaling) {
+    const unsigned int mr = 0xFF0;
+    static unsigned int max = 16000, min = 0;
+    float localmax = max;
+    
+    /* Compute smoothed min/max */
+    min = ((min * mr) + (bands->band[bands->imin].v * (0x1000-mr))) >> 12;
+
+    {
+      float f0 = 0.3 * 0.14f / ((float)max), f1;
+      for (i=0,f1=f0*0.5; i<VLR_W; ++i, f1 += f0) {
+	const float r = 0.3f;
+	float w = f1 * (float)bands->band[i].v;
+	if (w > localmax) {
+	  localmax = w;
+	}
+	vy[i].y = (float)(w * (1.0f-r)) + (vy[i-VLR_W].y * r);
+      }
+      if (localmax < 100) localmax = 100;
+      max = localmax;
+    }
+  } else {
+    const int db_min = 10;
+    const unsigned int mr = 0xfc0;
+    static unsigned int min = 0;
+    int minv;
+    /* Compute smoothed min/max */
+    minv = bands->band[bands->imin].v;
+    min = ((min * mr) + (minv * (0x1000-mr))) >> 12;
+    if (min < db_min) min = db_min;
+    minv = int_decibel[min>>3];
+
+    {
+      const unsigned int db_sub = min;
+      const float f0 = 0.7 * VLR_Y / (float)32768.0;
+
+      for (i=0; i<VLR_W; ++i) {
+	const float r = 0.3f;
+	int w0 = bands->band[i].v - min;
+	float w;
+	w0 &= ~(w0>>31);
+	w0 = int_decibel[w0>>3];
+	w = (float)w0 * f0;
+	vy[i].y = (float)(w * (1.0f-r)) + (vy[i-VLR_W].y * r);
+      }
+    }
   }
 
   {
-    /* const */ float la = light_color.w * 255.0f, aa = ambient_color.w * 255.0f;
-    /* const */ float lr = light_color.x * 255.0f, ar = ambient_color.x * 255.0f;
-    /* const */ float lg = light_color.y * 255.0f, ag = ambient_color.y * 255.0f;
-    /* const */ float lb = light_color.z * 255.0f, ab = ambient_color.z * 255.0f;
+    const float la = light_color.w * 255.0f, aa = ambient_color.w * 255.0f;
+    const float lr = light_color.x * 255.0f, ar = ambient_color.x * 255.0f;
+    const float lg = light_color.y * 255.0f, ag = ambient_color.y * 255.0f;
+    const float lb = light_color.z * 255.0f, ab = ambient_color.z * 255.0f;
 
     /* Face normal calculation  and lightning */
     for (i=0; i<VLR_TPL; i++) {
       const int idx = (VLR_H-2)*VLR_TPL+i;
       vtx_t *n = &nrm[idx];
       float coef;
-      
       FaceNormal(&n->x, v, tri+idx);
-
-      //$$$ REMOVE ME !!! DEBUGZZZZ
-      if ( Fabs(vtx_norm(n) - 1.0) > MF_EPSYLON) {
-	printf("normal #%03d : %f\n",idx, vtx_norm(n));
-      }
-      
-      coef = vtx_dot_product(n,&tlight_normal);
-
-      coef = (float)i / (float)VLR_TPL;
-      coef = n->z;
-
+      coef = vtx_dot_product(n, &tlight_normal);
       if (coef < 0) {
-	coef = 0;
+	coef *= -0.3 * coef;
       }
-
-/*       { */
-/* 	static int t = 0; */
-/* 	int j = i; */
-
-/* 	coef = 1; */
-/* 	aa=ar=ag=ab=0; */
-/* 	la = 255.0f; */
-/* 	lr = (j&1) ? 255.0f : 128.0f; */
-/* 	lg = (j&2) ? 255.0f : 128.0f; */
-/* 	lb = (j&4) ? 255.0f : 128.0f; */
-/* 	++t; */
-/*       } */
-
       *(int*)&n->w = argb4(aa + coef * la, ar + coef * lr,
 			   ag + coef * lg, ab + coef * lb);
-      
     }
     *(int*)&nrm[i].w = -1;
   }
@@ -390,6 +401,7 @@ static int fftvlr_init(any_driver_t *d)
   border_customize(fftvlr_texid, borderdef);
 
   db_scaling = 0;
+  fftvlr_opacity = 0;
 
   return -(fftvlr_texid < 0);
 }
@@ -418,7 +430,7 @@ static int fftvlr_process(viewport_t * vp, matrix_t projection, int elapsed_ms)
     MtxRotateZ(fftvlr_mtx, 3.14159);
     MtxRotateY(fftvlr_mtx, ay += 0.014*0.15);
     MtxRotateX(fftvlr_mtx, 0.3f);
-    fftvlr_mtx[3][2] = 0.6;
+    fftvlr_mtx[3][2] = 1.0;
 
     MtxIdentity(tmp);
     MtxRotateZ(tmp, 3.14159);
@@ -429,41 +441,37 @@ static int fftvlr_process(viewport_t * vp, matrix_t projection, int elapsed_ms)
 
     vlr_update();
 
-    fftvlr_obj.flags = 0
-	  | DRAW_NO_FILTER
-	  | DRAW_TRANSLUCENT
-	  | (fftvlr_texid << DRAW_TEXTURE_BIT);
     return 0;
   }
   return -1;
 }
 
+static int render(int render_opaque)
+{
+  if (!ready) {
+    return -1;
+  }
+  if (render_opaque != fftvlr_opacity) {
+    return 0;
+  }
+
+  fftvlr_obj.flags = 0
+    | DRAW_NO_FILTER
+    | (render_opaque ? DRAW_OPAQUE : DRAW_TRANSLUCENT)
+    | (fftvlr_texid << DRAW_TEXTURE_BIT);
+
+  return DrawObjectPrelighted(&viewport, fftvlr_mtx, fftvlr_proj,
+			      &fftvlr_obj);
+}
+
 static int fftvlr_opaque(void)
 {
-  return 0;
+  return render(1);
 }
 
 static int fftvlr_transparent(void)
 {
-  if (ready) {
-#if 1
-  static vtx_t color = {
-    80.0f, 0.90f, 0.0f, 0.4f
-  };
-
-/*     DrawObjectSingleColor(&viewport, fftvlr_mtx, fftvlr_proj, */
-/* 			  &fftvlr_obj, &color); */
-  DrawObjectFrontLighted(&viewport, fftvlr_mtx, fftvlr_proj,
-			 &fftvlr_obj, &ambient_color, &light_color);
-
-#else
-    DrawObjectPrelighted(&viewport, fftvlr_mtx, fftvlr_proj,
-			  &fftvlr_obj);
-#endif
-    return 0;
-  } else {
-    return -1;
-  }
+  return render(0);
 }
 
 static driver_option_t * fftvlr_options(any_driver_t * d, int idx,
@@ -502,14 +510,40 @@ static int lua_setdirectionnal(lua_State * L)
   return 0;
 }
 
-static int lua_setdb(lua_State * L)
+static int lua_setboolean(lua_State * L, int * v)
 {
-  int old = db_scaling;
+  int old = *v;
 
-  db_scaling = lua_tonumber(L, 1) != 0.0f;
+  if (lua_gettop(L) >= 1) {
+    *v = lua_tonumber(L,1) != 0;
+  }
+  lua_settop(L,0);
+  if (old) {
+    lua_pushnumber(L,1);
+  }
+  return lua_gettop(L);
+}
+
+static int lua_setinteger(lua_State * L, int * v)
+{
+  int old = *v;
+
+  if (lua_gettop(L) >= 1) {
+    *v = lua_tonumber(L,1);
+  }
   lua_settop(L,0);
   lua_pushnumber(L,old);
-  return 1;
+  return lua_gettop(L);
+}
+
+static int lua_setdb(lua_State * L)
+{
+  return lua_setboolean(L,&db_scaling);
+}
+
+static int lua_setopaque(lua_State * L)
+{
+  return lua_setboolean(L, &fftvlr_opacity);
 }
 
 static int lua_setbordertex(lua_State * L)
@@ -583,6 +617,14 @@ static luashell_command_description_t fftvlr_commands[] = {
       "fftvlr_db(bool) : set Db scaling on/off"
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_setdb    /* function */
+  },
+  {
+    "fftvlr_setopacity", 0,
+    "print [["
+    "fftvlr_setopacity([boolean]) : get/set opacity mode. "
+    "Return old state."
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_setopaque    /* function */
   },
 
   {0},                                   /* end of the command list */

@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/17
  *  @brief   Fly Into a Musical Environment
- *  $Id: fime.c,v 1.5 2003-01-21 02:38:16 ben Exp $
+ *  $Id: fime.c,v 1.6 2003-01-25 11:37:44 ben Exp $
  */ 
 
 #include <stdio.h>
@@ -122,6 +122,7 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
     return 0;
   }
 
+  vid_border_color(0,255,0);
   viewport = *vp;
   MtxCopy(proj, projection);
 
@@ -160,6 +161,7 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
 /* 	  camera[3][2] */
 /* 	  ); */
 
+  vid_border_color(0,0,0);
 
   return 0;
 }

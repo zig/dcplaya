@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/14
  *
- *  $Id: hyperpipe.c,v 1.10 2003-01-24 04:16:02 ben Exp $
+ *  $Id: hyperpipe.c,v 1.11 2003-01-25 11:37:44 ben Exp $
  */ 
 
 #include <stdio.h>
@@ -77,10 +77,12 @@ static int mode;
 
 #define DEFAULT_CHANGE (CHANGE_MODE|CHANGE_BORDER|CHANGE_FLASH)
 
+static int hp_opaque = 0;
+static int hp_lighted = 0;
+
 static int change_mode;
 static int change_cnt;
 static int change_time = 5*1000;
-static int use_remanens = 1;
 
 extern short int_decibel[];
 
@@ -645,10 +647,6 @@ static void anim_object(const float seconds)
   mtx[3][2] = pos.z;
 
   build_normals();
-  hyperpipe_obj.flags = 0
-    | DRAW_NO_FILTER
-    | DRAW_TRANSLUCENT
-    | (texid << DRAW_TEXTURE_BIT);
 }
 
 
@@ -725,15 +723,14 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
   return 0;
 }
 
-static int opaque_render(void)
+static int render(int opaque)
 {
   if (!ready) {
     return -1;
   }
   
-  if (light_object) {
+  if (light_object && hp_lighted && texid2>0) {
     vtx_t di;
-    matrix_t tmp;
 
     float lx,ly,lz;
     lx = light_vtx.x + pos.x;
@@ -748,14 +745,44 @@ static int opaque_render(void)
     
     light_object->obj.flags = 0
       | DRAW_NO_FILTER
-      | DRAW_OPAQUE
+      | (opaque ? DRAW_OPAQUE : DRAW_TRANSLUCENT)
       | (texid2 << DRAW_TEXTURE_BIT);
 
     DrawObjectSingleColor(&viewport, light_mtx, proj,
 			   &light_object->obj, &di);
   }
 
+  if (texid>0) {
+    hyperpipe_obj.flags = 0
+      | DRAW_NO_FILTER
+      | (opaque ? DRAW_OPAQUE : DRAW_TRANSLUCENT)
+      | (texid << DRAW_TEXTURE_BIT);
+
+    if (hp_lighted) {
+      vtx_t light_dir;
+      vtx_neg2(&light_dir, &light_vtx);
+      DrawObjectLighted(&viewport, mtx, proj,
+			&hyperpipe_obj,
+			&ambient, &light_dir, &color);
+    } else {
+      DrawObjectFrontLighted(&viewport, mtx, proj,
+			     &hyperpipe_obj,
+			     &ambient, &color);
+    }
+  }
   return 0;
+}
+
+static int opaque_render(void)
+{
+  if (!ready) {
+    return -1;
+  }
+
+  if (!hp_opaque) {
+    return 0;
+  }
+  return render(1);
 }
 
 static int transparent_render(void)
@@ -765,19 +792,10 @@ static int transparent_render(void)
     return -1;
   }
 
-  if (1) {
-    vtx_t light_dir;
-    vtx_neg2(&light_dir, &light_vtx);
-    DrawObjectLighted(&viewport, mtx, proj,
-		      &hyperpipe_obj,
-		      &ambient, &light_dir, &color);
-  } else {
-    DrawObjectFrontLighted(&viewport, mtx, proj,
-			   &hyperpipe_obj,
-			   &ambient, &color);
+  if (hp_opaque) {
+    return 0;
   }
-
-  return 0;
+  return render(0);
 }
 
 
@@ -923,6 +941,31 @@ static int lua_setchange(lua_State * L)
   return lua_gettop(L);
 }
 
+static int lua_setboolean(lua_State * L, int * v)
+{
+  int old = *v;
+
+  if (lua_gettop(L) >= 1) {
+    *v = lua_tonumber(L,1) != 0;
+  }
+  lua_settop(L,0);
+  if (old) {
+    lua_pushnumber(L,1);
+  }
+  return lua_gettop(L);
+}
+
+static int lua_setopaque(lua_State * L)
+{
+  return lua_setboolean(L, &hp_opaque);
+}
+
+static int lua_setlighting(lua_State * L)
+{
+  return lua_setboolean(L, &hp_lighted);
+}
+
+
 static int lua_setmode(lua_State * L)
 {
   int omode = mode;
@@ -943,21 +986,21 @@ static int lua_setmode(lua_State * L)
 
 static luashell_command_description_t commands[] = {
   {
-    "hyperpipe_setambient", 0,              /* long and short names */
+    "hyperpipe_setambient", "hp_ambient",
     "print [["
     "hyperpipe_setambient(a, r, g, b) : set ambient color."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_setambient      /* function */
   },
   {
-    "hyperpipe_setbasecolor", 0,         /* long and short names */
+    "hyperpipe_setdiffuse", "hp_diffuse",
     "print [["
-    "hyperpipe_setbasecolor(a, r, g, b) : set object base color."
+    "hyperpipe_setdiffuse(a, r, g, b) : set object base color."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_setbasecolor /* function */
   },
   {
-    "hyperpipe_setflashcolor", 0,         /* long and short names */
+    "hyperpipe_setflashcolor", "hp_flashcolor",
     "print [["
     "hyperpipe_setflashcolor(a, r, g, b) : set flash color."
     "]]",                                /* usage */
@@ -965,14 +1008,14 @@ static luashell_command_description_t commands[] = {
   },
 
   {
-    "hyperpipe_setbordertex", 0,            /* long and short names */
+    "hyperpipe_setbordertex", "hp_border",
     "print [["
     "hyperpipe_setbordertex(num) : set border texture type."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_setbordertex    /* function */
   },
   {
-    "hyperpipe_custombordertex", 0,            /* long and short names */
+    "hyperpipe_custombordertex", "hp_customborder",
     "print [["
     "hyperpipe_custombordertex(a1,r1,g1,b1, a2,r2,g2,b2, a3,r3,g3,b3) : "
     "set custom border texture. Each color componant could be set to nil to "
@@ -985,7 +1028,7 @@ static luashell_command_description_t commands[] = {
   },
 
   {
-    "hyperpipe_setchange", 0,            /* long and short names */
+    "hyperpipe_setchange", "hp_change",            /* long and short names */
     "print [["
     "hyperpipe_setchange(type [, time]) : Set object change properties. "
     "type bit0:random-mode bit1:active-flash bit2:auto-border."
@@ -994,12 +1037,28 @@ static luashell_command_description_t commands[] = {
     SHELL_COMMAND_C, lua_setchange    /* function */
   },
   {
-    "hyperpipe_setmode", 0,            /* long and short names */
+    "hyperpipe_setmode", "hp_mode",            /* long and short names */
     "print [["
     "hyperpipe_setmode([mode]) : Set display mode. "
     "Return old values."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_setmode    /* function */
+  },
+  {
+    "hyperpipe_setopacity", "hp_opacity", /* long and short names */
+    "print [["
+    "hyperpipe_setopacity([boolean]) : get/set opacity mode. "
+    "Return old state."
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_setopaque    /* function */
+  },
+  {
+    "hyperpipe__setlighting", "hp_light",  /* long and short names */
+    "print [["
+    "hp_setlighting([boolean]) : Set/Get lighting process."
+    "Return old values."
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_setlighting    /* function */
   },
 
   {0},                                   /* end of the command list */
