@@ -1,6 +1,13 @@
 /*
- * $Id: ffmpeg_driver.c,v 1.4 2004-07-09 21:20:17 vincentp Exp $
+ * $Id: ffmpeg_driver.c,v 1.5 2004-07-13 09:24:19 vincentp Exp $
  */
+
+/* Define this for benchmark mode (not to a watch video !) */
+//#define BENCH
+
+/* Define this to use dma texture transfert, for faster yuv2rgb transformation */
+#define USE_DMA
+
 
 #include "dcplaya/config.h"
 #include "extern_def.h"
@@ -98,8 +105,32 @@ static int audio_fc;
 static uint64_t audio_time;
 static int audio_delay;
 static uint64_t oldpts;
+static uint64_t realpts;
 
 static char * force_format;
+
+static semaphore_t * dma_done;
+#ifdef USE_DMA
+
+/* VP : For some reason, it is not stable when launching the dma for more than
+   DMA_BSZ bytes */
+#define DMA_BSZ (64*64*2) /* size of a dma block */
+
+typedef struct dma_pict {
+  uint8_t * buf;
+  uint64_t pts;
+} dma_pict_t;
+
+static uint32_t dma_tex;
+static int dma_sendn;
+static int dma_sendoff;
+static int dma_sendinc;
+static uint8_t * dma_texbuf;
+static int dma_texbufsz = 1024*1024;
+static dma_pict_t dma_pics[32];
+static int dma_picin;
+static int dma_picout;
+#endif
 
 typedef struct AVInputStream {
     AVStream *st;
@@ -154,9 +185,12 @@ static int init(any_driver_t *d)
 
   av_register_all();
 
+#ifndef OLDFF
   sha123_ffdriver_init();
+#endif
 
 
+  dma_done = sem_create(1);
   vidstream_thd = thd_create(vidstream_thread, 0);
   if (vidstream_thd)
     thd_set_label(vidstream_thd, "Video-decode-thd");
@@ -209,11 +243,17 @@ static int shutdown(any_driver_t *d)
   vidstream_exit = 1;
   while (vidstream_exit)
     thd_pass();
+  sem_destroy(dma_done);
 
+#ifndef OLDFF
   sha123_ffdriver_shutdown();
+#endif
 
   for (i=0; i<nbcodecs; i++)
     lef_free(codecs[i]);
+
+  if (dma_texbuf)
+    free(dma_texbuf);
   
   FreeAll();
 
@@ -235,7 +275,9 @@ static int start(const char *fn, int track, playa_info_t *info)
   if (decode_start(fn))
     goto error;
 
+#ifndef OLDFF
   playa_info_bps    (info, ic->bit_rate); 
+#endif
   {
     char buf[128];
     sprintf(buf, "FFMpeg: %s", ic->iformat->name);
@@ -252,7 +294,9 @@ static int start(const char *fn, int track, playa_info_t *info)
     playa_info_stereo (info, audio_stream->codec.channels > 1? 1:0);
   }
   playa_info_bits   (info, 16);
+#ifndef OLDFF
   playa_info_time   (info, ic->duration * 1000 / AV_TIME_BASE);
+#endif
 
   ready = 1;
 
@@ -460,6 +504,18 @@ static int lua_formats(lua_State * L)
 
 }
 
+/* Get power of 2 greater or equal to a value or -1 */
+static int greaterlog2(int v)
+{
+  int i;
+  for (i=0; i<(sizeof(int)<<3); ++i) {
+    if ((1<<i) >= v) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 #include "controler.h"
 // hack, defined in dreamcast68.c
 extern controler_state_t controler68;
@@ -477,25 +533,30 @@ int decode_start(const char * filename)
 
 
     http = strstr(filename, "/http/") == filename;
+#ifdef BENCH
+    http = 1;
+#endif
 
     audio_size = 0;
     audio_ptr = 0;
 
     /* get default parameters from command line */
     memset(ap, 0, sizeof(*ap));
-    ap->sample_rate = audio_sample_rate;
-    ap->channels = audio_channels;
-    ap->frame_rate = frame_rate;
-    ap->frame_rate_base = frame_rate_base;
-    ap->width = frame_width + frame_padleft + frame_padright;
-    ap->height = frame_height + frame_padtop + frame_padbottom;
-    ap->image_format = image_format;
-    ap->pix_fmt = frame_pix_fmt;
+/*     ap->sample_rate = audio_sample_rate; */
+/*     ap->channels = audio_channels; */
+/*     ap->frame_rate = frame_rate; */
+/*     ap->frame_rate_base = frame_rate_base; */
+/*     ap->width = frame_width + frame_padleft + frame_padright; */
+/*     ap->height = frame_height + frame_padtop + frame_padbottom; */
+/*     ap->image_format = image_format; */
+/*     ap->pix_fmt = frame_pix_fmt; */
 
 
 
     if (force_format)
       file_iformat = av_find_input_format(force_format);
+    else
+      file_iformat = NULL;
 
 
     /* open the input file with generic libav function */
@@ -533,6 +594,9 @@ int decode_start(const char * filename)
         switch(enc->codec_type) {
         case CODEC_TYPE_AUDIO:
 	  //printf("\nInput Audio channels: %d\n", enc->channels);
+#ifdef BENCH
+	    break;
+#endif
 	    if (audio_stream == NULL) {
 	      audio_channels = enc->channels;
 	      audio_sample_rate = enc->sample_rate;
@@ -715,26 +779,53 @@ int decode_start(const char * filename)
 
       {
 	char buf[128];
+	int i, n;
 	int w, h;
+	int nw, nh, lw, lh;
 	w = video_stream->codec.width;
 	h = video_stream->codec.height;
+
+	lw = greaterlog2(w);
+	nw = 1<<lw;
+	lh = greaterlog2(h);
+	nh = 1<<lh;
+
+	printf("Texture size %dx%d\n", nw, nh);
+	btexture->width = nw;
+	btexture->height = nh;
+	btexture2->width = nw;
+	btexture2->height = nh;
+	btexture->wlog2 = lw;
+	btexture->hlog2 = lh;
+	btexture2->wlog2 = lw;
+	btexture2->hlog2 = lh;
+
+#ifdef USE_DMA
+	dma_texbuf = memalign(64, dma_texbufsz);
+#endif
+
 	{
 	  uint32_t pix = video_stream->codec.pix_fmt == PIX_FMT_YUV420P? 
-	    0x007f007f : 0;
-	  int i, n;
+	    0x00800080 : 0;
 	  uint32_t * p1 = btexture->addr;
 	  uint32_t * p2 = btexture2->addr;
+#ifdef USE_DMA
+	  uint32_t * p  = (uint32_t *) dma_texbuf;
+#endif
 	  n = btexture->width*btexture->height/2;
 	  for (i=0; i<n; i++) {
 	    *p1++ = pix;
 	    *p2++ = pix;
+#ifdef USE_DMA
+	    *p++ = pix;
+#endif
 	  }
 	}
 	sprintf(buf, 
 		"dl_set_trans(background.dl, "
-		"mat_scale(1024*640/%d,512*640/%d,1)"
+		"mat_scale(%d*640/%d,%d*640/%d,1)"
 		"*mat_trans(0, (480-%d*640/%d)/2, 0))",
-		w, w, h, w);
+		nw, w, nh, w, h, w);
 	shell_command(buf);
       }
     }
@@ -862,51 +953,173 @@ static int vid_fifo_put(AVPacket * pkt)
 static int vidstream_skip;
 
 
-/* from dcdivx */
+static uint lumi=256, chroma1=256, chroma2=256;
+static uint lt[256], ct1[256], ct2[256];
+
+
+/* from dcdivx, not faster than my code */
 void yuv2rgb_565(uint8_t *y, int stride_y, 
 		 uint8_t *cb, uint8_t *cr, int stride_uv, 
 		 uint8_t *puc_out, int w, int h,int stride_dest) 
      //, int Dither) //,int Brightness,uint8_t *puc_yp,uint8_t *puc_up,uint8_t *puc_vp, int slowopt, int invert) 
 {
-    int i,j;
-    unsigned int *texp;
-	unsigned int p1,p2;
-    texp = (unsigned int*) puc_out; 
+  int i,j;
+  unsigned int *texp;
+  unsigned int p1,p2;
+  texp = (unsigned int*) puc_out; 
 
-    for(j =  h>>1; j ; j--) 
+  for(j =  h>>1; j ; j--) 
+    {
+      for(i = 0; i < w>>1; i++) 
 	{
-		for(i = 0; i < w>>1; i++) 
-		{
-			p1=(*(cb) | (((unsigned short)*(y++))<<8));
-			p2=(*(cr) | (((unsigned short)*(y++))<<8));
+	  p1=(*(cb) | (((unsigned short)*(y++))<<8));
+	  p2=(*(cr) | (((unsigned short)*(y++))<<8));
 
-			texp[i] = p1|(p2<<16); 
-			p1=(*(cb++) | (((unsigned short)*(y+(stride_y)-2))<<8));
-			p2=(*(cr++) | (((unsigned short)*(y+(stride_y)-1))<<8));
-			texp[i+(stride_dest>>1)]=p1|(p2<<16);
+	  texp[i] = p1|(p2<<16); 
+	  p1=(*(cb++) | (((unsigned short)*(y+(stride_y)-2))<<8));
+	  p2=(*(cr++) | (((unsigned short)*(y+(stride_y)-1))<<8));
+	  texp[i+(stride_dest>>1)]=p1|(p2<<16);
 
-		}
-		texp += stride_dest;
-		y+=(stride_y<<1)-w;
-		cb+=stride_uv-(w>>1);
-		cr+=stride_uv-(w>>1);
+	}
+      texp += stride_dest;
+      y+=(stride_y<<1)-w;
+      cb+=stride_uv-(w>>1);
+      cr+=stride_uv-(w>>1);
     }
 }
 
 
-static uint lumi=130, chroma1=256, chroma2=256;
+static yuvinit(float lo, float lm, float c1o, float c1m, float c2o, float c2m)
+{
+  int i;
+  
+  for (i=0; i<256; i++) {
+    int v;
+
+    v = (i-lo)*lm;
+    if (v<0) v = 0;
+    if (v>255) v=255;
+    lt[i] = v;
+
+    v = i-128;
+    if (v>0) {
+      v -= c1o;
+      if (v < 0)
+	v = 0;
+    } else {
+      v += c1o;
+      if (v > 0)
+	v = 0;
+    }
+    v = v*c1m+128;
+    if (v<0) v = 0;
+    if (v>255) v=255;
+    ct1[i] = v;
+
+    v = i-128;
+    if (v>0) {
+      v -= c2o;
+      if (v < 0)
+	v = 0;
+    } else {
+      v += c2o;
+      if (v > 0)
+	v = 0;
+    }
+    v = v*c2m+128;
+    if (v<0) v = 0;
+    if (v>255) v=255;
+    ct2[i] = v;
+  }
+}
+
+
+
+extern uint32 render_counter;
+extern uint32 render_counter2;
+extern void (* ta_render_done_cb) ();
+
+void totocb()
+{
+  if (btexture && btexture2) {
+  {
+    uint32 tmp;
+    tmp = btexture->ta_tex; 
+    btexture->ta_tex = btexture2->ta_tex;
+    btexture2->ta_tex = tmp;
+  } {
+    void * tmp;
+    tmp = btexture->addr; 
+    btexture->addr = btexture2->addr;
+    btexture2->addr = tmp;
+  }
+  }
+}
+
+void render_done_cb()
+{
+  static int code = 0;
+
+  memset(btexture2->addr, code, btexture->width*btexture->height);
+  code = 0x80-code;
+
+/*   { */
+/*     uint32 tmp; */
+/*     tmp = btexture->ta_tex;  */
+/*     btexture->ta_tex = btexture2->ta_tex; */
+/*     btexture2->ta_tex = tmp; */
+/*   } { */
+/*     void * tmp; */
+/*     tmp = btexture->addr;  */
+/*     btexture->addr = btexture2->addr; */
+/*     btexture2->addr = tmp; */
+/*   } */
+
+  ta_render_done_cb = NULL;
+  //ta_render_done_cb = totocb;
+}
+
+
+#include <dc/pvr.h>
+
+#ifdef USE_DMA
+static void dma_cb(void * p)
+{
+  if (dma_sendn > 0) {
+    pvr_txr_load_dma(dma_texbuf+dma_sendoff, dma_tex+dma_sendoff, 
+		     dma_sendinc, 0, dma_cb, 0);
+    dma_sendn -= dma_sendinc;
+    dma_sendoff += dma_sendinc;
+    vid_border_color(dma_sendn/64, dma_sendoff/128, 128);
+  } else {
+    dma_sendn = 0;
+    sem_signal(dma_done);
+    thd_schedule(1, 0);
+    vid_border_color(0, 0, 0);
+  }
+}
+#endif
+
 static void yuv420pto422(int w, int h)
 {
+#ifdef USE_DMA
+  /* wait for previous transfert completion */
+  sem_wait(dma_done);
+#endif
 
-  
 
   int i;
   u32_t * srcY1 = (u8_t *) frame->data[0];
   u32_t * srcY2 = (u8_t *) frame->data[0];
   u32_t * srcU = (s8_t *) frame->data[2]; 
   u32_t * srcV = (s8_t *) frame->data[1];
+#ifdef USE_DMA
+  u32_t * dst1 = (u32_t *) dma_texbuf;
+  u32_t * dst2 = (u32_t *) dma_texbuf;
+#else
   u32_t * dst1 = (u32_t *) btexture2->addr;
   u32_t * dst2 = (u32_t *) btexture2->addr;
+#endif
   int stride = btexture->width;
   int srcs = frame->linesize[0];
   int srcsU = frame->linesize[1]>>2;
@@ -938,7 +1151,47 @@ static void yuv420pto422(int w, int h)
 #if 1
 
 #if 1
-      /* with luminosity and chroma */
+
+#if 1
+
+      /* with luminosity and chroma tables, and, surprise, it's just as fast
+	 as the non-tunnable version ! */
+      uint Y0, Y1, U, V;
+      uint u, v;
+
+      Y0 = *srcY1++;
+      Y1 = *srcY2++;
+      U = *srcU++;
+      V = *srcV++;
+
+      u = (ct1[(U&0xff)])<<16;
+      v = (ct2[(V&0xff)]);
+      *dst1++ = ((lt[(Y0>>8)&0xff]<<24)) | (u) | ((lt[(Y0&0xff)]<<8)) | (v);
+      *dst2++ = ((lt[(Y1>>8)&0xff]<<24)) | (u) | ((lt[(Y1&0xff)]<<8)) | (v);
+
+      u = (ct1[(U>>8)&0xff])<<16;
+      v = (ct2[(V>>8)&0xff]);
+      *dst1++ = (((lt[(Y0)>>24]))<<24) | u | ((lt[(Y0>>16)&0xff]<<8)) | (v);
+      *dst2++ = (((lt[(Y1)>>24]))<<24) | u | ((lt[(Y1>>16)&0xff]<<8)) | (v);
+
+
+
+      Y0 = *srcY1++;
+      Y1 = *srcY2++;
+      u = (ct1[(U>>16)&0xff])<<16;
+      v = (ct2[(V>>16)&0xff]);
+      *dst1++ = ((lt[(Y0>>8)&0xff]<<24)) | (u) | ((lt[(Y0&0xff)]<<8)) | (v);
+      *dst2++ = ((lt[(Y1>>8)&0xff]<<24)) | (u) | ((lt[(Y1&0xff)]<<8)) | (v);
+
+      u = ((ct1[(U)>>24]))<<16;
+      v = ct2[(V)>>24];
+      *dst1++ = (((lt[(Y0)>>24]))<<24) | u | ((lt[(Y0>>16)&0xff]<<8)) | (v);
+      *dst2++ = (((lt[(Y1)>>24]))<<24) | u | ((lt[(Y1>>16)&0xff]<<8)) | (v);
+
+#else
+
+
+      /* with luminosity and chroma (slow version with multiplications) */
       uint Y0, Y1, U, V;
       uint u, v;
 
@@ -971,8 +1224,10 @@ static void yuv420pto422(int w, int h)
       *dst1++ = ((((Y0&m24)>>8)*l)&m24) | u | (((Y0&m16)*l>>16)&m8) | (v>>24);
       *dst2++ = ((((Y1&m24)>>8)*l)&m24) | u | (((Y1&m16)*l>>16)&m8) | (v>>24);
 
-#else
+#endif
 
+#else
+      /* no luminosity/chroma tuning, not faster than with it */
       uint Y0, Y1, U, V;
 
       Y0 = *srcY1++;
@@ -1041,50 +1296,18 @@ static void yuv420pto422(int w, int h)
     dst1 += stride - (ww<<2);
     dst2 += stride - (ww<<2);
   }
-}
 
-extern uint32 render_counter;
-extern uint32 render_counter2;
-extern void (* ta_render_done_cb) ();
+#ifdef USE_DMA
+  dma_sendn = btexture2->width * h * 2;
+  dma_sendoff = 0;
+  //dma_sendinc = (dma_sendn + 31) & (~31);
+  dma_sendinc = DMA_BSZ; 
+  dma_tex = btexture2->ta_tex;
+  dma_cb(0);
 
-void totocb()
-{
-  if (btexture && btexture2) {
-  {
-    uint32 tmp;
-    tmp = btexture->ta_tex; 
-    btexture->ta_tex = btexture2->ta_tex;
-    btexture2->ta_tex = tmp;
-  } {
-    void * tmp;
-    tmp = btexture->addr; 
-    btexture->addr = btexture2->addr;
-    btexture2->addr = tmp;
-  }
-  }
-}
+  return;
+#endif
 
-void render_done_cb()
-{
-  static int code = 0;
-
-  memset(btexture2->addr, code, btexture->width*btexture->height);
-  code = 0x80-code;
-
-/*   { */
-/*     uint32 tmp; */
-/*     tmp = btexture->ta_tex;  */
-/*     btexture->ta_tex = btexture2->ta_tex; */
-/*     btexture2->ta_tex = tmp; */
-/*   } { */
-/*     void * tmp; */
-/*     tmp = btexture->addr;  */
-/*     btexture->addr = btexture2->addr; */
-/*     btexture2->addr = tmp; */
-/*   } */
-
-  ta_render_done_cb = NULL;
-  //ta_render_done_cb = totocb;
 }
 
 #include "controler.h"
@@ -1097,6 +1320,8 @@ void vidstream_thread(void *userdata)
   static int lj;
   int nj;
   static int fc;
+
+  yuvinit(15, 1.2, 0, 1, 0, 1);
 
   while (!vidstream_exit) {
     AVPacket * pkt;
@@ -1124,7 +1349,7 @@ void vidstream_thread(void *userdata)
 	got_picture = 1;
       } else {
 
-	if (http)
+	if (audio_stream == NULL || http)
 	  video_stream->codec.hurry_up = 0;
 	else {
 	  static int add;
@@ -1139,6 +1364,7 @@ void vidstream_thread(void *userdata)
 	  else
 	    video_stream->codec.hurry_up = 0;
 	}
+	video_stream->codec.hurry_up = 0;
 
 	len1 = avcodec_decode_video(&video_stream->codec, 
 				    frame, &got_picture, 
@@ -1211,8 +1437,8 @@ void vidstream_thread(void *userdata)
 		+ audio_delay
 		;
 
-	      if (controler68.buttons & CONT_X)
-		diff += 500;
+/* 	      if (controler68.buttons & CONT_X) */
+/* 		diff += 500; */
 
 	      if (nbdiffs == NBDIFFS) {
 		diffavg -= diffs[idiffs];
@@ -1350,6 +1576,9 @@ void vidstream_thread(void *userdata)
 /* 		      frame->data[1], frame->data[2], frame->linesize[1],  */
 /* 		      btexture2->addr, w, h,btexture->width); */
 
+#ifdef BENCH
+	  static int toto; toto++; if ((toto&15)) got_picture = 0; else
+#endif
 	  yuv420pto422(w, h);
 	  //render_done_cb();
 
@@ -1368,6 +1597,8 @@ void vidstream_thread(void *userdata)
   
       }
 
+      realpts = pkt->pts;
+	      
       av_free_packet(pkt);
       
       /* Swap textures */
@@ -1438,7 +1669,7 @@ int decode_frame()
 
   if (audio_size > 0)
     return 0;
-	
+
   if (av_read_frame(ic, &pkt) < 0) {
     if (vid_fifo_used() > 0)
       return 0;
@@ -1462,9 +1693,31 @@ int decode_frame()
 
   if (ist->st == audio_stream) {
     int data_size;
+    uint8_t * data = pkt.data;
+    int size = pkt.size;
     len1 = avcodec_decode_audio(&ist->st->codec, 
 				(int16_t *)audio_buf, &data_size, 
 				pkt.data, pkt.size);
+
+    if (data_size < 0)
+      data_size = 0;
+#ifdef OLDFF
+    while (len1 > 0 && size > 0) {
+      int s;
+      data += len1;
+      size -= len1;
+      len1 = avcodec_decode_audio(&ist->st->codec, 
+				  ((uint8_t *)audio_buf) + data_size, 
+				  &s, 
+				  data, size);
+
+      if (s < 0)
+	s = 0;
+
+      if (len1 > 0)
+	data_size += s;
+    }
+#endif
 
     nj = thd_current->jiffies;
     adecode_j += nj-lj;
@@ -1492,8 +1745,8 @@ int decode_frame()
 
   if (ist->st == video_stream) {
     if (1||audio_stream == NULL) { // No sound --> never skip video frame
+      vidstream_thd->prio2 = 6;
       while (vid_fifo_put(&pkt)) {
-	vidstream_thd->prio2 = 4;
 	thd_pass();
       }
       return 0;
@@ -1550,11 +1803,26 @@ int decode_stop()
   }
 
   if (btexture) {
+    btexture->format = TA_RGB565;
     memset(btexture->addr, 0, btexture->width*btexture->height*2);
     memset(btexture2->addr, 0, btexture->width*btexture->height*2);
-    btexture->format = TA_RGB565;
+
+    /* restore original size */
+    btexture->width = 1024;
+    btexture->height = 512;
+    btexture->wlog2 = 10;
+    btexture->hlog2 = 9;
+
     btexture = NULL;
+
   }
+
+#ifdef USE_DMA
+  if (dma_texbuf) {
+    free(dma_texbuf);
+    dma_texbuf = NULL;
+  }
+#endif
 
   if (frame) {
     av_free(frame);
@@ -1655,10 +1923,13 @@ static int lua_force_format(lua_State * L)
 
   if (force_format)
     free(force_format);
-  if (f)
+  if (f) {
     force_format = strdup(f);
-  else
+    printf("ffmpeg: Force to format '%s' (on next opened file)\n", force_format);
+  } else {
     force_format = NULL;
+    printf("ffmpeg: Format guessed (on next opened file)\n", force_format);
+  }
 
   return 0;
 }
@@ -1670,17 +1941,44 @@ static int lua_delay(lua_State * L)
   return 0;
 }
 
+static int lua_settings(lua_State * L)
+{
+  yuvinit(lua_tonumber(L, 1), lua_tonumber(L, 2), lua_tonumber(L, 3), lua_tonumber(L, 4), lua_tonumber(L, 5), lua_tonumber(L, 6));
+  return 0;
+}
+
+static int lua_picbuf_size(lua_State * L)
+{
+  dma_texbufsz = ((int)lua_tonumber(L, 1)) * 1024;
+  if (dma_texbufsz <= 0)
+    dma_texbufsz = 1024*1024;
+
+  printf("Picture buffer set to %dKb\n", dma_texbufsz/1024);
+
+  return 0;
+}
+
+static int lua_vtime(lua_State * L)
+{
+  lua_settop(L, 0);
+  lua_pushnumber(L, ((int)(realpts/1000))/1000.0f);
+  lua_pushnumber(L, timer_ms_gettime64()/1000.0f);
+  return 2;
+}
+
 static luashell_command_description_t commands[] = {
+#ifndef RELEASE
   {
-    "ff_toto", 0, "ffmpeg",     /* long name, short name, topic */
-    "ff_toto() : toto",  /* usage */
-    SHELL_COMMAND_C, lua_toto      /* function */
+    "ff_toto", 0, "ffmpeg",                    /* long name, short name, topic */
+    "ff_toto(filename) : toto",                /* usage */
+    SHELL_COMMAND_C, lua_toto                  /* function */
   },
+#endif
 
   {
-    "ff_formats", 0, "ffmpeg",                  /* long name, short name, topic */
-    "ff_formats() : display supported formats", /* usage */
-    SHELL_COMMAND_C, lua_formats                /* function */
+    "ff_formats", 0, "ffmpeg",                 /* long name, short name, topic */
+    "ff_formats() : display supported formats",/* usage */
+    SHELL_COMMAND_C, lua_formats               /* function */
   },
 
   {
@@ -1720,6 +2018,27 @@ static luashell_command_description_t commands[] = {
   },
 
   {
+    "ff_settings", 0, "ffmpeg",                /* long name, short name, topic */
+    "ff_settings(lo,lm,c1o, c1m, c2o, c2m) : "
+    "image luminosity/chroma settings \n",     /* usage */
+    SHELL_COMMAND_C, lua_settings              /* function */
+  },
+
+  {
+    "ff_vtime", 0, "ffmpeg",                   /* long name, short name, topic */
+    "ff_vtime() : "
+    "return current image's time \n",          /* usage */
+    SHELL_COMMAND_C, lua_vtime                 /* function */
+  },
+
+  {
+    "ff_picbuf_size", "ff_pbs", "ffmpeg",      /* long name, short name, topic */
+    "ff_picbuf_size(kb) : "
+    "set the size of the picture buffer in Kb \n", /* usage */
+    SHELL_COMMAND_C, lua_picbuf_size           /* function */
+  },
+
+  {
     "codec_load", "cl", "ffmpeg",              /* long name, short name, topic */
     "codec_load(name) : load a codec plugin \n", /* usage */
     SHELL_COMMAND_C, lua_codec_load            /* function */
@@ -1752,7 +2071,7 @@ static inp_driver_t ffmpeg_driver =
   /* Input driver specific */
   
   0,                      /**< User Id */
-  ".wmv\0.wma\0.rm\0.mpg\0.mpeg\0.mpc\0.mp3\0.avi\0",   /**< EXtension list */
+  "*\0.wmv\0.wma\0.rm\0.mpg\0.mpeg\0.mpc\0.mp3\0.avi\0",   /**< EXtension list */
 
   start,
   stop,

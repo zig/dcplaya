@@ -12,12 +12,82 @@ void avcodec_register_all(void)
 	return;
     inited = 1;
 
-
+#ifdef OLDFF
+    avcodec_init();
+#endif
 
     register_avcodec(&mp2_decoder); /* sha123 doesn't do mp2 */
+    //register_avcodec(&mp3_decoder);
     //register_avcodec(&shamp2_decoder);
     register_avcodec(&shamp3_decoder);
+#ifndef OLDFF
     av_register_codec_parser(&mpegaudio_parser);
+#endif
+
+
+#ifdef OLDFF
+
+    /* decoders */
+
+    register_avcodec(&h263_decoder);
+    register_avcodec(&mpeg4_decoder);
+    register_avcodec(&msmpeg4v1_decoder);
+    register_avcodec(&msmpeg4v2_decoder);
+    register_avcodec(&msmpeg4v3_decoder);
+    register_avcodec(&wmv1_decoder);
+    register_avcodec(&wmv2_decoder);
+    register_avcodec(&h263i_decoder);
+    register_avcodec(&rv10_decoder);
+    register_avcodec(&svq1_decoder);
+    register_avcodec(&wmav1_decoder);
+    register_avcodec(&wmav2_decoder);
+    register_avcodec(&indeo3_decoder);
+
+    register_avcodec(&mpeg_decoder);
+//    register_avcodec(&dvvideo_decoder);
+//    register_avcodec(&dvaudio_decoder);
+    register_avcodec(&mjpeg_decoder);
+    register_avcodec(&mjpegb_decoder);
+#if 1
+    //register_avcodec(&mp2_decoder);
+    //register_avcodec(&mp3_decoder);
+#else
+    register_avcodec(&mpglib_mp2_decoder);
+    register_avcodec(&mpglib_mp3_decoder);
+#endif
+    register_avcodec(&mace3_decoder);
+    register_avcodec(&mace6_decoder);
+    register_avcodec(&huffyuv_decoder);
+    register_avcodec(&cyuv_decoder);
+    register_avcodec(&h264_decoder);
+
+//    register_avcodec(&ac3_decoder);
+
+    //register_avcodec(&oggvorbis_decoder);
+
+    /* pcm codecs */
+
+#define PCM_CODEC(id, name) \
+    /*register_avcodec(& name ## _encoder);*/ \
+    register_avcodec(& name ## _decoder); \
+
+PCM_CODEC(CODEC_ID_PCM_S16LE, pcm_s16le);
+PCM_CODEC(CODEC_ID_PCM_S16BE, pcm_s16be);
+PCM_CODEC(CODEC_ID_PCM_U16LE, pcm_u16le);
+PCM_CODEC(CODEC_ID_PCM_U16BE, pcm_u16be);
+PCM_CODEC(CODEC_ID_PCM_S8, pcm_s8);
+PCM_CODEC(CODEC_ID_PCM_U8, pcm_u8);
+PCM_CODEC(CODEC_ID_PCM_ALAW, pcm_alaw);
+PCM_CODEC(CODEC_ID_PCM_MULAW, pcm_mulaw);
+
+    /* adpcm codecs */
+PCM_CODEC(CODEC_ID_ADPCM_IMA_QT, adpcm_ima_qt);
+PCM_CODEC(CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav);
+PCM_CODEC(CODEC_ID_ADPCM_MS, adpcm_ms);
+
+#undef PCM_CODEC
+
+#endif // ifdef OLDFF
 
 
 #if 0
@@ -225,6 +295,39 @@ void av_register_all(void)
 
     avcodec_register_all();
 
+
+#ifdef OLDFF
+
+    mpegps_init();
+    mpegts_init();
+//    crc_init();
+//    img_init();
+    raw_init();
+    rm_init();
+//#ifdef CONFIG_RISKY
+    asf_init();
+//#endif
+//    avienc_init();
+    avidec_init();
+    wav_init();
+    swf_init();
+    au_init();
+//    gif_init();
+    mov_init();
+//    jpeg_init(); encoder only
+//    dv_init();
+
+//    av_register_output_format(&yuv4mpegpipe_oformat);
+    
+//#ifdef CONFIG_VORBIS
+    //ogm_init();
+//#endif
+
+    register_protocol(&file_protocol);
+
+#else // ifdef OLDFF
+
+
     mp3_init();
 
 
@@ -330,5 +433,15 @@ void av_register_all(void)
     register_protocol(&tcp_protocol);
     register_protocol(&http_protocol);
 #endif
-#endif
+
+#endif // if 1/0
+
+#endif // ifdef OLDFF
+
 }
+
+
+/* void dcp_register_avcodec(AVCodec *format) */
+/* { */
+/*   register_avcodec(format); */
+/* } */

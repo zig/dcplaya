@@ -4,7 +4,7 @@
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sasahipa.com>
 #
 #
-# $Id: Makefile,v 1.3 2004-07-09 21:20:16 vincentp Exp $
+# $Id: Makefile,v 1.4 2004-07-13 09:24:19 vincentp Exp $
 #
 
 LEZ=yes
@@ -15,8 +15,9 @@ FFMPEG_LIB		:= $(FFMPEG_DIR)/libavformat.a $(FFMPEG_DIR)/libavcodec.a
 
 LEF_TARGET_EXTRA_DEP := $(FFMPEG_LIB) sha123/libsha123.a istream/libistream.a
 #LEF_EXTRA := -L$(FFMPEG_DIR) -Lsha123 -Listream -lavformat -lavcodec -lsha123 -listream
+LEF_EXTRA = -L$(KOS_BASE)/../kos-ports/lib/dreamcast -loggvorbisplay
 
-KOS_LOCAL_CFLAGS += -DHOST_LITTLE_ENDIAN -DDCPLAYA=1
+KOS_LOCAL_CFLAGS += -DHOST_LITTLE_ENDIAN -DDCPLAYA=1 -falign-functions=32 -falign-loops=32 -falign-jumps=32
 
 KOS_LOCAL_INCS += -I. -I../../../include -I../../../libs\
  $(foreach i,$(FFMPEG_INCS),-I$(FFMPEG_DIR)/$(i))

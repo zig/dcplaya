@@ -1,9 +1,13 @@
 
+#define NULL 0L
+
 #include "sha123/api.h"
 #include "sha123/sha123.h"
 #include "istream/istream_def.h"
 
 #include "ffmpeg.h"
+
+#ifndef OLDFF
 
 #define dbmsg (void)
 
@@ -13,6 +17,8 @@ typedef struct context {
   sha123_t * decoder;
 
   int error;
+
+  int gotinfo;
 
   uint8_t * buf;
   int buf_size;
@@ -98,7 +104,7 @@ static int isseekb(istream_t * p, int pos)
   return 0;
 }
 
-static int close(AVCodecContext * avctx)
+static int decode_close(AVCodecContext * avctx)
 {
   context_t * ctx = (context_t *) avctx->priv_data;
 
@@ -115,6 +121,8 @@ static int decode_init(AVCodecContext * avctx)
   ctx->error = 0;
 
   ctx->total = 0;
+
+  ctx->gotinfo = 0;
 
   ctx->istream.open = isopen;
   ctx->istream.close = isclose;
@@ -155,7 +163,9 @@ static int decode_frame(AVCodecContext * avctx,
   ctx->buf_size = buf_size;
   ctx->pos = 0;
 
-  dbmsg("frame size %d\n", buf_size);
+#ifdef OLDFF
+  printf("frame size %d\n", buf_size);
+#endif
 
   if (ctx->decoder == NULL && !ctx->error) {
     ctx->decoder = sha123_start(&ctx->param);
@@ -165,11 +175,26 @@ static int decode_frame(AVCodecContext * avctx,
   }
   if (ctx->decoder) {
     res = sha123_decode(ctx->decoder, data, !first/*AVCODEC_MAX_AUDIO_FRAME_SIZE*/);
-    if (res)
+    if (res) {
       printf("sha123 : decoder error %d\n", res);
-    else {
+      return -1;
+    } else {
       //printf("pcm_point = %d (%d, %d)\n", ctx->decoder->pcm_point, ctx->pos, ctx->max);
       *data_size = ctx->decoder->pcm_point;
+
+#ifdef OLDFF
+      if (!ctx->gotinfo) {
+	sha123_info_t * info = sha123_info(ctx->decoder);
+	if (info) {
+	  avctx->channels = info->channels;
+	  avctx->sample_rate = info->sampling_rate;
+	  printf("channels=%d,rate=%d\n",avctx->channels,avctx->sample_rate);
+	  avctx->bit_rate = 0;
+	  ctx->gotinfo = 1;
+	}
+      }
+#endif
+
     }
   }
 
@@ -179,6 +204,7 @@ static int decode_frame(AVCodecContext * avctx,
 }
 
 
+#if 0
 AVCodec shamp2_decoder =
 {
     "mp2",
@@ -191,20 +217,31 @@ AVCodec shamp2_decoder =
     decode_frame,
     CODEC_CAP_PARSE_ONLY,
 };
+#endif
 
 AVCodec shamp3_decoder =
 {
+#ifdef OLDFF
+    "mp3",
+    CODEC_TYPE_AUDIO,
+    CODEC_ID_MP3LAME,
+    sizeof(context_t),
+    decode_init,
+    NULL,
+    decode_close,
+    decode_frame,
+#else
     "mp3",
     CODEC_TYPE_AUDIO,
     CODEC_ID_MP3,
     sizeof(context_t),
     decode_init,
     NULL,
-    close,
+    decode_close,
     decode_frame,
     CODEC_CAP_PARSE_ONLY,
+#endif
 };
-
 
 int sha123_ffdriver_init()
 {
@@ -216,3 +253,5 @@ int sha123_ffdriver_shutdown()
   sha123_shutdown();
   return 0;
 }
+
+#endif

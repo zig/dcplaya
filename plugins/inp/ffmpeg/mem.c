@@ -7,6 +7,7 @@
 #undef MALLOC_DEBUG 
 #include <malloc.h>
 #include <stdio.h>
+#include <assert.h>
 
 int av_nballocs;
 
@@ -294,6 +295,10 @@ void *av_malloc_(unsigned int size, const char * file, int line)
     void *ptr;
 
     //printf("alloc '%s' #%d : %d\n", file, line, size);
+/*     if (!size) { */
+/*       printf("malloc null size '%s' #%d : %d\n", file, line, size); */
+/*       size++; */
+/*     } */
 
 #ifdef MEMALIGN_HACK
     int diff;
@@ -302,7 +307,7 @@ void *av_malloc_(unsigned int size, const char * file, int line)
     ptr += diff;
     ((char*)ptr)[-1]= diff;
 #elif defined (HAVE_MEMALIGN) 
-    ptr = memalign(16,size);
+    ptr = memalign(32,size);
 #else
     ptr = malloc(size);
 #endif
@@ -325,6 +330,11 @@ void *av_malloc_(unsigned int size, const char * file, int line)
 void *av_realloc_(void *ptr, unsigned int size, const char * file, int line)
 {
   void * res;
+
+/*   if (!size) { */
+/*     printf("realloc null size '%s' #%d : %d\n", file, line, size); */
+/*     size++; */
+/*   } */
 
   if (ptr >= pkt_buf && ptr < pkt_buf+PKT_BUFSZ) {
     for (;;)
