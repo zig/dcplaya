@@ -1,3 +1,4 @@
+#if 0
 #ifndef __KOS_FAKE_FUNC__
 #define __KOS_FAKE_FUNC__
 
@@ -17,3 +18,4 @@ void exit(int status);
 
 #endif
 
+#endif

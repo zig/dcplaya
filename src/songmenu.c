@@ -4,7 +4,7 @@
  * @date    2002/02/10
  * @brief   file and playlist browser
  * 
- * $Id: songmenu.c,v 1.6 2002-09-21 09:58:30 benjihan Exp $
+ * $Id: songmenu.c,v 1.7 2002-09-23 03:25:01 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -352,7 +352,7 @@ static int r_load_song_dir(char *dirname)
   }
 	
   if (entrylist_isfull(&playlist)) {
-    SDDEBUG("<< %s(%s) : list full\n", __FUNCTION__ , dirname);
+    SDWARNING("<< %s(%s) : list full\n", __FUNCTION__ , dirname);
     return 0;
   }
 
@@ -366,14 +366,15 @@ static int r_load_song_dir(char *dirname)
   while (running && (de = fs_readdir(d), de)) {
     int type;
     
-    if (de->size < 0) {
+    type = direntry_filetype(de);
+
+    if (type <= FILETYPE_DIR) {
       /* Skip directory in first pass */
 /*        SDDEBUG(, "** " __FUNCTION__  */
 /*  	     "(%s) : Skip dir [%s] in 1st pass\n", dirname, de->name); */
       continue;
     }
 
-    type = direntry_filetype(de);
 /*      SDDEBUG(, "*** " __FUNCTION__  */
 /*  	   "(%s) : [s:%d] ['%s'] [t:%x]\n", */
 /*  	   dirname, de->size, de->name, type); */
@@ -401,10 +402,11 @@ static int r_load_song_dir(char *dirname)
   }
     
   while (running && (de = fs_readdir(d), de)) {
-    //    int type;
+    int type;
     
-    if (de->size >= 0) {
-      /* Skip file in 2nd pass */
+    type = direntry_filetype(de);
+    if (type != FILETYPE_DIR) {
+      /* Only keep dir in 2nd pass, remove self, parent ... */
 /*        SDDEBUG(, "** " __FUNCTION__  */
 /*  	     "(%s) : Skip file [%s] in 2nd pass\n", dirname, de->name); */
       continue;

@@ -1,20 +1,17 @@
-/* KallistiOS Ogg/Vorbis Decoder Library
+/**
+ * @file    ogg_friver.c
+ * @author  benjamin gerard <ben@sashipa.com>
+ * @brief   dcplaya ogg input driver.
  *
- * sndoggvorbis.c
- * (c)2001 Thorsten Titze
+ *  Based on sndoggvorbis.c from KallistiOS Ogg/Vorbis Decoder Library
  *
- * An Ogg/Vorbis player library using sndstream and functions provided by
- * sndvorbisfile.
+ *  (c)2001 Thorsten Titze
+ *
+ *  An Ogg/Vorbis player library using sndstream and functions provided by
+ *  sndvorbisfile.
+ *
+ * $Id: ogg_driver.c,v 1.3 2002-09-23 03:25:01 benjihan Exp $
  */
-
-static char id[] = "sndoggvorbis $Id: ogg_driver.c,v 1.2 2002-09-06 07:17:52 ben Exp $";
-
-/*
-
-    ogg driver - DreamMp3 version by ben
-
-*/
-
 
 #include <kos.h>
 
@@ -26,15 +23,14 @@ static char id[] = "sndoggvorbis $Id: ogg_driver.c,v 1.2 2002-09-06 07:17:52 ben
 #include "inp_driver.h"
 #include "pcm_buffer.h"
 #include "fifo.h"
-
-#define BUF_SIZE 65536			/* Size of buffer */
+#include "sysdebug.h"
 
 /* PCM buffer: for storing data going out to the SPU */
 static short * pcm_ptr;
 static int pcm_count;
 static int pcm_stereo;
 
-static int32 last_read=0;			/* number of bytes the sndstream driver grabbed at last callback */
+//static int32 last_read=0; /* number of bytes the sndstream driver grabbed at last callback */
 
 static int tempcounter =0;
 
@@ -61,12 +57,12 @@ static volatile int sndoggvorbis_bitrateint;	/* bitrateinterval in calls */
 
 void sndoggvorbis_setbitrateinterval(int interval)
 {
-	sndoggvorbis_bitrateint=interval;
+  sndoggvorbis_bitrateint=interval;
 
-	/* Just in case we're already counting above interval
-	 * reset the counter
-	 */
-	tempcounter = 0;
+  /* Just in case we're already counting above interval
+   * reset the counter
+   */
+  tempcounter = 0;
 }
 
 /* sndoggvorbis_getbitrate()
@@ -78,13 +74,13 @@ void sndoggvorbis_setbitrateinterval(int interval)
  */
 long sndoggvorbis_getbitrate()
 {
-	return(sndoggvorbis_info.actualbitrate);
-	// return(VorbisFile_getBitrateInstant());
+  return(sndoggvorbis_info.actualbitrate);
+  // return(VorbisFile_getBitrateInstant());
 }
 
 long sndoggvorbis_getposition()
 {
-	return(sndoggvorbis_info.actualposition);
+  return(sndoggvorbis_info.actualposition);
 }
 
 /* The following getters only return the contents of specific comment
@@ -93,20 +89,20 @@ long sndoggvorbis_getposition()
  */
 char *sndoggvorbis_getartist()
 {
-	return(sndoggvorbis_info.artist);
+  return(sndoggvorbis_info.artist);
 }
 char *sndoggvorbis_gettitle()
 {
-	return(sndoggvorbis_info.title);
+  return(sndoggvorbis_info.title);
 }
 char *sndoggvorbis_getgenre()
 {
-	return(sndoggvorbis_info.genre);
+  return(sndoggvorbis_info.genre);
 }
 
 char *sndoggvorbis_getcommentbyname(char *commentfield)
 {
-	return(VorbisFile_getCommentByName(commentfield));
+  return(VorbisFile_getCommentByName(commentfield));
 }
 
 
@@ -146,24 +142,23 @@ static int decode_frame(void)
   pcm_ptr = pcm_buffer;
 
   if (VorbisFile_isEOS()==1) {
-    dbglog(DBG_DEBUG, "** " __FUNCTION__ " : Decode complete\n");
+    SDDEBUG("%s() : Decode complete\n", __FUNCTION__);
     return INP_DECODE_END;
   }
 
   pcm_decoded = VorbisFile_decodePCM(v_headers, pcm_ptr, 4096);
   if (pcm_decoded < 0) {
-      dbglog(DBG_DEBUG, "** " __FUNCTION__ " : Decode failed\n");
-      return INP_DECODE_ERROR;
+    SDERROR("%s() : Decode failed\n", __FUNCTION__);
+    return INP_DECODE_ERROR;
   }
   pcm_count = pcm_decoded;
   return 0;
 }
 
 
-
 static int sndogg_init(any_driver_t * d)
 {
-  dbglog(DBG_DEBUG, "** " __FUNCTION__"\n");
+  SDDEBUG("%s([%s]) := [0]\n", __FUNCTION__, d->name);
   return 0;
 }
 
@@ -171,14 +166,16 @@ static int sndogg_init(any_driver_t * d)
 /* Start playback (implies song load) */
 static int sndogg_start(const char *fn, decoder_info_t *decoder_info)
 {
-  dbglog(DBG_DEBUG, "** " __FUNCTION__ " ('%s')\n", fn);
+  int err = -1;
+
+  SDDEBUG("%s([%s])\n", fn);
+  SDINDENT;
 
   sndoggvorbis_clearcomments();
   sndoggvorbis_setbitrateinterval(1000);
   if (VorbisFile_openFile(fn, &v_headers)) {
-    dbglog(DBG_DEBUG, "** " __FUNCTION__
-	   " : error could not open file\n");
-    return -1;
+    SDERROR("Error could not open file\n");
+    goto error;
   }
 
   /*
@@ -217,7 +214,12 @@ static int sndogg_start(const char *fn, decoder_info_t *decoder_info)
   pcm_ptr = pcm_buffer;
   pcm_count = 0;
   pcm_stereo = decoder_info->stereo;
-  return 0;
+  err = 0;
+
+ error:
+  SDUNINDENT;
+  SDDEBUG("%s() := [%d]\n", __FUNCTION__, err);
+  return err;
 }
 
 /* sndoggvorbis_stop()
@@ -227,18 +229,23 @@ static int sndogg_start(const char *fn, decoder_info_t *decoder_info)
  */
 static int sndogg_stop(void)
 {
-  dbglog(DBG_DEBUG, ">> " __FUNCTION__"\n");
+  SDDEBUG(">> %s()\n", __FUNCTION__);
+  SDINDENT;
+
   VorbisFile_closeFile();
-  dbglog(DBG_DEBUG, "** " __FUNCTION__" : vorbis file closed\n");
+  SDDEBUG("Vorbis file closed\n");
   sndoggvorbis_clearcomments();
-  dbglog(DBG_DEBUG, "** " __FUNCTION__" : comments cleared\n");
+  SDDEBUG("Comments cleared\n");
+
+  SDUNINDENT;
+  SDDEBUG("<< %s()\n", __FUNCTION__);
   return 0;
 }
 
 /* Shutdown the player */
 static int sndogg_shutdown(any_driver_t * d)
 {
-  dbglog(DBG_DEBUG, "** " __FUNCTION__"\n");
+  SDDEBUG("%s(%s) := [0]\n", __FUNCTION__, d->name);
   return 0;
 }
 
@@ -316,8 +323,7 @@ static driver_option_t * sndogg_options(any_driver_t * d, int idx,
   return o;
 }
 
-static inp_driver_t ogg_driver =
-{
+static inp_driver_t ogg_driver = {
   /* Any driver */
   {
     NEXT_DRIVER,          /* Next driver (see any_driver.h)  */

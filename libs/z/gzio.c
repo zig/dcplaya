@@ -5,7 +5,7 @@
  * Compile this file with -DNO_DEFLATE to avoid the compression code.
  */
 
-/* @(#) $Id: gzio.c,v 1.2 2002-09-20 00:22:14 benjihan Exp $ */
+/* @(#) $Id: gzio.c,v 1.3 2002-09-23 03:25:01 benjihan Exp $ */
 
 #include <stdio.h>
 
@@ -163,8 +163,12 @@ local gzFile gz_open (path, mode, fd)
     if (s->mode == 'w') {
         /* Write a very simple .gz header:
          */
-        fprintf(s->file, "%c%c%c%c%c%c%c%c%c%c", gz_magic[0], gz_magic[1],
-             Z_DEFLATED, 0 /*flags*/, 0,0,0,0 /*time*/, 0 /*xflags*/, OS_CODE);
+      //fprintf(s->file, "%c%c%c%c%c%c%c%c%c%c", gz_magic[0], gz_magic[1],
+      //Z_DEFLATED, 0 /*flags*/, 0,0,0,0 /*time*/, 0 /*xflags*/, OS_CODE);
+      char tmp[10];
+      sprintf(tmp, "%c%c%c%c%c%c%c%c%c%c", gz_magic[0], gz_magic[1],
+	      Z_DEFLATED, 0 /*flags*/, 0,0,0,0 /*time*/, 0 /*xflags*/, OS_CODE);
+      fwrite(tmp, 1 , 10, s->file);
 	s->startpos = 10L;
 	/* We use 10L instead of ftell(s->file) to because ftell causes an
          * fflush on some systems. This version of the library doesn't use

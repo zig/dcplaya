@@ -15,11 +15,11 @@
  */
 typedef struct
 {
-        int     channels;
-        int     frequency;
-        char    *vendor;
-        int     convsize;
-        int     bitrate;
+  int     channels;
+  int     frequency;
+  char    *vendor;
+  int     convsize;
+  int     bitrate;
   unsigned int bytes;
 } VorbisFile_headers_t;
 
@@ -45,24 +45,24 @@ typedef struct
  */
 typedef struct
 {
-        char    *artist;
-        char    *title;
-        char    *version;
-        char    *album;
-        char    *tracknumber;
-        char    *organization;
-        char    *description;
-        char    *genre;
-        char    *date;
-        char    *location;
-        char    *copyright;
-        char    *isrc;
+  char    *artist;
+  char    *title;
+  char    *version;
+  char    *album;
+  char    *tracknumber;
+  char    *organization;
+  char    *description;
+  char    *genre;
+  char    *date;
+  char    *location;
+  char    *copyright;
+  char    *isrc;
  
-        char    *filename;
+  char    *filename;
  
-        long    nominalbitrate;
-        long    actualbitrate;
-        long    actualposition;
+  long    nominalbitrate;
+  long    actualbitrate;
+  long    actualposition;
 } VorbisFile_info_t;
 
 typedef uint32		VorbisFile_handle_t;
@@ -80,7 +80,7 @@ long VorbisFile_getBitrateInstant();
 char *VorbisFile_getCommentByName(char *commentfield);
 char *VorbisFile_getCommentByID(long commentid);
 
-int VorbisFile_openFile(char *filename, VorbisFile_headers_t *v_headers);
+int VorbisFile_openFile(const char *filename, VorbisFile_headers_t *v_headers);
 void VorbisFile_closeFile();
 
 int VorbisFile_decodePCMint8(VorbisFile_headers_t vhd, uint8 *target, int requested);

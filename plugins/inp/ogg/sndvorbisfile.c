@@ -1,19 +1,20 @@
 /* KallistiOS Ogg/Vorbis Decoder Library
  *
- * ilboggvorbis.c
+ * liboggvorbis.c
  * (c)2001 Thorsten Titze
  *
  * Basic Ogg/Vorbis stream information and decoding routines used by
  * libsndoggvorbis. May also be used directly for playback without
  * threading.
+ *
+ * $Id: sndvorbisfile.c,v 1.2 2002-09-23 03:25:01 benjihan Exp $
  */
 
-static char id[] =
-    "sndoggvorbis $Id: sndvorbisfile.c,v 1.1 2002-08-26 14:14:35 ben Exp $";
 #include <kos.h>
 #include <stdio.h>
 #include <vorbis/codec.h>
 #include "sndvorbisfile.h"
+#include "sysdebug.h"
 
 VorbisFile_handle_t fd;
 
@@ -170,21 +171,15 @@ void VorbisFile_closeFile()
  *  0 = File open and header read succesful
  * -1 = File not opened successfully or no valid OggVorbis stream
  */
-int VorbisFile_openFile(char *filename, VorbisFile_headers_t * v_headers)
+int VorbisFile_openFile(const char *filename, VorbisFile_headers_t * v_headers)
 {
   int i;
   VorbisFile_EOS = 0;
 
-  dbglog(DBG_DEBUG,
-         "** " __FUNCTION__
-         ": liboggvorbis: trying to open file \"%s\"\r\n", filename);
-
   fd = fs_open(filename, O_RDONLY);
 
   if (fd == 0) {
-    dbglog(DBG_DEBUG,
-           "** " __FUNCTION__
-           ": liboggvorbis: cannot open file \"%s\"\r\n", filename);
+    SDERROR("Liboggvorbis: cannot open file [%s]\n", filename);
     return (-1);
   }
   v_headers->bytes = fs_total(fd);
@@ -200,38 +195,28 @@ int VorbisFile_openFile(char *filename, VorbisFile_headers_t * v_headers)
     if (bytes < 4096)
       return (-1);
   }
-  dbglog(DBG_DEBUG,
-         "** " __FUNCTION__
-         ": libogg: input bitstream has been detected to be Ogg compliant\n");
+  SDDEBUG("libogg: input bitstream has been detected to be Ogg compliant\n");
 
   ogg_stream_init(&os, ogg_page_serialno(&og));
-  dbglog(DBG_DEBUG,
-         "** " __FUNCTION__ ": libogg: ogg input bitstream initialized\n");
+  SDDEBUG("libogg: ogg input bitstream initialized\n");
 
   vorbis_info_init(&vi);
   vorbis_comment_init(&vc);
 
-  dbglog(DBG_DEBUG,
-         "** " __FUNCTION__ ": libvorbis: info and comment initialized\n");
+  SDDEBUG("libvorbis: info and comment initialized\n");
 
   if (ogg_stream_pagein(&os, &og) < 0) {
-    dbglog(DBG_DEBUG,
-           "** " __FUNCTION__
-           ": libogg: error reading first page of Ogg bitstream\n");
+    SDERROR("libogg: error reading first page of Ogg bitstream\n");
   }
 
   if (ogg_stream_packetout(&os, &op) != 1) {
-    dbglog(DBG_DEBUG,
-           "** " __FUNCTION__
-           ": libogg: error reading initial header packet\n");
+    SDERROR("libogg: error reading initial header packet\n");
   }
 
   if (vorbis_synthesis_headerin(&vi, &vc, &op) < 0) {
-    dbglog(DBG_DEBUG,
-           "** " __FUNCTION__
-           ": libvorbis: Ogg bitstream does not contain Vorbis encoded date\n");
+    SDWARNING("libvorbis: Ogg bitstream does not contain "
+	      "Vorbis encoded date\n");
   }
-
 
   i = 0;
   while (i < 2) {
@@ -246,9 +231,7 @@ int VorbisFile_openFile(char *filename, VorbisFile_headers_t * v_headers)
           if (result == 0)
             break;
           if (result < 0) {
-            dbglog(DBG_DEBUG,
-                   "** " __FUNCTION__
-                   ": libogg: corrupt secondary header in bitstream\n");
+            SDERROR("Libogg: corrupt secondary header in bitstream\n");
           }
           vorbis_synthesis_headerin(&vi, &vc, &op);
           i++;
@@ -258,23 +241,17 @@ int VorbisFile_openFile(char *filename, VorbisFile_headers_t * v_headers)
     VorbisFile_streambuffer = ogg_sync_buffer(&oy, 4096);
     bytes = fs_read(fd, VorbisFile_streambuffer, 4096);
     if (bytes == 0 && i < 2) {
-      dbglog(DBG_DEBUG,
-             "** " __FUNCTION__
-             ": libogg: EOF occured before all headers have been found\n");
+      SDERROR("Libogg: EOF occured before all headers have been found\n");
     }
     ogg_sync_wrote(&oy, bytes);
   }
 
-  dbglog(DBG_DEBUG,
-         "** " __FUNCTION__
-         ": libvorbis: Bitstream is %d channel, %ld Hz, %ld bit/s\r\n",
+  SDDEBUG("libvorbis: Bitstream is %d channel, %ld Hz, %ld bit/s\n",
          vi.channels, vi.rate, vi.bitrate_nominal);
-  dbglog(DBG_DEBUG, "** " __FUNCTION__ ": libvorbis: Encoded by: %s\r\n",
-         vc.vendor);
-  dbglog(DBG_DEBUG,
-         "** " __FUNCTION__
-         ": libvorbis: Found %d additional comment fields\r\n",
-         vc.comments);
+  SDDEBUG("Libvorbis: Encoded by: %s\n",
+	  vc.vendor);
+  SDDEBUG("Libvorbis: Found %d additional comment fields\n",
+	  vc.comments);
 
   /* Todo:
    * Reading of additional comment fields and putting in v_headers
@@ -360,8 +337,8 @@ static void conv_stereo(ogg_int32_t *d, const float *l, const float *r, int n)
 
 /* VorbisFile_decodePCM(...)
  *
- * same as VorbisFile_decodePCMint8 but decodes into a 16-bit Integer buffer not in
- * a 8 bit byte buffer
+ * same as VorbisFile_decodePCMint8 but decodes into a 16-bit Integer buffer
+ * not in a 8 bit byte buffer.
  */
 int VorbisFile_decodePCM(VorbisFile_headers_t vhd,
 			   ogg_int16_t * target,
@@ -396,11 +373,10 @@ int VorbisFile_decodePCM(VorbisFile_headers_t vhd,
 	conv_mono(target, pcm[0], bout);
 	break;
       case 2:
-	conv_stereo(target, pcm[0], pcm[1], bout);
+	conv_stereo((ogg_int32_t *)target, pcm[0], pcm[1], bout);
 	break;
       default:
-	dbglog(DBG_DEBUG,"!! " __FUNCTION__
-	       " : bad number of channel : %d\n", vi.channels);
+	SDERROR("Bad number of channel : %d\n", vi.channels);
 	return -1;
       }
       target += bout << (vi.channels-1);
@@ -416,9 +392,7 @@ int VorbisFile_decodePCM(VorbisFile_headers_t vhd,
         }
         if (ogg_page_eos(&og)) {
           VorbisFile_EOS = 1;
-          dbglog(DBG_DEBUG,
-                 "** " __FUNCTION__
-                 ": liboggvorbis: reached the end of the stream\r\n");
+          SDDEBUG("Liboggvorbis: reached the end of the stream\n");
 	  break;
         }
         ogg_stream_pagein(&os, &og);
@@ -428,9 +402,9 @@ int VorbisFile_decodePCM(VorbisFile_headers_t vhd,
       }
     }
   } while (n > 0);
-  if (req_pcm - n < 0) {
-    dbglog(DBG_DEBUG, "%d ", req_pcm - n);
-  }
+/*   if (req_pcm - n < 0) { */
+/*     SDWARNING("%d ", req_pcm - n); */
+/*   } */
   return req_pcm - n;
 }
 

@@ -3,7 +3,7 @@
  * @author  ben(jamin) gerard <ben@sashipa.com> 
  * @brief   Deal with file types and extensions.
  *
- * $Id: filetype.h,v 1.3 2002-09-21 09:58:30 benjihan Exp $
+ * $Id: filetype.h,v 1.4 2002-09-23 03:25:01 benjihan Exp $
  */
 
 #ifndef _FILETYPE_H_
@@ -39,7 +39,6 @@ DCPLAYA_EXTERN_C_START
 
 /** First available playable (music) filetype. */
 #define FILETYPE_PLAYABLE (256*4)
-//#define FILETYPE_MP3      (FILETYPE_PLAYABLE+0) 
 
 /*@}*/
 

@@ -1,5 +1,5 @@
 
-$Id: TODO,v 1.7 2002-09-21 09:58:28 benjihan Exp $
+$Id: TODO,v 1.8 2002-09-23 03:25:01 benjihan Exp $
 
 ** TODO :
 
@@ -55,3 +55,6 @@ $Id: TODO,v 1.7 2002-09-21 09:58:28 benjihan Exp $
 
 - Change info in inp plugin API. It is such a mess.
 
+- Ignore joypad move when awaking browser display
+
+- Don't make browser sleep when no visual ( or music playing ? )

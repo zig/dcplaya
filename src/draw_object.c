@@ -1,5 +1,5 @@
 /**
- * $Id: draw_object.c,v 1.3 2002-09-19 01:30:05 benjihan Exp $
+ * $Id: draw_object.c,v 1.4 2002-09-23 03:25:01 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -54,10 +54,10 @@ static int sature(const float a)
 static unsigned int argb255(const vtx_t *color)
 {
   return
-    (sature(color->w*255.0f)  << 24) |
-    (sature(color->x*255.0f)  << 16) |
-    (sature(color->y*255.0f)  << 8)  |
-    (sature(color->z*255.0f)  << 0);
+    (sature(color->w*255.0f) << 24) |
+    (sature(color->x*255.0f) << 16) |
+    (sature(color->y*255.0f) << 8)  |
+    (sature(color->z*255.0f) << 0);
 }
 
 static unsigned int argb4(const float a, const float r,
