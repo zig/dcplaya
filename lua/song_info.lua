@@ -3,7 +3,7 @@
 --- @author  benjamin gerard <ben@sashipa.com>
 --- @date    2002/11/29
 --- @brief   Song info application.
---- $Id: song_info.lua,v 1.3 2002-12-05 08:17:47 ben Exp $
+--- $Id: song_info.lua,v 1.4 2002-12-06 12:15:56 ben Exp $
 
 song_info_loaded = nil
 
@@ -70,13 +70,11 @@ function song_info_create(owner, nane)
    --
    function song_info_update(si, frametime)
 
-	  vcolor(1,0,0,1)
-
-	  if dl_get_active(si.icon_dl) == 1 then 
-		 dl_set_active(si.icon_dl, 0)
-	  else
-		 dl_set_active(si.icon_dl, 1)
-	  end
+-- 	  if dl_get_active(si.icon_dl) == 1 then 
+-- 		 dl_set_active(si.icon_dl, 0)
+-- 	  else
+-- 		 dl_set_active(si.icon_dl, 1)
+-- 	  end
 
 	  local a = si.alpha or 0
 
@@ -141,9 +139,6 @@ function song_info_create(owner, nane)
 		 end
 		 dl_draw_text(si.time_dl, 0,0,0, 1,1,1,1, fs)
 	  end
-
-	  vcolor(0,0,0,0)
-
    end
 
    --- Song-Info handle.
@@ -188,13 +183,10 @@ function song_info_create(owner, nane)
 
    --- Song-Info shutdown.
    function song_info_shutdown(si)
-	  dl_destroy_list(si.dl)
-	  dl_destroy_list(si.icon_dl)
-	  dl_destroy_list(si.time_dl);
-	  local i,v
-	  for i,v in si.icons_dl do
-		 dl_destroy_list(v)
-	  end
+	  si.dl = nil
+	  si.icon_dl = nil
+	  si.time_dl = nil
+	  si.icons_dl = nil
    end
 
    si = {

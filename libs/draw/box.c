@@ -4,7 +4,7 @@
  * @author  ben(jamin) gerard <ben@sashipa.com>
  * @date    2002/11/22
  *
- * $Id: box.c,v 1.1 2002-11-25 16:42:28 ben Exp $
+ * $Id: box.c,v 1.2 2002-12-06 12:15:56 ben Exp $
  */
 
 #include "draw/box.h"
@@ -86,6 +86,7 @@ void draw_box4(float x1, float y1, float x2, float y2, float z,
   if (y2 > current_gc->clipbox.y2) {
 	float f1 = (y2 - current_gc->clipbox.y2) / h;
 	float f2 = 1.0f - f2;
+	y2 = current_gc->clipbox.y2;
 	CLIPME(a,3,1);
 	CLIPME(r,3,1);
 	CLIPME(g,3,1);

@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.15 2002-12-05 08:17:47 ben Exp $
+--- $Id: textlist.lua,v 1.16 2002-12-06 12:15:56 ben Exp $
 ---
 
 -- Unload the library
@@ -198,10 +198,10 @@ function textlist_create(flparm)
    --- Textlist shutdown.
    ---
    function textlist_shutdown(fl)
-	  local i,v
-	  for i,v in fl do
-		 fl[i] = nil
-	  end
+	  fl.dl = nil
+	  fl.cdl = nil
+	  fl.ldl = nil
+	  fl.idl = nil
    end
 
    --- Measure dimension of the whole textlist and set dirinfo.
@@ -640,8 +640,10 @@ function textlist_create_gui(fl, owner)
    function textlist_gui_handle(app,evt)
 	  local key = evt.key
 	  local fl = app.fl
-	  local dir = nil
-	  if fl then dir = fl.dir end
+	  local dir = fl.dir
+
+ 	  print("owner:"..app.owner.name)
+ 	  print("TL-EVT:"..key)
 
 	  if key == evt_shutdown_event then
 		 fl:shutdown()
@@ -651,6 +653,7 @@ function textlist_create_gui(fl, owner)
 
 	  if dir.n < 1 or not gui_is_focus(app.owner,app) then
 		 -- No dir loaded or no focus, ignore event --
+ 		 print("NOFOCUUUUS:", dir.n)
 		 return evt;
 	  elseif gui_keyup[key] then
 		 local code = fl:move_cursor(-1)
@@ -678,7 +681,7 @@ function textlist_create_gui(fl, owner)
 			evt_send(app.owner, { key = gui_item_change_event })
 			evt_send(app.owner, { key = gui_item_confirm_event })
 		 end
-		 return -- ??? - $$$ just add this, was it forgot
+		 return -- ??? - $$$ just add this, was it forgotten ?
 	  end
 	  return evt
    end

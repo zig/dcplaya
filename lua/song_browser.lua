@@ -49,6 +49,12 @@ function song_browser_create_sprite(sb)
 							453/512, 0/128, 510/512, 80/128,
 							sb.sprites.texid)
 
+   sb.sprites.vmu = sprite("vmu",	
+							104/2, 62/2,
+							104, 62,
+							108/512, 65/128, 212/512, 127/128,
+							sb.sprites.texid,1)
+
    sb.fl.title_sprite = sb.sprites.file
    sb.fl.icon_sprite = sb.sprites.jess
    sb.pl.title_sprite = sb.sprites.list
@@ -205,10 +211,7 @@ function song_browser_create(owner, name, box)
 		if not sb then return end
 		sb.fl:shutdown()
 		sb.pl:shutdown()
-		local i,v
-		for i,v in sb do
-			sb[i] = nil
-		end
+		sb.dl = nil;
 	end
 
 	--- Song-Browser draw.
@@ -283,19 +286,6 @@ function song_browser_create(owner, name, box)
 	function song_browser_set_color(sb, a, r, g, b)
 	   sb.fl:set_color(a,r,g,b)
 	   sb.pl:set_color(a,r,g,b)
-
--- 		local f1,f2
--- 		a = a or sb.alpha or 1
--- 		sb.alpha = a
--- 		f1 = 1
--- 		f2 = 0.5
--- 		if sb.cl == sb.pl then
--- 			f1,f2 = f2,f1
--- 		end
--- 		dl_set_color(sb.fdl,a*f1,r,g,b)
--- 		dl_set_color(sb.pdl,a*f2,r,g,b)
--- 		sb.fl:set_color(a*f1,r,g,b)
--- 		sb.pl:set_color(a*f2,r,g,b)
 	end
 
 	--- Song-Browser confirm.
@@ -335,8 +325,6 @@ function song_browser_create(owner, name, box)
 
 		-- Members
 		style = style,
-		fdl = dl_new_list(64),
-		pdl = dl_new_list(64),
 		z = gui_guess_z(owner,z),
 		fade = 0,
 

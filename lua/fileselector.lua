@@ -4,7 +4,7 @@
 --- @date   2002/10/04
 --- @brief  fileselector gui
 ---
---- $Id: fileselector.lua,v 1.16 2002-12-04 10:47:25 ben Exp $
+--- $Id: fileselector.lua,v 1.17 2002-12-06 12:15:56 ben Exp $
 --
 -- TODO : select item with space 
 --        completion with tab        
@@ -320,8 +320,8 @@ function fileselector(name,path,filename)
 							{ x = "left", y = "up" } )
 	  dial.event_table = {
 		 [gui_item_confirm_event]	= fileselector_handle,
-		 [gui_item_cancel_event]		= fileselector_handle,
-		 [gui_item_change_event]		= fileselector_handle,
+		 [gui_item_cancel_event]	= fileselector_handle,
+		 [gui_item_change_event]	= fileselector_handle,
 		 [gui_input_confirm_event]	= fileselector_handle
 	  }
 	  

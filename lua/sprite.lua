@@ -24,6 +24,7 @@ if not sprite_tag then sprite_tag = newtag() end
 ---   matrix  tra;  ///< Sprite vertex transform buffer
 ---
 ---   draw();		///< Draw sprite into display list
+---   set_color();  ///< Set sprite color
 ---   
 --- };
 
@@ -40,20 +41,18 @@ if not sprite_tag then sprite_tag = newtag() end
 --- @param  u2    texture right coodinate
 --- @param  v2    texture bottom coodinate
 --- @param  texture  texture-id, texture-name, or texture-file
+--- @param  rotate   non nil to perform a -90 degree rotation.
 ---
 --- @return  sprite object
 --- @retval  nil  Error.
 ---
-function sprite(name, x, y, w, h, u1, v1, u2, v2, texture)
+function sprite(name, x, y, w, h, u1, v1, u2, v2, texture, rotate)
 	local spr = {}
+
 
 	spr.name = name
 	spr.vtx  = mat_new(4,12);
 	spr.tra  = mat_new(spr.vtx);
-	spr.x    = x
-	spr.y    = y
-	spr.w    = w
-	spr.h    = h
 	spr.tex  = tex_get(texture)
 	if not spr.tex and type(texture) == "string" then
 		spr.tex = tex_new(texture)
@@ -67,10 +66,27 @@ function sprite(name, x, y, w, h, u1, v1, u2, v2, texture)
 	x2 = x1+w
 	y2 = y1+h
 
-	set_vertex(spr.vtx[1], { x1, y1, 0, 1, 1,1,1,1, u1, v1 } )
-	set_vertex(spr.vtx[2], { x2, y1, 0, 1, 1,1,1,1, u2, v1 } )
-	set_vertex(spr.vtx[3], { x1, y2, 0, 1, 1,1,1,1, u1, v2 } )
-	set_vertex(spr.vtx[4], { x2, y2, 0, 1, 1,1,1,1, u2, v2 } )
+	set_vertex(spr.vtx[1], { 0, 0, 0, 1, 1,1,1,1, u1, v1 } )
+	set_vertex(spr.vtx[2], { w, 0, 0, 1, 1,1,1,1, u2, v1 } )
+	set_vertex(spr.vtx[3], { 0, h, 0, 1, 1,1,1,1, u1, v2 } )
+	set_vertex(spr.vtx[4], { w, h, 0, 1, 1,1,1,1, u2, v2 } )
+
+	local mat
+	if not rotate then
+	   mat = mat_trans(-x, -y, 0)
+	else
+	   local tr = mat_new()
+	   tr[1][1] = 0
+	   tr[1][2] = -1
+	   tr[2][1] = 1
+	   tr[2][2] = 0
+	   mat = mat_trans(-w,0,0) * tr * mat_trans(-y, -x, 0)
+	   w,h = h,w
+	end
+
+	mat_mult_self(spr.vtx, mat)
+	spr.w = w
+	spr.h = h
 
 	settag(spr, sprite_tag)
 
