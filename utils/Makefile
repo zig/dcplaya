@@ -1,7 +1,9 @@
-all: mkvmuheader mktgabox
+all: mkvmuheader mktgabox mkromimg2
 
 mkvmuheader : mkvmuheader.cxx
 	$(CXX) -o $@ $<
 mktgabox : mktgabox.cxx
 	$(CXX) -o $@ $<
+mkromimg2 : mkromimg2.c
+	$(CC) -o $@ $< -lz
 
