@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Exceptions and guardians handling
  *
- * @version    $Id: exceptions.h,v 1.1 2002-09-14 04:46:45 zig Exp $
+ * @version    $Id: exceptions.h,v 1.2 2002-09-15 15:31:03 zig Exp $
  */
 
 
@@ -27,6 +27,8 @@ int expt_guard_begin();
 /*extern int expt_guard_stack_pos;
 extern jmp_buf expt_jump_stack[EXPT_GUARD_STACK_SIZE];*/
 
+
+extern void irq_dump_regs(int , int);
 
 
 #define EXPT_GUARD_BEGIN                                  \

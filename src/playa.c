@@ -148,9 +148,9 @@ void sndstream_thread(void *cookie)
   streamstatus = PLAYA_STATUS_STARTING;
 
   stream_init(sndstream_callback, 1<<14);
-  //  stream_start(1200, current_frq=44100, playavolume, current_stereo=1);
+  stream_start(1200, current_frq=44100, playavolume, current_stereo=1);
   // $$$ Aprox sync VBL
-  stream_start(736, current_frq=44100, playavolume, current_stereo=1);
+  //stream_start(736, current_frq=44100, playavolume, current_stereo=1);
   //  stream_start(256, 44100, playavolume, 1);
 
   streamstatus = PLAYA_STATUS_PLAYING;

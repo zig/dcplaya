@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.8 2002-09-14 09:46:22 ben Exp $
+ * @version   $Id: console.c,v 1.9 2002-09-15 15:31:04 zig Exp $
  */
 
 
@@ -41,8 +41,10 @@ static void csl_printk_func(const char * s)
 {
   csl_putstring(csl_main_console, s);
 
-  if (old_printk_func)
-    old_printk_func(s);
+  if ( !(csl_main_console->render_modes & CSL_RENDER_WINDOW) ) {
+    if (old_printk_func)
+      old_printk_func(s);
+  }
 }
 
 void csl_init_main_console()
@@ -334,17 +336,21 @@ void csl_window_configure(csl_console_t * console, int x, int y, int w, int h,
 /* Functions to access to a console */
 void csl_putchar(csl_console_t * console, char c )
 {
+  spinlock_lock(&console->mutex);
   MUterm_inputc(c, console->term);
   if ((console->render_modes & CSL_RENDER_BASIC) && c == '\n')
     csl_basic_render(console);
   console->window.cursor_time = 0;
+  spinlock_unlock(&console->mutex);
 }
 void csl_putstring(csl_console_t * console, const char * s )
 {
+  spinlock_lock(&console->mutex);
   MUterm_input(s, console->term);
   if ((console->render_modes & CSL_RENDER_BASIC) && strchr(s, '\n'))
     csl_basic_render(console);
   console->window.cursor_time = 0;
+  spinlock_unlock(&console->mutex);
 }
 void csl_printf(csl_console_t * console, const char *fmt, ... )
 {
@@ -356,6 +362,7 @@ void csl_printf(csl_console_t * console, const char *fmt, ... )
 void csl_vprintf(csl_console_t * console, const char *fmt, va_list args )
 {
 
+  spinlock_lock(&console->mutex);
   MUterm_setactive(console->term);
   MUterm_vprintf(fmt, args);
 
@@ -366,6 +373,40 @@ void csl_vprintf(csl_console_t * console, const char *fmt, va_list args )
   */
 
   console->window.cursor_time = 0;
+  spinlock_unlock(&console->mutex);
 }
 
 
+int csl_getchar()
+{
+  int k;
+
+  for ( ;; ) {
+    
+    k = csl_peekchar();
+    if (k != -1)
+      return k;
+
+    thd_pass();
+  }
+
+}
+
+
+
+int csl_peekchar()
+{
+  static last_frame = -1;
+  int k;
+
+
+  if (ta_state.frame_counter != last_frame) {
+    kbd_poll(maple_first_kb());
+    k = kbd_get_key();
+    
+    if (k != -1)
+      return k;
+  }
+
+  return -1;
+}

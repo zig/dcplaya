@@ -1,5 +1,5 @@
 /*
-** $Id: ldo.c,v 1.2 2002-09-14 00:47:13 zig Exp $
+** $Id: ldo.c,v 1.3 2002-09-15 15:31:04 zig Exp $
 ** Stack and Call structure of Lua
 ** See Copyright Notice in lua.h
 */
@@ -326,10 +326,10 @@ static int parse_buffer (lua_State *L, const char *buff, size_t size,
 
 LUA_API int lua_dobuffer (lua_State *L, const char *buff, size_t size, const char *name) {
   
-  SDDEBUG("Calling parse_buffer ...\n");
+  //SDDEBUG("Calling parse_buffer ...\n");
   int status = parse_buffer(L, buff, size, name);
   if (status == 0) { /* parse OK? */
-    SDDEBUG("Calling lua_call ...\n");
+    //SDDEBUG("Calling lua_call ...\n");
     status = lua_call(L, 0, LUA_MULTRET);  /* call main */
   }
   return status;

@@ -134,8 +134,14 @@ char *fgets(char *s, int size, FILE *stream)
     if (c == '\n')
       break;
     c = fgetc(stream);
-    if (c == EOF)
+    if (c == EOF) {
+      if (i == 0) {
+	s[0] = 0;
+	return 0;
+      }
+
       break;
+    }
     s[i] = c;
   }
 

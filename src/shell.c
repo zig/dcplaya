@@ -32,13 +32,14 @@ static int read_command;
 
 
 
+
+
 static void shell_update_keyboard()
 {
 
   int key;
-  
-  kbd_poll(maple_first_kb());
-  key = kbd_get_key();
+
+  key = csl_peekchar();
 
 /*  if (key != -1)
     printf(" --> %d\n", key);*/
@@ -49,6 +50,10 @@ static void shell_update_keyboard()
 
   case KBD_KEY_F1<<8: // F1
     shell_load(shell_lef_fname);
+    break;
+
+  case KBD_KEY_F2<<8: // F2
+    shell_command("dofile(home..[[autorun.lua]])");
     break;
 
   case 8:
@@ -82,13 +87,28 @@ static void shell_update_keyboard()
 
 }
 
+static spinlock_t shellmutex;
+
+static void lockshell(void)
+{
+  spinlock_lock(&shellmutex);
+}
+
+void unlockshell(void)
+{
+  spinlock_unlock(&shellmutex);
+}
+
+
 
 void shell_load(const char * fname)
 {
   int fd;
 
-  /* make sure all commands are finished */
+  /* better to make sure all previous commands are finished */
   shell_wait();
+
+  lockshell();
 
   /* Shutdown previously opened shell */
   if (shell_lef) {
@@ -113,6 +133,9 @@ void shell_load(const char * fname)
   if (shell_lef) {
     shell_lef_shutdown_func = (shell_shutdown_func_t) shell_lef->main(0, 0);
   }
+
+  unlockshell();
+
 }
 
 
@@ -120,16 +143,24 @@ void shell_load(const char * fname)
 static void shell_thread(void * param)
 {
   for (;;) {
-    while (write_command == read_command)
+
+    while (write_command == read_command) {
       thd_pass();
 
-    if (shell_command_func)
+      /* Keyboard update */
+      shell_update_keyboard();
+    }
+
+    if (shell_command_func) {
+      lockshell();
       shell_command_func(commands[read_command]);
-    else
+      unlockshell();
+    } else
       printf("shell: don't know what to do with command '%s' (no shell loaded !)\n", commands[read_command]);
 
     free(commands[read_command]);
     read_command = (read_command+1)%MAX_COMMANDS;
+
  }
 }
 
@@ -153,10 +184,6 @@ void shell_shutdown()
 void shell_update(float frameTime)
 {
 
-  /* Keyboard update */
-  shell_update_keyboard();
-
-
   /* Console movement handling */
   if (show_console || read_command != write_command) {
     console_y += 5 * frameTime * (CONSOLE_Y - console_y);
@@ -173,15 +200,29 @@ void shell_update(float frameTime)
 }
 
 
+static spinlock_t commandmutex;
+
+static void lockcommand(void)
+{
+  spinlock_lock(&commandmutex);
+}
+
+void unlockcommand(void)
+{
+  spinlock_unlock(&commandmutex);
+}
+
 
 int shell_command(const char * com)
 {
   //printf("COMMAND <%s>\n", com);
 
-  commands[write_command] = strdup(com);
+  lockcommand();
 
-  // increment in atomic way
+  commands[write_command] = strdup(com);
   write_command = (write_command+1) % MAX_COMMANDS;
+
+  unlockcommand();
 
   return 0;
 

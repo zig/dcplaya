@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.h,v 1.3 2002-09-13 16:04:19 zig Exp $
+ * @version   $Id: console.h,v 1.4 2002-09-15 15:31:03 zig Exp $
  */
 
 
@@ -36,6 +36,8 @@ typedef struct csl_window {
 typedef struct csl_console {
 
   int w, h;
+
+  spinlock_t mutex; ///< mutex for terminal access
 
   struct csl_console * next; ///< Next console
 
@@ -88,6 +90,10 @@ void csl_vprintf(csl_console_t * console, const char *fmt, va_list args );
 extern csl_console_t * csl_main_console;
 void csl_init_main_console();
 void csl_close_main_console();
+
+/* Keyboard input */
+int csl_getchar();
+int csl_peekchar();
 
 
 #endif /* #ifndef _CONSOLE_H_ */

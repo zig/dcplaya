@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.8 2002-09-14 19:48:47 zig Exp $
+ * @version    $Id: dynshell.c,v 1.9 2002-09-15 15:31:03 zig Exp $
  */
 
 #include <stdio.h>
@@ -16,6 +16,7 @@
 #include "lua.h"
 #include "lualib.h"
 
+#include "console.h"
 #include "shell.h"
 
 #include "plugin.h"
@@ -48,7 +49,6 @@ typedef struct shell_command_description {
 
 static int dynshell_command(const char * fmt, ...)
 {
-  int i;
   char com[1024];
   int result = -1;
   //printf("COMMAND <%s>\n", com);
@@ -242,6 +242,32 @@ static int lua_driver_load(lua_State * L)
   return 0;
 }
 
+static int lua_getchar(lua_State * L)
+{
+  int k;
+
+  /* ingnore any parameters */
+  lua_settop(L, 0);
+
+  k = csl_getchar();
+
+  lua_pushnumber(L, k);
+
+  return 1;
+}
+
+
+static int lua_rawprint(lua_State * L)
+{
+  int nparam = lua_gettop(L);
+  int i;
+
+  for (i=1; i<= nparam; i++) {
+    csl_putstring(csl_main_console, lua_tostring(L, i));
+  }
+
+  return 0;
+}
 
 
 
@@ -309,6 +335,26 @@ static shell_command_description_t commands[] = {
     "]])",
 
     SHELL_COMMAND_C, lua_driver_load
+  },
+  { 
+    "getchar",
+    "gc",
+
+    "print([["
+    "getchar() : wait for an input key on keyboard and return its value\n"
+    "]])",
+
+    SHELL_COMMAND_C, lua_getchar
+  },
+  { 
+    "rawprint",
+    "rp",
+
+    "print([["
+    "rawprint( ... ) : raw print on console (no extra linefeed like with print)\n"
+    "]])",
+
+    SHELL_COMMAND_C, lua_rawprint
   },
   {0},
 };
