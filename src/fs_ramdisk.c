@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   RAM disk for KOS file system
  * 
- * $Id: fs_ramdisk.c,v 1.6 2002-09-20 17:15:08 benjihan Exp $
+ * $Id: fs_ramdisk.c,v 1.7 2002-09-25 22:43:18 benjihan Exp $
  */
 
 #ifdef VPSPECIAL
@@ -81,18 +81,41 @@ static int namecmp(const char *n1, const char *n2)
   return strcmp(n1,n2);
 }
 
+static const char * modestr(int mode)
+{
+  const char * str[8] =
+    {
+      "N/A", "R", "W", "R/W",
+      "D", "D/R", "D/W", "D/R/W"
+    };
+  return str[mode&7];
+}
+
+static const char * whatstr(int what)
+{
+  switch (what) {
+  case 1:  return "file";
+  case 2:  return "dir";
+  case 3:  return "file/dir";
+  default: return "nothing";
+  }
+}
+
 static int valid_fh(uint32 fd)
 {
   if (--fd >= MAX_RD_FILES || !(fh_mask & (1<<fd)) || !fh[fd].node>1) {
+    SDERROR("[%d] : invalid file handle.\n", fd+1);
     return INVALID_FH;
   }
   return fd;
 }
 
-static int valid_file(uint32 fd)
+static int valid_file(uint32 fd, int mode)
 {
+  mode &= (READ_MODE|WRITE_MODE);
   if (fd = valid_fh(fd), fd != INVALID_FH) {
-    if (!(fh[fd].mode & (READ_MODE|WRITE_MODE))) {
+    if (!(fh[fd].mode & mode)) {
+      SDERROR("[%d] : not an [%s] opened handle.\n", fd+1, modestr(mode));
       fd = INVALID_FH;
     }
   }
@@ -104,14 +127,42 @@ static int is_dir(node_t * node)
   return node && node->entry.size == -1;
 }
 
-static int valid_dir(uint32 fd)
+static int valid_regular(uint32 fd, int mode)
 {
-  if (fd = valid_fh(fd), fd != INVALID_FH) {
-    if (!is_dir(fh[fd].node) || (fh[fd].mode != (READ_MODE|DIR_MODE))) {
+  if (fd = valid_file(fd, mode), fd != INVALID_FH) {
+    if (is_dir(fh[fd].node) || (fh[fd].mode & DIR_MODE)) {
+      SDERROR("[%d] : not regular file handle.\n", fd+1);
       fd = INVALID_FH;
     }
   }
   return fd;
+}
+
+static int valid_dir(uint32 fd, int mode)
+{
+  if (fd = valid_file(fd, mode), fd != INVALID_FH) {
+    if (!is_dir(fh[fd].node) || !(fh[fd].mode & DIR_MODE)) {
+      SDERROR("[%d] : not directory handle.\n", fd+1);
+      fd = INVALID_FH;
+    }
+  }
+  return fd;
+}
+
+static int valid_name(const char * name, int accept_root) {
+  node_t *node;
+  int valid =
+    ! (
+       !name ||
+       (!accept_root && !name[0]) ||
+       (name[0] == '.' && !name[1]) ||
+       (name[0] == '.' && name[1] == '.' && !name[2]) ||
+       strlen(name) >= sizeof(node->entry.name)
+       );
+  if (!valid) {
+    SDERROR("[%s] : invalid filename.\n", name ? name : "<null>");
+  }
+  return valid;
 }
 
 static node_t * youngest_bros(node_t * node)
@@ -126,9 +177,11 @@ static node_t * youngest_bros(node_t * node)
 
 static void attach_node(node_t * father, node_t * node)
 {
+  /*
   SDDEBUG("%s [%s] to [%s]\n",__FUNCTION__,
 	  node ? node->entry.name : "<null>",
 	  father ? father->entry.name : "<null>");
+  */
   node->father = father;
   node->little_bros = 0;
   if ((node->big_bros = youngest_bros(father->son)) != 0) {
@@ -142,7 +195,7 @@ static void detach_node(node_t * node)
 {
   int i;
 
-  SDDEBUG("%s [%s]\n",__FUNCTION__, node ? node->entry.name : "<null>");
+  //  SDDEBUG("%s [%s]\n",__FUNCTION__, node ? node->entry.name : "<null>");
   if (!node) {
     return;
   }
@@ -165,7 +218,7 @@ static void detach_node(node_t * node)
 
 static void release_node(node_t * node)
 {
-  SDDEBUG( "%s [%s]\n", __FUNCTION__, node ? node->entry.name : "<null>"); 
+  //  SDDEBUG( "%s [%s]\n", __FUNCTION__, node ? node->entry.name : "<null>"); 
   if (node) {
     if (node->data) {
       free(node->data);
@@ -242,8 +295,6 @@ static int realloc_node(node_t * node, int req_size)
   }
 }
 
-
-
 static void clean_openfile(openfile_t *f)
 {
   memset(f,0,sizeof(*f));
@@ -263,15 +314,15 @@ static void clean_node(node_t * node)
   memset(node,0,sizeof(*node));
 }
 
+
 static node_t * create_node(const char *name, int datasize)
 {
   node_t * node = 0;
 
-  SDDEBUG("%s [%s] %d\n", __FUNCTION__, name, datasize);
+  //  SDDEBUG("%s [%s] %d\n", __FUNCTION__, name, datasize);
 
   /* Forbid empty name, and minus filesize. */
-  if (!name || !name[0] || datasize < 0 ||
-      strlen(name) >= sizeof(node->entry.name)) {
+  if (!valid_name(name, 0) || datasize < 0) {
     goto error;
   }
 
@@ -299,31 +350,24 @@ static node_t * create_node(const char *name, int datasize)
   }
   node->max = datasize;
 
-  SDDEBUG("-->%s success\n", __FUNCTION__);
+  //  SDDEBUG("-->%s success\n", __FUNCTION__);
   return node;
 
  error:
   release_node(node);
-  SDDEBUG("-->%s failure\n", __FUNCTION__);
+  //  SDDEBUG("-->%s failure\n", __FUNCTION__);
   return 0;
 } 
 
-static const char * whatstr(int what)
-{
-  switch(what) {
-  case 1: return "file";
-  case 2: return "dir";
-  case 3: return "file/dir";
-  default: return "nothing";
-  }
-}
 
 static node_t * find_node_same_level(node_t *node, const char *fn, int what)
 {
+  /*
   SDDEBUG("%s [%s] [%s] in [%s]\n", __FUNCTION__,
 	  whatstr(what),
 	  fn ? fn : "<null>",
 	  node ? node->entry.name : "<null>");
+  */
   SDINDENT;
   if (!node || !fn) {
     SDERROR("Invalid parms [%p] [%p]\n", node, fn);
@@ -346,10 +390,10 @@ static node_t * find_node_same_level(node_t *node, const char *fn, int what)
     if (!namecmp(fn, node->entry.name)) {
       /* Found it, is it a kind we want to ? 1:regular 2Ldir 3:both */
       if ( (is_dir(node) + 1) & what) {
-	SDDEBUG("-->%s success\n", __FUNCTION__);
+	//	SDDEBUG("-->%s success\n", __FUNCTION__);
 	break;
       } else {
-	SDDEBUG("-->%s failure : bad node type\n", __FUNCTION__);
+	//	SDDEBUG("-->%s failure : bad node type\n", __FUNCTION__);
 	node = 0;
 	break;
       }
@@ -366,11 +410,12 @@ static node_t * find_node(node_t * node, char *fn, int what)
   node_t * n = 0;
   int len, save_char;
 
+  /*
   SDDEBUG("%s [%s] [%s] in [%s]\n", __FUNCTION__,
 	  whatstr(what),
 	  fn ? fn : "<null>",
 	  node ? node->entry.name : "<null>");
-
+  */
   if (!node || !fn) {
     SDERROR("Find node invalid parameters [%p] [%p]\n", node, fn);
     return 0;
@@ -393,7 +438,7 @@ static node_t * find_node(node_t * node, char *fn, int what)
     /* Reach end of path : search target (dir/file) */
     n = find_node_same_level(node, fn, what);
     if (!n) {
-      SDERROR("Not found\n");
+      //      SDERROR("Not found\n");
     }
     return n;
   }
@@ -401,12 +446,11 @@ static node_t * find_node(node_t * node, char *fn, int what)
   /* Search a dir */
   *fe = 0;
   n = find_node_same_level(node, fn, 2);
-  if (!n) {
-    SDERROR("Not found\n");
-     *fe = save_char;
+  *fe = save_char;
+  if (!n || !n->son) {
+    //    SDERROR("Not found\n");
     return 0;
   }
-  *fe = save_char;
   return find_node(n->son, fe+1, what);
 }
 
@@ -435,9 +479,12 @@ static ssize_t read(file_t fd, void * buffer, size_t size)
 
   //  SDDEBUG("%s (%d, %p, %d)\n", __FUNCTION__, fd, buffer, size);
   
-  fd = valid_file(fd);
-  if (fd == INVALID_FH || ! (fh[fd].mode & READ_MODE) || size < 0) {
-    SDERROR("-->Invalid file or parameters\n");
+  fd = valid_regular(fd, READ_MODE);
+  if (fd == INVALID_FH) {
+    return -1;
+  }
+  if (size < 0) {
+    SDERROR("minus size (%d)\n", size);
     return -1;
   }
   of = fh + fd;
@@ -471,9 +518,12 @@ static ssize_t write(file_t fd, const void * buffer, size_t size)
 
   //  SDDEBUG("%s (%d, %p, %d)\n", __FUNCTION__, fd, buffer, size);
 
-  fd = valid_file(fd);
-  if (fd == INVALID_FH || ! (fh[fd].mode & WRITE_MODE) || size < 0) {
-    SDERROR("-->Invalid file or parameters\n");
+  fd = valid_file(fd, WRITE_MODE);
+  if (fd == INVALID_FH) {
+    return -1;
+  }
+  if (size < 0) {
+    SDERROR("minus size:%d\n", size);
     return -1;
   }
   of = fh + fd;
@@ -505,14 +555,15 @@ static ssize_t write(file_t fd, const void * buffer, size_t size)
 
 /* Create a valid filename, return leaf pointer. */
 static char * valid_filename(char * fname, int max,
-			     const char *fn, int *endslash)
+			     const char *fn, int *endslash, int accept_root)
 {
+  const char * save_fn = fn;
   int i, c, oc, leaf;
 
   /* Check filename */
-  SDDEBUG("%s [%s]\n", __FUNCTION__, fn);
+  //  SDDEBUG("%s [%s]\n", __FUNCTION__, fn);
   if (!fn) {
-    SDERROR("<null> filename\n");
+    SDERROR("[<null>] : invalid filename.\n");
     return 0;
   }
 /*   if (fn[0] != '/') { */
@@ -536,7 +587,7 @@ static char * valid_filename(char * fname, int max,
     fname[i++] = oc = c;
   }
   if (c) {
-    SDERROR("Filename too long.\n");
+    SDERROR("[%s] : filename too long.\n", save_fn);
     return 0;
   }
   /* Discard last char if it is a '/' */
@@ -544,13 +595,17 @@ static char * valid_filename(char * fname, int max,
     --i;
   }
   fname[i] = 0;
-  SDDEBUG("copied string [%s] (slashended:%d)\n", fname, *endslash);
+  //  SDDEBUG("copied string [%s] (slashended:%d)\n", fname, *endslash);
 
   /* If leaf separator has been found, to first char of leafname. */
   if (fname[leaf] == '/') {
     ++leaf;
   }
-  SDDEBUG("leaf [%s]\n", fname+leaf);
+  //  SDDEBUG("leaf [%s]\n", fname+leaf);
+
+  if (!valid_name(fname+leaf, accept_root)) {
+    return 0;
+  }
 
   return fname + leaf;
 }
@@ -564,7 +619,7 @@ static file_t open(const char *fn, int mode)
   char fname[1024], *leaf;
   int endslash;
 
-  leaf = valid_filename(fname, sizeof(fname), fn, &endslash);
+  leaf = valid_filename(fname, sizeof(fname), fn, &endslash, 1);
   if (!leaf) {
     goto error;
   }
@@ -606,7 +661,7 @@ static file_t open(const char *fn, int mode)
 
   if (!node) {
     if (omode & READ_MODE) {
-      SDERROR("Not found.\n");
+      //      SDERROR("Not found.\n");
       goto error;
     }
 
@@ -615,8 +670,7 @@ static file_t open(const char *fn, int mode)
       goto error;
     } 
 
-
-    SDDEBUG("Find father node\n");
+    //    SDDEBUG("Find father node\n");
     /* Node created, must be attached to father ... */
     if (leaf == fname) {
       father = root;
@@ -629,7 +683,7 @@ static file_t open(const char *fn, int mode)
       goto error;
     }
 
-    SDDEBUG("Create a new node [%s] for file or dir\n", leaf);
+    //    SDDEBUG("Create a new node [%s] for [%s]\n", leaf, modestr(omode));
     created_node = node = create_node(leaf, 0);
     if (!node) {
       goto error;
@@ -662,7 +716,7 @@ static file_t open(const char *fn, int mode)
 			 opened file */
 
 	
-  SDDEBUG("-->%s success (%d)\n", __FUNCTION__, fd + 1);
+  //  SDDEBUG("-->%s success (%d)\n", __FUNCTION__, fd + 1);
   return fd + 1;
 	
  error:
@@ -672,7 +726,7 @@ static file_t open(const char *fn, int mode)
   }
   release_node(created_node);
 
-  SDDEBUG("-->%s failure\n", __FUNCTION__);
+  //  SDERROR("-->%s failure\n", __FUNCTION__);
   return 0;
 }
 
@@ -681,10 +735,10 @@ static void really_unlink(node_t * node);
 /* Close a file or directory */
 static void close(uint32 fd)
 {
-  SDDEBUG("%s [%d]\n",__FUNCTION__, fd);
+  //  SDDEBUG("%s [%d]\n",__FUNCTION__, fd);
 
   /* Check that the fd is valid */
-  if (fd = valid_fh(fd), fd != INVALID_FH) {
+  if (fd = valid_file(fd, -1), fd != INVALID_FH) {
     if (!OPEN_COUNT(fh[fd].node)) {
       SDERROR("-->Invalid open count\n");
       return; 
@@ -698,7 +752,7 @@ static void close(uint32 fd)
 
     spinlock_lock(&fh_mutex);
     fh_mask &= ~(1 << fd);
-    SDDEBUG("-->closed [%s]\n", fh[fd].node->entry.name);
+    //    SDDEBUG("-->closed [%s]\n", fh[fd].node->entry.name);
     fh[fd].node = 0;
     fh[fd].mode = 0;
     spinlock_unlock(&fh_mutex);
@@ -708,9 +762,9 @@ static void close(uint32 fd)
 /* Seek elsewhere in a file */
 static off_t seek(uint32 fd, off_t offset, int whence)
 {
-  SDDEBUG("Seek [%u] [%d] [%d]\n", fd, offset, whence);
+  //  SDDEBUG("Seek [%u] [%d] [%d]\n", fd, offset, whence);
 
-  if (fd = valid_file(fd), fd == INVALID_FH) {	
+  if (fd = valid_regular(fd, -1), fd == INVALID_FH) {	
     return -1;
   }
 
@@ -740,7 +794,7 @@ static off_t seek(uint32 fd, off_t offset, int whence)
     fh[fd].pos = fh[fd].node->entry.size;
     }*/
 	
-  SDDEBUG("--> %s success (%u)\n", __FUNCTION__, fh[fd].pos);
+  //  SDDEBUG("--> %s success (%u)\n", __FUNCTION__, fh[fd].pos);
   return fh[fd].pos;
 }
 
@@ -748,23 +802,23 @@ static off_t seek(uint32 fd, off_t offset, int whence)
 /* Tell where in the file we are */
 static off_t tell(uint32 fd)
 {
-  SDDEBUG("%s [%u]\n",__FUNCTION__, fd);
-  if (fd = valid_file(fd), fd == INVALID_FH) {	
+  //  SDDEBUG("%s [%u]\n",__FUNCTION__, fd);
+  if (fd = valid_regular(fd, -1), fd == INVALID_FH) {	
     return -1;
   }
-  SDDEBUG("-->%s success [%u]\n",__FUNCTION__, fh[fd].pos);
+  //  SDDEBUG("-->%s success [%u]\n",__FUNCTION__, fh[fd].pos);
   return fh[fd].pos;
 }
 
 /* Tell how big the file is */
 static size_t total(uint32 fd)
 {
-  SDDEBUG("%s [%u]\n",__FUNCTION__, fd);
+  //  SDDEBUG("%s [%u]\n",__FUNCTION__, fd);
 
   if (fd = valid_fh(fd), fd == INVALID_FH) {	
     return -1;
   }
-  SDDEBUG("-->%s success [%u]\n",__FUNCTION__, fh[fd].node->entry.size);
+  //  SDDEBUG("-->%s success [%u]\n",__FUNCTION__, fh[fd].node->entry.size);
   return fh[fd].node->entry.size;
 }
 
@@ -772,9 +826,9 @@ static dirent_t * readdir(file_t fd)
 {
   node_t *rd;
 
-  SDDEBUG("Readdir [%u]\n", fd);
+  //  SDDEBUG("Readdir [%u]\n", fd);
 
-  if (fd = valid_dir(fd), fd == INVALID_FH) {
+  if (fd = valid_dir(fd, READ_MODE), fd == INVALID_FH) {
     return 0;
   }
 
@@ -782,12 +836,14 @@ static dirent_t * readdir(file_t fd)
   rd = fh[fd].readdir;
   if (rd) {
     fh[fd].readdir = rd->little_bros;
+    /*
     SDDEBUG("-->%s success [%s] [%d]\n", __FUNCTION__,
 	    rd->entry.name, rd->entry.size);
+    */
     return &rd->entry;
   }
 
-  SDDEBUG("-->end of dir\n");
+  //  SDDEBUG("-->end of dir\n");
   return 0;
 }
 
@@ -814,8 +870,8 @@ static int rename(const char *fn1, const char *fn2)
     return -1;
   }
 
-  leaf1 = valid_filename(fname1, sizeof(fname1), fn1, &slash_end);
-  leaf2 = valid_filename(fname2, sizeof(fname2), fn2, &slash_end);
+  leaf1 = valid_filename(fname1, sizeof(fname1), fn1, &slash_end, 0);
+  leaf2 = valid_filename(fname2, sizeof(fname2), fn2, &slash_end, 0);
 
   if (!leaf1 || !leaf2) {
     return -1;
@@ -849,7 +905,7 @@ static int rename(const char *fn1, const char *fn2)
 
 static void really_unlink(node_t * node)
 {
-  SDDEBUG("%s [%s]\n",__FUNCTION__,node ? node->entry.name : "<null>");
+  //  SDDEBUG("%s [%s]\n",__FUNCTION__,node ? node->entry.name : "<null>");
   SDINDENT;
 
   if (node && node->son) {
@@ -870,9 +926,9 @@ static int unlink(const char *fn)
   char fname[1024], *leaf;
   int slash_end;
 
-  SDDEBUG("%s [%s]\n",__FUNCTION__, fn);
+  //  SDDEBUG("%s [%s]\n",__FUNCTION__, fn);
 
-  leaf = valid_filename(fname, sizeof(fname), fn, &slash_end);
+  leaf = valid_filename(fname, sizeof(fname), fn, &slash_end, 0);
   if (!leaf) {
     return -1;
   }
@@ -902,7 +958,7 @@ static int unlink(const char *fn)
 
 static void * mmap(file_t fd)
 {
-  if (fd = valid_file(fd), fd == INVALID_FH) {	
+  if (fd = valid_regular(fd,-1), fd == INVALID_FH) {	
     return 0;
   }
   return fh[fd].node->data;

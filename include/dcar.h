@@ -4,7 +4,7 @@
  * @date      2002/09/21
  * @brief     dcplaya archive.
  *
- * $Id: dcar.h,v 1.1 2002-09-23 03:23:27 benjihan Exp $
+ * $Id: dcar.h,v 1.2 2002-09-25 22:43:17 benjihan Exp $
  *
  * @warning   Architecture dependent code.
  */
@@ -120,7 +120,7 @@ int dcar_simulate(const char *path, dcar_option_t * opt);
 
 /** Create an archive.
  *
- *    The dcar_create() function a new archive from a given path.
+ *    The dcar_create() function creates a new archive from a given path.
  *
  *  @param  name  Name of archive file to create.
  *  @param  path  Directory to archive
@@ -131,6 +131,20 @@ int dcar_simulate(const char *path, dcar_option_t * opt);
  *  @retval   <0  Failure.
  */
 int dcar_archive(const char *name, const char *path, dcar_option_t * opt);
+
+/** Extract an archive.
+ *
+ *    The dcar_extract() function extracts an archive file to a given path.
+ *
+ *  @param  name  Name of archive file to extract.
+ *  @param  path  Extract location. 
+ *  @param  opt   Pointer to dcar option (0 for default)
+ *
+ *  @return error-code
+ *  @retval  >=0  Success.
+ *  @retval   <0  Failure.
+ **/
+int dcar_extract(const char *name, const char *path, dcar_option_t *opt);
 
 DCPLAYA_EXTERN_C_END
 

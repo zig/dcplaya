@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.21 2002-09-25 21:36:44 vincentp Exp $
+ * @version    $Id: dynshell.c,v 1.22 2002-09-25 22:43:07 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -633,7 +633,14 @@ static int lua_dcar(lua_State * L)
     break;
 
   case 'x':
-    error = "not implemented";
+    if (path && archive) {
+      count = dcar_extract(archive, path, &opt);
+      if (count >= 0) {
+	error = 0;
+      } else {
+	error = "extract failure";
+      }
+    }
     break;
   default:
     error = "bad command : try help dcar";
@@ -643,16 +650,19 @@ static int lua_dcar(lua_State * L)
  error:  
   if (count < 0) {
     printf("dcar : %s\n", error);
-  } else {
+  } else if (opt.in.verbose) {
     printf("dcar := %d\n", count);
     if (opt.out.level)
-      printf(" level       : %d\n",opt.out.level);
+      printf(" level        : %d\n",opt.out.level);
     if (opt.out.entries)
-      printf(" entries     : %d\n",opt.out.entries);
+      printf(" entries      : %d\n",opt.out.entries);
     if (opt.out.bytes)
-      printf(" bytes       : %d\n",opt.out.bytes);
-    if (opt.out.ubytes && opt.out.cbytes)
-      printf(" compression : %d%%\n",opt.out.cbytes*100/opt.out.ubytes);
+      printf(" data bytes   : %d\n",opt.out.bytes);
+    if (opt.out.ubytes && opt.out.cbytes) {
+      printf(" compressed   : %d\n", opt.out.cbytes);
+      printf(" uncompressed : %d\n", opt.out.ubytes);
+      printf(" compression  : %d\n",opt.out.cbytes*100/opt.out.ubytes);
+    }
   }
 
   return count;

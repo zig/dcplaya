@@ -4,7 +4,7 @@
  * @date      2002/09/21
  * @brief     dcplaya archive.
  *
- * $Id: dcar.c,v 1.1 2002-09-23 03:23:24 benjihan Exp $
+ * $Id: dcar.c,v 1.2 2002-09-25 22:43:18 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -48,6 +48,17 @@ static int ftotal(const char *fname)
   n = fs_total(fd);
   fs_close(fd);
   return n;
+}
+
+static char * mk_pathend(const dcar_option_t * opt)
+{
+  char * pathend
+    = opt->internal.path + strlen(opt->internal.path);
+  if (pathend > opt->internal.path && pathend[-1] != '/') {
+    *pathend++ = '/';
+    *pathend = 0;
+  }
+  return pathend;
 }
 
 /* Alloc the global archive. */
@@ -154,7 +165,8 @@ static int make_dir_index(aentry_t * aentry, int base)
   aentry_t *e;
 
   if (!aentry) {
-    return base;
+    // Empty sub directory special case
+    return 0;
   }
 
   /* Count entries in this level */
@@ -166,8 +178,14 @@ static int make_dir_index(aentry_t * aentry, int base)
   /* Apply index to this level */
   for (e=aentry; e; e=e->nxt) {
     if (e->te.attr.dir) {
-      e->te.attr.size = base;
-      base = make_dir_index(e->son, base);
+      int newbase;
+      newbase = make_dir_index(e->son, base);
+      if (newbase) {
+	e->te.attr.size = base;
+	base = newbase;
+      } else {
+	e->te.attr.size = 0;
+      }
     }
   }
   return base;
@@ -201,12 +219,28 @@ static int r_gzwrite_aentries(gzFile zf, aentry_t * aentry)
   return 0;
 }
 
+/*
+static unsigned int CRC(unsigned int crc, char *b, int n)
+{
+  while (n--) {
+    crc += *(unsigned char *)b++;
+  }
+  return crc;
+}
+*/
+
 static int gzcopy(gzFile zf, dcar_option_t * opt)
 {
-  int fd, n, r, w;
+  int fd, n, r, w, len;
+
+  //  unsigned int crc = 0;
 
   fd = fs_open(opt->internal.path, O_RDONLY);
   if (!fd) {
+    return -1;
+  }
+  len = fs_total(fd);
+  if (len < 0) {
     return -1;
   }
 
@@ -224,13 +258,35 @@ static int gzcopy(gzFile zf, dcar_option_t * opt)
       break;
     }
     w += n;
+
+    //    crc = CRC(crc,  opt->internal.tmp, n);
+
+    opt->out.bytes += n;
+
   } while (1);
 
-  if (n != 0 || r != w) {
+  if (n != 0 || r != w || r != len) {
     n = -1;
   } else {
+    int z;
+
     n = r;
+    len = (len + dcar_align - 1) & ~(dcar_align - 1);
+    z = len - n;
+
+    // Zero pad for alignment requirement.
+    if (z >= dcar_align) {
+      return -1;
+    }
+    if (z) {
+      memset(opt->internal.tmp, 0, z);
+      if (gzwrite(zf, opt->internal.tmp, z) != z) {
+	return -1;
+      }
+    }
   }
+
+  //  printf("crc: %08x\n",crc);
 
   fs_close(fd);
   
@@ -247,11 +303,7 @@ static int r_gzwrite_data(gzFile zf, aentry_t * aentry, dcar_option_t * opt)
   }
 
   /* make path */
-  pathend = opt->internal.path+strlen(opt->internal.path);
-  if (pathend > opt->internal.path && pathend[-1] != '/') {
-    *pathend++ = '/';
-    *pathend = 0;
-  }
+  pathend = mk_pathend(opt);
 
   /* 1st : This level */
   for (e=aentry; e; e=e->nxt) {
@@ -337,7 +389,7 @@ static void dump(aentry_t * aentry)
   }
 }
 
-static int r_add(char * path, dcar_option_t *opt, aentry_t * parent)
+static int r_add(dcar_option_t *opt, aentry_t * parent)
 {
   aentry_t * aentry = 0, * t;
   int fd;
@@ -345,9 +397,9 @@ static int r_add(char * path, dcar_option_t *opt, aentry_t * parent)
   dirent_t *de;
   char *pathend;
 
-  fd = fs_open(path, O_RDONLY|O_DIR);
+  fd = fs_open(opt->internal.path, O_RDONLY|O_DIR);
   if (!fd) {
-    SDERROR("Open error [%s]\n", path);
+    SDERROR("[%s] : open error\n", opt->internal.path);
     count = -1;
     goto error;
   }
@@ -403,14 +455,11 @@ static int r_add(char * path, dcar_option_t *opt, aentry_t * parent)
   fs_close(fd);
   fd = 0;
 
-  pathend = path+strlen(path);
-  if (pathend > path && pathend[-1] != '/') {
-    *pathend++ = '/';
-    *pathend = 0;
-  }
+  pathend = mk_pathend(opt);
+
   for (t=reverse(aentry); t; t=t->nxt) {
     if (opt->in.verbose) {
-      printf("%s%s\n", path,t->te.name);
+      printf("%s%s\n", opt->internal.path,t->te.name);
     }
     ++opt->out.entries;
     opt->out.bytes += t->te.attr.size;
@@ -419,7 +468,7 @@ static int r_add(char * path, dcar_option_t *opt, aentry_t * parent)
       int more;
       strcpy(pathend, t->te.name);
       ++opt->internal.level;
-      more = r_add(path, opt, t);
+      more = r_add(opt, t);
       --opt->internal.level;
       *pathend=0;
       if (more < 0) {
@@ -489,8 +538,9 @@ int dcar_archive(const char *name, const char *path, dcar_option_t *opt)
   memset(&root, 0, sizeof(root));
   root.te.attr.dir = root.te.attr.end = 1;
   opt->in.verbose = 0;
-  count = r_add(cpath, opt, &root);
+  count = r_add(opt, &root);
   opt->in.verbose = save_verbose;
+  opt->out.bytes = 0;
   if (count < 0) {
     goto error;
   }
@@ -522,10 +572,9 @@ int dcar_archive(const char *name, const char *path, dcar_option_t *opt)
     SDERROR("Writing archive file data.\n");
     goto error;
   }
+  opt->out.ubytes  = gztell(zf);
   gzclose(zf);
   zf = 0;
-
-  opt->out.ubytes  = gztell(zf);
   opt->out.cbytes  = ftotal(name);
 
  error:
@@ -559,7 +608,7 @@ int dcar_simulate(const char *path, dcar_option_t * opt)
   opt->internal.path = cpath;
 
   root.nxt = root.son = 0;
-  count = r_add(cpath, opt, &root);
+  count = r_add(opt, &root);
   free_aentries(root.son);
 
   return count;
@@ -570,15 +619,304 @@ int dcar_test(const char *name, dcar_option_t * opt)
   return -1;
 }
 
+
+static int r_dump_dtree(dcar_tree_t * dt, int n)
+{
+  int count;
+  dcar_tree_entry_t *e;
+
+  if ((unsigned int)n >= (unsigned int)dt->n) {
+    SDERROR("Entry out of range [%d, %d]\n", n, dt->n);
+    return -1;
+  }
+
+  for (count=0, e = dt->e+n; n<dt->n;  ++n, ++e) {
+    SDDEBUG("#%3d [%s]%s%s : %d\n",
+	   n,
+	   e->name,
+	   e->attr.dir ? "*":"",
+	   e->attr.end ? ".":"",
+	   e->attr.size);
+    ++count;
+    if (e->attr.dir) {
+      int cnt;
+      if (!e->attr.size) {
+	//	SDDEBUG("Skipping : no sub tree\n");
+	cnt = 0;
+      } else {
+	SDINDENT;
+	cnt = r_dump_dtree(dt, e->attr.size);
+	SDUNINDENT;
+      }
+      if (cnt < 0) {
+	return cnt;
+      }
+      count += cnt;
+    }
+    if (e->attr.end) {
+      return count;
+    }
+  } while (n < dt->n);
+  SDERROR("Reach end of tree without encounter end flag.\n");
+  return -1;
+}
+
+static int dump_dtree(dcar_tree_t * dt)
+{
+  int count;
+  SDDEBUG("%s('%d')\n", __FUNCTION__, dt->n);
+  SDINDENT;
+
+  count = r_dump_dtree(dt, 0);
+
+  return count;
+}
+
+static int exist_dir(const char *fname)
+{
+ int fd;
+
+ fd = fs_open(fname, O_DIR | O_RDONLY);
+ if (fd) {
+   fs_close(fd);
+ }
+ return fd != 0;
+}
+
+/* Create a directory if not exist */ 
+static int create_dir(const char *fname)
+{
+ if (!exist_dir(fname)) {
+   int fd;
+
+   fd = fs_open(fname, O_DIR | O_WRONLY);
+   if (!fd) {
+     SDERROR("[%s] : directory creation failed\n", fname);
+     return -1;
+   }
+   fs_close(fd);
+ }
+ return 0;
+}
+
+static int gzextract(int fd, gzFile zf, dcar_option_t * opt, int len)
+{
+  int n, r, w, rem;
+  //  unsigned int crc = 0;
+
+  if (len < 0) {
+    return -1;
+  }
+
+  r = w = 0;
+  rem = len;
+  while (rem > 0) {
+    n = rem;
+    if (n > opt->internal.max) {
+      n = opt->internal.max;
+    }
+    rem -= n;
+
+    if (gzread(zf, opt->internal.tmp, n) != n) {
+      SDERROR("gzread error.\n");
+      return -1;
+    }
+    r += n;
+
+    if (fs_write(fd, opt->internal.tmp, n) != n) {
+      SDERROR("write error.\n");
+      return -1;
+    }
+    w += n;
+
+    //    crc = CRC(crc,  opt->internal.tmp, n);
+
+    opt->out.bytes += n;
+  };
+
+  if (rem != 0 || r != w || w != len) {
+    n = -1;
+  } else {
+    int z;
+
+    n = r;
+    len = (len + dcar_align - 1) & ~(dcar_align - 1);
+    z = len - n;
+
+    // Zero pad for alignment requirement.
+    if (z >= dcar_align) {
+      return -1;
+    }
+    if (z) {
+      //      SDDEBUG("Zero pad : %d\n", z);
+      if (gzread(zf, opt->internal.tmp, z) != z) {
+	return -1;
+      }
+    }
+  }
+
+  //  printf("CRC: %08x\n", crc);
+  
+  return n;
+}
+
+
+static int extract_file(gzFile zf, dcar_option_t * opt,
+			int bytes)
+{
+  int fd;
+  char * fname = opt->internal.path;
+
+  if (bytes < 0) {
+    return -1;
+  }
+  
+  if (exist_dir(fname)) {
+    SDERROR("[%s] : Exist as a directory. Can't unlink it.\n", fname);
+    return -1;
+  }
+  fs_unlink(fname);
+
+  fd = fs_open(fname, O_WRONLY);
+  if (!fd) {
+    SDERROR("[%s] : create error.\n");
+    return -1;
+  }
+  bytes = gzextract(fd, zf, opt, bytes);
+  fs_close(fd);
+
+  return bytes;
+}
+
+static int r_extract_dtree(gzFile zf, dcar_tree_t * dt, dcar_option_t * opt,
+			   int n)
+{
+  char * pathend;
+  int count;
+  dcar_tree_entry_t *e, *save_e;
+
+  if ((unsigned int)n >= (unsigned int)dt->n) {
+    SDERROR("Entry out of range [%d, %d]\n", n, dt->n);
+    return -1;
+  }
+
+  pathend = mk_pathend(opt);
+
+  /* Process files */
+  for (count=0, save_e = e = dt->e+n; n < dt->n;  ++n, ++e) {
+    strcpy(pathend, e->name);
+    if (opt->in.verbose) {
+      printf("%s\n", opt->internal.path);
+    }
+    ++count;
+    
+    if (e->attr.dir) {
+      /* Create directory */
+      if (create_dir(opt->internal.path) < 0) {
+	goto error;
+      }
+    } else {
+      /* Extract regular file */
+      if (extract_file(zf, opt, e->attr.size) < 0) {
+	goto error;
+      }
+    }
+
+    if (e->attr.end) {
+      *pathend = 0;
+      break;
+    }
+  }
+
+  if (n >= dt->n) {
+    goto error;
+  }
+
+  /* Process subdir */
+  for (e = save_e; 1; ++e) {
+    int cnt;
+
+    if (e->attr.dir) {
+      /* Extract sub-directory */
+
+      strcpy(pathend, e->name);
+      opt->internal.level++;
+      if (opt->internal.level > opt->out.level) {
+	opt->out.level = opt->internal.level;
+      }
+      cnt = 0;
+      if (e->attr.size) {
+	if (cnt = r_extract_dtree(zf, dt, opt, e->attr.size), cnt < 0) {
+	  goto error;
+	}
+      }
+      opt->internal.level--;
+      count += cnt;
+    }
+
+    if (e->attr.end) {
+      *pathend = 0;
+      return count;
+    }
+  }
+
+ error:
+  *pathend = 0;
+  SDERROR("Reach end of tree without encounter end flag.\n");
+  return -1;
+}
+
+static int extract_dtree(gzFile zf, dcar_tree_t * dt, dcar_option_t * opt)
+{
+  int count = -1;
+
+  SDDEBUG("%s('%s')\n", __FUNCTION__, opt->internal.path);
+  SDINDENT;
+
+  /* Create path extract path. */
+  if (opt->in.verbose) {
+    printf("%s\n", opt->internal.path);
+  }
+  if (create_dir(opt->internal.path) < 0) {
+    goto error;
+  }
+  count = r_extract_dtree(zf, dt, opt, 0);
+
+ error:
+  SDUNINDENT;
+  SDDEBUG("%s('%s') := [%d]\n", __FUNCTION__, opt->internal.path, count);
+  return count;
+}
+
+
 int dcar_extract(const char *name, const char *path, dcar_option_t *opt)
 {
-  char header[8];
+  char cpath[1024];
+  char tmp[512];
   dcar_option_t option;
   dcar_tree_t * dt = 0;
   int fd, n;
+  int err = -1;
   gzFile zf = 0;
 
+  SDDEBUG("%s('%s','%s',%p)\n", __FUNCTION__, name, path, opt);
+  SDINDENT;
+
+  if (!name || !path)  {
+    return -1;
+  }
   opt = setup_option(opt, &option);
+  opt->internal.tmp = tmp;
+  opt->internal.max = sizeof(tmp);
+
+  cpath[sizeof(cpath)-1] = 0;
+  strncpy(cpath, path, sizeof(cpath)-1);
+  if (cpath[sizeof(cpath)-1]) {
+    SDERROR("[%s] : path too long\n", path);
+    return -1;
+  }
+  cpath[sizeof(cpath)-1] = 0;
+  opt->internal.path = cpath;
 
   fd = fs_open(name, O_RDONLY);
   if (!fd) {
@@ -589,44 +927,66 @@ int dcar_extract(const char *name, const char *path, dcar_option_t *opt)
 
   zf = gzdopen(fd, "rb");
   if (!zf) {
-    SDERROR("Open error.\n");
+    SDERROR("Reopen error.\n");
     goto error;
   }
   fd = 0;
 
-  if (gzread(zf, header, 8) != 8) {
+  if (gzread(zf, tmp, 8) != 8) {
     SDERROR("Header read error.\n");
     goto error;
   }
 
-  if (memcmp(header, "DCAR", 4)) {
-    SDERROR("Invalid archive header");
+  if (memcmp(tmp, "DCAR", 4)) {
+    SDERROR("Invalid archive header.\n");
     goto error;
   }
 
-  dt = tree_alloc(*(int*)&header[4], 0);
+  dt = tree_alloc(*(int*)&tmp[4], 0);
   if (!dt) {
     goto error;
   }
 
   /* Read directory entries */
   n = dt->n * sizeof(*dt->e);
+  SDDEBUG("read entry (%d, %d)\n", dt->n, n);
   if (gzread(zf, dt->e, n) != n) {
     SDERROR("Dir entries read error.\n");
     goto error;
   }
 
+  /*
   for (n=0; n<dt->n; ++n) {
-    printf("#%3d [%s]%s%s : %d\n",
-	   n,
-	   dt->e[n].name,
-	   dt->e[n].attr.dir ? "*":"",
-	   dt->e[n].attr.end ? ".":"",
-	   dt->e[n].attr.size);
     opt->out.bytes += dt->e[n].attr.dir ? 0 : dt->e[n].attr.size;
   }
-
+  */
   opt->out.entries = dt->n;
+
+  /*
+  SDDEBUG("Dump\n");
+  n = dump_dtree(dt);
+  if (n != dt->n) {
+    SDERROR("Bad number of entry: %d != %d\n", n, dt->n);
+    err = -1;
+  } else {
+    err = n;
+  }
+  */
+
+  SDDEBUG("Extract\n");
+  n = extract_dtree(zf, dt, opt);
+  opt->out.ubytes = gztell(zf);
+
+  if (n != dt->n) {
+    if (n>=0) {
+      SDERROR("Bad number of entry: %d != %d\n", n, dt->n);
+    } else {
+      SDERROR("[%s] : extract failure [%d].\n", name, n);
+    }
+    err = -1;
+  } else {
+    err = n;
+  }
 
  error:
   if (dt) {
@@ -639,6 +999,8 @@ int dcar_extract(const char *name, const char *path, dcar_option_t *opt)
     gzclose(zf);
   }
 
-  return -1;
-}
+  SDUNINDENT;
+  SDDEBUG("%s('%s','%s') := [%d]\n", __FUNCTION__, name, path, err);
 
+  return err;
+}
