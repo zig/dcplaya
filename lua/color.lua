@@ -3,7 +3,7 @@
 -- author : benjamin gerard <ben@sashipa.com>
 -- date   : 2002/10/14
 --
--- $Id: color.lua,v 1.2 2002-10-14 19:10:05 benjihan Exp $
+-- $Id: color.lua,v 1.3 2002-10-14 23:31:17 benjihan Exp $
 --
 
 color_loaded = nil
@@ -57,20 +57,18 @@ function color_copy(c,s,noalpha)
 		if v then rawset(c,3,v) end
 		v = rawget(s,4)
 		if v then rawset(c,4,v) end
-		return color_clip(c)
+		return c
 	end
 end
 
 -- Clip color components.
---  If "positive" is not nil range is [0..1] else range is [-1..1]
-function color_clip(c, positive)
+--
+function color_clip(c, min, max)
 	if tag(c) == color_tag then
-		local min = -1
-		if positive then min = 0 end
-		rawset(c,1,clip_value(rawget(c,1),min,1))
-		rawset(c,2,clip_value(rawget(c,2),min,1))
-		rawset(c,3,clip_value(rawget(c,3),min,1))
-		rawset(c,4,clip_value(rawget(c,4),min,1))
+		rawset(c,1,clip_value(rawget(c,1),min,max))
+		rawset(c,2,clip_value(rawget(c,2),min,max))
+		rawset(c,3,clip_value(rawget(c,3),min,max))
+		rawset(c,4,clip_value(rawget(c,4),min,max))
 		return c
 	end
 end
@@ -166,7 +164,7 @@ function color_add(a,b)
 	local r=table_add(a,b)
 	if type(r) == "table" then
 		settag(r,color_tag)
-		return color_clip(r)
+		return r
 	end
 end
 
@@ -174,7 +172,7 @@ function color_sub(a,b)
 	local r=table_sub(a,b)
 	if type(r) == "table" then
 		settag(r,color_tag)
-		return color_clip(r)
+		return r
 	end
 end
 
@@ -182,7 +180,7 @@ function color_mul(a,b)
 	local r=table_mul(a,b)
 	if type(r) == "table" then
 		settag(r,color_tag)
-		return color_clip(r)
+		return r
 	end
 end
 
@@ -190,7 +188,7 @@ function color_div(a,b)
 	local r=table_div(a,b)
 	if type(r) == "table" then
 		settag(r,color_tag)
-		return color_clip(r)
+		return r
 	end
 end
 
@@ -198,7 +196,7 @@ function color_minus(a,b)
 	local r=table_minus(a,b)
 	if type(r) == "table" then
 		settag(r,color_tag)
-		return color_clip(r)
+		return r
 	end
 end
 
@@ -237,7 +235,7 @@ function color_sort(c)
 	local i,j
 	for i=1, 2, 1 do
 		for j=i+1, 3, 1 do
-			if rawget(c,order[j]y) > rawget(c,order[i]) then
+			if rawget(c,order[j]) > rawget(c,order[i]) then
 				order[i], order[j] = order[j], order[i]
 			end
 		end

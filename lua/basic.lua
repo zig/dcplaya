@@ -2,7 +2,7 @@
 --
 -- author : vincent penne <ziggy@sashipa.com>
 --
--- $Id: basic.lua,v 1.5 2002-10-14 19:10:05 benjihan Exp $
+-- $Id: basic.lua,v 1.6 2002-10-14 23:31:16 benjihan Exp $
 ---
 
 -- Unload library
@@ -189,6 +189,33 @@ function table_min(a)
 		end
 	end
 	return imin
+end
+
+function type_dump(v, name, indent)
+	if not indent then indent = 0 end
+	local t = type(v)
+	local istr = strrep(" ",indent*2)
+	local s = istr
+	if type(name) == "string" then
+		s = s..format("[%q]=",name)
+	end
+
+	if t == "number" then
+		 s=s..v
+	elseif t == "string" then
+		s=s..format("%q",v)
+	elseif t == "table" then
+		s=s.."{\n"
+		local i,w
+		for i,w in v do
+			s=s..type_dump(w,i,indent+1)..",\n"
+		end
+		s=s..istr.."}"
+	else
+		local a = tostring(v)
+		if type(a) == "string"  then s=s..a else s=s.."???" end
+	end
+	return s
 end
 
 function clip_value(v,min,max)
