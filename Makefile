@@ -3,7 +3,7 @@
 #
 # (C) COPYRIGHT 2002 benjamin gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.16 2002-09-25 14:44:52 benjihan Exp $ 
+# $Id: Makefile,v 1.17 2002-09-30 20:06:50 benjihan Exp $ 
 #
 TARGETS=dreammp3.elf
 
@@ -11,9 +11,9 @@ SH_LDFLAGS=-ml -m4-single-only -nostartfiles -nostdlib -static  -Wl,-Ttext=0x8c0
 
 SUBDIRS = arm plugins src data libs dynshell
 
-WHOLE_LIBS=-lz,-ldreammp3,-llua,-ldcutils,-lkallisti
+WHOLE_LIBS=-lz,-ltranslator,-ldreammp3,-llua,-ldcutils,-lkallisti
 OPT_LIBS= -los -lgcc -lm
-ELF_EXTRA += -L./src -L./libs/z -L./libs/lua -L$(KOS_BASE)/lib\
+ELF_EXTRA += -L./src -L./libs/z -L./libs/translator -L./libs/lua -L$(KOS_BASE)/lib\
  -Wl,--whole-archive,$(WHOLE_LIBS),--no-whole-archive\
  $(OPT_LIBS)
 
@@ -86,7 +86,13 @@ TODO:
 	diff -q $@ $@.$$$$; \
 	if test $$? -ne 0; then mv -f $@.$$$$ $@; else rm -f $@.$$$$; fi;
 
-DEPEND_EXTRA=depend_extra
+commit: TODO
+	cvs commit 2>&1 | tee - cvs.log 
+
+update: TODO
+	cvs update -d 2>&1 | tee - cvs.log
+
+DEPEND_EXTRA=depend_extra
 depend_extra:
 	@touch "symtab.h"
 

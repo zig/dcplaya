@@ -81,6 +81,25 @@ void ARGB1555toARGB32(void * dst, const void * src, int n)
   }
 }
 
+void ARGB32toARGB1555(void * dst, const void * src, int n)
+{
+  while (n--) {
+    int v = *(SHAsint32 *)src;
+    int r;
+
+    // Alpha
+    r = (v>>(24+7-15)) & 0x8000;
+    // Red
+    r |= (v>>(16+3-10)) & (0x1F<<10);
+    // Green
+    r |= (v>>(8+3-5)) & (0x1F<<5);
+    // Blue
+    r |= (v>>3) & 0x1f;
+    *(SHAuint16 *)dst = r;
+    src = (void *)((char *)src+4);
+    dst = (void *)((char *)dst+2);
+  }
+}
 
 void ARGB4444toARGB32(void * dst, const void * src, int n)
 {

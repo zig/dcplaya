@@ -4,7 +4,7 @@
  * @date      2002/09/21
  * @brief     dcplaya archive.
  *
- * $Id: dcar.c,v 1.3 2002-09-27 03:20:20 benjihan Exp $
+ * $Id: dcar.c,v 1.4 2002-09-30 20:06:50 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -530,6 +530,7 @@ int dcar_archive(const char *name, const char *path, dcar_option_t *opt)
   char tmp[512];
   int count;
   dcar_tree_t dt;
+  int fd = 0, fd2;
   gzFile zf=0;
   dcar_option_t option;
   volatile int save_verbose;
@@ -571,11 +572,19 @@ int dcar_archive(const char *name, const char *path, dcar_option_t *opt)
   /* Write archive */
   // $$$ ben : Could unlink empty-dir !!!
   fs_unlink(name);
-  zf = gzopen(name, mode);
+  fd2 = fd = fs_open(name, O_WRONLY);
+  if (!fd) {
+    count = -1;
+    goto error;
+  }
+
+  zf = gzdopen(fd, mode);
   if (!zf) {
     count = -1;
     goto error;
   }
+  fd = 0;
+
   memcpy(&dt.magic, "DCAR",4);
   dt.n = count;
 
@@ -596,14 +605,15 @@ int dcar_archive(const char *name, const char *path, dcar_option_t *opt)
     count = -1;
     goto error;
   }
-  opt->out.ubytes  = gztell(zf);
-  gzclose(zf);
-  zf = 0;
-  opt->out.cbytes  = ftotal(name);
+  gzflush(zf, Z_SYNC_FLUSH);
+  opt->out.ubytes = gztell(zf);
+  opt->out.cbytes = fs_tell(fd2) + 8; /* add checksum + filesize */
 
  error:
   free_aentries(root.son);
-  if (zf) {
+  if (fd) {
+    fs_close(fd);
+  } else if (zf) {
     gzclose(zf);
     if (count < 0) {
       fs_unlink(name);

@@ -3,7 +3,7 @@
  * @author  ben(jamin) gerard <ben@sashipa.com> 
  * @brief   Deal with file types and extensions.
  *
- * $Id: filetype.h,v 1.4 2002-09-23 03:25:01 benjihan Exp $
+ * $Id: filetype.h,v 1.5 2002-09-30 20:06:50 benjihan Exp $
  */
 
 #ifndef _FILETYPE_H_
@@ -70,16 +70,6 @@ int filetype_regular(const char * fname);
  * @return FILETYPE
  */
 int filetype_dir(const char * fname);
-
-/** Get extension from file path.
- *
- * @param  fname  Complete path, base-name of directory.
- *
- * @return Pointer to extension in fname. Address of `.' char.
- * @retval !0  Extension found.
- * @retval  0  Extension not found.
- */
-const char *filetype_ext(const char *fname);
 
 DCPLAYA_EXTERN_C_END
 

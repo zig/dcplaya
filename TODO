@@ -1,5 +1,5 @@
 
-$Id: TODO,v 1.18 2002-09-27 16:53:25 benjihan Exp $
+$Id: TODO,v 1.19 2002-09-30 20:06:50 benjihan Exp $
 
 ** TODO :
 
@@ -122,3 +122,9 @@ $Id: TODO,v 1.18 2002-09-27 16:53:25 benjihan Exp $
 - [2002-09-27 10:46:59 AM, ben]
   Executing ke_shutdown() after a keyboard_emu() kills the keyboard emulator
   but do not give back controler control.
+
+- [2002-09-29 02:49:07 AM, ben]
+  drawing text bugs while console has not been displayed.
+
+- [2002-09-30 09:53:51 PM, ben]
+  Prevent auto fullpath for options (string starting by '-').

@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   RAM disk for KOS file system
  * 
- * $Id: fs_ramdisk.c,v 1.9 2002-09-26 22:28:45 benjihan Exp $
+ * $Id: fs_ramdisk.c,v 1.10 2002-09-30 20:06:50 benjihan Exp $
  */
 
 #ifdef VPSPECIAL
@@ -522,14 +522,9 @@ static ssize_t read(file_t fd, void * buffer, size_t size)
   if (end_pos > of->node->entry.size) {
     end_pos = of->node->entry.size;
   }
-	
   n = end_pos - of->pos;
   memcpy(d, of->node->data + of->pos, n);
-  //  SDDEBUG("%s copied [%p %p+%d %d]\n", __FUNCTION__,
-  //	  d, of->node->data, of->pos, n);
-  of->pos += n;
-
-  //  SDDEBUG("--> %d bytes\n", n);
+  of->pos = end_pos;
 	
   return n;
 }

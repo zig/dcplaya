@@ -1,21 +1,19 @@
+/**
+ * @file    filetype.c
+ * @author  benjamin gerard <ben@sashipa.com>
+ * @brief   Deal with file types and extensions.
+ *
+ * $Id: filetype.c,v 1.4 2002-09-30 20:06:50 benjihan Exp $
+ */
 
 #include <string.h>
 #include "filetype.h"
+#include "filename.h"
 
 typedef struct {
   const char *ext;
   int type;
 } _ext_list_t;
-
-/* Get filename extension. */
-/* $$$ Does not handle .gz */
-const char *filetype_ext(const char *fname)
-{
-  const char * e = strrchr(fname,'.');
-  const char * p = strrchr(fname,'/');
-
-  return (e>p) ? e : fname + strlen(fname);
-}
 
 /* Find extension ext in extension list exts */
 static int find_ext(const char *ext, const _ext_list_t *exts)
@@ -42,8 +40,8 @@ int filetype_regular(const char * fname)
     };
   const char * e;
 
-  e = filetype_ext(fname);
-  if (e[0]) {
+  e = fn_ext(fname);
+  if (e && e[0]) {
     type = find_ext(e, ext);
   }
   return type;

@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.26 2002-09-25 21:36:45 vincentp Exp $
+ * @version   $Id: dreamcast68.c,v 1.27 2002-09-30 20:06:50 benjihan Exp $
  */
 
 //#define RELEASE
@@ -435,8 +435,7 @@ static int driver_init(void)
     };
 
     for (p=paths; *p; ++p) {
-      dbglog(DBG_DEBUG,"** " __FUNCTION__
-	     " : Load default drivers\n[%s]\n", *p);
+      SDDEBUG("[%s] : Load default drivers in [%s]\n", __FUNCTION__, *p);
       err |= plugin_path_load(*p, 1);
     }
   }
@@ -818,6 +817,8 @@ int dreammp3_main(int argc, char **argv)
 
 #ifdef RELEASE
   dbglog_set_level(0);
+#elif DEBUG_LEVEL > 1
+  dbglog_set_level(DBG_KDEBUG);
 #else
   dbglog_set_level(DBG_DEBUG);
 #endif
@@ -827,26 +828,24 @@ int dreammp3_main(int argc, char **argv)
   kos_init_all(IRQ_ENABLE | THD_ENABLE, romdisk);
   //  vid_border_color(0,0,0);
 
-
   /* Initialize exceptions handling */
   expt_init();
 
 
   /* Initialize shell and LUA */
+  SDDEBUG("SHELL init\n");
   if (shell_init()) {
     STHROW_ERROR(error);
   }
 
   /* Initialize the console debugging log facility */
+  SDDEBUG("CONSOLE init\n");
   csl_init_main_console();
   csl_printf(csl_main_console, "TOTO !\n");
-  //SDWARNING("TOTO !\n");
-
 
   ta_init(TA_LIST_OPAQUE_POLYS | TA_LIST_TRANS_POLYS, TA_POLYBUF_32, 1024*1024);
 /*  ta_set_buffer_config(TA_LIST_OPAQUE_POLYS | TA_LIST_TRANS_POLYS, TA_POLYBUF_32, 1024*1024);
   ta_hw_init();*/
-
 
   frame_counter68 = ta_state.frame_counter;
 
@@ -856,6 +855,8 @@ int dreammp3_main(int argc, char **argv)
     goto error;
   }
   //return 0;
+
+  //  texture_init();
 
   /* change main console render mode */
   csl_disable_render_mode(csl_main_console, CSL_RENDER_BASIC);
