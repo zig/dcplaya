@@ -3,17 +3,18 @@
 -- author : benjamin gerard <ben@sashipa.com>
 -- date   : 2002/10/11
 --
--- $Id: colorpicker.lua,v 1.3 2002-10-13 07:55:45 benjihan Exp $
+-- $Id: colorpicker.lua,v 1.4 2002-10-14 19:10:05 benjihan Exp $
 --
 --
 
 -- Load required libraries
 --
-dolib("gui")
+if not dolib("gui") then return end
+if not dolib("color") then return end
 
 --
 --
-function colorpicker(name, color)
+function colorpicker(name, pos, color)
 
 -- COLORPICKER LAYOUT
 --
@@ -84,7 +85,7 @@ function colorpicker(name, color)
 	end
 
 	function color2hex(color)
-		if not color then color = {0,0,0,0} end
+		if not color then color = color_new() end
 		return strupper(n2hex(color[1])..n2hex(color[2])
 						..n2hex(color[3])..n2hex(color[4]))
 	end
@@ -100,14 +101,10 @@ function colorpicker(name, color)
 		if l < 8 then
 			str = strrep("F",8-l)..str
 		end
-		return {	hex2n(strsub(str,1,2)),	hex2n(strsub(str,3,4)),
-					hex2n(strsub(str,5,6)),	hex2n(strsub(str,7,8)) }
-	end
-
-	function colorstr(c)
-		if not c then return "(nil)" end
-		return format("[%5.3f %5.3f %5.3f %5.3f] #"..color2hex(c),
-						c[1],c[2],c[3],c[4])
+		return color_new({	hex2n(strsub(str,1,2)),
+							hex2n(strsub(str,3,4)),
+							hex2n(strsub(str,5,6)),
+							hex2n(strsub(str,7,8)) })
 	end
 
 ----------------
@@ -133,7 +130,7 @@ function colorpicker(name, color)
 	h = bordery + 128 + spany + bh + bordery
 
 	local x,x1,x2,x3,x4,x5,x6,x7,x8,x9
-	x  = (screenw-w)/2
+	if pos and pos.x then x = pos.x	else x = (screenw-w)/2 end
 	x2 = x+w
 	x1 = x+borderx
 	x9 = x1+128
@@ -146,7 +143,7 @@ function colorpicker(name, color)
 	w  = x2-x
 
 	local y,y1,y2,y3,y4,y5,y6,y7,y8
-	y  = (screenh-h)/2-32
+	if pos and pos.y then y = pos.y	else y = (screenh-h)/2-32 end
 	y1 = y+bh
 	y5 = y1+128
 	y6 = y5-bh
@@ -161,86 +158,12 @@ function colorpicker(name, color)
 -- MAIN DIALOG
 ---------------
 
-	-- Set status text
---	function status(dial,text)
---		if dial.status then
---			gui_text_set(dial.status,text)
---		end
---	end
-
-	function clip_value(v)
-		if v < 0 then return 0 end
-		if v > 1 then return 1 end
-		return v
-	end
-
-	function copy_color(d,s,noalpha)
-		if not d then d = {} end
-		if not noalpha then d[1] = s[1] end
-		d[2] = s[2]
-		d[3] = s[3]
-		d[4] = s[4]
-		return d
-	end
-
-	function clip_color(color)
-		color[1] = clip_value(color[1])
-		color[2] = clip_value(color[2])
-		color[3] = clip_value(color[3])
-		color[4] = clip_value(color[4])
-	end
-
-	function distant_color(color, alt)
-		local t = 0.5
-		local c = { 1,1,1,1 } - color
-		local d = c ^ color
---print(d)
-		if d < t then
-			if not alt then alt = { 1,1,1,1 } end
-			d = d / t
-			c = c * d + alt * (1-d)
-		end
---		c[1] = 1
---print(colorstr(c))
-		return c
-	end
-
-	function sort_color(color)
-		local order = { 2, 3, 4 }
-		local i,j
-		for i=1, 2, 1 do
-			local tmp = order[i]
-			for j=i+1, 3, 1 do
-				if color[order[j]] > color[tmp] then
-					order[i] = order[j]
-					order[j] = tmp
-					tmp = order[i]
-				end
-			end
-		end
-		return order[1],order[2],order[3]
-	end
-
-	function maximize_color(color)
-		local max = 2
-		if color[3] > color[max] then max = 3 end
-		if color[4] > color[max] then max = 4 end
-		if color[max] ~= 0 then
-			local scale=color[max]
-			color[1] = 1
-			color[2] = color[2]/scale
-			color[3] = color[3]/scale
-			color[4] = color[4]/scale
---			color[max] = 1
-		end
-	end
-
 	-- Set alphabar value (y) and refresh it
 	--
 	function set_alphabar(dial,alpha)
 		local abar = dial.alphabar
 		if not abar then return end
-		alpha = clip_value(alpha)
+		alpha = clip_value(alpha,0,1)
 		abar.value = alpha
 		dial.value[1] = alpha
 	end
@@ -267,8 +190,7 @@ function colorpicker(name, color)
     --  The color 
 	function colorbar_value(cbar, color)
 		local scale, i, n = getn(cbar.colors)
-		a,b,c = sort_color(color)
-		
+		a,b,c = color_sort(color)
 		if color[a] < 1 or color[c] > 0 then
 			return 0
 		end
@@ -276,9 +198,6 @@ function colorpicker(name, color)
 
 		local cnta = 2^(a-2)
 		local cntb = 2^(b-2)
---		if color[b] >= 0.9999 then
---			return lookup[cnta+cntb]/6
---		end
 --		print(format("cnta=%d, cntb=%d a+b=%d ",cnta,cntb, cnta+cntb))
 		local ia=lookup[cnta]
 		local ib=lookup[cntb+cnta]
@@ -321,9 +240,8 @@ function colorpicker(name, color)
 --print("value:="..value)
 --print("color:="..colorstr(color))
 
-		if value<0 then value = 0 elseif value > 1 then value = 1 end
-		cbar.value = value
-		copy_color(cbar.color,color)
+		cbar.value = clip_value(value,0,1)
+		color_copy(cbar.color,color)
 	end
 
 	function refresh_colorbar(dial)
@@ -337,13 +255,13 @@ function colorpicker(name, color)
 		local col = cbar.colors
 		for i=1, 6, 1 do
 			dl_draw_box (cbar.dl,0,y,16,y+ys,0,
-						col[i  ][1],col[i  ][2],col[i  ][3],col[i  ][4],
-						col[i+1][1],col[i+1][2],col[i+1][3],col[i+1][4],
+						1,col[i  ][2],col[i  ][3],col[i  ][4],
+						1,col[i+1][2],col[i+1][3],col[i+1][4],
 						2)
 			y = y + ys
 		end
 		
-		col = distant_color(cbar.color)
+		col = color_distant(cbar.color)
 		y = cbar.value*128;
 		dl_draw_box1(cbar.dl,0,y-0.5,16,y+1.5,1,
 			1,col[2],col[3],col[4])
@@ -405,7 +323,7 @@ function colorpicker(name, color)
 
 --		print("Get_XY "..colorstr(color))
 --		print("max := "..colorstr(max))
-		a,b,c = sort_color(color)
+		a,b,c = color_sort(color)
 --		print (format("order: %d %d %d", a,b,c))
 
 		y = color[2] + 1 - color[c] - max[2] + max[2] * color[3]
@@ -427,20 +345,16 @@ function colorpicker(name, color)
 	function get_corner(color)
 		local x,y
 		local corner
-		corner = copy_color(nil,color)
-		maximize_color(corner)
+		corner = color_new(color)
+		color_maximize(corner)
 --		print ("get_corner col : "..colorstr(color))
 --		print ("get_corner max : "..colorstr(corner))
-		a,b,c = sort_color(corner)
+		a,b,c = color_sort(corner)
 --		print (format("order: %d %d %d", a,b,c))
 		
-		if corner[a] < 1 then
---			print("Black !!!")
-			return 0,0,{1,1,0,0}
-		end
 		if corner[c] > 0.9999 then
---			print("White !!!")
-			return 0,color[a],{1,1,0,0}
+--			print("B or W !!!")
+			return 0, color[a], color_new(1,1,0,0)
 		end
 
 		y = color[a]
@@ -471,8 +385,8 @@ function colorpicker(name, color)
 		if not cbox then return end
 		local x,y,c
 		x,y,c = get_corner(color)
-		copy_color(cbox.corner,c)
-		copy_color(cbox.restore,color)
+		color_copy(cbox.corner,c)
+		color_copy(cbox.restore,color)
 		set_colorbox_xy(dial,x,y)
 	end
 
@@ -482,7 +396,7 @@ function colorpicker(name, color)
 --print("set_colorbox_corner:"..colorstr(color))
 		local cbox = dial.colorbox
 		if not cbox then return end
-		copy_color(cbox.corner,color)
+		color_copy(cbox.corner,color)
 		set_colorbox_xy(dial,cbox.x,cbox.y)
 	end
 
@@ -498,11 +412,10 @@ function colorpicker(name, color)
 		local c
 		local corner = cbox.corner
 		c = {1,yxy,yxy,yxy} + xy * corner
-		copy_color(dial.value,c,1)
+		color_copy(dial.value,c,1)
 
 --print("dial.value="..colorstr(dial.value))
 --print("cbox.value="..colorstr(cbox.value))
-
 
 	end
 
@@ -512,7 +425,7 @@ function colorpicker(name, color)
 		local cbox = dial.colorbox
 		if not cbox then return end
 		local corner = cbox.corner
-		c = distant_color(cbox.value,{1,0,0,1})
+		c = color_distant(cbox.value,{1,0,0,1})
 
 		dl_clear(cbox.dl)
 		dl_draw_box4(cbox.dl,
@@ -542,7 +455,7 @@ function colorpicker(name, color)
 	function refresh_argb(dial)
 		evt_send(dial.owner,
 			{ 	key = gui_color_change_event,
-				color = copy_color(nil,dial.value) })
+				color = color_new(dial.value) })
 		gui_input_set(dial.argb, color2hex(dial.value))
 	end
 	
@@ -550,7 +463,7 @@ function colorpicker(name, color)
 	--
 	function get_pickcolor(dial)
 		local c = {}
-		copy_color(c,dial.value)
+		color_copy(c,dial.value)
 		return c;
 	end
 
@@ -561,8 +474,8 @@ function colorpicker(name, color)
 		if type(color) == "string" then
 			color = hex2color(color)
 		end
-		clip_color(color)
-		copy_color(dial.value,color)
+		color_clip(color)
+		color_copy(dial.value,color)
 		set_colorbox_value(dial,color)
 		set_alphabar(dial,color[1])
 		set_colorbar(dial,dial.colorbox.corner)
@@ -590,14 +503,14 @@ function colorpicker(name, color)
 		gui_color_change_event	= evt_new_code()
 	end
 	if not name then name="Color picker" end
-	if not color then color = { 1,1,1,1 } end
+	color = color_new(color)
 	dial = gui_new_dialog(evt_desktop_app,
 		{x, y, x2, y2 }, nil, nil, name, { x = "left", y = "up" } )
 	dial.event_table = {
 		[gui_input_confirm_event]	= dial_handle
 	}
-	dial.value = { 0,0,0,0 }
-	dial.reset_color = color
+	dial.value = color_new(color)
+	dial.reset_color = color_new(color)
 
 ---------------
 -- ALL BUTTONS
@@ -643,19 +556,19 @@ function colorpicker(name, color)
 			local newx = cbox.x
 			local newy = cbox.y
 			if gui_keyleft[key] then
-				newx = clip_value(newx-(1/255))
+				newx = clip_value(newx-(1/255),0,1)
 				evt = nil
 			elseif gui_keyright[key] then
-				newx = clip_value(newx+(1/255))
+				newx = clip_value(newx+(1/255),0,1)
 				evt = nil
 			elseif gui_keydown[key] then
-				newy = clip_value(newy+(1/255))
+				newy = clip_value(newy+(1/255),0,1)
 				evt = nil
 			elseif gui_keyup[key] then
-				newy = clip_value(newy-(1/255))
+				newy = clip_value(newy-(1/255),0,1)
 				evt = nil
 			elseif gui_keyconfirm[key] then
-				copy_color(cbox.restore,dial.value)
+				color_copy(cbox.restore,dial.value)
 				gui_new_focus(dial, dial.argb)
 				evt = nil
 			elseif gui_keycancel[key] then
@@ -696,8 +609,8 @@ function colorpicker(name, color)
 	dl_set_trans(dial.colorbox.dl, mat_trans(x1,y1,dial.colorbox.z))
 	dl_set_active(dial.colorbox.dl,1)
 	dial.colorbox.value  = dial.value
-	dial.colorbox.restore = {}
-	dial.colorbox.corner = {}
+	dial.colorbox.restore = color_new()
+	dial.colorbox.corner = color_new()
 	dial.colorbox.x = 0
 	dial.colorbox.y = 0
 
@@ -730,15 +643,15 @@ function colorpicker(name, color)
 		if gui_is_focus(dial, app) then
 			local newvalue = app.value
 			if gui_keydown[key] then
-				newvalue = clip_value(newvalue+(1/255))
+				newvalue = clip_value(newvalue+(1/255),0,1)
 				evt = nil
 			elseif gui_keyup[key] then
-				newvalue = clip_value(newvalue-(1/255))
+				newvalue = clip_value(newvalue-(1/255),0,1)
 				evt = nil
 			end
 			if newvalue ~= app.value then
 				app.set_value(dial,newvalue)
-				refresh_argb(dial)
+--				refresh_argb(dial)
 			end
 		end
 		return evt
@@ -750,10 +663,12 @@ function colorpicker(name, color)
 	dl_set_active(dial.colorbar.dl,1)
 	dial.colorbar.set_value = change_colorbar
 	dial.colorbar.value = 0
-	dial.colorbar.color = {1,0,0,0}
+	dial.colorbar.color = color_new()
 	dial.colorbar.colors = {
-			{1,1,0,0},  {1,1,0,1},	{1,0,0,1},	{1,0,1,1},
-			{1,0,1,0},	{1,1,1,0},	{1,1,0,0}
+			color_new(1,1,0,0), color_new(1,1,0,1),
+			color_new(1,0,0,1),	color_new(1,0,1,1),
+			color_new(1,0,1,0),	color_new(1,1,1,0),
+			color_new(1,1,0,0) 
 		}
 
 -------------
@@ -765,12 +680,6 @@ function colorpicker(name, color)
 	dl_set_active(dial.alphabar.dl,1)
 	dial.alphabar.set_value = change_alphabar
 	dial.alphabar.value = 0
-
-----------
--- STATUS
-----------
-	-- create a text item
---	dial.status = gui_new_text(dial, { x1, y4, x3, y3 }, nil, {x="left"})
 
 --------------
 -- ARGB INPUT
@@ -789,14 +698,14 @@ if not nil then
 	print("Run test (y/n) ?")
 	c = getchar()
 	if c == 121 then
-		dial = colorpicker("SELECT A COLOR", {0.3,0,0,1})
+		dial = colorpicker("SELECT A COLOR", nil, {0.3,0,0,1})
 		if dial and fftvlr_setdirectionnal then
 
 		fftvlr_setbordertex(1)
 		fftvlr_setambient(0,0,0,0.5)
 
 		dial2 = gui_new_dialog(evt_desktop_app,
-		{0, 0, 100, 100 }, nil, nil, "test", { x = "left", y = "up" } )
+			{0, 0, 100, 100 }, nil, nil, "test", { x = "left", y = "up" } )
 		dial2.event_table = {
 		[gui_color_change_event] =
 			function(app,evt)
@@ -812,8 +721,6 @@ if not nil then
 end
 
 function kill()
-	evt_shutdown_app(dial)
+	if dial then evt_shutdown_app(dial) dial = nil end
+	if dial2 then evt_shutdown_app(dial2) dial2 = nil end
 end
-
-
-

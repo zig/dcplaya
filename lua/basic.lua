@@ -2,9 +2,11 @@
 --
 -- author : vincent penne <ziggy@sashipa.com>
 --
--- $Id: basic.lua,v 1.4 2002-10-13 07:55:45 benjihan Exp $
+-- $Id: basic.lua,v 1.5 2002-10-14 19:10:05 benjihan Exp $
 ---
 
+-- Unload library
+basic_loaded=nil
 
 -- doubly linked list support
 
@@ -144,10 +146,63 @@ function table_div(a, t)
 	return r
 end
 
+function table_minus(a)
+	local r = nil
+	local i, v
+
+	if type(a) == "table" then
+		r = {}
+		for i, v in a do
+			r[i] = -v
+		end
+	end
+	return r
+end
+
+function table_max(a)
+	local imax = nil
+	if type(a) == "table" and getn(a) > 0 then
+		local i, v, max
+		imax = 1
+		max = a[1]
+		for i, v in a do
+			if (v > max) then
+				imax = i
+				max = v
+			end
+		end
+	end
+	return imax
+end
+
+function table_min(a)
+	local imin = nil
+	if type(a) == "table" and getn(a) > 0 then
+		local i, v, min
+		imin = 1
+		min = a[1]
+		for i, v in a do
+			if (v < min) then
+				imin = i
+				min = v
+			end
+		end
+	end
+	return imin
+end
+
+function clip_value(v,min,max)
+	if min and v < min then v = min end
+	if max and v > max then v = max end
+	return v
+end
+
 settagmethod(tag( {} ), "add", table_add)
 settagmethod(tag( {} ), "sub", table_sub)
 settagmethod(tag( {} ), "mul", table_mul)
 settagmethod(tag( {} ), "div", table_div)
 settagmethod(tag( {} ), "pow", table_sqrdist)
+settagmethod(tag( {} ), "unm", table_minus)
 
 basic_loaded=1
+return basic_loaded

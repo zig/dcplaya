@@ -3,7 +3,7 @@
 -- author : benjamin gerard <ben@sashipa.com>
 -- date   : 2002/10/04
 --
--- $Id: filelist.lua,v 1.5 2002-10-09 00:51:17 benjihan Exp $
+-- $Id: filelist.lua,v 1.6 2002-10-14 19:10:06 benjihan Exp $
 --
 
 --- filelist object - Extends textlist
@@ -12,9 +12,12 @@
 -- "filter"  dirlist filter function
 -- "pwd"     Current path
 
+-- Unload the library
+filelist_loaded = nil
+
 -- Load required libraries
 --
-dolib("textlist")
+if not dolib("textlist") then return end
 
 function filelist_dump(fl)
 	textlist_dump(fl)
@@ -129,3 +132,5 @@ if c == 121 then
 	textlist_standalone_run(fl)
 end
 end
+
+return filelist_loaded

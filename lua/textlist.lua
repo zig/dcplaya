@@ -3,8 +3,11 @@
 -- author : benjamin gerard <ben@sashipa.com>
 -- date   : 2002/10/04
 --
--- $Id: textlist.lua,v 1.6 2002-10-11 12:05:21 benjihan Exp $
+-- $Id: textlist.lua,v 1.7 2002-10-14 19:10:06 benjihan Exp $
 --
+
+-- Unload the library
+textlist_loaded = nil
 
 --- textlist object - Display a textlist from a given dir
 --
@@ -645,3 +648,5 @@ if c == 121 then
 	textlist_standalone_run(fl)
 end
 end
+
+return textlist_loaded

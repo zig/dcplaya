@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: shell.lua,v 1.8 2002-10-09 00:51:17 benjihan Exp $
+-- $Id: shell.lua,v 1.9 2002-10-14 19:10:06 benjihan Exp $
 --
 
 
@@ -66,7 +66,7 @@ function doshellcommand(string)
 end
 
 function check_zed()
-	if not dolib("zed") then
+	if not zed_loaded and not dolib("zed") then
 		print ("You need to install ZED before using the shell")
 		return nil
 	end

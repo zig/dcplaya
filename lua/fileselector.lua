@@ -3,11 +3,14 @@
 -- author : benjamin gerard <ben@sashipa.com>
 -- date   : 2002/10/04
 --
--- $Id: fileselector.lua,v 1.9 2002-10-09 00:51:17 benjihan Exp $
+-- $Id: fileselector.lua,v 1.10 2002-10-14 19:10:06 benjihan Exp $
 --
 -- TODO : select item with space 
 --        completion with tab        
 --
+
+-- 
+fileselector_loaded=nil
 
 -- Load required libraries
 --
@@ -436,3 +439,5 @@ if not nil then
 		dial = fileselector("SELECT A FILE", "/")
 	end
 end
+
+return fileselector_loaded
