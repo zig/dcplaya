@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.30 2003-03-17 18:50:11 ben Exp $
+ * $Id: display.c,v 1.31 2003-03-18 01:10:10 ben Exp $
  */
 
 #include <stdlib.h>
@@ -126,6 +126,7 @@ static int lua_new_list(lua_State * L)
   int heapsize = lua_tonumber(L, 1);
   int active   = lua_tonumber(L, 2);
   int sub      = lua_tonumber(L, 3);
+  const char * name = lua_tostring(L, 4);
 
 /*   if (dl_list_tag < 0) { */
 /*     /\* try to initialize it *\/ */
@@ -139,9 +140,9 @@ static int lua_new_list(lua_State * L)
   ///$$$
     //printf("Creating new %s-list %d %d\n", sub?"sub":"main",heapsize, active);
   lua_settop(L, 0);
-  l = dl_create(heapsize, active, sub);
+  l = dl_create(heapsize, active, sub, name);
   if (l) {
-	driver_reference(&display_driver);
+    driver_reference(&display_driver);
 
 /*     /\* insert the new display list into list of all display lists */
 /* 	   (used in shutdown) *\/ */

@@ -5,11 +5,14 @@
  * @author    benjamin gerard <ben@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.c,v 1.20 2003-03-11 13:38:04 ben Exp $
+ * @version   $Id: display_list.c,v 1.21 2003-03-18 01:10:10 ben Exp $
  */
 
 #include <malloc.h>
 #include "dcplaya/config.h"
+#ifdef DEBUG
+# include <string.h> /* strdup */
+#endif
 #include "sysdebug.h"
 #include "display_list.h"
 #include "draw/draw.h"
@@ -126,7 +129,7 @@ int dl_shutdown(void)
   return 0;
 }
 
-dl_list_t * dl_create(int heapsize, int active, int sub)
+dl_list_t * dl_create(int heapsize, int active, int sub, const char *name)
 {
   dl_list_t * l;
   int type;
@@ -143,6 +146,11 @@ dl_list_t * dl_create(int heapsize, int active, int sub)
   }
   l->flags.active = !!active;
   type = l->flags.type = sub ? DL_SUB_TYPE : DL_MAIN_TYPE;
+#ifndef DEBUG
+  l->name = 0;
+#else
+  l->name = (name && name[0]) ? strdup(name) : 0;
+#endif
 
   l->heap = heapsize ? malloc(heapsize) : 0;
   l->heap_size = l->heap ? heapsize : 0;
@@ -161,10 +169,12 @@ dl_list_t * dl_create(int heapsize, int active, int sub)
 static void real_destroy(dl_list_t * l, int force)
 {
   if (l->refcount) {
-    SDWARNING("[%s] : [%p] refcount = [%d]\n", __FUNCTION__, l, l->refcount);
+    SDWARNING("[%s] : [%p,%s] refcount = [%d]\n",
+	      __FUNCTION__, l, l->name, l->refcount);
   }
   if (!l->refcount || force) {
     if (l->heap) free(l->heap);
+    if (l->name) free((void *)l->name);
     if (l) free(l);
   }
 }
@@ -210,7 +220,8 @@ static int real_dereference(dl_list_t * dl)
 
   ref = --dl->refcount;
   if (ref < 0) {
-    SDWARNING("[%s] : [%p] refcount = [%d].\n",__FUNCTION__,dl, ref);
+    SDWARNING("[%s] : [%p,%s] refcount = [%d].\n",
+	      __FUNCTION__, dl, dl->name, ref);
     ref = 0;
   }
   if (!ref) {
@@ -305,7 +316,7 @@ void * dl_alloc(dl_list_t * dl, size_t size)
 {
   CHECK_INIT(0);
   locklists();
-  /* Do not unlock on ourpose. */
+  /* Do not unlock on purpose. */
   return real_alloc(dl, size);
 }
 
@@ -409,7 +420,7 @@ static dl_code_e dl_render_list(dl_runcontext_t * rc, dl_context_t * parent,
     if (c->flags.inactive) {
       continue;
     }
-	
+
     code = DL_COMMAND_OK; 
     if (opaque) {
       if (c->render_opaque)

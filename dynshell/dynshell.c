@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.81 2003-03-17 03:26:32 ben Exp $
+ * @version    $Id: dynshell.c,v 1.82 2003-03-18 01:10:10 ben Exp $
  */
 
 #include "dcplaya/config.h"
@@ -712,15 +712,23 @@ static int lua_driver_load(lua_State * L)
   char rpath[2048];
 
   int nparam = lua_gettop(L);
-  int i;
+  int i, err = 0, total = 0;
 
   for (i=1; i<=nparam; i++) {
+    int count;
     //strcpy(rpath, home);
     strcpy(rpath, lua_tostring(L, i));
-    
-    plugin_load_and_register(rpath);
+    count = plugin_load_and_register(rpath);
+    if (count < 0) {
+      err = 1;
+    } else {
+      total += count;
+    }
   }
-
+  if (!err) {
+    lua_pushnumber(L,total);
+    return 1;
+  }
   return 0;
 }
 

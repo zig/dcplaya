@@ -5,7 +5,7 @@
  * @author    benjamin gerard <ben@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.h,v 1.11 2002-12-26 07:12:57 ben Exp $
+ * @version   $Id: display_list.h,v 1.12 2003-03-18 01:10:10 ben Exp $
  */
 
 #ifndef _DISPLAY_LIST_H_
@@ -139,15 +139,17 @@ typedef struct dl_command {
  *  @ingroup dcplaya_display_list
  */
 typedef struct dl_list {
-  LIST_ENTRY(dl_list) g_list;  /**< linked list entry */
+  LIST_ENTRY(dl_list) g_list;  /**< linked list entry                   */
+
+  const char * name;           /**< Display list name (DEBUG mode only) */
 
   /** Display list flags. */
   struct {
-	unsigned int active:1;     /**< Is active.                          */
-	unsigned int type:2;       /**< type of list [MAIN,SUB,DEAD]        */
+	unsigned int active:1; /**< Is active.                          */
+	unsigned int type:2;   /**< type of list [MAIN,SUB,DEAD]        */
   } flags;
 
-  volatile int refcount;           /**< Reference counter.                  */
+  volatile int refcount;       /**< Reference counter.                  */
 
   matrix_t   trans;            /**< Current transform matrix.           */
   dl_color_t color;            /**< Current color.                      */
@@ -196,11 +198,12 @@ int dl_shutdown(void);
   * @param  heapsize  Size of the command heap (0 to get a default size of 1Kb)
   * @param  active    Initial active state
   * @param  sub       0:main-list, <>0:sub-list
+  * @param  name      name of display list (debug purpose !)
   *
   * @return pointer to the created display list.
   * @retval 0 error.
   */
-dl_list_t * dl_create(int heapsize, int active, int sub);
+dl_list_t * dl_create(int heapsize, int active, int sub, const char *name);
 
 /** Destroy the given display list (Does not ckeck the reference count.
  *  @see dl_dereference().
