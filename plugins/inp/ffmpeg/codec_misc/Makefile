@@ -4,30 +4,35 @@
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sasahipa.com>
 #
 #
-# $Id: Makefile,v 1.3 2004-07-09 21:20:16 vincentp Exp $
+# $Id: Makefile,v 1.1 2004-07-09 21:20:17 vincentp Exp $
 #
 
-LEZ=yes
+#LEZ=yes
 
-FFMPEG_DIR		:= ffmpeg
-FFMPEG_INCS 	:= .
-FFMPEG_LIB		:= $(FFMPEG_DIR)/libavformat.a $(FFMPEG_DIR)/libavcodec.a
+FFMPEG_DIR	:= ../ffmpeg
+FFMPEG_INCS	:= .
+FFMPEG_LIB	:= $(FFMPEG_DIR)/libavformat.a $(FFMPEG_DIR)/libavcodec.a
 
-LEF_TARGET_EXTRA_DEP := $(FFMPEG_LIB) sha123/libsha123.a istream/libistream.a
-#LEF_EXTRA := -L$(FFMPEG_DIR) -Lsha123 -Listream -lavformat -lavcodec -lsha123 -listream
+#LEF_TARGET_EXTRA_DEP := $(FFMPEG_LIB)
+#LEF_EXTRA := -L$(FFMPEG_DIR) -R ../ffmpeg.lef -lavformat -lavcodec
+#LEF_EXTRA := -R ../ffmpeg.lef $(FFMPEG_LIB)
+LEF_EXTRA := -L$(FFMPEG_DIR) -lavcodec_misc
+#LEF_EXTRA := ../ffmpeg.lef $(FFMPEG_LIB)
 
 KOS_LOCAL_CFLAGS += -DHOST_LITTLE_ENDIAN -DDCPLAYA=1
 
-KOS_LOCAL_INCS += -I. -I../../../include -I../../../libs\
+KOS_LOCAL_INCS += -I.. -I. -I../../../../include -I../../../../libs\
  $(foreach i,$(FFMPEG_INCS),-I$(FFMPEG_DIR)/$(i))
 
 OPTIMIZE = $(OPTIMIZE_FOR_SPEED)
 
+TARGETS = codec_misc.codez
 
-SUBDIRS = sha123 istream
+#test:
+#	echo $(OBJS)
 
+include ../../../../Makefile.inc
 
-include ../../../Makefile.inc
 
 
 # SH-4 compile tools
@@ -45,15 +50,15 @@ KOS_OBJDUMP=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-objdump
 KOS_NM=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-nm
 KOS_STRIP=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-strip
 
+.PRECIOUS : %.codec
 
-#.PHONY: $(FFMPEG_LIB)
-#$(FFMPEG_LIB):
-#	$(MAKE) -C $(FFMPEG_DIR) -f Makefile.dcp
+%.codez : %.codec
+	@echo "Build [$@] from [$^]"
+	@gzip --best -n -c -v $< >$@
 
-#clean : clean_libffmpeg
-#clean_libffmpeg:
-#	$(MAKE) -C $(FFMPEG_DIR) -f Makefile.dcp clean
+%.codec : $(OBJS) #$(filter %.a %.o %.elf %.lef, $(LEF_EXTRA)) $(LEF_TARGET_EXTRA_DEP)
+	@echo "Build [$@] from [$^]"
+	$(KOS_LD) -b elf32-shl -d -O 3 -EL -r --cref -M -Map $*.map -x -O -S $^ $(LEF_EXTRA) -o $@
+	$(KOS_STRIP) --strip-unneeded $@
+	$(KOS_OBJDUMP) -t $@ | grep '*COM*' || echo ":_) No *COM* found."
 
-#depend : depend_libffmpeg
-#depend_libffmpeg:
-#	$(MAKE) -C $(FFMPEG_DIR) -f Makefile.dcp depend
