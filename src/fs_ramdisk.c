@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   RAM disk for KOS file system
  * 
- * $Id: fs_ramdisk.c,v 1.7 2002-09-25 22:43:18 benjihan Exp $
+ * $Id: fs_ramdisk.c,v 1.8 2002-09-26 02:22:12 benjihan Exp $
  */
 
 #ifdef VPSPECIAL
@@ -83,12 +83,13 @@ static int namecmp(const char *n1, const char *n2)
 
 static const char * modestr(int mode)
 {
-  const char * str[8] =
+  const char * str[12] =
     {
       "N/A", "R", "W", "R/W",
-      "D", "D/R", "D/W", "D/R/W"
+      "D", "D/R", "D/W", "D/R/W",
+      "?/D", "?/D/R", "?/D/W", "?/D/R/W"
     };
-  return str[mode&7];
+  return str[(mode&7) + ((!!(mode&-8)) << 3)];
 }
 
 static const char * whatstr(int what)
@@ -240,6 +241,30 @@ static void release_nodes(node_t * node)
   SDUNINDENT;
 }
 
+static void dump_node(node_t * node)
+{
+  SDINDENT;
+  if (node) {
+    SDDEBUG("Name:   '%s'\n", node->entry.name);
+    SDDEBUG("size:   %d\n", node->entry.size);
+    SDDEBUG("alloc:  %d\n", node->max);
+    SDDEBUG("open:   %d\n", OPEN_COUNT(node));
+    SDDEBUG("unlink: %s\n", IS_UNLINKED(node)?"yes":"no");
+    SDDEBUG("lbros:  '%s'\n", !node->little_bros ?
+	    "<null>":node->little_bros->entry.name);
+    SDDEBUG("bbros:  '%s'\n", !node->big_bros ?
+	    "<null>":node->big_bros->entry.name);
+    SDDEBUG("father: '%s'\n", !node->father ?
+	    "<null>":node->father->entry.name);
+    SDDEBUG("son:    '%s'\n", !node->son ?
+	    "<null>":node->son->entry.name);
+  } else {
+    SDDEBUG("Name:   '<null>'\n");
+  }
+  SDUNINDENT;
+}
+ 
+
 /*
 static void remap_node(node_t * n0, node_t *n1)
 {
@@ -381,7 +406,7 @@ static node_t * find_node_same_level(node_t *node, const char *fn, int what)
 
   /* Search ... */
   for (; node; node = node->little_bros) {
-    //    SDDEBUG("scan [%s]\n", node->entry.name);
+    //    SDDEBUG("SCAN [%s]%s\n", node->entry.name, is_dir(node)?"*":"");
     if (IS_UNLINKED(node)) {
       SDDEBUG("Skipping [%s] (scheduled for unlink)\n", node->entry.name);
       continue;
@@ -390,16 +415,20 @@ static node_t * find_node_same_level(node_t *node, const char *fn, int what)
     if (!namecmp(fn, node->entry.name)) {
       /* Found it, is it a kind we want to ? 1:regular 2Ldir 3:both */
       if ( (is_dir(node) + 1) & what) {
-	//	SDDEBUG("-->%s success\n", __FUNCTION__);
 	break;
       } else {
-	//	SDDEBUG("-->%s failure : bad node type\n", __FUNCTION__);
+	//	SDDEBUG("BAD TYPE !!\n");
 	node = 0;
 	break;
       }
     }
   }
  error:
+  if (node) {
+    //    SDDEBUG("-->[%s]\n",node->entry.name);
+  } else {
+    //    SDDEBUG("NOT FOUND OR BAD TYPE\n");
+  }
   SDUNINDENT;
   return node;
 }
@@ -410,21 +439,15 @@ static node_t * find_node(node_t * node, char *fn, int what)
   node_t * n = 0;
   int len, save_char;
 
-  /*
-  SDDEBUG("%s [%s] [%s] in [%s]\n", __FUNCTION__,
-	  whatstr(what),
-	  fn ? fn : "<null>",
-	  node ? node->entry.name : "<null>");
-  */
+/*   SDDEBUG("%s [%s] [%s] in [%s]\n", __FUNCTION__, */
+/* 	  whatstr(what), */
+/* 	  fn ? fn : "<null>", */
+/* 	  node ? node->entry.name : "<null>"); */
+
   if (!node || !fn) {
     SDERROR("Find node invalid parameters [%p] [%p]\n", node, fn);
     return 0;
   }
-
-  /* Remove starting '/' */
-  //  while (*fn=='/') {
-  //    ++fn;
-  //  }
 
   /* Scan for end of level name */
   for (fe=fn; *fe && *fe != '/'; ++fe)
@@ -435,11 +458,13 @@ static node_t * find_node(node_t * node, char *fn, int what)
 
   if (!save_char) {
     node_t *n;
+    //    SDDEBUG("REACH LEAF LEVEL:\n");
     /* Reach end of path : search target (dir/file) */
     n = find_node_same_level(node, fn, what);
     if (!n) {
-      //      SDERROR("Not found\n");
+      SDERROR("NOT FOUND [%s] [%s]\n", fn, whatstr(what));
     }
+    //    SDDEBUG("FOUND [%s] [%s]\n", fn, whatstr(what));
     return n;
   }
 
@@ -447,8 +472,8 @@ static node_t * find_node(node_t * node, char *fn, int what)
   *fe = 0;
   n = find_node_same_level(node, fn, 2);
   *fe = save_char;
-  if (!n || !n->son) {
-    //    SDERROR("Not found\n");
+  if (!n) {
+    SDERROR("SUBDIR [%s] Not found\n", fn);
     return 0;
   }
   return find_node(n->son, fe+1, what);
@@ -614,7 +639,7 @@ static char * valid_filename(char * fname, int max,
 static file_t open(const char *fn, int mode)
 {
   uint32 fd = INVALID_FH;
-  int omode;
+  int omode=0;
   node_t * node, * created_node = 0, * father = 0;
   char fname[1024], *leaf;
   int endslash;
@@ -655,20 +680,31 @@ static file_t open(const char *fn, int mode)
   if (fd = get_openfile(), fd == INVALID_FH) {
     goto error;               
   }
-	
-  /* Look for the file or directory */
-  node = find_node(root, fname, !!(omode & DIR_MODE) + 1);
 
-  if (!node) {
-    if (omode & READ_MODE) {
-      //      SDERROR("Not found.\n");
+  //  SDDEBUG("open('%s') in [%s]\n", fn , modestr(omode));
+
+  //  SDDEBUG("Find [%s] [%s] node:\n", fn, whatstr(3));
+  node = find_node(root, fname, 3);
+  //  SDDEBUG("FOUND-NODE:\n");
+  //  dump_node(node);
+
+  if (node) {
+    /* Node already exist. Perform some checks. */
+    if ((omode ^ -is_dir(node)) & DIR_MODE) {
+      SDERROR("Incompatible file/dir mode\n");
       goto error;
     }
 
-    if (!(omode & WRITE_MODE)) {
-      SDCRITICAL("Weird: mode has no READ nor WRITE attribut.\n");
+    if (omode == (DIR_MODE | WRITE_MODE)) {
+      SDERROR("Directory already exist\n");
       goto error;
-    } 
+    }
+
+  } else /* if (!node) */ {
+    if ( ! (omode & WRITE_MODE) ) {
+      SDERROR("Not found and not created.\n");
+      goto error;
+    }
 
     //    SDDEBUG("Find father node\n");
     /* Node created, must be attached to father ... */
@@ -678,6 +714,10 @@ static file_t open(const char *fn, int mode)
       leaf[-1] = 0;
       father = find_node(root, fname, 2);
     }
+
+    //    SDDEBUG("FATHER:\n");
+    //    dump_node(father);
+
     if (!father) {
       SDERROR("Path not found.\n");
       goto error;
@@ -685,6 +725,9 @@ static file_t open(const char *fn, int mode)
 
     //    SDDEBUG("Create a new node [%s] for [%s]\n", leaf, modestr(omode));
     created_node = node = create_node(leaf, 0);
+    //    SDDEBUG("CREATED-NODE:\n");
+    //    dump_node(node);
+
     if (!node) {
       goto error;
     }
@@ -692,17 +735,7 @@ static file_t open(const char *fn, int mode)
 
     attach_node(father, node);
   }
-  
-  if (!created_node) {
-    /* Node exist */
-    if (omode & DIR_MODE) {
-      /* Directory */
-    } else {
-      /* File */
-    }
-  }
 
-	
   /* Fill the fh structure */
   ++node->open;
 
@@ -715,8 +748,10 @@ static file_t open(const char *fn, int mode)
   fh[fd].node = node; /* $$$ Last to be set, atomic op that valided
 			 opened file */
 
+  //  SDDEBUG("FINAL-NODE:\n");
+  //  dump_node(node);
 	
-  //  SDDEBUG("-->%s success (%d)\n", __FUNCTION__, fd + 1);
+  //  SDDEBUG("[%s] open in [%s] := [%d]\n", fn, modestr(omode), fd+1);
   return fd + 1;
 	
  error:
@@ -726,7 +761,7 @@ static file_t open(const char *fn, int mode)
   }
   release_node(created_node);
 
-  //  SDERROR("-->%s failure\n", __FUNCTION__);
+  //  SDDEBUG("FAILED OPEN [%s] in [%s]\n", fn, modestr(omode));
   return 0;
 }
 
@@ -912,6 +947,8 @@ static void really_unlink(node_t * node)
     SDCRITICAL("Trying to unlink non-empty dir\n");
     return;
   }
+
+  //  SDDEBUG("UNLINKING [%s]\n", node->entry.name); 
 
   detach_node(node);
   release_node(node);
