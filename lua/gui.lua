@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: gui.lua,v 1.5 2002-10-06 22:47:29 vincentp Exp $
+-- $Id: gui.lua,v 1.6 2002-10-07 15:19:39 benjihan Exp $
 --
 
 --
@@ -593,22 +593,18 @@ end
 
 
 function gui_shutdown()
+	gui_curz = 1000
 end
 
 function gui_init()
+	gui_curz = 1000
+	gui_press_event 		= evt_new_code()
+	gui_focus_event 		= evt_new_code()
+	gui_unfocus_event 		= evt_new_code()
+	gui_item_confirm_event	= evt_new_code()
+	gui_item_cancel_event	= evt_new_code()
+	gui_item_change_event	= evt_new_code()
 	gui_shutdown()
-
-	if not gui_curz then
-		gui_curz = 1000
-		gui_press_event = evt_new_code()
-		gui_focus_event = evt_new_code()
-		gui_unfocus_event = evt_new_code()
---		gui_keyup_event		= evt_new_code()
---		gui_keydown_event	= evt_new_code()
---		gui_keyconfirm_event 	= evt_new_code()
---		gui_keycancel_event 	= evt_new_code()
-		gui_filelist_event	= evt_new_code() -- with {[file] {[name],[size]}}
-	end
 end
 
 gui_init()
