@@ -4,7 +4,7 @@
 --- @date     2003/03/08
 --- @brief    IO control application.
 ---
---- $Id: io_control.lua,v 1.2 2003-03-11 21:33:13 ben Exp $
+--- $Id: io_control.lua,v 1.3 2003-03-12 13:20:48 ben Exp $
 ---
 
 if not dolib ("evt") then return end
@@ -154,11 +154,7 @@ end
 function io_control()
 
    -- Only one !
-   if ioctrl_app then
-      print("IO control already exist : kick it !")
-      evt_shutdown_app(ioctrl_app)
-      ioctrl_app = nil
-   end
+   io_control_kill()
 
    ioctrl_app = {
       -- Application
@@ -189,9 +185,31 @@ function io_control()
 end
 
 --
+--- Kill an io-control application.
+---
+---   The io_control_kill() function kills the given application by
+---   calling sending the evt_shutdown_app() function. If the given
+---   application is nil or ioctrl_app the default io-control
+---   (ioctrl_app) is killed and the global variable ioctrl_app is
+---   set to nil.
+---
+--- @param  io  application to kill (default to ioctrl_app)
+--
+function io_control_kill(io)
+   io = io or ioctrl_app
+   if io then
+      evt_shutdown_app(io)
+      if io == ioctrl_app then
+	 ioctrl_app = nil
+      end
+   end
+end
+
+--
 --- @}
 --
 
+io_control_kill()
 io_control()
 
 return 1

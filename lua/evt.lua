@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.24 2003-01-12 19:48:01 ben Exp $
+-- $Id: evt.lua,v 1.25 2003-03-12 13:20:48 ben Exp $
 --
 
 
@@ -260,11 +260,13 @@ end
 ---          removed from the owner's list correctly
 ---
 function evt_shutdown_app(app)
-   evt_send(app, { key = evt_shutdown_event } )
-   evt_app_remove(app)
+   if type(app) == "table" then 
+      evt_send(app, { key = evt_shutdown_event } )
+      evt_app_remove(app)
+   else
+      print("[evt_shutdown_app] : not an application ["..tostring(app).."]")
+   end
 end
-
-
 
 -- create the console application
 function evt_create_console_app()

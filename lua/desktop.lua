@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.26 2003-03-11 15:07:57 zigziggy Exp $
+--- $Id: desktop.lua,v 1.27 2003-03-12 13:20:49 ben Exp $
 ---
 
 if not dolib("evt") then return end
@@ -76,7 +76,7 @@ function dskt_openmenu(dial, target, x, y)
 '<macro macro-name="nrm" macro-cmd="font" color="'..col..'" size="16">' ..
 'Are you sure you want to kill the application <yellow>'..
 %target.name..
-'<nrm> ?'
+'<nrm> ?', nil, 'Kill ' .. %target.name .. ' ?', 'Kill ' .. %target.name, 'cancel'
 			      ) == 1 then
 		       evt_shutdown_app(%dial)
 		       evt_shutdown_app(%target)

@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.16 2003-03-11 15:07:57 zigziggy Exp $
+--- $Id: control_center.lua,v 1.17 2003-03-12 13:20:48 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_cc_app Control center application
@@ -76,24 +76,6 @@ function control_center_about(menu)
 	 .. '<p><pspace><normal>Visite dcplaya official website<br><url>' .. __URL
    end
 
-   --       local di = driver_info()
-   --       if type(di) == "table" then
-   -- 	 local k,v
-   -- 	 local convert = {
-   -- 	    inp="input",
-   -- 	    vis="visual",
-   -- 	    img="image",
-   -- 	    exe="executable",
-   -- 	    obj="3D object" }
-   -- 	 for k,v in di do
-   -- 	    if type(v) == "table" and getn(v) > 0 then
-   -- 	       local type = convert[k] or k;
-   -- 	       text = text . '<p><center><dfont>' .. type .. 'plugins'
-   -- 	       local pname, p
-   -- 	       for pname,p in v do
-   -- 		  text = text .. '<p><left>'
-   -- 	       end
-
    gui_ask(text,
 	   {control_center_close_button},
 	   400,'About dcplaya')
@@ -103,7 +85,8 @@ end
 --- Create an icon sprite.
 --- @internal
 --
-function control_center_create_sprite(cc, name, src, w, h, u1, v2, u2, v2, rotate)
+function control_center_create_sprite(cc, name, src, w, h, u1, v2, u2, v2,
+				      rotate)
    local spr = sprite_get(name)
    if spr then
       printf("spr %q %q exist",name,src)
@@ -199,7 +182,7 @@ end
 function vmu_save(vmu, alternate)
    vmu = (type(vmu) == "string" and vmu) or vmu_file()
    if not vmu then
-      vmu = vmu_choose_file(files, dir, expr)
+      vmu = vmu_choose_file()
       if not vmu and alternate then
 	 return vmu_save_as(type(alternate) == "string" and alternate)
       end
@@ -215,6 +198,7 @@ end
 --- @internal
 --
 function control_center_menucreator(target)
+   local cc = target
    control_center_create_sprites(cc)
 
    local root = ":" .. target.name .. ":" .. 
@@ -262,6 +246,13 @@ function control_center_menucreator(target)
 		       vmu_save_as()
 		    end,
 
+      vmu_autosave = function (menu, idx)
+			local cc = menu.root_menu.target
+			cc.vmu_auto_save = not cc.vmu_auto_save
+			menu.fl.dir[idx].name =
+			   (cc.vmu_auto_save and "no autosave") or "autosave"
+			menu:draw()
+		    end,
    }
 
    -- Read available driver type
@@ -326,7 +317,9 @@ function control_center_menucreator(target)
       cb = cb,
       sub = {
 	 vmu = {
-	    root = ":vmu:visual >vmu_visual,load{vmu_load},merge{vmu_merge},save{vmu_save},save as{vmu_saveas}",
+	    root = ":vmu:visual >vmu_visual,"
+	       .. ((cc.vmu_auto_save and "no autosave") or "autosave")
+	       .. "{vmu_autosave},load{vmu_load},merge{vmu_merge},save{vmu_save},save as{vmu_saveas}",
 	    sub = {
 	       vmu_visual = ":visual:none{setvmuvis},scope{setvmuvis},fft{setvmuvis},band{setvmuvis}"
 	    }
@@ -337,6 +330,34 @@ function control_center_menucreator(target)
    return menu_create_defs(def , target)
 end
 
+--
+--- control-center event handler.
+---
+--- @param  app  control center application
+--- @param  evt  recieved event
+---
+--- @return event
+---
+--- @see dcplaya_lua_event
+--- @internal
+--
+function control_center_handle(app, evt)
+   local key = evt.key
+   if key == evt_shutdown_event then
+      dl_set_active(app.dl,nil)
+      return evt
+   end
+
+   if ioctrl_ramdisk_event and key == ioctrl_ramdisk_event then
+      print("[control-center] : ioctrl_ramdisk_event");
+      if app.vmu_auto_save then
+	 vmu_save(nil, 1)
+      end
+      return nil
+   end
+   
+   return evt
+end
 
 --
 --- Create a control center application.
@@ -355,9 +376,8 @@ function control_center_create(owner, name)
       -- Application
       name = name,
       version = 1.0,
-      handle = nil,
+      handle = control_center_handle,
       update = nil,
-
       icon_name = "control-center",
       
       -- Members
@@ -366,6 +386,8 @@ function control_center_create(owner, name)
       dl = dl_new_list(256, 1),
       mainmenu_def = control_center_menucreator,
       flags = { unfocusable = 1 },
+
+      vmu_auto_save = vmu_auto_save,
    }
 
    evt_app_insert_last(owner, cc)

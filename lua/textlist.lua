@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.36 2003-03-11 15:07:58 zigziggy Exp $
+--- $Id: textlist.lua,v 1.37 2003-03-12 13:20:49 ben Exp $
 ---
 
 -- Unload the library
@@ -112,24 +112,21 @@ function textlist_create(flparm)
 	 if	h < fl.minmax[2] then h = fl.minmax[2]
 	 elseif	h > fl.minmax[4] then h = fl.minmax[4] end
       end
-
-      if not fl.keepin then
-	 -- $$$ ben : screen size should be in variable on day !
-	 local sx1,sy1,sx2,sy2 = 15, 15, 640-15, 480-15
-	 
-	 -- Force bottom/right part to be on screen.
-	 if x + w > sx2 then x = sx2 - w end 
-	 if y + h > sy2 then y = sy2 - w end
-
-	 -- Force top/left part to be on screen.
-	 if x < sx1 then x = sx1 end 
+      
+      -- $$$ ben : screen size should be in variable one day !
+      local sx1,sy1,sx2,sy2 = 40, 40, 640-40, 480-40
+      if intop(fl.allow_out,'&',1) == 0 then
+	 if x + w > sx2 then x = sx2 - w end
+	 if x < sx1 then x = sx1 end
+      end 
+      if intop(fl.allow_out,'&',2) == 0 then
+	 if y + h > sy2 then y = sy2 - h end
 	 if y < sy1 then y = sy1 end 
-
-	 -- $$$ ben : No test for box larger than screen. May be should it be ?
-	 -- Anyway I have added a minmax box that should avoid it by default
-	 -- but it could be override by user provided minmax box.
       end
-
+      -- $$$ ben : No test for box larger than screen. May be should it be ?
+      -- Anyway I have added a minmax box that should avoid it by default
+      -- but it could be override by user provided minmax box.
+      
       fl.bo2[1] = w
       fl.bo2[2] = h
       fl.bo2[3] = z
@@ -657,7 +654,7 @@ function textlist_create(flparm)
       if flparm.dircolor  then fl.dircolor	= flparm.dircolor	end
       if flparm.bkgcolor  then fl.bkgcolor	= flparm.bkgcolor	end
       if flparm.curcolor  then fl.curcolor	= flparm.curcolor	end
-      if flparm.keepin    then fl.keepin        = flparm.keepin         end
+      if flparm.allow_out then fl.allow_out     = flparm.allow_out      end
       fl.owner = flparm.owner
    end
 
@@ -743,7 +740,7 @@ function textlist_create_app(fl,owner)
    --
    function textlist_app_handle(app,evt)
       -- call the standard dialog handle (manage child autoplacement)
-      evt = gui_dialog_basic_handle(sb, evt)
+      evt = gui_dialog_basic_handle(app, evt)
       if not evt then
 	 return
       end
@@ -786,7 +783,7 @@ function textlist_create_gui(fl, owner)
    --
    function textlist_gui_handle(app,evt)
       -- call the standard dialog handle (manage child autoplacement)
-      evt = gui_dialog_basic_handle(sb, evt)
+      evt = gui_dialog_basic_handle(app, evt)
       if not evt then
 	 return
       end
