@@ -5,7 +5,7 @@
  * @date    2002/11/22
  * @brief   drawing system
  *
- * $Id: draw.h,v 1.2 2002-11-29 08:29:41 ben Exp $
+ * $Id: draw.h,v 1.3 2003-01-28 06:38:18 ben Exp $
  */
 
 #ifndef _DRAW_H_
@@ -54,6 +54,12 @@ extern viewport_t draw_viewport;
 
 /** Current drawing system projection. */
 extern matrix_t draw_projection;
+
+/** Current draw projection Z near. */
+extern float draw_znear;
+
+/** Current draw projection 1/Z near. */
+extern float draw_ooznear;
 
 /**@}*/
 

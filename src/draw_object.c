@@ -1,5 +1,5 @@
 /**
- * $Id: draw_object.c,v 1.16 2003-01-25 11:37:44 ben Exp $
+ * $Id: draw_object.c,v 1.17 2003-01-28 06:38:18 ben Exp $
  */
 
 #include <stdio.h>
@@ -11,25 +11,35 @@
 #include "sysdebug.h"
 #include "draw_object.h"
 
+extern float draw_znear;
+
+static int counter = 0, counter2=0;
 
 typedef struct {
   float u;
   float v;
 } uv_t;
 
+// $$$ temp for debug
+static volatile int acolor = -1;
+
 static matrix_t mtx;
 static ta_hw_tex_vtx_t * const hw = HW_TEX_VTX;
 
 typedef struct {
+  float x,y,z;
+  int flags;
+} pvtx_t;
+
+typedef struct {
   vtx_t v;
-  struct {
-    float x,y,z;
-    int flags;
-  } p;
+  pvtx_t p;
 } tvtx_t;
 
 static tvtx_t * transform = 0;
 static int transform_sz = 0;
+static float oozNear, zNear; // $$$ ben ugly !
+static const int strong_mask = 7; // 0 for no strong link
 
 #define U1 (02.0f/64.0f)
 #define U2 (30.0f/64.0f)
@@ -77,6 +87,70 @@ inline static unsigned int argb4(const float a, const float r,
     (sature(g) << 8)  |
     (sature(b) << 0);
 }
+
+static void dump_clipflags(int f)
+{
+  int i;
+  static char t[7], t2[] = "xXyYzZ";
+  for (i=0; i<6; ++i) {
+    t[i] = (f&(1<<i)) ? t2[i] : '.';
+  }
+  t[i] = 0;
+  printf(t);
+}  
+
+static void dump_vtxflags(const pvtx_t *p)
+{
+  printf("[");
+  dump_clipflags(p->flags>>6);
+  printf(" ");
+  dump_clipflags(p->flags);
+  printf("]");
+}
+
+static void pvtx_dump(const pvtx_t * v)
+{
+  printf("[x:%f y:%f z:%f ", v->x, v->y, v->z);
+  dump_vtxflags(v);
+  printf("]");
+}
+
+static void dump_triflags(const tri_t *f)
+{
+  printf("[%c ", (f->flags&1) ? 'I' : '.');
+  dump_clipflags(f->flags>>(8+0));
+  printf(" ");
+  dump_clipflags(f->flags>>(8+6));
+  printf(" ");
+  dump_clipflags(f->flags>>(8+12));
+  printf("]");
+}
+
+static void tvtx_dump(const tvtx_t * v, const char * tabs)
+{
+  printf(tabs);
+  vtx_dump(&v->v);
+  printf(tabs);
+  pvtx_dump(&v->p);
+}
+
+static void dump_face(const tri_t * f, const tlk_t * l, const tri_t * t,
+		      const tvtx_t * transfo, const char * label )
+{
+  int i;
+  printf("%s : [A:%d%s B:%d%s C:%d%s] ",
+	 label,
+	 f->a, (t[l->a].flags&1)?"*":"",
+	 f->b, (t[l->b].flags&1)?"*":"",
+	 f->c, (t[l->c].flags&1)?"*":"");
+  dump_triflags(f);
+  printf("\n[");
+  for (i=0; i<3; ++i) {
+    tvtx_dump(transfo + ((int*)&f->a)[i],"\n  ");
+  }
+  printf("\n]\n");
+}
+
 
 static int init_transform(int nb)
 {
@@ -139,12 +213,16 @@ static void TransformVtx(tvtx_t * d, const vtx_t *v, int n,
 
 inline static void proj_vtx(tvtx_t * d,
 			    const float mx, const float my,
-			    const float tx, const float ty)
+			    const float tx, const float ty,
+			    const float oow)
 {
-  const float oow = Inv(d->v.w); 
   d->p.x = d->v.x * oow * mx + tx;
   d->p.y = d->v.y * oow * my + ty;
-  d->p.z = Inv(d->v.z);
+  d->p.z = Inv(d->v.z + 1);
+#if DEBUG
+  d->p.flags |= 0x80000000; /* $$$ has been projected  */
+#endif
+
 }
 
 static void ProjectVtx(tvtx_t * d, int n,
@@ -157,12 +235,10 @@ static void ProjectVtx(tvtx_t * d, int n,
 
   // $$$ Optimize with special opcode
   do { 
-    proj_vtx(d, mx, my, tx, ty);
+    proj_vtx(d, mx, my, tx, ty, Inv(d->v.w));
     ++d;
   } while (--n);
 }
-
-
 
 static void ProjectVtxNotClipped(tvtx_t * d, int n,
 				 const viewport_t *vp, const int mask)
@@ -175,64 +251,69 @@ static void ProjectVtxNotClipped(tvtx_t * d, int n,
   // $$$ Optimize with special opcode
   do {
     if (! (d->p.flags & mask) ) {
-      proj_vtx(d, mx, my, tx, ty);
+      proj_vtx(d, mx, my, tx, ty, Inv(d->v.w));
     }
     ++d;
   } while (--n);
 }
 
+inline static int test_visible(const pvtx_t *t0,
+			       const pvtx_t *t1,
+			       const pvtx_t *t2)
+{
+    const float a = t1->x - t0->x;
+    const float b = t1->y - t0->y;
+    const float c = t2->x - t0->x;
+    const float d = t2->y - t0->y;
+    return (a * d - b * c) <= 0;
+}
 
 static void TestVisibleFace(const obj_t * o)
 {
   tri_t * f = o->tri;
   int     n = o->nbf;
   do {
-    const vtx_t *t0 = (const vtx_t *)&transform[f->a].p;
-    const vtx_t *t1 = (const vtx_t *)&transform[f->b].p;
-    const vtx_t *t2 = (const vtx_t *)&transform[f->c].p;
-
-    const float a = t1->x - t0->x;
-    const float b = t1->y - t0->y;
-    const float c = t2->x - t0->x;
-    const float d = t2->y - t0->y;
-
-    const float sens =  a * d - b * c;
-
-    f->flags = (sens < 0);
-
+    f->flags = test_visible(&transform[f->a].p,
+			    &transform[f->b].p,
+			    &transform[f->c].p);
     ++f;
   } while(--n);
 }
 
-static void TestVisibleFaceNotClipped(const obj_t * o)
+static void TestVisibleFaceNotClipped(const obj_t * o, const int omask)
 {
+  const int mask = (omask | (omask<<6) | (omask<<12)) << 8;
   tri_t * f = o->tri;
   int     n = o->nbf;
   do {
-    const tvtx_t *t0 = &transform[f->a];
-    const tvtx_t *t1 = (const tvtx_t *)&transform[f->b];
-    const tvtx_t *t2 = (const tvtx_t *)&transform[f->c];
+    const pvtx_t *t0 = &transform[f->a].p;
+    const pvtx_t *t1 = &transform[f->b].p;
+    const pvtx_t *t2 = &transform[f->c].p;
     int flags;
 
-    flags = 0
-      | (t0->p.flags << 8)
-      | (t1->p.flags << (8+6))
-      | (t2->p.flags << (8+12));
 
-    if (!flags) {
-      const float a = t1->p.x - t0->p.x;
-      const float b = t1->p.y - t0->p.y;
-      const float c = t2->p.x - t0->p.x;
-      const float d = t2->p.y - t0->p.y;
-      const float sens =  a * d - b * c;
-      flags = (sens < 0);
-    }      
+    flags = 0
+      | (t0->flags << 8)
+      | (t1->flags << (8+6))
+      | (t2->flags << (8+12));
+
+    if (!(flags&mask)) {
+
+#ifdef DEBUG
+    // $$$
+      if ((t0->flags&t1->flags&t2->flags) >= 0) {
+	SDDEBUG("Trying to test visibility on not projected face #%d [%x]\n",
+		f-o->tri, flags);
+	dump_face(f, o->tlk, o->tri, transform, "VISIBILITY");
+      } else
+#endif
+
+      flags |= test_visible(t0,t1,t2);
+    }
     f->flags = flags;
     ++f;
   } while(--n);
 }
-
-
 
 
 typedef int cl_t;
@@ -300,7 +381,7 @@ static int SingleColor(obj_t *o, const vtx_t * color)
       return -1;
     }
     for(n=o->nbf ;n--; ++f, ++l, ++nrm)  {
-      int lflags = 0;
+      int lflags;
       uv_t * uvl;
 
       if (f->flags) {
@@ -311,7 +392,7 @@ static int SingleColor(obj_t *o, const vtx_t * color)
       lflags |= t[l->b].flags << 1;
       lflags |= t[l->c].flags << 2;
       // Strong link :
-      //lflags |= l->flags & 7;
+      lflags |= strong_mask & l->flags;
 	
       uvl = uvlinks[lflags];
 
@@ -396,7 +477,7 @@ int DrawObjectLighted(viewport_t * vp, matrix_t local, matrix_t proj,
       return -1;
     }
     for(n=o->nbf ;n--; ++f, ++l, ++nrm)  {
-      int lflags = 0;
+      int lflags;
       uv_t * uvl;
       float coef;
 
@@ -418,8 +499,7 @@ int DrawObjectLighted(viewport_t * vp, matrix_t local, matrix_t proj,
       lflags  = t[l->a].flags << 0;
       lflags |= t[l->b].flags << 1;
       lflags |= t[l->c].flags << 2;
-      // Strong link :
-      //lflags |= l->flags & 7;
+      lflags |= strong_mask & l->flags;
 	
       uvl = uvlinks[lflags];
 
@@ -462,7 +542,6 @@ int DrawObjectFrontLighted(viewport_t * vp, matrix_t local, matrix_t proj,
   const float m02 = local[0][2];
   const float m12 = local[1][2];
   const float m22 = local[2][2];
-  const int strong_mask = 7;
 
   if (DrawObjectPostProcess(vp, local, proj, o) < 0) {
     return -1;
@@ -494,7 +573,7 @@ int DrawObjectFrontLighted(viewport_t * vp, matrix_t local, matrix_t proj,
       return -1;
     }
     for(n=o->nbf ;n--; ++f, ++l, ++nrm)  {
-      int lflags = 0;
+      int lflags;
       uv_t * uvl;
       float coef;
 
@@ -520,8 +599,7 @@ int DrawObjectFrontLighted(viewport_t * vp, matrix_t local, matrix_t proj,
       lflags  = t[l->a].flags << 0;
       lflags |= t[l->b].flags << 1;
       lflags |= t[l->c].flags << 2;
-      // Strong link :
-      lflags |= l->flags & strong_mask;
+      lflags |= strong_mask & l->flags;
 	
       uvl = uvlinks[lflags];
 
@@ -581,7 +659,7 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
 /* #define SMOOTH_IT */
 
     for(n=o->nbf ;n--; ++f, ++l, ++nrm)  {
-      int lflags = 0;
+      int lflags;
       unsigned int col;
 #ifdef SMOOTH_IT
       unsigned int cola, colb, colc,
@@ -623,8 +701,7 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
       lflags  = t[l->a].flags << 0;
       lflags |= t[l->b].flags << 1;
       lflags |= t[l->c].flags << 2;
-      // Strong link :
-      //lflags |= l->flags & 7;
+      lflags |= strong_mask & l->flags;
 	
       uvl = uvlinks[lflags];
 
@@ -699,96 +776,230 @@ static int set_clipping_flags(tvtx_t * v, int nbv)
 static void draw_tri_single(const tri_t * f, /* triangle to draw */
 			    const tlk_t * l, /* link to draw     */
 			    const tri_t * t, /* triangle buffer */ 
-			    const tvtx_t * transform)
+			    const tvtx_t * transfo)
 {
-  const int strong_mask = 7;
   int lflags;
   uv_t * uvl;
+  const pvtx_t * pv;
   
-  if (t->flags) {
-    /* backface */
-    return;
-  }
+  hw->col = acolor;
 
   lflags  = (1&t[l->a].flags) << 0;
   lflags |= (1&t[l->b].flags) << 1;
   lflags |= (1&t[l->c].flags) << 2;
-  lflags |= l->flags & 7 & strong_mask; // Strong link
+  lflags |= strong_mask & l->flags;
+
+  lflags = 7;
+
   uvl = uvlinks[lflags];
 
   hw->flags = TA_VERTEX_NORMAL;
-  hw->x = transform[f->a].p.x;
-  hw->y = transform[f->a].p.y;
-  hw->z = transform[f->a].p.z;
+  pv = &transfo[f->a].p;
+  hw->x = pv->x;
+  hw->y = pv->y;
+  hw->z = pv->z;
   hw->u = uvl[0].u;
   hw->v = uvl[0].v;
   ta_commit32_nocopy();
 
-  hw->x = transform[f->b].p.x;
-  hw->y = transform[f->b].p.y;
-  hw->z = transform[f->b].p.z;
+  pv = &transfo[f->b].p;
+  hw->x = pv->x;
+  hw->y = pv->y;
+  hw->z = pv->z;
   hw->u = uvl[1].u;
   hw->v = uvl[1].v;
   ta_commit32_nocopy();
 
   hw->flags = TA_VERTEX_EOL;
-  hw->x = transform[f->c].p.x;
-  hw->y = transform[f->c].p.y;
-  hw->z = transform[f->c].p.z;
+  pv = &transfo[f->c].p;
+  hw->x = pv->x;
+  hw->y = pv->y;
+  hw->z = pv->z;
   hw->u = uvl[2].u;
   hw->v = uvl[2].v;
   ta_commit32_nocopy();
+
+  if(1)
+    {
+      hw->col = 0xFFFFFF00;
+      hw->flags = TA_VERTEX_NORMAL;
+
+      pv = &transfo[f->b].p;
+      hw->x = pv->x;
+      hw->y = pv->y;
+      hw->z = pv->z;
+      hw->u = uvl[1].u;
+      hw->v = uvl[1].v;
+      ta_commit32_nocopy();
+
+      pv = &transfo[f->a].p;
+      hw->x = pv->x;
+      hw->y = pv->y;
+      hw->z = pv->z;
+      hw->u = uvl[0].u;
+      hw->v = uvl[0].v;
+      ta_commit32_nocopy();
+
+      hw->flags = TA_VERTEX_EOL;
+      pv = &transfo[f->c].p;
+      hw->x = pv->x;
+      hw->y = pv->y;
+      hw->z = pv->z;
+      hw->u = uvl[2].u;
+      hw->v = uvl[2].v;
+      ta_commit32_nocopy();
+    }
 }
 
+static void clip_znear_vtx(tvtx_t * d, const vtx_t * a, const vtx_t * b, 
+			   const viewport_t * vp)
+{
+  const float f = (zNear-a->w) / (b->w - a->w);
+/*   const float f2 = -a->z  / (b->z - a->z); */
+  const float of = 1.0-f;
 
+  d->v.x = a->x * of + b->x * f;
+  d->v.y = a->y * of + b->y * f;
+  d->v.z = 0; //a->z * of + b->z * f;
+#if 0
+  d->v.w = zNear; //a->w * of + b->w * f;
+#endif
+  proj_vtx(d, vp->mx, vp->my, vp->tx, vp->ty, oozNear);
+}
 
 static void draw_clip_znear_tri(const tri_t * f, /* triangle to draw */
 				const tlk_t * l, /* link to draw     */
 				const tri_t * t, /* triangle buffer  */ 
 				const tvtx_t * transform,
-				viewport_t * vp)
+				const viewport_t * vp)
 {
   const tvtx_t *va, *vb, *vc;
-  int flags = f->flags;
+  int flags;
 
+  static tvtx_t cvtx[4];
+
+  static const tri_t ctri[] = {
+    { 0,0,0,1 }, /* 0: Invisible */
+    { 0,1,2,0 }, /* 1: 1st build triangle, case 1 out/in */
+    { 0,2,3,0 }, /* 2: 2st build triangle, case 1 out */
+    { 1,0,2,0 }, /* 3: back-side, 1st build triangle, case 1 out/in */
+    { 2,0,3,0 }, /* 4: back-side, 2st build triangle, case 1 out */
+  };
+
+  static tlk_t ctlk[1] = {
+  };
+
+  static struct {
+    int va, vb, vc;
+  } *ci, clipinfo [8] = {
+    { },          /* 0 :  */
+    { 0,1,2,  },  /* 1 : A-out */
+    { 1,2,0,  },  /* 2 : B-out */
+    { 2,0,1,  },  /* 3 : C-in  */
+    { 2,0,1,  },  /* 4 : C-out */
+    { 1,2,0,  },  /* 5 : B in  */
+    { 0,1,2,  },  /* 6 : A in  */
+    { },          /* 7 :  */
+  };
+
+  flags = f->flags;
   if (flags&1) {
-    /* backface */
-    return;
+    /* backface (only projected face were flaged...) */
+    /* $$$ */
+/*     return; */
   }
   
-  flags = 0
-    | (1 & (flags >> (8+4)))
-    | (2 & (flags >> (8+4+6-1)))
-    | (4 & (flags >> (8+4+12-2)));
+  flags >>= (8+4);
+  flags &= 010101;
   if (!flags) {
+    /* No clip */
+    acolor = 0xc0FFFFFF;
     draw_tri_single(f,l,t,transform);
     return;
   }
-  if (flags == 7) {
+  if (flags == 010101) {
+    /* All clipped */
     return;
   }
-  
-/*   va = transform + f->a; */
-/*   vb = transform + f->b; */
-/*   vc = transform + f->c; */
 
+  flags = ((flags >> 0) | (flags >> 5) | (flags >> 10)) & 7;
+
+  ci = clipinfo + flags;
+  va = transform + ((int*)&f->a)[ci->va];
+  vb = transform + ((int*)&f->a)[ci->vb];
+  vc = transform + ((int*)&f->a)[ci->vc];
 
   switch (flags) {
-  case 1:
-    /* A out */
-  case 2:
-    /* B out */
-  case 3:
-    /* C in */
-  case 4:
-    /* C out */
-  case 5:
-    /* B in */
-  case 6:
-  default:
-    ;
-  }
+  case 1: case 2: case 4:
+    {
+      {
+	// verify cliping flags:
+	int flags2;
+	const pvtx_t *t0 = &va->p;
+	const pvtx_t *t1 = &vb->p;
+	const pvtx_t *t2 = &vc->p;
+	flags2 = 0
+	  | (t0->flags << 8)
+	  | (t1->flags << (8+6))
+	  | (t2->flags << (8+12));
+	flags2 >>= (8+4);
+	flags2 &= 010101;
+	if (flags2 != 000001) {
+	  printf("flags2:%x, flags:%x\n",flags2,flags);
+	  BREAKPOINT(0xDEADFACE);
+	}
+      }
 
+
+      clip_znear_vtx(&cvtx[0], &va->v, &vb->v, vp);
+      cvtx[1] = *vb;
+      cvtx[2] = *vc;
+      clip_znear_vtx(&cvtx[3], &va->v, &vc->v, vp);
+
+      acolor = 0xc00000FF;
+      if (1 || !test_visible(&cvtx[0].p,&cvtx[1].p,&cvtx[2].p)) {
+	draw_tri_single(ctri+1,ctlk,ctri,cvtx);
+	//	draw_tri_single(ctri+3,ctlk,ctri,cvtx);
+      }
+      acolor = 0xc000FF00;
+      if (1 || !test_visible(&cvtx[0].p,&cvtx[2].p,&cvtx[3].p)) {
+	draw_tri_single(ctri+2,ctlk,ctri,cvtx);
+	//	draw_tri_single(ctri+4,ctlk,ctri,cvtx);
+      }
+    } break;
+
+  case 3: case 5: case 6:
+    {
+      {
+	// verify cliping flags:
+	int flags2;
+	const pvtx_t *t0 = &va->p;
+	const pvtx_t *t1 = &vb->p;
+	const pvtx_t *t2 = &vc->p;
+	flags2 = 0
+	  | (t0->flags << 8)
+	  | (t1->flags << (8+6))
+	  | (t2->flags << (8+12));
+	flags2 >>= (8+4);
+	flags2 &= 010101;
+	if (flags2 != 010100) {
+	  printf("flags2:%x, flags:%x\n",flags2,flags);
+	  BREAKPOINT(0xDEADFACE);
+	}
+      }
+
+      cvtx[0] = *va;
+      clip_znear_vtx(&cvtx[1], &vb->v, &va->v, vp);
+      clip_znear_vtx(&cvtx[2], &vc->v, &va->v, vp);
+      acolor = 0xc0FF0000;
+      if (1 || !test_visible(&cvtx[0].p,&cvtx[1].p,&cvtx[2].p)) {
+	draw_tri_single(ctri+1,ctlk,ctri,cvtx);
+	//	draw_tri_single(ctri+3,ctlk,ctri,cvtx);
+      }
+    } break;
+  default:
+    BREAKPOINT(0xDEADCCCC);
+  }
 }
 
 static void draw_clip_znear_object(obj_t *o, viewport_t * vp,
@@ -831,12 +1042,15 @@ int DrawObject(viewport_t * vp, matrix_t local, matrix_t proj,
   }
 
   /* Init transformed vertex buffer */
-  if (init_transform(o->nbv + 16)) {
+  if (init_transform(o->nbv)) {
     return -1;
   }
 
   /* Compute final matrix */
   MtxMult3(mtx,local,proj);
+
+
+  /* $$$ Optimize : do the 2 (+proj?) following op in 1 function. */
 
   /* Transform vertrices */
   MtxVectorsMult(&transform->v.x, &o->vtx->x, mtx, o->nbv,
@@ -848,7 +1062,7 @@ int DrawObject(viewport_t * vp, matrix_t local, matrix_t proj,
     /* All vertrices are clipped in some direction. */
     return flags;
   }
-  if (!(flags & 0020)) {
+  if (!(flags & 00020)) {
     /* No one is clipped in Znear */
     ProjectVtx(transform, o->nbv, vp);
     TestVisibleFace(o);
@@ -856,10 +1070,20 @@ int DrawObject(viewport_t * vp, matrix_t local, matrix_t proj,
       return -1;
     }
   } else {
-    ProjectVtxNotClipped(transform, o->nbv, vp, 0020);
-    TestVisibleFaceNotClipped(o);
+    oozNear = -(proj[2][2]/proj[3][2]);
+    zNear = -(proj[3][2]/proj[2][2]);
+    //$$$
+    if (!FnearZero(zNear-draw_znear)) {
+      printf("znear : %f %f\n",zNear,draw_znear);
+    }
+    ProjectVtxNotClipped(transform, o->nbv, vp, 00020);
+    TestVisibleFaceNotClipped(o, 00020);
     draw_clip_znear_object(o, vp, diffuse);
+
+    ++counter;
+    counter2 = 0;
   }
+
 
   return flags;
 }

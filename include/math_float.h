@@ -4,7 +4,7 @@
  *  @date     2003/01/21
  *  @brief    floating point macros and defines
  *
- * $Id: math_float.h,v 1.4 2003-01-24 10:48:40 ben Exp $
+ * $Id: math_float.h,v 1.5 2003-01-28 06:38:18 ben Exp $
  */
 
 #ifndef _MATH_FLOAT_H_
@@ -40,7 +40,7 @@
 #define Cos(A) fcos((A))
 #define Sin(A) fsin((A))
 #define Inv(A) (1.0f/(A))
-#define Sq(A,B) __mf_sq(A)
+#define Sq(A) __mf_sq(A)
 #define Sqrt(A) sqrtf((A))
 #define ISqrt(A) Inv(Sqrt((A)))
 #define Fabs(A) __mf_abs((A))

@@ -90,7 +90,11 @@ void MtxLookAt2(matrix_t row,
 		const float eyes_x, const float eyes_y, const float eyes_z,
 		const float x, const float y, const float z);
 
-void MtxProjection(matrix_t row, const float openAngle, const float fov,
+/** Set a projection matrix.
+ *  @return zNear
+ *  @retval -row[3][2]/row[2][2];
+ */
+float MtxProjection(matrix_t row, const float openAngle, const float fov,
                    const float aspectRatio, const float zFar);
 void MtxFrustum(matrix_t row, const float left, const float right,
                               const float top, const float bottom,

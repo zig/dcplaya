@@ -324,7 +324,7 @@ static void SetProjection(matrix_t row, const float w, const float h,
     row[3][0] = row[3][1] = row[3][3] = 0.0f;
 }
 
-void MtxProjection(matrix_t row, const float openAngle, const float fov,
+float MtxProjection(matrix_t row, const float openAngle, const float fov,
 				   const float aspectRatio, const float zFar)
 {
   const float halfFov = 0.5f * fov;
@@ -336,6 +336,7 @@ void MtxProjection(matrix_t row, const float openAngle, const float fov,
   const float q = zFar / (zFar - zNear);
 
   SetProjection(row, w, h, q, zNear);
+  return zNear;
 }
 
 void MtxProjection2(matrix_t row, const float openAngle,

@@ -6,7 +6,7 @@
  *
  *  @wraning Do NOT include this file directly. Use "vtx.h" indeed.
  *
- * $Id: vtx.inl,v 1.3 2003-01-24 10:48:40 ben Exp $
+ * $Id: vtx.inl,v 1.4 2003-01-28 06:38:18 ben Exp $
  */
 
 #ifndef _VTX_INL_
@@ -353,5 +353,15 @@ int vtx_znear_clip_flags(const vtx_t *a)
 {
   return Fsign(a->z);
 }
+
+#ifdef DEBUG
+#include <stdio.h>
+VTX_FUNCTION
+void vtx_dump(const vtx_t * v)
+{
+  printf("[x:%f y:%f z:%f w:%f]", v->x, v->y, v->z, v->w);
+}
+#endif
+
 
 #endif /* #ifndef _VTX_INL_ */

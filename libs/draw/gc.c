@@ -4,7 +4,7 @@
  * @author   ben(jamin) gerard <ben@sashipa.com>
  * @brief    graphic context interface.
  *
- * $Id: gc.c,v 1.7 2002-12-24 04:07:54 ben Exp $
+ * $Id: gc.c,v 1.8 2003-01-28 06:38:18 ben Exp $
  */
 
 #include "draw/gc.h"
@@ -21,7 +21,7 @@ gc_t * current_gc;
 
 void gc_default(void)
 {
-  int i;
+/*   int i; */
   gc_t * gc = current_gc;
 
   /* Default clipping box. */

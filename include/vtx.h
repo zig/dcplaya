@@ -4,7 +4,7 @@
  *  @date    2003/01/19
  *  @brief   Vertex.
  *
- * $Id: vtx.h,v 1.4 2003-01-22 19:12:56 ben Exp $
+ * $Id: vtx.h,v 1.5 2003-01-28 06:38:18 ben Exp $
  */
 
 #ifndef _VTX_H_
@@ -223,6 +223,11 @@ int vtx_clip_flags(const vtx_t *a);
  *  @retval 1 clipped
  */
 int vtx_znear_clip_flags(const vtx_t *a);
+
+#ifdef DEBUG
+/** Print formatted vertex. */
+void vtx_dump(const vtx_t * v);
+#endif
 
 /** @} */
 

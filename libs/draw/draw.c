@@ -5,7 +5,7 @@
  * @date    2002/11/22
  * @brief   drawing system
  *
- * $Id: draw.c,v 1.4 2003-01-25 11:37:44 ben Exp $
+ * $Id: draw.c,v 1.5 2003-01-28 06:38:18 ben Exp $
  */
 
 #include "draw/draw.h"
@@ -16,6 +16,7 @@
 
 viewport_t draw_viewport; 
 matrix_t draw_projection;
+float draw_znear, draw_ooznear;
 
 float draw_screen_width;
 float draw_screen_height;
@@ -23,6 +24,8 @@ float draw_screen_height;
 int draw_init(const float screen_width, const float screen_height)
 {
   int err;
+  //  const float fov = 0.01, zFar = 1000;
+  const float fov = 1.0, zFar = 250;
 
   SDDEBUG("[%s] W:%.02f H:%.02f\n", __FUNCTION__, screen_width, screen_height);
   SDINDENT;
@@ -36,8 +39,10 @@ int draw_init(const float screen_width, const float screen_height)
 
   /* Set default projection. */
   SDDEBUG("Set projection.\n");
-  MtxProjection(draw_projection, 70*2.0*3.14159/360,
-				0.01, (float)screen_width/screen_height, 1000);
+  draw_znear = MtxProjection(draw_projection, 70*2.0*3.14159/360,
+				fov, (float)screen_width/screen_height, zFar);
+  draw_ooznear = 1.0f / draw_znear;
+  SDDEBUG("Z-Near=%f\n", draw_znear);
 
   /* Init renderer (TA). */
   SDDEBUG("Init render:\n");
