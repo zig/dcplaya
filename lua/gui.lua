@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.17 2002-12-01 19:19:14 ben Exp $
+--- $Id: gui.lua,v 1.18 2002-12-04 13:46:11 zigziggy Exp $
 ---
 
 --
@@ -747,7 +747,6 @@ function gui_init()
 	gui_item_cancel_event	= evt_new_code()
 	gui_item_change_event	= evt_new_code()
 	gui_color_change_event	= evt_new_code() -- arg:color
-	gui_shutdown()
 end
 
 gui_init()

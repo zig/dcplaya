@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: keyboard_emu.lua,v 1.11 2002-10-09 00:51:17 benjihan Exp $
+-- $Id: keyboard_emu.lua,v 1.12 2002-12-04 13:46:12 zigziggy Exp $
 --
 
 dolib("keydefs")
@@ -534,7 +534,7 @@ function ke_init()
 	ke_addkey("PgUp")
 
 	ke_addkeypos(5, -25)
-	ke_addkey("", 32, nil, nil, 80)
+	ke_addkey(" ", 32, nil, nil, 80)
 	ke_addkey("z")
 	ke_addkey("x")
 	ke_addkey("c")
