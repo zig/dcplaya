@@ -5,7 +5,7 @@
  * @date       2002/09/04
  * @brief      Debug fonctions.
  *
- * @version    $Id: sysdebug.c,v 1.4 2002-09-12 19:08:12 ben Exp $
+ * @version    $Id: sysdebug.c,v 1.5 2002-09-12 19:18:41 ben Exp $
  */
 
 #include <stdarg.h>
@@ -146,7 +146,7 @@ void sysdbg_vprintf(const char * file, int line, int level,
   /* Reset column if last char is '\n' */
   for (len=0; fmt[len]; ++len)
     ;
-  if (len > 0 && fmt[len-1]) {
+  if (len > 0 && fmt[len-1]=='\n') {
     sd_col = 0;
   }
 
