@@ -2,7 +2,7 @@
 --
 -- author : vincent penne <ziggy@sashipa.com>
 --
--- $Id: basic.lua,v 1.7 2002-10-15 06:02:47 benjihan Exp $
+-- $Id: basic.lua,v 1.8 2002-10-18 00:06:49 benjihan Exp $
 ---
 
 -- Unload library
@@ -232,7 +232,7 @@ function type_dump(v, name, indent)
 		end
 		s=s..istr.."}"
 	elseif t == "function" then
-		s=s..getinfo(v).name
+		s=s..tostirng(nil) -- getinfo(v).name
 	else
 		local a = tostring(v)
 		if type(a) == "string"  then s=s..a else s=s.."???" end

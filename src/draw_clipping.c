@@ -4,7 +4,7 @@
  *  @date    2002/10/15
  *  @brief   draw primitive vertex definition.
  *
- * $Id: draw_clipping.c,v 1.2 2002-10-17 04:59:50 benjihan Exp $
+ * $Id: draw_clipping.c,v 1.3 2002-10-18 00:06:49 benjihan Exp $
  */
 
 #include "draw_clipping.h"
@@ -124,8 +124,10 @@ void draw_triangle_clip_any(const draw_vertex_t *v1,
   int clipflags;
   draw_vertex_t w[2];
 
-/*   printf("clip %03X %d\n", flags, bit); */
-/*   printf("[%p %p %p]\n", v1,v2,v3); */
+
+  if (flags & (flags>>2) & 0x333) {
+	printf("Unexpected clipping flags : %03X\n", flags);
+  }
 
   /* LT clip, 1 OUT or RB clip, 1 IN
    *    +       +		
@@ -157,10 +159,6 @@ void draw_triangle_clip_any(const draw_vertex_t *v1,
   flags -= clipflags;
   /* Shift them to bit 0 */
   clipflags >>= bit;
-  /* "Pack" bits */
-  //clipflags = (clipflags | (clipflags>>(4-1)) |  (clipflags>>(8-2))) & 7;
-  //printf("packed: %d\n", clipflags);
-
 
   /* flags  v1   cv1 
    *  abc              ^aa   -   
@@ -173,15 +171,11 @@ void draw_triangle_clip_any(const draw_vertex_t *v1,
    *  110    11   0    101  011
    *  111    ?    ?
    *
-   * cv1 = (flags^(flags>>1)^(flags>>2))&1
+   * cv1 = a^b^c
    * v1 = (-(flags^(-(flags>>2)&3))) 
    */
 
   /* Process vertrices rolling so that involved vertex becomes v1 */
-  {
-	//int cv1 = ((clipflags^(-(clipflags>>2)&3))&3);
-
-	//switch ((clipflags^(-(clipflags>>2)&3))&3) {
   switch ((clipflags^(-(clipflags>>8)))&0x11) { 
   case 0x10:
 	{
@@ -200,34 +194,24 @@ void draw_triangle_clip_any(const draw_vertex_t *v1,
 	  flags = (flags & ~0xFFF) | ((flags>>4)&0x0FF) | ((flags&0x00F)<<8);
 	} break;
   }
-  //  printf("cv1:%d flags:%03X\n", cv1, flags);
-  //  printf("rolling [%p %p %p]\n", v1,v2,v3);
-  }
-
+  
   /* Computes intersection vertrices (xn can be either xn or yn) */
   {
 	const int i = bit & 1;
-/* 	const int j = bit >> 1; */
 	const float x1 = (&v1->x)[i];
 	const float x2 = (&v2->x)[i];
 	const float x3 = (&v3->x)[i];
 	const float f12 = (clipbox[bit]-x1) / (x2-x1);
 	const float f13 = (clipbox[bit]-x1) / (x3-x1);
-/* 	printf("v1:%p x:%.3f\n", v1, x1); */
-/* 	printf("v2:%p x:%.3f\n", v2, x2); */
-/* 	printf("v3:%p x:%.3f\n", v3, x3); */
-/* 	printf("f12:%.3f\n", f12); */
-/* 	printf("f13:%.3f\n", f13); */
 	vertex_clip(&w[0], v1, v2, f12, flags);
 	vertex_clip(&w[1], v1, v3, f13, flags);
   }
 
-
   if ((clipflags^(clipflags>>4)^(clipflags>>8))&1) {
-	draw_triangle_clip_continue(&w[0],v2,&w[1],flags,bit);
-	draw_triangle_clip_continue(&w[1],v2,v3,flags,bit);
+	draw_triangle_clip_continue(&w[0], v2, &w[1], flags, bit);
+	draw_triangle_clip_continue(&w[1], v2,    v3, flags, bit);
   } else {
-	draw_triangle_clip_continue(v1,&w[0],&w[1],flags,bit);
+	draw_triangle_clip_continue(v1, &w[0], &w[1], flags, bit);
   }
 
 }

@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.8 2002-10-17 04:59:50 benjihan Exp $
+ * $Id: display.c,v 1.9 2002-10-18 00:06:49 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -26,6 +26,7 @@ DL_FUNCTION_DECLARE(set_trans);
 DL_FUNCTION_DECLARE(get_trans);
 DL_FUNCTION_DECLARE(mat_new);
 DL_FUNCTION_DECLARE(mat_mult);
+DL_FUNCTION_DECLARE(mat_mult_self);
 DL_FUNCTION_DECLARE(mat_rotx);
 DL_FUNCTION_DECLARE(mat_roty);
 DL_FUNCTION_DECLARE(mat_rotz);
@@ -476,7 +477,10 @@ static luashell_command_description_t display_commands[] = {
   {
     "mat_new", 0,                        /* long and short names */
     "print [["
-      "mat_new() : make a new identity matrix"
+	"mat_new([lines, [ columns ] ] ) : make a new matrix. "
+	"Default lines and columns is 4. "
+	"If matrix dimension is 4x4 the result is an identity matrix "
+	"else the result matrix is zeroed."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_mat_trans       /* function */
   },
@@ -522,6 +526,14 @@ static luashell_command_description_t display_commands[] = {
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_mat_mult        /* function */
   },
+  {
+    "mat_mult_self", 0,                  /* long and short names */
+    "print [["
+      "mat_mult(mat1, mat2) : mat1=mat1xmat2"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_mat_mult_self   /* function */
+  },
+
   {
     "mat_li", 0,                         /* long and short names */
     "print [["

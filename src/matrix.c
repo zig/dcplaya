@@ -18,6 +18,28 @@ void MtxCopy(matrix_t m, matrix_t m2)
   }
 }
 
+void MtxCopyFlexible(float *d, const float *s, int nline, int ncol,
+					 int dsize, int ssize)
+{
+  if (nline > 0 && ncol > 0) {
+	if ( ncol*sizeof(float) == dsize && dsize == ssize) {
+	  unsigned int words = (unsigned int)dsize / sizeof(float);
+	  do {
+		*d++ = *s++;
+	  } while(--words);
+	}
+
+	do  {
+	  int i;
+	  for (i=0; i<ncol; ++i) {
+		d[i] = s[i];
+	  }
+	  d = (float *) ((char *)d + dsize);
+	  s = (const float *) ((const char *)s + ssize);
+	} while (--nline);
+  }
+}
+
 void MtxIdentity(matrix_t m)
 {
   int i,j;
@@ -46,6 +68,22 @@ void MtxVectMult(float *v, const float *u, matrix_t m)
   v[2] = x * m[0][2] + y * m[1][2] + z * m[2][2] + w * m[3][2];
   v[3] = x * m[0][3] + y * m[1][3] + z * m[2][3] + w * m[3][3];
 }
+
+void MtxVectorsMult(float *v, const float *u, matrix_t m, int nmemb,
+					int sizev, int sizeu)
+{
+  while (nmemb--) {
+	const float x=u[0],y=u[1],z=u[2],w=u[3];
+	v[0] = x * m[0][0] + y * m[1][0] + z * m[2][0] + w * m[3][0];
+	v[1] = x * m[0][1] + y * m[1][1] + z * m[2][1] + w * m[3][1];
+	v[2] = x * m[0][2] + y * m[1][2] + z * m[2][2] + w * m[3][2];
+	v[3] = x * m[0][3] + y * m[1][3] + z * m[2][3] + w * m[3][3];
+
+	v = (float *)((char *)v + sizev);
+	u = (const float *)((const char *)u + sizeu);
+  }
+}
+
 
 void MtxScale(matrix_t m, const float s)
 {

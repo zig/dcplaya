@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   RAM disk for KOS file system
  * 
- * $Id: fs_ramdisk.c,v 1.10 2002-09-30 20:06:50 benjihan Exp $
+ * $Id: fs_ramdisk.c,v 1.11 2002-10-18 00:06:49 benjihan Exp $
  */
 
 #ifdef VPSPECIAL
@@ -445,7 +445,7 @@ static node_t * find_node(node_t * node, char *fn, int what)
 /* 	  node ? node->entry.name : "<null>"); */
 
   if (!node || !fn) {
-    SDERROR("Find node invalid parameters [%p] [%p]\n", node, fn);
+/*     SDERROR("Find node invalid parameters [%p] [%p]\n", node, fn); */
     return 0;
   }
 
@@ -699,7 +699,7 @@ static file_t open(const char *fn, int mode)
 
   } else /* if (!node) */ {
     if ( ! (omode & WRITE_MODE) ) {
-      SDERROR("Not found and not created.\n");
+/*       SDERROR("Not found and not created.\n"); */
       goto error;
     }
 

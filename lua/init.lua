@@ -3,13 +3,18 @@
 --
 -- author : Vincent Penne
 --
--- $Id: init.lua,v 1.8 2002-10-09 00:51:17 benjihan Exp $
+-- $Id: init.lua,v 1.9 2002-10-18 00:06:49 benjihan Exp $
 --
 
 
 -- do this file only once !
 if not init_lua then
 init_lua=1
+
+-- Set default LIBRARY_PATH
+if not LIBRARY_PATH then
+	LIBRARY_PATH = { home, "/ram/", "/rd/" }
+end
 
 -- simple doshellcommand (reimplemented in shell.lua)
 function doshellcommand(string)
@@ -196,7 +201,6 @@ end
 
 update_all_driver_lists(1)
 
-
 -- reimplement driver_load so that it calls update_all_driver_lists()
 -- automatically after
 function driver_load(...)
@@ -205,31 +209,55 @@ function driver_load(...)
 end
 dl=driver_load
 
--- Load a lua library in {HOME}/lua/{NAME}.lua
+
+-- Load a lua library. The file lua/{NAME}.lua will be loaded via dofile()
+-- in pathes stored in LIBRARY_PATH.
 -- Library must set the {NAME}_loaded variable when loaded successfully
 -- If force parameter is set, the function ignore the {NAME}_loaded value
 -- and try to reload the library anyway.
+-- the libpath parameter allows to override the default LIBRARY_PATH
 --
--- TODO : Add a libpath parameter
---
-function dolib(name,force)
-	if not name then return end
+function dolib(name,force,libpath)
+	if not libpath then
+		libpath=LIBRARY_PATH
+	end
+	if type(libpath) == "string" then
+		libpath = { libpath }
+	end
+	if type(name) ~= "string" or type(libpath) ~= "table" then
+		print("dolib : bad arguments")
+		return
+	end
 
 	local test = "return "..name.."_loaded"
 	local reset = name.."_loaded=nil"
 
+	function loadlib()
+		local i,p
+		for i,p in %libpath do
+			if type(p) == "string" then
+				p = p.."lua/"..%name..".lua"
+				if dofile(p) and dostring(%test) then
+					return p
+				end
+			end
+		end
+	end
+
+
 	if dostring(test) and not force then
-		print(format("Library '%s' already loaded",name))
+		print(format("Library %q already loaded",name))
 		return 1
 	end
-	print(format("Loading library '%s'...",name))
+	print(format("Loading library %q",name))
 	dostring(reset)
-	dofile(home.."lua/"..name..".lua")
-	if not dostring(test) then
-		print(format("Load library '%s' failed",name))
+	local path
+	path = loadlib()
+	if not path then
+		print(format("Load library %q failed", name))
 		return
 	end
-	print(format("Library '%s' loaded",name))
+	print(format("Library %q loaded from %q",name,path))
 	return 1
 end
 

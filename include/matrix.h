@@ -13,9 +13,13 @@ typedef float matrix_t[4][4];
 #endif
 
 void MtxCopy(matrix_t m, matrix_t m2);
+void MtxCopyFlexible(float *d, const float *s, int nline, int ncol,
+					 int dsize, int ssize);
 void MtxIdentity(matrix_t m);
 void MtxMult(matrix_t m, matrix_t m2);
 void MtxVectMult(float *v, const float *u, matrix_t m);
+void MtxVectorsMult(float *v, const float *u, matrix_t m, int nmemb,
+					int sizev, int sizeu);
 void MtxTranspose(matrix_t m);
 void MtxScale(matrix_t m, const float s);
 void MtxRotateX(matrix_t m, const float a);
