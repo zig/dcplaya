@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.15 2002-09-20 06:08:57 vincentp Exp $
+ * @version    $Id: dynshell.c,v 1.16 2002-09-23 03:23:27 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -20,6 +20,7 @@
 #include "shell.h"
 
 #include "plugin.h"
+#include "dcar.h"
 
 #include "exceptions.h"
 
@@ -380,6 +381,100 @@ static int lua_unlink(lua_State * L)
   return 0;
 }
 
+static int lua_dcar(lua_State * L)
+{
+  int nparam = lua_gettop(L);
+  int count=-1, com; 
+  const char * command=0, *archive=0, *path=0, *error="bad arguments";
+  dcar_option_t opt;
+
+  /* Get lua parms */
+  if (nparam >= 1) {
+    command = lua_tostring(L, 1);
+  }
+  if (nparam >= 2) {
+    archive = lua_tostring(L, 2);
+  }
+  if (nparam >= 3) {
+    path = lua_tostring(L, 3);
+  }
+
+  dcar_default_option(&opt);
+  opt.in.verbose = 0;
+
+  if (!command) {
+    command = "?";
+  }
+
+  for (com = 0; *command; ++command) {
+    int c = (*command) & 255;
+
+    switch(c) {
+    case 'c': case 's': case 'x': case 't':
+      if (com) {
+	error = "Multiple commands";
+	goto error;
+      }
+      com = c;
+      break;
+    case 'v':
+      opt.in.verbose = 1;
+      break;
+    case 'f':
+      break;
+    default:
+      if (c>='0' && c<='9') {
+	opt.in.compress = c - '0';
+      } else {
+	error = "Invalid command";
+	goto error;
+      }
+    }
+  }
+  
+  switch(com) {
+  case 'c':
+    if (archive && path) {
+      count = dcar_archive(archive, path, &opt);
+    }
+    break;
+
+  case 't':
+    error = "not implemented";
+    break;
+  case 's':
+    if (path=archive, path) {
+      count = dcar_simulate(path, &opt);
+    }
+    break;
+
+  case 'x':
+    error = "not implemented";
+    break;
+  default:
+    error = "bad command : try help dcar";
+    break;
+  }
+
+ error:  
+  if (count < 0) {
+    printf("dcar : %s\n", error);
+  } else {
+    printf("dcar := %d\n", count);
+    if (opt.out.level)
+      printf(" level       : %d\n",opt.out.level);
+    if (opt.out.entries)
+      printf(" entries     : %d\n",opt.out.entries);
+    if (opt.out.bytes)
+      printf(" bytes       : %d\n",opt.out.bytes);
+    if (opt.out.ubytes && opt.out.cbytes)
+      printf(" compression : %d%%\n",opt.out.cbytes*100/opt.out.ubytes);
+  }
+
+  return count;
+}
+
+
 
 #if 0
 static char shell_basic_lua_init[] = 
@@ -537,6 +632,26 @@ static shell_command_description_t commands[] = {
 
     SHELL_COMMAND_C, lua_unlink
   },
+
+  {
+    "dcar",
+    "ar",
+
+    "print([["
+    "dcar(command,archive[,path]) : works on archive\n"
+    "  command:\n"
+    "    c : create a new archive.\n"
+    "    s : simulate a new archive.\n" 
+    "    x : extract an existing archive\n"
+    "    t : test an existing archive\n"
+    "  options:\n"
+    "    v : verbose.\n"
+    "    f : ignored.\n"
+    "]])",
+
+    SHELL_COMMAND_C, lua_dcar
+  },
+
   {0},
 };
 
