@@ -176,6 +176,12 @@ function menu_create(owner, name, def, box, x1, y1)
    -- Menu handle
    -- -----------
    function menu_handle(menu, evt)
+      -- call the standard dialog handle (manage child autoplacement)
+      evt = gui_dialog_basic_handle(sb, evt)
+      if not evt then
+	 return
+      end
+
       local key = evt.key
 
       if key == evt_shutdown_event then
@@ -264,14 +270,14 @@ function menu_create(owner, name, def, box, x1, y1)
       local box = menu.fl.box
       if not box then return end
 
-      printf("move menu %q x:%s y:%s z:%s sub:%s owner:%s",
-	     tostring(menu.def.title),
-	     tostring(movx),
-	     tostring(movy),
-	     tostring(movz),
-	     move_sub and "OK" or "NO",
-	     move_owner and "OK" or "NO"
-	  )
+--      printf("move menu %q x:%s y:%s z:%s sub:%s owner:%s",
+--	     tostring(menu.def.title),
+--	     tostring(movx),
+--	     tostring(movy),
+--	     tostring(movz),
+--	     move_sub and "OK" or "NO",
+--	     move_owner and "OK" or "NO"
+--	  )
 
       -- Get current menu position
       local x,y,z = box[1], box[2], menu.fl.bo2 and menu.fl.bo2[3]
@@ -298,7 +304,7 @@ function menu_create(owner, name, def, box, x1, y1)
 --       print("type of owner:"..type(menu.owner))
 
       if move_owner and tag(menu.owner) == menu_tag then
-	 print("move owner:"..menu.owner.def.title)
+--	 print("move owner:"..menu.owner.def.title)
 	 menu.owner:move(movx,movy,movz,nil,1)
       end
       
@@ -485,7 +491,7 @@ function menu_create(owner, name, def, box, x1, y1)
 	 if tag(submenu) == menu_tag then
 	    submenu:open()
 	    evt_app_insert_first(menu, submenu)
-	    --gui_child_autoplacement(menu);
+	    gui_child_autoplacement(menu);
 	 else
 	    local y = (xentry and xentry.y) or 0
 	    if not menu.def.sub then return end
@@ -549,7 +555,7 @@ function menu_create(owner, name, def, box, x1, y1)
       -- Members
       style = style,
       dl = dl_new_list(),
-      z = gui_guess_z(owner,z),
+      z = 0, --gui_guess_z(owner,z),
       def	= def,
       sub_menu = {},
 --      fade = 0,

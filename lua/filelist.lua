@@ -3,7 +3,7 @@
 --- @date   2002/10/04
 --- @brief  Manage and display a list of file.
 ---
---- $Id: filelist.lua,v 1.11 2003-01-07 19:40:40 ben Exp $
+--- $Id: filelist.lua,v 1.12 2003-03-11 15:07:58 zigziggy Exp $
 ---
 
 --- filelist object - Extends textlist
@@ -62,6 +62,7 @@ function filelist_create(flparm)
 	 print(format("filelist: failed to load '%s'",path))
 	 return
       end
+
       fl.pwd = path
       return fl:change_dir(dir)
    end

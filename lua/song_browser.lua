@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.43 2003-03-11 14:45:30 ben Exp $
+--- $Id: song_browser.lua,v 1.44 2003-03-11 15:07:58 zigziggy Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song browser application
@@ -274,6 +274,12 @@ function song_browser_create(owner, name)
    --- Song-Browser handle.
    --  -------------------
    function song_browser_handle(sb, evt)
+      -- call the standard dialog handle (manage child autoplacement)
+      evt = gui_dialog_basic_handle(sb, evt)
+      if not evt then
+	 return
+      end
+
       local key = evt.key
       if key == evt_shutdown_event then
 	 sb:shutdown()

@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.25 2003-03-09 11:16:36 ben Exp $
+--- $Id: desktop.lua,v 1.26 2003-03-11 15:07:57 zigziggy Exp $
 ---
 
 if not dolib("evt") then return end
@@ -60,16 +60,28 @@ function dskt_openmenu(dial, target, x, y)
    local name = target.name or "app"
    local def
    local user_def = menu_create_defs(target.mainmenu_def, target)
+   local root = ":" .. name ..":{"
+   if not target.flags or not target.flags.unfocusable then
+      root = root.. wmm_name .. "}switch to{switch},{"
+   end
+   root = root.. spr_name .. "}kill{kill}"
    local default_def = menu_create_defs
    ({
-       root = ":" .. name .. ":{"
-	  .. wmm_name .. "}switch to{switch},{"
-	  .. spr_name .. "}kill{kill}",
+       root = root,
        cb = {
 	  kill = function(menu) 
-		    evt_shutdown_app(%dial)
-		    evt_shutdown_app(%target)
-		    evt_shutdown_app(menu)
+		    local col = color_tostring(gui_text_color) or "#FFFFB0"
+		    if gui_yesno(
+'<macro macro-name="yellow" macro-cmd="font" color="#FFFF00" size="18">' ..
+'<macro macro-name="nrm" macro-cmd="font" color="'..col..'" size="16">' ..
+'Are you sure you want to kill the application <yellow>'..
+%target.name..
+'<nrm> ?'
+			      ) == 1 then
+		       evt_shutdown_app(%dial)
+		       evt_shutdown_app(%target)
+		       evt_shutdown_app(menu)
+		    end
 		 end,
 	  switch = function(menu) 
 		    evt_shutdown_app(%dial)
@@ -97,10 +109,14 @@ function dskt_openmenu(dial, target, x, y)
 end
 
 function dskt_switcher_create(owner, name, dir, x, y, z)
-   local text = '<dialog guiref="dialog" label="Desktop" name="desktop">'
-   text = text..'<linecenter>Running application ('..
-      strchar(16)..' switch to,'..strchar(18)..
-      ' menu) :<br><vspace h="8"><hspace w="16"><linedown>'
+   local col = color_tostring(gui_text_color) or "#FFFFB0"
+   local text =
+'<macro macro-name="yellow" macro-cmd="font" color="#FFFF00">' ..
+'<macro macro-name="nrm" macro-cmd="font" color="'..col..'">'
+
+   text = text..'<dialog guiref="dialog" label="Desktop" name="desktop">'
+   text = text..'<linecenter>Running application'..
+      ' :<br><vspace h="8"><hspace w="16"><linedown>'
 
    local i
    for i=1,dir.n, 1 do
@@ -124,12 +140,18 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 	 icon_file = "dcplaya.tga"
       end
 
+      local name = app.name or "app"
       text = text .. format('<button name=%q total_w="64" guiref="r%d">',
-			    (app.name or "app") .. " switcher" , i)
+			    (name) .. " switcher" , i)
+      if i == 1 then
+	 name = '<yellow>'..name
+      else
+	 name = '<nrm>'..name
+      end
       text = text
 	 .. '<img name="' .. icon_name
 	 .. '" src="' .. icon_file
-	 .. '" w="48"><br><center>' .. app.name
+	 .. '" w="48"><br><center>' .. name
       text = text..'</button><hspace w="16">'
    end
 
@@ -137,8 +159,10 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 --      'Launchable application ('..strchar(16)..' launch,'..strchar(18)..
 --      ' info) :<br><vspace h="8"><hspace w="16"><linedown>'
 
-   text = text..'<br><vspace h="16"><left><linecenter>'..
-      strchar(19)..' Close this dialog<linedown>'
+   text = text..'<br><vspace h="16"><left><linecenter>'
+   text = text..strchar(16)..' ... Switch to selected application<br>'
+   text = text..strchar(18)..' ... Application menu<br>'
+   text = text..strchar(19)..' ... Close this dialog<linedown>'
 
    text = text..'</dialog>'
 
@@ -177,11 +201,18 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 	       end
 	       
 	       if key == gui_press_event then
-		  if app.owner then
-		     local owner = app.owner.owner
-		     evt_shutdown_app(app.owner)
-		     if owner then
-			gui_new_focus(owner, app.target)
+		  if app.target.flags and app.target.flags.unfocusable then
+		     gui_ask(
+			     'Sorry, this application is not switchable '..
+				'<img name="smiley" src="stock_smiley.tga" scale="1.5">'
+			     , { "OK !" })
+		  else
+		     if app.owner then
+			local owner = app.owner.owner
+			evt_shutdown_app(app.owner)
+			if owner then
+			   gui_new_focus(owner, app.target)
+			end
 		     end
 		     return
 		  end

@@ -4,7 +4,7 @@
 --- @date    2002/11/29
 --- @brief   Song info application.
 ---
---- $Id: song_info.lua,v 1.19 2003-03-09 11:16:36 ben Exp $
+--- $Id: song_info.lua,v 1.20 2003-03-11 15:07:58 zigziggy Exp $
 
 song_info_loaded = nil
 
@@ -376,6 +376,7 @@ function song_info_create(owner, name, style)
       alpha = 0,
       fade = 0,
       z = gui_guess_z(owner,z),
+      flags = { unfocusable = 1 },
    }
 
    local bstyle = style_get(style)

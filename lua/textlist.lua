@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.35 2003-03-09 13:15:54 ben Exp $
+--- $Id: textlist.lua,v 1.36 2003-03-11 15:07:58 zigziggy Exp $
 ---
 
 -- Unload the library
@@ -13,6 +13,7 @@ textlist_loaded = nil
 
 -- z shift of textlist entry text
 textlist_entry_z = 25
+textlist_cursor_z = 25
 
 
 -- Load required libraries
@@ -475,7 +476,7 @@ function textlist_create(flparm)
 		  0, y, w, y+h, 0,
 		  fl.curcolor[1],fl.curcolor[2],fl.curcolor[3],fl.curcolor[4],
 		  fl.curcolor[5],fl.curcolor[6],fl.curcolor[7],fl.curcolor[8])
-      fl:draw_entry(dl, i, 0, y+fl.span, textlist_entry_z)
+      fl:draw_entry(dl, i, 0, y+fl.span, textlist_entry_z + textlist_cursor_z)
       -- display to vmu
       vmu_set_text(fl:get_text(i))
       dl_set_active(dl,1)
@@ -741,6 +742,12 @@ function textlist_create_app(fl,owner)
    --- @internal
    --
    function textlist_app_handle(app,evt)
+      -- call the standard dialog handle (manage child autoplacement)
+      evt = gui_dialog_basic_handle(sb, evt)
+      if not evt then
+	 return
+      end
+
       local fl = app.fl
       if key == evt_shutdown_event then
 	 fl:shutdown()
@@ -778,6 +785,12 @@ function textlist_create_gui(fl, owner)
    --- @internal
    --
    function textlist_gui_handle(app,evt)
+      -- call the standard dialog handle (manage child autoplacement)
+      evt = gui_dialog_basic_handle(sb, evt)
+      if not evt then
+	 return
+      end
+
       local key = evt.key
       local fl = app.fl
       local dir = fl.dir
@@ -825,8 +838,8 @@ function textlist_create_gui(fl, owner)
       return evt
    end
 
-   app.z		= gui_guess_z(owner, nil)
-   fl:set_pos(nil, nil, gui_guess_z(app))
+   app.z		= 0 --gui_guess_z(owner, nil)
+   fl:set_pos(nil, nil, 0) --gui_guess_z(app))
    app.fl		= fl
    app.name	    	= "gui "..app.name
    app.box		= app.fl.box

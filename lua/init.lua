@@ -4,7 +4,7 @@
 --- @author   benjamin gerard <ben@sashipa.com>
 --- @brief    Fundamental lua stuff.
 ---
---- $Id: init.lua,v 1.17 2003-03-09 01:00:15 ben Exp $
+--- $Id: init.lua,v 1.18 2003-03-11 15:07:58 zigziggy Exp $
 ---
 
 -- do this file only once !
@@ -193,7 +193,9 @@ if not init_lua then
       local lists = get_driver_lists()
       local name, list
       for name,list in lists do
-	 update_driver_list(list, force)
+	 if name ~= "obj" then -- (skip obj plugins, not relevant here ...)
+	    update_driver_list(list, force)
+	 end
       end
    end
 

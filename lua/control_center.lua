@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.15 2003-03-10 22:55:32 ben Exp $
+--- $Id: control_center.lua,v 1.16 2003-03-11 15:07:57 zigziggy Exp $
 ---
 
 --- @defgroup dcplaya_lua_cc_app Control center application
@@ -364,7 +364,8 @@ function control_center_create(owner, name)
       z = gui_guess_z(owner,z),
       fade = 0,
       dl = dl_new_list(256, 1),
-      mainmenu_def = control_center_menucreator
+      mainmenu_def = control_center_menucreator,
+      flags = { unfocusable = 1 },
    }
 
    evt_app_insert_last(owner, cc)

@@ -3,7 +3,7 @@
 --- @date   2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  hyper text viwer gui
---- $Id: textviewer.lua,v 1.10 2003-03-07 15:36:28 ben Exp $
+--- $Id: textviewer.lua,v 1.11 2003-03-11 15:07:58 zigziggy Exp $
 ---
 
 if not dolib("taggedtext") then return end
@@ -135,7 +135,7 @@ function gui_text_viewer(owner, texts, box, label, mode)
 
    local border = 8
    local dial
-   local buttext = "close \017"
+   local buttext = "close"
 
    -- Button size
    local butw,buth = dl_measure_text(nil,buttext)

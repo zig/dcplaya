@@ -4,7 +4,7 @@
 --- @date   2002/10/04
 --- @brief  fileselector gui
 ---
---- $Id: fileselector.lua,v 1.24 2003-03-11 13:39:21 ben Exp $
+--- $Id: fileselector.lua,v 1.25 2003-03-11 15:07:58 zigziggy Exp $
 --
 -- TODO : select item with space 
 --        completion with tab        
@@ -410,6 +410,18 @@ function fileselector(name,path,filename,owner)
 				confirm=fileselector_confirm,
 				box={x5-x1, y5-y1, x5-x1, y5-y1}
 			     })
+
+   -- VP : added these two statements to add ".." as first file in the list
+--   dial.flist.fl.change_dir = function(fl, dir, pos)
+--			      dir = dir or { }
+--			      local first = dir[1]
+--			      if fl.pwd ~= "/" and
+--				   (not first or first.name ~= "..") then
+--				 tinsert(dir, 1, { name = "..", size = -1 })
+--			      end
+--			      return textlist_change_dir(fl, dir, pos)
+--			   end
+--   dial.flist.fl:set_path()
 
    return dial
 end
