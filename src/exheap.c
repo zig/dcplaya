@@ -4,7 +4,7 @@
  * @date     2003/01/19
  * @brief    External heap management.
  * 
- * $Id: exheap.c,v 1.1 2003-01-19 16:45:14 zigziggy Exp $
+ * $Id: exheap.c,v 1.2 2003-01-19 20:05:30 zigziggy Exp $
  */
 
 
@@ -21,9 +21,9 @@ searching, and may allow to choose free blocks that suit better.
 #include <malloc.h>
 
 
-#define MARK_USED(b) (b)->g_freelist.cqe_next = NULL
-#define IS_USED(b) (b)->g_freelist.cqe_next == NULL
-#define IS_FREE(b) (b)->g_freelist.cqe_next != NULL
+#define MARK_USED(b) ( (b)->g_freelist.cqe_next = NULL )
+#define IS_USED(b) ( (b)->g_freelist.cqe_next == NULL )
+#define IS_FREE(b) ( (b)->g_freelist.cqe_next != NULL )
 
 
 #define MIN_FREEBLOCK_SZ sizeof(eh_block_t)
@@ -78,9 +78,35 @@ void eh_destroy_heap(eh_heap_t * heap)
 }
 
 
+
+static void dump_freeblock(eh_heap_t * heap)
+{
+  eh_block_t * b;
+  size_t sz, total = 0;
+
+  printf("Dumping video memory free texture areas :\n");
+
+  /* browser all free blocks */
+  CIRCLEQ_FOREACH(b, &heap->freelist, g_freelist) {
+    eh_block_t * next;
+    next = CIRCLEQ_NEXT(b, g_list);
+    if (next != (void *) &heap->list) {
+      sz = next->offset - b->offset;
+    } else {
+      sz = heap->total_sz - b->offset;
+    }
+
+    printf("block %gMb\n", sz/1024.0f);
+    total += sz;
+  }
+
+  printf("total %gMb\n", total/1024.0f);
+}
+
+
 static void free_usedblock(eh_heap_t * heap, eh_block_t * b)
 {
-  SDDEBUG("used_freeblock(%x)\n", b);
+  SDDEBUG("free_usedblock(%x)\n", b);
   CIRCLEQ_REMOVE(&heap->list, b, g_list);
   heap->usedblock_free(heap, b);
 }
@@ -134,6 +160,7 @@ static eh_block_t * do_alloc(eh_heap_t * heap, eh_block_t * b, size_t bsz, size_
     printf("1\n");
     CIRCLEQ_REMOVE(&heap->freelist, b, g_freelist);
     MARK_USED(b);
+    dump_freeblock(heap);
     return b;
   }
 
@@ -181,6 +208,7 @@ static eh_block_t * do_alloc(eh_heap_t * heap, eh_block_t * b, size_t bsz, size_
 
     }
 
+  dump_freeblock(heap);
   return a;
 }
 
@@ -289,17 +317,22 @@ void eh_free(eh_heap_t * heap, eh_block_t * b)
       if (b == NULL) {
 	/* NOW WE HAVE A PROBLEM !! The free block will be lost ... 
 	   But the memory might be recovered later if an adjacent used
-	   block is freed later. */
+	   block is freed. */
       } else {
 	if (prev == (void *)&heap->list) {
+	  printf("toto\n");
+
 	  CIRCLEQ_INSERT_HEAD(&heap->freelist, b, g_freelist);
 	  CIRCLEQ_INSERT_HEAD(&heap->list, b, g_list);
 	} else {
+	  printf("tutu\n");
+
 	  CIRCLEQ_INSERT_AFTER(&heap->freelist, prev, b, g_freelist);
 	  CIRCLEQ_INSERT_AFTER(&heap->list, prev, b, g_list);
 	}
       }
     }
   }
+  dump_freeblock(heap);
 }
 

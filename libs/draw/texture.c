@@ -4,7 +4,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.4 2003-01-19 16:45:14 zigziggy Exp $
+ * $Id: texture.c,v 1.5 2003-01-19 20:05:30 zigziggy Exp $
  */
 
 #include <stdlib.h>
@@ -102,7 +102,7 @@ static size_t vid_sbrk(eh_heap_t * heap, size_t size)
   printf("sbrk %d\n", size);
 
   /* return the maximum amount of memory */
-  return 5*1024*1024; /* TODO calculate the exact amount */
+  return 4*1024*1024; /* TODO calculate the exact amount */
 }
 
 int texture_init(void)
