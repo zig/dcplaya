@@ -2,13 +2,20 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.7 2002-11-25 20:31:39 ben Exp $
+# $Id: Makefile.in,v 1.8 2002-12-15 02:32:28 ben Exp $
 #
 
 VERSION = @VERSION@
 DOXYGEN = "@DOXYGEN@"
 
-DEVDOCDIR  	:= . .. ../include  ../libs/draw
+IMGPLUGINDOCDIR := \
+	$(foreach dir,tga jpeg, ../plugins/img/$(dir))
+INPPLUGINDOCDIR := \
+$(foreach dir,mikmod ogg sc68 sidplay spc xing, ../plugins/inp/$(dir))
+
+PLUGINDOCDIR := $(IMGPLUGINDOCDIR) $(INPPLUGINDOCDIR)
+
+DEVDOCDIR  	:= . .. ../include ../libs/draw $(PLUGINDOCDIR)
 DEVDOCFILES	:= doc.h devdoc.h
 
 LUADOCDIR   := lua
