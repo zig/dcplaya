@@ -3,7 +3,7 @@
 #
 # by Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.8 2003-03-03 08:35:24 ben Exp $
+# $Id: Makefile,v 1.9 2003-03-19 05:24:24 ben Exp $
 #
 
 CDRECORD	= cdrecord dev=0,0,0 speed=4
@@ -109,6 +109,7 @@ dcplaya-data: id.txt RELEASE.txt README.txt 1ST_READ.BIN
 	@cp -a ../autorun.lua ../dcplayarc.lua ../userconf.lua dcplaya
 	@cp -a ../dynshell/dynshell.lez dcplaya/dynshell
 	@cp -a ../lua dcplaya
+	@cp -a ../doc/doc dcplaya
 	@(cd ..; find plugins -type f -name '*.lez') \
 	| tar cf - -C .. -T - \
 	| tar xf - -C dcplaya
