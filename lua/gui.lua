@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.33 2002-12-19 18:47:47 zigziggy Exp $
+--- $Id: gui.lua,v 1.34 2002-12-21 06:02:23 zigziggy Exp $
 ---
 
 --
@@ -51,6 +51,8 @@ gui_button_color1 = { 0.8, 0.2, 0.7, 0.7 }
 gui_button_color2 = { 0.8, 0.1, 0.3, 0.3 }
 gui_text_color = { 0.9, 1.0, 1.0, 0.7 }
 gui_text_shiftbox = { 5, 5, -5, -5 }
+gui_input_color1 = { 0.8, 0.2, 0.3, 0.3 }
+gui_input_color2 = { 0.8, 0.1, 0.1, 0.1 }
 gui_input_cursor_color1 = { 1, 1, 0.5, 0 }
 gui_input_cursor_color2 = { 1, 0.5, 1.0, 0 }
 gui_focus_border_width = 2
@@ -463,6 +465,20 @@ function gui_button_box_draw(dl, box, z, bcolor, color)
    end
 end
 
+function gui_input_box_draw(dl, box, z, bcolor, color)
+   if not nil then
+      local t, l, b, r = 1.6*bcolor, 0.8*bcolor, 0.2*bcolor, 0.4*bcolor
+      t[1] = bcolor[1]
+      l[1] = bcolor[1]
+      b[1] = bcolor[1]
+      r[1] = bcolor[1]
+      local b3d = box3d(box, 2, color, b, r, t, l)
+      box3d_draw(b3d,dl, mat_trans(0, 0, z))
+   else
+      dl_draw_box(app.dl, app.box, z, bcolor, color)
+   end
+end
+
 
 function gui_new_dialog(owner, box, z, dlsize, text, mode, name)
    local dial
@@ -518,6 +534,10 @@ function gui_new_dialog(owner, box, z, dlsize, text, mode, name)
    end
    
    if text then
+      mode = mode or { }
+      mode.x = mode.x or "left"
+      mode.y = mode.y or "upout"
+      mode.font_h = mode.font_h or 14
       gui_label(dial, text, mode)
    end
    
@@ -649,8 +669,8 @@ end
 
 function gui_input_display_text(app)
    local w, h = dl_measure_text(app.input_dl, app.input)
-   local x = app.box[1]
-   local y = (app.box[2] + app.box[4] - h) / 2
+   local x = app.input_box[1]
+   local y = (app.input_box[2] + app.input_box[4] - h) / 2
    local z = app.z + 1
 
    dl_clear(app.input_dl)
@@ -704,6 +724,7 @@ function gui_new_input(owner, box, text, mode, string, z)
       
       dl = owner.dl,
       box = box,
+      input_box = box + { 2, 2, -2, -2 },
       z = z,
       
       event_table = { },
@@ -715,7 +736,8 @@ function gui_new_input(owner, box, text, mode, string, z)
 
    dl_sublist(app.dl, app.input_dl)
    
-   dl_draw_box(app.dl, app.box, z, gui_input_color1, gui_input_color2)
+   gui_input_box_draw(app.dl, app.box, z, gui_input_color1, gui_input_color2)
+   --dl_draw_box(app.dl, app.box, z, gui_input_color1, gui_input_color2)
    
    gui_input_set(app, string)
    
@@ -802,16 +824,20 @@ end
 -- display justified text into given box
 function gui_justify(dl, box, z, color, text, mode)
 
-   if not mode then
-      mode = { }
+   if tag(text) == tt_tag then
+      mode = text
+   else
+      if not mode then
+	 mode = { }
+      end
+      mode.x = mode.x or "center"
+      mode.y = mode.y or "center"
+      mode.box = box
+      mode.z = z
+      mode.color = color
+      mode = tt_build(text, mode)
    end
-   if not mode.x then mode.x = "center" end
-   if not mode.y then mode.y = "center" end
-   mode.box = box
-   mode.z = z
-   mode.color = color
-   
-   mode = tt_build(text, mode)
+
    tt_draw(mode)
 
    dl_sublist(dl, mode.dl)
@@ -820,10 +846,80 @@ function gui_justify(dl, box, z, color, text, mode)
 
 end
 
+
+
+--- ask a question (given as a tagged text) and propose given answers
+--- (array of tagged text), with given optional box width (default to 300)
+function gui_ask(question, answers, width, label)
+
+   width = width or 300
+
+   local text = '<dialog guiref="dialog" x="center" name="gui_ask"'
+
+   if label then
+      text = text..' label="'..label..'"'
+   end
+   if width then
+      text = text..format(' w="%d"', width)
+   end
+   text = text..'>'
+
+   text = text..'<vspace h="8">'
+
+   text = text..question
+
+   text = text..'<vspace h="8">'
+
+   local i
+   for i=1, getn(answers), 1 do
+      text = text..'<hspace w="8">'
+      text = text..format('<button guiref="%d">', i)..answers[i]..'</button>'
+   end
+   text = text..'<hspace w="8">'
+
+   text = text..'<vspace h="4">'
+
+   text = text..'</dialog>'
+
+   --print(text)
+   local tt = tt_build(text, {
+			  x = "center",
+			  y = "center",
+			  box = { 0, 0, 640, 400 },
+		       }
+		    )
+   
+   tt_draw(tt)
+
+   for i=1, getn(answers), 1 do
+      tt.guis.dialog.guis[format("%d", i)].event_table[gui_press_event] = function(app, evt)
+								 evt_shutdown_app(app.owner)
+								 app.owner.answer = %i
+								 return evt
+							      end
+   end
+
+   while not tt.guis.dialog.answer do
+      evt_peek()
+   end
+
+   return tt.guis.dialog.answer
+   
+end
+
+
+--- Ask a question with two possible answers (default is yes/no) with value 1 and 2
+function gui_yesno(question, width, label, yes, no)
+   yes = yes or "Yes"
+   no = no or "No"
+   return gui_ask(question, { yes..'<img name="apply" src="stock_button_apply.tga" scale="1.5">', no..'<img name="cancel" src="stock_button_cancel.tga" scale="1.5">' }, width, label)
+end
+
+
 -- add a label to a gui item
 function gui_label(app, text, mode)
    --	gui_justify(app.dl, app.box + gui_text_shiftbox, app.z+1, gui_text_color, text, mode)
-   gui_justify(app.dl, app.box, app.z+10, gui_text_color, text, mode)
+   return gui_justify(app.dl, app.box, app.z+10, gui_text_color, text, mode)
    -- TODO use an optional mode.boxcolor and render a box around text if it is set ...
 end
 
@@ -860,7 +956,7 @@ function dialog_test(parent)
    end
 
    -- create a dialog box with a label outside of the box
-   local box = { 100, 100, 400, 360 }
+   local box = { 100, 100, 400, 400 }
    if parent.box then
       box[1] = box[1] + parent.box[1] + 100
       box[2] = box[2] + parent.box[2]
@@ -881,7 +977,7 @@ Ceci est un tres long texte on purpose !!!!
    local y = box[2] - 100
    
    -- create a few buttons with labels
-   but = gui_new_button(dial, { x + 150, y + 200, x + 240, y + 230 }, 'OK <img name="dcplaya" src="dcplaya.tga" scale="0.75">')
+   but = gui_new_button(dial, { x + 150, y + 200, x + 240, y + 230 }, 'OK <img name="apply" src="stock_button_apply.tga" scale="1.5">')
    
    -- add a gui_press_event response
    but.event_table[gui_press_event] =
@@ -891,7 +987,7 @@ Ceci est un tres long texte on purpose !!!!
 	 return nil -- block the event
       end
    
-   but = gui_new_button(dial, { x + 250, y + 200, x + 360, y + 230 }, 'CANCEL <img name="colorpicker" src="colorpicker.tga" scale="0.75">')
+   but = gui_new_button(dial, { x + 250, y + 200, x + 360, y + 230 }, 'CANCEL <img name="cancel" src="stock_button_cancel.tga" scale="1.5">')
    but.event_table[gui_press_event] =
       function(but, evt)
 	 print [[CANCEL !!]]
@@ -899,14 +995,14 @@ Ceci est un tres long texte on purpose !!!!
 	 return nil -- block the event
       end
    
-   but = gui_new_button(dial, { x + 150, y + 250, x + 200, y + 270 }, "TITI")
+   but = gui_new_button(dial, { x + 150, y + 250, x + 240, y + 290 }, 'VMU <img name="vmu" scale="0.25">')
    but.event_table[gui_press_event] =
       function(but, evt)
 	 print [[TITI !!]]
 	 return nil -- block the event
       end
    
-   but = gui_new_button(dial, { x + 250, y + 250, x + 300, y + 270 }, "TOTO")
+   but = gui_new_button(dial, { x + 250, y + 250, x + 390, y + 290 }, 'DCPlaya <img name="dcplaya" src="dcplaya.tga" scale="1.25">')
    but.event_table[gui_press_event] =
       function(but, evt)
 	 print [[TOTO !!]]
@@ -920,8 +1016,8 @@ Ceci est un tres long texte on purpose !!!!
 
    -- create subdialog
    for i=1, 4, 1 do
-      local subdial = gui_new_dialog(dial, { x + 120, y + 300, x + 180, y + 350 }, nil, nil, "Sub dialog", { x = "left", y="upout" })
-      but = gui_new_button(subdial, { x + 130, y + 310, x + 180, y + 340 }, "TOTO")
+      local subdial = gui_new_dialog(dial, { x + 120, y + 330, x + 190, y + 380 }, nil, nil, "Sub dialog", { x = "left", y="upout" })
+      but = gui_new_button(subdial, { x + 130, y + 340, x + 180, y + 370 }, "TOTO")
 --      but.event_table[gui_press_event] =
 --	 function(but, evt)
 --	    print [[TOTO !!]]
@@ -941,3 +1037,4 @@ if nil then
 end
 
 
+return 1

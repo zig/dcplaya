@@ -33,12 +33,13 @@ function tt_img_cmd(mode, param)
       --local tex = tex_new()
       --print("'"..src.."'")
       local tex = tex_get(home.."lua/rsc/icons/"..src) or tex_new(home.."lua/rsc/icons/"..src)
-      print(tex)
+      --print(tex)
       if tex then
 	 local info = tex_info(tex)
 	 local w, h = info.w, info.h
+	 local orig_w, orig_h = info.orig_w, info.orig_h
 	 rotate = param.rotate
-	 spr = sprite(name, 0, 0, w, h, 0, 0, 1, 1, tex, rotate)
+	 spr = sprite(name, 0, 0, orig_w, orig_h, 0, 0, orig_w/w, orig_h/h, tex, rotate)
       end
    end
 
@@ -103,6 +104,7 @@ function tt_tocolor(s)
 
       return col
    else
+      -- hahaha :)
       local a = tonumber(s) / 255
       return { 1, a, a, a }
    end
@@ -111,7 +113,9 @@ end
 
 function tt_font_cmd(mode, param)
 
-   mode.font_h = tonumber(param.size) or mode.font_h
+   if param.size then
+      mode.font_h = tonumber(param.size) or mode.font_h
+   end
    if param.color then
 --      print("color", param.color)
       mode.color = tt_tocolor(param.color)
@@ -136,31 +140,178 @@ function tt_font_cmd(mode, param)
    return block
 end
 
+function tt_dialog_draw(block)
+   local papp
+   local mode = block.tt
+   papp = mode.parent.app
+   local box = { block.x, block.y, block.x + block.w, block.y + block.h }
+   mode.box = box + { 8, 8, -8, -8 }
+   dl_set_trans(mode.dl, mat_trans(0, 0, block.z))
+   local app = gui_new_dialog(papp, box, nil, nil, mode.label, nil, mode.name)
+   app.guis = mode.guis
+   mode.app = app
+   gui_label(app, mode)
+   --print(mode.label, mode.guiref)
+   if mode.guiref then
+      --print("dialog", mode.guiref)
+      mode.parent.guis[mode.guiref] = app
+   end
+end
+
+function tt_dialog_cmd(mode, param)
+   param.x = param.x or "left"
+   param.y = param.y or "up"
+   param.border = { 0, 0 }
+   param.box = {
+      0, 0, 
+      param.w or 640,
+      param.h or 480
+   }
+   param.w = nil
+   param.h = nil
+   local newmode = tt_build("", param)
+   
+   newmode.parent = mode
+   newmode.parent_cmd = tt_end_dialog_cmd
+   newmode.z = 10
+   
+   return nil, newmode
+end
+
+function tt_end_dialog_cmd(mode)
+   mode = tt_endgroup(mode, tt_end_dialog_cmd)
+
+   local block = {
+      type = "dialog",
+      w = mode.total_w + 20,
+      h = mode.total_h + 20,
+      z = mode.z,
+      tt = mode,
+      draw = tt_dialog_draw,
+   }
+
+   return block, mode.parent
+end
+
+
+function tt_button_draw(block)
+   local papp
+   local mode = block.tt
+   papp = mode.parent.app
+   if not papp then
+      return
+   end
+   local box = { block.x, block.y, block.x + block.w, block.y + block.h }
+   mode.box = box + { 4, 4, -4, -4 }
+   dl_set_trans(mode.dl, mat_trans(0, 0, block.z))
+   local app = gui_new_button(papp, box, nil, mode.name)
+   app.guis = mode.guis
+   mode.app = app
+   gui_label(app, mode)
+   if mode.guiref then
+      --print("button", mode.guiref)
+      mode.parent.guis[mode.guiref] = app
+   end
+end
+
+function tt_button_cmd(mode, param)
+   param.x = param.x or "center"
+   param.y = param.y or "center"
+   param.border = { 0, 0 }
+   param.box = {
+      0, 0, 
+      param.w or 640,
+      param.h or 480
+   }
+   param.w = nil
+   param.h = nil
+   local newmode = tt_build("", param)
+   
+   newmode.parent = mode
+   newmode.parent_cmd = tt_end_button_cmd
+   newmode.z = 20
+   newmode.box = {
+      0, 0, 
+      param.w or 640,
+      param.h or 480
+   }
+   
+   return nil, newmode
+end
+
+function tt_end_button_cmd(mode)
+   mode = tt_endgroup(mode, tt_end_button_cmd)
+
+   local block = {
+      type = "button",
+      w = mode.total_w + 20,
+      h = mode.total_h + 20,
+      z = mode.z,
+      tt = mode,
+      draw = tt_button_draw,
+   }
+
+   return block, mode.parent
+end
+
 -- all commands
 tt_commands = {
+
    img = tt_img_cmd,
+
    br = function(mode)
 	   tt_endline(mode)
 	end,
+
+   p = function(mode)
+	  tt_endline(mode)
+       end,
+
    left = function(mode)
 	     mode.align_line_h = tt_align_line_left
 	  end,
+
    center = function(mode)
 	       mode.align_line_h = tt_align_line_center
 	    end,
+
    right = function(mode)
 	      mode.align_line_h = tt_align_line_right
 	   end,
+
    up = function(mode)
 	     mode.align_v = tt_align_up
 	  end,
+
    vcenter = function(mode)
 	       mode.align_v = tt_align_vcenter
 	    end,
+
    down = function(mode)
 	      mode.align_v = tt_align_down
 	   end,
-   font = tt_font_cmd
+
+   font = tt_font_cmd,
+
+   vspace = function(mode, param)
+	       local h = param.h or 16
+	       mode.h = mode.h + h
+	       tt_endline(mode)
+	       tt_insert_block(mode, { w = 0, h = h, draw = function() end })
+	       tt_endline(mode)
+	    end,
+
+   hspace = function(mode, param)
+	       local w = param.w or 16
+	       mode.w = mode.w + w
+	       return { w = w, h = 0, draw = function() end }
+	    end,
+
+   ["dialog"] = tt_dialog_cmd,
+   ["/dialog"] = tt_end_dialog_cmd,
+
+   ["button"] = tt_button_cmd,
+   ["/button"] = tt_end_button_cmd
 }
 
 
@@ -178,7 +329,7 @@ function tt_getword(text, e1)
    if e1 then
       local e2 = strfind(text, "%s", e1)
       if e2 then
-	 word = strsub(text, e1-1, e2-1)
+	 word = strsub(text, e1, e2-1)
       else
 	 word = strsub(text, e1, -1)
       end
@@ -225,24 +376,21 @@ function tt_copymode(mode)
    return copy
 end
 
-function tt_align_line_down(mode, h)
-   local line = mode.curline
+function tt_align_line_down(mode, line, h)
    local i
    for i=1, line.n, 1 do
       line[i].y = line[i].y - line[i].h + h
    end
 end
 
-function tt_align_line_vcenter(mode, h)
-   local line = mode.curline
+function tt_align_line_vcenter(mode, line, h)
    local i
    for i=1, line.n, 1 do
       line[i].y = line[i].y + ( h - line[i].h ) / 2
    end
 end
 
-function tt_align_line_left(mode, h)
-   local line = mode.curline
+function tt_align_line_left(mode, line, h)
    local i
    local x = mode.box[1]
    for i=1, line.n, 1 do
@@ -250,19 +398,17 @@ function tt_align_line_left(mode, h)
    end
 end
 
-function tt_align_line_right(mode, h)
-   local line = mode.curline
+function tt_align_line_right(mode, line, h)
    local i
-   local x = mode.box[3] - mode.w
+   local x = mode.box[3] - line.w
    for i=1, line.n, 1 do
       line[i].x = line[i].x + x
    end
 end
 
-function tt_align_line_center(mode, h)
-   local line = mode.curline
+function tt_align_line_center(mode, line, h)
    local i
-   local x = (mode.box[1] + mode.box[3] - mode.w)/2
+   local x = (mode.box[1] + mode.box[3] - line.w)/2
    for i=1, line.n, 1 do
       line[i].x = line[i].x + x
    end
@@ -321,6 +467,10 @@ end
 
 
 function tt_endline(mode)
+   if mode.curline.n < 1 then
+      return
+   end
+
    local h = 0
    local line = mode.curline
    local i
@@ -330,8 +480,9 @@ function tt_endline(mode)
    end
 
    line.h = h
-   mode:align_line_h(h)
-   mode:align_line_v(h)
+   line.w = mode.w
+   line.align_line_h = mode.align_line_h
+   line.align_line_v = mode.align_line_v
 
    tinsert(mode.lines, line)
    mode.curline = { n = 0 }
@@ -358,11 +509,29 @@ function tt_insert_block(mode, block)
 end
 
 
--- perform justification on a tagged text
+function tt_endgroup(mode, cur)
+   tt_endline(mode)
+   
+   while mode.parent and mode.parent_cmd ~= cur do
+      local block = mode:parent_cmd()
+      mode = mode.parent
+      if block then
+	 tt_insert_block(mode, block)
+      end
+   end
+   return mode
+end
+
+-- process a tagged text
 function tt_build(text, mode)
+   if not tt_tag then
+      tt_tag = newtag()
+   end
+
    if not mode then
       mode = { }
    end
+   settag(mode, tt_tag)
    mode.dl = mode.dl or dl_new_list(1024, 1)
    mode.box = mode.box or { 0, 0, 640, 480 }
    mode.outbox = mode.outbox or { 0, 0, 640, 480 }
@@ -376,9 +545,10 @@ function tt_build(text, mode)
    mode.bw = mode.box[3] - mode.box[1] -- box width
    mode.w = mode.w or 0
    mode.h = mode.h or 0
-   mode.border = mode.border or { 6, 6 }
+   mode.border = mode.border or { 8, 8 }
    mode.total_w = 0
    mode.total_h = 0
+   mode.guis = { }
    
    mode.box = tt_copymode(mode.box)
 
@@ -430,6 +600,10 @@ function tt_build(text, mode)
    
    local start = 1
    local len = strlen(text)
+
+   if mode.font_h ~= 16 then
+      tt_insert_block(mode, tt_font_cmd(mode, { size = mode.font_h }))
+   end
    
    while start <= len do
       local e1, e2 = strfind(text, "[%s%p]*%w+[%s%p]+", start)
@@ -441,13 +615,16 @@ function tt_build(text, mode)
 --	 print("sub", strsub(text, start, e2))
 --      end
 
+      local t = strsub(text, start, e2)
+
       local e3, e4
       if start <= e2 then
-	 e3, e4 = strfind(text, "<", start, e2)
+	 e3, e4 = strfind(t, "<")
 	 if e3 then 
 	    e3, e4 = strfind(text, "%b<>", start)
 	    if e3 then
 	       e2 = e3-1
+	       t = strsub(text, start, e2)
 	    end
 	 end
       end
@@ -455,7 +632,8 @@ function tt_build(text, mode)
       if start <= e2 then
 	 local block = {
 	    type = "text",
-	    text = strsub(text, start, e2),
+	    text = gsub(t, "%s", "").." ",
+--	    text = t,
 	    draw = tt_text_draw,
 	    dl = mode.dl,
 	    font_id = mode.font_id,
@@ -497,7 +675,11 @@ function tt_build(text, mode)
 	    local f = tt_commands[command]
 
 	    if f then
-	       block = f(mode, param)
+	       local newmode
+	       block, newmode = f(mode, param)
+	       if newmode then
+		  mode = newmode
+	       end
 	       if block then
 		  tt_insert_block(mode, block)
 	       end
@@ -508,19 +690,26 @@ function tt_build(text, mode)
       start = e2 + 1
    end
 
-   if mode.curline.n > 0 then
-      tt_endline(mode)
-   end
+   -- end all unclosed groups
+   mode = tt_endgroup(mode)
 
-   mode:align_v()
+   tt_endline(mode)
 
    return mode
 end
 
 function tt_draw(tt)
    local i, j
+
+   tt:align_v()
+
    for i=1, tt.lines.n, 1 do
       local line = tt.lines[i]
+
+      local h = line.h
+      line.align_line_h(tt, line, h)
+      line.align_line_v(tt, line, h)
+
       for j=1, line.n, 1 do
 	 line[j]:draw()
       end
@@ -552,4 +741,4 @@ Hello <img name="vmu" scale="0.5"> World ! <br>
 
 end
 
-taggedtext_loaded = 1
+return 1

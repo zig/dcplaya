@@ -106,7 +106,9 @@ function sprite(name, x, y, w, h, u1, v1, u2, v2, texture, rotate)
 
 	settag(spr, sprite_tag)
 
-	sprite_list[spr.name] = spr
+	if spr.tex then
+	   sprite_list[spr.name] = spr
+	end
 
 	return spr
 end
