@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.19 2002-11-29 08:29:42 ben Exp $
+ * $Id: display.c,v 1.20 2002-12-01 19:19:14 ben Exp $
  */
 
 #include <stdlib.h>
@@ -20,6 +20,8 @@
 
 #include "display_driver.h"
 #include "display_matrix.h"
+
+#include "sysdebug.h"
 
 /* display_matrix.c */
 DL_FUNCTION_DECLARE(init_matrix_type);
@@ -77,31 +79,40 @@ DL_FUNCTION_DECLARE(draw_colors);
 /* display list LUA interface */
 int dl_list_tag;
 
+DL_FUNCTION_DECLARE(dl_gc);
+
 static void lua_init_dl_type(lua_State * L)
 {
-  dl_list_tag = lua_newtag(L);
+  lua_getglobal(L,"dl_tag");
+  dl_list_tag = lua_tonumber(L,1);
+  if (! dl_list_tag) {
+	dl_list_tag = lua_newtag(L);
+	lua_pushnumber(L, dl_list_tag);
+	lua_setglobal(L,"dl_tag");
+  }
+  lua_pushcfunction(L, lua_dl_gc);
+  lua_settagmethod(L, dl_list_tag, "gc");
 
   /* Initialize an empty list of display list */
-  lua_dostring(L, 
-	       "\n dl_lists = { }"
-	       "\n init_display_driver = nil"
-	       );
+/*   lua_dostring(L,  */
+/* 	       "\n dl_lists = { }" */
+/* 	       "\n init_display_driver = nil" */
+/* 	       ); */
 }
 
 static void lua_shutdown_dl_type(lua_State * L)
 {
   /* Destroy all allocated display lists */
-  lua_dostring(L, 
-	       "\n if type(dl_lists)==[[table]] then "
-	       "\n   while next(dl_lists) do"
-	       "\n     dl_destroy_list(next(dl_lists))"
-	       "\n   end"
-	       "\n end"
-	       "\n dl_lists = { }"
-	       "\n init_display_driver = nil"
-	       );
-
-  dl_list_tag = -1;
+/*   lua_dostring(L,  */
+/* 	       "\n if type(dl_lists)==[[table]] then " */
+/* 	       "\n   while next(dl_lists) do" */
+/* 	       "\n     dl_destroy_list(next(dl_lists))" */
+/* 	       "\n   end" */
+/* 	       "\n end" */
+/* 	       "\n dl_lists = { }" */
+/* 	       "\n init_display_driver = nil" */
+/* 	       ); */
+/*   dl_list_tag = -1; */
 }
 
 static int lua_new_list(lua_State * L)
@@ -111,28 +122,28 @@ static int lua_new_list(lua_State * L)
   int active   = lua_tonumber(L, 2);
   int sub      = lua_tonumber(L, 3);
 
-  if (dl_list_tag < 0) {
-    /* try to initialize it */
-    lua_dostring(L, DRIVER_NAME"_driver_init()");
+/*   if (dl_list_tag < 0) { */
+/*     /\* try to initialize it *\/ */
+/*     lua_dostring(L, DRIVER_NAME"_driver_init()"); */
     
-    if (dl_list_tag < 0) {
-      printf("display driver not initialized !");
-      return 0;
-    }
-  }
-
+/*     if (dl_list_tag < 0) { */
+/*       printf("display driver not initialized !"); */
+/*       return 0; */
+/*     } */
+/*   } */
+  ///$$$
   printf("Creating new %s-list %d %d\n", sub?"sub":"main",heapsize, active);
-
   lua_settop(L, 0);
   l = dl_create(heapsize, active, sub);
   if (l) {
+	driver_reference(&display_driver);
 
-    /* insert the new display list into list of all display lists
-	   (used in shutdown) */
-    lua_getglobal(L, "dl_lists");
-    lua_pushusertag(L, l, dl_list_tag);
-    lua_pushnumber(L, 1);
-    lua_settable(L, 1);
+/*     /\* insert the new display list into list of all display lists */
+/* 	   (used in shutdown) *\/ */
+/*     lua_getglobal(L, "dl_lists"); */
+/*     lua_pushusertag(L, l, dl_list_tag); */
+/*     lua_pushnumber(L, 1); */
+/*     lua_settable(L, 1); */
     
     /* return the display list to the happy user */
     lua_settop(L, 0);
@@ -144,17 +155,26 @@ static int lua_new_list(lua_State * L)
 }
 
 
+DL_FUNCTION_START(dl_gc)
+{
+  if (!dl_dereference(dl)) {
+	driver_dereference(&display_driver);
+  }
+  return 0;
+}
+DL_FUNCTION_END()
+
 DL_FUNCTION_START(destroy_list)
 {
-  printf("destroying list %p\n", dl);
+  printf("destroying list %p : Obsolete !! \n", dl);
 
-  lua_settop(L, 0);
+/*   lua_settop(L, 0); */
 
-  /* remove the display list from list of all display lists (used in shutdown) */
-  lua_getglobal(L, "dl_lists");
-  lua_pushusertag(L, dl, dl_list_tag);
-  lua_pushnil(L);
-  lua_settable(L, 1);
+/*   /\* remove the display list from list of all display lists (used in shutdown) *\/ */
+/*   lua_getglobal(L, "dl_lists"); */
+/*   lua_pushusertag(L, dl, dl_list_tag); */
+/*   lua_pushnil(L); */
+/*   lua_settable(L, 1); */
 
   dl_destroy(dl);
   return 0;
@@ -257,6 +277,7 @@ static int display_init(any_driver_t *d)
 
 static int display_shutdown(any_driver_t * d)
 {
+  SDDEBUG("[%s] : refcount = %d\n", __FUNCTION__, d->count);
   return display_matrix_shutdown();
 }
 
@@ -271,22 +292,14 @@ static int init;
 
 static int lua_init(lua_State * L)
 {
-
   if (init) {
     printf("display_driver_init called more than once !\n");
-
     return 0;
   }
-
   init = 1;
-
   printf("display_driver_init called\n");
-
-
   lua_init_matrix_type(L);
   lua_init_dl_type(L);
-  
-
   return 0;
 }
 
@@ -294,12 +307,9 @@ static int lua_shutdown(lua_State * L)
 {
   if (!init) {
     printf("display_driver_shutdown called more than once !\n");
-
     return 0;
   }
-
   init = 0;
-
   printf("display_driver_shutdown called\n");
 
   lua_shutdown_dl_type(L);
@@ -310,10 +320,10 @@ static int lua_shutdown(lua_State * L)
 
 static luashell_command_description_t display_commands[] = {
 
-  /* general commands */
+  /* internal init commands */
 
   {
-    DRIVER_NAME"_driver_init", 0,            /* long and short names */
+    DRIVER_NAME"_driver_init", 0,        /* long and short names */
     "print [["
 	DRIVER_NAME"_driver_init : "
 	"INTERNAL ; initialize lua side display driver."
@@ -321,13 +331,16 @@ static luashell_command_description_t display_commands[] = {
     SHELL_COMMAND_C, lua_init            /* function */
   },
   {
-    DRIVER_NAME"_driver_shutdown", 0,        /* long and short names */
+    DRIVER_NAME"_driver_shutdown", 0,    /* long and short names */
     "print [["
 	DRIVER_NAME"_driver_shutdown : "
-	"INTERNAL ; shut down lua side display driver."
+	"INTERNAL ; shutdown lua side display driver."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_shutdown        /* function */
   },
+
+  /* General commands */
+
   {
     "dl_new_list", "dl_new",             /* long and short names */
     "print [["
@@ -360,6 +373,9 @@ static luashell_command_description_t display_commands[] = {
     "]]",                               /* usage */
     SHELL_COMMAND_C, lua_heap_used      /* function */
   },
+
+  /* Properties commands */
+
   {
     "dl_set_active", 0,                  /* long and short names */
     "print [["
@@ -425,8 +441,8 @@ static luashell_command_description_t display_commands[] = {
   {
     "dl_draw_colors", 0,                    /* long and short names */
     "print [["
-	"dl_draw_box(list, a, r, g, b [,a, r, g, b ...]) : set up to 4 "
-	"draw colors."
+	"dl_draw_colors(list, a, r, g, b [,a, r, g, b ...]) : "
+	"Set up to 4 draw colors."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_draw_colors     /* function */
   },
@@ -436,7 +452,8 @@ static luashell_command_description_t display_commands[] = {
   {
     "dl_draw_box1", 0,                    /* long and short names */
     "print [["
-	"dl_draw_box(list, x1, y1, x2, y2, z, a, r, g, b) : draw a flat box"
+	"dl_draw_box(list, x1, y1, x2, y2, z, a, r, g, b) : "
+	"Draw a flat box"
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_draw_box1       /* function */
   },

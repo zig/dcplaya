@@ -14,12 +14,13 @@ function song_browser_create(owner, name, box)
 	-- Song-Browser default style
 	-- --------------------------
 	local style = {
-		bkg_color		= { 0.5, 0.7, 0.7, 0.7,  0.5, 0.3, 0.3, 0.3 },
+		bkg_color		= { 0.8, 0.7, 0.7, 0.7,  0.8, 0.3, 0.3, 0.3 },
 		border			= 5,
 		span            = 1,
 		file_color		= { 1, 0, 0, 0 },
 		dir_color		= { 1, 0, 0, .4 },
 		cur_color		= { 1, 1, 1, 1,  1, 0.1, 0.4, 0.5 },
+		text            = {font=0, size=16, aspect=1}
 	}
 
 	-- Song-Browser update (handles fade in / fade out)

@@ -3,7 +3,7 @@
 --- @author  benjamin gerard <ben@sashipa.com>
 --- @date    2002/11/29
 --- @brief   Song info application.
---- $Id: song_info.lua,v 1.1 2002-11-29 08:29:42 ben Exp $
+--- $Id: song_info.lua,v 1.2 2002-12-01 19:19:14 ben Exp $
 
 song_info_loaded = nil
 
@@ -211,7 +211,7 @@ function song_info_create(owner, nane)
    si.dl = dl_new_list(256,0)
    si.icon_dl = dl_new_list(0,1,1)
    si.time_dl = dl_new_list(0,1,1)
-   dl_set_trans( si.time_dl, mat_trans(2,0,0))
+   dl_set_trans(si.time_dl, mat_trans(2,0,0))
 
    dl_text_prop(si.time_dl, 0, 1.5, 1)
    dl_draw_text(si.time_dl, 0,0,0, 1,1,1,1, "info")

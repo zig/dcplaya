@@ -1,10 +1,10 @@
---- @ingroup dcplaya_lua_gui
+--- @ingroup dcplaya_lua_colorpicker_gui
 --- @file    colorpicker.lua
 --- @author  benjamin gerard <ben@sashipa.com>
 --- @date    2002/10/11
 --- @brief   Colorpicker GUI.
 ---
---- $Id: colorpicker.lua,v 1.6 2002-10-28 18:53:39 benjihan Exp $
+--- $Id: colorpicker.lua,v 1.7 2002-12-01 19:19:14 ben Exp $
 
 -- Load required libraries
 --
@@ -49,51 +49,50 @@ function colorpicker(owner, name, pos, color)
 -- ^ ^                   ^  ^ ^ ^  ^ ^      ^ ^
 -- X X1                X9 X8 X7 X6 X5 X4   X3 X2
 
--- -----------------------
--- BUTTONS' EVENT HANDLERS
--- -----------------------
-	function but_cancel_handle(but,evt)
-		print("BUTTON CANCEL")
-		local dial = but.owner 
-		evt_shutdown_app(dial)
-		return nil
+   -- -----------------------
+   -- BUTTONS' EVENT HANDLERS
+   -- -----------------------
+   function but_cancel_handle(but,evt)
+	  local dial = but.owner 
+	  evt_shutdown_app(dial)
+	  return nil
 	end
 
-	function but_reset_handle(but,evt)
-		local dial = but.owner
-		set_pickcolor(dial,dial.reset_color)
-		gui_new_focus(dial,dial.argb)
-	end
+   function but_reset_handle(but,evt)
+	  local dial = but.owner
+	  set_pickcolor(dial,dial.reset_color)
+	  gui_new_focus(dial,dial.argb)
+   end
 
 	-- Convert "XX" -> [0..1]
 	function hex2n(str)
-		if not str then return 0 end
-		local hc,lc
-		hc = strsub(str,1,1)
-		lc = strsub(str,2,2)
-		h = tonumber(hc)
-		l = tonumber(lc)
-		if not h then h = tonumber(hc,16) end
-		if not l then l = tonumber(lc,16) end
-
-		if not h then
-			h = 0
-		elseif l then
-			h = h*16 + l
-		end
-		return h/255
+	   if not str then return 0 end
+	   local hc,lc
+	   hc = strsub(str,1,1)
+	   lc = strsub(str,2,2)
+	   h = tonumber(hc)
+	   l = tonumber(lc)
+	   if not h then h = tonumber(hc,16) end
+	   if not l then l = tonumber(lc,16) end
+	   
+	   if not h then
+		  h = 0
+	   elseif l then
+		  h = h*16 + l
+	   end
+	   return h/255
 	end
 
 	-- convert n [0..1] -> string "xx"
 	function n2hex(n)
-		if not n then return "00" end
-		return format("%02X", floor((n*255)))
+	   if not n then return "00" end
+	   return format("%02X", floor((n*255)))
 	end
 
 	function color2hex(color)
-		if not color then color = color_new() end
-		return strupper(n2hex(color[1])..n2hex(color[2])
-						..n2hex(color[3])..n2hex(color[4]))
+	   color = color or color_new()
+	   return strupper(n2hex(color[1])..n2hex(color[2])
+					   ..n2hex(color[3])..n2hex(color[4]))
 	end
 
 	function hex2color(str)

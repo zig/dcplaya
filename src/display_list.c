@@ -5,7 +5,7 @@
  * @author    benjamin gerard <ben@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.c,v 1.11 2002-11-29 08:29:42 ben Exp $
+ * @version   $Id: display_list.c,v 1.12 2002-12-01 19:19:14 ben Exp $
  */
 
 #include <malloc.h>
@@ -18,9 +18,14 @@
 #define DLCOM(HEAP,OFFSET) ((dl_command_t *)((char*)(HEAP)+(OFFSET)))
 #define DLID(HEAP,COM)     ((dl_comid_t)((char*)(COM)-(char*)(HEAP)))
 
+#define DL_MAIN_TYPE  0
+#define DL_SUB_TYPE   1
+#define DL_DEAD_TYPE  2
+
+static const char * typestr[3] =  { "main", "sub", "dead" };
+	
 /* List of display list. */
-static dl_lists_t dl_lists;
-static dl_lists_t dl_sub_lists;
+static dl_lists_t dl_lists[3];
 
 /* List of display list mutex. */
 static spinlock_t listmutex;
@@ -42,14 +47,24 @@ static void unlocklists(void)
   spinlock_unlock(&listmutex);
 }
 
+static void changetype(dl_list_t *l, int type)
+{
+  if (l->flags.type != type) {
+	LIST_REMOVE(l, g_list);
+	l->flags.type = type;
+	LIST_INSERT_HEAD(&dl_lists[type], l, g_list);
+  }
+}
+
 int dl_init(void)
 {
   SDDEBUG("[%s]\n", __FUNCTION__);
   SDINDENT;
 
   spinlock_init(&listmutex);
-  LIST_INIT(&dl_lists);
-  LIST_INIT(&dl_sub_lists);
+  LIST_INIT(&dl_lists[0]);
+  LIST_INIT(&dl_lists[1]);
+  LIST_INIT(&dl_lists[2]);
 
   *(int *) &listrc = 0;
   listrc.color_inherit = listrc.trans_inherit = DL_INHERIT_LOCAL;
@@ -65,20 +80,21 @@ static void real_destroy(dl_list_t * l);
 int dl_shutdown(void)
 {
   dl_list_t *l, *next;
+  int j;
 
   SDDEBUG("[%s]\n", __FUNCTION__);
   SDINDENT;
 
   locklists();
-  for (l=LIST_FIRST(&dl_lists); l; l=next) {
-	next = LIST_NEXT(l,g_list);
-	SDDEBUG("destroying main-list [%p,%d]\n", l, l->refcount);
-	real_destroy(l);
-  }
-  for (l=LIST_FIRST(&dl_sub_lists); l; l=next) {
-	next = LIST_NEXT(l,g_list);
-	SDDEBUG("destroying sub-list [%p,%d]\n", l, l->refcount);
-	real_destroy(l);
+  for (j=0; j<3; ++j) {
+	SDDEBUG("Destroying [%s-lists]\n", typestr[j]);
+	SDINDENT;
+	for (l=LIST_FIRST(&dl_lists[j]); l; l=next) {
+	  next = LIST_NEXT(l,g_list);
+	  SDDEBUG(" - destroying [%p,%d]\n", l, l->refcount);
+	  real_destroy(l);
+	}
+	SDUNINDENT;
   }
   unlocklists();
 
@@ -94,19 +110,22 @@ void dl_reference(dl_list_t * dl)
   unlock(dl);
 }
 
-void dl_dereference(dl_list_t * dl)
+int dl_dereference(dl_list_t * dl)
 {
+  int ref;
+
   lock(dl);
-  if (--dl->refcount <= 0) {
+  ref = --dl->refcount;
+  unlock(dl);
+  if (ref <= 0) {
+	ref = 0;
 	dl_destroy(dl);
-  } else {
-	unlock(dl);
   }
+  return ref;
 }
 
 dl_list_t * dl_create(int heapsize, int active, int sub)
 {
-  dl_lists_t * lists;
   dl_list_t * l;
 
   l = calloc(1, sizeof(dl_list_t));
@@ -116,13 +135,7 @@ dl_list_t * dl_create(int heapsize, int active, int sub)
 
   spinlock_init(&l->mutex);
   l->flags.active = !!active;
-  if (sub) {
-	l->flags.sublist = 1;
-	lists = &dl_sub_lists;
-  } else {
-	l->flags.sublist = 0;
-	lists = &dl_lists;
-  }
+  l->flags.type = sub ? DL_SUB_TYPE : DL_MAIN_TYPE;
 
   l->heap = heapsize ? malloc(heapsize) : 0;
   l->heap_size = l->heap ? heapsize : 0;
@@ -132,7 +145,7 @@ dl_list_t * dl_create(int heapsize, int active, int sub)
   l->refcount = 1;
 
   locklists();
-  LIST_INSERT_HEAD(lists, l, g_list);
+  LIST_INSERT_HEAD(&dl_lists[l->flags.type], l, g_list);
   unlocklists();
 
   return l;
@@ -140,6 +153,9 @@ dl_list_t * dl_create(int heapsize, int active, int sub)
 
 static void real_destroy(dl_list_t * l)
 {
+  if (l->refcount) {
+	SDWARNING("[%s] : [%p] refcount = [%d]\n", __FUNCTION__, l, l->refcount);
+  } 
   if (l->heap) free(l->heap);
   if (l) free(l);
 }
@@ -147,9 +163,20 @@ static void real_destroy(dl_list_t * l)
 void dl_destroy(dl_list_t * l)
 {
   locklists();
-  LIST_REMOVE(l, g_list);
+  lock(l);
+  if (l->refcount) {
+	changetype(l, DL_DEAD_TYPE);
+	l->flags.active = 0;
+	SDWARNING("[%s] : [%p,%d] added to dead-lists.\n", __FUNCTION__,
+			  l, l->refcount);
+	unlock(l);
+  } else {
+	SDDEBUG("[%s] : [%p, %s-list]\n", __FUNCTION__,
+			l, typestr[l->flags.type]);
+	LIST_REMOVE(l, g_list);
+	real_destroy(l);
+  }
   unlocklists();
-  real_destroy(l);
 }
 
 int dl_set_active(dl_list_t * l, int active)
@@ -158,7 +185,7 @@ int dl_set_active(dl_list_t * l, int active)
 
   lock(l);
   old = l->flags.active;
-  l->flags.active = !!active;
+  l->flags.active = active && (l->flags.type != DL_DEAD_TYPE);
   unlock(l);
 
   return old;
@@ -269,9 +296,8 @@ void dl_clear(dl_list_t * dl)
   unlock(dl);
 }
 
-
-void dl_insert(dl_list_t * dl, void * pcom,
-			   dl_command_func_t o_render, dl_command_func_t t_render)
+dl_comid_t dl_insert(dl_list_t * dl, void * pcom,
+					 dl_command_func_t o_render, dl_command_func_t t_render)
 
 {
   dl_command_t * com = pcom;
@@ -281,7 +307,7 @@ void dl_insert(dl_list_t * dl, void * pcom,
 /*   SDDEBUG("[%s] : [%p] [%p]\n", __FUNCTION__, dl, pcom); */
 
   if (!com) {
-	return;
+	return DL_COMID_ERROR;
   }
   com->next_id = DL_COMID_ERROR;
   com->flags.all = 0;
@@ -300,18 +326,19 @@ void dl_insert(dl_list_t * dl, void * pcom,
   ++dl->n_commands;
  
   unlock(dl);
+
+  return id;
 }
 
 void dl_insert2(dl_list_t * dl, dl_comid_t id,
 			   dl_command_func_t o_render, dl_command_func_t t_render)
 {
-  if (id == DL_COMID_ERROR) {
+  if (id != DL_COMID_ERROR) {
 	return;
   }
   lock(dl);
   dl_insert(dl, DLCOM(dl->heap,id), o_render, t_render);
 }
-
 
 static dl_code_e dl_render_list(dl_runcontext_t * rc, dl_context_t * parent,
 								dl_list_t * l, int opaque)
@@ -328,9 +355,17 @@ static dl_code_e dl_render_list(dl_runcontext_t * rc, dl_context_t * parent,
 	return DL_COMMAND_OK;
   }
 
-  if (rc->gc_flags) {
-	gc_push(rc->gc_flags);
+  if ((start_idx = 0) >= (end_idx = l->n_commands)) {
+	return DL_COMMAND_OK;
   }
+
+/*   if (rc->gc_flags) { */
+/* 	gc_push(rc->gc_flags); */
+/*   } */
+
+/*   SDDEBUG("[%s] [%p,%s,%d]\n", __FUNCTION__, */
+/* 		  l, typestr[l->flags.type], l->n_commands); */
+/*   SDINDENT; */
 
   switch (rc->trans_inherit) {
   case DL_INHERIT_PARENT:
@@ -357,9 +392,6 @@ static dl_code_e dl_render_list(dl_runcontext_t * rc, dl_context_t * parent,
 	draw_color_mul_clip(&context.color, &parent->color, &l->color);
   }
 
-  start_idx = 0;
-  end_idx = l->n_commands;
-
   /* Skipped at start. */
   for (i=0, c=0, id=l->first_comid;
 	   i<start_idx/* && id != DL_COMID_ERROR*/;
@@ -367,12 +399,13 @@ static dl_code_e dl_render_list(dl_runcontext_t * rc, dl_context_t * parent,
 	c = DLCOM(heap, id);
   }
 
-  for (code = DL_COMMAND_OK; i<end_idx/* && id != DL_COMID_ERROR*/;
+  for (code = DL_COMMAND_OK; i < end_idx /*&& id != DL_COMID_ERROR*/;
 		++i, id = c->next_id) {
 
 	c = DLCOM(heap, id);
 
 	if (c->flags.inactive) {
+	  SDDEBUG("[%p,%d/%d], INACTVE\n", l, i, end_idx);
 	  continue;
 	}
 	
@@ -391,10 +424,12 @@ static dl_code_e dl_render_list(dl_runcontext_t * rc, dl_context_t * parent,
 	  break;
   
 	case DL_COMMAND_BREAK:
+	  SDDEBUG("[%s] : [%p,%d/%d] : BREAK\n",__FUNCTION__,l,i,end_idx);
 	  i = end_idx;
 	  break;
 
 	case DL_COMMAND_SKIP:
+	  SDDEBUG("[%s] : [%p,%d/%d] : SKIP\n",__FUNCTION__,l,i,end_idx);
 	  if (++i < end_idx) {
 		c = DLCOM(heap, c->next_id);
 	  }
@@ -402,9 +437,11 @@ static dl_code_e dl_render_list(dl_runcontext_t * rc, dl_context_t * parent,
 	}
   }
 
-  if (rc->gc_flags) {
-	gc_pop(rc->gc_flags);
-  }
+/*   SDUNINDENT; */
+
+/*   if (rc->gc_flags) { */
+/* 	gc_pop(rc->gc_flags); */
+/*   } */
 
   return code;
 }
@@ -414,12 +451,13 @@ static void dl_render(int opaque)
   dl_list_t * l;
 
   locklists();
-  LIST_FOREACH(l, &dl_lists, g_list) {
+  LIST_FOREACH(l, &dl_lists[DL_MAIN_TYPE], g_list) {
 	gc_reset();
 	lock(l);
 	dl_render_list(&listrc, 0, l, opaque);
 	unlock(l);
   }
+  gc_reset();
   unlocklists();
 }
 
@@ -454,16 +492,6 @@ dl_color_t * dl_get_color(dl_list_t * dl)
   return &dl->color;
 }
 
-/* void dl_set_clipping(dl_list_t * dl, const dl_clipbox_t box) */
-/* { */
-/*   memcpy(&dl->clip_box, &box, sizeof(dl->clip_box)); */
-/* } */
-
-/* float * dl_get_clipping(dl_list_t * dl) */
-/* { */
-/*   return &dl->clip_box.x1; */
-/* } */
-
 /* NOP command */
 
 static dl_code_e nop_render(void * pcom, dl_context_t * context)
@@ -471,17 +499,18 @@ static dl_code_e nop_render(void * pcom, dl_context_t * context)
   return DL_COMMAND_OK;
 }
 
-int dl_nop_command(dl_list_t * dl)
+dl_comid_t dl_nop_command(dl_list_t * dl)
 {
+  dl_comid_t err = DL_COMID_ERROR;
   struct  {
 	 dl_command_t uc;
   } * c;
 
   c = dl_alloc(dl, sizeof(*c));
   if (c) {
-	dl_insert(dl, c, nop_render, nop_render);
+	err = dl_insert(dl, c, nop_render, nop_render);
   }
-  return -!c;
+  return err;
 }
 
 /* SUBLIST command */
@@ -499,25 +528,12 @@ static dl_code_e sub_render(struct sublist_command_t * c,
   dl_code_e code;
   dl_list_t * dl = c->sublist;
 
-  static int debug = 0;
-  debug = (debug+1)&1023;
-  debug = 0;
-
   lock(dl);
-  if (debug == 1) {
-	SDDEBUG("[%s] [%p,%s,%s,%d]\n",__FUNCTION__,
-			dl,
-			dl->flags.sublist?"SUB":"MAIN",
-			dl->flags.active?"ON":"OFF",
-			dl->n_commands
-			);
-  }
   code = dl_render_list(&c->rc, context, dl, opaque);
-  unlock(c->sublist);
+  unlock(dl);
 
   return code;
 }
-
 
 static dl_code_e sub_render_opaque(void * pcom, dl_context_t * context)
 {
@@ -531,17 +547,19 @@ static dl_code_e sub_render_transparent(void * pcom, dl_context_t * context)
   return sub_render(c, context, 0);
 }
 
-int dl_sublist_command(dl_list_t * dl, dl_list_t * sublist,
-					   const dl_runcontext_t * rc)
+dl_comid_t dl_sublist_command(dl_list_t * dl, dl_list_t * sublist,
+							  const dl_runcontext_t * rc)
 {
+  dl_comid_t err = DL_COMID_ERROR;
   struct sublist_command_t * c = 0;
 
-  lock(sublist);
-  if (!sublist->flags.sublist) {
-	unlock(sublist);
-	SDERROR("[%s] : [%p] not a sub-list\n", __FUNCTION__, sublist);
+  if (dl == sublist) {
+	SDERROR("[%s] : Nested lists.\n", __FUNCTION__);
 	goto finish;
   }
+
+  lock(sublist);
+  changetype(sublist, DL_SUB_TYPE);
   ++sublist->refcount;
   unlock(sublist);
 
@@ -549,11 +567,14 @@ int dl_sublist_command(dl_list_t * dl, dl_list_t * sublist,
   if (c) {
 	c->sublist = sublist;
 	c->rc = *rc;
-	dl_insert(dl, c, sub_render_opaque, sub_render_transparent);
+	err = dl_insert(dl, c, sub_render_opaque, sub_render_transparent);
   } else {
 	dl_dereference(sublist);
   }
   
-  finish:
-  return -!c;
+ finish:
+
+  SDDEBUG("[%s] : [%p,%p] := [%d]\n", __FUNCTION__, dl, sublist, err);
+
+  return err;
 }

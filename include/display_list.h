@@ -5,7 +5,7 @@
  * @author    benjamin gerard <ben@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.h,v 1.9 2002-11-29 08:29:41 ben Exp $
+ * @version   $Id: display_list.h,v 1.10 2002-12-01 19:19:14 ben Exp $
  */
 
 #ifndef _DISPLAY_LIST_H_
@@ -116,7 +116,7 @@ typedef struct dl_command {
   /** Display list command flags. */
   union {
 	struct {
-	  int inactive : 1;                 /** Command is inactive.           */
+	  unsigned int inactive : 1;        /** Command is inactive.           */
 	};
 	int all;
   } flags;
@@ -143,8 +143,8 @@ typedef struct dl_list {
 
   /** Display list flags. */
   struct {
-	int active:1;              /**< Is active.                          */
-	int sublist:1;             /**< Is a sub-list                       */
+	unsigned int active:1;     /**< Is active.                          */
+	unsigned int type:2;       /**< type of list [MAIN,SUB,DEAD]        */
   } flags;
 
   int refcount;                /**< Reference counter.                  */
@@ -214,10 +214,11 @@ void dl_reference(dl_list_t * dl);
 
 /** Dereference a display list and destroy it if there is no more reference
  *  on it.
+ *  @return Number of remaining reference.
  *  @see dl_reference().
  *  @see dl_destroy_list().
  */
-void dl_dereference(dl_list_t * dl);
+int dl_dereference(dl_list_t * dl);
 
 /**@}*/
 
@@ -347,9 +348,12 @@ void dl_insert2(dl_list_t * dl, dl_comid_t id,
  *  @param pcom      Display list command allocated by dl_alloc() function.
  *  @param o_render  Opaque render callback.
  *  @param t_render  Transparent render callback.
+ *
+ *  @return  Command identifier
+ *  @retval  DL_COMMID_ERROR failure
  */
-void dl_insert(dl_list_t * dl, void * pcom,
-			   dl_command_func_t o_render, dl_command_func_t t_render);
+dl_comid_t dl_insert(dl_list_t * dl, void * pcom,
+					 dl_command_func_t o_render, dl_command_func_t t_render);
 
 /** Clear the display list (i.e. reset the command list) */
 void dl_clear(dl_list_t * dl);
@@ -357,10 +361,11 @@ void dl_clear(dl_list_t * dl);
 /** Insert an NO-OPERATION command to display list.
  *
  *  @param   dl  Display list.
- *  @return error-code
- *  @retaval 0 success
+ *
+ *  @return  Command identifier
+ *  @retval  DL_COMMID_ERROR failure
  */
-int dl_nop_command(dl_list_t * dl);
+dl_comid_t dl_nop_command(dl_list_t * dl);
 
 /** Insert an SUB-LIST command to display list.
  *
@@ -369,13 +374,14 @@ int dl_nop_command(dl_list_t * dl);
  *  @param   gc_flags  Set of GC_RESTORE flags that determines which graphic
  *                     properties must be restored.
  *  @param   inherit   Inherit properties
- *  @return error-code
- *  @retval 0 success
+ *
+ *  @return  Command identifier
+ *  @retval  DL_COMMID_ERROR failure
  *
  *  @see dl_create()
  */
-int dl_sublist_command(dl_list_t * dl, dl_list_t * sublist,
-					   const dl_runcontext_t * rc);
+dl_comid_t dl_sublist_command(dl_list_t * dl, dl_list_t * sublist,
+							  const dl_runcontext_t * rc);
 
 /**@}*/
 
@@ -411,12 +417,6 @@ void dl_set_color(dl_list_t * dl, const dl_color_t * col);
 
 /** Get display list global color. */
 dl_color_t * dl_get_color(dl_list_t * dl);
-
-/** set the global clipping of a given list. */
-/* void dl_set_clipping(dl_list_t * dl, const dl_clipbox_t box); */
-
-/** get the global clipping of a given list. */
-/* float * dl_get_clipping(dl_list_t * dl); */
 
 /**@}*/
 
