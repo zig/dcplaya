@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.1 2002-09-10 23:39:13 ben Exp $
+# $Id: Makefile.in,v 1.2 2002-09-11 03:28:18 ben Exp $
 #
 
 VERSION = @VERSION@
@@ -10,6 +10,8 @@ DOXYGEN = "@DOXYGEN@"
 
 DEVDOCDIR  	:= . .. ../include
 DEVDOCFILES 	:= doc.h
+
+SHASUBST=../utils/shasubst.sh
 
 # Build shasubst definition
 #
@@ -49,7 +51,6 @@ DOXDEV	+= -D dox-predefined="DEBUG"
 DOXDEV	+= -D dox-include_path=..
 DOXDEV	+= -D dox-optimize-output-for-c=YES
 DOXDEV	+= -D dox-enabled-sections=""
-
 DOXDEV	+= -D dox-generate-html=YES
 DOXDEV	+= -D dox-html-header=
 DOXDEV	+= -D dox-html-footer=
@@ -58,7 +59,6 @@ DOXDEV	+= -D dox-generate-treeview=YES
 DOXDEV	+= -D dox-generate-man=NO
 DOXDEV	+= -D dox-man-extension=.1
 DOXDEV	+= -D dox-generate-latex=NO
-
 
 # MAKE RULES
 ###################################################
@@ -71,10 +71,10 @@ devdoc: devdoc.dox $(DEVDOCFILES)
 devdoc.dox: generic.doxin Makefile
 	cat $< | grep -E -v '^#.*$$' |\
 	grep -E -v '^ *$$' |\
-	shasubst $(DOXALL) $(DOXDEV) > $@
+	$(SHASUBST) $(DOXALL) $(DOXDEV) > $@
 
 doc.h : doc.hin
-	shasubst $(SUBST) -t $< > $@
+	cat $< > $@
 
 clean_local:
 	@rm -f *.dox *.h
