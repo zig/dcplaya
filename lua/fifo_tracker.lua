@@ -1,10 +1,10 @@
 --- @ingroup  dcplaya_lua_app
 --- @file     fifo_tracker.lua
---- @author   benjamin gerard
---- @date     2002
+--- @author   vincent penne
+--- @date     2003
 --- @brief    fifo tracker application.
 ---
---- $Id: fifo_tracker.lua,v 1.1 2003-04-21 04:32:48 vincentp Exp $
+--- $Id: fifo_tracker.lua,v 1.2 2003-04-21 16:26:36 vincentp Exp $
 ---
 
 fifo_tracker_loaded = nil
@@ -35,11 +35,6 @@ function fifo_tracker_create(owner, name)
 	 vc.dl_full = nil
 	 vc.dl_empty = nil
 	 return evt
-      end
-
-      if gui_keycancel[key] or gui_keyselect[key]  or gui_keyconfirm[key] then
-	 evt_shutdown_app(vc)
-	 return
       end
 
       return evt
@@ -135,6 +130,7 @@ function fifo_tracker_create(owner, name)
       handle = fifo_tracker_handle,
       update = fifo_tracker_update,
       icon_name = "volume2",
+      flags = { unfocusable = 1 },
 
       -- Members
       z = gui_guess_z(owner,z),
@@ -152,9 +148,10 @@ function fifo_tracker_create(owner, name)
    dl_clear(vc.dl)
    local tw = 16
    dl_text_prop(vc.dl,0,tw)
-   local w,h = dl_measure_text(vc.dl,"sound buffer", 0, tw)
+   local title = "sound buffer"
+   local w,h = dl_measure_text(vc.dl,title, 0, tw)
 
-   dl_draw_text(vc.dl, (640-w)*0.5,-h,0, 1,1,1,1, "sound buffer");
+   dl_draw_text(vc.dl, (640-w)*0.5,-h,0, 1,1,1,1, title);
    dl_sublist(vc.dl, vc.dl_full)
    dl_sublist(vc.dl, vc.dl_empty)
    dl_sublist(vc.dl, vc.dl_text)

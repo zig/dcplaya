@@ -3,7 +3,7 @@
 #
 # by Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.18 2003-04-20 02:25:05 vincentp Exp $
+# $Id: Makefile,v 1.19 2003-04-21 16:26:36 vincentp Exp $
 #
 # This makefile is pretty ugly. Sorry :( I'll try to make a clean one
 # when I get some time.
@@ -181,8 +181,8 @@ plugins: dynshell
 	| tar xf - -C iso/dcplaya
 
 .PHONY: distrib
-distrib: 1ST_READ.BIN distrib-doc distrib-devdoc plugins lua
-#distrib: 1ST_READ.BIN plugins lua
+#distrib: 1ST_READ.BIN distrib-doc distrib-devdoc plugins lua
+distrib: 1ST_READ.BIN plugins lua
 
 
 .PHONY: dcplaya-data

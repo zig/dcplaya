@@ -5,7 +5,7 @@
  * @date     2003/01/19
  * @brief    Thread priority settings.
  * 
- * $Id: priorities.h,v 1.1 2003-04-21 04:32:48 vincentp Exp $
+ * $Id: priorities.h,v 1.2 2003-04-21 16:26:36 vincentp Exp $
  */
 
 
@@ -40,12 +40,12 @@
    almost empty, in this case we boost the playa decoder task in order to be
    sure that the sound streaming won't be interrupted.
 
-   Note that one jiffies is equal to 1/1200th of a second (see HZ defined in
+   Note that one jiffy is equal to 1/1200th of a second (see HZ defined in
    arch.h)
 */
 
 /** Main thread priority */
-#define MAIN_THREAD_PRIORITY 5
+#define MAIN_THREAD_PRIORITY 7
 
 /** Lua thread priority */
 #define LUA_THREAD_PRIORITY 3
@@ -57,7 +57,7 @@
 #define PLAYA_DECODER_THREAD_PRIORITY 1
 
 /** Playa decoder thread boost priority */
-#define PLAYA_DECODER_THREAD_BOOST_PRIORITY MAIN_THREAD_PRIORITY
+#define PLAYA_DECODER_THREAD_BOOST_PRIORITY 3
 
 /** Maple thread priority */
 #define MAPLE_THREAD_PRIORITY 3

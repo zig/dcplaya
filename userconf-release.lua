@@ -64,7 +64,7 @@ if __RELEASE then
    local plugins = {
       plug_obj,
       plug_cdda, plug_xing, plug_ogg, plug_mikmod, plug_sidplay, plug_sc68,
-      plug_lpo, plug_fftvlr, plug_hyperpipe, plug_fime
+      plug_lpo, plug_fftvlr, plug_hyperpipe, plug_fime, plug_spc
    }
    -- Add entrylist driver if not already loaded.
    if type(entrylist_load) ~= "function" then
@@ -80,6 +80,7 @@ if __RELEASE then
    local i,v
    for i,v in plugins do
       if type(v) == "string" then
+	 print(format(" '%s'", v))
 	 driver_load(v)
       end
    end
