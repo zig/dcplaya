@@ -3,8 +3,11 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   RAM disk for KOS file system
  * 
- * $Id: fs_ramdisk.c,v 1.13 2003-03-11 21:32:16 ben Exp $
+ * $Id: fs_ramdisk.c,v 1.14 2003-03-12 13:22:21 ben Exp $
  */
+
+/** @TODO add lock to file-handle. It is not thread-safe right now !!! */
+/** I'll try to use the node-mutex as a fix. It should be ok. */
 
 #ifdef VPSPECIAL
 /* VP : added this to remove debug messages and test :) */
@@ -85,6 +88,28 @@ static spinlock_t fh_mutex;
 
 /* Mutex for node modification (modify notify) */
 static spinlock_t node_mutex;
+
+#ifdef DEBUG
+#define LOCK_NODE() \
+if (node_mutex) {\
+  SDCRITICAL("[%s] : already locked\n",__FUNCTION__);\
+} else {\
+  spinlock_lock(&node_mutex);\
+}
+
+#define UNLOCK_NODE() \
+if (!node_mutex) {\
+  SDCRITICAL("[%s] : already unlocked\n",__FUNCTION__);\
+} else {\
+  spinlock_unlock(&node_mutex);\
+}
+
+#else
+# define LOCK_NODE() if (1) {spinlock_lock(&node_mutex);} else
+# define UNLOCK_NODE() if (1) {spinlock_unlock(&node_mutex)} else
+#endif
+
+static void dump_node(node_t * node, const char * label);
 
 /* Used to compare 2 names. We could easily change case sensitivity */
 static int namecmp(const char *n1, const char *n2)
@@ -201,7 +226,7 @@ static void attach_node(node_t * father, node_t * node)
   } else {
     father->son = node;
   }
-  father->flags.modified = 1; /* Attach modify father ! */
+/*   father->flags.modified = 1; /\* Attach modify father ! *\/ */
   node->flags.notify = father->flags.notify;
 }
 
@@ -214,15 +239,33 @@ static void detach_node(node_t * node)
     return;
   }
 
+#if DEBUG
+  if (node == root) {
+    SDCRITICAL("[%s] : Detaching root node\n",__FUNCTION__);
+    dump_node(node,"Detaching root node");
+  }
+#endif
+
   /* Remove this node from directory reading. */
   for (i=0; i<MAX_RD_FILES; ++i) {
     if (fh[i].readdir == node) {
       fh[i].readdir = node->little_bros;
     }
   }
+  /* This node is the first son of its father,
+     them its little bros become the first son.
+     In that case the node should not have big brother !!
+  */
   if (node->father && node->father->son == node) {
       node->father->son = node->little_bros;
+#if DEBUG
+      if (node->big_bros) {
+	SDCRITICAL("[%s] : node have an unexpected big bros\n",__FUNCTION__);
+	dump_node(node,"unexpected big bros");
+      }
+#endif
   }
+  /* Correct little/big brother hierarchy */
   if (node->big_bros) {
     node->big_bros->little_bros = node->little_bros;
   }
@@ -544,7 +587,7 @@ static ssize_t read(file_t fd, void * buffer, size_t size)
     return 0;
   }
 		
-  spinlock_lock(&node_mutex);
+  LOCK_NODE();
   end_pos = of->pos + size;
   if (end_pos > of->node->entry.size) {
     end_pos = of->node->entry.size;
@@ -552,7 +595,7 @@ static ssize_t read(file_t fd, void * buffer, size_t size)
   n = end_pos - of->pos;
   memcpy(d, of->node->data + of->pos, n);
   of->pos = end_pos;
-  spinlock_unlock(&node_mutex);
+  UNLOCK_NODE();
 	
   return n;
 }
@@ -579,18 +622,25 @@ static ssize_t write(file_t fd, const void * buffer, size_t size)
   }
 	
   of = fh + fd;
+  LOCK_NODE();
   end_pos = of->pos + size;
-
   if (end_pos > of->node->max) {
     realloc_node(of->node, end_pos);
     if (end_pos > of->node->max) {
-/*       SDWARNING("[%s] : Realloc failed [end:%d] [max:%d]\n", */
-/* 		__FUNCTION__, end_pos, of->node->max); */
+      SDWARNING("[%s] : Realloc failed [end:%d] [max:%d]\n",
+		__FUNCTION__, end_pos, of->node->max);
       end_pos = of->node->max;
     }
   }
-	
+
   n = end_pos - of->pos;
+#if DEBUG
+  if (n < 0) {
+    SDCRITICAL("[%s] : n=%d\n",__FUNCTION__,n);
+    n = 0;
+  }
+#endif
+  
   memcpy(of->node->data + of->pos, d, n);
   //  SDDEBUG("%s copied [%p+%d %p %d]\n", __FUNCTION__,
   //	  of->node->data, of->pos, d, n);
@@ -600,10 +650,11 @@ static ssize_t write(file_t fd, const void * buffer, size_t size)
   }
 
   if (n>0) {
+    /* Writing some data modify node */
     of->node->flags.modified = 1;
   }
 
-  spinlock_unlock(&node_mutex);
+  UNLOCK_NODE();
 	
   //SDDEBUG("--> %d bytes\n", n);
   return n;
@@ -715,7 +766,7 @@ static file_t open(const char *fn, int mode)
   //  SDDEBUG("open('%s') in [%s]\n", fn , modestr(omode));
 
   //  SDDEBUG("Find [%s] [%s] node:\n", fn, whatstr(3));
-  spinlock_lock(&node_mutex);
+  LOCK_NODE();
   node = find_node(root, fname, 3);
 
   //  SDDEBUG("FOUND-NODE:\n");
@@ -725,19 +776,19 @@ static file_t open(const char *fn, int mode)
     /* Node already exist. Perform some checks. */
     if ((omode ^ -is_dir(node)) & DIR_MODE) {
       SDERROR("Incompatible file/dir mode\n");
-      spinlock_unlock(&node_mutex);
+      UNLOCK_NODE();
       goto error;
     }
 
     if (omode == (DIR_MODE | WRITE_MODE)) {
       SDERROR("Directory already exist\n");
-      spinlock_unlock(&node_mutex);
+      UNLOCK_NODE();
       goto error;
     }
   } else /* if (!node) */ {
     if ( ! (omode & WRITE_MODE) ) {
 /*       SDERROR("Not found and not created.\n"); */
-      spinlock_unlock(&node_mutex);
+      UNLOCK_NODE();
       goto error;
     }
 
@@ -755,7 +806,7 @@ static file_t open(const char *fn, int mode)
 
     if (!father) {
       SDERROR("Path not found.\n");
-      spinlock_unlock(&node_mutex);
+      UNLOCK_NODE();
       goto error;
     }
 
@@ -765,7 +816,7 @@ static file_t open(const char *fn, int mode)
     //    dump_node(node);
 
     if (!node) {
-      spinlock_unlock(&node_mutex);
+      UNLOCK_NODE();
       goto error;
     }
 
@@ -778,6 +829,9 @@ static file_t open(const char *fn, int mode)
   /* Fill the fh structure */
   if (omode & DIR_MODE) {
     fh[fd].readdir = (omode & READ_MODE) ? node->son : 0;
+#if DEBUG
+    dump_node(fh[fd].readdir,"OPEN-DIR");
+#endif
   } else {
     fh[fd].pos = (mode & O_MODE_MASK) == O_APPEND ? node->entry.size : 0;
   }
@@ -786,7 +840,7 @@ static file_t open(const char *fn, int mode)
 			 opened file */
 
   // dump_node(node, fn);
-  spinlock_unlock(&node_mutex);
+  UNLOCK_NODE();
 
   //  SDDEBUG("FINAL-NODE:\n");
   //  dump_node(node);
@@ -816,23 +870,26 @@ static void close(uint32 fd)
   if (fd = valid_file(fd, -1), fd != INVALID_FH) {
     node_t * node = fh[fd].node;
     int open;
-    spinlock_lock(&node_mutex);
+    LOCK_NODE();
     
     if (open = node->flags.open, !open) {
       SDERROR("-->Invalid open count\n");
-      spinlock_unlock(&node_mutex);
+      UNLOCK_NODE();
       return;
     }
     node->flags.open = --open;
-    if(!open && node->flags.notify) {
-      modify += node->flags.modified;
+    if(!open && node->flags.notify && node->flags.modified) {
+      modify = 1;
+#if DEBUG
+      dump_node(node,"CLOSE-MODIFY");
+#endif
     }
     node->flags.modified = 0;
 
     if (node->flags.unlinked && !open) {
       really_unlink(fh[fd].node);
     }
-    spinlock_unlock(&node_mutex);
+    UNLOCK_NODE();
 
     spinlock_lock(&fh_mutex);
     fh_mask &= ~(1 << fd);
@@ -909,6 +966,7 @@ static size_t total(uint32 fd)
 static dirent_t * readdir(file_t fd)
 {
   node_t *rd;
+  dirent_t *e;
 
   //  SDDEBUG("Readdir [%u]\n", fd);
 
@@ -916,15 +974,28 @@ static dirent_t * readdir(file_t fd)
     return 0;
   }
 
-  spinlock_lock(&node_mutex);
+  LOCK_NODE();
   /* Don't need to check mode, readdir only set for READ_MODE */
-  for (rd = fh[fd].readdir; rd && rd->flags.unlinked; rd = rd->little_bros)
+  for (rd = fh[fd].readdir; rd && rd->flags.unlinked; rd = rd->little_bros) {
+#if DEBUG
+    dump_node(rd,"Skip-Dir");
+#endif
+  }
     ;
-  fh[fd].readdir = rd;
-  spinlock_unlock(&node_mutex);
+  if (rd) {
+    /* Found one, set pointer to next */
+    e = &rd->entry;
+    dump_node(rd,"Read-Dir");
+    rd = rd->little_bros;
+  } else {
+    e = 0;
+  }
+  fh[fd].readdir = rd; 
+
+  UNLOCK_NODE();
 
   //  SDDEBUG("-->end of dir\n");
-  return rd ? &rd->entry : 0;
+  return e;
 }
 
 
@@ -996,6 +1067,10 @@ static void really_unlink(node_t * node)
   //  SDDEBUG("UNLINKING [%s]\n", node->entry.name); 
 
   detach_node(node);
+  if (node->flags.notify) {
+    dump_node(node,"MODIFY BY UNLINK");
+    modify = 1;
+  }
   release_node(node);
 
   SDUNINDENT;
@@ -1027,11 +1102,7 @@ static int unlink(const char *fn)
     return -1;
   }
 
-  spinlock_lock(&node_mutex);
-
-  if (node->father && node->father->flags.notify) {
-    ++modify;
-  }
+  LOCK_NODE();
 
   if (node->flags.open) {
     /* Node is open... Just flag it for unlinking. */
@@ -1041,7 +1112,7 @@ static int unlink(const char *fn)
     /* Node is closed... */
     really_unlink(node);
   }
-  spinlock_unlock(&node_mutex);
+  UNLOCK_NODE();
 
   return 0;
 }
@@ -1052,9 +1123,9 @@ static void * mmap(file_t fd)
   if (fd = valid_regular(fd,-1), fd == INVALID_FH) {
     return 0;
   }
-  spinlock_lock(&node_mutex);
+  LOCK_NODE();
   fh[fd].node->flags.modified = 1;
-  spinlock_unlock(&node_mutex);
+  UNLOCK_NODE();
 
   return fh[fd].node->data;
 }
@@ -1077,13 +1148,10 @@ static vfs_handler vh = {
   mmap
 };
 
-
-static void test();
-
 /* Initialize the file system */
 int fs_ramdisk_init(int max_size)
 {
-  SDDEBUG("%s [%d]\n", __FUNCTION__, max_size);
+  SDDEBUG("[%s] : [max_size:%d]\n", __FUNCTION__, max_size);
 
   /* Could not create 2 ramdisks. */
   if (root) {
@@ -1095,6 +1163,11 @@ int fs_ramdisk_init(int max_size)
   root_node.entry.size = -1;
   root_node.flags.notify = 1;
   
+  if (max_size) {
+    SDNOTICE("[%s] : max_size [%d] ignored (not implemented\n",
+	     __FUNCTION__, max_size);
+  }
+
   /* Set max size to max if 0 is requested. $$$ BEN: Not used  */ 
   max_size -= !max_size;
 
@@ -1106,17 +1179,12 @@ int fs_ramdisk_init(int max_size)
 
   /* Register with VFS */
   if (fs_handler_add("/ram", &vh)) {
-    SDERROR("-->fs_handler_add failed\n");
+    SDERROR("[%s] : fs_handler_add failed\n", __FUNCTION__);
     return -1;
   }
   fh_mask = 0;
   root = &root_node;
   modify = 0;
-
-#if RAMDISK_TEST
-  test();
-#endif
-
 
   return 0;
 }
@@ -1128,7 +1196,7 @@ int fs_ramdisk_shutdown(void)
 
   if (root) {
     spinlock_lock(&fh_mutex);
-    spinlock_lock(&node_mutex);
+    LOCK_NODE();
     fh_mask = 0;
     clean_openfiles();
     release_nodes(root);
@@ -1143,10 +1211,10 @@ int fs_ramdisk_shutdown(void)
 int fs_ramdisk_modified(void)
 {
   int ret;
-  spinlock_lock(&node_mutex);
+  LOCK_NODE();
   ret = modify;
   modify = 0;
-  spinlock_unlock(&node_mutex);
+  UNLOCK_NODE();
   return ret;
 }
 
@@ -1175,7 +1243,15 @@ int fs_ramdisk_notify_path(const char *path)
   const char * leaf;
   int slash_end;
 
-  if (path && strstr(path,"/ram/") == path) {
+  if (!path) {
+    /* Desactive all notifications */
+    LOCK_NODE();
+    notify_nodes(root, 0, 0);
+    UNLOCK_NODE();
+    return 0;
+  }
+
+  if (strstr(path,"/ram/") == path) {
     path += 4;
   }
 
@@ -1185,10 +1261,10 @@ int fs_ramdisk_notify_path(const char *path)
     return -1;
   }
 
-  spinlock_lock(&node_mutex);
+  LOCK_NODE();
   node = find_node(root, fname, 2);
   if (!node) {
-    spinlock_unlock(&node_mutex);
+    UNLOCK_NODE();
     SDERROR("[fs_ramdisk_notify_path] : [%s] not found\n", fname);
     return -1;
   }
@@ -1196,79 +1272,6 @@ int fs_ramdisk_notify_path(const char *path)
   notify_nodes(root, node, 0);
   notify_nodes(node, 0, 1);
 
-  spinlock_unlock(&node_mutex);
+  UNLOCK_NODE();
   return 0;
 }
-
-#if RAMDISK_TEST
-
-static int copyfile(const char *fn1, const char *fn2)
-     /* $$$ Give it a try */
-{
-  file_t fd, fd2;
-
-  SDDEBUG("%s [%s] <- [%s]\n", __FUNCTION__, fn1, fn2);
-  SDINDENT;
-
-  fd  = fs_open(fn1, O_WRONLY);
-  fd2 = fs_open(fn2, O_RDONLY);
-
-  if (fd && fd2) {
-    char buf[256];
-    int n;
-
-    do {
-      n = fs_read(fd2, buf, 256);
-      if (n > 0) {
-	fs_write(fd,buf,n);
-      }
-    } while (n > 0);
-  }
-
-  if (fd) fs_close(fd);
-  if (fd2) fs_close(fd2);
-
-  SDUNINDENT;
-  return 0;
-}
-
-static int createdir(const char *fn)
-{
-  file_t fd;
-
-  SDDEBUG("%s [%s]\n", __FUNCTION__, fn);
-  SDINDENT;
-
-  fd  = fs_open(fn, O_WRONLY|O_DIR);
-  if (fd) {
-    fs_close(fd);
-  }
-  SDUNINDENT;
-  return 0;
-}
-
-
-static void test()
-{
-  SDDEBUG("Perform RAMdisk test suit...\n");
-  SDINDENT;
-
-  copyfile("/ram/toto.sid", "/pc/Shades.sid");
-  copyfile("/ram/zorglub.sid", "/pc/Synapse.sid");
-  copyfile("/ram//toto-bak.sid", "/ram/toto.sid");
-  copyfile("//ram/toto.sid", "/pc/Synapse.sid");
-  copyfile("/ram/invalid.sid/", "/pc/Synapse.sid");
-
-  createdir("/ram/sid");
-  createdir("/ram/sid2/sid3");
-  createdir("/ram/sid2/");
-  createdir("/ram/sid2/sid3");
-  copyfile("/ram/sid/sid1.sid", "/ram/zorglub.sid");
-  copyfile("/ram/sid/sid2.sid", "/ram/toto.sid");
-  copyfile("/ram/sid2/sid1.sid", "/ram/zorglub.sid");
-  copyfile("/ram/sid2/sid2.sid", "/ram/toto.sid");
-  
-  SDUNINDENT;
-}
-
-#endif
