@@ -1,5 +1,5 @@
 /**
- * $Id: draw_object.c,v 1.2 2002-09-13 14:48:25 ben Exp $
+ * $Id: draw_object.c,v 1.3 2002-09-19 01:30:05 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -487,14 +487,22 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
     }
     for(n=o->nbf ;n--; ++f, ++l, ++nrm)  {
       int lflags = 0;
+      unsigned int cola, colb, colc, col;
       uv_t * uvl;
 
       if (f->flags) {
 	continue;
       }
 
-      
-      hw->col = *(int *)&nrm->w;
+      col = *(int *)&nrm->w;
+      cola = *(int *)&o->nvx[l->a].w;
+      colb = *(int *)&o->nvx[l->b].w;
+      colc = *(int *)&o->nvx[l->c].w;
+
+      col  = (col  >> 1) & 0x7f7f7f7f;
+      cola = (cola >> 2) & 0x3f3f3f3f;  
+      colb = (colb >> 2) & 0x3f3f3f3f;  
+      colc = (colc >> 2) & 0x3f3f3f3f;  
 
       lflags  = t[l->a].flags << 0;
       lflags |= t[l->b].flags << 1;
@@ -504,6 +512,7 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
 	
       uvl = uvlinks[lflags];
 
+      hw->col = col + cola + colc;
       hw->flags = TA_VERTEX_NORMAL;
       hw->x = transform[f->a].x;
       hw->y = transform[f->a].y;
@@ -513,6 +522,7 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
       ta_commit32_nocopy();
 
       //	hw->flags = TA_VERTEX;
+      hw->col = col + colb + cola;
       hw->x = transform[f->b].x;
       hw->y = transform[f->b].y;
       hw->z = transform[f->b].z;
@@ -520,6 +530,7 @@ int DrawObjectPrelighted(viewport_t * vp, matrix_t local, matrix_t proj,
       hw->v = uvl[1].v;
       ta_commit32_nocopy();
 
+      hw->col = col + colc + colb;
       hw->flags = TA_VERTEX_EOL;
       hw->x = transform[f->c].x;
       hw->y = transform[f->c].y;
