@@ -8,17 +8,18 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.9 2002-09-16 05:25:08 zig Exp $
+ * $Id: fftvlr.c,v 1.10 2002-09-19 01:32:46 benjihan Exp $
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include "fft.h"
 #include "vis_driver.h"
 #include "obj3d.h"
 #include "draw_object.h"
 
 /* from border.c */
-extern int bordertex;
+extern int bordertex, bordertex2;
 
 /* From obj3d.c */
 void FaceNormal(float *d, const vtx_t * v, const tri_t *t);
@@ -55,19 +56,35 @@ static vtx_t light_normal = {
 };
 
 static vtx_t tlight_normal;
+
 static vtx_t light_color = {
-  0.9,
-  0.90,
-  0.9,
-  0.5
+    1.5,
+    1.1,
+    1.5,
+    -0.3
 };
 
 static vtx_t ambient_color = {
-  0.5,
-  0.3,
-  0.1,
-  0.5
+   0.0,
+  -0.2,
+  -1.0,
+  0.8
 };
+
+
+/* static vtx_t light_color = { */
+/*     1.5, */
+/*     1.0, */
+/*     0.5, */
+/*     -0.3 */
+/* }; */
+
+/* static vtx_t ambient_color = { */
+/*   0, */
+/*   0, */
+/*   0, */
+/*   0.8 */
+/* }; */
 
 
 
@@ -187,6 +204,26 @@ static int fftvlr_start(void)
   return 0;
 }
 
+static int sature(const float a)
+{
+  int v;
+
+  v = (int)a;
+  v = v & ~(v>>31);
+  v = v | (((255-v)>>31) & 255);
+  return v;
+}
+
+static unsigned int argb4(const float a, const float r,
+			  const float g, const float b)
+{
+  return
+    (sature(a) << 24) |
+    (sature(r) << 16) |
+    (sature(g) << 8)  |
+    (sature(b) << 0);
+}
+
 static void vlr_update(void)
 {
   const float f0 = VLR_Y / 32768.0f;
@@ -223,11 +260,32 @@ static void vlr_update(void)
     vy[i].y = (float)(w * f0 * (1.0f-r)) +  (vy[i-VLR_W].y * r);
   }
 
-  /* Face normal calculation */
-  for (i=0; i<VLR_TPL; i++) {
-    FaceNormal(&nrm[(VLR_H-2)*VLR_TPL+i].x, v,
-               tri+(VLR_H-2)*VLR_TPL+i);
 
+  {
+    const float la = light_color.w * 255.0f, aa = ambient_color.w * 255.0f;
+    const float lr = light_color.x * 255.0f, ar = ambient_color.x * 255.0f;
+    const float lg = light_color.y * 255.0f, ag = ambient_color.y * 255.0f;
+    const float lb = light_color.z * 255.0f, ab = ambient_color.z * 255.0f;
+
+    /* Face normal calculation  and lightning */
+    for (i=0; i<VLR_TPL; i++) {
+      vtx_t *n = &nrm[(VLR_H-2)*VLR_TPL+i];
+      float coef;
+      
+      FaceNormal(&n->x, v,
+		 tri+(VLR_H-2)*VLR_TPL+i);
+      
+      coef = n->x * tlight_normal.x 
+	+ n->y * tlight_normal.y 
+	+ n->z * tlight_normal.z;
+
+      if (coef < 0) {
+	coef = 0;
+      }
+      *(int*)&n->w = argb4(aa + coef * la, ar + coef * lr,
+			   ag + coef * lg, ab + coef * lb);
+      
+    }
   }
 }
 
@@ -264,7 +322,6 @@ static int fftvlr_process(viewport_t * vp, matrix_t projection, int elapsed_ms)
     
     viewport = *vp;
     MtxCopy(fftvlr_proj, projection);
-    vlr_update();
 
     MtxIdentity(fftvlr_mtx);
     MtxRotateZ(fftvlr_mtx, 3.14159);
@@ -279,7 +336,10 @@ static int fftvlr_process(viewport_t * vp, matrix_t projection, int elapsed_ms)
     MtxTranspose(tmp);
     MtxVectMult(&tlight_normal, &light_normal, tmp);
 
-    fftvlr_obj.flags = bordertex;
+    vlr_update();
+
+
+    fftvlr_obj.flags = bordertex2;
     return 0;
   }
   return -1;
@@ -296,8 +356,11 @@ static int fftvlr_transparent(void)
     80.0f, 0.90f, 0.0f, 0.4f
   };
   if (ready) {
-    DrawObjectSingleColor(&viewport, fftvlr_mtx, fftvlr_proj,
-			  &fftvlr_obj, &color);
+/*     DrawObjectSingleColor(&viewport, fftvlr_mtx, fftvlr_proj, */
+/* 			  &fftvlr_obj, &color); */
+    DrawObjectPrelighted(&viewport, fftvlr_mtx, fftvlr_proj,
+			  &fftvlr_obj);
+
     return 0;
   } else {
     return -1;
