@@ -70,7 +70,7 @@ function sprite(name, x, y, w, h, u1, v1, u2, v2, texture, rotate)
       spr.tex = nil -- $$$ Sprite can has no textute !
    else
       if type(texture) == "string" then
-	 spr.tex  = tex_exist(texture) or tex_new(texture)
+	 spr.tex = tex_exist(texture) or tex_new(texture)
       else
 	 spr.tex = tex_get(texture)
       end
@@ -82,10 +82,43 @@ function sprite(name, x, y, w, h, u1, v1, u2, v2, texture, rotate)
    spr.draw = sprite_draw
    spr.set_color = sprite_set_color
 
-   set_vertex(spr.vtx[1], { 0, 0, 0, 1, 1,1,1,1, u1+0.5/w, v1+0.5/h } )
-   set_vertex(spr.vtx[2], { w, 0, 0, 1, 1,1,1,1, u2+0.5/w, v1+0.5/h } )
-   set_vertex(spr.vtx[3], { 0, h, 0, 1, 1,1,1,1, u1+0.5/w, v2+0.5/h } )
-   set_vertex(spr.vtx[4], { w, h, 0, 1, 1,1,1,1, u2+0.5/w, v2+0.5/h } )
+   if spr.tex then
+      local info = tex_info(spr.tex)
+      if not info then
+	 print("[sprite] : Unexpected error ! no texture info")
+      else
+	 local hpx,hpy = 0.5/info.w, 0.5/info.h -- half pixel size
+	 w = w or info.orig_w -- guess sprite dimension
+	 h = h or info.orig_h
+	 u1 = (u1 or 0) + hpx
+	 v1 = (v1 or 0) + hpy
+	 u2 = (u2 or info.orig_w/info.w) - hpx
+	 v2 = (v2 or info.orig_h/info.h) - hpy
+      end
+   end
+   
+   -- Set default hot point.
+   x = x or 0
+   y = y or 0
+
+   -- no dimension has been given nor guessed.
+   if not w or not h then
+      print("[sprite] : No dimension.")
+      return
+   end
+
+   -- No UV mapping force whole texture
+   u1 = u1 or 0
+   v1 = v1 or 0
+   u2 = u2 or 1
+   v2 = v2 or 1
+
+   -- ben : UV corretion was wrong ! Does not add a half pixel since it
+   -- use the sprite dimension instead of texture one !!!
+   set_vertex(spr.vtx[1], { 0, 0, 0, 1, 1,1,1,1, u1, v1 } )
+   set_vertex(spr.vtx[2], { w, 0, 0, 1, 1,1,1,1, u2, v1 } )
+   set_vertex(spr.vtx[3], { 0, h, 0, 1, 1,1,1,1, u1, v2 } )
+   set_vertex(spr.vtx[4], { w, h, 0, 1, 1,1,1,1, u2, v2 } )
 
    local org
    local mat
@@ -144,12 +177,11 @@ function sprite_simple(name, filename)
    local tex = tex_exist(filename)
       or tex_new(home.."lua/rsc/icons/"..filename)
    if not tex then return end
-   local info = tex_info(tex)
-   if not info then return end
-   local info_w, info_h = info.w, info.h
-   local orig_w, orig_h = info.orig_w, info.orig_h
-   return sprite(name, 0, 0, orig_w, orig_h,
-		   0, 0, orig_w/info_w, orig_h/info_h, tex)
+--    local info = tex_info(tex)
+--    if not info then return end
+--    local info_w, info_h = info.w, info.h
+--    local orig_w, orig_h = info.orig_w, info.orig_h
+   return sprite(name, 0, 0, orig_w, orig_h, nil, nil, nil, nil,tex)
 end
 
 --- Default sprite drawing function.
