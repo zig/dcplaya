@@ -5,12 +5,14 @@
  * @date     2002/11/28
  * @brief    graphics lua extension plugin, display list built-in functions
  * 
- * $Id: display_commands.c,v 1.1 2002-12-04 11:28:24 ben Exp $
+ * $Id: display_commands.c,v 1.2 2002-12-11 14:18:50 ben Exp $
  */
 
 #include <string.h>
 #include "display_driver.h"
 #include "draw/gc.h"
+
+#include "sysdebug.h"
 
 DL_FUNCTION_START(nop)
 {

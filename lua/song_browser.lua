@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.8 2002-12-10 17:24:06 ben Exp $
+--- $Id: song_browser.lua,v 1.9 2002-12-11 14:18:50 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -106,6 +106,14 @@ function song_browser_create(owner, name)
 			sb.fl:change_dir(sb.fl.dir)
 		 end
 
+		 if sb.key_time then
+			sb.key_time = sb.key_time + frametime
+			if sb.key_time >= 1 then
+			   sb.search_str = nil
+			   sb.key_time = nil
+			end
+		 end
+
 		 if sb.stopping and playa_fade() == 0 then
 			print("REAL STOP")
 			playa_stop()
@@ -152,9 +160,10 @@ function song_browser_create(owner, name)
 
 		local action
 
---		print("key="..strchar(key))
 		if key >= 32 and key < 128 then
-		   action = sb.cl:locate_entry_expr("^" .. strchar(key) .. ".*")
+		   sb.search_str = (sb.search_str or "^") .. strchar(key)
+		   action = sb.cl:locate_entry_expr(sb.search_str .. ".*")
+		   sb.key_time = 0
 		elseif gui_keyconfirm[key] then
 		   action = sb:confirm()
 		elseif gui_keycancel[key] then
@@ -187,6 +196,8 @@ function song_browser_create(owner, name)
 		   local entry = sb.cl:get_entry()
 		   vmu_set_text(entry and entry.name)
 		end
+
+		sb.wake_up = 1
 		
 	 end
 

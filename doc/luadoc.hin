@@ -1,21 +1,26 @@
 /**
 
-@defgroup dcplaya_lua  dcplaya lua components and extensions documeation
+@defgroup dcplaya_lua  dcplaya lua components and extensions documentation
 This documentation intends to help developers to use dcplaya LUA components.
+
+@author benjamin gerard <ben@sashipa.com>
 
  **/
 
 /**
 @defgroup dcplaya_lua_basics	dcplaya lua basic components documentation
 @ingroup  dcplaya_lua
+@author benjamin gerard <ben@sashipa.com>
  **/
 
 /**
 @defgroup dcplaya_lua_files		dcplaya lua file organization documentation
 @ingroup  dcplaya_lua
+@author benjamin gerard <ben@sashipa.com>
  **/
 
 /**
-@defgroup dcplaya_lua_gui		dcplaya lua GUI components  documentation
+@defgroup dcplaya_lua_gui		dcplaya lua GUI components documentation
 @ingroup  dcplaya_lua
+@author benjamin gerard <ben@sashipa.com>
  **/

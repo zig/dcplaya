@@ -5,7 +5,7 @@
  * @date    2002/02/11
  * @brief   drawing and formating text primitives
  *
- * $Id: text.c,v 1.3 2002-12-04 10:47:25 ben Exp $
+ * $Id: text.c,v 1.4 2002-12-11 14:18:50 ben Exp $
  */
 
 #include <stdarg.h>
@@ -383,6 +383,7 @@ static float draw_text_char(float x1, float y1, float z1,
   float u1,u2,v1,v2;
   float x2,y2;
   myglyph_t * g;
+  draw_argb_t argb;
 	
   ta_hw_tex_vtx_t * hw = HW_TEX_VTX;
 
@@ -395,10 +396,29 @@ static float draw_text_char(float x1, float y1, float z1,
   wc = g->w * scalex;
   hc = g->h * scaley;
 
+  argb = current_gc->text.argb;
+
+#define A_BUTTON_COLOR 0x00FF6363
+#define B_BUTTON_COLOR 0x0000bded
+#define X_BUTTON_COLOR 0x00fff021
+#define Y_BUTTON_COLOR 0x006fe066
+#define DPAD_COLOR     0x00CCCCCC
+#define JOY_COLOR      0x00EEEEEE
+
+
   if (c==4 || c==6) {
+	/* Joypad special case */
+	argb = (argb & 0xFF000000) | (c==4 ? DPAD_COLOR : JOY_COLOR);
     y1 -= hc * 0.5f;
     hc *= 2.0f;
+  } else if (c >= 16 && c <= 19) {
+	/* Pad buttons special case */
+	static draw_argb_t colors[4] = {
+	  A_BUTTON_COLOR, B_BUTTON_COLOR, X_BUTTON_COLOR, Y_BUTTON_COLOR
+	};
+	argb = (argb & 0xFF000000) | colors[c-16];
   }
+
   /* Clip very small char */
   if (hc < 1E-5 || wc < 1E-5) {
 	return x1;
@@ -452,7 +472,7 @@ static float draw_text_char(float x1, float y1, float z1,
   hw->z = z1;
   hw->u = u1;
   hw->v = v2;
-  hw->col = current_gc->text.argb;
+  hw->col = argb;
   hw->addcol = 0;
   ta_commit32_nocopy();
 	

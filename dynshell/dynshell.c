@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.44 2002-12-10 17:24:06 ben Exp $
+ * @version    $Id: dynshell.c,v 1.45 2002-12-11 14:18:50 ben Exp $
  */
 
 #include <stdio.h>
@@ -1219,13 +1219,17 @@ static int lua_playtime(lua_State * L)
   return 2;
 }
 
-static int convert_info(lua_State * L, playa_info_t * info)
+static int convert_info(lua_State * L, playa_info_t * info, int update)
 {
   char * r = (char *)-1;
+  int mask;
 
   if (!info || !info->valid) {
 	return 0;
   }
+
+  mask = info->update_mask | -!!update;
+  
   
   lua_settop(L,0);
   lua_newtable(L);
@@ -1233,70 +1237,106 @@ static int convert_info(lua_State * L, playa_info_t * info)
   lua_pushstring(L,"valid");
   lua_pushnumber(L, info->valid);
   lua_settable(L,1);
+
+  lua_pushstring(L,"update");
+  lua_pushnumber(L, info->update_mask);
+  lua_settable(L,1);
   
-  lua_pushstring(L,"bits");
-  lua_pushnumber(L, 1<<(playa_info_bits(info, -1)+3));
-  lua_settable(L,1);
+  if (mask & (1<<PLAYA_INFO_BITS)) {
+	lua_pushstring(L,"bits");
+	lua_pushnumber(L, 1<<(playa_info_bits(info, -1)+3));
+	lua_settable(L,1);
+  }
 
-  lua_pushstring(L,"stereo");
-  lua_pushnumber(L, playa_info_stereo(info, -1));
-  lua_settable(L,1);
+  if (mask & (1<<PLAYA_INFO_STEREO)) {
+	lua_pushstring(L,"stereo");
+	lua_pushnumber(L, playa_info_stereo(info, -1));
+	lua_settable(L,1);
+  }
 
-  lua_pushstring(L,"frq");
-  lua_pushnumber(L, playa_info_frq(info, -1));
-  lua_settable(L,1);
+  if (mask & (1<<PLAYA_INFO_FRQ)) {
+	lua_pushstring(L,"frq");
+	lua_pushnumber(L, playa_info_frq(info, -1));
+	lua_settable(L,1);
+  }
 
-  lua_pushstring(L,"time_ms");
-  lua_pushnumber(L, (float)playa_info_time(info, -1) / 1024.0f);
-  lua_settable(L,1);
+  if (mask & (1<<PLAYA_INFO_TIME)) {
+	lua_pushstring(L,"time_ms");
+	lua_pushnumber(L, (float)playa_info_time(info, -1) / 1024.0f);
+	lua_settable(L,1);
+  }
 
-  lua_pushstring(L,"bps");
-  lua_pushnumber(L, playa_info_bps(info, -1));
-  lua_settable(L,1);
+  if (mask & (1<<PLAYA_INFO_BPS)) {
+	lua_pushstring(L,"bps");
+	lua_pushnumber(L, playa_info_bps(info, -1));
+	lua_settable(L,1);
+  }
 
-  lua_pushstring(L,"bytes");
-  lua_pushnumber(L, playa_info_bytes(info, -1));
-  lua_settable(L,1);
+  if (mask & (1<<PLAYA_INFO_BYTES)) {
+	lua_pushstring(L,"bytes");
+	lua_pushnumber(L, playa_info_bytes(info, -1));
+	lua_settable(L,1);
+  }
 
-  lua_pushstring(L,"description");
-  lua_pushstring(L,playa_info_desc(info, r));
-  lua_settable(L,1);
+  if (mask & (1<<PLAYA_INFO_DESC)) {
+	lua_pushstring(L,"description");
+	lua_pushstring(L,playa_info_desc(info, r));
+	lua_settable(L,1);
+  }
 
-  lua_pushstring(L,"artist");
-  lua_pushstring(L,playa_info_artist(info, r));
-  lua_settable(L,1);
+  if (mask & (1<<PLAYA_INFO_ARTIST)) {
+	lua_pushstring(L,"artist");
+	lua_pushstring(L,playa_info_artist(info, r));
+	lua_settable(L,1);
+  }
 
-  lua_pushstring(L,"album");
-  lua_pushstring(L,playa_info_album(info, r));
-  lua_settable(L,1);
+  if (mask & (1<<PLAYA_INFO_ALBUM)) {
+	lua_pushstring(L,"album");
+	lua_pushstring(L,playa_info_album(info, r));
+	lua_settable(L,1);
+  }
 
-  lua_pushstring(L,"track");
-  lua_pushstring(L,playa_info_track(info, r));
-  lua_settable(L,1);
+  if (mask & (1<<PLAYA_INFO_TRACK)) {
+	lua_pushstring(L,"track");
+	lua_pushstring(L,playa_info_track(info, r));
+	lua_settable(L,1);
+  }
 
-  lua_pushstring(L,"title");
-  lua_pushstring(L,playa_info_title(info, r));
-  lua_settable(L,1);
+  if (mask & (1<<PLAYA_INFO_TITLE)) {
+	lua_pushstring(L,"title");
+	lua_pushstring(L,playa_info_title(info, r));
+	lua_settable(L,1);
+  }
 
-  lua_pushstring(L,"year");
-  lua_pushstring(L,playa_info_year(info, r));
-  lua_settable(L,1);
+  if (mask & (1<<PLAYA_INFO_YEAR)) {
+	lua_pushstring(L,"year");
+	lua_pushstring(L,playa_info_year(info, r));
+	lua_settable(L,1);
+  }
 
-  lua_pushstring(L,"genre");
-  lua_pushstring(L,playa_info_genre(info, r));
-  lua_settable(L,1);
+  if (mask & (1<<PLAYA_INFO_GENRE)) {
+	lua_pushstring(L,"genre");
+	lua_pushstring(L,playa_info_genre(info, r));
+	lua_settable(L,1);
+  }
 
-  lua_pushstring(L,"comments");
-  lua_pushstring(L,playa_info_comments(info, r));
-  lua_settable(L,1);
+  if (mask & (1<<PLAYA_INFO_COMMENTS)) {
+	lua_pushstring(L,"comments");
+	lua_pushstring(L,playa_info_comments(info, r));
+	lua_settable(L,1);
+  }
 
-  lua_pushstring(L,"format");
-  lua_pushstring(L,playa_info_format(info));
-  lua_settable(L,1);
+  if (mask & (1<<PLAYA_INFO_FORMAT)) {
+	lua_pushstring(L,"format");
+	lua_pushstring(L,playa_info_format(info));
+	lua_settable(L,1);
+  }
 
-  lua_pushstring(L,"time");
-  lua_pushstring(L,playa_info_timestr(info));
-  lua_settable(L,1);
+  if (mask & (1<<PLAYA_INFO_TIME)) {
+	lua_pushstring(L,"time");
+	lua_pushstring(L,playa_info_timestr(info));
+	lua_settable(L,1);
+  }
 
   return 1;
 }
@@ -1308,7 +1348,7 @@ static int lua_music_info(lua_State * L)
   playa_info_t * info;
 
   info = playa_info_lock();
-  err = convert_info(L,info);
+  err = convert_info(L,info, lua_tonumber(L,1));
   playa_info_release(info);
 
   return err;
@@ -1855,7 +1895,7 @@ static luashell_command_description_t commands[] = {
     "playa_info",
     "info",
     "print([["
-    "playa_info([filename [ ,track ] ]) :\n"
+    "playa_info( [update | [filename [ ,track ] ] ]) :\n"
 	"Get music information table."
     "]])",
     SHELL_COMMAND_C, lua_music_info

@@ -5,7 +5,7 @@
  * @author    benjamin gerard <ben@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.c,v 1.12 2002-12-01 19:19:14 ben Exp $
+ * @version   $Id: display_list.c,v 1.13 2002-12-11 14:18:50 ben Exp $
  */
 
 #include <malloc.h>
@@ -66,7 +66,7 @@ int dl_init(void)
   LIST_INIT(&dl_lists[1]);
   LIST_INIT(&dl_lists[2]);
 
-  *(int *) &listrc = 0;
+  listrc.gc_flags = 0;
   listrc.color_inherit = listrc.trans_inherit = DL_INHERIT_LOCAL;
 
   SDUNINDENT;
@@ -171,8 +171,8 @@ void dl_destroy(dl_list_t * l)
 			  l, l->refcount);
 	unlock(l);
   } else {
-	SDDEBUG("[%s] : [%p, %s-list]\n", __FUNCTION__,
-			l, typestr[l->flags.type]);
+/* 	SDDEBUG("[%s] : [%p, %s-list]\n", __FUNCTION__, */
+/* 			l, typestr[l->flags.type]); */
 	LIST_REMOVE(l, g_list);
 	real_destroy(l);
   }
@@ -359,9 +359,9 @@ static dl_code_e dl_render_list(dl_runcontext_t * rc, dl_context_t * parent,
 	return DL_COMMAND_OK;
   }
 
-/*   if (rc->gc_flags) { */
-/* 	gc_push(rc->gc_flags); */
-/*   } */
+  if (rc->gc_flags) {
+	gc_push(rc->gc_flags);
+  }
 
 /*   SDDEBUG("[%s] [%p,%s,%d]\n", __FUNCTION__, */
 /* 		  l, typestr[l->flags.type], l->n_commands); */
@@ -405,7 +405,7 @@ static dl_code_e dl_render_list(dl_runcontext_t * rc, dl_context_t * parent,
 	c = DLCOM(heap, id);
 
 	if (c->flags.inactive) {
-	  SDDEBUG("[%p,%d/%d], INACTVE\n", l, i, end_idx);
+/* 	  SDDEBUG("[%p,%d/%d], INACTVE\n", l, i, end_idx); */
 	  continue;
 	}
 	
@@ -439,9 +439,9 @@ static dl_code_e dl_render_list(dl_runcontext_t * rc, dl_context_t * parent,
 
 /*   SDUNINDENT; */
 
-/*   if (rc->gc_flags) { */
-/* 	gc_pop(rc->gc_flags); */
-/*   } */
+  if (rc->gc_flags) {
+	gc_pop(rc->gc_flags);
+  }
 
   return code;
 }
@@ -452,8 +452,8 @@ static void dl_render(int opaque)
 
   locklists();
   LIST_FOREACH(l, &dl_lists[DL_MAIN_TYPE], g_list) {
-	gc_reset();
 	lock(l);
+	gc_reset();
 	dl_render_list(&listrc, 0, l, opaque);
 	unlock(l);
   }

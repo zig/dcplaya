@@ -4,12 +4,14 @@
 --- @date    2002/11/29
 --- @brief   Song info application.
 ---
---- $Id: song_info.lua,v 1.5 2002-12-10 15:20:42 ben Exp $
+--- $Id: song_info.lua,v 1.6 2002-12-11 14:18:50 ben Exp $
 
 song_info_loaded = nil
 
 if not dolib("basic") then return end
 if not dolib("evt") then return end
+if not dolib("box3d") then return end
+if not dolib("sprite") then return end
 
 --- @name song-info functions
 --- @ingroup dcplaya_lua_gui
@@ -140,6 +142,12 @@ function song_info_create(owner, name)
 			if not si.info or playa_info_id() ~= si.info.valid then
 			   si.info = playa_info()
 			   if si.info and si.info.valid then
+				  local i,v
+				  for i,v in si.info_fields do
+					 print("update "..i..":"..si.info[i])
+					 v.value = si.info[i]
+					 song_info_draw_field(v)
+				  end
 			   else
 			   end
 			end
@@ -198,7 +206,10 @@ function song_info_create(owner, name)
    --- @internal
    --
    function song_info_draw(si)
-	  dl_set_trans(si.dl,mat_scale(16,16,1) * mat_trans(80,50,si.z))
+	  dl_set_trans(si.dl,mat_trans(0,0,si.z))
+	  dl_set_trans(si.layer1_dl, mat_scale(16,16,1) * mat_trans(80,50,1))
+--	  dl_set_trans(si.layer2_dl, mat_trans(45,300,1))
+
 -- 	  dl_set_trans(si.icon_dl, )
    end
 
@@ -207,9 +218,14 @@ function song_info_create(owner, name)
    --
    function song_info_shutdown(si)
 	  si.dl = nil
+	  si.icons_dl = nil
+	  si.layer1_dl = nil
+	  si.layer2_dl = nil
 	  si.icon_dl = nil
 	  si.time_dl = nil
-	  si.icons_dl = nil
+	  si.info_dl = nil
+	  si.help_dl = nil
+	  si.info_fields = nil
    end
 
    si = {
@@ -235,21 +251,135 @@ function song_info_create(owner, name)
    }
 
    song_info_create_icons(si)
-   si.dl = dl_new_list(256,0)
+   si.dl = dl_new_list(256,0)        -- Main display list
+   si.layer1_dl = dl_new_list(0,1,1) -- Time and icon layer sub-list
+   si.layer2_dl = dl_new_list(0,1,1) -- Help and info layer sub-list
+
    si.icon_dl = dl_new_list(0,1,1)
    si.time_dl = dl_new_list(0,1,1)
+   si.info_dl = dl_new_list(0,1,1)
+   si.help_dl = dl_new_list(0,1,1)
+
    dl_set_trans(si.time_dl, mat_trans(2,0,0))
 
-   dl_text_prop(si.time_dl, 0, 1.5, 1)
-   dl_draw_text(si.time_dl, 0,0,0, 1,1,1,1, "info")
+--    dl_text_prop(si.time_dl, 0, 1.5, 1)
+--    dl_draw_text(si.time_dl, 0,0,0, 1,1,1,1, "info")
+
+   dl_sublist(si.layer1_dl, si.icon_dl)
+   dl_sublist(si.layer1_dl, si.time_dl)
+   dl_sublist(si.layer2_dl, si.info_dl)
+   dl_sublist(si.layer2_dl, si.help_dl)
+   dl_sublist(si.dl, si.layer1_dl)
+   dl_sublist(si.dl, si.layer2_dl)
+
+   local color = color_new(1, 0, 0.7, 1)
+
+   local ct, cl, cb, cr
+   ct = { 1, 0.9, 0.9, 0.9 }
+   cl = { 1, 0.7, 0.7, 0.7 }
+   cb = { 1, 0.5, 0.5, 0.5 }
+   cr = { 1, 0.4, 0.4, 0.4 }
+
+   si.layer2_box = box3d({0,0,550,120},
+						 -4,
+						 color * 0.5,
+						 color * ct,
+						 color * cl,
+						 color * cr,
+						 color * cb)
+   si.layer2_ibox = box3d_inner_box(si.layer2_box)
+   si.layer2_obox = box3d_outer_box(si.layer2_box)
+
+   local screenw, screenh = 640, 480
+   local outer, inner = si.layer2_obox,si.layer2_ibox
+
+   dl_set_trans(si.layer2_dl,
+				mat_trans((screenw - (outer[3]-outer[1])) * 0.5,
+						  screenh - (outer[4]-outer[2]) - 16,
+						  0))
+
+   si.layer2_box:draw(si.layer2_dl, nil, 1)
 
 
-   dl_sublist(si.dl, si.icon_dl)
-   dl_sublist(si.dl, si.time_dl)
+   function song_info_draw_help(si)
+	  local w,h = dl_measure_text(si.help_dl,"Help")
+	  w = w * 24 / 16
+	  h = h * 24 / 16
+	  local x = (si.layer2_obox[3] + si.layer2_obox[1] - w) * 0.5
+	  dl_text_prop(si.help_dl, 0, 24)
+	  dl_draw_text(si.help_dl, x, 0, 10, 1,1,1,0, "Help")
+	  dl_text_prop(si.help_dl, 0, 16)
+	  dl_draw_text(si.help_dl, 0,24,10, 1,1,1,1, "help text " ..
+				   strchar(16) .. " " .. strchar(17) .. " " ..  
+				   strchar(18) .. " " .. strchar(19))
+   end
+
+   song_info_draw_help(si)
+
+-- Desc     Genre Year
+-- Artist
+-- Album
+-- Title
+-- Comment
+
+   function song_info_draw_field(field)
+	  local x,y = 70,1
+	  dl_clear(field.dl)
+	  field.box:draw(field.dl,nil,1)
+	  if type(field.label) == "string" then
+		 dl_draw_text(field.dl, 0,y,10, 1,1,1,0.6, field.label)
+	  elseif tag(field.label) == sprite_tag then
+		 field.label:draw(field.dl, 0,0,10)
+	  else
+		 x = 0
+	  end
+
+	  if field.value then
+		 dl_draw_text(field.dl, x,y,10, 1,1,1,1, field.value)
+	  end
+   end
+
+   function song_info_field(label, box, x, y)
+	  local field = {}
+	  field.label = label
+	  field.box = box
+	  field.dl = dl_new_list(0,1,1)
+	  dl_set_trans(field.dl, mat_trans(x,y,0))
+	  return field
+   end
+
+   color = color_new(0.5,1,1,1)
+   local lbox
+   lbox = box3d({0,0,inner[3]-inner[1]-12,18},
+				-2,
+				{0.5,0,0,0},
+				color * cb,
+				color * cr,
+				color * cl,
+				color * ct)
+
+   si.info_fields = {}
+   local ob = box3d_outer_box(lbox)
+   local h = (ob[4] - ob[2]) + 3
+   si.info_fields.format  = song_info_field("Format", lbox,0,h*0)
+   si.info_fields.artist  = song_info_field("Artist", lbox,0,h*1)
+   si.info_fields.album   = song_info_field("Album", lbox,0,h*2)
+   si.info_fields.title   = song_info_field("Title", lbox,0,h*3)
+   dl_set_active(si.help_dl,0)
+
+   dl_set_trans(si.info_dl,
+				mat_trans( (inner[1] + inner[3] - ob[1] - ob[3]) * 0.5, 5, 1))
+
+   local i,v
+   for i,v in si.info_fields do
+	  song_info_draw_field(v)
+	  dl_sublist(si.info_dl, v.dl)
+   end
 
    si:set_color(0, 1, 1, 1)
    si:draw()
    si:open()
+
    evt_app_insert_first(owner, si)
 
    return si
@@ -260,7 +390,7 @@ end
 
 si = song_info_create()
 
-function k()
+function ksi()
    if si then evt_shutdown_app(si) end
    si = nil
 end

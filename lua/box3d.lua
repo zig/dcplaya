@@ -81,7 +81,7 @@ function box3d(box, border, bkg, top, left, bottom, right)
    ---  @param  mat  Transform matrix (or nil)
    ---  @param  clip Override box3d clip properties
    function box3d_draw(b3d, dl, mat, clip)
-	  local vtx
+	  local vtx, i
 
 	  if tag(mat) == matrix_tag then
 		 mat_mult_self(b3d.trans, b3d.vtx, mat)
@@ -90,7 +90,7 @@ function box3d(box, border, bkg, top, left, bottom, right)
 		 vtx = b3d.vtx
 	  end
 
-	  for i=1, 20, 4 do
+	  for i=b3d.background or 5, 20, 4 do
 		 dl_draw_strip(dl, vtx[i], 4)
 	  end
 
@@ -113,6 +113,7 @@ function box3d(box, border, bkg, top, left, bottom, right)
 	  vtx = mat_new(20,8),   -- Box vertrices
 	  trans = mat_new(20,8), -- Transformed vertrices
 	  draw = box3d_draw,     -- Draw method
+	  background = bkg ~= nil,
    }
 
    local inner_box, outer_box
