@@ -103,12 +103,15 @@ static int rescale(int v, const int dead, const int shift)
 
 static int rescale2(int v, const int dead, const int shift)
 {
+  int v2;
   const int max = 1 << shift;
 
-  if (v > max-dead && v < max+dead) {
+  v -= max; /* [ -128 127 ] */
+  v2 = v - (dead ^ (v>>31)); /* -127 - 127 */
+  if ((v^v2) < 0) {
     v = 0;
   } else {
-    v = ((max-v) << shift) / ((1<<shift) - dead);
+    v = (v2<<shift) / (max - 1 - dead);
   }
   return v;
 }

@@ -1,4 +1,14 @@
-/* 2002/02/16 */
+/**
+ * @ingroup dcplaya_utils
+ * @file    mkobjlinks.c
+ * @author  benjamin gerard <ben@sashipa.com>
+ * @date   2002/02/16
+ * @brief  Build face links.
+ *
+ * This is a crappy program !!!
+ *
+ * $Id: mkobjlinks.c,v 1.3 2003-01-24 10:48:40 ben Exp $
+ */
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -27,72 +37,6 @@ void Error(const char *fmt, ...)
 static volatile int missed = 0;       /* Missed when create */
 static volatile int verif_missed = 0; /* Missed when verify */
 
-static void CrossProduct(float *d, const float *v, const float * w)
-{
-  d[0] = v[1] * w[2] - v[2] * w[1];
-  d[1] = v[2] * w[0] - v[0] * w[2];
-  d[2] = v[0] * w[1] - v[1] * w[0];
-}
-
-static void FaceNormal(float *d, const vtx_t * v, const tri_t *t)
-{
-  const vtx_t *a=v+t->a,*b=v+t->b,*c=v+t->c;
-  float n;
-  vtx_t A,B;
-
-  A.x = a->x - b->x;
-  A.y = a->y - b->y;
-  A.z = a->z - b->z;
-
-  B.x = a->x - c->x;
-  B.y = a->y - c->y;
-  B.z = a->z - c->z;
-
-  CrossProduct(d,&A.x,&B.x);
-  n = 1.0f / (float)sqrt((double)(d[0]*d[0] + d[1]*d[1] + d[2]*d[2]));
-  d[0] *= n;
-  d[1] *= n;
-  d[2] *= n;
-}
-
-static void BuildNormals(obj_t *o)
-{
-  int i;
-
-  if (!o->nvx) {
-    o ->nvx = (vtx_t *)malloc(sizeof(vtx_t) * o->nbf);
-  }
-  if (!o->nvx) {
-    return;
-  }
-  for (i=0; i<o->nbf; ++i) {
-    FaceNormal((float *)(o->nvx+i),o->vtx,o->tri+i);
-  }
-}
-
-static float FaceCosAngle(obj_t *o, int ia, int ib)
-{
-  vtx_t *va = o->nvx + ia;
-  vtx_t *vb = o->nvx + ib;
-  
-  return va->x * vb->x + va->y * vb->y + va->z * vb->z;
-}
-
-static int optimize_vtx(vtx_t *v, int n)
-{
-  int i,j;
-  int cnt;
-  for (i=0; i<n; ++i) {
-    for (j=i+1; j<n; ++j) {
-      float d = ABS(v[i].x-v[j].x) + ABS(v[i].y-v[j].y) + ABS(v[i].z-v[j].z);
-      if (d <= 0) {
-        ++cnt;
-      }
-    }
-  }
-  return cnt;
-}
-
 static int verify_a_link(tlk_t *l, tri_t *t, int j, int i, int nbf, int nbv)
 {
   int link = (&l[i].a)[j];     /* link = num_tri*4 + num_seg */
@@ -114,9 +58,9 @@ static int verify_a_link(tlk_t *l, tri_t *t, int j, int i, int nbf, int nbv)
     /* Verify index range */
     if (link >= nbf) {
       Error(
-	      "bad links #%d of face %d : "
-	      "out of range (%d>=%d)\n",
-	      j, i, link, nbf);
+	    "bad links #%d of face %d : "
+	    "out of range (%d>=%d)\n",
+	    j, i, link, nbf);
       return -1;
     }
 
@@ -128,9 +72,9 @@ static int verify_a_link(tlk_t *l, tri_t *t, int j, int i, int nbf, int nbv)
 	(unsigned int)a2>=nbv ||
 	(unsigned int)b2>=nbv) {
       Error(
-	      "bad links #%d of face %d : "
-	      "out of range [%d,%d,%d,%d] >= %d\n",
-	      j, i, a1, b1, a2, b2, nbv);
+	    "bad links #%d of face %d : "
+	    "out of range [%d,%d,%d,%d] >= %d\n",
+	    j, i, a1, b1, a2, b2, nbv);
       return -1;
     }
     
@@ -139,20 +83,13 @@ static int verify_a_link(tlk_t *l, tri_t *t, int j, int i, int nbf, int nbv)
     code = (a1==a2) | ((b1==b2)<<1);
     if (code != 3) {
       Error(
-	      "bad links #%d of face %d : "
-	      "[code=%d a1=%d b1=%d a2=%d b2=%d]\n",
-	      j, i, code, a1,b1,a2,b2);
+	    "bad links #%d of face %d : "
+	    "[code=%d a1=%d b1=%d a2=%d b2=%d]\n",
+	    j, i, code, a1,b1,a2,b2);
       return -1;
     }
 
-    /* Verify symetric link */
-
-/*   
-    Error(
-	    "Ok links #%d of face %d : "
-	    "[code=%d a1=%d b1=%d a2=%d b2=%d]\n",
-	    j, i, code, a1,b1,a2,b2);
-*/
+    /* $$$ Verify symetric link : todo */
     return 0;
   }
 }
@@ -215,7 +152,6 @@ static tlk_t *MakeLinks(obj_t *o)
     lnk[i].a = lnk[i].b = lnk[i].c = -1;
     lnk[i].flags = 0;
   }
-  
 
   /* Build for each face */
   for (i=0; i<o->nbf; ++i) {
@@ -234,34 +170,8 @@ static tlk_t *MakeLinks(obj_t *o)
       
       k = findlinks(o->tri, o->nbf, t[(j+1)%3], t[j]);
 
-/*
-      if (1 || (i == 0)) {
-	Error(
-		"F:%d,L:%d [%d %d %d] -> "
-		"F:%d,L:%d [%d %d %d]\n",
-		i,    j,   o->tri[i].a, o->tri[i].b,    o->tri[i].c,
-		k>>2, k&3, o->tri[k>>2].a, o->tri[k>>2].b, o->tri[k>>2].c);
-      }
-*/
-
       if (k >= 0) {
-        float cos_v, cos_v2;
-        int forte;
-        
-        // face #i seg #j linked to face #k>>2 seg #k&3
-        // face #k>>2 seg #k&3 linked to face #i seg#j
-        
         l[j] = k;
-        //(&lnk[(k>>2)].a)[k&3] = i;
-/*
-        cos_v  = FaceCosAngle(o,i,k>>2);
-        cos_v2 = FaceCosAngle(o,k>>2,i);
-//        Error( "ANG= %.04f   %.04f\n", cos_v, cos_v2);
-        
-        forte = cos_v > 0;
-        o->tlk[   i].flags |= forte << j;
-        //o->tlk[k>>2].flags |= forte << (k&3);
-*/        
       } else {
         missed++;
       }
@@ -282,20 +192,6 @@ static void PrintLinks(tlk_t *l, int n)
   } 
   printf("  { -1, -1, -1, 0 },\n");
   printf("};\n");
-}
-
-static void scramble(tri_t *t, int n)
-{
-  while (n--) {
-    int v[3], d = n + rand()%83;
-    v[(0+d)%3] = t->a;
-    v[(1+d)%3] = t->b;
-    v[(2+d)%3] = t->c;
-    t->b = v[0];
-    t->a = v[1];
-    t->c = v[2];
-    ++t;
-  }
 }
 
 /* Fake functions for linkage purpose */
@@ -322,21 +218,6 @@ int main(int na, char **a)
   obj_t * o = & OBJECTNAME.obj;
   int cnt_missed;
 
-/* DON'T DO THAT !!!! */
-/*   Error("******** Scramble Faces ********\n"); */
-/*   scramble(o->tri, o->nbf); */
-
-/* #define TOTO(O) (O##_tlk) */
-/*   if (o->nbf != sizeof(TOTO(OBJECTNAME)) / sizeof(*TOTO(OBJECTNAME))) { */
-/*     Error("Bad number of link faces\n"); */
-/*     return 23; */
-/*   } */
-
-  indent = 2;
-  Error("- Build Nornals...\n");
-  indent = 4;
-  BuildNormals(o);
-
   indent = 2;
   Error("- Make links...\n");
   indent = 4;
@@ -348,20 +229,14 @@ int main(int na, char **a)
   indent = 2;
   Error("- Verify links...\n");  
   indent = 4;
-  if (cnt_missed = verify_links(l, o->tri, o->nbf, o->nbv), cnt_missed < 0)
+  if (cnt_missed = verify_links(l, o->tri, o->nbf, o->nbv), cnt_missed < 0) {
     return 3;
+  }
   if (cnt_missed != missed || cnt_missed != verif_missed) {
     Error( "Verify error : %d!=%d!=%d\n",
-	    cnt_missed, missed,verif_missed);
+	   cnt_missed, missed,verif_missed);
     return 4;
   }
-
-  
-/*
-  indent = 2;
-  printf("opt vtx:%d\n", 
-    optimize_vtx(o->vtx, o->nbv)); 
-*/
 
   indent = 2;
   Error("- Print links...\n");

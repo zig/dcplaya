@@ -4,7 +4,7 @@
  * @date    2002/02/12
  * @brief   Very simple 3D API.
  *
- * @version $Id: obj3d.c,v 1.8 2003-01-24 04:28:13 ben Exp $
+ * @version $Id: obj3d.c,v 1.9 2003-01-24 10:48:40 ben Exp $
  */
 
 #include <stdio.h>
@@ -25,7 +25,7 @@ static void swap (int *a, int *b) {
 
 static float FaceCosAngle(obj_t *o, int ia, int ib)
 {
-  return vtx_dot_product(o->nvx + ia,o->nvx + ib);
+  return vtx_dot_product(o->nvx + ia, o->nvx + ib);
 }
 
 void FaceNormal(float *d, const vtx_t * v, const tri_t *t)
@@ -48,6 +48,9 @@ static void ResizeAndCenter(obj_t *o, const float w)
 
   if (o->nbv != o->static_nbv || o->nbf+1 != o->static_nbf) {
     // !!! Problem in genenerated object file
+    SDCRITICAL("[%s] : Problem in genenerated object file : "
+	       "[%d != %d] and/or [%d != %d]\n",
+	       o->nbv, o->static_nbv, o->nbf+1, o->static_nbf);
     BREAKPOINT(0xDEAD9872);
   }
 
@@ -85,11 +88,17 @@ static void ResizeAndCenter(obj_t *o, const float w)
   }
 
   // Calculates scale factor
-  s = w / (m[1][0] - m[0][0]);
+  s = (m[1][0] - m[0][0]);
   for (j=1; j<3; ++j) {
-    float s2 = w / (m[1][j] - m[0][j]);
-    if (s2 < s) {
-      s = s2;                                    }
+    float s2 = (m[1][j] - m[0][j]);
+    if (s2 > s) {
+      s = s2;   
+    }
+  }
+  if (s > MF_EPSYLON) {
+    s = w / s;
+  } else {
+    s = 1;
   }
 
   // Transform all
@@ -104,12 +113,14 @@ static void ResizeAndCenter(obj_t *o, const float w)
   }
 
   // Inverse face def
-  for (i=0; i<o->nbf; ++i) {
-    swap (&o->tri[i].a, &o->tri[i].b);
-    swap (&o->tlk[i].b, &o->tlk[i].c);
-    o->tlk[i].flags = ((o->tlk[i].flags&1))
-      | ((o->tlk[i].flags&2)<<1)
-      | ((o->tlk[i].flags&4)>>1);
+  if (0) {
+    for (i=0; i<o->nbf; ++i) {
+      swap (&o->tri[i].a, &o->tri[i].b);
+      swap (&o->tlk[i].b, &o->tlk[i].c);
+      o->tlk[i].flags = ((o->tlk[i].flags&1))
+	| ((o->tlk[i].flags&2)<<1)
+	| ((o->tlk[i].flags&4)>>1);
+    }
   }
 }
 
@@ -119,13 +130,13 @@ static int BuildNormals(obj_t *o)
 
   /* One more for safety-net in lighted object. */
   if (!o->nvx) {
-    o ->nvx = (vtx_t *)malloc(sizeof(vtx_t) * (o->nbf+1));
+    o->nvx = (vtx_t *)malloc(sizeof(vtx_t) * (o->nbf+1));
   }
   if (!o->nvx) {
     return -1;
   }
   for (i=0; i<o->nbf; ++i) {
-    FaceNormal(&o->nvx[i].x,o->vtx,o->tri+i);
+    FaceNormal(&o->nvx[i].x, o->vtx, o->tri+i);
   }
   o->nvx[i].x = o->nvx[i].y = o->nvx[i].z = o->nvx[i].w = 0;
   return 0;

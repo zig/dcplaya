@@ -6,7 +6,7 @@
  *
  *  @wraning Do NOT include this file directly. Use "vtx.h" indeed.
  *
- * $Id: vtx.inl,v 1.2 2003-01-22 19:12:56 ben Exp $
+ * $Id: vtx.inl,v 1.3 2003-01-24 10:48:40 ben Exp $
  */
 
 #ifndef _VTX_INL_
@@ -166,7 +166,7 @@ VTX_FUNCTION
 float vtx_inorm(const vtx_t * a)
 {
   const float d = vtx_sqnorm(a);
-  return (d > MF_EPSYLON) ? ISqrt(d) : -1;
+  return (d > MF_EPSYLON2) ? ISqrt(d) : -1;
 }
 
 static vtx_t * __vtx_max_to_1(vtx_t * a)

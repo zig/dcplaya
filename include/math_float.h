@@ -4,7 +4,7 @@
  *  @date     2003/01/21
  *  @brief    floating point macros and defines
  *
- * $Id: math_float.h,v 1.3 2003-01-22 19:12:56 ben Exp $
+ * $Id: math_float.h,v 1.4 2003-01-24 10:48:40 ben Exp $
  */
 
 #ifndef _MATH_FLOAT_H_
@@ -24,6 +24,10 @@
 # define MF_EPSYLON 1E-5
 #endif
 
+#ifndef MF_EPSYLON2
+# define MF_EPSYLON2 (MF_EPSYLON*MF_EPSYLON)
+#endif
+
 /** PI. */
 #ifndef MF_PI
 # ifdef M_PI
@@ -36,6 +40,7 @@
 #define Cos(A) fcos((A))
 #define Sin(A) fsin((A))
 #define Inv(A) (1.0f/(A))
+#define Sq(A,B) __mf_sq(A)
 #define Sqrt(A) sqrtf((A))
 #define ISqrt(A) Inv(Sqrt((A)))
 #define Fabs(A) __mf_abs((A))
@@ -46,7 +51,6 @@
 #define FnearZero(A) __mf_near_zero((A))
 #define Fsign(A) ((A)<0)
 
-#define Sq(A,B) __mf_sq(A)
 
 inline static float __mf_sq(const float a) {
   return a * a;

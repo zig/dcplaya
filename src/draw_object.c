@@ -1,5 +1,5 @@
 /**
- * $Id: draw_object.c,v 1.14 2003-01-24 04:28:13 ben Exp $
+ * $Id: draw_object.c,v 1.15 2003-01-24 10:48:40 ben Exp $
  */
 
 #include <stdio.h>
@@ -127,6 +127,7 @@ static void TransformVtx(tvtx_t * d, const vtx_t *v, int n,
   do { 
     const float x = v->x, y = v->y, z = v->z; 
     const float oow = Inv((x * m03 + y * m13 + z * m23) + m33);
+    //    const float z2 = (x * m02 + y * m12 + z * m22) + m32;
 
     d->p.x = ((x * m00 + y * m10 + z * m20) + m30) * oow * mx + tx;
     d->p.y = ((x * m01 + y * m11 + z * m21) + m31) * oow * my + ty;
@@ -349,10 +350,11 @@ int DrawObjectLighted(viewport_t * vp, matrix_t local, matrix_t proj,
       coef = nrm->x * tlight.x 
 	+ nrm->y * tlight.y 
 	+ nrm->z * tlight.z;
-	  
-      if (coef < 0) {
-	coef = 0;
-      }
+
+      coef *= coef;
+/*       if (coef < 0) { */
+/* 	coef = 0; */
+/*       } */
       hw->col = argb4(aa + coef * la, ar + coef * lr,
 		      ag + coef * lg, ab + coef * lb);
 	
@@ -403,6 +405,7 @@ int DrawObjectFrontLighted(viewport_t * vp, matrix_t local, matrix_t proj,
   const float m02 = local[0][2];
   const float m12 = local[1][2];
   const float m22 = local[2][2];
+  const int strong_mask = 7;
 
   if (DrawObjectPostProcess(vp, local, proj, o) < 0) {
     return -1;
@@ -443,21 +446,25 @@ int DrawObjectFrontLighted(viewport_t * vp, matrix_t local, matrix_t proj,
       }
 
       coef = m02 * nrm->x + m12 * nrm->y + m22 * nrm->z;
+      coef *= coef;
 
-      if (coef < 0) {
-/*  	coef *= coef; */
-	coef = -0.4 * coef;
-	hw->col = 0xFFFF0000;
-      } else {
+/*       if (coef < 0) { */
+/* 	coef = -1 * coef; */
+/* 	hw->col = 0xFF7f0000 + (sature(coef * 127.0f)<<16); */
+/*       } else { */
+/* 	hw->col = argb4(aa + coef * la, ar + coef * lr, */
+/* 			ag + coef * lg, ab + coef * lb); */
+/*       } */
+
       hw->col = argb4(aa + coef * la, ar + coef * lr,
 		      ag + coef * lg, ab + coef * lb);
-      }
+
 	
       lflags  = t[l->a].flags << 0;
       lflags |= t[l->b].flags << 1;
       lflags |= t[l->c].flags << 2;
       // Strong link :
-      //lflags |= l->flags & 7;
+      lflags |= l->flags & strong_mask;
 	
       uvl = uvlinks[lflags];
 
