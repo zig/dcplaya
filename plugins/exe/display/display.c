@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.29 2003-03-10 22:55:33 ben Exp $
+ * $Id: display.c,v 1.30 2003-03-17 18:50:11 ben Exp $
  */
 
 #include <stdlib.h>
@@ -46,6 +46,7 @@ DL_FUNCTION_DECLARE(mat_dump);
 
 /* display_text.c */
 DL_FUNCTION_DECLARE(draw_text);
+DL_FUNCTION_DECLARE(draw_scroll_text);
 DL_FUNCTION_DECLARE(measure_text);
 DL_FUNCTION_DECLARE(text_prop);
 
@@ -490,6 +491,14 @@ static luashell_command_description_t display_commands[] = {
       "dl_draw_text(list, x, y, z, a, r, g, b, string) : draw text"
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_draw_text       /* function */
+  },
+  {
+    "dl_draw_scroll_text", 0,            /* long and short names */
+    "print [["
+      "dl_draw_scroll_text(list, x, y, z, a, r, g, b, string,"
+      " window, speed, pingpong) : draw scroll text"
+    "]]",                                /* usage */
+    SHELL_COMMAND_C, lua_draw_scroll_text       /* function */
   },
   {
     "dl_measure_text", 0,                /* long and short names */

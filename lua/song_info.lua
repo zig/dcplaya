@@ -4,7 +4,7 @@
 --- @date     2002/11/29
 --- @brief    Song info application.
 ---
---- $Id: song_info.lua,v 1.22 2003-03-17 03:31:21 ben Exp $
+--- $Id: song_info.lua,v 1.23 2003-03-17 18:50:11 ben Exp $
 
 song_info_loaded = nil
 
@@ -129,16 +129,11 @@ function song_info_create(owner, name, style)
 	    local x
 	    local w,h = dl_measure_text(si.info_comments.dl,
 					si.info.comments)
-	    si.info_comments.text_w = w
-	    si.info_comments.scroll = -32
-	    local mat = dl_get_trans(si.info_comments.dl)
-	    mat[4][1] = si.info_comments.w
-	    dl_set_trans(si.info_comments.dl,mat)
 	    dl_clear(si.info_comments.dl)
 	    local c = si.label_color
-	    dl_draw_text(si.info_comments.dl, 0,0,10,
-			 c[1],c[2],c[3],c[4],
-			 si.info.comments)
+	    dl_draw_scroll_text(si.info_comments.dl, 0,0,10,
+				c[1],c[2],c[3],c[4],
+				si.info.comments, si.info_comments.w, 1)
 	 end
       end
    end
@@ -169,26 +164,6 @@ function song_info_create(owner, name, style)
 	    dl_set_active(si.dl, 0)
 	 end
 	 si:set_color(a)
-      end
-
-      --- Scroll-text
-      if si.info_comments.scroll and not si.minimized then
-	 local mat = dl_get_trans(si.info_comments.dl)
-	 local x = mat[4][1]
-	 local scroll = si.info_comments.scroll * frametime
-	 x = x + scroll
-	 local x2 = x + si.info_comments.text_w
-	 if scroll < 0 then
-	    if x2 < 0 then
-	       x = -x2 - si.info_comments.text_w
-	       si.info_comments.scroll = -si.info_comments.scroll
-	    end
-	 elseif x > si.info_comments.w then
-	    x = si.info_comments.w - x + si.info_comments.w
-	    si.info_comments.scroll = -si.info_comments.scroll
-	 end
-	 mat[4][1] = x
-	 dl_set_trans(si.info_comments.dl,mat)
       end
 
       -- Process refresh
@@ -548,34 +523,52 @@ function song_info_create(owner, name, style)
    -- Comment
 
    function song_info_draw_field(si,field)
-      local x,y = 60,1
-      local c
+      local x,y,space = 60,1,3
+      local c, maxw
+      
       dl_clear(field.dl)
       field.box:draw(field.dl,nil,1)
       if type(field.label) == "string" then
+	 -- Draw label
 	 c = si.label_color
-	 dl_draw_text(field.dl, 0,y,10, c[1],c[2],c[3],c[4], field.label)
+	 maxw = x-space
+	 local w,h = dl_measure_text(field.dl,field.label)
+	 if w <= maxw then
+	    dl_draw_text(field.dl, 0,y,10, c[1],c[2],c[3],c[4], field.label)
+	 else
+	    print(w,maxw)
+	    dl_set_clipping(field.dl,0,0,maxw,-1)
+	    dl_draw_scroll_text(field.dl, 0,y,10, c[1],c[2],c[3],c[4],
+				field.label, maxw, 1, 2)
+	 end
       elseif tag(field.label) == sprite_tag then
 	 field.label:draw(field.dl, 0,0,10)
       end
 
       if field.value then
-	 if not field.label then
-	    local w,h = dl_measure_text(field.dl, field.value)
-	    x = (field.w - w) * 0.5
+	 local w,h = dl_measure_text(field.dl, field.value)
+	 c = si.text_color
+	 x = (field.label and x) or 0
+	 maxw = field.w - x
+	 if w > maxw then
+	    dl_set_clipping(field.dl,x,0,x+maxw,-1)
+	    dl_draw_scroll_text(field.dl, x,y,10, c[1],c[2],c[3],c[4],
+				field.value, maxw, 1, 2)
+	 else
+	    x = (field.label and x) or ((maxw - w) * 0.5)
+	    dl_draw_text(field.dl, x,y,10, c[1],c[2],c[3],c[4], field.value)
 	 end
-	 local c = si.text_color
-	 dl_draw_text(field.dl, x,y,10, c[1],c[2],c[3],c[4], field.value)
       end
    end
 
    function song_info_field(label, box, x, y)
       local field = {}
-      local obox = box3d_outer_box(box)
+--      local obox = box3d_outer_box(box)
+      local ibox = box3d_inner_box(box)
       field.label = label
       field.box = box
-      field.w = obox[3]-obox[1]
-      field.h = obox[4]-obox[2]
+      field.w = ibox[3]-ibox[1]
+      field.h = ibox[4]-ibox[2]
       field.dl = dl_new_list(0,1,1)
       dl_set_trans(field.dl, mat_trans(x,y,10))
       return field
