@@ -4,14 +4,14 @@
  * @author   ben(jamin) gerard <ben@sashipa.com>
  * @brief    graphic context interface.
  *
- * $Id: gc.c,v 1.8 2003-01-28 06:38:18 ben Exp $
+ * $Id: gc.c,v 1.9 2003-03-09 11:09:25 ben Exp $
  */
 
 #include "draw/gc.h"
 #include "draw/draw.h"
 #include "sysdebug.h"
 
-#define MAX_GC 16
+#define MAX_GC 32
 
 static gc_t gc_stack[MAX_GC];
 static gc_t * sp_gc;
