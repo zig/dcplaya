@@ -4,7 +4,7 @@
  * @date    2002/09/30
  * @brief   File manipulation utilities.
  *
- * $Id: file_utils.c,v 1.8 2003-03-10 22:55:35 ben Exp $
+ * $Id: file_utils.c,v 1.9 2003-03-11 13:32:10 ben Exp $
  */
 
 /*
@@ -218,36 +218,63 @@ static void copy_direntry(fu_dirent_t * entry, const dirent_t *dir)
   entry->size = dir->size;
 }
 
+static void copy_linkeddirentry(fu_linkeddirent_t * entry, const dirent_t *dir,
+				fu_linkeddirent_t * next)
+{
+  copy_direntry(&entry->entry, dir);
+  entry->nxt = next;
+}
+
+static int is_parent_or_self(const char * name)
+{
+  return name[0] == '.' &&
+    (!name[1] || (name[1] == '.' && !name[2]));
+}
+
 static int r_readir(int fd, fu_filter_f filter, fu_linkeddirent_t *elist,
-		    fu_dirent_t ** res) 
+		    fu_dirent_t ** res,
+		    dirent_t * parentdir, dirent_t * selfdir)
 {
   dirent_t *dir;
   fu_linkeddirent_t local, *e;
   int count;
 
-  while (dir=fs_readdir(fd), dir) {
-    /* Copy direntry */
-/*     SDDEBUG("entry [%s] [%d]\n", dir->name, dir->size); */
+  if (parentdir) {
+    copy_linkeddirentry(&local, parentdir, elist);
+    if (!filter(&local.entry)) {
+      return r_readir(fd, filter, &local, res, 0, selfdir);
+    }
+  }
 
-    memset(&local,0,sizeof(local));
-    copy_direntry(&local.entry,dir);
-    /* Filter */
+  if (selfdir) {
+    copy_linkeddirentry(&local, selfdir, elist);
+    if (!filter(&local.entry)) {
+      return r_readir(fd, filter, &local, res, 0, 0);
+    }
+  }
+
+  while (dir=fs_readdir(fd), dir) {
+    if (dir->size < 0 && is_parent_or_self(dir->name)) {
+      /* Skip '.' and '..' if found it since we add then first.
+	 Doing this because some filesystem add them in the fs_readir
+	 and some does not. */
+      continue;
+    }
+
+    copy_linkeddirentry(&local, dir, elist);
     if (filter(&local.entry)) {
       continue;
     }
-/*     SDDEBUG("-->Accepted [%s] [%d]\n", local.entry.name, local.entry.size); */
 
-    local.nxt = elist;
     /* Continue ... */
-    return r_readir(fd, filter, &local, res);
-  }
+    return r_readir(fd, filter, &local, res, 0, 0);
+
+  } while (dir=fs_readdir(fd), dir);
   *res = 0;
-      
-/*   SDDEBUG("count:\n"); */
+
   /* Count entries */
   for (e=elist, count=0; e; ++count, e=e->nxt)
     ;
-/*   SDDEBUG("-->%d\n", count); */
 
   if (count) {
     fu_dirent_t * result;
@@ -264,6 +291,7 @@ static int r_readir(int fd, fu_filter_f filter, fu_linkeddirent_t *elist,
       count = FU_ALLOC_ERROR;
     }
   }
+
   return count;
 }
 
@@ -276,6 +304,8 @@ static int readir_default_filter(const fu_dirent_t *dir)
 int fu_read_dir(const char *dirname, fu_dirent_t **res, fu_filter_f filter)
 {
   int fd, count;
+  dirent_t selfdir, parentdir;
+  dirent_t * pselfdir = 0, *pparentdir = 0;
 
 /*   SDDEBUG("[%s] : [%s]\n", __FUNCTION__, dirname); */
 
@@ -292,7 +322,25 @@ int fu_read_dir(const char *dirname, fu_dirent_t **res, fu_filter_f filter)
   if (!fd) {
     return FU_OPEN_ERROR;
   }
-  count = r_readir(fd, filter, 0, res);
+
+  if (dirname[0] == '/' && !dirname[1]) {
+    /* Root : don't add '.' and '..' */
+    pparentdir = 0;
+    pselfdir = 0;
+  } else {
+    memset(&selfdir,0,sizeof(selfdir));
+    selfdir.name[0] = '.';
+    selfdir.size = -1;
+    pselfdir = &selfdir;
+
+    memset(&parentdir,0,sizeof(parentdir));
+    parentdir.name[0] = '.';
+    parentdir.name[1] = '.';
+    parentdir.size = -1;
+    pparentdir = &parentdir;
+  }
+
+  count = r_readir(fd, filter, 0, res, pparentdir, pselfdir);
   fs_close(fd);
 
 /*   SDDEBUG("[%s] : [%s] := [%d]\n", __FUNCTION__, dirname, count); */
@@ -319,15 +367,16 @@ int fu_read_dir_cb(const char *dirname, fu_addentry_f addentry, void * cookie)
 
   count = 0;
   while (dir=fs_readdir(fd), dir) {
-	int err;
+    int err;
 
-/* 	SDDEBUG("[%s] : [%s]\n", __FUNCTION__, dir->name); */
+    if (dir->size < 0 && is_parent_or_self(dir->name)) {
+      /* Skip '.' and '..' */
+      continue;
+    }
 
     memset(&local,0,sizeof(local));
     copy_direntry(&local,dir);
     err = addentry(&local, cookie);
-
-/* 	SDDEBUG("-> %d\n", err); */
 
     if (err < 0) {
       count = err;

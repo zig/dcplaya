@@ -4,7 +4,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   Deal with file types and extensions.
  *
- * $Id: filetype.c,v 1.11 2003-03-10 22:55:35 ben Exp $
+ * $Id: filetype.c,v 1.12 2003-03-11 13:32:10 ben Exp $
  */
 
 #include <stdlib.h>
@@ -49,21 +49,21 @@ static minor_type_t * find_minor(int type)
 {
   minor_type_t * m;
   if (type == -1) {
-	return 0;
+    return 0;
   }
   for (m = major[(type>>12)&15].minor; m && m->type != type; m = m->next)
-	;
+    ;
   return m;
 }
 
 static minor_type_t * find_minor_name(const minor_type_t * m,
-									  const char * name)
+				      const char * name)
 {
   if (!name) {
-	return 0;
+    return 0;
   }
   for (; m && stricmp(name, m->name); m = m->next)
-	;
+    ;
   return (minor_type_t *)m;
 }
 
@@ -73,9 +73,9 @@ static int findfree_minor(int majornum)
   int expected;
   minor_type_t * m;
   for (m = major[majornum].minor, expected = majornum << 12;
-	   m && m->type == expected;
-	   m = m->next, ++expected)
-	;
+       m && m->type == expected;
+       m = m->next, ++expected)
+    ;
   return (expected < ((majornum+1)<<12)) ? expected : -1;
 }
 
@@ -86,9 +86,9 @@ static void insert_minor(minor_type_t * minor)
   major_type_t * maj = &major[(type>>12)&15];
 
   for (prev = &maj->minor, m = maj->minor;
-	   m && m->type < type;
-	   prev = &m->next, m = m->next)
-	;
+       m && m->type < type;
+       prev = &m->next, m = m->next)
+    ;
 
   *prev = minor;
   minor->next = m;
@@ -97,9 +97,9 @@ static void insert_minor(minor_type_t * minor)
 static int reserved_type(int type)
 {
   return 0
-	|| (type == -1)
-	|| (type >= filetype_root && type <= filetype_dir)
-	|| (type == filetype_file);
+    || (type == -1)
+    || (type >= filetype_root && type <= filetype_dir)
+    || (type == filetype_file);
 }
 
 static void delete_minor(int type)
@@ -110,17 +110,17 @@ static void delete_minor(int type)
 
   /* Protected filetype */
   if (reserved_type(type)) {
- 	SDWARNING("Trying to remove reserved filetype [%04x]\n", type);
-	return;
+    SDWARNING("Trying to remove reserved filetype [%04x]\n", type);
+    return;
   }
 
   for (prev = &maj->minor, m = maj->minor; m; prev = &m->next, m = m->next) {
-	if (m->type == type) {
-	  *prev = m->next;
-	  SDDEBUG("Removing filetype [%04x,%s:%s]\n", type, maj->name, m->name);
-	  free(m);
-	  return;
-	}
+    if (m->type == type) {
+      *prev = m->next;
+      SDDEBUG("Removing filetype [%04x,%s:%s]\n", type, maj->name, m->name);
+      free(m);
+      return;
+    }
   }
 
   SDWARNING("Removing filetype [%04x] failed.\n", type);
@@ -130,9 +130,9 @@ int filetype_major(const char * name)
 {
   int i;
   for (i = 0; i < 16; ++i) {
-	if ( ! stricmp(name, major[i].name)) {
-	  return (i << 12);
-	}
+    if ( ! stricmp(name, major[i].name)) {
+      return (i << 12);
+    }
   }
   return -1;
 }
@@ -141,15 +141,15 @@ int filetype_minor(const char * name, int type)
 {
   int i;
   if (type < 0 || type > 0xFFFF) {
-	return -1;
+    return -1;
   }
   for (i = FILETYPE_MAJOR_NUM(type); i < 16; ++i) {
-	const minor_type_t * m;
-	for (m = major[i].minor; m; m = m->next) {
-	  if (!stricmp(name, m->name) && m->type >= type) {
-		return m->type;
-	  }
-	}
+    const minor_type_t * m;
+    for (m = major[i].minor; m; m = m->next) {
+      if (!stricmp(name, m->name) && m->type >= type) {
+	return m->type;
+      }
+    }
   }
   return -1;
 }
@@ -171,9 +171,9 @@ int filetype_names(int type, const char ** maj, const char ** min)
   minor_type_t * m;
 
   if (m = find_minor(type), m) {
-	if (maj) *maj = major[FILETYPE_MAJOR_NUM(type)].name;
-	if (min) *min = m->name;
-	return 0;
+    if (maj) *maj = major[FILETYPE_MAJOR_NUM(type)].name;
+    if (min) *min = m->name;
+    return 0;
   }
   return -1;
 }
@@ -181,20 +181,20 @@ int filetype_names(int type, const char ** maj, const char ** min)
 int filetype_major_add(const char * name)
 {
   if (name) {
-	int i;
-	i = filetype_major(name);
-	if (i != -1) {
-	  SDDEBUG("Existing Major type [%04x, %s]\n", i, name);
-	  return i;
-	}
-	for (i = 0; i < 16; ++i) {
-	  if (!major[i].name) {
-		major[i].name = strdup(name);
-		major[i].minor = 0;
-		SDDEBUG("Add Major type [%04x, %s]\n", i<<12, name); 
-		return i << 12;
-	  }
-	}
+    int i;
+    i = filetype_major(name);
+    if (i != -1) {
+      SDDEBUG("Existing Major type [%04x, %s]\n", i, name);
+      return i;
+    }
+    for (i = 0; i < 16; ++i) {
+      if (!major[i].name) {
+	major[i].name = strdup(name);
+	major[i].minor = 0;
+	SDDEBUG("Add Major type [%04x, %s]\n", i<<12, name); 
+	return i << 12;
+      }
+    }
   }
   return -1;
 }
@@ -208,8 +208,8 @@ void filetype_major_del(int type)
   if (reserved_type(type)) return;
   maj = &major[major_num];
   for (m = maj->minor; m; m = n) {
-	n = m->next;
-	free(m);
+    n = m->next;
+    free(m);
   }
   maj->name = 0;
   maj->minor = 0;
@@ -225,7 +225,7 @@ int filetype_add(int major_type, const char * name, const char *exts)
   const char * e;
 
   if (major_type == -1) {
-	return -1;
+    return -1;
   }
 
   exts = exts ? exts : default_exts;
@@ -234,29 +234,29 @@ int filetype_add(int major_type, const char * name, const char *exts)
   major_type = FILETYPE_MAJOR_NUM(major_type);
   m = find_minor_name(major[major_type].minor, name);
   if (m) {
- 	SDDEBUG("filetype [%04x, %s:%s] already exist\n",
- 			m->type, major[major_type].name, name);
-	return -1;
-/* 	SDDEBUG("Replacing filetype [%04x, %s:%s]\n", */
-/* 			m->type, major[major_type].name, name); */
-/* 	m->exts = exts; */
-/* 	return m->type; */
+    SDDEBUG("filetype [%04x, %s:%s] already exist\n",
+	    m->type, major[major_type].name, name);
+    return -1;
+    /* 	SDDEBUG("Replacing filetype [%04x, %s:%s]\n", */
+    /* 			m->type, major[major_type].name, name); */
+    /* 	m->exts = exts; */
+    /* 	return m->type; */
   }
 
   i = findfree_minor(major_type);
   if (i < 0) {
-	return -1;
+    return -1;
   }
 
   for (e = exts; e[0] || e[1]; ++e)
-	;
+    ;
 
   extslen = (e - exts) + 2;
   namelen = strlen(name) + 1;
 
   m = malloc(sizeof(*m) - sizeof(m->buffer) + extslen + namelen);
   if (!m) {
-	return -1;
+    return -1;
   }
   m->type = i;
   m->name = m->buffer;
@@ -266,7 +266,7 @@ int filetype_add(int major_type, const char * name, const char *exts)
 
   insert_minor(m);
   SDDEBUG("Adding filetype [%04x, %s:%s]\n",
-		  m->type, major[major_type].name, m->name); 
+	  m->type, major[major_type].name, m->name); 
 
   return i;
 }
@@ -274,7 +274,7 @@ int filetype_add(int major_type, const char * name, const char *exts)
 void filetype_del(int type)
 {
   if (type == -1) {
-	return;
+    return;
   }
   delete_minor(type);
 }
@@ -284,41 +284,41 @@ static int extfind(const char * extlist, const char * ext)
 {
   int found = 0;
   if (extlist && ext) {
-	int len;
-	while (!found && (len = strlen(extlist), len > 0)) {
-/* 	  SDDEBUG("   -- [%s] into [%s]\n", ext, extlist); */
-	  found = !stricmp(ext,extlist);
-	  if (!found && len == 1 && extlist[0] == '*') {
-		found = 2;
-	  }
-	  extlist += len+1;
-	}
+    int len;
+    while (!found && (len = strlen(extlist), len > 0)) {
+      /* 	  SDDEBUG("   -- [%s] into [%s]\n", ext, extlist); */
+      found = !stricmp(ext,extlist);
+      if (!found && len == 1 && extlist[0] == '*') {
+	found = 2;
+      }
+      extlist += len+1;
+    }
   }
   return found;
 }
 
 static const minor_type_t * find_minor_ext(const minor_type_t * m,
-										   const char * ext, int * alt)
+					   const char * ext, int * alt)
 {
   const minor_type_t * fm = 0;
 
   *alt = 1;
 
-/*   SDDEBUG("find [%s] into [%s]\n", */
-/* 		  ext, major[FILETYPE_MAJOR_NUM(m->type)].name); */
+  /*   SDDEBUG("find [%s] into [%s]\n", */
+  /* 		  ext, major[FILETYPE_MAJOR_NUM(m->type)].name); */
 
   for ( ; m ; m=m->next) {
-	int r;
-/* 	SDDEBUG(" -- [%s] into [%s]\n", ext, m->name); */
+    int r;
+    /* 	SDDEBUG(" -- [%s] into [%s]\n", ext, m->name); */
 
-	r = extfind(m->exts, ext);
-	if (r) {
-	  fm = m;
-	  if (r==1) {
-		*alt = 0;
-		break;
-	  }
-	}
+    r = extfind(m->exts, ext);
+    if (r) {
+      fm = m;
+      if (r==1) {
+	*alt = 0;
+	break;
+      }
+    }
   }
   return fm;
 }
@@ -330,31 +330,31 @@ static int get_regular(const char * fname, int mask)
   int i, type, alt;
 
   if (!fname) {
-	return -1;
+    return -1;
   }
 
   type = filetype_file;
   e = fn_secondary_ext(fname,".gz");
   if (e && e[0]) {
-	for (i = 1; i < 16; ++i) {
-	  if (!(mask&(1<<i)) || !major[i].minor) continue;
-	  m = find_minor_ext(major[i].minor, e, &alt);
-	  if (m) {
-		type = m->type;
-		if (!alt) break;
-	  }
-	}
+    for (i = 1; i < 16; ++i) {
+      if (!(mask&(1<<i)) || !major[i].minor) continue;
+      m = find_minor_ext(major[i].minor, e, &alt);
+      if (m) {
+	type = m->type;
+	if (!alt) break;
+      }
+    }
   } else {
-	/* No extension, may be a filetype defined by filename */
-	fname = fn_basename(fname);
-	for (i = 1; i < 16; ++i) {
-	  if (!(mask&(1<<i)) || !major[i].minor) continue;
-	  m = find_minor_ext(major[i].minor, fname, &alt);
-	  if (m) {
-		type = m->type;
-		if (!alt) break;
-	  }
-	}
+    /* No extension, may be a filetype defined by filename */
+    fname = fn_basename(fname);
+    for (i = 1; i < 16; ++i) {
+      if (!(mask&(1<<i)) || !major[i].minor) continue;
+      m = find_minor_ext(major[i].minor, fname, &alt);
+      if (m) {
+	type = m->type;
+	if (!alt) break;
+      }
+    }
   }
 
   return type;
@@ -373,18 +373,18 @@ int filetype_directory(const char * fname)
   int type = -1;
 
   if (!fname) {
-	return -1;
+    return -1;
   }
   
   if (!fname[0]) {
     type = filetype_root;
   }	else {
-	int alt;
-	const minor_type_t * m;
-	m = find_minor_ext(major[0].minor, fn_basename(fname), &alt);
-	if (m) {
-	  type = m->type;
-	}
+    int alt;
+    const minor_type_t * m;
+    m = find_minor_ext(major[0].minor, fn_basename(fname), &alt);
+    if (m) {
+      type = m->type;
+    }
   }
   return type;
 }
@@ -408,7 +408,7 @@ int filetype_get_filter(const char *fname, int major_mask)
   if (major_mask == 1) {
     type = filetype_directory(fname);
   } else {
-	type = get_regular(fname, major_mask);
+    type = get_regular(fname, major_mask);
   }
   return type;
 }
