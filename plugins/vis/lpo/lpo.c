@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.14 2003-01-02 14:40:03 ben Exp $
+ * $Id: lpo.c,v 1.15 2003-01-02 18:32:54 ben Exp $
  */
 
 #include <stdio.h>
@@ -170,8 +170,8 @@ static analysers_t analysers;
 static void init_analyser(analyser_t *a, float sec_len, float reduction)
 {
   memset(a,0,sizeof(*a));
-  a->sec_factor = reduction;
-  a->frame_factor = pow(reduction, 1.0f/60.0f); 
+  a->sec_factor = pow(reduction, 1.0f/sec_len);
+  a->frame_factor = pow(reduction, 1.0f/(60.0f*sec_len)); 
   a->sec_len = sec_len;
   a->max = 0.1;
   a->avg = (a->max+a->min) * 0.5;
@@ -180,7 +180,7 @@ static void init_analyser(analyser_t *a, float sec_len, float reduction)
 static void init_analysers(analysers_t *a)
 {
   int i,j,k;
-  static float times[] = { 8, 1, 0.2 };
+  static float times[] = { 4, 1, 0.2 };
 
   for (i=k=0; i<4; ++i) {
     for (j=0; j<3; ++j, ++k) {
@@ -286,8 +286,11 @@ static int anim(unsigned int ms)
 
   float zoom;
 
-  const int zoom_analyser = 3 * 3 + 0;
-  const int flash_analyser = 3 * 0 + 0;
+/*   const int zoom1_analyser = 3 * 2 + 1; */
+/*   const int zoom2_analyser = 3 * 1 + 1; */
+  const int zoom1_analyser = 3 * 3 + 1;
+
+  const int flash_analyser = 3 * 2 + 1;
   const int swing_analyser = 3 * 2 + 2;
   const int rotate_analyser = 3 * 1 + 1;
   analyser_t * a;
@@ -299,6 +302,7 @@ static int anim(unsigned int ms)
   fft_fill_bands(bands);
   update_analysers(&analysers, bands , sec);
 
+  /* Flash */
   flash_latch -= sec;
   if (flash_latch < 0) {
     flash_latch = 0;
@@ -316,11 +320,21 @@ static int anim(unsigned int ms)
   }
 	
   /* Calculate zoom factor */
-  a = analysers.analyser + zoom_analyser;
-  zoom = zoom_min;
-  if (a->max - a->min > 1E-5) {
-    r = (a->val - a->min) / (a->max - a->min);
-    zoom += (zoom_max - zoom_min) * r;
+  { 
+    const float zoom_delta = (zoom_max - zoom_min) / 1;
+    zoom = zoom_min;
+
+    a = analysers.analyser + zoom1_analyser;
+    if (a->max - a->min > 1E-4) {
+      r = (a->val - a->min) / (a->max - a->min);
+      zoom += zoom_delta * r;
+    }
+
+/*     a = analysers.analyser + zoom2_analyser; */
+/*     if (a->max - a->min > 1E-4) { */
+/*       r = (a->val - a->min) / (a->max - a->min); */
+/*       zoom += zoom_delta * r; */
+/*     } */
   }
   r = (zoom > ozoom) ? 0.75f : 0.90f;
   ozoom = ozoom * r + zoom * (1.0f-r);
@@ -343,7 +357,7 @@ static int anim(unsigned int ms)
   a = analysers.analyser + rotate_analyser;
   if (!a->state.max && a->ostate.max) {
     rps_goal = rps_min;
-    if (a->max - a->min > 1E-5) {
+    if (a->max - a->min > 1E-4) {
       r = (a->val - a->min) / (a->max - a->min);
       rps_goal += (rps_max - rps_min) * r;
     }

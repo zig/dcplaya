@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/01 
  *
- *  $Id: cdda_driver.c,v 1.1 2003-01-02 11:50:17 ben Exp $
+ *  $Id: cdda_driver.c,v 1.2 2003-01-02 18:32:54 ben Exp $
  */
 
 #include <stdlib.h>
@@ -26,6 +26,7 @@ typedef struct {
   uint32 lba_start;     /**< Starting address. */
   uint32 lba_end;       /**< Ending address.   */
   uint32 time_ms;       /**< Time in ms.       */
+  uint32 samples;       /**< Approx number of sample. */
 } audio_track_t;
 
 typedef struct {
@@ -34,6 +35,7 @@ typedef struct {
   audio_track_t track[1];      /**< Tracks.                */
 } audio_cd_t;
 
+static uint32 sample_cnt;
 static const int zero_size = (44100 / 60);
 static short * zero;
 static audio_cd_t * cdda;
@@ -147,6 +149,7 @@ static audio_cd_t * cdda_content(void)
       }
       /* $$$ From my calculation there is about audio 2348-2350 bytes
 	 per sector */
+      track->samples = sectors * 587u;
       track->time_ms = ((unsigned int)sectors * 1365u + 99u) / 100u;
       track->number = ++cnt;
 
@@ -204,6 +207,7 @@ static int start(const char *fn, int track, playa_info_t *inf)
   }
   cdda->cur_track = cdda->track + track - 1;
   info(inf, 0);
+  sample_cnt = 0;
   return 0;
 
  error:
@@ -285,9 +289,11 @@ static int decoder(playa_info_t * info)
   if (n < 0) {
     return INP_DECODE_ERROR;
   }
+  sample_cnt += n;
 
 #endif
-  return -(n > 0) & INP_DECODE_CONT;
+  return (-(n > 0) & INP_DECODE_CONT)
+    | (-(sample_cnt >= cdda->cur_track->samples) & INP_DECODE_END);
 }
 
 static int make_info(playa_info_t *info, audio_track_t * track, int tracks)
