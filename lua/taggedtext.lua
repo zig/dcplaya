@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  sgml text and gui element formater
 ---
---- $Id: taggedtext.lua,v 1.14 2003-01-13 14:01:16 zigziggy Exp $
+--- $Id: taggedtext.lua,v 1.15 2003-01-13 14:02:36 zigziggy Exp $
 ---
 
 if not dolib("sprite") then return end
@@ -546,7 +546,7 @@ function tt_endline(mode)
 
    tinsert(mode.lines, line)
    mode.curline = { n = 0 }
-   mode.h = mode.h + h
+   mode.h = mode.h + h + (mode.vspace or 0)
 
    mode.total_w = max(mode.total_w, mode.w)
    mode.total_h = max(mode.total_h, mode.h)
