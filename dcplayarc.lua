@@ -1,7 +1,7 @@
 --
 -- This is main DCplaya lua script
 --
--- $Id: dcplayarc.lua,v 1.16 2002-09-29 00:49:09 vincentp Exp $
+-- $Id: dcplayarc.lua,v 1.17 2002-09-29 06:35:07 vincentp Exp $
 --
 
 showconsole()
@@ -12,6 +12,7 @@ print ("Home is set to '", home, "'\n")
 
 
 -- standard stuffs
+dofile (home.."lua/basic.lua")
 dofile (home.."lua/evt.lua")
 dofile (home.."lua/dirfunc.lua")
 dofile (home.."lua/shell.lua")

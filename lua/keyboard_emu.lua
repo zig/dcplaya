@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: keyboard_emu.lua,v 1.6 2002-09-29 00:49:14 vincentp Exp $
+-- $Id: keyboard_emu.lua,v 1.7 2002-09-29 06:35:12 vincentp Exp $
 --
 
 
@@ -68,58 +68,6 @@ ke_translate	= {
 	[KBD_CONT1_DPAD_LEFT] = KBD_KEY_LEFT,
 	[KBD_CONT1_DPAD_RIGHT] = KBD_KEY_RIGHT
 }
-
-function table_sqrdist(t1, t2)
-	local sum = 0
-	local i, v
-	for i, v in t1 do
-		local d = v - t2[i]
-		sum = sum + d*d
-	end
-	
-	return sum
-end
-
-function table_add(t1, t2)
-	local r = {}
-	local i, v
-	for i, v in t1 do
-		r[i] = v + t2[i]
-	end
-	
-	return r
-end
-
-function table_sub(t1, t2)
-	local r = {}
-	local i, v
-	for i, v in t1 do
-		r[i] = v - t2[i]
-	end
-	
-	return r
-end
-
-function table_mul(a, t)
-	local r = {}
-	local i, v
-	if type(a) == "table" then
-		a, t = t, a
-	end
-	if type(a) == "table" then
-		-- two tables case
-		for i, v in a do
-			r[i] = v * t[i]
-		end
-	else
-		-- number * table case
-		for i, v in t do
-			r[i] = v * a
-		end
-	end
-	
-	return r
-end
 
 function ke_addkeypos(x, y)
 	if not ke_addkeycurpos then
@@ -198,32 +146,14 @@ function ke_addkey(down, downcode, up, upcode, spacing)
 end
 
 function ke_shutdown()
+
+	if not evt_included then
+		return nil
+	end
+
 	if ke_app then
-		evt_app_remove(ke_app)
-		ke_app = nil
+		evt_shutdown_app(ke_app)
 	end
-
-	if ke_active then
-		ke_set_active(nil)
-	end
-
-	if ke_arrays then
-		local array
-		for _, array in ke_arrays do
-			if type(array)=="table" then
-				dl_destroy_list(array.dl)
-			end
-		end
-		ke_arrays = { }
-	end
-
-	if ke_cursor_dl then
-		dl_destroy_list(ke_cursor_dl)
-		ke_cursor_dl = nil
-	end
-
-	ke_vanishing_arrays = { }
-	ke_arrays = nil
 
 end
 
@@ -280,6 +210,36 @@ end
 function ke_handle(app, evt)
 
 	local key = evt.key
+
+	if key == evt_shutdown_event then
+
+		ke_app = nil
+
+		if ke_active then
+			ke_set_active(nil)
+		end
+
+		if ke_arrays then
+			local array
+			for _, array in ke_arrays do
+				if type(array)=="table" then
+					dl_destroy_list(array.dl)
+				end
+			end
+			ke_arrays = { }
+		end
+
+		if ke_cursor_dl then
+			dl_destroy_list(ke_cursor_dl)
+			ke_cursor_dl = nil
+		end
+
+		ke_vanishing_arrays = { }
+		ke_arrays = nil
+
+		return evt -- pass the shutdown event to next app
+
+	end
 
 	-- activating key toggle
 	if ke_keyactivate[key] then
@@ -369,7 +329,7 @@ function ke_handle(app, evt)
 	end
 
 	if ke_keycancel[key] then
-		return { key = KBD_ESCAPE }
+		return { key = KBD_ESC }
 	end
 
 	local trans = ke_translate[key]
@@ -455,6 +415,10 @@ function ke_update(app, frametime)
 end
 
 function ke_init()
+
+	if not evt_included then
+		return nil
+	end
 
 	ke_shutdown()
 

@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.2 2002-09-29 00:49:14 vincentp Exp $
+-- $Id: evt.lua,v 1.3 2002-09-29 06:35:12 vincentp Exp $
 --
 
 
@@ -23,6 +23,8 @@
 -- sub			  : sub list of application
 -- owner		  : owner application (that is the one that contains
 --			    this one in its sub list, i.e. the parent)
+-- next			  : next app in the sub list
+-- prev			  : prev app in the sub list
 --
 
 -- An event is an array containing at least a [key] entry
@@ -56,19 +58,30 @@ if not init_display_driver then
 end
 
 
--- INTERNAL
+-- create a new event code
+function evt_new_code()
+	if not evt_free_code then
+		-- free event code start at KBD_USER value ...
+		evt_free_code = KBD_USER
+	end
+
+	evt_free_code = evt_free_code + 1
+	return evt_free_code - 1
+end
+
+
+-- send an event to an application and its sub applications
 function evt_send(app, evt)
 	
-	local sub = app.sub
-	if type(sub) == "table" then
-		local i
-		local n = sub.n
-		for i=1, n, 1 do
-			evt = evt_send(sub[i], evt)
-			if not evt then
-				return
-			end
+--	print ("Sending to", app.name)
+	local i = app.sub
+	while i do
+		local n = i.next
+		evt = evt_send(i, evt)
+		if not evt then
+			return
 		end
+		i = n
 	end
 
 	if app.handle then
@@ -81,13 +94,11 @@ end
 -- INTERNAL
 function evt_update(app, frametime)
 	
-	local sub = app.sub
-	if type(sub) == "table" then
-		local i
-		local n = sub.n
-		for i=1, n, 1 do
-			evt_update(sub[i], frametime)
-		end
+	local i = app.sub
+	while i do
+		local n = i.next
+		evt_update(i, frametime)
+		i = n
 	end
 
 	if app.update then
@@ -96,27 +107,10 @@ function evt_update(app, frametime)
 
 end
 
--- INTERNAL
-function evt_do_commands()
-	-- perform all queued commands
-	local q = evt_command_queue
-	evt_command_queue = { n=0 }
-	local i
-	local n = q.n
-	for i=1, n, 1 do
-		q[i]()
-	end
-
-
-end
-
 
 -- return next event or nil
 function evt_peek()
 	
-	-- perform all queued commands
-	evt_do_commands()
-
 	-- basic events
 	local key
 
@@ -169,64 +163,18 @@ end
 
 -- add a sub application to an application at the beginning of its sub list
 function evt_app_insert_first(parent, app)
-	-- enqueue the command
-	tinsert(evt_command_queue, 
-		function()
-			if %app.owner then
-				print("evt_app_insert_first : application", %app.name, "has already a parent !!")
-				return
-			end
-			%app.owner = %parent
-			if type(%parent.sub) ~= "table" then
-				%parent.sub = { }
-			end
-			tinsert(%parent.sub, 1, %app)
-		end
-	)
+	dlist_insert(parent, "sub", app, "prev", "next")
+	app.owner =  parent
 end
 
-
--- add a sub application to an application at the end of its sub list
-function evt_app_insert_first(parent, app)
-	-- enqueue the command
-	tinsert(evt_command_queue, 
-		function()
-			if %app.owner then
-				print("evt_app_insert_first : application", %app.name, "has already a parent !!")
-				return
-			end
-			%app.owner = %parent
-			if type(%parent.sub) ~= "table" then
-				%parent.sub = { }
-			end
-			tinsert(%parent.sub, %app)
-		end
-	 )
-end
 
 -- remove a sub application from an application sub list
 function evt_app_remove(app)
-	-- enqueue the command
-	tinsert(evt_command_queue, 
-		function()
-			local owner = %app.owner
-			if owner then
-				local i
-				local sub = owner.sub
-				local n=sub.n
-				for i=1, n, 1 do
-					if sub[i] == %app then
-						tremove(sub, i)
-						%app.owner = nil
-						return
-					end
-				end
-				print ("evt_app_remove : application", %app.name, "was not found into its parent", owner.name, "!!!")
-			else
-				print ("evt_app_remove : application", %app.name, "has no parent !")
-			end
-		end
-	 )
+	if not app.owner then
+		return
+	end
+	dlist_remove(app.owner, "sub", app, "prev", "next")
+	app.owner = nil
 end
 
 
@@ -234,8 +182,18 @@ function evt_framecounter()
 	return evt_curframecounter
 end
 
+function evt_shutdown_app(app)
+	evt_send(app, { key = evt_shutdown_event } )
+	evt_app_remove(app)
+end
+
 -- shutdown event system
 function evt_shutdown()
+
+	if evt_root_app and evt_shutdown_event then
+		-- send shutdown event too all application
+		evt_send(evt_root_app, { key = evt_shutdown_event } )
+	end
 
 	if evt_origgetchar then
 		getchar = evt_origgetchar
@@ -263,6 +221,11 @@ function evt_init()
 		evt_origframecounter = framecounter
 	end
 
+
+	-- create basic event type
+	evt_shutdown_event = evt_new_code()
+
+
 	evt_command_queue = { n=0 }
 
 	evt_root_app = {
@@ -289,9 +252,6 @@ function evt_init()
 	peekchar = evt_peekchar
 	framecounter = evt_framecounter
 
-	-- perform all queued commands
-	evt_do_commands()
-
 	print [[EVT SYSTEM INITIALIZED]]
 
 	return 1
@@ -300,6 +260,7 @@ end
 
 evt_init()
 
+evt_included = 1
 
 if nil then
 
@@ -313,9 +274,6 @@ evt_app_remove(evt_desktop_app)
 evt_app_remove(evt_desktop_app)
 evt_app_insert_first(evt_root_app, evt_desktop_app)
 
-
--- perform all queued commands
-evt_do_commands()
 
 getchar()
 
