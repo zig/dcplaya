@@ -20,6 +20,11 @@ static float force(float v)
   w += atan2(v,v);
   w += sqrt(v);
   w += pow(v,v);
+  w += acos(v);
+  w += exp(v); 
+  w += hypot(v,v);
+  w += ldexp(v,2);
+  w += log(v);
 
   return w;
 }

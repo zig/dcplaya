@@ -4,7 +4,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.5 2002-09-06 01:15:01 zig Exp $
+ * @version   $Id: dreamcast68.c,v 1.6 2002-09-06 07:17:52 ben Exp $
  */
 
 //#define RELEASE
@@ -439,11 +439,11 @@ static int driver_init(void)
   /* Load the default drivers from romdisk */
   {
     const char **p, *paths[] = {
-      //      "/pc" DREAMMP3_HOME "plugins/inp/ogg",
       "/pc" DREAMMP3_HOME "plugins/obj",
       "/pc" DREAMMP3_HOME "plugins/vis/lpo",
       "/pc" DREAMMP3_HOME "plugins/vis/fftvlr",
       "/pc" DREAMMP3_HOME "plugins/inp/xing",
+      "/pc" DREAMMP3_HOME "plugins/inp/ogg",
       "/pc" DREAMMP3_HOME "plugins/inp/sc68",
       0
     };
@@ -681,7 +681,7 @@ void main_thread(void *cookie)
     /* Update FFT */
     update_fft();
 
-    /* Update the VMU LCD */
+    /* Update the VMU LCD and calulate vupeek data */
     update_lcd();
 
     /* Make visual FX calculation */

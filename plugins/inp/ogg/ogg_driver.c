@@ -7,7 +7,7 @@
  * sndvorbisfile.
  */
 
-static char id[] = "sndoggvorbis $Id: ogg_driver.c,v 1.1 2002-08-26 14:14:35 ben Exp $";
+static char id[] = "sndoggvorbis $Id: ogg_driver.c,v 1.2 2002-09-06 07:17:52 ben Exp $";
 
 /*
 
@@ -147,15 +147,16 @@ static int decode_frame(void)
 
   if (VorbisFile_isEOS()==1) {
     dbglog(DBG_DEBUG, "** " __FUNCTION__ " : Decode complete\n");
-    return 0;
+    return INP_DECODE_END;
   }
 
   pcm_decoded = VorbisFile_decodePCM(v_headers, pcm_ptr, 4096);
   if (pcm_decoded < 0) {
       dbglog(DBG_DEBUG, "** " __FUNCTION__ " : Decode failed\n");
-      return -1;
+      return INP_DECODE_ERROR;
   }
-  return pcm_count = pcm_decoded;
+  pcm_count = pcm_decoded;
+  return 0;
 }
 
 
@@ -167,25 +168,19 @@ static int sndogg_init(any_driver_t * d)
 }
 
 
-#define TR dbglog(DBG_DEBUG,  "(%4d) " __FUNCTION__ "\n", __LINE__);
-
-
 /* Start playback (implies song load) */
 static int sndogg_start(const char *fn, decoder_info_t *decoder_info)
 {
   dbglog(DBG_DEBUG, "** " __FUNCTION__ " ('%s')\n", fn);
 
   sndoggvorbis_clearcomments();
-TR
   sndoggvorbis_setbitrateinterval(1000);
-TR
   if (VorbisFile_openFile(fn, &v_headers)) {
     dbglog(DBG_DEBUG, "** " __FUNCTION__
 	   " : error could not open file\n");
     return -1;
   }
 
-TR
   /*
     v_headers->channels = vi.channels;
     v_headers->frequency = vi.rate;
@@ -199,7 +194,7 @@ TR
   decoder_info->bps       = v_headers.bitrate*1000;
   decoder_info->bytes     = v_headers.bytes;
   decoder_info->time      = 0;
-TR
+
   if (decoder_info->bps > 0) {
     unsigned long long ms;
     ms = decoder_info->bytes;
@@ -207,26 +202,21 @@ TR
     ms /= decoder_info->bps;
     decoder_info->time = ms;
   }
-TR
+
   {
     static char version[128], *s;
     strcpy(version, "ogg");
-TR
     s = VorbisFile_getCommentByName("version");
-TR
     if (s && strcmp(s,"N/A")) {
       strcat(version, " ");
       strcat(version, s);
     }
-TR
     strcat(version, decoder_info->stereo ? " stereo" : " mono");
     decoder_info->desc    = version;
   }
-TR
   pcm_ptr = pcm_buffer;
   pcm_count = 0;
   pcm_stereo = decoder_info->stereo;
-TR
   return 0;
 }
 
@@ -261,28 +251,30 @@ static int sndogg_decoder(decoder_info_t * info)
    * while so that the user can just read out this value from the struct
    * and use it for whatever purpose
    */
-TR
   if (tempcounter == sndoggvorbis_bitrateint) {
     long test;
     if ((test = VorbisFile_getBitrateInstant()) != -1) {
-TR
       sndoggvorbis_info.actualbitrate = test;
     }
     tempcounter = 0;
   }
   tempcounter++;
-TR
+
   /* No more pcm : decode next mp3 frame
    * No more frame : it is the end
    */
-  if (!pcm_count && !decode_frame()) {
-TR
-    return -1;
+  if (!pcm_count) {
+    int status;
+
+    status = decode_frame();
+    /* End or Error */
+    if (status & INP_DECODE_END) {
+      return status;
+    }
   }
 
   if (pcm_count > 0) {
     /* If we have some pcm , send them to fifo */
-TR
     if (pcm_stereo) {
       n = fifo_write((int *) pcm_ptr, pcm_count);
     } else {
@@ -292,10 +284,11 @@ TR
     if (n > 0) {
       pcm_ptr += (n << pcm_stereo);
       pcm_count -= n;
+    } else if (n < 0) {
+      return INP_DECODE_ERROR;
     }
   }
-TR
-  return n;
+  return -(n>0) & INP_DECODE_CONT;
 }
 
 static char *StrDup(const char *s)

@@ -7,11 +7,11 @@
  */
 
 #include <stdlib.h>
-#include <string.h>
 #include "fft.h"
 #include "vis_driver.h"
 #include "obj3d.h"
 #include "draw_object.h"
+
 
 /* From obj3d.c */
 void FaceNormal(float *d, const vtx_t * v, const tri_t *t);
@@ -19,33 +19,25 @@ void FaceNormal(float *d, const vtx_t * v, const tri_t *t);
 /* Here are the constant (for now) parameters */
 #define VLR_X 0.5f
 #define VLR_Z 0.5f
+#define VLR_Y 0.2f
 #define VLR_W 32
 #define VLR_H 48
 
 /* Resulting number of triangles */
-#define VLR_T ((VLR_W-1) * (VLR_H-1) * 2) 
+#define VLR_TPL ((VLR_W-1)*2)
+#define VLR_T   (VLR_TPL * (VLR_H-1))
 
 /* VLR 3d-objects */
 static vtx_t *v;   /* Vertex buffer */
 static vtx_t *nrm; /* Normal buffer */
 static tri_t *tri; /* Triangle buffer */
 static tlk_t *tlk; /* Triangle link buffer */
-static int idx; 
 
 volatile int ready;
 
-static viewport_t viewport;   /**< Current viewport */
+static viewport_t viewport;  /* Graphic viewport */
 static matrix_t fftvlr_proj; /* Projection matrix */
 static matrix_t fftvlr_mtx;  /* Local matrix */
-
-static float angle;
-static vtx_t tlight_normal;
-static vtx_t light_normal = { 
-  0.8,
-  0.4,
-  0.5
-};
-
 
 /* The 3D-object */
 static obj_t fftvlr_obj =
@@ -92,7 +84,7 @@ static void fftvlr_free(void)
 static int fftvlr_alloc(void)
 {
   fftvlr_free(); /* Safety net */
-  v   = (vtx_t *)malloc(sizeof(vtx_t) * (VLR_H*2)*VLR_W);
+  v   = (vtx_t *)malloc(sizeof(vtx_t) * (VLR_H*VLR_W));
   nrm = (vtx_t *)malloc(sizeof(vtx_t) * (VLR_T));
   tri = (tri_t *)malloc(sizeof(tri_t) * (VLR_T+1)); /* +1 for invisible */
   tlk = (tlk_t *)malloc(sizeof(tlk_t) * (VLR_T));
@@ -116,23 +108,21 @@ static int fftvlr_start(void)
   if (fftvlr_alloc()) {
     return -1;
   }
-  idx = 0;
 
   /* Build vertrices double buffer (ring buffer)  */
   for(j=0, vy=v; j<VLR_H; ++j) {
     for (i=0; i<VLR_W; ++i, ++vy){
-      vy->x = (i-VLR_W*0.5f) * (VLR_X / VLR_W);
-      vy->y = (i/(float)VLR_W) * (j/(float)VLR_H);
-      vy->z = (j-VLR_H*0.5f) * (VLR_Z / VLR_H);
+      vy->x = (i-(VLR_W>>1)) * VLR_X / VLR_W;
+      vy->y = 0;
+      vy->z = (j-(VLR_H>>1)) * VLR_Z / VLR_H;
       vy->w = 1.0f;
-      vy[VLR_H*VLR_W] = vy[0];
     }
   }
 
   /* Build faces and link-faces */
   for(k=j=0; j<VLR_H-1; ++j) {
     for (i=0; i<VLR_W-1; ++i, k += 2) {
-      const int tpl = (VLR_W-1)*2;
+      const int tpl = VLR_TPL;
 
       tlk[k+0].flags = tri[k+0].flags = 0;
 
@@ -169,33 +159,32 @@ static void vlr_update(void)
 {
   const int stp = ((1<<(FFT_LOG_2-1))<<12) / VLR_W;
   int i,j;
-  const float f = 0.3f / 32000.0f;
-  float f2 = f;
+  const float f0 = VLR_Y / 65536.0f;
+  const float f1 = f0 * 44100.0f / (float)(1<<(FFT_LOG_2-1));
+  const float f  = (f1-f0) / VLR_W;
+  float f2;
   vtx_t *vy;
 
-  /* Scroll FFT towards Y axis */
-  for (j=0, vy=v; j<VLR_H-1; ++j) {
-    for (i=0; i<VLR_W; ++i, ++vy) {
+  /* Scroll FFT towards Z axis */
+  for (i=0,vy=v; i<VLR_W*(VLR_H-1); ++i, ++vy) {
       vy->y = vy[VLR_W].y;
-    }
   }
-  memmove(nrm, nrm + 2*(VLR_W-1), sizeof(nrm[0])*2*(VLR_W-1) * (VLR_H-1-1));
+  /* Scroll Normals and colors (norm.w) */
+  memmove(nrm, nrm + VLR_TPL, sizeof(nrm[0]) * (VLR_T - VLR_TPL));
 
   /* Update first VLR row with FFT data */
   vy = v + (VLR_H-1) * VLR_W;
-  for (i=j=0; i<VLR_W; ++i, j += stp, f2 += f) {
+  for (f2=f0, i=j=0; i<VLR_W; ++i, j += stp, f2 += f) {
     int w = fft_F[j>>12];
     const float r = 0.85f;
-    
-    if (w < 0) *(int*)1 = 0x1234; 
 
     vy[i].y = (float)(w * f2 * (1.0f-r)) +  (vy[i-VLR_W].y * r);
   }
 
   /* Face normal calculation */
-  for (i=0; i<2*(VLR_W-1); i++) {
-    FaceNormal(&nrm[(VLR_H-2)*2*(VLR_W-1)+i].x, v,
-               tri+(VLR_H-2)*2*(VLR_W-1)+i);
+  for (i=0; i<VLR_TPL; i++) {
+    FaceNormal(&nrm[(VLR_H-2)*VLR_TPL+i].x, v,
+               tri+(VLR_H-2)*VLR_TPL+i);
 
   }
 }
@@ -204,6 +193,7 @@ static int fftvlr_stop(void)
 {
   ready = 0;
   fftvlr_free();
+  return 0;
 }
 
 static int fftvlr_init(any_driver_t *d)
@@ -227,33 +217,17 @@ static int fftvlr_shutdown(any_driver_t * d)
 static int fftvlr_process(viewport_t * vp, matrix_t projection, int elapsed_ms)
 {
   if (ready) {
-    matrix_t tmp, m;
-
-    angle += elapsed_ms;
-
-    /* Copy viewport and projection matrix for further use (render) */
+    static float ay;
+    
     viewport = *vp;
     MtxCopy(fftvlr_proj, projection);
-
-    MtxIdentity(m);
-    MtxRotateZ(m, 3.14159);
-    MtxRotateY(m, 0.1*angle);
-    MtxRotateX(m, 0.4);
-    MtxRotateY(tmp, -0.33468713*angle);
-    MtxRotateX(tmp, 0.4);
-    MtxTranspose(tmp);
-    MtxVectMult(&tlight_normal, &light_normal, tmp);
-    
-    //    MtxScale(m,32*4/10);
-    MtxScale(m,1.0f/5.0f);
-    m[3][0] = 0;
-    m[3][1] = 0;
-    m[3][2] = 0;
-      
-    MtxCopy(fftvlr_mtx, m);
-      
-
     vlr_update();
+
+    MtxIdentity(fftvlr_mtx);
+    MtxRotateZ(fftvlr_mtx, 3.14159);
+    MtxRotateY(fftvlr_mtx, ay += 0.014);
+    MtxRotateX(fftvlr_mtx, 0.6f);
+    fftvlr_mtx[3][2] = 0.8;
 
     return 0;
   }
@@ -267,14 +241,12 @@ static int fftvlr_opaque(void)
 
 static int fftvlr_transparent(void)
 {
+  static vtx_t color = {
+    1.0, 1.0, 1.0, 1.0
+  };
   if (ready) {
-    static vtx_t color =     /**< Original color */
-      {
-	0.8f, 0.9f, 0.0f, 0.7f
-      };
     DrawObjectSingleColor(&viewport, fftvlr_mtx, fftvlr_proj,
 			  &fftvlr_obj, &color);
-    //    DrawObject(&fftvlr_obj , fftvlr_mtx, 0, 80.0f, 0.90f, 0.0f);
     return 0;
   } else {
     return -1;
