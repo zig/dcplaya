@@ -4,14 +4,16 @@
  * @date    2002/10/10
  * @brief   2D drawing primitives.
  *
- * $Id: 3dutils.c,v 1.4 2002-10-17 04:59:50 benjihan Exp $
+ * $Id: 3dutils.c,v 1.5 2002-10-19 18:34:40 benjihan Exp $
  */
 
 #include <stdarg.h>
 #include <stdio.h>
 #include "gp.h"
+#include "sysdebug.h"
 
 #include "draw_clipping.h"
+
 
 // #if 0
 //   struct poly_hd {
@@ -142,6 +144,11 @@ void draw_triangle(const draw_vertex_t *v1,
 	/* Entering clipping stage with a BOTTOM clipping */
 	draw_triangle_clip_any(v1,v2,v3,flags,3);
   }
+#ifdef DEBUG 
+  else {
+	SDCRITICAL("Something wrong here\n");
+  }
+#endif
 
 }
 

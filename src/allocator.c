@@ -4,7 +4,7 @@
  * @date     2002/10/18
  * @brief    fast allocator for fixed size small buffer.
  * 
- * $Id: allocator.c,v 1.2 2002-10-18 23:16:22 benjihan Exp $
+ * $Id: allocator.c,v 1.3 2002-10-19 18:34:41 benjihan Exp $
  */
 
 #include <stdlib.h>
@@ -38,7 +38,9 @@ allocator_t * allocator_create(int nmemb, int size)
 	if (p) {
 	  p->next = e;
 	}
-	SDDEBUG(" #%3d -> %p\n",i,e);
+#if DEBUG_LEVEL > 1
+ 	SDDEBUG(" #%3d -> %p\n",i,e);
+#endif
 	e->prev = p;
 	e->next = 0;
 	p = e;

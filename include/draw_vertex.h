@@ -4,7 +4,7 @@
  *  @date    2002/10/15
  *  @brief   draw primitive vertex definition.
  *
- * $Id: draw_vertex.h,v 1.1 2002-10-16 18:50:41 benjihan Exp $
+ * $Id: draw_vertex.h,v 1.2 2002-10-19 18:34:40 benjihan Exp $
  */
 
 #ifndef _DRAW_VERTEX_H_
@@ -15,6 +15,7 @@
  */
 #define DRAW_OPACITY_BIT  12 /**< 1st bit of opacity type. */
 #define DRAW_SHADING_BIT  13 /**< 1st bit of shading type. */
+#define DRAW_DEBUGIN_BIT  15 /**< User debug bit.          */
 #define DRAW_TEXTURE_BIT  16 /**< 1st bit of texture.      */
 /**@}*/
 

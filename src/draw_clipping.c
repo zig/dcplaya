@@ -4,10 +4,11 @@
  *  @date    2002/10/15
  *  @brief   draw primitive vertex definition.
  *
- * $Id: draw_clipping.c,v 1.3 2002-10-18 00:06:49 benjihan Exp $
+ * $Id: draw_clipping.c,v 1.4 2002-10-19 18:34:41 benjihan Exp $
  */
 
 #include "draw_clipping.h"
+#include "sysdebug.h"
 
 float clipbox[4];
 
@@ -31,12 +32,18 @@ void draw_get_clipping(float * xmin, float  * ymin,
 
 static void vertex_clip(draw_vertex_t *v,
 						const draw_vertex_t *v0, const draw_vertex_t *v1,
-						const float f, int flags)
+						const float f, int flags, int bit)
 {
   const float of = 1.0f - f;
+  const float clip = clipbox[bit];/*  + ((bit>1) ? -3 : 3); */
 
-  v->x = of * v0->x + f * v1->x;
-  v->y = of * v0->y + f * v1->y;
+  if (!(bit & 1)) {
+	v->x = clip;
+	v->y = of * v0->y + f * v1->y;
+  } else {
+	v->x = of * v0->x + f * v1->x;
+	v->y = clip;
+  }
   v->z = of * v0->z + f * v1->z;
 
   if (DRAW_SHADING(flags) == DRAW_FLAT) {
@@ -57,7 +64,7 @@ static void vertex_clip(draw_vertex_t *v,
   }
 }
 
-/** Calculates clipping flags for a vertex. */
+/** Calculates TOP/BOTTOM clipping flags for a vertex. */
 static int vertex_clip_tb_flags(const draw_vertex_t *v)
 {
   return
@@ -65,9 +72,32 @@ static int vertex_clip_tb_flags(const draw_vertex_t *v)
 	((v->y > clipbox[3]) << 3);
 }
 
+/** Calculates clipping flags for a vertex. */
+static int vertex_clip_flags(const draw_vertex_t *v)
+{
+  return
+	((v->x < clipbox[0]) << 0) |
+	((v->x > clipbox[2]) << 2) |
+	((v->y < clipbox[1]) << 1) |
+	((v->y > clipbox[3]) << 3);
+}
+
+
 void draw_triangle_no_clip(const draw_vertex_t *v1,
 						   const draw_vertex_t *v2,
 						   const draw_vertex_t *v3, int flags);
+
+static void dump_triangle(const char * label,
+						  const draw_vertex_t *v1,
+						  const draw_vertex_t *v2,
+						  const draw_vertex_t *v3,
+						  int flags, int vflags, int bits)
+{
+  printf("Clip %c(%d) : %s\n"
+		 " %03X %03X [ (%.3f,%.3f) (%.3f,%.3f) (%.3f,%.3f) ]\n",
+		 bits["LTRB"], bits, label, flags, vflags,
+		 v1->x,v1->y, v2->x,v2->y, v3->x,v3->y);
+}
 
 static void draw_triangle_clip_continue(const draw_vertex_t *v1,
 										const draw_vertex_t *v2,
@@ -78,7 +108,7 @@ static void draw_triangle_clip_continue(const draw_vertex_t *v1,
   case 0: /* Coming from left clipping. Right clipping flags should be Ok */
 	if (flags & 0x444) {
 	  draw_triangle_clip_any(v1,v2,v3,flags,2);
-	  break;
+	  return;
 	}
   case 2: /* Coming from left/right clipping. Calculates new TOP/BOTTOM */
 	{
@@ -88,9 +118,10 @@ static void draw_triangle_clip_continue(const draw_vertex_t *v1,
 	  clipflags |= vertex_clip_tb_flags(v2);
 	  clipflags <<= 4;
 	  clipflags |= vertex_clip_tb_flags(v3);
+
 	  if (!clipflags) {
 		draw_triangle_no_clip(v1,v2,v3,flags);
-		break;
+		return;
 	  }
 	  
 	  if (clipflags & (clipflags>>4) & (clipflags>>8)) {
@@ -101,18 +132,21 @@ static void draw_triangle_clip_continue(const draw_vertex_t *v1,
 	  /* Insert clipping flags into draw flags */
 	  flags = (flags & ~0xFFF) | clipflags;
 
-	  if (clipflags & 0x222) {
+	  if (flags & 0x222) {
+		/* clip TOP */
 		draw_triangle_clip_any(v1,v2,v3,flags,1);
-		break;
+		return;
 	  }
 	}
   case 1:  /* Coming from TOP clipping. BOTTOM clipping flags should be Ok. */
 	if (flags & 0x888) {
 	  draw_triangle_clip_any(v1,v2,v3,flags,3);
-	  break;
+	  return;
 	}
+
   case 3:  /* Coming from TOP/BOTTOM clipping. Finish here. */
 	draw_triangle_no_clip(v1,v2,v3,flags);
+	return;
   }
 }
 
@@ -124,39 +158,23 @@ void draw_triangle_clip_any(const draw_vertex_t *v1,
   int clipflags;
   draw_vertex_t w[2];
 
-
-  if (flags & (flags>>2) & 0x333) {
-	printf("Unexpected clipping flags : %03X\n", flags);
-  }
-
-  /* LT clip, 1 OUT or RB clip, 1 IN
-   *    +       +		
-   *    | v2  v3|		
-   *  w0|/|   |\|w1	
-   * v1/| |   | |\ v1	
-   *   \| |	  | |/	
-   *  w1|\|	  |/|w0	
-   *    | v3  v2|     
-   *    +       +
-   */
-
-  /*
-   * bit
-   *  HL K=~H  cv1 triangles
-   *  00   1    0  v1.L,w0.L,w1.L
-   *  01   1    0  v1.L,w0.L,w1.L
-   *  10   0    0  v1.L,w0.L,w1.L
-   *  11   0    0  v1.L,w0.L,w1.L
-   *  00   1    1  w0.L,v2.L,w1.L w1.L,v2.L,v3.L
-   *  01   1    1  w0.L,v2.L,w1.L w1.L,v2.L,v3.L  
-   *  10   0    1  w0.L,v2.L,w1.L w1.L,v2.L,v3.L 
-   *  11   0    1  w0.L,v2.L,w1.L wK.L,v2.L,v3.L 
+  /*                    *											 
+   *    +       +		* bit										 
+   *    | v2  v3|		*  HL K=~H  cv1 triangles					 
+   *  w0|/|   |\|w1		*  00   1    0  v1.L,w0.L,w1.L				 
+   * v1/| |   | |\ v1	*  01   1    0  v1.L,w0.L,w1.L				 
+   *   \| |	  | |/		*  10   0    0  v1.L,w0.L,w1.L				 
+   *  w1|\|	  |/|w0		*  11   0    0  v1.L,w0.L,w1.L				 
+   *    | v3  v2|     	*  00   1    1  w0.L,v2.L,w1.L w1.L,v2.L,v3.L 
+   *    +       +		*  01   1    1  w0.L,v2.L,w1.L w1.L,v2.L,v3.L 
+   *					*  10   0    1  w0.L,v2.L,w1.L w1.L,v2.L,v3.L 
+   *					*  11   0    1  w0.L,v2.L,w1.L wK.L,v2.L,v3.L 
    */
 
   /* Keeps interresting bits */
   clipflags = flags & (0x111<<bit);
   /* Removes from original flags */
-  flags -= clipflags;
+  flags ^= clipflags;
   /* Shift them to bit 0 */
   clipflags >>= bit;
 
@@ -201,17 +219,29 @@ void draw_triangle_clip_any(const draw_vertex_t *v1,
 	const float x1 = (&v1->x)[i];
 	const float x2 = (&v2->x)[i];
 	const float x3 = (&v3->x)[i];
-	const float f12 = (clipbox[bit]-x1) / (x2-x1);
-	const float f13 = (clipbox[bit]-x1) / (x3-x1);
-	vertex_clip(&w[0], v1, v2, f12, flags);
-	vertex_clip(&w[1], v1, v3, f13, flags);
+	const float x12 = x2-x1;
+	const float x13 = x3-x1;
+	float f12;
+	float f13;
+
+	if ((x12<0 ? -x12 : x12) < 0.0001) {
+	  f12 = 0.5;
+	} else {
+	  f12 = (clipbox[bit]-x1) / (x12);
+	}
+	if ((x13<0 ? -x13 : x13) < 0.0001) {
+	  f13 =  0.5;
+	} else {
+	  f13 = (clipbox[bit]-x1) / (x13);
+	}
+	vertex_clip(&w[0], v1, v2, f12, flags, bit);
+	vertex_clip(&w[1], v1, v3, f13, flags, bit);
   }
 
   if ((clipflags^(clipflags>>4)^(clipflags>>8))&1) {
-	draw_triangle_clip_continue(&w[0], v2, &w[1], flags, bit);
-	draw_triangle_clip_continue(&w[1], v2,    v3, flags, bit);
+	draw_triangle_clip_continue(&w[0], v2, &w[1], flags & ~0xF0F , bit);
+	draw_triangle_clip_continue(&w[1], v2,    v3, flags & ~0xF00, bit);
   } else {
-	draw_triangle_clip_continue(v1, &w[0], &w[1], flags, bit);
+	draw_triangle_clip_continue(v1, &w[0], &w[1], flags & ~0x0FF, bit);
   }
-
 }
