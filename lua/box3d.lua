@@ -57,7 +57,8 @@ function box3d(box, border, bkg, top, left, bottom, right)
 	  if type(color[1]) == "number" then
 		 for j=1,4 do colors[j] = color end
 	  elseif type(color[1]) == "table" then
-		 for j=1,4 do colors[j] = color[j] or color_new() end
+		 colors[1] = color[1] or color_new()
+		 for j=2,4 do colors[j] = color[j] or colors[j-1] end
 	  end
 
 	  return colors

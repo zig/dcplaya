@@ -213,20 +213,20 @@ function menu_create(owner, name, def, box)
 		end
 
 		-- Draw menu background
-		col = style.bkg_color
-		if col then
-			local bkgtype = style.bkg_type
-			local i,max
-			max=fl.top+fl.lines
-			if max > fl.dir.n then max = fl.dir.n end
-			for i=fl.top+1, max do
-				local e = fl.dir[i]
-				dl_draw_box(dl, 0, e.y, w, e.y+e.h, -0.1,
-							col[1],col[2],col[3],col[4],
-							col[5],col[6],col[7],col[8],
-							bkgtype)
-			end
-		end
+-- 		col = style.bkg_color
+-- 		if col then
+-- 			local bkgtype = style.bkg_type
+-- 			local i,max
+-- 			max=fl.top+fl.lines
+-- 			if max > fl.dir.n then max = fl.dir.n end
+-- 			for i=fl.top+1, max do
+-- 				local e = fl.dir[i]
+-- 				dl_draw_box(dl, 0, e.y, w, e.y+e.h, -0.1,
+-- 							col[1],col[2],col[3],col[4],
+-- 							col[5],col[6],col[7],col[8],
+-- 							bkgtype)
+-- 			end
+-- 		end
 		dl_set_clipping(dl,0,0,w,0)
 		dl_set_trans(dl, fl.mtx)
 		dl_set_active(dl,active)
