@@ -11,7 +11,7 @@ function transform
     val="`expr "$1" : '.*=\(.*\)' \| ""`"
 ##    echo "name:[$name]" >&2
 ##    echo "val:[$val]" >&2
-    echo "s#\\\$${name}\\\$#${val}#"
+    echo "s¬\\\$${name}\\\$¬${val}¬"
 }
 
 
