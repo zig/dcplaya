@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.60 2003-04-21 04:32:48 vincentp Exp $
+ * @version   $Id: dreamcast68.c,v 1.61 2004-06-30 15:17:36 vincentp Exp $
  */
 
 //#define RELEASE
@@ -73,6 +73,9 @@
 #include "priorities.h"
 
 #include "exceptions.h"
+
+/* added for stdlib compatibility */
+int errno;
 
 /* from rand.c */
 extern void srandom(unsigned int nseed);
@@ -875,6 +878,9 @@ void main_thread(void *cookie)
 
   SDDEBUG("Start exit procedure\n");
 
+  /* VP : quick exit ! Don't want to stay stucked into playa_stop ... */
+  exit();
+
   /* Stop sc68 from playing */
   playa_stop(1);
   vmu_lcd_title();
@@ -1107,7 +1113,7 @@ int dreammp3_main(int argc, char **argv)
   /* Initialize shell and LUA */
   SDDEBUG("SHELL init\n");
 
-  /* From this point the number of jiffies must be some what different...
+  /* From this point the number of jiffies must be somewhat different...
      I hope so ! */
   srandom(jiffies);
   if (shell_init()) {
@@ -1119,6 +1125,8 @@ int dreammp3_main(int argc, char **argv)
   SDDEBUG("CONSOLE init\n");
   csl_init_main_console();
   csl_printf(csl_main_console, "test des micros !\n");
+
+  csl_disable_render_mode(csl_basic_console, CSL_RENDER_BASIC);
 
   /*  ta_set_buffer_config(TA_LIST_OPAQUE_POLYS | TA_LIST_TRANS_POLYS, TA_POLYBUF_32, 1024*1024);
       ta_hw_init();*/

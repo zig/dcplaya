@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.97 2003-05-01 06:37:04 vincentp Exp $
+ * @version    $Id: dynshell.c,v 1.98 2004-06-30 15:17:35 vincentp Exp $
  */
 
 #include "dcplaya/config.h"
@@ -64,19 +64,70 @@ static void lua_assert_func(lua_State * L, const char * msg)
   lua_error(L, msg);
 }
 
-static int dynshell_command(const char * fmt, ...)
-{
-  char com[1024];
-  int result = -1;
-  //printf("COMMAND <%s>\n", com);
+#define CR_SIZE 32
+static spinlock_t cr_inmutex;
+static spinlock_t cr_outmutex;
+static int cr_in;
+static int cr_out;
+static char * cr[CR_SIZE];
 
+static int lua_get_shell_command(lua_State * L)
+{
+  int result = 0;
+
+  spinlock_lock(&cr_outmutex);
+  if ( cr_in != cr_out ) {
+    lua_pushstring(L, cr[cr_out]);
+    free(cr[cr_out]);
+    cr[cr_out] = 0;
+    cr_out = (cr_out+1)&(CR_SIZE-1);
+
+    result = 1;
+  }
+  spinlock_unlock(&cr_outmutex);
+
+  return result;
+}
+
+//static int dynshell_command(const char * fmt, ...)
+static int dynshell_command(const char * com)
+{
+  static int inner; // replace this by a mutex latex
+  //char com[1024];
+  //char com[10*1024];
+  //char com[256];
+  //char toto[10*1024];
+  int result = -1;
+
+  //printf("dynshell '%s'\n", com);
+
+  if (inner) {
+/*     va_list args; */
+/*     va_start(args, fmt); */
+/*     vsprintf(com, fmt, args); */
+/*     va_end(args); */
+    printf("QUEUE COMMAND <%s>\n", com);
+
+    spinlock_lock(&cr_inmutex);
+    if ( ((cr_in + 1)&(CR_SIZE-1)) != cr_out ) {
+      cr[cr_in] = strdup(com);
+      cr_in = (cr_in+1)&(CR_SIZE-1);
+      result = 0;
+    }
+    spinlock_unlock(&cr_inmutex);
+
+    return result;
+  }
+
+  inner = 1;
   EXPT_GUARD_BEGIN;
 
-  if (*fmt) {
-    va_list args;
-    va_start(args, fmt);
-    vsprintf(com, fmt, args);
-    va_end(args);
+  if (*com) {
+/*   if (*fmt) { */
+/*     va_list args; */
+/*     va_start(args, fmt); */
+/*     vsprintf(com, fmt, args); */
+/*     va_end(args); */
       
     //result = lua_dostring(shell_lua_state, com);
     lua_getglobal(shell_lua_state, "doshellcommand");
@@ -125,11 +176,25 @@ static int dynshell_command(const char * fmt, ...)
 
   EXPT_GUARD_END;
 
-  
+  inner = 0;
   return result;
   
 }
 
+static int fdynshell_command(const char * fmt, ...)
+{
+  char com[2048];
+  //char com[256];
+
+  //printf("fdynshell '%s'\n", fmt);
+
+  va_list args;
+  va_start(args, fmt);
+  vsprintf(com, fmt, args);
+  va_end(args);
+
+  return dynshell_command(com);
+}
 
 /* dynamic structure lua support */
 #define lua_push_entry(L, desc, data, entry) lua_push_entry_func((L), &desc##_DSD, (data), (entry) )
@@ -2852,6 +2917,18 @@ static int lua_fifo_size(lua_State * L)
   return 1;
 }
 
+#ifdef MALLOC_DEBUG
+extern void CheckUnfrees();
+#endif
+static int lua_checkmem(lua_State * L)
+{
+#ifdef MALLOC_DEBUG
+  CheckUnfrees();
+#endif
+  
+  return 0;
+}
+
 static luashell_command_description_t commands[] = {
 
   /* system commands */
@@ -3415,6 +3492,22 @@ static luashell_command_description_t commands[] = {
     SHELL_COMMAND_C, lua_fifo_size
   },
 
+  {
+    "shell_get_command",0,"shell",
+    "shell_get_command() :\n"
+    " Get next external command from queue.\n"
+    ,
+    SHELL_COMMAND_C, lua_get_shell_command
+  },
+
+  {
+    "checkmem","cm","system",
+    "checkmem() :\n"
+    " Display allocated memory statistics.\n"
+    ,
+    SHELL_COMMAND_C, lua_checkmem
+  },
+
   {0},
 };
 
@@ -3452,7 +3545,7 @@ static void shell_register_lua_commands()
 
   printf("setting [home] to [%s]\n",home);
 
-  dynshell_command("home = [[%s]]", home);
+  fdynshell_command("home = [[%s]]", home);
 
   //lua_dobuffer(L, shell_basic_lua_init, sizeof(shell_basic_lua_init) - 1, "init");
 
@@ -3478,12 +3571,12 @@ static void shell_register_lua_commands()
     strcat(format,",[[%s]],[[ %s ]])"); /* Add white-space on purpose */
 
     if (commands[i].usage) {
-      dynshell_command(format,
-		       commands[i].name,
-		       commands[i].short_name ? commands[i].short_name : "nil",
-		       last_topic = commands[i].topic
-		       ? commands[i].topic : last_topic,
-		       commands[i].usage);
+      fdynshell_command(format,
+			commands[i].name,
+			commands[i].short_name ? commands[i].short_name : "nil",
+			last_topic = commands[i].topic
+			? commands[i].topic : last_topic,
+			commands[i].usage);
     }
   }
 }
@@ -3499,6 +3592,8 @@ void shell_lua_fputs(const char * s)
 
 static void shutdown()
 {
+  int i;
+
   printf("shell: Shutting down dynamic shell\n");
 
   lua_dostring(shell_lua_state, "dynshell_shutdown()");
@@ -3508,6 +3603,11 @@ static void shutdown()
   lua_close(shell_lua_state);
   
   controler_binding(-1,-1);
+
+  spinlock_lock(&cr_inmutex);
+  for (i=0; i<CR_SIZE; i++)
+    if (cr[i])
+      free(cr[i]);
 
 }
 

@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     shell support for dcplaya
- * @version   $Id: shell.c,v 1.18 2003-04-21 04:32:48 vincentp Exp $
+ * @version   $Id: shell.c,v 1.19 2004-06-30 15:17:36 vincentp Exp $
  */
 
 #include <kos.h>
@@ -153,7 +153,7 @@ void shell_load(const char * fname)
 }
 
 
-
+static int hack;
 static void shell_thread(void * param)
 {
   /* VP : set the prio2 to 2 for the shell, so that lua will not get too 
@@ -172,6 +172,8 @@ static void shell_thread(void * param)
 
     lockshell();
 
+    hack = 1;
+
     com = commands[read_command];
 
     if (shell_command_func) {
@@ -182,6 +184,8 @@ static void shell_thread(void * param)
 
     free(commands[read_command]);
     read_command = (read_command+1)%MAX_COMMANDS;
+
+    hack = 0;
 
     unlockshell();
 
@@ -196,19 +200,19 @@ int shell_init()
   char tmp[256];
 #endif
   uint32 old = thd_default_stack_size;
-  thd_default_stack_size = 1024*1024;
+  //thd_default_stack_size = 1024*1024;
+  thd_default_stack_size = 256*1024;
 
   SDDEBUG("[shell_init] : dynshell [%s]\n",shell_lef_fname);
-
-  thd_create(shell_thread, 0);
-
-  thd_default_stack_size = old;
 
   /* first try the user shell */
   shell_load(shell_user_lef_fname);
   /* if fail, load the standard shell */
   if (!shell_lef)
     shell_load(shell_lef_fname);
+
+  thd_create(shell_thread, 0);
+  thd_default_stack_size = old;
 
   // Setup some environmental variables
   shell_command("setglobal([[__VERSION]],[[" DCPLAYA_VERSION_STR "]])");
@@ -270,6 +274,15 @@ void unlockcommand(void)
 int shell_command(const char * com)
 {
   //printf("COMMAND <%s>\n", com);
+
+  if (hack) {
+    if (shell_command_func) {
+      shell_command_func(com);
+    } else {
+      printf("shell: don't know what to do with command '%s' (no shell loaded !)\n", com);
+    }
+    return 0;
+  }
 
   lockcommand();
 

@@ -5,7 +5,7 @@
 --- @date     2002
 --- @brief    Main dcplaya lua script.
 ---
---- $Id: dcplayarc.lua,v 1.45 2003-04-12 12:46:27 ben Exp $
+--- $Id: dcplayarc.lua,v 1.46 2004-06-30 15:17:35 vincentp Exp $
 ---
 ---   The @b home.."dcplayarc.lua" file is dcplaya main script.
 ---   It is executed after the dynshell has been loaded.
@@ -83,6 +83,8 @@ plug_hyperpipe	= home.."plugins/vis/hyperpipe/hyperpipe.lez"
 plug_fime	= home.."plugins/vis/fime/fime.lez"
 plug_el         = home.."plugins/exe/entrylist/entrylist.lez"
 plug_jpeg       = home.."plugins/img/jpeg/jpeg.lez"
+plug_net        = home.."plugins/exe/net/net.lez"
+plug_ffmpeg     = home.."plugins/inp/ffmpeg/ffmpeg.lez"
 
 -- Little function for fun !
 -- $$$ should be move ...
@@ -193,6 +195,13 @@ end
 
 dolib ("io_control")
 dolib ("gui")
+
+if not __RELEASE then
+   if scroll_dl then
+      dl_set_active(scroll_dl,nil)
+   end
+   shell()
+end
 
 -- vmu initialisation.
 dolib ("vmu_init")

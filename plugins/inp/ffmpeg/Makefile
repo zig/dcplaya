@@ -4,7 +4,7 @@
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sasahipa.com>
 #
 #
-# $Id: Makefile,v 1.1 2004-06-22 20:21:35 vincentp Exp $
+# $Id: Makefile,v 1.2 2004-06-30 15:17:36 vincentp Exp $
 #
 
 LEZ=yes
@@ -25,6 +25,24 @@ OPTIMIZE = $(OPTIMIZE_FOR_SPEED)
 
 
 include ../../../Makefile.inc
+
+
+# SH-4 compile tools
+KOS_CC=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-gcc
+KOS_CXX=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-g++
+KOS_AS=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-as
+KOS_LD=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-ld
+#export KOS_CC KOS_CXX KOS_AS KOS_LD
+
+# SH-4 bin utils
+KOS_AR=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-ar
+KOS_RANLIB=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-ranlib
+KOS_OBJCOPY=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-objcopy
+KOS_OBJDUMP=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-objdump
+KOS_NM=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-nm
+KOS_STRIP=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-strip
+
+
 
 #.PHONY: $(FFMPEG_LIB)
 #$(FFMPEG_LIB):

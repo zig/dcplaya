@@ -4,8 +4,10 @@
  * @date     2002/10/18
  * @brief    fast allocator for fixed size small buffer.
  * 
- * $Id: allocator.c,v 1.7 2003-03-10 22:55:34 ben Exp $
+ * $Id: allocator.c,v 1.8 2004-06-30 15:17:36 vincentp Exp $
  */
+
+#undef MALLOC_DEBUG
 
 #include <stdlib.h>
 #include <stdio.h>

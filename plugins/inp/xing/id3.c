@@ -100,7 +100,7 @@ void show_id3(playa_info_t * info3, struct id3_tag const *tag)
 
     name = info[i].name;
     namelen = name ? strlen(name) : 0;
-    assert(namelen < sizeof(spaces));
+    //    assert(namelen < sizeof(spaces));
 
     for (j = 0; j < nstrings; ++j) {
       ucs4 = id3_field_getstrings(field, j);

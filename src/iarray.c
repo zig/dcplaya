@@ -4,7 +4,7 @@
  *  @date   2002/10/22
  *  @brief  Resizable array of indirect elements of any size.
  *
- *  $Id: iarray.c,v 1.6 2003-04-05 16:33:31 ben Exp $
+ *  $Id: iarray.c,v 1.7 2004-06-30 15:17:36 vincentp Exp $
  *
  *  @TODO Add callback for copy, clear ... operations
  */
@@ -76,6 +76,9 @@ void iarray_destroy(iarray_t * a)
   a->max = 0;
   iarray_unlock(a);
 }
+
+/* VP : WARNING, after this point, don't call the free function !! */
+#undef free
 
 int iarray_clear(iarray_t *a)
 {

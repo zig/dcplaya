@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Exceptions and guardians handling
  *
- * @version    $Id: exceptions.h,v 1.6 2003-04-20 02:23:20 vincentp Exp $
+ * @version    $Id: exceptions.h,v 1.7 2004-06-30 15:17:35 vincentp Exp $
  */
 
 
@@ -68,6 +68,28 @@ extern void irq_dump_regs(int , int);
  * @{ 
  */
 
+#define NO_EXPT
+
+#ifdef NO_EXPT
+
+
+#define EXPT_GUARD_BEGIN                                  \
+  if (1) {                                                \
+
+#define EXPT_GUARD_CATCH                                  \
+    } else {                                              \
+
+#define EXPT_GUARD_END }
+
+#define EXPT_GUARD_RETURN                                 \
+  return
+
+
+
+#else /* ifdef NO_EXPT */
+
+
+
 /** Start a protected section.
   * @warning : it is FORBIDEN to do "return" inside a guarded section,
     use EXPT_GUARD_RETURN instead. */
@@ -97,6 +119,13 @@ extern void irq_dump_regs(int , int);
 #define EXPT_GUARD_RETURN                                 \
   thd_current->expt_guard_stack_pos--;                    \
   return
+
+
+
+#endif /* ifdef NO_EXPT */
+
+
+
 
 /**@}*/
 

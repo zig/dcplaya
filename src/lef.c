@@ -5,7 +5,7 @@
  * @author  Dan Potter
  * @brief   ELF library loader - Based on elf.c from KallistiOS 1.1.5 
  *
- * @version $Id: lef.c,v 1.16 2003-04-20 02:23:20 vincentp Exp $
+ * @version $Id: lef.c,v 1.17 2004-06-30 15:17:36 vincentp Exp $
  */
 
 #include <malloc.h>
@@ -254,6 +254,8 @@ lef_prog_t *lef_load(const char * fname)
 
   img = gzip_load(fname, &sz);
   if (!img) {
+    SDERROR("Could not open file\n");
+    ++errors;
     goto error;
   }
 

@@ -20,7 +20,7 @@
 ** memguard.h
 **
 ** memory allocation wrapper routines
-** $Id: memguard.h,v 1.1 2003-04-08 20:46:46 ben Exp $
+** $Id: memguard.h,v 1.2 2004-06-30 15:17:36 vincentp Exp $
 */
 
 #ifndef  _MEMGUARD_H_
@@ -36,8 +36,10 @@ extern void _my_free(void **data, char *file, int line);
 
 #else /* Non-debugging versions of calls */
 
+#ifndef MALLOC_DEBUG
 #define  malloc(s)   _my_malloc((s))
 #define  free(d)     _my_free((void **) &(d))
+#endif
 
 extern void *_my_malloc(int size);
 extern void _my_free(void **data);
@@ -54,7 +56,10 @@ extern boolean mem_debug;
 
 /*
 ** $Log: memguard.h,v $
-** Revision 1.1  2003-04-08 20:46:46  ben
+** Revision 1.2  2004-06-30 15:17:36  vincentp
+** lot of modifications. I hope it still compile fine since I modified a bit kos too, but it should be alright, the modifs only mattered for ffmpeg and the BBA
+**
+** Revision 1.1  2003/04/08 20:46:46  ben
 ** add new input for NES music file.
 **
 ** Revision 1.5  2000/06/26 04:54:48  matt

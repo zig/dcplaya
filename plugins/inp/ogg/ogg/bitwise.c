@@ -11,7 +11,7 @@
  ********************************************************************
 
   function: packing variable sized words into an octet stream
-  last mod: $Id: bitwise.c,v 1.1 2002-08-26 14:14:42 ben Exp $
+  last mod: $Id: bitwise.c,v 1.2 2004-06-30 15:17:36 vincentp Exp $
 
  ********************************************************************/
 
@@ -20,6 +20,7 @@
 
 //#include <string.h>
 //#include <stdlib.h>
+#include <malloc.h>
 #include <ogg/ogg.h>
 
 #define BUFFER_INCREMENT 256

@@ -4,7 +4,7 @@
 --- @date     2003
 --- @brief    fifo tracker application.
 ---
---- $Id: fifo_tracker.lua,v 1.5 2003-07-29 08:25:00 benjihan Exp $
+--- $Id: fifo_tracker.lua,v 1.6 2004-06-30 15:17:35 vincentp Exp $
 ---
 
 fifo_tracker_loaded = nil
@@ -64,12 +64,14 @@ function fifo_tracker_create(owner, name)
 
       if key == evt_shutdown_event then
 	 local k,dl
-	 for k,dl in { ft.dl_full, ft.dl_empty, ft.dl } do
+	 for k,dl in { ft.dl_full, ft.dl_empty, ft.dl_vfull, ft.dl_vempty, ft.dl } do
 	    dl_set_active(dl,0)
 	    dl_clear(dl)
 	 end
 	 ft.dl_full = nil
 	 ft.dl_empty = nil
+	 ft.dl_vfull = nil
+	 ft.dl_vempty = nil
 	 return evt
       end
 
@@ -83,6 +85,15 @@ function fifo_tracker_create(owner, name)
 
       if percent > 990 then
 	 percent = 1000
+      end
+
+
+      local vtotal = ff_fifo_size and ff_fifo_size()
+      local bh = 30
+      if vtotal == 0 then 
+	 vtotal = nil 
+      else
+	 bh = 15
       end
 
       
@@ -145,23 +156,47 @@ function fifo_tracker_create(owner, name)
       local w = 200
       local x = 200 * a / total
       dl_set_trans(ft.dl_full, 
-		   mat_scale(x, 30, 1)
+		   mat_scale(x, bh, 1)
 		   *
 		   mat_trans(320-w/2, 5, 0)
 	     )
 
       local x = 200
       dl_set_trans(ft.dl_empty, 
-		   mat_scale(x, 30, 1)
+		   mat_scale(x, bh, 1)
 		   *
 		   mat_trans(320-w/2, 5, 0)
 	     )
+
+
+      local text = format("%4d", percent)
+      if vtotal then
+	 a = ff_fifo_used()
+
+	 text = text .. format(" -- %2d/%2d", a, vtotal)
+
+	 local x = 200 * a / vtotal
+	 dl_set_trans(ft.dl_vfull, 
+		      mat_scale(x, 15, 1)
+			 *
+			 mat_trans(320-w/2, 20, 0)
+		   )
+
+	 local x = 200
+	 dl_set_trans(ft.dl_vempty, 
+		      mat_scale(x, 15, 1)
+			 *
+			 mat_trans(320-w/2, 20, 0)
+		   )
+      end
+
+
 
       dl_clear(ft.dl_text)
       
       dl_text_prop(ft.dl_text,1,16)
       dl_draw_text(ft.dl_text, 320-w/2 + 40, 14, 3, 1, 1, 1, 1, 
-		   format("%4d", percent))
+		   text)
 
       --print(x)
    end
@@ -184,6 +219,9 @@ function fifo_tracker_create(owner, name)
       dl_empty = dl_new_list(128, 1, 1),
       dl_text = dl_new_list(1024, 1, 1),
 
+      dl_vfull = dl_new_list(128, 1, 1),
+      dl_vempty = dl_new_list(128, 1, 1),
+
       time_full = 0,
       time_empty = 0,
       alpha = 0,
@@ -199,6 +237,8 @@ function fifo_tracker_create(owner, name)
    dl_draw_text(ft.dl, (640-w)*0.5,-h,0, 1,1,1,1, title);
    dl_sublist(ft.dl, ft.dl_full)
    dl_sublist(ft.dl, ft.dl_empty)
+   dl_sublist(ft.dl, ft.dl_vfull)
+   dl_sublist(ft.dl, ft.dl_vempty)
    dl_sublist(ft.dl, ft.dl_text)
    dl_set_trans(ft.dl, mat_trans(200,40,0))
    dl_set_color(ft.dl, 0.5,1,1,1)
@@ -222,6 +262,23 @@ function fifo_tracker_create(owner, name)
 		fifo_tracker_empty_color[4]
 	     )
    dl_draw_box(ft.dl_empty, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1)
+
+   -- build bar (video)
+   dl_set_color(ft.dl_vfull, 
+		fifo_tracker_full_color[1],
+		fifo_tracker_full_color[2],
+		fifo_tracker_full_color[3],
+		fifo_tracker_full_color[4]
+	     )
+   dl_draw_box(ft.dl_vfull, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+
+   dl_set_color(ft.dl_vempty, 
+		fifo_tracker_empty_color[1],
+		fifo_tracker_empty_color[2],
+		fifo_tracker_empty_color[3],
+		fifo_tracker_empty_color[4]
+	     )
+   dl_draw_box(ft.dl_vempty, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1)
 
 
    dl_set_active(ft.dl, 1)

@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.26 2003-03-28 14:01:44 ben Exp $
+-- $Id: evt.lua,v 1.27 2004-06-30 15:17:35 vincentp Exp $
 --
 
 
@@ -126,6 +126,12 @@ function evt_peek()
    local frametime
 
    repeat
+      local com = shell_get_command()
+      while com do
+	 doshellcommand(com)
+	 com = shell_get_command()
+      end
+
       key = evt_origpeekchar()
       
       if key then

@@ -5,7 +5,7 @@
  * @date     2002/09/20
  * @brief    Simple gzipped file access.
  *
- * $Id: gzip.c,v 1.4 2003-03-10 22:55:35 ben Exp $
+ * $Id: gzip.c,v 1.5 2004-06-30 15:17:36 vincentp Exp $
  */
 
 #include <kos/fs.h>
@@ -63,7 +63,9 @@ void *gzip_load(const char *fname, int *ptr_ulen)
 
   fd = fs_open(fname, O_RDONLY);
   if (!fd) {
-    goto error;
+    return 0; /* VP : workaround gcc bug, uncompr was not zero after 
+		 the goto !! */
+/*    goto error;*/
   }
   len = fs_total(fd);
   ulen = is_gz(fd, len);

@@ -1,5 +1,5 @@
 /*
-** $Id: lbaselib.c,v 1.4 2003-01-28 22:58:18 ben Exp $
+** $Id: lbaselib.c,v 1.5 2004-06-30 15:17:35 vincentp Exp $
 ** Basic library
 ** See Copyright Notice in lua.h
 */
@@ -101,8 +101,13 @@ long strtoul(const char * s, char * * end, unsigned int base)
   return neg ? -(signed long)v : v;
 }
 
-
-#define fputs printf /* VP : I think Ben has defined an equivalent of fputs in kos now, but what it is called ? */
+#include <kos.h>
+static void fputs(const char * str, FILE * f)
+{
+  if (str && *str)
+    dbgio_puts(str);
+}
+//#define fputs dbgio_puts /* VP : Special kos version of puts */
 
 
 /*

@@ -11,6 +11,16 @@
 
 #include <arch/spinlock.h>
 
+#include <kos/mutex.h>
+
+#if 1
+#define mutex_t dcpmutex_t
+#define mutex_init dcpmutex_init
+#define mutex_trylock dcpmutex_trylock
+#define mutex_lockcount dcpmutex_lockcount
+#define mutex_lock dcpmutex_lock
+#define mutex_unlock dcpmutex_unlock
+
 /** @defgroup dcplaya_mutex Rescursive mutex
  *  @ingroup  dcplaya_devel
  *  @brief    rescursive mutex.
@@ -135,5 +145,7 @@ inline static void mutex_unlock(mutex_t *mutex)
 }
 
 /**@}*/
+
+#endif
 
 #endif /* #define _MUTEX_H_ */

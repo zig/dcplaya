@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.25 2003-04-21 20:25:09 vincentp Exp $
+ * $Id: playa.c,v 1.26 2004-06-30 15:17:36 vincentp Exp $
  */
 
 #include <kos.h>
@@ -191,6 +191,9 @@ static void * sndstream_callback(int size)
 	playa_thread->prio2 = PLAYA_DECODER_THREAD_BOOST1_PRIORITY;
       }
     }
+
+    // VP : TEMPORARY TO TEST FFMPEG !!!!
+    //playa_thread->prio2 = PLAYA_DECODER_THREAD_BOOST1_PRIORITY;
 #endif
 
     n = fifo_read(out_buffer, size);

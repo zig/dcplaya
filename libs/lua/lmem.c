@@ -1,9 +1,10 @@
 /*
-** $Id: lmem.c,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
+** $Id: lmem.c,v 1.3 2004-06-30 15:17:35 vincentp Exp $
 ** Interface to Memory Manager
 ** See Copyright Notice in lua.h
 */
 
+#undef MALLOC_DEBUG
 
 #include <stdlib.h>
 

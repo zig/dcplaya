@@ -4,7 +4,7 @@
 --- @author   benjamin gerard
 --- @brief    LUA enhanced shell
 ---
---- $Id: shell.lua,v 1.18 2003-03-26 23:02:49 ben Exp $
+--- $Id: shell.lua,v 1.19 2004-06-30 15:17:36 vincentp Exp $
 --
 
 --- @defgroup  dcplaya_lua_enhanced_shell  LUA enhanced shell
@@ -336,6 +336,10 @@ function shell_input(string)
 	 return "exit"
       elseif key == KBD_KEY_F2 then
 	 dofile (home.."autorun.lua")
+      elseif key == KBD_KEY_F3 then
+	 dofile (home.."autorun3.lua")
+      elseif key == KBD_KEY_F4 then
+	 dofile (home.."autorun4.lua")
       elseif key == shell_toggleconsolekey then
 	 toggleconsole()
       else

@@ -6,7 +6,7 @@
  * @date     2002/10/20
  * @brief    texture manager
  *
- * $Id: texture.h,v 1.11 2003-04-05 16:33:30 ben Exp $
+ * $Id: texture.h,v 1.12 2004-06-30 15:17:35 vincentp Exp $
  */
 
 #ifndef _TEXTURE_H_
@@ -223,7 +223,6 @@ int texture_twiddle(texture_t * t, int wanted);
  *   or equal to height are twiddlable.
  *
  *    @param  t  texture
- *    @param  wanted 0:De-twiddle 1:Twiddle
  *
  *  @return twiddlable stat.
  */

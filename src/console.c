@@ -4,7 +4,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.25 2003-04-05 16:33:31 ben Exp $
+ * @version   $Id: console.c,v 1.26 2004-06-30 15:17:36 vincentp Exp $
  */
 
 
@@ -45,7 +45,7 @@ int csl_echo = 1;
 
 static void csl_printk_func(const char * s)
 {
-  if (csl_echo) {
+  if (thd_enabled && csl_echo) {
     csl_putstring(csl_main_console, s);
   }
 
@@ -166,8 +166,6 @@ void csl_close_main_console()
   dbgio_set_printk(old_printk_func);
 
 }
-
-
 
 
 /* Functions to create and destroy a console */
