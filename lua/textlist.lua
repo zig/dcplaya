@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.28 2003-01-11 14:44:03 ben Exp $
+--- $Id: textlist.lua,v 1.29 2003-01-12 19:48:01 ben Exp $
 ---
 
 -- Unload the library
@@ -643,6 +643,7 @@ function textlist_update(fl, frametime)
       
       if not fl.fade_to then
 	 dl_set_active(fl.dl, a > 0)
+	 fl.closed = fl.closed and 2
       end
       fl:set_color(a,r,g,b)
    end

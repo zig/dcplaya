@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.23 2003-01-11 07:44:59 zigziggy Exp $
+-- $Id: evt.lua,v 1.24 2003-01-12 19:48:01 ben Exp $
 --
 
 
@@ -70,11 +70,6 @@ end
 
 -- send an event to an application and its sub applications
 function evt_send(app, evt, not_to_child, not_to_owner)
-
-   --	if not evt then
-   --		print (format("[H] [%s]", name))
-   --	end
-
    local i = app.sub
    if not not_to_child and i then
       local n = i.next
@@ -84,11 +79,6 @@ function evt_send(app, evt, not_to_child, not_to_owner)
       end
       i = n
    end
-
-   -- $$$
-   --	local name = "unknown"
-   --	if app.name then name = app.name end
-   --	print (format("[S] [%d] [%s]",evt.key, name))
 
    if not not_to_owner and app.handle then
       evt = app:handle(evt)
@@ -107,8 +97,6 @@ function evt_send(app, evt, not_to_child, not_to_owner)
 	 i = n
       end
    end
-   
-   --	print (format("[R] [%d] [%s]", evt.key, name))
    
    return evt
 end

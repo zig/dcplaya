@@ -17,6 +17,8 @@ if not menudef_tag then
    menudef_tag = newtag()
 end
 
+gui_menu_close_event = gui_menu_close_event or evt_new_code()
+
 --- @defgroup dcplaya_lua_menu_gui Menu GUI
 --- @ingroup  dcplaya_lua_gui
 --- 
@@ -156,19 +158,33 @@ function menu_create(owner, name, def, box, x1, y1)
    -- Menu update (handles fade in / fade out)
    -- -----------
    function menu_update(menu, frametime)
-      if menu.fade == 0 then return end
-      local a,r,g,b
-      a, r, g, b = dl_get_color(menu.dl)
-      a = a + menu.fade * frametime
-      if a > 1 then
-	 a = 1
-	 menu.fade  = 0
-      elseif a < 0 then
-	 a = 0
-	 menu.fade  = 0
-	 dl_set_active(menu.dl, 0)
+      local oldclose,newclose = (menu.closed or 0),2
+      local fl = menu.fl
+      if fl then
+	 fl:update(frametime)
+	 newclose = (fl.closed or 0)
       end
-      menu:set_color(a, r, g, b)
+
+      if newclose ~= oldclose and newclose == 2 then
+	 menu.closed = newclose>0 and newclose
+	 if menu.owner then
+	    evt_send(menu.owner, { key = gui_menu_close_event })
+	 end
+      end
+
+--       if menu.fade == 0 then return end
+--       local a,r,g,b
+--       a, r, g, b = dl_get_color(menu.dl)
+--       a = a + menu.fade * frametime
+--       if a > 1 then
+-- 	 a = 1
+-- 	 menu.fade  = 0
+--       elseif a < 0 then
+-- 	 a = 0
+-- 	 menu.fade  = 0
+-- 	 dl_set_active(menu.dl, 0)
+--       end
+--       menu:set_color(a, r, g, b)
    end
 
    -- Menu handle
@@ -195,7 +211,10 @@ function menu_create(owner, name, def, box, x1, y1)
 	 if gui_keyconfirm[key] then
 	    menu.root_menu:close(1)
 	 end
-	 return r
+	 if (r or 0) > 0 then
+	    evt = { key = gui_item_confirm_event }
+	 else evt = nil end
+	 return evt
       elseif gui_keycancel[key] then
 	 evt_shutdown_app(menu.root_menu)
 	 return
@@ -208,9 +227,7 @@ function menu_create(owner, name, def, box, x1, y1)
 	 menu.fl:move_cursor(1)
 	 return
       elseif gui_keyleft[key] then
---	 if tag(menu.owner) == menu_tag then
-	    menu:close()
---	 end
+	 menu:close()
 	 return
       elseif gui_keyright[key] then
 	 local fl = menu.fl
@@ -219,7 +236,7 @@ function menu_create(owner, name, def, box, x1, y1)
 	 if not pos then return end
 	 local entry = fl.dir[pos]
 	 if entry and entry.size < 0 then
-	    return menu:confirm()
+	    menu:confirm()
 	 end
 	 return
       end
@@ -229,8 +246,12 @@ function menu_create(owner, name, def, box, x1, y1)
    -- Menu open
    -- ---------
    function menu_open(menu)
-      menu.fade = 4
       menu.closed = nil
+      local fl = menu.fl
+      if fl then
+	 fl.fade_max = 1
+	 fl:open()
+      end
       dl_set_active(menu.dl,1)
       gui_new_focus(menu)
    end
@@ -247,7 +268,11 @@ function menu_create(owner, name, def, box, x1, y1)
 	 end
       end
       menu.closed = 1
-      menu.fade = -4;
+      local fl = menu.fl
+      if fl then
+	 fl.fade_min = 0
+	 fl:close()
+      end
       if menu.owner then
 	 evt_app_insert_last(menu.owner, menu)
       end
@@ -257,7 +282,7 @@ function menu_create(owner, name, def, box, x1, y1)
    -- --------------
    function menu_set_color(menu, a, r, g, b)
       dl_set_color(menu.dl,a,r,g,b)
-      menu.fl:set_color(a,r,g,b)
+--      menu.fl:set_color(a,r,g,b)
    end
 
    -- Menu draw
@@ -331,7 +356,13 @@ function menu_create(owner, name, def, box, x1, y1)
 
 
    function menu_draw(menu)
-      menu.fl:draw()
+      dl_clear(menu.dl)
+      if menu.fl then
+	 menu.fl:draw()
+	 dl_sublist(menu.dl,menu.fl.dl)
+-- 	 dl_set_active(menu.dl,1)
+-- 	 dl_set_active(menu.fl.dl,1)
+      end
    end
 
    -- Menu confirm
@@ -340,9 +371,6 @@ function menu_create(owner, name, def, box, x1, y1)
       local fl = menu.fl
       if not fl then return end
       local entry = fl:get_entry()
---fl.dir[idx]
---      local info = fl.dirinfo[idx]
-
       if not entry then return end
       local idx = fl.pos+1
 
@@ -358,8 +386,9 @@ function menu_create(owner, name, def, box, x1, y1)
 	    local y = entry.y
 	    submenu = menu:create(subname, menu.def.sub[subname],
 				  { m[4][1]+fl.bo2[1],
-				     m[4][2]+y-menu.style.border})
+				     m[4][2]+y})
 	 end
+	 return 2
       else
 	 local cbname = menu.def[idx].cbname
 	 if cbname and type(menu.def.cb) == "table" then
@@ -368,8 +397,8 @@ function menu_create(owner, name, def, box, x1, y1)
 	       cb(menu, idx)
 	    end
 	 end
+	 return 1
       end
-      return
    end
 
    -- Menu shutdown
@@ -381,10 +410,14 @@ function menu_create(owner, name, def, box, x1, y1)
       if tag(owner) == menu_tag then
 	 owner.sub_menu[menu.name] = nil
       end
-      menu.fl:shutdown()
-      --dl_destroy_list(menu.dl)
-       dl_set_active(menu.dl)
-      menu.dl = nil
+      if menu.fl then
+	 menu.fl:shutdown()
+	 menu.fl = nil
+      end
+      if menu.dl then
+	 dl_set_active(menu.dl)
+	 menu.dl = nil
+      end
    end
 
    menu = {
@@ -405,11 +438,11 @@ function menu_create(owner, name, def, box, x1, y1)
 
       -- Members
       style = style,
-      dl = dl_new_list(64 * (def.n or 0) + 1024),
+      dl = dl_new_list(),
       z = gui_guess_z(owner,z),
       def	= def,
       sub_menu = {},
-      fade = 0,
+--      fade = 0,
    }
    settag(menu, menu_tag)
 
@@ -426,6 +459,7 @@ function menu_create(owner, name, def, box, x1, y1)
 				span      = menu.style.span,
 			     } )
 
+   menu.fl.fade_spd = 4
    menu.fl.draw_background = menufl_draw_background
 
 --       draw_list         = textlist_draw_list,
@@ -441,8 +475,7 @@ function menu_create(owner, name, def, box, x1, y1)
 
 -- $$$ ben : draw will create menu box...
 -- menu.box = { menu.fl.box[1], menu.fl.box[2], menu.fl.box[3], menu.fl.box[4] }
-
-   menu:set_color(0, 1, 1, 1)
+--   menu:set_color(1, 1, 1, 1)
    menu:draw()
 
    if tag(owner) == menu_tag then

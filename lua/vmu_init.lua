@@ -1,7 +1,7 @@
 --- @date 2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  LUA script to initialize dcplaya VMU backup.
---- $Id: vmu_init.lua,v 1.5 2003-01-11 14:44:03 ben Exp $
+--- $Id: vmu_init.lua,v 1.6 2003-01-12 19:48:01 ben Exp $
 ---
 
 -- Unload library
@@ -221,7 +221,7 @@ function gui_text_viewer(owner, texts, box, label, mode)
    -- Display tagged-texts
    local tt_dl = dl_new_list(256,1,1)
    dl_set_clipping(tt_dl, 0, 0, tw, th)
-   dl_set_trans(tt_dl, mat_trans(tx,ty,250))
+   dl_set_trans(tt_dl, mat_trans(tx,ty,90))
    local tt_dl2 = dl_new_list(256,1,1)
    dl_sublist(tt_dl, tt_dl2)
    for i,v in tts do
@@ -308,9 +308,6 @@ function gui_text_viewer(owner, texts, box, label, mode)
    function gui_text_viewer_up(dial, evt)
       local mat = dl_get_trans(dial.tt_dl)
       if mat then
--- 	 local stp = (dial.tv_scroll_step or 0) + 1
--- 	 stp = (stp > 20 and 20) or stp
--- 	 dial.tv_scroll_step = stp
 	 gui_text_viewer_set_scroll(dial, mat[4][1], mat[4][2] + 12)
       end
    end
@@ -542,17 +539,26 @@ end
 
 ramdisk_init()
 
+-- <left> <img name="dcplaya" src="dcplaya.tga">
+-- <center> <font size="18" color="#FFFF90"> Welcome to dcplaya<br>
+-- <br>
+
+local newbie_text = 
+[[
+<font size="14">
+<center><font color="#9090FF">Newbie
+<vspace h="4"><p><left><font color="#909090">
+If is this the first time you launch dcplaya, you should read this lines.
+It contains a 
+]]
+
 local welcome_text =
 [[
-<left> <img name="dcplaya" src="dcplaya.tga">
-<center> <font size="18" color="#FFFF90"> Welcome to dcplaya<br>
-<br>
-
 <font size="14">
-<vspace h="8"><p>
 <center><font color="#90FF00">Greetings
 <vspace h="4"><p><left><font color="#909090">
-The dcplaya team wants to greet people that make this project possible.
+<hspace w="4">The dcplaya team wants to greet people that make this project
+possible.
 <vspace h="6"><p><center>
 GNU [http://www.gnu.org]<br>
 The Free Software Foundation<br>
@@ -564,7 +570,6 @@ andrewk for its dcload program.<br>
 local warning_text = 
 [[
 <font size="14">
-<vspace h="8"><p>
 <center><font color="#FF9000">Warning
 <vspace h="4"><p><left><font color="#909090">
 This program is NOT official SEGA production. It is distributed in the
@@ -595,19 +600,6 @@ warranty !
 -- <center><font color="#9090FF">Presentation
 -- <vspace h="4"><p><left><font color="#909090">
 -- dcplaya is a music player for the dreamcast.<br> toto
-
--- <vspace h="8"><p>
--- <center><font color="#FF9000">Warning
--- <vspace h="4"><p><left><font color="#909090">
--- This program is NOT official SEGA production. It is distributed in the
--- hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
--- implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.<br>
--- In other words, dcplaya developpers have worked hard to make it possible.
--- They have make the best to do a nice program and test it for you during hours.
--- This is a lot of work and they made it for FREE. They do not want to be implied
--- with any purchasse for anything that happen to you or to anything while using
--- this program. Problems may be submit to them but this is without any
--- warranty !
 
 -- <vspace h="8"><p>
 -- <center><font color="#90FF00">Greetings

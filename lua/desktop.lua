@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.14 2003-01-05 18:08:39 zigziggy Exp $
+--- $Id: desktop.lua,v 1.15 2003-01-12 19:48:01 ben Exp $
 ---
 
 if not dolib("evt") then return end
@@ -25,10 +25,15 @@ function dskt_create_sprites(vs)
    vs.sprites = {}
 end
 
-function dskt_openmenu(dial, target, x, y)
+function dskt_killmenu(dial)
    if dial.menu then
       evt_shutdown_app(dial.menu)
+      dial.menu = nil
    end
+end
+
+function dskt_openmenu(dial, target, x, y)
+   dskt_killmenu(dial)
 
    local name = target.name or "app"
    local def
@@ -99,200 +104,223 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 	 but.target = dir[i].app
 
 	 local oldhandle = but.handle
-	 but.handle = function(app, evt)
-			 local key = evt.key
+	 but.handle =
+	    function(app, evt)
+	       local key = evt.key
+	       
+	       if dskt_keytoggle[key]
+		  --or (key == gui_item_confirm_event)
+	       then
+		  if app.owner then
+		     local owner = app.owner.owner
+		     evt_shutdown_app(app.owner)
+		     if owner then
+			gui_new_focus(owner, app.target)
+		     end
+		     return
+		  end
+	       end
+	       
+	       if key == gui_press_event then
+		  dskt_openmenu(app.owner, app.target,
+				app.box[3], (app.box[2] + app.box[4]) / 2)
+		  return
+	       end
 
-			 if dskt_keytoggle[key] then
-			    local owner = app.owner.owner
-			    evt_shutdown_app(app.owner)
-			    gui_new_focus(owner, app.target)
+	       if key == gui_menu_close_event then
+		  print("RECEIVE MENU-CLOSE")
+		  dskt_killmenu(app.owner)
+		  return
+	       elseif key == gui_item_confirm_event then
+		  print("RECEIVE MENU-CONFIRM")
+--		  evt_send(app, { key = rawget(dskt_keytoggle,1) })
+-- 		  local owner = app.owner.owner
+-- 		  evt_shutdown_app(app.owner)
+-- 		  gui_new_focus(owner, app.target)
 
-			    return
-			 end
+		  return
+	       end
 
-			 if key == gui_press_event then
-			    dskt_openmenu(app.owner, app.target, app.box[3], (app.box[2] + app.box[4]) / 2)
-			    return
-			 end
-
-			 return %oldhandle(app, evt)
-		      end
+	       
+	       return %oldhandle(app, evt)
+	    end
       end
    end
-
+   
    do return tt.guis.dialog end
    
 
-if nil then
+-- if nil then
 
-   -- Default
-   owner = owner or evt_desktop_app
-   name = name or "app_switcher"
+--    -- Default
+--    owner = owner or evt_desktop_app
+--    name = name or "app_switcher"
 
-   -- application switcher default style
-   -- ------------------------
-   local style = {
-      bkg_color	= { 0.8, 0.7, 0.7, 0.7,  0.8, 0.3, 0.3, 0.3 },
-      border	= 8,
-      span      = 1,
-      file_color= { 1, 0, 0, 0 },
-      dir_color	= { 1, 0, 0, .4 },
-      cur_color	= { 1, 1, 1, 1,  1, 0.1, 0.4, 0.5 },
-      text      = { font=0, size=16, aspect=1 }
-   }
+--    -- application switcher default style
+--    -- ------------------------
+--    local style = {
+--       bkg_color	= { 0.8, 0.7, 0.7, 0.7,  0.8, 0.3, 0.3, 0.3 },
+--       border	= 8,
+--       span      = 1,
+--       file_color= { 1, 0, 0, 0 },
+--       dir_color	= { 1, 0, 0, .4 },
+--       cur_color	= { 1, 1, 1, 1,  1, 0.1, 0.4, 0.5 },
+--       text      = { font=0, size=16, aspect=1 }
+--    }
 
-   --- application switcher event handler.
-   --
-   function dskt_switcher_handle(dial, evt)
-      local key = evt.key
+--    --- application switcher event handler.
+--    --
+--    function dskt_switcher_handle(dial, evt)
+--       local key = evt.key
 
-      if key == evt_shutdown_event then
-	 local dir = dial.dir
---	 print("dir = ", dir)
-	 if dir then
-	    local a = dir[dial.vs.fl.pos+1].app
-	    if a ~= dial.next then
-	       gui_new_focus(evt_desktop_app, a)
-	    end
-	 end
+--       if key == evt_shutdown_event then
+-- 	 local dir = dial.dir
+-- --	 print("dir = ", dir)
+-- 	 if dir then
+-- 	    local a = dir[dial.vs.fl.pos+1].app
+-- 	    if a ~= dial.next then
+-- 	       gui_new_focus(evt_desktop_app, a)
+-- 	    end
+-- 	 end
 
-	 dl_set_active(dial.dl)
+-- 	 dl_set_active(dial.dl)
 
-	 return evt
-      end
+-- 	 return evt
+--       end
       
-      if dskt_keytoggle[key] then
-	 evt_shutdown_app(dial)
-	 return
-      end
+--       if dskt_keytoggle[key] then
+-- 	 evt_shutdown_app(dial)
+-- 	 return
+--       end
 
---      if dial.menu then
---	 if not dial.menu_focusing and not gui_is_focus(dial.menu) then
---	    dial.menu_focusing = 1
---	    gui_new_focus(dial, dial.menu)
---	    dial.menu_focusing = nil
---	 end
---	 return evt
---      end
+-- --      if dial.menu then
+-- --	 if not dial.menu_focusing and not gui_is_focus(dial.menu) then
+-- --	    dial.menu_focusing = 1
+-- --	    gui_new_focus(dial, dial.menu)
+-- --	    dial.menu_focusing = nil
+-- --	 end
+-- --	 return evt
+-- --      end
 
-      if key == gui_item_confirm_event then
-	 local result =  dial.vs.fl:get_entry()
-	 evt_shutdown_app(dial)
-	 dial._done = 1
-	 dial._result = result
-	 return
-      elseif key == gui_item_cancel_event then
-	 evt_shutdown_app(dial)
-	 dial._done = 1
-	 dial._result = nil
-	 return
-      elseif gui_keyright[key] or gui_keyleft[key] then
-	 if dial.menu then
-	    evt_shutdown_app(dial.menu)
-	 end
-	 local dir = dial.dir
-	 local dirinfo = dial.vs.fl.dirinfo
-	 --	 print("dir = ", dir)
-	 if dir then
-	    local pos = dial.vs.fl.pos+1
-	    local target = dir[pos].app
-	    local name = target.name or "app"
-	    local def
-	    local user_def = menu_create_defs(target.mainmenu_def, target)
-	    local default_def = menu_create_defs
-	    ({
-		root=":"..name..":kill{kill}",
-		cb = {
-		   kill = function(menu) 
-			     evt_shutdown_app(%dial)
-			     evt_shutdown_app(%target)
-			     evt_shutdown_app(menu)
-			  end
-		},
-	     }, target)
+--       if key == gui_item_confirm_event then
+-- 	 local result =  dial.vs.fl:get_entry()
+-- 	 evt_shutdown_app(dial)
+-- 	 dial._done = 1
+-- 	 dial._result = result
+-- 	 return
+--       elseif key == gui_item_cancel_event then
+-- 	 evt_shutdown_app(dial)
+-- 	 dial._done = 1
+-- 	 dial._result = nil
+-- 	 return
+--       elseif gui_keyright[key] or gui_keyleft[key] then
+-- 	 if dial.menu then
+-- 	    evt_shutdown_app(dial.menu)
+-- 	    dial.menu = nil
+-- 	 end
+-- 	 local dir = dial.dir
+-- 	 local dirinfo = dial.vs.fl.dirinfo
+-- 	 --	 print("dir = ", dir)
+-- 	 if dir then
+-- 	    local pos = dial.vs.fl.pos+1
+-- 	    local target = dir[pos].app
+-- 	    local name = target.name or "app"
+-- 	    local def
+-- 	    local user_def = menu_create_defs(target.mainmenu_def, target)
+-- 	    local default_def = menu_create_defs
+-- 	    ({
+-- 		root=":"..name..":kill{kill}",
+-- 		cb = {
+-- 		   kill = function(menu) 
+-- 			     evt_shutdown_app(%dial)
+-- 			     evt_shutdown_app(%target)
+-- 			     evt_shutdown_app(menu)
+-- 			  end
+-- 		},
+-- 	     }, target)
 
-	    if not user_def then
-	       def = default_def
-	    else
-	       def = menu_merge_def(user_def, default_def)
-	    end
+-- 	    if not user_def then
+-- 	       def = default_def
+-- 	    else
+-- 	       def = menu_merge_def(user_def, default_def)
+-- 	    end
 
-	    local info = dirinfo[pos]
-	    local x, y = dial.vs.box[1] + info.w, dial.vs.fl.box[2] + info.y
+-- 	    local info = dirinfo[pos]
+-- 	    local x, y = dial.vs.box[1] + info.w, dial.vs.fl.box[2] + info.y
 
-	    dial.menu = gui_menu(dial, name.."-menu",def, {x, y, 100, 100})
-	    if tag(dial.menu) == menu_tag then
-	       dial.menu.target = target
-	    end
-	 end
-	 return
-      elseif key == gui_item_change_event then
-	 local dir = dial.dir
---	 print("dir = ", dir)
-	 if dir then
-	    local a = dir[evt.pos+1].app
-	    gui_new_focus(evt_desktop_app, a)
-	    gui_new_focus(evt_desktop_app, dial)
-	 end
-      end
+-- 	    dial.menu = gui_menu(dial, name.."-menu",def, {x, y, 100, 100})
+-- 	    if tag(dial.menu) == menu_tag then
+-- 	       dial.menu.target = target
+-- 	    end
+-- 	 end
+-- 	 return
+--       elseif key == gui_item_change_event then
+-- 	 local dir = dial.dir
+-- --	 print("dir = ", dir)
+-- 	 if dir then
+-- 	    local a = dir[evt.pos+1].app
+-- 	    gui_new_focus(evt_desktop_app, a)
+-- 	    gui_new_focus(evt_desktop_app, dial)
+-- 	 end
+--       end
 
-      return gui_dialog_handle(dial, evt)
-   end
+--       return gui_dialog_handle(dial, evt)
+--    end
 
-   -- Create sprite
-   local texid = tex_get("dcpsprites") or tex_new("/rd/dcpsprites.tga")
-   local vmusprite = sprite("vmu",	
-			    0, 62/2,
-			    104, 62,
-			    108/512, 65/128, 212/512, 127/128,
-			    texid,1)
+--    -- Create sprite
+--    local texid = tex_get("dcpsprites") or tex_new("/rd/dcpsprites.tga")
+--    local vmusprite = sprite("vmu",	
+-- 			    0, 62/2,
+-- 			    104, 62,
+-- 			    108/512, 65/128, 212/512, 127/128,
+-- 			    texid,1)
 
-   local border = 8
-   local w = vmusprite.w * 2 + 2 * (border + style.border)
-   local h = vmusprite.h + 16 + 2 * (border + style.border) + 16
-   local box = { 0, 0, w, h }
-   local screenw, screenh = 640,480
+--    local border = 8
+--    local w = vmusprite.w * 2 + 2 * (border + style.border)
+--    local h = vmusprite.h + 16 + 2 * (border + style.border) + 16
+--    local box = { 0, 0, w, h }
+--    local screenw, screenh = 640,480
 
-   x = x or ((screenw - box[3])/2) 
-   y = y or ((screenh - box[4])/2)
-   local x2,y2 = x+box[3], y+box[4]
+--    x = x or ((screenw - box[3])/2) 
+--    y = y or ((screenh - box[4])/2)
+--    local x2,y2 = x+box[3], y+box[4]
    
-   -- Create dialog
-   local dial
-   dial = gui_new_dialog(owner,
-			 { x, y, x2, y2 }, z, nil, name,
-			 { x = "left", y = "up" }, "app_switcher" )
-   dial.handle = dskt_switcher_handle
+--    -- Create dialog
+--    local dial
+--    dial = gui_new_dialog(owner,
+-- 			 { x, y, x2, y2 }, z, nil, name,
+-- 			 { x = "left", y = "up" }, "app_switcher" )
+--    dial.handle = dskt_switcher_handle
 
-   box = box + { x+border, y+16+border, x-border, y-border }
-   local w,h = box[3]-box[1], box[4]-box[2]
+--    box = box + { x+border, y+16+border, x-border, y-border }
+--    local w,h = box[3]-box[1], box[4]-box[2]
 
-   dial.vs = gui_textlist(dial,
-			  {
-			     pos = {box[1], box[2]},
-			     box = {w,h,w,h},
-			     flags=nil,
-			     filecolor = style.file_color,
-			     dircolor  = style.dir_color,
-			     bkgcolor  = style.bkg_color,
-			     curcolor  = style.cur_color,
-			     border    = style.border,
-			     span      = style.span,
-			  })
+--    dial.vs = gui_textlist(dial,
+-- 			  {
+-- 			     pos = {box[1], box[2]},
+-- 			     box = {w,h,w,h},
+-- 			     flags=nil,
+-- 			     filecolor = style.file_color,
+-- 			     dircolor  = style.dir_color,
+-- 			     bkgcolor  = style.bkg_color,
+-- 			     curcolor  = style.cur_color,
+-- 			     border    = style.border,
+-- 			     span      = style.span,
+-- 			  })
 
-   if not dial.vs then
-      print("dskt_switcher: error creating textlist-gui")
-      return
-   end
+--    if not dial.vs then
+--       print("dskt_switcher: error creating textlist-gui")
+--       return
+--    end
 
-   -- Customize textlist
-   local fl = dial.vs.fl
+--    -- Customize textlist
+--    local fl = dial.vs.fl
 
-   dial.dir = dir or { }
-   fl:change_dir(dial.dir)
+--    dial.dir = dir or { }
+--    fl:change_dir(dial.dir)
 
-   return dial
-end
+--    return dial
+-- end
 
 end
 
