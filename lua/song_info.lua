@@ -3,7 +3,7 @@
 --- @author  benjamin gerard <ben@sashipa.com>
 --- @date    2002/11/29
 --- @brief   Song info application.
---- $Id: song_info.lua,v 1.2 2002-12-01 19:19:14 ben Exp $
+--- $Id: song_info.lua,v 1.3 2002-12-05 08:17:47 ben Exp $
 
 song_info_loaded = nil
 
@@ -69,17 +69,26 @@ function song_info_create(owner, nane)
    --- Song-Info update.
    --
    function song_info_update(si, frametime)
+
+	  vcolor(1,0,0,1)
+
+	  if dl_get_active(si.icon_dl) == 1 then 
+		 dl_set_active(si.icon_dl, 0)
+	  else
+		 dl_set_active(si.icon_dl, 1)
+	  end
+
 	  local a = si.alpha or 0
 
 	  -- Process fading 
-	  if si.fade ~= 0 then
+	  if si.fade then
 		 a = a + si.fade * frametime
 		 if a > 1 then
 			a = 1
-			si.fade = 0
+			si.fade = nil
 		 elseif a < 0 then
 			a = 0
-			si.fade = 0
+			si.fade = nil
 			dl_set_active(si.dl, 0)
 		 end
 		 si:set_color(a)
@@ -132,6 +141,9 @@ function song_info_create(owner, nane)
 		 end
 		 dl_draw_text(si.time_dl, 0,0,0, 1,1,1,1, fs)
 	  end
+
+	  vcolor(0,0,0,0)
+
    end
 
    --- Song-Info handle.

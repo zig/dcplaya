@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.14 2002-12-04 10:47:25 ben Exp $
+--- $Id: textlist.lua,v 1.15 2002-12-05 08:17:47 ben Exp $
 ---
 
 -- Unload the library
@@ -154,7 +154,7 @@ function textlist_create(flparm)
    function textlist_open(fl)
 -- 	  print ("open",fl)
 	  fl.closed = nil
-	  fl.fade = 1
+	  fl.fade = fl.fade_spd or 2
 	  dl_set_active(fl.dl, 1)
    end
 
@@ -163,7 +163,7 @@ function textlist_create(flparm)
    function textlist_close(fl)
 -- 	  print ("close",fl)
 	  fl.closed = 1
-	  fl.fade = -1
+	  fl.fade = -(fl.fade_spd or 2)
    end
 
    --- Center a textlist in a box.
@@ -233,6 +233,24 @@ function textlist_create(flparm)
    function textlist_measure_text(fl, entry)
 	  local w,h = dl_measure_text(fl.dl, entry.name)
 	  return w, h+2*fl.span
+   end
+
+   --- Insert an entry.
+   function textlist_insert_entry(fl, entry, pos)
+	  local y = 0
+	  if not entry then return end
+	  if not pos then
+		 local n = fl.dir.n
+		 if n > 0 then
+			y = fl.dirinfo[n].y + fl.dirinfo[n].h
+		 end
+		 local w,h = fl:measure_text(entry)
+		 tinsert(fl.dir, entry)
+		 tinsert(fl.dirinfo, { y=y, w=w, h=h })
+		 fl:draw()
+	  else
+		 printf("TEXTLIST INSERT NOT IMPLEMENTED")
+	  end
    end
 
    --- Reset textlist.
@@ -469,6 +487,7 @@ function textlist_create(flparm)
 	  get_entry		    = textlist_get_entry,
 	  locate_entry_expr	= textlist_locate_entry_expr,
 	  locate_entry		= textlist_locate_entry,
+	  insert_entry      = textlist_insert_entry,
 	  measure_text		= textlist_measure_text,
 	  set_box			= textlist_set_box,
 	  set_pos			= textlist_set_pos,

@@ -88,6 +88,28 @@ function song_browser_create(owner, name, box)
 			print("REAL STOP")
 			playa_stop()
 			sb.stopping = nil
+			sb.playlist_idx = nil
+		 elseif sb.playlist_idx then
+			local n = sb.pl.dir.n
+			while playa_play() == 0 and sb.playlist_idx < n do
+			   sb.playlist_idx = sb.playlist_idx + 1
+			   local path = sb.pl.dir[sb.playlist_idx].path
+			   local leaf = sb.pl.dir[sb.playlist_idx].file
+			   if leaf then 
+				  if path then
+					 leaf = path .. "/" .. leaf
+				  end
+				  path = fullpath(leaf)
+				  print("PLAY-LIST ADVANCE: #"..sb.playlist_idx.." "..path)
+				  song_browser_play(sb, path,0,0)
+			   end
+			   
+			end
+			if sb.playlist_idx > n then
+			   print("END OF PLAY-LIST")
+			   sb.playlist_idx = nil
+			end
+			   
 		 end
 
 		 sb.fl:update(frametime)
@@ -111,6 +133,9 @@ function song_browser_create(owner, name, box)
 		   return
 		elseif gui_keycancel[key] then
 		   sb:cancel()
+		   return
+		elseif gui_keyselect[key] then
+		   sb:select()
 		   return
 		elseif key == gui_item_change_event then
 			return
@@ -193,7 +218,7 @@ function song_browser_create(owner, name, box)
 	   sb.pl:draw()
 	end
 
-	function songbrowser_list_draw_background(fl,dl)
+	function song_browser_list_draw_background(fl,dl)
 	   local v = mat_new(4,8)
 	   local x1,y1,x2,y2,x3,y3,x4,y4
 	   local border = fl.border * 0.75
@@ -285,6 +310,12 @@ function song_browser_create(owner, name, box)
 		return sb.cl:cancel(sb)
 	end
 
+	--- Song-Browser select.
+	--
+	function song_browser_select(sb)
+		return sb.cl:select(sb)
+	end
+
 	sb = {
 		-- Application
 		name = name,
@@ -299,6 +330,7 @@ function song_browser_create(owner, name, box)
 		draw = song_browser_draw,
 		confirm = song_browser_confirm,
 		cancel = song_browser_cancel,
+		select = song_browser_select,
 		shutdown = song_browser_shutdown,
 
 		-- Members
@@ -334,23 +366,34 @@ function song_browser_create(owner, name, box)
 		  entrylist_load(fl.dir,entry_path)
 		  fl:change_dir(fl.dir)
 	   else
-		  play(entry_path)
+		  song_browser_play(sb, entry_path, 0, 1)
 		  return 1
 	   end 
 	end
 
-	function songbrowser_stop(sb)
+	function song_browser_stop(sb)
 	   sb.stopping = 1
 	   playa_fade(-1)
+	end
+
+	function song_browser_play(sb, filename, track, immediat)
+	   sb.stopping = nil
+	   playa_play(filename, track, immediat)
+	   playa_fade(2)
 	end
 
 	function sbfl_cancel(fl, sb)
 	   print("sbfl_cancel")
 	   if playa_play() == 1 then
-		  songbrowser_stop(sb);
+		  song_browser_stop(sb);
 	   else
 		  evt_shutdown_app(sb)
 	   end
+	end
+
+	function sbfl_select(fl, sb)
+	   print("sbfl_select")
+	   sbpl_insert(sb, fl:get_entry())
 	end
 
 	sb.fl = textlist_create(
@@ -368,34 +411,47 @@ function song_browser_create(owner, name, box)
 			   confirm   = sbfl_confirm,
 			})
 	sb.fl.cancel = sbfl_cancel
+	sb.fl.select = sbfl_select
 
 	sb.fl.fade_min = 0.3
 	sb.fl.draw_background_old = sb.fl.draw_background
-	sb.fl.draw_background = songbrowser_list_draw_background
+	sb.fl.draw_background = song_browser_list_draw_background
 
 
-
-	function sbpl_confirm(fl)
+	function sbpl_insert(sb, entry)
+	   sb.pl:insert_entry(entry)
 	end
 
-	function sbpl_cancel(fl, sb)
+	function sbpl_confirm(pl, sb)
+	   sb.playlist_idx = pl.pos
+	   print("START PLAYLIST AT " .. sb.playlist_idx)
+	   playa_stop()
+	end
+
+	function sbpl_cancel(pl, sb)
 	   evt_shutdown_app(sb)
+	end
+
+	function sbpl_select(pl, sb)
 	end
 
 	x = 341
 	sb.pl = textlist_create(
-				{	pos = {x, y, z+1},
-					box = minmax,
-					flags=nil,
-					dir=entrylist_new(),
-					filecolor = sb.style.file_color,
-					dircolor  = sb.style.dir_color,
-					bkgcolor  = sb.style.bkg_color,
-					curcolor  = sb.style.cur_color,
-					border    = sb.style.border,
-					span      = sb.style.span,
-				} )
+			{
+			   pos = {x, y, z+1},
+			   box = minmax,
+			   flags=nil,
+			   dir={},
+			   filecolor = sb.style.file_color,
+			   dircolor  = sb.style.dir_color,
+			   bkgcolor  = sb.style.bkg_color,
+			   curcolor  = sb.style.cur_color,
+			   border    = sb.style.border,
+			   span      = sb.style.span,
+			} )
+	sb.pl.confirm = sbpl_confirm
 	sb.pl.cancel = sbpl_cancel
+	sb.pl.select = sbpl_select
 
 	sb.pl.fade_min = sb.fl.fade_min
 	sb.pl.draw_background_old = sb.pl.draw_background

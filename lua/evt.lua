@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.9 2002-10-12 20:28:53 vincentp Exp $
+-- $Id: evt.lua,v 1.10 2002-12-05 08:17:47 ben Exp $
 --
 
 
@@ -56,224 +56,224 @@ dolib("display_init")
 
 -- create a new event code
 function evt_new_code()
-	if not evt_free_code then
-		-- free event code start at KBD_USER value ...
-		evt_free_code = KBD_USER
-	end
+   if not evt_free_code then
+	  -- free event code start at KBD_USER value ...
+	  evt_free_code = KBD_USER
+   end
 
-	evt_free_code = evt_free_code + 1
-	return evt_free_code - 1
+   evt_free_code = evt_free_code + 1
+   return evt_free_code - 1
 end
 
 
 -- send an event to an application and its sub applications
 function evt_send(app, evt)
 
-	-- $$$
---	local name = "unknown"
---	if app.name then name = app.name end
---	print (format("[S] [%d] [%s]",evt.key, name))
+   -- $$$
+   --	local name = "unknown"
+   --	if app.name then name = app.name end
+   --	print (format("[S] [%d] [%s]",evt.key, name))
 
-	local i = app.sub
-	while i do
-		local n = i.next
-		evt = evt_send(i, evt)
-		if not evt then
-			return
-		end
-		i = n
-	end
+   local i = app.sub
+   while i do
+	  local n = i.next
+	  evt = evt_send(i, evt)
+	  if not evt then
+		 return
+	  end
+	  i = n
+   end
 
---	print (format("[R] [%d] [%s]", evt.key, name))
+   --	print (format("[R] [%d] [%s]", evt.key, name))
 
-	if app.handle then
-		evt = app:handle(evt)
-	end
+   if app.handle then
+	  evt = app:handle(evt)
+   end
 
---	if not evt then
---		print (format("[H] [%s]", name))
---	end
+   --	if not evt then
+   --		print (format("[H] [%s]", name))
+   --	end
 
-	return evt
+   return evt
 end
 
 -- INTERNAL
 function evt_update(app, frametime)
 
-	local i = app.sub
-	while i do
-		local n = i.next
-		evt_update(i, frametime)
-		i = n
-	end
+   local i = app.sub
+   while i do
+	  local n = i.next
+	  evt_update(i, frametime)
+	  i = n
+   end
 
-	if app.update then
-		app:update(frametime)
-	end
+   if app.update then
+	  app:update(frametime)
+   end
 
 end
 
 
 -- return next event or nil
 function evt_peek()
-	
-	-- basic events
-	local key
-	local frametime
+   
+   -- basic events
+   local key
+   local frametime
 
-	repeat
-		key = evt_origpeekchar()
+   repeat
+	  key = evt_origpeekchar()
 
-		if key then
-			vcolor(255, 0, 0)
-			evt = { key = key }
-			evt = evt_send(evt_root_app, evt)
-			if evt then
-				return evt
-			end
-			vcolor(0, 0, 0)
-		else
-			-- do collect garbage once per frame for smoother animation
-			collectgarbage()
+	  if key then
+		 vcolor(255, 0, 0)
+		 evt = { key = key }
+		 evt = evt_send(evt_root_app, evt)
+		 if evt then
+			return evt
+		 end
+		 vcolor(0, 0, 0)
+	  else
+		 -- do collect garbage once per frame for smoother animation
+		 collectgarbage()
 
-			-- calculate frame time
-			evt_curframecounter = evt_origframecounter(1)
-			frametime = evt_curframecounter/60
-		end
-	until not key
+		 -- calculate frame time
+		 evt_curframecounter = evt_origframecounter(1)
+		 frametime = evt_curframecounter/60
+	  end
+   until not key
 
-	-- call update method of applications
-	vcolor(100, 0, 0)
-	evt_update(evt_root_app, frametime)
-	vcolor(0, 0, 0)
+   -- call update method of applications
+   vcolor(100, 0, 0)
+   evt_update(evt_root_app, frametime)
+   vcolor(0, 0, 0)
 
 end
 
 -- peekchar wrapper
 function evt_peekchar()
-	local evt
-	evt = evt_peek()
-	if evt then
-		return evt.key
-	end
+   local evt
+   evt = evt_peek()
+   if evt then
+	  return evt.key
+   end
 end
 
 -- wait for next event and return it
 function evt_wait()
-	local evt
-	repeat
-		evt = evt_peek()
-	until evt
+   local evt
+   repeat
+	  evt = evt_peek()
+   until evt
 
-	return evt
+   return evt
 end
 
 -- getchar wrapper
 function evt_getchar()
-	local evt
-	evt = evt_wait()
-	return evt.key
+   local evt
+   evt = evt_wait()
+   return evt.key
 end
 
 -- add a sub application to an application at the beginning of its sub list
 function evt_app_insert_first(parent, app)
-	evt_app_remove(app)
-	dlist_insert(parent, "sub", "sublast", app, "prev", "next", "owner")
+   evt_app_remove(app)
+   dlist_insert(parent, "sub", "sublast", app, "prev", "next", "owner")
 end
 
 -- add a sub application to an application at the end of its sub list
 function evt_app_insert_last(parent, app)
-	evt_app_remove(app)
-	dlist_insert(parent, "sublast", "sub", app, "next", "prev", "owner")
+   evt_app_remove(app)
+   dlist_insert(parent, "sublast", "sub", app, "next", "prev", "owner")
 end
 
 
 -- remove a sub application from an application sub list
 function evt_app_remove(app)
-	dlist_remove("sub", "sublast", app, "prev", "next", "owner")
+   dlist_remove("sub", "sublast", app, "prev", "next", "owner")
 end
 
 
 function evt_framecounter()
-	return evt_curframecounter
+   return evt_curframecounter
 end
 
 function evt_shutdown_app(app)
-	evt_send(app, { key = evt_shutdown_event } )
-	evt_app_remove(app)
+   evt_send(app, { key = evt_shutdown_event } )
+   evt_app_remove(app)
 end
 
 -- shutdown event system
 function evt_shutdown()
 
-	if evt_root_app and evt_shutdown_event then
-		-- send shutdown event too all application
-		evt_send(evt_root_app, { key = evt_shutdown_event } )
-	end
+   if evt_root_app and evt_shutdown_event then
+	  -- send shutdown event too all application
+	  evt_send(evt_root_app, { key = evt_shutdown_event } )
+   end
 
-	if evt_origgetchar then
-		getchar = evt_origgetchar
-		peekchar = evt_origpeekchar
-		framecounter = evt_origframecounter
-	end
+   if evt_origgetchar then
+	  getchar = evt_origgetchar
+	  peekchar = evt_origpeekchar
+	  framecounter = evt_origframecounter
+   end
 
-	evt_root_app = nil
-	evt_desktop_app = nil
+   evt_root_app = nil
+   evt_desktop_app = nil
 
-	print [[EVT SYSTEM SHUT DOWN]]
+   print [[EVT SYSTEM SHUT DOWN]]
 
 end
 
 -- initialize event system
 function evt_init()
-	evt_shutdown()
+   evt_shutdown()
 
-	if not check_display_driver or not check_display_driver() then
-		return
-	end
+   if not check_display_driver or not check_display_driver() then
+	  return
+   end
 
-	if not evt_origgetchar then
-		-- get original getchar and peekchar
-		-- the event system will replace these two variables later
-		evt_origgetchar = getchar
-		evt_origpeekchar = peekchar
-		evt_origframecounter = framecounter
-	end
-
-
-	-- create basic event type
-	evt_shutdown_event = evt_new_code()
+   if not evt_origgetchar then
+	  -- get original getchar and peekchar
+	  -- the event system will replace these two variables later
+	  evt_origgetchar = getchar
+	  evt_origpeekchar = peekchar
+	  evt_origframecounter = framecounter
+   end
 
 
-	evt_command_queue = { n=0 }
+   -- create basic event type
+   evt_shutdown_event = evt_new_code()
 
-	evt_root_app = {
 
-		name = "root",
-		version = "0.9"
+   evt_command_queue = { n=0 }
 
-	}
+   evt_root_app = {
 
-	evt_desktop_app = {
+	  name = "root",
+	  version = "0.9"
 
-		name = "desktop",
-		version = "0.9"
+   }
 
-	}
+   evt_desktop_app = {
 
-	evt_app_insert_first(evt_root_app, evt_desktop_app)
+	  name = "desktop",
+	  version = "0.9"
 
-	-- initialize framecounter
-	evt_curframecounter = evt_origframecounter(1)
+   }
 
-	-- last step : replace getchar and cie
-	getchar = evt_getchar
-	peekchar = evt_peekchar
-	framecounter = evt_framecounter
+   evt_app_insert_first(evt_root_app, evt_desktop_app)
 
-	print [[EVT SYSTEM INITIALIZED]]
+   -- initialize framecounter
+   evt_curframecounter = evt_origframecounter(1)
 
-	return 1
+   -- last step : replace getchar and cie
+   getchar = evt_getchar
+   peekchar = evt_peekchar
+   framecounter = evt_framecounter
+
+   print [[EVT SYSTEM INITIALIZED]]
+
+   return 1
 
 end
 
@@ -284,17 +284,17 @@ evt_loaded = 1
 
 if nil then
 
--- some tests
+   -- some tests
 
-evt_peek()
-
-
-print (evt_desktop_app.owner)
-evt_app_remove(evt_desktop_app)
-evt_app_remove(evt_desktop_app)
-evt_app_insert_first(evt_root_app, evt_desktop_app)
+   evt_peek()
 
 
-getchar()
+   print (evt_desktop_app.owner)
+   evt_app_remove(evt_desktop_app)
+   evt_app_remove(evt_desktop_app)
+   evt_app_insert_first(evt_root_app, evt_desktop_app)
+
+
+   getchar()
 
 end

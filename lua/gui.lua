@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.19 2002-12-04 18:46:49 ben Exp $
+--- $Id: gui.lua,v 1.20 2002-12-05 08:17:47 ben Exp $
 ---
 
 --
@@ -100,6 +100,13 @@ gui_keymenu = {
 	[KBD_CONT2_Y] = 1, 
 	[KBD_CONT3_Y] = 1, 
 	[KBD_CONT4_Y] = 1, 
+}
+gui_keyselect = { 
+	[KBD_BACKSPACE] = 1, 
+	[KBD_CONT1_X] = 1, 
+	[KBD_CONT2_X] = 1, 
+	[KBD_CONT3_X] = 1, 
+	[KBD_CONT4_X] = 1, 
 }
 
 -- compute an automatic guess if none is given
