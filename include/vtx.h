@@ -4,15 +4,27 @@
  *  @date    2003/01/19
  *  @brief   Vertex.
  *
- * $Id: vtx.h,v 1.2 2003-01-21 02:38:16 ben Exp $
+ * $Id: vtx.h,v 1.3 2003-01-22 02:08:53 ben Exp $
  */
 
 #ifndef _VTX_H_
 #define _VTX_H_
 
+#ifndef _VTX_INLINED_
+# define _VTX_INLINED_ 1
+#endif
+
 #include "extern_def.h"
 
 DCPLAYA_EXTERN_C_START
+
+#if !defined(VTX_FUNCTION)
+# if _VTX_INLINED_
+#  define VTX_FUNCTION inline static
+# else
+#  define VTX_FUNCTION
+# endif
+#endif
 
 /** Vertex.
  *  @ingroup dcplaya_devel
@@ -24,10 +36,24 @@ typedef struct {
   float w;  /**< W homogeneous coordinate */
 } vtx_t;
 
+#if _VTX_INLINED_
+# include "vtx.inl"
+#else
+
 /** @name Vertex fucntions
  *  @ingroup dcplaya_devel
  *  @{
  */
+
+/** Identity vertex [0 0 0 1].
+ *  @return a
+ */
+vtx_t * vtx_identity(vtx_t *a);
+
+/** Set vertex to [x y z 1].
+ *  @return a
+ */
+vtx_t * vtx_set(vtx_t *a, const float x, const float y, const float z);
 
 /** Negation (a = -a).
  *  @return a
@@ -167,8 +193,10 @@ float vtx_sqdist(const vtx_t * a, const vtx_t * b);
  */
 float vtx_dist(const vtx_t * a, const vtx_t * b);
 
-
 /** @} */
+
+#endif /* #else _VTX_INLINED_ */
+
 DCPLAYA_EXTERN_C_END
 
 #endif /* #define  _VTX_H_ */

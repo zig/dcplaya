@@ -1,3 +1,11 @@
+/** @ingroup dcplaya_vis_driver
+ *  @file    fime_bees.c
+ *  @author  benjamin gerard 
+ *  @date    2003/01/17
+ *  @brief   FIME : bees 
+ *  $Id: fime_bees.c,v 1.5 2003-01-22 02:08:54 ben Exp $
+ */ 
+
 #include <stdlib.h>
 #include "config.h"
 #include "math_float.h"
@@ -92,76 +100,114 @@ static int init_bo_obj(void)
 
 }
 
+static matrix_t target_mtx;
+static vtx_t target_pos;
+static vtx_t target_pos_scale;
+static vtx_t target_angle;
+static vtx_t target_inc;
+static float target_inc_spd;
+static float target_inc_spd_a;
+
+static void update_target(matrix_t mtx)
+{
+  vtx_t pos;
+
+  MtxIdentity(mtx);
+  MtxRotateX(mtx, target_angle.x);
+  MtxRotateY(mtx, target_angle.y);
+  vtx_mul3(&pos, (vtx_t *)mtx[2], &target_pos_scale);
+  MtxIdentity(mtx);
+  vtx_add3((vtx_t *)mtx[3], &pos, &target_pos);
+}
+
+static void reset_target(matrix_t mtx,
+			 const float x, const float y, const float z)
+{
+  target_inc_spd_a = 0;
+  target_inc_spd = 1;
+  vtx_set(&target_pos, x, y, z);
+  vtx_set(&target_pos_scale, 0.7, 0.7*0.75, 1);
+  vtx_identity(&target_angle);
+  vtx_set(&target_inc, -0.021f, 0.033f, 0);
+
+  update_target(mtx);
+}
+
+
+static void move_target(matrix_t mtx)
+{
+  vtx_t inc;
+
+  target_inc_spd_a = __vtx_inc_angle(target_inc_spd_a, 0.0023);
+  target_inc_spd = Cos(target_inc_spd_a) + 0.5;
+
+  vtx_scale3(&inc, &target_inc, target_inc_spd);
+  vtx_inc_angle(&target_angle, &inc);
+
+  update_target(mtx);
+}
+
+static void bee_matrix(fime_bee_t * bee, matrix_t mtx, const vtx_t * axe)
+{
+  MtxLookAt(mtx, axe->x, axe->y, axe->z);
+  MtxTranspose3x3(mtx);
+  MtxScale(mtx,bee->scale);
+  MtxTranslate(mtx, bee->pos.x, bee->pos.y, bee->pos.z);
+}
+
 static void bee_update(matrix_t leader_mtx, matrix_t mtx, fime_bee_t * bee)
 {
-  vtx_t leader_pos; 
-  vtx_t tgt;
-  vtx_t mov;
+  vtx_t leader_pos, tgt, mov, axe;
   float d;
-  char * dump=0;
 
   bee->prev_pos = bee->pos;
 
+  /* Get leader position */
   leader_pos = *(vtx_t *)leader_mtx[3];
+
+  /* Compute target position. */
   MtxVectMult(&tgt.x, &bee->rel_pos.x, leader_mtx);
 
-#if 1
-  vtx_sub3(&mov, &tgt, &bee->pos);
-  d = vtx_norm(&mov);
+  /* Compute move axis. */
+  vtx_sub3(&axe, &tgt, &bee->pos);
+
+  /* Get distance to target */
+  d = vtx_norm(&axe);
+
   if (d < MF_EPSYLON) {
-    printf("Heho : %f [%f %f %f]\n", d, mov.x, mov.y, mov.z);
-    dump = "NO MOVE";
+    /* Target is very near, move to target */
+    bee->pos = tgt;
     bee->spd = 0;
     d = 0;
+    /* Do not update matrix except for translation. */
+    //    *(vtx_t *)mtx[3] = tgt;
   } else {
-    if (d <= bee->spd) {
-      bee->spd = d;
-      //      dump = "TOO FAST";
+    const float id = Inv(d);
+    float a;
+    const float f = 0.2f;
+    vtx_t new_axe;
+    const float spd_max = 0.02;
+
+    vtx_scale3(&mov, &axe, id);
+    a = vtx_dot_product(&mov,&bee->axe);
+    /* Should determine acceleration here */
+    bee->spd = d * f + bee->spd * (1.0-f);
+
+    if (bee->spd > spd_max) bee->spd = spd_max;
+
+    vtx_blend3(&new_axe, &axe, &bee->axe, 0.5);
+
+    d = vtx_inorm(&new_axe);
+    if (d < 0) {
+      printf("%f\n",d);
+      vtx_scale3(&bee->axe, &axe, id);
     } else {
-      const float f = 0.2f;
-      const float maxspd = 0.013f;
-      bee->spd = d * f + bee->spd * (1.0-f);
-      if (bee->spd > maxspd) {
-	bee->spd = maxspd;
-      }
-      vtx_scale(&mov, bee->spd/d);
+      vtx_scale3(&bee->axe, &new_axe, d);
     }
+    vtx_scale3(&mov, &bee->axe, bee->spd);
     vtx_add(&bee->pos, &mov);
+    bee_matrix(bee, mtx, &bee->axe);
   }
-#else
-  vtx_blend(&bee->pos,&tgt, 0.9);
-  
-#endif
-/*   if (!dump && bee == bees) dump = "Leader"; */
-
-  if (dump) {
-    printf("dump [%p,'%s']\n"
-	   " lea:[ %f %f %f ]\n"
-	   " tgt:[ %f %f %f ]\n"
-	   " mov:[ %f %f %f ] := %f\n"
-	   " dir:[ %f %f %f ]\n"
-	   " pos:[ %f %f %f ] := %f\n"
-	   " rel:[ %f %f %f ]\n",
-	   bee,dump,
-	   leader_pos.x, leader_pos.y, leader_pos.z,
-	   tgt.x, tgt.y, tgt.z,
-	   mov.x, mov.y, mov.z, d,
-	   (leader_pos.x-bee->pos.x),(leader_pos.y-bee->pos.y),
-	   (leader_pos.z-bee->pos.z),
-	   bee->pos.x, bee->pos.y, bee->pos.z, bee->spd,
-	   bee->rel_pos.x, bee->rel_pos.y, bee->rel_pos.z
-	   );
-	   
-  }
-
-  MtxLookAt(mtx,
-	    (leader_pos.x - bee->pos.x),
-	    (leader_pos.y - bee->pos.y),
-	    (leader_pos.z - bee->pos.z));
-  MtxTranspose3x3(mtx);
-  MtxScale(mtx,0.2);
-/*   MtxIdentity(mtx); */
-  MtxTranslate(mtx, bee->pos.x, bee->pos.y, bee->pos.z);
 }
 
 static void r_bee_update(matrix_t leader_mtx, fime_bee_t * bee)
@@ -171,6 +217,31 @@ static void r_bee_update(matrix_t leader_mtx, fime_bee_t * bee)
     r_bee_update(bee->mtx, bee->soldier);
   }
 }
+
+static void dump_bee(const fime_bee_t * bee, int level) {
+  if (bee) {
+    int i;
+    for (i=0;i<level;++i) printf(" ");
+    printf("[bee:%p lea:%p bud:%p sol:%p (%.02f %.02f %.02f)]\n",
+	   bee, bee->leader, bee->buddy, bee->soldier,
+	   bee->rel_pos.x,bee->rel_pos.y,bee->rel_pos.z);
+  } 
+}
+
+static void bee_dump(fime_bee_t * bee, int level)
+{
+  fime_bee_t * b = bee;
+  if (!b) return;
+
+  for ( ; bee; bee=bee->buddy) {
+    dump_bee(bee, level);
+  }
+
+  for (bee=b ; bee; bee=bee->buddy) {
+    bee_dump(bee->soldier, level+1);
+  }
+}
+
 
 static void bee_update_tree(matrix_t mtx, fime_bee_t * bee)
 {
@@ -210,7 +281,7 @@ static int r_bee_count(const fime_bee_t * bee)
 
 static fime_bee_t * create_bee(int n)
 {
-  const float rmin = 0.1, rmax = 0.5, sep=0.6;
+  const float rmin = 0.1, rmax = 0.5, sep=1.1;
   int i;
   int m = (n * (n+1)) >> 1;
   fime_bee_t *bees, *bee, *leader;
@@ -243,12 +314,19 @@ static fime_bee_t * create_bee(int n)
 	return 0;
       }
 
-      bee->pos.x = Cos(a) * sx;
-      bee->pos.y = Sin(a) * sy;
+      bee->scale = 0.1;
+      if (bee == bees) {
+	/* Leader */
+	bee->pos.x = 0;
+	bee->pos.y = 0;
+      } else {
+	bee->pos.x = Cos(a) * sx;
+	bee->pos.y = Sin(a) * sy;
+      }
       bee->pos.z = z;
       bee->pos.w = 1;
 
-      bee->leader = find_nearest(bee, leader , n_leader);
+      bee->leader = find_nearest(bee, leader, n_leader);
       if (bee->leader) {
 	fime_bee_t ** b = &bee->leader->soldier;
 	for ( ; *b; b = &(*b)->buddy)
@@ -256,7 +334,6 @@ static fime_bee_t * create_bee(int n)
 	*b = bee;
       }
       MtxIdentity(bee->mtx);
-
     }
     leader = first_buddy;
     n_leader = bee-leader;
@@ -270,13 +347,16 @@ static fime_bee_t * create_bee(int n)
   }
 
   /* Compute relative position. */
-  bees->pos.x = bees->pos.y = bees->pos.z = 0;
-  bees->rel_pos = bees->pos;
-  for (i=1; i<m; ++i) {
+  for (i=0; i<m; ++i) {
+    fime_bee_t *leader;
     vtx_t tmp;
     bee=bees+i;
-    tmp = bee->leader->pos;
-/*     tmp.x = tmp.y = 0; */
+    leader = bee->leader;
+    if (!leader) {
+      vtx_identity(&tmp);
+    } else {
+      tmp = leader->pos;
+    }
     vtx_sub3(&bee->rel_pos, &bee->pos, &tmp);
   }
 
@@ -295,73 +375,56 @@ static fime_bee_t * create_bee(int n)
   return bees;
 }
 
-int fime_bees_init(void)
+static void bee_reset_position(fime_bee_t *bee, matrix_t leader_mtx)
 {
-  int err = 0;
-  SDDEBUG("[fime] bees init...\n");
+  vtx_t leader_pos; 
 
-  bee_obj = 0;
-  if (0) {
-    bee_obj = (obj_driver_t *)driver_list_search(&obj_drivers,"spaceship1");
-    err = !bee_obj;
-    if (!err) {
-      cur_obj = &bee_obj->obj;
-    } 
-  }
-  if (!cur_obj) {
-    if (!init_bo_obj()) {
-      cur_obj = &bo_obj;
-    }
+  if (!bee) {
+    return;
   }
 
-  bees = create_bee(6);
-  texid = texture_get("fime_bordertile");
-  err |= !bees || !cur_obj || (texid<0);
+  leader_pos = *(vtx_t *)leader_mtx[3];
+  MtxVectMult(&bee->pos.x, &bee->rel_pos.x, leader_mtx);
+  bee_matrix(bee, bee->mtx, (vtx_t *)leader_mtx[2]);
 
-  SDDEBUG("[fime] bees init := [%s].\n", !err ? "OK" : "FAILED");
-  
-  return -(!!err);
-  
+  /* Compute fake previous position. */
+  vtx_sub3(&bee->prev_pos, &bee->pos, (vtx_t *)bee->mtx[2]);
+
+  /* Clean */
+  bee->spd = 0;
 }
 
-void fime_bees_shutdown(void)
+static void fime_bee_reset_position(fime_bee_t *bee, matrix_t leader_mtx)
 {
-  driver_dereference(&bee_obj->common);
-  bee_obj = 0;
-  cur_obj = 0;
-
-  if (bees) {
-    free(bees);
-    bees = 0;
+  for ( ; bee; bee=bee->buddy) {
+    bee_reset_position(bee, leader_mtx);
+    fime_bee_reset_position(bee->soldier, bee->mtx);
   }
-  SDDEBUG("[fime] bees shutdowned.\n");
 }
+
 
 int fime_bees_update(void)
 {
   int err = 0;
-  static float ax;
-  static float ay;
-  matrix_t tmp;
-  vtx_t pos, pos_scale = {1.4, 1.0, 2.0, 1};
-
   if (!bees) {
     return -1;
   }
-
-  MtxIdentity(tmp);
-  MtxRotateX(tmp, ax += -0.021f);
-  MtxRotateY(tmp, ay += 0.033f);
-  vtx_mul3(&pos, (vtx_t *)tmp[2], &pos_scale);
-  pos.z += 4;
-
-  MtxIdentity(tmp);
-  MtxScale(tmp,0.3f);
-  *(vtx_t *)tmp[3] = pos;
-
-  bee_update_tree(tmp, bees);
+  move_target(target_mtx);
+  bee_update_tree(target_mtx, bees);
 
   return -(!!err);
+}
+
+static int render_it(viewport_t *vp, matrix_t mtx, matrix_t proj,
+		     const vtx_t * ambient, const vtx_t * color)
+{
+  const int opaque = 1;
+  cur_obj->flags = 0
+    | DRAW_NO_FILTER
+    | (opaque ? DRAW_OPAQUE : DRAW_TRANSLUCENT)
+    | (texid << DRAW_TEXTURE_BIT);
+  return DrawObjectFrontLighted(vp, mtx, proj,
+				cur_obj, ambient, color);
 }
 
 static int bee_render(fime_bee_t * bee,
@@ -370,23 +433,10 @@ static int bee_render(fime_bee_t * bee,
   int err;
   vtx_t ambient = { 0.1, 0.2, 0.3, 1 };
   vtx_t color = { 0.3, 1, 1, 0 };
-  const int opaque = 1;
+  matrix_t mtx;
 
-  if (!cur_obj) {
-    return -1;
-  }
-
-  cur_obj->flags = 0
-    | DRAW_NO_FILTER
-    | (opaque ? DRAW_OPAQUE : DRAW_TRANSLUCENT)
-    | (texid << DRAW_TEXTURE_BIT);
-
-  MtxMult(bee->mtx, camera);
-
-/*   err =  DrawObjectSingleColor(vp, bee->mtx, proj, */
-/* 			       cur_obj, &color); */
-  err =  DrawObjectFrontLighted(vp, bee->mtx, proj,
-			       cur_obj, &ambient, &color);
+  MtxMult3(mtx, bee->mtx, camera);
+  err = render_it(vp, mtx, proj, &ambient, &color);
 
   return -!!err;
 }
@@ -408,7 +458,76 @@ int fime_bees_render(viewport_t *vp,
 {
   int err;
 
+  if (!cur_obj) {
+    return -1;
+  }
+
+  if (1) {
+    /* render the target */
+    static const vtx_t ambient = { 0.2,0.3,0,1 };
+    static const vtx_t color = { 1,1,0,1 };
+    matrix_t mtx;
+
+    MtxIdentity(mtx);
+    MtxRotateX(mtx, target_angle.x);
+    MtxRotateY(mtx, target_angle.y);
+    MtxMult(mtx, target_mtx);
+    MtxScale3x3(mtx, 0.2);
+    MtxMult(mtx, camera);
+
+    render_it(vp, mtx, proj,
+	      &ambient, &color);
+  }
+  
   err = r_bee_render(bees, vp, camera, proj);
   return -(!!err);
 }
 
+int fime_bees_init(void)
+{
+  int err = 0;
+  SDDEBUG("[fime] bees init...\n");
+
+  bee_obj = 0;
+  if (0) {
+    bee_obj = (obj_driver_t *)driver_list_search(&obj_drivers,"spaceship1");
+    err = !bee_obj;
+    if (!err) {
+      cur_obj = &bee_obj->obj;
+    } 
+  }
+  if (!cur_obj) {
+    if (!init_bo_obj()) {
+      cur_obj = &bo_obj;
+    }
+  }
+
+  bees = create_bee(4);
+  bee_dump(bees,0);
+  {
+    reset_target(target_mtx, 0, 0, 4);
+    fime_bee_reset_position(bees, target_mtx);
+  }
+
+
+  texid = texture_get("fime_bordertile");
+  err |= !bees || !cur_obj || (texid<0);
+
+  SDDEBUG("[fime] bees init := [%s].\n", !err ? "OK" : "FAILED");
+  
+  return -(!!err);
+
+}
+
+void fime_bees_shutdown(void)
+{
+  driver_dereference(&bee_obj->common);
+  bee_obj = 0;
+  cur_obj = 0;
+
+  if (bees) {
+    free(bees);
+    bees = 0;
+  }
+  SDDEBUG("[fime] bees shutdowned.\n");
+}

@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/19
  *  @brief   FIME : beat detection
- *  $Id: fime_beatdetect.c,v 1.1 2003-01-20 14:23:09 ben Exp $
+ *  $Id: fime_beatdetect.c,v 1.2 2003-01-22 02:08:54 ben Exp $
  */ 
 
 #include <stdlib.h>
@@ -15,20 +15,26 @@
 
 #include "draw/primitives.h"
 
+#define NO_BEATDETECT
+
 #define FFT_SIZE (1 << FFT_LOG_2)
 
-static short * fime_fft_buffer;
+#ifndef NO_BEATDETECT
 
+static short * fime_fft_buffer;
 static int * fime_fft_F; /* FFT final */
 static short * fime_fft_S; /* FFT scroll      */
 static short * fime_fft_R; /* FFT real        */
 static short * fime_fft_I; /* FFT imaginary   */
 unsigned int fime_fft_idx;
 
+#endif
+
 int fime_beatdetect_init(void)
 {
   int err = 0;
   SDDEBUG("[fime] : beatdetect init := [%s]\n", !err ? "OK" : "FAILED");
+#ifndef NO_BEATDETECT
 
   if (!fime_fft_buffer) {
     int size = FFT_SIZE * (2+1+1) * sizeof(short) +
@@ -46,6 +52,7 @@ int fime_beatdetect_init(void)
   }
   fime_fft_idx = 0;
   err = !fime_fft_buffer;
+#endif
   return -(!!err);
 }
 
@@ -56,9 +63,14 @@ void fime_beatdetect_shutdown(void)
 
 float fime_beatdetect_update(void)
 {
+#ifdef NO_BEATDETECT
+  return 0;
+#else
+
   int i;
   short * I, * R, * S, w;
   int *F;
+
   const fime_analyser_t * analyser;
   if (!fime_fft_buffer || (analyser = fime_analysis_get(1), !analyser)) {
     return 0;
@@ -102,12 +114,16 @@ float fime_beatdetect_update(void)
   }
 
   return 0;
+#endif
 }
 
 extern short int_decibel[];
 
 int fime_beatdetect_render(void)
 {
+#ifdef NO_BEATDETECT
+  return 0;
+#else
   int i;
   float x, w = 640.0f/(FFT_SIZE/2);
   float sy = 300 / 32768.0f;
@@ -116,7 +132,6 @@ int fime_beatdetect_render(void)
 
   //  const float f0 = 60.0f / (float)FFT_SIZE;
   unsigned int max = 0, imax=0;
-  
 
   for (i=0;i<4;++i) {
     vtx[i].z = 300;
@@ -158,4 +173,5 @@ int fime_beatdetect_render(void)
 /*   printf("[%d %.02f] ", imax, imax * f0 * 60.0f); */
 
   return 0;
+#endif
 }
