@@ -1,10 +1,11 @@
 /**
+ * @ingroup dcplaya_screen_shot
  * @file    screen_shot.h
- * @author  benjamin gerard <ben@sashipa.com>
+ * @author  benjamin gerard
  * @date    2002/09/14
  * @brief   Takes TGA screen shot.
  * 
- * $Id: screen_shot.h,v 1.2 2003-02-12 12:31:56 ben Exp $
+ * $Id: screen_shot.h,v 1.3 2003-03-26 23:02:48 ben Exp $
  */
 
 #ifndef _SCREEN_SHOT_H_
@@ -13,6 +14,13 @@
 #include "extern_def.h"
 
 DCPLAYA_EXTERN_C_START
+
+/** @defgroup dcplaya_screen_shot Screen shot
+ *  @ingroup  dcplaya_devel
+ *  @brief    take a screen shot
+ *  @author  benjamin gerard
+ *  @{
+ */
 
 /** Takes a TGA screen shot.
  *
@@ -27,6 +35,8 @@ DCPLAYA_EXTERN_C_START
  *  @retval <0 failure
  */
 int screen_shot(const char *basename);
+
+/**@}*/
 
 DCPLAYA_EXTERN_C_END
 

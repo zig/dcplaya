@@ -1,11 +1,11 @@
 /**
- * @ingroup    dcplaya
+ * @ingroup    dcplaya_exception
  * @file       exceptions.h
- * @author     vincent penne <ziggy@sashipa.com>
+ * @author     vincent penne
  * @date       2002/11/09
  * @brief      Exceptions and guardians handling
  *
- * @version    $Id: exceptions.h,v 1.4 2002-11-25 16:51:05 ben Exp $
+ * @version    $Id: exceptions.h,v 1.5 2003-03-26 23:02:47 ben Exp $
  */
 
 
@@ -16,22 +16,59 @@
 #include <kos/thread.h>
 #include "setjmp.h"
 
-void expt_init();
+/** @defgroup  dcplaya_exception  Exceptions and Guardians handling
+ *  @ingroup   dcplaya_devel
+ *  @brief     exceptions and guardians handling
+ *  @author    vincent penne
+ *  @{
+ */
 
-void expt_shutdown();
+/** Initialize the exception system. */
+void expt_init(void);
 
-int expt_guard_begin();
+/** Shutdoyn the exception system. */
+void expt_shutdown(void);
+
+/** Start a protected section.
+ *  @deprecated Use EXPT_GUARD_BEGIN macro.
+ */
+int expt_guard_begin(void);
 
 // moved to kos/thread.h
 //#define EXPT_GUARD_STACK_SIZE 8
 
-/*extern int expt_guard_stack_pos;
-extern jmp_buf expt_jump_stack[EXPT_GUARD_STACK_SIZE];*/
-
-
+/*
+extern int expt_guard_stack_pos;
+extern jmp_buf expt_jump_stack[EXPT_GUARD_STACK_SIZE];
+*/
 extern void irq_dump_regs(int , int);
 
+/** @name Protected section.
+ *
+ *  To protect a code from exception :
+ * @code
+ *  char * buffer = malloc(32);
+ *  EXPT_GUARD_BEGIN;
+ *  // Run code to protect here. This instruction makes a bus error or
+ *  // something like that on most machine.
+ *  *(int *) (buffer+1) = 0xDEADBEEF;
+ *
+ *  EXPT_GUARD_CATCH;
+ *  // Things to do if hell happen
+ *  printf("Error\n");
+ *  free(buffer);
+ *  return -1;
+ *
+ *  EXPT_GUARD_END;
+ *  // Life continue ... 
+ *  memset(buffer,0,32);
+ *  // ...
+ * @endcode
+ *
+ * @{ 
+ */
 
+/** Start a protected section. */
 #define EXPT_GUARD_BEGIN                                  \
   if (1) {                                                \
     thd_current->expt_guard_stack_pos++;                               \
@@ -40,15 +77,19 @@ extern void irq_dump_regs(int , int);
     if (!setjmp(thd_current->expt_jump_stack[thd_current->expt_guard_stack_pos])) { 
 //    if (!expt_guard_begin()) {
 
+/** Catch a protected section. */
 #define EXPT_GUARD_CATCH                                  \
     } else {                                              \
       printf("CATCHING EXCEPTION IN %s:%s (%d)\n", __FILE__, __FUNCTION__, __LINE__); \
       irq_dump_regs(0, 0);
 
+/** End of protected section. */
 #define EXPT_GUARD_END                                    \
     }                                                     \
     thd_current->expt_guard_stack_pos--;                  \
   } else
+
+/**@}*/
 
 #endif // #ifndef _EXECEPTIONS_H_
 

@@ -1,10 +1,10 @@
 --- @ingroup  dcplaya_lua_shell
 --- @file     dirfunc.lua
---- @author   vincent penne <ziggy@sashipa.com>
---- @author   benjamin gerard <ben@sashipa.com>
+--- @author   vincent penne
+--- @author   benjamin gerard
 --- @brief    Directory and filename support.
 ---
---- $Id: dirfunc.lua,v 1.17 2003-03-25 09:26:46 ben Exp $
+--- $Id: dirfunc.lua,v 1.18 2003-03-26 23:02:49 ben Exp $
 ---
 
 --- Current path.

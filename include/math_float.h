@@ -1,21 +1,21 @@
 /** @ingroup  dcplaya_math_devel
  *  @file     math_float.h
- *  @author   benjamin gerard <ben@sashipa.com>
+ *  @author   benjamin gerard
  *  @date     2003/01/21
  *  @brief    floating point macros and defines
  *
- * $Id: math_float.h,v 1.7 2003-03-22 00:35:27 ben Exp $
+ * $Id: math_float.h,v 1.8 2003-03-26 23:02:47 ben Exp $
  */
 
 /** @defgroup  dcplaya_math_devel Mathematics
  *  @ingroup   dcplaya_devel
- *  @brief     Mathematics
+ *  @brief     mathematics various (float, integer, matrix, vertex, fft ...)
  *
- *  @author   benjamin gerard <ben@sashipa.com>
+ *  @author   benjamin gerard
+ *  @{
  */
 
 /** @name Floating point mathematic basics.
- *  @ingroup dcplaya_math_devel
  *  @{
  */
 
@@ -91,6 +91,8 @@ inline static float __mf_max(const float a, const float b) {
 inline static float __mf_bound(const float a, const float b, const float c) {
   return a < b ? b : (a > c ? c : a);
 }
+
+/** @} */
 
 /** @} */
 

@@ -1,11 +1,11 @@
 /**
- * @ingroup  exe_plugin
+ * @ingroup  dcplaya_exe_plugin_devel
  * @file     display_box.c
- * @author   Benjamin Gerard <ben@sashipa.com>
+ * @author   benjamin gerard
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, box functions
  * 
- * $Id: display_color.c,v 1.2 2002-11-28 20:20:24 ben Exp $
+ * $Id: display_color.c,v 1.3 2003-03-26 23:02:50 ben Exp $
  */
 
 #include "draw/gc.h"

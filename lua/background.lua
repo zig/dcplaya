@@ -1,6 +1,6 @@
 --- @ingroup dcplaya_lua_background
 --- @file    background.lua
---- @author  benjamin gerard <ben@sashipa.com>
+--- @author  benjamin gerard
 --- @date    2002/12/16
 --- @brief   Background image.
 ---
@@ -8,7 +8,7 @@
 --- @defgroup  dcplaya_lua_background  Background
 --- @ingroup   dcplaya_lua_graphics
 --- @brief     background graphic objects
---- @author    benjamin gerard <ben@sashipa.com>
+--- @author    benjamin gerard
 --- @{
 ---
 

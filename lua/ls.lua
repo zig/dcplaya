@@ -1,9 +1,9 @@
 --- @ingroup dcplaya_lua_shell
 --- @file    ls.lua
---- @author  Benjamin Gerard <ben@sashipa.com>
+--- @author  benjamin gerard
 --- @brief   Directory listing core function.
 ---
---- $Id: ls.lua,v 1.5 2003-03-22 00:32:27 ben Exp $
+--- $Id: ls.lua,v 1.6 2003-03-26 23:02:49 ben Exp $
 ---
 
 -- Display a directory in optimized column format.

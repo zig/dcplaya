@@ -1,7 +1,10 @@
 /**
- * @ingroup dcplaya_devel
- * @file    SHAsystypes.h
+ * @ingroup  dcplaya_translator_devel
+ * @file     SHAsysTypes.h
+ * @author   benjamin gerard
+ * @brief    sashipa library type definitions
  *
+ * $Id: SHAsysTypes.h,v 1.3 2003-03-26 23:02:48 ben Exp $
  */
 
 #ifndef _SHATYPE_H_

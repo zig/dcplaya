@@ -5,7 +5,7 @@
  * @date     2002/11/22
  * @brief    draw tile accelarator interface
  *
- * $Id: ta.c,v 1.5 2003-03-23 23:54:54 ben Exp $
+ * $Id: ta.c,v 1.6 2003-03-26 23:02:48 ben Exp $
  */
 
 /* $$$ ben hacks :
@@ -80,16 +80,6 @@ static void make_poly_hdr(ta_hw_poly_t * poly, int flags)
 
     if (t->twiddled)
       tformat &= ~1;
-#ifdef DEBUG
-    else {
-      if (!t->non_twiddled_debugged) {
-	/* VP : Display once any non twiddled texture, we should avoid
-	   non twiddled texture if possible, they are slow to render ! */
-	SDWARNING("Texture NOT TWIDDLED ! [%s]\n", t->name);
-	t->non_twiddled_debugged = 1;
-      }
-    }
-#endif
     
     /* $$$ does not match documentation !!!  */
     word3 |= ((DRAW_FILTER(flags)^DRAW_FILTER_MASK)) << (13-DRAW_FILTER_BIT);

@@ -1,11 +1,11 @@
 /**
  * @ingroup dcplaya_matrix_devel
  * @file    matrix.h
- * @author  ben(jamin) gerard <ben@sashipa.com>
+ * @author  benjamin gerard
  * @date    2002/02/12
  * @brief   Matrix support.
  *
- * $Id: matrix.h,v 1.12 2003-03-22 00:35:27 ben Exp $
+ * $Id: matrix.h,v 1.13 2003-03-26 23:02:47 ben Exp $
  */
 
 #ifndef _MATRIX_H_
@@ -13,25 +13,23 @@
 
 #include "extern_def.h"
 
-/** @defgroup  dcplaya_matrix_devel  Matrix support.
- *  @ingroup   dcplaya_math_devel
- *  @brief     Performing matrix operations.
- *
- *  @author    benjamin gerard <ben@sashipa.com>
- */
 
 DCPLAYA_EXTERN_C_START
 
+/** @defgroup  dcplaya_matrix_devel  Matrix
+ *  @ingroup   dcplaya_math_devel
+ *  @brief     matrix operations
+ *
+ *  @author    benjamin gerard
+ *
+ *  @{
+ */
+
 #ifndef __MATRIX_H
 /** 4x4 matrix type.
- *  @ingroup dcplaya_matrix_devel
  */
 typedef float matrix_t[4][4];
 #endif
-
-/** @name Matrix functions.
- *  @ingroup dcplaya_matrix_devel
- */
 
 #ifdef DEBUG
 void MtxDump(matrix_t m);
@@ -100,15 +98,24 @@ void MtxLookAt2(matrix_t row,
 		const float x, const float y, const float z);
 
 /** Set a projection matrix.
- *  @return zNear
+ *  @param row          matrix to set
+ *  @param openAngle    open angle in radian
+ *  @param fov          field of vision (not really that!)
+ *  @param aspectRatio  typically width/height
+ *  @param zFar         Z mapped to 1 after projection
+ *
+ *  Parameters of this functions are a bit strange and unusual.
+ *
+ *  @return zNear (Z mapped to 0 after projection)
+ *
  *  @retval -row[3][2]/row[2][2];
  */
 float MtxProjection(matrix_t row, const float openAngle, const float fov,
-                   const float aspectRatio, const float zFar);
+		    const float aspectRatio, const float zFar);
+
 void MtxFrustum(matrix_t row, const float left, const float right,
                               const float top, const float bottom,
                               const float zNear, const float zFar);
-/* void CrossProduct(float *d, const float *v, const float * w); */
 
 /**@}*/
 

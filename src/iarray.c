@@ -4,7 +4,7 @@
  *  @date   2002/10/22
  *  @brief  Resizable array of indirect elements of any size.
  *
- *  $Id: iarray.c,v 1.4 2002-11-04 22:41:53 benjihan Exp $
+ *  $Id: iarray.c,v 1.5 2003-03-26 23:02:51 ben Exp $
  *
  *  @TODO Add callback for copy, clear ... operations
  */
@@ -15,7 +15,7 @@
 
 void iarray_lock(iarray_t *a)
 {
- mutex_lock(&a->mutex);
+  mutex_lock(&a->mutex);
 }
 
 void iarray_unlock(iarray_t *a)
@@ -45,15 +45,15 @@ static void iarray_free(void * addr, void * cookie)
 {
   cookie = cookie;
   if (addr) {
-	free(addr);
+    free(addr);
   }
 }
 
 int iarray_create(iarray_t *a, iarray_alloc_f alloc, iarray_free_f free,
-				  void *cookie)
+		  void *cookie)
 {
   if (!a) {
-	return -1;
+    return -1;
   }
   a->n = 0;
   a->max = 0;
@@ -70,8 +70,8 @@ void iarray_destroy(iarray_t * a)
   iarray_lock(a);
   iarray_clear(a);
   if (a->elt) {
-	free(a->elt);
-	a->elt = 0;
+    free(a->elt);
+    a->elt = 0;
   }
   a->max = 0;
   iarray_unlock(a);
@@ -81,14 +81,14 @@ int iarray_clear(iarray_t *a)
 {
   iarray_lock(a);
   if (a->elt) {
-	int i;
-	for (i=0; i<a->n; ++i) {
-	  if (a->elt[i].addr) {
-		a->free(a->elt[i].addr, a->cookie);
-		a->elt[i].addr = 0;
-		a->elt[i].size = 0;
-	  }
-	}
+    int i;
+    for (i=0; i<a->n; ++i) {
+      if (a->elt[i].addr) {
+	a->free(a->elt[i].addr, a->cookie);
+	a->elt[i].addr = 0;
+	a->elt[i].size = 0;
+      }
+    }
   }
   a->n = 0;
   iarray_unlock(a);
@@ -100,7 +100,7 @@ void * iarray_addrof(iarray_t *a, int idx)
   void * addr = 0;
   iarray_lock(a);
   if ((unsigned int)idx < a->n) {
-	addr = a->elt[idx].addr;
+    addr = a->elt[idx].addr;
   }
   iarray_unlock(a);
   return addr;
@@ -110,15 +110,15 @@ int iarray_get(iarray_t *a, int idx, void * elt, int maxsize)
 {
   iarray_lock(a);
   if ((unsigned int)idx < a->n) {
-	iarray_elt_t * e = a->elt + idx;
-	idx = -2;
-	if (e->size <= maxsize) {
-	  idx = 0;
-	  maxsize = e->size;
-	}
-	memcpy(elt, a->elt[idx].addr, maxsize);
+    iarray_elt_t * e = a->elt + idx;
+    idx = -2;
+    if (e->size <= maxsize) {
+      idx = 0;
+      maxsize = e->size;
+    }
+    memcpy(elt, a->elt[idx].addr, maxsize);
   } else {
-	idx = -1;
+    idx = -1;
   }
   iarray_unlock(a);
   return idx;
@@ -129,14 +129,14 @@ iarray_elt_t * iarray_dup(iarray_t *a, int idx)
   iarray_elt_t * addr = 0;
   iarray_lock(a);
   if ((unsigned int)idx < a->n) {
-	iarray_elt_t * e = a->elt + idx;
-	const int size = sizeof(*addr) + e->size;
-	addr = malloc(size); /* $$$ DO NOT USE THIS a->alloc(size, a->cookie); */
-	if (addr) {
-	  addr->size = e->size;
-	  addr->addr = addr+1;
-	  memcpy(addr+1, e->addr, e->size);
-	}
+    iarray_elt_t * e = a->elt + idx;
+    const int size = sizeof(*addr) + e->size;
+    addr = malloc(size); /* $$$ DO NOT USE THIS a->alloc(size, a->cookie); */
+    if (addr) {
+      addr->size = e->size;
+      addr->addr = addr+1;
+      memcpy(addr+1, e->addr, e->size);
+    }
   }
   iarray_unlock(a);
   return addr;
@@ -147,21 +147,21 @@ static void resize(iarray_t * a, int newsize)
   void * b;
 
   if (newsize < a->n) {
-	int i;
-	for (i=newsize; i<a->n; ++i) {
-	  if (a->elt[i].addr) {
-		a->free(a->elt[i].addr, a->cookie);
-	  }
-	}
+    int i;
+    for (i=newsize; i<a->n; ++i) {
+      if (a->elt[i].addr) {
+	a->free(a->elt[i].addr, a->cookie);
+      }
+    }
   }
 
   b = realloc(a->elt, newsize * sizeof(*a->elt));
   if (b) {
-	a->max = newsize;
-	a->elt = b;
+    a->max = newsize;
+    a->elt = b;
   } else if (newsize < a->n) {
-	/* $$$ Safety net. Reducing a buffer should always work ! */
-	a->n = newsize;
+    /* $$$ Safety net. Reducing a buffer should always work ! */
+    a->n = newsize;
   }
 }
 
@@ -171,60 +171,60 @@ int iarray_set(iarray_t *a, int idx, void *elt, unsigned int eltsize)
   iarray_elt_t * e;
 
   if (!elt) {
-/* 	printf("iarray_remove(%d)\n",idx); */
-	/* Seting a null elt : remove */
-	return iarray_remove(a, idx);
+    /* 	printf("iarray_remove(%d)\n",idx); */
+    /* Seting a null elt : remove */
+    return iarray_remove(a, idx);
   }
 
-/*   printf("iarray_set(%d) %p %d\n",idx, elt, eltsize); */
-/*   printf("iarray [n=%d max=%d]\n", a->n, a->max); */
+  /*   printf("iarray_set(%d) %p %d\n",idx, elt, eltsize); */
+  /*   printf("iarray [n=%d max=%d]\n", a->n, a->max); */
 
   iarray_lock(a);
   if ((unsigned int)idx > a->n) {
-	goto error;
+    goto error;
   }
   if (idx == a->max) {
-/* 	printf("iarray_resize\n"); */
-	resize(a, a->max ? a->max * 2 : 256);
-/* 	printf("iarray_resized\n"); */
+    /* 	printf("iarray_resize\n"); */
+    resize(a, a->max ? a->max * 2 : 256);
+    /* 	printf("iarray_resized\n"); */
   }
   if ((unsigned int)idx >= a->max) {
-	goto error;
+    goto error;
   }
 
   e = a->elt + idx;
   /* Case to alloc a new entry : */
   if (idx == a->n                    /* Append                            */
-	  || !e->addr                    /* No data in target element         */
-	  || e->size < eltsize           /* Data buffer too small for new elt */
-	  || e->size - eltsize > 1024) { /* Data buffer too big for new elt   */
-	/* Alloc a new entry , if this one is too small or bigger from 1Kb    */
-/* 	printf("realloc\n"); */
-	addr = a->alloc(eltsize, a->cookie);
-	if (!addr) {
-	  goto error;
-	}
-/* 	printf("realloc completed : %p\n", addr); */
+      || !e->addr                    /* No data in target element         */
+      || e->size < eltsize           /* Data buffer too small for new elt */
+      || e->size - eltsize > 1024) { /* Data buffer too big for new elt   */
+    /* Alloc a new entry , if this one is too small or bigger from 1Kb    */
+    /* 	printf("realloc\n"); */
+    addr = a->alloc(eltsize, a->cookie);
+    if (!addr) {
+      goto error;
+    }
+    /* 	printf("realloc completed : %p\n", addr); */
 
-	if (idx == a->n) {
-/* 	  printf("Insert an element at %d\n", idx); */
-	  ++a->n;
-	} else {
-/* 	  printf("free old : %p\n", e->addr); */
-	  a->free(e->addr, a->cookie);
-	}
-	e->addr = addr;
+    if (idx == a->n) {
+      /* 	  printf("Insert an element at %d\n", idx); */
+      ++a->n;
+    } else {
+      /* 	  printf("free old : %p\n", e->addr); */
+      a->free(e->addr, a->cookie);
+    }
+    e->addr = addr;
   }
   e->size = eltsize;
-/*   printf("copy %d bytes from %p ->%p\n", eltsize, e, e->addr); */
+  /*   printf("copy %d bytes from %p ->%p\n", eltsize, e, e->addr); */
   memcpy(e->addr, elt, eltsize);
-/*   printf("copied\n"); */
+  /*   printf("copied\n"); */
   iarray_unlock(a);
   return idx;
 
  error:
   if (addr) {
-	a->free(addr, a->cookie);
+    a->free(addr, a->cookie);
   }
   iarray_unlock(a);
   return -1;
@@ -238,25 +238,25 @@ int iarray_insert(iarray_t *a, int idx, void *elt, unsigned int eltsize)
 
   iarray_lock(a);
   if (idx < 0) {
-	idx = a->n + idx + 1;
+    idx = a->n + idx + 1;
   }
   if ((unsigned int)idx > a->n) {
-	goto error;
+    goto error;
   }
   addr = a->alloc(eltsize, a->cookie);
   if (!addr) {
-	goto error;
+    goto error;
   }
   if (idx == a->max) {
-	resize(a, a->max ? a->max * 2 : 256);
+    resize(a, a->max ? a->max * 2 : 256);
   }
   if ((unsigned int)idx >= a->max) {
-	goto error;
+    goto error;
   }
   memcpy(addr, elt, eltsize);
   
   for (e = a->elt+idx, end = a->elt+a->n-1; end >= e; --end) {
-	end[1] = end[0];
+    end[1] = end[0];
   }
   e->addr = addr;
   e->size = eltsize;
@@ -266,7 +266,7 @@ int iarray_insert(iarray_t *a, int idx, void *elt, unsigned int eltsize)
 
  error:
   if (addr) {
-	a->free(addr, a->cookie);
+    a->free(addr, a->cookie);
   }
   iarray_unlock(a);
   return -1;
@@ -276,22 +276,22 @@ int iarray_remove(iarray_t *a, int idx)
 {
   iarray_lock(a);
   if ((unsigned int)idx < a->n) {
-	iarray_elt_t * e = a->elt + idx, *end;
-	if (e->addr) {
-	  a->free(e->addr, a->cookie);
-	}
-	for (end = a->elt + a->n-1; e < end; ++e) {
-	  e[0] = e[1];
-	}
-	if (end->addr) {
-	  a->free(end->addr, a->cookie);
-	}
-	end->addr = 0;
-	end->size = 0;
-	--a->n;
-	idx = 0;
+    iarray_elt_t * e = a->elt + idx, *end;
+    if (e->addr) {
+      a->free(e->addr, a->cookie);
+    }
+    for (end = a->elt + a->n-1; e < end; ++e) {
+      e[0] = e[1];
+    }
+    if (end->addr) {
+      a->free(end->addr, a->cookie);
+    }
+    end->addr = 0;
+    end->size = 0;
+    --a->n;
+    idx = 0;
   } else {
-	idx = -1;
+    idx = -1;
   }
   iarray_unlock(a);
   return idx;
@@ -303,9 +303,9 @@ int iarray_find(iarray_t *a, const void * what, iarray_cmp_f cmp)
 
   iarray_lock(a);
   for (i=0; i<a->n && cmp(what, a->elt[i].addr) ; ++i)
-	;
+    ;
   if (i >= a->n) {
-	i = -1;
+    i = -1;
   }
   iarray_unlock(a);
   return i;
@@ -327,6 +327,13 @@ void iarray_shuffle(iarray_t *a, int idx, int n)
   iarray_lock(a);
 
   e = a->elt;
+
+  if (idx < 0) {
+    idx = 0;
+  }  else if (idx >= a->n) {
+    return;
+  }
+
   if ((unsigned int)idx >= a->n || n <= 0) {
     return;
   }
@@ -337,7 +344,7 @@ void iarray_shuffle(iarray_t *a, int idx, int n)
   
   for (i=idx; i<n; ++i) {
     int m = (rand()&0x7FFFFFF) % (n-idx) + idx;
-	swap(e+m, e+i);
+    swap(e+m, e+i);
   }
 
   iarray_unlock(a);
@@ -362,7 +369,7 @@ static void sort_part(iarray_t *a, int idx, int n, iarray_cmp_f cmp)
   iarray_elt_t * e;
 
   if (n<=0) {
-	return;
+    return;
   }
 
   if (idx < 0) {
@@ -378,7 +385,7 @@ static void sort_part(iarray_t *a, int idx, int n, iarray_cmp_f cmp)
   
   for (; n>0; --n) {
     int k = find_max(e, n, cmp);
-	swap(e+k, e+n-1);
+    swap(e+k, e+n-1);
   }
 }
 

@@ -1,10 +1,10 @@
 --- @ingroup  dcplaya_lua_app
 --- @file     volume_control.lua
---- @author   benjamin gerard <ben@sashipa.com>
+--- @author   benjamin gerard
 --- @date     2002
 --- @brief    volume  application.
 ---
---- $Id: volume_control.lua,v 1.6 2003-03-09 11:16:37 ben Exp $
+--- $Id: volume_control.lua,v 1.7 2003-03-26 23:02:50 ben Exp $
 ---
 
 volume_control_loaded = nil

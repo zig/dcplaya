@@ -1,11 +1,11 @@
 /**
  * @ingroup   dcplaya_dcar_devel
  * @file      dcar.h
- * @author    benjamin gerard <ben@sashipa.com>
+ * @author    benjamin gerard
  * @date      2002/09/21
  * @brief     dcplaya archive.
  *
- * $Id: dcar.h,v 1.5 2003-03-22 00:35:26 ben Exp $
+ * $Id: dcar.h,v 1.6 2003-03-26 23:02:47 ben Exp $
  *
  */
 
@@ -17,23 +17,23 @@
 
 DCPLAYA_EXTERN_C_START
 
-/** @defgroup  dcplaya_dcar_devel  dcar archiver
+/** @defgroup  dcplaya_dcar_devel  Dcar Archiver
  *  @ingroup   dcplaya_devel
- *  @brief     dcar archiver
+ *  @brief     tar like file archiver
  *
  *    dcar is a tar-like file archiver. Like tar the archive could be
- *    compressed with gzip. The whole archive file is compressed.
+ *    compressed with gzip. The whole archive file is compressed at once.
  *
  *    dcar is used for dcplaya vmu files. 
  *
  *    @b limitations: filename are limited to 32 characters.
  *
  *  @warning   Architecture dependent code.
- *  @author    benjamin gerard <ben@sashipa.com>
+ *  @author    benjamin gerard
+ *  @{
  */
 
 /** dcplaya filter function return codes.
- *  @ingroup dcplaya_dcar_devel
  */
 typedef enum {
   DCAR_FILTER_ACCEPT = 0, /**< Entry is accepted.                       */
@@ -43,24 +43,22 @@ typedef enum {
 } dcar_filter_e;
 
 /** dcplaya archive filter function.
- *  @ingroup dcplaya_dcar_devel
  */
 typedef dcar_filter_e (*dcar_filter_f)(const dirent_t *de, int level);
 
 /** dcplaya archive tree entry.
- *  @ingroup dcplaya_dcar_devel
  */
 typedef struct {
   char name[32];    /**< entry name, not neccessary 0 terminated. */
+  /** Entry (file) attributs. */
   struct {
-    unsigned int size : 30;
-    unsigned int dir  : 1;
-    unsigned int end  : 1;
+    unsigned int size : 30; /**< size in byte.                             */
+    unsigned int dir  : 1;  /**< set if file is a directory.               */
+    unsigned int end  : 1;  /**< set if file is the last entry of its dir. */
   } attr;
 } dcar_tree_entry_t;
 
 /** dcplaya archive tree.
- *  @ingroup dcplaya_dcar_devel
  */
 typedef struct {
   union {
@@ -72,7 +70,6 @@ typedef struct {
 } dcar_tree_t;
 
 /** dcplaya archive option.
- *  @ingroup dcplaya_dcar_devel
  */
 typedef struct {
   
@@ -104,11 +101,6 @@ typedef struct {
   const char * errstr;      /**< Error string. */
   
 } dcar_option_t;
-
-/** @name dcar functions.
- *  @ingroup dcplaya_dcar_devel
- *  @{
- */
 
 /** Default dcplaya filter function.
  *
@@ -178,7 +170,7 @@ int dcar_archive(const char *name, const char *path, dcar_option_t * opt);
  **/
 int dcar_extract(const char *name, const char *path, dcar_option_t *opt);
 
-/*@}*/
+/**@}*/
 
 DCPLAYA_EXTERN_C_END
 

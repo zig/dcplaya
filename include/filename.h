@@ -1,11 +1,11 @@
 /**
  * @ingroup dcplaya_fn_devel
  * @file    filename.h
- * @author  benjamin gerard <ben@sashipa.com>
+ * @author  benjamin gerard
  * @date    2002/09/30
  * @brief   filename utilities.
  *
- * $Id: filename.h,v 1.5 2003-03-22 00:35:26 ben Exp $
+ * $Id: filename.h,v 1.6 2003-03-26 23:02:47 ben Exp $
  */
 
 #ifndef _FILENAME_H_
@@ -16,19 +16,19 @@
 DCPLAYA_EXTERN_C_START
 
 /** @defgroup dcplaya_fn_devel Filename 
- *  @ingroup dcplaya_devel
- *  @brief   filename API.
+ *  @ingroup  dcplaya_devel
+ *  @brief    working with pathes and filenames 
  *
  *    The filename API handles filenames and pathes. It provides all functions
  *    needed to create clean path, to retrieve information on a filename such
  *    as its leaf (basename), its extension ...
  *
  *  @see     dcplaya_fu_devel
- *  @author  benjamin gerard <ben@sashipa.com>
+ *  @author  benjamin gerard
+ *  @{
  */
 
 /** Get extension from file path.
- *  @ingroup dcplaya_fn_devel
  *
  * @param  pathname  File path name
  *
@@ -38,7 +38,6 @@ DCPLAYA_EXTERN_C_START
 const char *fn_ext(const char *pathname);
 
 /** Get secondary extension from file path.
- *  @ingroup dcplaya_fn_devel
  *
  * @param  pathname  File path name
  * @param  ext       Primary extension or 0 for any. e.g ".gz"
@@ -50,7 +49,6 @@ const char *fn_ext(const char *pathname);
 const char *fn_secondary_ext(const char *pathname, const char *ext);
 
 /** Get basename (or leafname) of a path.
- *  @ingroup dcplaya_fn_devel
  *
  *    The fn_basename() function returns a pointer to the next character after
  *    the last '/' or pathname if there is no '/' character.
@@ -63,13 +61,11 @@ const char *fn_secondary_ext(const char *pathname, const char *ext);
 const char *fn_basename(const char *pathname);
 
 /** Alias for the fn_basename() function.
- *  @ingroup dcplaya_fn_devel
  *  @see fn_basename()
  */
 const char * fn_leafname(const char * pathname);
 
 /** Test if a path is absolute.
- *  @ingroup dcplaya_fn_devel
  *
  *    The fn_is_absolute() function tests if the first charactere of pathname
  *    is a '/'.
@@ -84,7 +80,6 @@ const char * fn_leafname(const char * pathname);
 int fn_is_absolute(const char *pathname);
 
 /** Test if a path is relative.
- *  @ingroup dcplaya_fn_devel
  *
  *    The fn_is_relative() function tests if the first charactere of pathname
  *    is a not '/'.
@@ -99,7 +94,6 @@ int fn_is_absolute(const char *pathname);
 int fn_is_relative(const char * pathname);
 
 /** Copy a pathname to a buffer and remove trailing '/'.
- *  @ingroup dcplaya_fn_devel
  *
  *    The fn_get_path() function copies a pathname to a buffer, removes
  *    trailing '/', translates '\' to '/' an returns a pointer to the 
@@ -117,7 +111,6 @@ int fn_is_relative(const char * pathname);
 char * fn_get_path(char *path, const char *pathname, int max, int * isslash);
 
 /** Append a leafname to a path.
- *  @ingroup dcplaya_fn_devel
  *
  *    The fn_add_path() function appends a relative path (leafname) to a path.
  *    The path must not be '/' terminated like path created by fn_get_path().
@@ -136,20 +129,21 @@ char * fn_get_path(char *path, const char *pathname, int max, int * isslash);
 char * fn_add_path(char *path, char *pathend, const char *leafname, int max);
 
 /** Get a 'cleaned' path.
- *  @ingroup dcplaya_fn_devel
  *
  *     The fn_canonical() function tries to make clean path from given path.
  *     It removes all '/.' '/..' and '//' sequances are transformed to '/'.
  *
  * @param  dst   destination buffer.
  * @param  name  source buffer (filename to clean).
- @ @param  max   size of destination buffer.
+ * @param  max   size of destination buffer.
  * 
  * @return dst
  * @retval 0 Error (probably a buffer overflow).
  *
  */
 char * fn_canonical(char * dst, const char * name, int max);
+
+/**@}*/
 
 DCPLAYA_EXTERN_C_END
 

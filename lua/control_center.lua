@@ -1,10 +1,10 @@
 --- @ingroup  dcplaya_lua_cc_app
 --- @file     control_center.lua
---- @author   benjamin gerard <ben@sashipa.com>
+--- @author   benjamin gerard
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.25 2003-03-25 09:26:46 ben Exp $
+--- $Id: control_center.lua,v 1.26 2003-03-26 23:02:48 ben Exp $
 ---
 
 --- @defgroup  dcplaya_lua_cc_app  Control Center
@@ -15,7 +15,7 @@
 ---   is used to retrieve dcplaya component information, to configure plugins
 ---   and many things.
 ---
---- @author   benjamin gerard <ben@sashipa.com>
+--- @author   benjamin gerard
 ---
 
 --

@@ -1,9 +1,9 @@
 -- dcplaya - lua config object
 --
--- author : benjamin gerard <ben@sashipa.com>
+-- author : benjamin gerard
 -- date   : 2002/10/14
 --
--- $Id: config.lua,v 1.2 2002-10-15 06:02:47 benjihan Exp $
+-- $Id: config.lua,v 1.3 2003-03-26 23:02:48 ben Exp $
 --
 -- -------------------------------------------------------------------
 -- "configs" object description

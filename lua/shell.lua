@@ -4,7 +4,7 @@
 --- @author   benjamin gerard
 --- @brief    LUA enhanced shell
 ---
---- $Id: shell.lua,v 1.17 2003-03-25 09:26:46 ben Exp $
+--- $Id: shell.lua,v 1.18 2003-03-26 23:02:49 ben Exp $
 --
 
 --- @defgroup  dcplaya_lua_enhanced_shell  LUA enhanced shell
@@ -249,7 +249,7 @@ shell_maxrecall = 20
 
 --- Enhanced shell toggle key.
 --- @ingroup dcplaya_lua_enhanced_shell
---- @warning Do not redefime it, lotsa hard code in other modules !!!
+--- @warning Do not redefine it : too many hard codes depend on it.
 --: number shell_toggleconsolekey;
 shell_toggleconsolekey = 96  -- configurable ... ( currently = ` )
 

@@ -1,48 +1,46 @@
-/****************************************************************************
-*
-* MU : My Utilities
-*
-* (c) Polygon Studio
-*
-* by Benjamin Gerard
-*
-*----------------------------------------------------------------------------
-* mu_termdefs.h
-*----------------------------------------------------------------------------
-*
-* VT52 Terminal : Caractere code definition
-*
-*****************************************************************************/
+/**
+ * @ingroup dcplaya_muterm_devel
+ * @file    mu_termdefs.h
+ * @author  benjamin gerard
+ * @brief   VT52 terminal code definition
+ */
 
 #ifndef __MU_TERMDEFS_H__
 #define __MU_TERMDEFS_H__
 
-/*
-#ifndef __MU__PLATFORM_SPECIFIC__H__
-# error "MU_platform.h MUST be included"
-#endif
-*/
+/** @addtogroup dcplaya_muterm_devel
+ *  @{
+ */
 
-#define MUTERM_ESC      27
-#define MUTERM_LF       10
-#define MUTERM_LF2      11
-#define MUTERM_LF3      12
-#define MUTERM_CR       13
-#define MUTERM_TAB      9
-#define MUTERM_BS       8
+/** @name terminal key code.
+ *  @{
+ */
+#define MUTERM_ESC      27  /**< escape          */
+#define MUTERM_LF       10  /**< line feed       */
+#define MUTERM_LF2      11  /**< line feed 2 ??? */
+#define MUTERM_LF3      12  /**< line feed 3 ??? */
+#define MUTERM_CR       13  /**< carriage return */
+#define MUTERM_TAB      9   /**< Tab             */
+#define MUTERM_BS       8   /**< Backspace       */
+/**@}*/
 
-// This is Gemdos compatible VT52 ESC code
+/** @name VT52 escape sequence.
+ * 
+ *  This is VT52 escape sequence from the Atari ST gemdos ! I can not tell
+ *  if it is real VT52 standard.
+ *  @{
+ */
 
-// Move cursor
+/** Cursor move codes. */
 #define MT_UP       "\033A"
 #define MT_DW       "\033B"
 #define MT_RT       "\033C"
 #define MT_LT       "\033D"
-
 #define MT_HOME     "\033H"
 #define MT_UPS      "\033I"
+#define MT_POS(X,Y) "\033Y"Y##X
 
-// clear
+/** Clear codes. */
 #define MT_CLS      "\033E"
 #define MT_CLRHOME  "\033d"
 #define MT_CLREND   "\033J"
@@ -50,13 +48,11 @@
 #define MT_CLRLINE  "\033l"
 #define MT_CLRBOL   "\033o"
 
-// Del & insert line
+/** Deletion / Insertoin codes. */
 #define MT_INSLINE  "\033L"
 #define MT_DELLINE  "\033M"
 
-#define MT_POS(X,Y) "\033Y"Y##X
-
-// Set Color
+/** Color codes. */
 #define MT_FGCOL(C)   "\033b"C
 #define MT_BKCOL(C)   "\033c"C
 #define MT_INVVIDEO   "\033p"
@@ -79,16 +75,20 @@
 #define MT_MBLUE      "\016"
 #define MT_HBLUE      "\017"
 
-// Show & hide Cursor
+/** Show/Hide cursor codes. */
 #define MT_CURSON   "\033e"
 #define MT_CURSOFF  "\033f"
 
-// Save & restore cursor pos
+/** Save/Restore cursor position codes. */
 #define MT_CURSAVE   "\033j"
 #define MT_CURREST   "\033k"
 
-// activ / desactiv end of line wrap mode
+/** Line wrapping codes. */
 #define MT_WRAPON     "\033v"
 #define MT_WRAPOFF    "\033w"
+
+/**@}*/
+
+/**@}*/
 
 #endif

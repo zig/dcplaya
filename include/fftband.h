@@ -1,11 +1,11 @@
 /**
- * @ingroup dcplaya_fftband_devel
+ * @ingroup dcplaya_fftband
  * @file    fftband.h
- * @author  benjamin gerard <ben@sashipa.com>
+ * @author  benjamin gerard
  * @date    2002/12/29
  * @brief   fft frequency band.
  *
- * $Id: fftband.h,v 1.5 2003-03-22 00:35:26 ben Exp $ 
+ * $Id: fftband.h,v 1.6 2003-03-26 23:02:47 ben Exp $ 
  */
  
 #ifndef _FFTBAND_H_
@@ -14,14 +14,14 @@
 #include <arch/types.h>
 
 /**
- * @defgroup dcplaya_fftband_devel  fft frequency band
- * @ingroup  dcplaya_devel
- * @brief   fft frequency band
- *
+ * @defgroup dcplaya_fftband  fft frequency band
+ * @ingroup  dcplaya_fft
+ * @brief    fft frequency band
+ * @author   benjamin gerard
+ * @{
  */
 
 /** Frequency band limits.
- *  @ingroup dcplaya_fftband_devel
  */
 typedef struct {
   unsigned int fmin; /**< Band lower frequency (in Hz). */
@@ -29,7 +29,6 @@ typedef struct {
 } fftband_limit_t;
 
 /** Frequency band info.
- *  @ingroup dcplaya_fftband_devel
  */
 typedef struct {
   unsigned int fmin;    /**< Band lower frequency (in Hz). */
@@ -46,7 +45,6 @@ typedef struct {
 } fftband_t;
 
 /** Set of frequency band.
- *  @ingroup dcplaya_fftband_devel
  */
 typedef struct {
   int n;                 /**< Number of band. */
@@ -62,7 +60,6 @@ typedef struct {
 } fftbands_t;
 
 /** Create a frequency band analyser.
- *  @ingroup dcplaya_fftband_devel
  *
  *   The fftband_create() fucntion creates a fftbands_t structure.
  *   If no limits is given the function will create a logarithmic scale to
@@ -82,7 +79,6 @@ fftbands_t * fftband_create(int n, int fft_size, int sampling,
 			    const fftband_limit_t * limits);
 
 /** Fill a frequency band analyser.
- *  @ingroup dcplaya_fftband_devel
  *
  *  @param  bands     fft bands to fill
  *  @param  fft       fft buffer (must be compatible with parameters
@@ -92,6 +88,7 @@ fftbands_t * fftband_create(int n, int fft_size, int sampling,
  */
 void fftband_update(fftbands_t * bands, const uint16 * fft);
 
+/**@*/
 
 #endif /* #define _FFTBAND_H_ */
 

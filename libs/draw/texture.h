@@ -6,7 +6,7 @@
  * @date     2002/10/20
  * @brief    texture manager
  *
- * $Id: texture.h,v 1.9 2003-03-23 23:54:54 ben Exp $
+ * $Id: texture.h,v 1.10 2003-03-26 23:02:48 ben Exp $
  */
 
 #ifndef _TEXTURE_H_
@@ -43,15 +43,12 @@ typedef struct {
   int twiddled;  /**< Twiddled state                 */
   int twiddlable;/**< Should we twiddle it ?         */
 
-#ifdef DEBUG
-  int non_twiddled_debugged; /**< DEBUG only         */
-#endif
-
   eh_block_t ehb;/**< External heap block            */
 
   void * addr;   /**< Mapped VRAM address            */
   uint32 ta_tex; /**< Texture address for TA         */
 } texture_t;
+
 
 struct _texture_create_s;
 

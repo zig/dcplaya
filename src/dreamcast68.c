@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.58 2003-03-25 09:29:23 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.59 2003-03-26 23:02:51 ben Exp $
  */
 
 //#define RELEASE
@@ -28,7 +28,7 @@
 #include "math_float.h"
 #include "filetype.h"
 #include "sndstream.h"
-#include "songmenu.h"
+/* #include "songmenu.h" */
 //#include "gp.h"
 //#include "draw_clipping.h"
 #include "draw/draw.h"
@@ -45,7 +45,7 @@
 #include "border.h"
 
 #include "playa.h"
-#include "vupeek.h"
+/* #include "vupeek.h" */
 #include "driver_list.h"
 #include "inp_driver.h"
 #include "img_driver.h"
@@ -596,11 +596,7 @@ static int no_mt_init(void)
 
 static void update_lcd(void)
 {
-  int *buf, nb, cnt, frq;
-
-  playa_get_buffer(&buf, &nb, &cnt, &frq);
-  vupeek_adddata(buf, nb, cnt, frq);
-  vmu_lcd_update(buf, nb, cnt);
+  vmu_lcd_update();
 }
 
 static void update_fft(void)

@@ -5,7 +5,7 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.20 2003-03-19 00:32:00 zigziggy Exp $
+ * $Id: texture.c,v 1.21 2003-03-26 23:02:48 ben Exp $
  */
 
 #include <stdlib.h>
@@ -22,6 +22,9 @@
 #include "filename.h"
 #include "sysdebug.h"
 
+
+/** $$$ Add this to debug the dependency problem */
+static int texture_struct_size;
 
 /** Video memory heap */
 static eh_heap_t * vid_heap;
@@ -113,6 +116,8 @@ static size_t vid_sbrk(eh_heap_t * heap, size_t size)
 int texture_init(void)
 {
   SDDEBUG("[%s]\n", __FUNCTION__);
+
+  texture_struct_size = sizeof(texture_t);
 
   /* create the video memory heap */
   vid_heap = eh_create_heap();

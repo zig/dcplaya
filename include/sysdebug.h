@@ -1,18 +1,11 @@
 /**
  * @ingroup    dcplaya_debug_devel
  * @file       sysdebug.h
- * @author     benjamin gerard <ben@sashipa.com>
+ * @author     benjamin gerard
  * @date       2002/09/04
  * @brief      Debug fonctions.
  *
- * @version    $Id: sysdebug.h,v 1.7 2003-03-22 00:35:27 ben Exp $
- */
-
-/** @defgroup dcplaya_debug_devel Debug facilities
- *  @ingroup  dcplaya_devel
- *  @brief    Debug facilities
- *
- *  @author   benjamin gerard <ben@sashipa.com>
+ * $Id: sysdebug.h,v 1.8 2003-03-26 23:02:48 ben Exp $
  */
 
 #ifndef _SYSDEBUG_H_
@@ -33,8 +26,15 @@ DCPLAYA_EXTERN_C_START
 
 # include <stdarg.h>
 
+/** @defgroup dcplaya_debug_devel Debug facilities
+ *  @ingroup  dcplaya_devel
+ *  @brief    debug facilities
+ *
+ *  @author   benjamin gerard
+ *  @{
+ */
+
 /** debug level enum.
- *  @ingroup  dcplaya_debug_devel
  */
 typedef enum {
 
@@ -66,7 +66,6 @@ typedef enum {
 } sysdgb_level_e;
 
 /** Debug level definition.
- *  @ingroup  dcplaya_debug_devel
  */
 typedef struct {
   int bit;               /**< Level mask                         */
@@ -76,15 +75,9 @@ typedef struct {
 } sysdbg_debug_level_t;
 
 /** Debug function type definition.
- *  @ingroup  dcplaya_debug_devel
  */
 typedef void (*sysdbg_f)(void * cookie,
 			const char *fmt, va_list list);
-
-/** @name Debug functions
- *  @ingroup  dcplaya_debug_devel
- * @{
- */
 
 /** Print a debug message (variable argument version). */
 void sysdbg_vprintf(const char * file, int line, int level,
@@ -130,10 +123,7 @@ void sysdbg_indent(int indent, int * prev);
 void sysdbg_register_level(sysdgb_level_e level,
 			   const char *name, const char *twocc);
 
-/**@}*/
-
 /** @name Predefined macros for logging messages.
- *  @ingroup  dcplaya_debug_devel
  *
  *  This macros are only actif if DBG_LOG is defined. To log debug message in
  *  non-debug compilation, use directly the sysdbg_printf() function.
@@ -161,6 +151,7 @@ void sysdbg_register_level(sysdgb_level_e level,
 # define SDENTER           if (1) SDGMSG(sysdbg_trace,">> {\n") else
 # define SDLEAVE(code)     if (1) SDGMSG(sysdbg_trace,"} << [%d]\n",\
  (int)(code)) else
+
 /**@}*/
 
 DCPLAYA_EXTERN_C_END

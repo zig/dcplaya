@@ -8,7 +8,7 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.27 2003-03-10 22:55:34 ben Exp $
+ * $Id: fftvlr.c,v 1.28 2003-03-26 23:02:51 ben Exp $
  */
 
 #include <stdlib.h>
@@ -88,7 +88,27 @@ static vtx_t ambient_color = {
   0.8
 };
 
+#elif 1
+
+/* NEW STYLE FOR RELEASE*/
+
+
+static vtx_t ambient_color = {
+  0.9, 1.4,  -1.7, 1.2
+/*   1.1, 0.9, 0, 1.2 */
+/*   1, 0.2, -0.1, 1.5 */
+};
+
+static vtx_t light_color = {
+  -1.7, -0.25, 2.5, -0.90
+/*   -0.25, -1.7, 0, -1.0 */
+/*   -1.5, 0.6, 0.9, -1.2 */
+};
+
+
+
 #else
+/* OLD STYLE*/
 
 static vtx_t light_color = {
   0.9,
@@ -400,7 +420,7 @@ static int fftvlr_init(any_driver_t *d)
   if (fftvlr_texid < 0) {
 	fftvlr_texid = texture_dup(texture_get("bordertile"), tname);
   }
-  border_get_def(borderdef, 2);
+  border_get_def(borderdef, 1);
   border_customize(fftvlr_texid, borderdef);
 
   db_scaling = 0;

@@ -1,11 +1,11 @@
 /**
- * @ingroup  exe_plugin
+ * @ingroup  dcplaya_exe_plugin_devel
  * @file     display_clipping.c
- * @author   Benjamin Gerard <ben@sashipa.com>
+ * @author   benjamin gerard
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display_clipping.c,v 1.4 2002-11-28 20:20:24 ben Exp $
+ * $Id: display_clipping.c,v 1.5 2003-03-26 23:02:50 ben Exp $
  */
 
 #include "display_driver.h"

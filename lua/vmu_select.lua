@@ -1,6 +1,6 @@
 --- @ingroup dcplaya_lua_gui
 --- @file    vmu_select.lua
---- @author  benjamin gerard <ben@sashipa.com>
+--- @author  benjamin gerard
 --- @date    2002/12/11
 --- @brief   VMU selector gui.
 --
@@ -18,11 +18,14 @@ function vmu_select_create_sprite()
 
    local texid = tex_exist("dcpsprites") or tex_new("/rd/dcpsprites.tga")
    local x1,y1,w,h = 109,65,104,63
+   print ("vmu_select_create_sprite: CREATE SPRITE")
    return sprite("vs_vmu",
-		 w/2, h/2,
+		 0, h/2,
 		 w, h,
 		 x1/512, y1/128, (x1+w)/512, (y1+h)/128,
 		 texid,1)
+
+
 end
 
 --- Create a vmu select application.

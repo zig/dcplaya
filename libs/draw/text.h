@@ -1,10 +1,10 @@
 /**
  * @ingroup  dcplaya_draw_text
  * @file     text.h
- * @author   ben(jamin) gerard <ben@sashipa.com>
+ * @author   benjamin gerard
  * @brief    drawing text interface
  *
- * $Id: text.h,v 1.6 2003-03-17 18:50:11 ben Exp $
+ * $Id: text.h,v 1.7 2003-03-26 23:02:48 ben Exp $
  */
 
 #ifndef _TEXT_H_
@@ -14,9 +14,11 @@
 #include "draw/texture.h"
 #include "draw/color.h"
 
-/** @defgroup  dcplaya_draw_text   dcplaya text drawing API.
+/** @defgroup  dcplaya_draw_text  Draw text
  *  @ingroup   dcplaya_draw
- *  
+ *  @brief     draw text
+ *  @author    benjamin gerard
+ *  @{
  */
 
 /** Invalid font identifier. */
@@ -91,7 +93,7 @@ void text_set_color(const float a, const float r,
 
 /**@}*/
 
-/** @name text drawing functions.
+/** @name Text drawing functions.
  *  @ingroup dcplaya_draw_text
  *  @{
  */
@@ -146,6 +148,8 @@ void text_size_str_prop(const char * s, float * w, float * h,
 
 /** Measure charactere width and height. */
 void text_size_char(char c, float * w, float * h);
+
+/** @} */
 
 /** @} */
 

@@ -3,7 +3,7 @@
 --- @author  vincent penne
 --- @author  benjamin gerard
 --- @brief   tagged text aka zml
---- $Id: taggedtext.lua,v 1.31 2003-03-25 09:26:47 ben Exp $
+--- $Id: taggedtext.lua,v 1.32 2003-03-26 23:02:50 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_tt Tagged Text
@@ -27,9 +27,9 @@
 ---   that `"' quotes are mandatory. There is no limit to the number of
 ---   parameter for a tag (excepted hardware limits).
 ---   The syntax should be something like :
----@verbatim
---- <TAG[ PAR1[="VAL1"][ PAR1[="VAL1"]]...]>
----@endverbatim
+--- @verbatim
+---  <TAG[ PAR1[="VAL1"][ PAR1[="VAL1"]]...]>
+--- @endverbatim
 ---
 --- @par Conventions
 ---
@@ -38,9 +38,9 @@
 ---   The '/' slash charactere is generally used as the first character of a
 ---   tag which meaning is to close a block beginning by the same tag without
 ---   the '/'.
----@verbatim
----<BLOCK width="32" type="sample"> This is a sample </BLOCK>
----@endverbatim
+--- @verbatim
+---  <BLOCK width="32" type="sample"> This is a sample </BLOCK>
+--- @endverbatim
 ---
 --- @par zml for Tagged Text
 ---

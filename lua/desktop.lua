@@ -1,9 +1,9 @@
 --- @todo Document me !!
 --- @file   desktop.lua
---- @author Vincent Penne <ziggy@sashipa.com>
+--- @author Vincent Penne
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.34 2003-03-25 09:26:46 ben Exp $
+--- $Id: desktop.lua,v 1.35 2003-03-26 23:02:49 ben Exp $
 ---
 
 if not dolib("evt") then return end

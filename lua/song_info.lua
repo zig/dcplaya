@@ -1,10 +1,10 @@
 --- @ingroup  dcplaya_lua_si_app
 --- @file     song_info.lua
---- @author   benjamin gerard <ben@sashipa.com>
+--- @author   benjamin gerard
 --- @date     2002/11/29
 --- @brief    Song info application.
 ---
---- $Id: song_info.lua,v 1.25 2003-03-25 09:26:47 ben Exp $
+--- $Id: song_info.lua,v 1.26 2003-03-26 23:02:50 ben Exp $
 
 song_info_loaded = nil
 
@@ -25,18 +25,14 @@ if not dolib("style") then return end
 ---   Normal behaviour is to have only one instance of a song-info application.
 ---   It is stored in the global variable song_info.
 ---
---- @author   benjamin gerard <ben@sashipa.com>
+--- @author   benjamin gerard
+---
+--- @{
 ---
 
 --- Global song_info application
 --- @ingroup dcplaya_lua_si_app
 --: application song_info;
-
---
---- @name song-info functions.
---- @ingroup dcplaya_lua_si_app
---- @{
---
 
 --- Creates song-info sprite icons.
 --- @internal
@@ -93,6 +89,7 @@ end
 ---
 --- @param  owner  Owner application (nil for desktop).
 --- @param  name   Application name (nil for "song info").
+--- @param  style  drwing style.
 ---
 --- @return  song-info application
 --- @retval  nil  error
@@ -645,7 +642,7 @@ end
 ---   (song_info) is killed and the global variable song_info is
 ---   set to nil.
 ---
---- @param  sb  application to kill (default to song_info)
+--- @param  si  application to kill (default to song_info)
 --
 function song_info_kill(si)
    si = si or song_info
@@ -657,7 +654,7 @@ end
 
 --
 --- @}
-----
+---
 
 -- Load texture for application icon
 local tex = tex_exist("song-info")

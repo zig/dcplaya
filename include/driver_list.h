@@ -1,11 +1,11 @@
 /**
  * @ingroup dcplaya_driverlist_devel
  * @file    driver_list.h
- * @author  benjamin gerard <ben@sashipa.com>
+ * @author  benjamin gerard
  * @date    2002
  * @brief   Registered driver list.
  *
- * $Id: driver_list.h,v 1.14 2003-03-22 00:35:26 ben Exp $
+ * $Id: driver_list.h,v 1.15 2003-03-26 23:02:47 ben Exp $
  */
 
 #ifndef _DRIVER_LIST_H_
@@ -19,16 +19,16 @@ DCPLAYA_EXTERN_C_START
 
 /** @defgroup  dcplaya_driverlist_devel  Driver and driver type
  *  @ingroup   dcplaya_devel
- *  @brief     Driver and driver type
+ *  @brief     drivers and driver type.
  *
- *  @author    benjamin gerard <ben@sashipa.com>
+ *  @author    benjamin gerard
+ *  @{
  */
 
 #include "any_driver.h"
 #include "inp_driver.h"
 
 /** Any driver list.
- * @ingroup dcplaya_driverlist_devel
  */
 typedef struct
 {
@@ -39,7 +39,6 @@ typedef struct
 } driver_list_t;
 
 /** Registered driver type.
- *  @ingroup dcplaya_driverlist_devel
  */
 typedef struct _driver_list_reg_s {
   struct _driver_list_reg_s * next; /**< Next registered driver type. */
@@ -54,9 +53,8 @@ typedef struct _driver_list_reg_s {
 } driver_list_reg_t;
 
 /** @name Global driver lists.
- *  @ingroup dcplaya_driverlist_devel
- *  @{
  *  @todo Remove this. Use clean driver_lists api instead.
+ *  @{
  */
 
 /** List of input driver. */
@@ -73,11 +71,10 @@ extern driver_list_t img_drivers;
 /* Table of all driver lists. */
 /*extern driver_list_reg_t * driver_lists;*/
 
-/*@}*/
+/**@}*/
 
 
 /** @name Driver lists management.
- *  @ingroup dcplaya_driverlist_devel
  *
  *  Driver lists referes to the list all driver type available.
  *  User can add new driver type (e.g a video driver type should be welcome.)
@@ -109,18 +106,31 @@ void driver_lists_unlock(driver_list_reg_t * reg);
 /** Shutdown a driver list. */
 void driver_list_shutdown(driver_list_t * dl);
 
-/*@}*/
+/**@}*/
 
 
 /** @name Driver list management.
- *  @ingroup dcplaya_driverlist_devel
  *  @{
  */
 
-/** Lock a driver list. */
+/** Lock a driver list.
+ *
+ *    Lock a driver list to modify it in multi-thread context.
+ *
+ *  @param  dl      driver list
+ *  @warning Use with care. Don't forget to unlock the list.
+ *  @see driver_list_unlock()
+ */
 void driver_list_lock(driver_list_t *dl);
 
-/** Unlock a driver list. */
+/** Unlock a driver list.
+ *
+ *    Unlock a previously locked list.
+ *
+ *  @param  dl      driver list
+ *  @see driver_list_unlock()
+ */
+
 void driver_list_unlock(driver_list_t *dl);
 
 /** Add a driver into a specified driver list.
@@ -130,6 +140,9 @@ void driver_list_unlock(driver_list_t *dl);
  *    driver_list_register() function failed. This function does some specific
  *    operations depending on the driver type. Currently these specific
  *    operations consist on filetype creation for input and image drivers.
+ *
+ *  @param  dl      driver list
+ *  @param  driver  driver to add in that list
  *
  *  @return error-code
  *  @retval 0, on success
@@ -143,6 +156,8 @@ int driver_list_register(driver_list_t * dl, any_driver_t * driver);
  * driver_list_register(driver_list_which(), driver);
  * @endcode
  *
+ *  @param  driver  driver to add
+ *
  * @see driver_list_register()
  * @see driver_list_which()
  * @see driver_unregister()
@@ -153,10 +168,13 @@ int driver_register(any_driver_t * driver);
  *
  *    The driver_list_unregister() function removes a driver to a given driver
  *    list.
- *    If the dirver in not found an the list the function failed.
+ *    If the dirver is not found in the list the function failed.
  *    This function does some specific operations depending on the driver type.
  *    Currently these specific operations consist on filetype removal for input
  *    and image drivers.
+ *
+ *  @param  dl      driver list
+ *  @param  driver  driver to unregister (remove from that list)
  *
  *  @return error-code
  *  @retval 0, on success
@@ -170,6 +188,8 @@ int driver_list_unregister(driver_list_t * dl, any_driver_t * driver);
  * driver_list_unregister(driver_list_which(), driver);
  * @endcode
  *
+ *  @param  driver  driver to unregister
+ *
  * @see driver_list_unregister()
  * @see driver_list_which()
  * @see driver_register()
@@ -181,30 +201,37 @@ int driver_unregister(any_driver_t * driver);
  *   The driver_list_which() function returns the driver list corresponding to
  *   the driver type.
  *
- * @return driver-list
- * @retval 0, on error
+ *  @param  driver  driver to get its driver list.
+ *
+ *  @return driver-list
+ *  @retval 0, on error
  */
 driver_list_t * driver_list_which(any_driver_t *driver);
 
 /** Search a driver in a driver list by its name.
  *
- * @return driver
- * @retval 0, on error
+ *  @param  dl    driver list
+ *  @param  name  driver name to search for
+ *
+ *  @return driver
+ *  @retval 0, on error
  */
 any_driver_t * driver_list_search(driver_list_t * dl, const char *name);
 
 /** Search a driver by index.
  *
- * @return driver
- * @retval 0, on error
+ *  @param  dl   driver list
+ *  @param  idx  index (position) in the list (0 based)
+ *
+ *  @return driver
+ *  @retval 0, on error (out of range).
  */
 any_driver_t * driver_list_index(driver_list_t *dl, int idx);
 
-/* @} */
+/**@}*/
 
 
 /** @name Driver reference (instance) management.
- *  @ingroup dcplaya_driverlist_devel
  *  @{
  */
 
@@ -267,22 +294,30 @@ any_driver_t * driver_lock(any_driver_t * drv);
  */
 void driver_unlock(any_driver_t * drv);
 
-
-/*@}*/
+/**@}*/
 
 
 /** @name Input driver specific.
- *  @ingroup dcplaya_driverlist_devel
  *  @{
  */
 
-/** Search an input driver that match a file extension. */
+/** Search an input driver that match a file extension.
+ *  @param  ext  filename or extension to search.
+ *  @return input driver
+ *  @retval 0 no driver found that match this extension.
+ */
 inp_driver_t * inp_driver_list_search_by_extension(const char *ext);
 
-/** Search an input driver that a id (filetype). */
+/** Search an input driver that a id (filetype).
+ *  @param  id  id to search for (id is a filetype).
+ *  @return input driver
+ *  @retval 0 no driver found that match this id.
+ */
 inp_driver_t * inp_driver_list_search_by_id(int id);
 
-/*@}*/
+/**@}*/
+
+/**@}*/
 
 DCPLAYA_EXTERN_C_END
 

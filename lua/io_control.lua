@@ -1,11 +1,11 @@
 --- @ingroup  dcplaya_lua_ioctrl_app
 --- @ingroup  dcplaya_lua_ioctrl_event
 --- @file     io_control.lua
---- @author   benjamin gerard <ben@sashipa.com>
+--- @author   benjamin gerard
 --- @date     2003/03/08
 --- @brief    IO control application.
 ---
---- $Id: io_control.lua,v 1.6 2003-03-25 09:26:46 ben Exp $
+--- $Id: io_control.lua,v 1.7 2003-03-26 23:02:49 ben Exp $
 ---
 
 if not dolib ("evt") then return end
@@ -20,41 +20,44 @@ if not dolib ("evt") then return end
 ---   function when its detects an IO status change.
 ---
 --- @see dcplaya_lua_ioctrl_app
---- @author   benjamin gerard <ben@sashipa.com>
---
+--- @author   benjamin gerard
+---
+--- @{
+---
 
 
 --
 --- CDROM change event structure.
---- @ingroup dcplaya_lua_ioctrl_event
 --- @see cdrom_status()
---- struct cdrom_change_event {
----  event_key key;      /**< Always ioctrl_cdrom_event.            */
----  number cdrom_id;    /**< Disk identifier (0 for no disk).      */
----  string cdrom_state; /**< Represents the CDROM status.          */
----  string cdrom_disk;  /**< Ddescribes the type of disk inserted. */
---- };
+--: struct cdrom_change_event {
+--:  event_key key;      /**< Always ioctrl_cdrom_event.            */
+--:  number cdrom_id;    /**< Disk identifier (0 for no disk).      */
+--:  string cdrom_state; /**< Represents the CDROM status.          */
+--:  string cdrom_disk;  /**< Ddescribes the type of disk inserted. */
+--: };
 --
 
 --
 --- RAM change event structure.
---- @ingroup dcplaya_lua_ioctrl_event
 --- @see ramdisk_is_modified()
 --- @see ramdisk_notify_path()
---- struct ramdisk_change_event {
----  event_key key;      /**< Always ioctrl_ramdisk_event.          */
---- };
+--: struct ramdisk_change_event {
+--:  event_key key;      /**< Always ioctrl_ramdisk_event.          */
+--: };
 --
 
 --
 --- Keyboard change event structure.
---- @ingroup dcplaya_lua_ioctrl_event
 --- @see keyboard_present()
---- struct keyboard_change_event {
----  event_key key;      /**< Always ioctrl_keyboard_event.          */
----  boolean present;    /**< Set if keyboard is present             */
---- };
+--: struct keyboard_change_event {
+--:  event_key key;      /**< Always ioctrl_keyboard_event.          */
+--:  boolean present;    /**< Set if keyboard is present             */
+--: };
 --
+
+---
+--- @}
+---
 
 --- @defgroup  dcplaya_lua_ioctrl_app IO Control
 --- @ingroup   dcplaya_lua_app
@@ -73,32 +76,30 @@ if not dolib ("evt") then return end
 --- @see ramdisk_notify_path()
 --- @see dcplaya_lua_ioctrl_event
 ---
---- @author   benjamin gerard <ben@sashipa.com>
+--- @author   benjamin gerard
+---
+--- @{
 ---
 
 --
 --- IO controler structure.
---- @ingroup dcplaya_lua_ioctrl_app
 ---
 --- @warning Only specific fields are listed.
 --- 
---- struct ioctrl_app {
----  number cdrom_check_timeout;     /**< Time left before next check.   */
----  number cdrom_check_interval;    /**< Interval between CDROM checks. */
----  number serial_check_timeout;    /**< Idem for serial.               */
----  number serial_check_interval;   /**< Idem for serial.               */
----  number ramdisk_check_timeout;   /**< Idem for ramdisk.              */
----  number ramdisk_check_interval;  /**< Idem for ramdisk.              */
----  number keyboard_check_timeout;  /**< Idem for keyboard.             */
----  number keyboard_check_interval; /**< Idem for keyboard.             */
---- };
+--: struct ioctrl_app_s {
+--:  number cdrom_check_timeout;     /**< Time left before next check.   */
+--:  number cdrom_check_interval;    /**< Interval between CDROM checks. */
+--:  number serial_check_timeout;    /**< Idem for serial.               */
+--:  number serial_check_interval;   /**< Idem for serial.               */
+--:  number ramdisk_check_timeout;   /**< Idem for ramdisk.              */
+--:  number ramdisk_check_interval;  /**< Idem for ramdisk.              */
+--:  number keyboard_check_timeout;  /**< Idem for keyboard.             */
+--:  number keyboard_check_interval; /**< Idem for keyboard.             */
+--: };
 --
 
---
---- @name IO control functions.
---- @ingroup dcplaya_lua_ioctrl_app
---- @{
---
+--- io control unique application.
+--: ioctrl_app_s ioctrl_app;
 
 --- IO control update handler.
 ---
@@ -186,6 +187,7 @@ function ioctrl_handle(app, evt)
 end
 
 --- Create IO control application.
+--- @see ioctrl_app_s
 --- @see ioctrl_app
 --
 function io_control()
@@ -245,9 +247,10 @@ function io_control_kill(io)
    end
 end
 
---
+---
 --- @}
-----
+---
+
 
 io_control_kill()
 io_control()

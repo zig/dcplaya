@@ -1,9 +1,9 @@
 --- @file   filelist.lua
---- @author benjamin gerard <ben@sashipa.com>
+--- @author benjamin gerard
 --- @date   2002/10/04
 --- @brief  Manage and display a list of file.
 ---
---- $Id: filelist.lua,v 1.13 2003-03-12 15:06:54 ben Exp $
+--- $Id: filelist.lua,v 1.14 2003-03-26 23:02:49 ben Exp $
 ---
 
 --- filelist object - Extends textlist

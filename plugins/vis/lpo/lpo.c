@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.25 2003-03-11 13:39:21 ben Exp $
+ * $Id: lpo.c,v 1.26 2003-03-26 23:02:51 ben Exp $
  */
 
 #include <stdio.h>
@@ -30,14 +30,34 @@ static viewport_t viewport;   /**< Current viewport */
 static matrix_t mtx;          /**< Current local matrix */
 static matrix_t projmtx;      /**< Current projection matrix */
 static vtx_t color;           /**< Final Color */
+
+#if 0
+/* old config classical */
 static vtx_t base_color =     /**< Original color */
   {
     0.8f, 0.8f, 0.2f, 0.7f
   };
-static vtx_t flash_color =     /**< Flashing color */
+static vtx_t flash_color =    /**< Flashing color */
   {
     0.5f, 0.5f, 1.0f, 0.8f
   };
+static vtx_t ambient = {      /**< Ambient color */
+  0,0,0,0
+};
+#else
+/* Funky colors */
+static vtx_t base_color =     /**< Original color */
+  {
+    8.5, 16, 1.2f, 0.1
+  };
+static vtx_t flash_color =    /**< Flashing color */
+  {
+    15, 5, -0.8, -0.15
+  };
+static vtx_t ambient = {      /**< Ambient color */
+  -9, -4, 0.4, 0.4
+};
+#endif
 
 static vtx_t pos;     /**< Object position */
 static vtx_t angle;   /**< Object rotation */
@@ -619,12 +639,6 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
   return 0;
 }
 
-/* Ambient color */
-static vtx_t ambient = {
-  0,0,0,0
-};
-
-
 const char * cflagsstr(int f)
 {
   int i;
@@ -652,6 +666,7 @@ int render(void)
     draw_color_add((draw_color_t *)&flat_color,
 		   (draw_color_t *)&ambient, (draw_color_t *)&color);
   }
+
   //$$$ test
   if (lpo_controler >= 0) {
     int flags = 
@@ -671,12 +686,19 @@ int render(void)
 
   if (lpo_remanens && !lpo_opaque) {
     int age, f, maxf = 2000; /* Max number of face */
+    const float reduct = 0.75f; /* alpha reduction */
+    const float amin = 0.05;
+    const float amax = 0.7;
 
-    if (curobj->obj.nbf >= maxf) {
-      color.w *= 1.5f; 
+    vtx_t * cur_color = lpo_lighted ? &color : &flat_color;
+
+    if (cur_color->w > amax) {
+      cur_color->w = amax;
+    } else if (cur_color->w < amin*3) {
+      cur_color->w = amin*3;
     }
 
-    for (age=f=0; f<=maxf && color.w > 0.05f; age += 3) {
+    for (age=f=0; f<=maxf && cur_color->w > amin; age += 3) {
       remanens_t *r = remanens_get(age);
 
       if (!r) {
@@ -690,15 +712,15 @@ int render(void)
       f += r->o->nbf;
 
       if (lpo_lighted) {
-	color.w *= 0.75f;
 	DrawObjectFrontLighted(&viewport, r->mtx, projmtx,
 			       r->o,
 			       &ambient, &color);
+
       } else {
-	flat_color.w *= 0.75f;
 	DrawObjectSingleColor(&viewport, r->mtx, projmtx,
 			      r->o, &flat_color);
       }
+      cur_color->w *= reduct;
     }
   } else {
     if (lpo_lighted) {
@@ -879,21 +901,65 @@ static int lua_setcontroller(lua_State * L)
   return r;
 }
 
+static char * mode2str(char * str, int mode)
+{
+  static const char modt[] = "rfb";
+  int i;
+  for (i=0; i<3; ++i) {
+    str[i] = modt[i] + ((mode & (1<<i)) ? ('A'-'a') : 0);
+  }
+  str[i] = 0;
+  return str;
+}
+
+static int str2mode(int mode, const char * str)
+{
+  if (str) {
+    int c;
+    while (c=*str++, c) {
+      switch(c) {
+      case 'r':
+	mode &= ~RANDOM_MODE;
+	break;
+      case 'R':
+	mode |= RANDOM_MODE;
+	break;
+
+      case 'f':
+	mode &= ~FLASH_MODE;
+	break;
+      case 'F':
+	mode |= FLASH_MODE;
+	break;
+
+      case 'b':
+	mode &= ~RND_BORDER_MODE;
+	break;
+      case 'B':
+	mode |= RND_BORDER_MODE;
+	break;
+      }
+    }
+  }
+  return mode;
+}
+
 static int lua_setchange(lua_State * L)
 {
   int mode = change_mode;
   float time = (float)change_time/1000.0f, new_time;
   int n = lua_gettop(L);
+  char str[33];
   
   if (n>=1 && lua_type(L,1) != LUA_TNIL) {
-    change_mode = lua_tonumber(L,1);
+    change_mode = str2mode(mode,lua_tostring(L,1));
   }
   new_time = lua_tonumber(L,2) * 1000.0f;
   if (new_time > 0) {
     change_time = new_time;
   }
   lua_settop(L,0);
-  lua_pushnumber(L, mode);
+  lua_pushstring(L, mode2str(str,mode));
   lua_pushnumber(L, time);
   return 2;
 }
@@ -980,9 +1046,16 @@ static luashell_command_description_t commands[] = {
   {
     "lpo_setchange", 0,            /* long and short names */
     "print [["
-    "lpo_setchange(type [, time]) : Set object change properties. "
-    "type bit0:random-object bit1:active-flash bit2:auto-border."
-    "Return old values."
+    "lpo_setchange([control [, time] ]) : Set/Get object change properties. "
+    "control is a string which chars control the properties to change. "
+    "Uppercase letters enable properties and lowercase letters disable it. "
+    "Missing letters leave its property unchanged.\n"
+    " Properties are:\n"
+    "  'R' randomize object\n"
+    "  'F' activate bass flash\n"
+    "  'B' activate auto change border\n"
+    "time parameter set auto-change time. 0 or nil leave it unchanged.\n"
+    "Return old values (both control,time)."
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_setchange    /* function */
   },

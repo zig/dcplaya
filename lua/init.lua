@@ -1,10 +1,10 @@
 --- @ingroup  dcplaya_lua_basics
 --- @file     init.lua
---- @author   vincent penne <ziggy@sashipa.com>
---- @author   benjamin gerard <ben@sashipa.com>
+--- @author   vincent penne
+--- @author   benjamin gerard
 --- @brief    Fundamental lua stuff.
 ---
---- $Id: init.lua,v 1.22 2003-03-25 09:26:46 ben Exp $
+--- $Id: init.lua,v 1.23 2003-03-26 23:02:49 ben Exp $
 ---
 
 --- @defgroup  dcplaya_lua_basics_library  LUA libraries
@@ -20,7 +20,7 @@
 ---     - avoiding infinite loop this circular reference
 ---     - searching library file in library pathes.
 ---
---- @author   benjamin gerard <ben@sashipa.com>
+--- @author   benjamin gerard
 --
 
 --- Default lua library pathes.
@@ -206,13 +206,13 @@ addhelp(addhelp,
 
 --
 --- @}
-----
-
---- @defgroup  dcplaya_lua_basics_driver driver support commands
---- @ingroup   dcplaya_lua_basics
---- @brief     driver support commands
 ---
---- @author   vincent penne <ziggy@sashipa.com>
+
+--- @defgroup  dcplaya_lua_basics_driver Driver Support
+--- @ingroup   dcplaya_lua_basics
+--- @brief     driver support
+---
+--- @author   vincent penne
 ---
 
 --- Register driver commands.

@@ -1,10 +1,10 @@
 /**
  * @ingroup dcplaya_filetype_devel
  * @file    filetype.h
- * @author  ben(jamin) gerard <ben@sashipa.com> 
+ * @author  benjamin gerard
  * @brief   Deal with filetypes and extensions.
  *
- * $Id: filetype.h,v 1.10 2003-03-22 00:35:26 ben Exp $
+ * $Id: filetype.h,v 1.11 2003-03-26 23:02:47 ben Exp $
  */
 
 #ifndef _FILETYPE_H_
@@ -36,11 +36,11 @@ DCPLAYA_EXTERN_C_START
  *     - filetype_dir    : any non-special directory
  *     - filetype_file   : any non-special regular file
  *
- *  @author  benjamin gerard <ben@sashipa.com>
+ *  @author  benjamin gerard
+ *  @{
  */
 
 /** @name Predefined filetypes
- *  @ingroup dcplaya_filetype_devel
  *  @{
  */
 
@@ -62,7 +62,6 @@ extern const int filetype_file;
 /** @} */
 
 /** @name Filetype number access macro.
- *  @ingroup dcplaya_filetype_devel
  *  @{
  */
 
@@ -75,7 +74,6 @@ extern const int filetype_file;
 /**@}*/
 
 /** Get major filetype from major name.
- *  @ingroup dcplaya_filetype_devel
  *
  *  @param  name  Major name.
  *
@@ -85,7 +83,6 @@ extern const int filetype_file;
 int filetype_major(const char * name);
 
 /** Get filetype from filetype (minor) name.
- *  @ingroup dcplaya_filetype_devel
  *
  *  @param  name  filetype (minor) name.
  *  @param  type  Start search from this filetype. Minor filetype name is not a
@@ -98,7 +95,6 @@ int filetype_major(const char * name);
 int filetype_minor(const char * name, int type);
 
 /** Get major name from filetype.
- *  @ingroup dcplaya_filetype_devel
  *
  *  @param  type  filetype.
  *
@@ -108,7 +104,6 @@ int filetype_minor(const char * name, int type);
 const char * filetype_major_name(int type);
 
 /** Get minor name from filetype.
- *  @ingroup dcplaya_filetype_devel
  *
  *  @param  type  filetype.
  *
@@ -118,7 +113,6 @@ const char * filetype_major_name(int type);
 const char * filetype_minor_name(int type);
 
 /** Get major and minor names from filetype.
- *  @ingroup dcplaya_filetype_devel
  *
  *  @param  type   filetype.
  *  @param  major  Pointer to returned major name (or 0).
@@ -131,7 +125,6 @@ const char * filetype_minor_name(int type);
 int filetype_names(int type, const char ** major, const char ** minor);
 
 /** Create a new major filetype.
- *  @ingroup dcplaya_filetype_devel
  *
  *    The filetype_major_add() funtion returns the filetype of a given major
  *    type name. If it does not exist, the function tries to create a new one.
@@ -144,14 +137,12 @@ int filetype_names(int type, const char ** major, const char ** minor);
 int filetype_major_add(const char * name);
 
 /** Remove a major filetype.
- *  @ingroup dcplaya_filetype_devel
  *
  * @see filetype_major_add()
  */
 void filetype_major_del(int type);
 
 /** Create a new filetype in a given major filetype.
- *  @ingroup dcplaya_filetype_devel
  *  
  *    The filetype_add() function returns the filetype of a given named
  *    (minor) filetype in the given major filetype after remplacing the
@@ -173,14 +164,12 @@ void filetype_major_del(int type);
 int filetype_add(int major_type, const char * name, const char *exts);
 
 /** Remove a filetype.
- *  @ingroup dcplaya_filetype_devel
  *
  * @see filetype_add()
  */
 void filetype_del(int type);
 
 /** Get file type from filename extension and size.
- *  @ingroup dcplaya_filetype_devel
  *
  * @param  fname  filename.
  * @param  size   Size of file in bytes. Must be set to -1 for directories.
@@ -193,7 +182,6 @@ void filetype_del(int type);
 int filetype_get(const char * fname, int size);
 
 /** Get filetype for major type from 1 to 15 (regular files) from filename.
- *  @ingroup dcplaya_filetype_devel
  *
  * @param  fname  filename
  *
@@ -203,7 +191,6 @@ int filetype_get(const char * fname, int size);
 int filetype_regular(const char * fname);
 
 /** Get filetype for major type 0 (directory) from a filename.
- *  @ingroup dcplaya_filetype_devel
  *
  * @param  fname  filename
  *
@@ -213,7 +200,6 @@ int filetype_regular(const char * fname);
 int filetype_directory(const char * fname);
 
 /** Get filetype in given major type only.
- *  @ingroup dcplaya_filetype_devel
  *
  * @param  fname       filename
  * @param  major_mask  Bit field of accepted major type. Use FILETYPE_MAJOR_NUM
@@ -227,6 +213,7 @@ int filetype_directory(const char * fname);
  */
 int filetype_get_filter(const char *fname, int major_mask);
 
+/**@}*/
 
 DCPLAYA_EXTERN_C_END
 

@@ -1,11 +1,11 @@
 /**
  * @ingroup  dcplaya_exe_plugin_devel
  * @file     display.c
- * @author   Vincent Penne
+ * @author   vincent penne
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.33 2003-03-23 23:54:55 ben Exp $
+ * $Id: display.c,v 1.34 2003-03-26 23:02:50 ben Exp $
  */
 
 #include <stdlib.h>

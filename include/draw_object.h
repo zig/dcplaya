@@ -1,10 +1,10 @@
 /**
  * @file     draw_object.h
- * @author   benjamin gerard <ben@sashipa.com>
+ * @author   benjamin gerard
  * @author   vincent penne
  * @brief    Simple 3D api
  *
- * @version  $Id: draw_object.h,v 1.6 2003-01-22 19:12:56 ben Exp $
+ * @version  $Id: draw_object.h,v 1.7 2003-03-26 23:02:47 ben Exp $
  */
 
 #ifndef _DRAW_OBJECT_H_

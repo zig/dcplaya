@@ -1,10 +1,25 @@
+/**
+ * @ingroup  dcplaya_translator_devel
+ * @file     SHAsysPeek.h
+ * @author   benjamin gerard
+ * @brief    Endianess independant memory access
+ *
+ * $Id: SHAsysPeek.h,v 1.2 2003-03-26 23:02:48 ben Exp $
+ */
+
 #ifndef _SHASYSPEEK_H_
 #define _SHASYSPEEK_H_
 
 #include "SHAsys/SHAsysTypes.h"
 
-/** @name   Unaligned little endian memory access
+/** @name Unaligned little endian memory access
  *  @{
+ */
+
+/** Write in little endian.
+ *  @param a address
+ *  @param v value
+ *  @return written value (v converted to written foramt)
  */
 inline int SHApoke32(void *a, int v)
 {
@@ -15,6 +30,7 @@ inline int SHApoke32(void *a, int v)
   return (int)(SHAsint32)v;
 }
 
+/// Write 32 bit unsigned LE.
 inline unsigned int SHApokeU32(void *a, int v)
 {
   0[(SHAuint8 *)a] = v;

@@ -1,25 +1,32 @@
 /**
  * @file    vmu_file.h
  * @ingroup dcplaya_vmu_file_devel
- * @author  benjamin gerard <ben@sashipa.com>
+ * @author  benjamin gerard
  * @date    2003/03/10
  * @brief   VMU file load and save function.
  *
- * $Id: vmu_file.h,v 1.4 2003-03-22 00:35:27 ben Exp $
+ * $Id: vmu_file.h,v 1.5 2003-03-26 23:02:48 ben Exp $
  */
 
 #ifndef _VMU_FILE_H_
 #define _VMU_FILE_H_
 
-/** @defgroup dcplaya_vmu_file_devel VMU file
+/** @defgroup dcplaya_vmu_devel VMU
  *  @ingroup dcplaya_devel
+ *  @brief VMU
+ *
+ *  @author  benjamin gerard
+ */
+
+/** @defgroup dcplaya_vmu_file_devel VMU file
+ *  @ingroup dcplaya_vmu_devel
  *  @brief VMU file
  *
- *  @author  benjamin gerard <ben@sashipa.com>
+ *  @author  benjamin gerard
+ *  @{
  */
 
 /** VMU transfert status code.
- *  @ingroup dcplaya_vmu_file_devel
  */
 typedef enum {
   VMU_TRANSFERT_SUCCESS = 0, /**< The transfert has finished successfully. */
@@ -33,12 +40,10 @@ typedef enum {
 } vmu_trans_status_e;
 
 /** VMU transfert handle type.
- *  @ingroup dcplaya_vmu_file_devel
  */
 typedef unsigned int vmu_trans_hdl_t;
 
 /** @name VMU file init functions.
- *  @ingroup dcplaya_vmu_file_devel
  *  @{
  */
 
@@ -56,7 +61,6 @@ void vmu_file_shutdown(void);
 /**@}*/
 
 /** @name VMU file functions.
- *  @ingroup dcplaya_vmu_file_devel
  *  @{
  */
 
@@ -97,7 +101,7 @@ const char * vmu_file_set_default(const char * default_path);
  *
  * @param  fname        Name of dcplaya save file.
  * @param  path         Path to archive (typically "/ram/dcplaya").
- * @param  set_defeult  Set this path as default path if default is not 0.
+ * @param  set_default  Set this path as default path if default is not 0.
  * 
  * @return vmu transfert handle
  * @retval 0   failure
@@ -145,6 +149,8 @@ vmu_trans_status_e vmu_file_status(vmu_trans_hdl_t transfer);
  *  @retval "error" status is VMU_TRANSFERT_ERROR.
  */
 const char * vmu_file_statusstr(vmu_trans_status_e status);
+
+/**@}*/
 
 /**@}*/
 

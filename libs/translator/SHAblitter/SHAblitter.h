@@ -1,14 +1,18 @@
 /**
- * @ingroup   SHAblitter
- * @file      SHAblitter.cxx
+ * @ingroup   dcplaya_translator_devel
+ * @file      SHAblitter.h
  * @brief     Soft blitter class definition.
  * @date      2001/08/01
- * @author    BeN(jamin) Gerard <ben@sashipa.com>
- * @version   $Id: SHAblitter.h,v 1.1 2002-09-27 16:45:07 benjihan Exp $
+ * @author    benjamin gerard
+ * @version   $Id: SHAblitter.h,v 1.2 2003-03-26 23:02:48 ben Exp $
  */
 
-/** @defgroup SHAblitter  Software blitter
- **/
+/** @defgroup  SHAblitter  Software blitter
+ *  @ingroup   dcplaya_translator_devel
+ *  @brief     Software blitter.
+ *  @author    benjamin gerard
+ *  @{
+ */
 
 #ifndef _SHABLITTER_H_
 #define _SHABLITTER_H_
@@ -16,17 +20,19 @@
 #include "SHAsys/SHAsysTypes.h"
 
 /** Software blitter class.
- * @ingroup   SHAblitter
- * @author    BeN(jamin) Gerard <ben@sashipa.com>
+ *  @author    benjamin gerard
  */
 class SHAblitter
 {
 public:
+  /// Clean c-tor.
   SHAblitter();
+  /// Set blitter source image.
   void Source(SHApixelFormat_e format, void *data, int width, int height, int modulo);
+  /// Set blitter destination image.
   void Destination(SHApixelFormat_e format, void *data, int width, int height, int modulo);
+  /// Launch blitter copy.
   void Copy(void);
-
 
 protected:
 
@@ -55,16 +61,19 @@ protected:
   ImageInfo src;          ///< Source image parameters
   ImageInfo dst;          ///< Destination image parameters
 
-  Color keyColor;
+  Color keyColor;         ///< Key color (unused).
 
-  FilterMatrix filterMtx;
+  FilterMatrix filterMtx; ///< Filter matrix. (unused).
 
   int CheckSameFormat(void);
-  static void SetImageInfo(ImageInfo * inf, SHApixelFormat_e format, void *data, int width, int height, int modulo);
+  static void SetImageInfo(ImageInfo * inf, SHApixelFormat_e format,
+			   void *data, int width, int height, int modulo);
 
 
   int Error(const char *errMsg, int errNo = -1);
 
 };
+
+/** @} */
 
 #endif //#define _SHABLITTER_H_

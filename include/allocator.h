@@ -1,10 +1,11 @@
 /**
+ * @ingroup  dcplaya_allocator_container
  * @file     allocator.h
- * @author   Benjamin Gerard <ben@sashipa.com>
+ * @author   benjamin gerard
  * @date     2002/10/18
  * @brief    fast allocator for fixed size small buffer.
  * 
- * $Id: allocator.h,v 1.5 2003-01-24 04:28:13 ben Exp $
+ * $Id: allocator.h,v 1.6 2003-03-26 23:02:47 ben Exp $
  */
 
 #ifndef _ALLOCATOR_H_
@@ -19,6 +20,23 @@
 #else
 # include <arch/spinlock.h>
 #endif
+
+/** @defgroup dcplaya_allocator_container Allocator
+ *  @ingroup  dcplaya_container
+ *  @brief    fast allocator for fixed size small buffer
+ *
+ *    An allocator aims to allocate and free little memory blocks fastly.
+ *    It is useful hold a predefined list of memory blocks preallocated.
+ *    Allocation are made in these blocks if the requested block is less
+ *    or equal to a block size and obviously if there is a free block.
+ *    In case of failure, allocator fall back to normal allocation method
+ *    with malloc() and free(). It is possible to force an allocation to be
+ *    inside the allocator heap which is neccessary if you intend to
+ *    use the allocator_index().
+ *
+ *  @author   benjamin gerard
+ *  @{
+ */
 
 /** Allocator elements.
  *
@@ -68,6 +86,7 @@ typedef struct {
  *
  * @param  nmemb  Number of elements preallocated.
  * @param  size   Size of pre-allocated elements.
+ * @param  name   Optionnal name (for debug purpose)
  *
  * @return pointer to allocator.
  * @retval 0  Error
@@ -100,6 +119,9 @@ void allocator_destroy(allocator_t * a);
  *
  *    The allocator_alloc() function is thread safe.
  *
+ * @param  a     allocator
+ * @param  size  size of object to alloc
+ *
  * @return  Pointer to allocated memory.
  * @retval  0  Error
  *
@@ -117,6 +139,8 @@ void * allocator_alloc(allocator_t * a, unsigned int size);
  *    The allocator_alloc_inside() function tries to alloc an element inside
  *    the allcoator heap.
  *
+ * @param  a     allocator
+ *
  * @return Pointer to allocated memory.
  * @retval 0  Error
  *
@@ -132,12 +156,18 @@ void * allocator_alloc_inside(allocator_t * a);
  *
  *     It does not check if the data location is a real allocated blocks.
  *
+ *  @param  a     allocator
+ *  @param  data  address of block to check
+ *
  *  @retval  1  data is in allocator heap.
  *  @retval  0  data is not in the allocator heap.
  */
 int allocator_is_inside(const allocator_t * a, const void * data);
 
 /** Get index of a memory location inside allocator heap.
+ *
+ *  @param  a     allocator
+ *  @param  data  address of block to retrieve its index
  *
  *  @retval  -1   Memory is not in allocator heap.
  *  @retval  >=0  Index of this block in allocator heap.
@@ -156,19 +186,22 @@ int allocator_index(const allocator_t * a, const void * data);
  *    validity checks such as looking for the block in both used and free
  *    lists.
  *
+ *  @param  a     allocator
+ *  @param  data  address of block
+ *
  *    The allocator_free() function is thread safe.
  */
 void allocator_free(allocator_t * a, void * data);
 
 /** Count number of allocated (used) block in the allocator internal heap.
- *
- * @see allocator_count_free()
+ *  @param  a     allocator
+ *  @see allocator_count_free()
  */
 int allocator_count_used(allocator_t * a);
 
 /** Count number of free block in the allocator internal heap.
- *
- * @see allocator_count_used()
+ *  @param  a     allocator
+ *  @see allocator_count_used()
  */
 int allocator_count_free(allocator_t * a);
 
@@ -179,13 +212,18 @@ int allocator_count_free(allocator_t * a);
  *     second parameter. If cmp() function returns 0 the elements data is 
  *     returned. If no matching element is found it returns 0.
  *
- * @return  Data of matching elements.
- * @retval  0  No matching element.
+ *  @param  a     allocator
+ *  @param  data  address of block to match
+ *  @param  cmp   fucntion that compare block.
+ *
+ *  @return  Data of matching elements.
+ *  @retval  0  No matching element.
  */
 void * allocator_match(allocator_t * a, const void * data,
-					   int (*cmp)(const void *, const void *));
+		       int (*cmp)(const void *, const void *));
 
 /** Dump allocator list content.
+ *  @param  a     allocator
  */
 void allocator_dump(allocator_t * a);
 
@@ -200,14 +238,18 @@ void allocator_dump(allocator_t * a);
  *    any other thread that use this allcocator or whatever you want. It is
  *    given for allocator management purpose.
  *
- * @see allocator_unlock()
+ *  @param  a     allocator to lock
+ *
+ *  @see allocator_unlock()
  */
 void allocator_lock(allocator_t * a);
 
 /** Unlock the allocator. 
- *
- * @see allocator_lock()
+ *  @param  a     allocator to unlock
+ *  @see allocator_lock()
  */
 void allocator_unlock(allocator_t * a);
+
+/**@}*/
 
 #endif /* #define _ALLOCATOR_H_ */

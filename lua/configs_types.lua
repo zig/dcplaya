@@ -1,10 +1,10 @@
 -- dcplaya - lua well-known config types
 --
--- author : benjamin gerard <ben@sashipa.com>
+-- author : benjamin gerard
 -- date   : 2002/10/14
 --
 --
--- $Id: configs_types.lua,v 1.1 2002-10-15 06:02:47 benjihan Exp $
+-- $Id: configs_types.lua,v 1.2 2003-03-26 23:02:48 ben Exp $
 --
 
 -- Unload library

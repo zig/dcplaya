@@ -1,9 +1,10 @@
 /**
- * @file    plugin.h
- * @author  benjamin gerard <ben@sashipa.com>
- * @brief   plugin loader
+ * @ingroup  dcplaya_plugin_devel
+ * @file     plugin.h
+ * @author   benjamin gerard
+ * @brief    plugin loader
  *
- * $Id: plugin.h,v 1.4 2002-09-14 04:30:55 ben Exp $
+ * $Id: plugin.h,v 1.5 2003-03-26 23:02:48 ben Exp $
  */
 
 #ifndef _PLUGIN_H_
@@ -14,6 +15,13 @@
 DCPLAYA_EXTERN_C_START
 
 #include "any_driver.h"
+
+/** @addtogroup  dcplaya_plugin_devel  Plugins
+ *  @ingroup     dcplaya_devel
+ *  @author      benjamin gerard
+ *  @brief       dcplaya plugins
+ *  @{
+ */
 
 /** Load a plugin file.
  *
@@ -65,6 +73,8 @@ int plugin_load_and_register(const char *fname);
  *
  */
 int plugin_path_load(const char *path, int max_recurse);
+
+/*@}*/
 
 DCPLAYA_EXTERN_C_END
 

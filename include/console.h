@@ -1,10 +1,10 @@
 /**
  * @ingroup   dcplaya_consol_devel
  * @file      console.h
- * @author    vincent penne <ziggy@sashipa.com>
+ * @author    vincent penne
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.h,v 1.7 2003-03-22 00:35:26 ben Exp $
+ * @version   $Id: console.h,v 1.8 2003-03-26 23:02:47 ben Exp $
  */
 
 #ifndef _CONSOLE_H_
@@ -13,13 +13,14 @@
 #include <arch/spinlock.h>
 #include "mu_term.h"
 
-/** @defgroup  dcplaya_console_devel console
+/** @defgroup  dcplaya_console_devel Console
  *  @ingroup   dcplaya_devel
- *  @brief     console API.
+ *  @brief     generic console
+ *  @author    vincent penne
+ *  @{
  */
 
 /** Console mode enumeration.
- * @ingroup   dcplaya_console_devel
  */
 typedef enum csl_render_mode {
   CSL_RENDER_BASIC  = 1,  ///< Direct write to framebuffer, exclusive
@@ -29,7 +30,6 @@ typedef enum csl_render_mode {
 
 
 /** Console window structure.
- *  @ingroup dcplaya_console_devel
  */
 typedef struct csl_window {
   int x, y;
@@ -43,7 +43,6 @@ typedef struct csl_window {
 } csl_window_t;
 
 /** Console structure.
- *  @ingroup   dcplaya_console_devel
  */
 typedef struct csl_console {
 
@@ -76,7 +75,7 @@ extern csl_console_t * csl_basic_console;
 extern csl_console_t * csl_ta_console;
 
 /** @name Console initialization functions.
- *  @ingroup dcplaya_console_devel
+ *  @{
  */
 
 /** Create a console. */
@@ -88,7 +87,7 @@ void csl_console_destroy(csl_console_t * console);
 /**@}*/
 
 /** @name Console update and render functions.
- *  @ingroup dcplaya_console_devel
+ *  @{
  */
 
 void csl_update_all(float frametime);
@@ -101,7 +100,7 @@ void csl_vmu_render_all();
 
 
 /** @name Console management functions.
- *  @ingroup dcplaya_console_devel
+ *  @{
  */
 
 /** Enable render modes for a console. */ 
@@ -117,7 +116,7 @@ void csl_window_configure(csl_console_t * console, int x, int y, int w, int h,
 /**@}*/
 
 /** @name Console access functions.
- *  @ingroup dcplaya_console_devel
+ *  @{
  */
 void csl_putchar(csl_console_t * console, char c );
 void csl_putstring(csl_console_t * console, const char * s );
@@ -126,7 +125,7 @@ void csl_vprintf(csl_console_t * console, const char *fmt, va_list args );
 /**@}*/
 
 /** @name Main console functions.
- *  @ingroup dcplaya_console_devel
+ *  @{
  */
 extern csl_console_t * csl_main_console;
 void csl_init_main_console();
@@ -134,10 +133,12 @@ void csl_close_main_console();
 /**@}*/
 
 /** @name Keyboard input functions.
- *  @ingroup dcplaya_console_devel
+ *  @{
  */
 int csl_getchar();
 int csl_peekchar();
+/**@}*/
+
 /**@}*/
 
 #endif /* #ifndef _CONSOLE_H_ */

@@ -3,7 +3,7 @@
 --- @author  vincent penne
 --- @brief   gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.62 2003-03-25 09:26:46 ben Exp $
+--- $Id: gui.lua,v 1.63 2003-03-26 23:02:49 ben Exp $
 ---
 ---
 
@@ -609,7 +609,7 @@ function gui_dialog_handle(app, evt)
    end
    
    if app.flags.modal then
-      print("modal !!")
+--      print("modal !!")
       return nil
    end
    --	print("dialog unhandle:"..key)
@@ -667,7 +667,7 @@ function gui_dialog_update(app, frametime)
    
 end
 
-function gui_dialog_box_draw(dl, box, z, bcolor, color1, color2, tranparent)
+function gui_dialog_box_draw(dl, box, z, bcolor, color1, color2, transparent)
    
    if not nil then
       local t, l, b, r = 1.6*bcolor, 0.8*bcolor, 0.2*bcolor, 0.4*bcolor
@@ -683,7 +683,7 @@ function gui_dialog_box_draw(dl, box, z, bcolor, color1, color2, tranparent)
       b3d= box3d(box + { 4, 4, -4, -4 }, 2, nil, b, r, t, l)
       box3d_draw(b3d,dl, mat_trans(0, 0, z))
 
-      if not tranparent then
+      if not transparent then
 	 dl_draw_box(dl, box + {6,6,-6,-6}, z, color1, color2)
       end
    else
@@ -724,13 +724,13 @@ function gui_input_box_draw(dl, box, z, bcolor, color, transparent)
 end
 
 
-function gui_new_dialog(owner, box, z, dlsize, text, mode, name)
+function gui_new_dialog(owner, box, z, dlsize, text, mode, name, flags)
    local dial
 
    --  $$$ ben : default owner is desktop
    if not owner then owner = evt_desktop_app end
    if not owner then print("gui_new_dialog : no desktop") return nil end
-   
+  
    z = gui_guess_z(owner, z)
 --   print(z)
 
@@ -758,8 +758,7 @@ function gui_new_dialog(owner, box, z, dlsize, text, mode, name)
       focus_time = 0,  -- blinking time
 
       event_table = { },
-      flags  = { }
-      
+      flags  = flags or {}
    }
 
    for _, dl in { dial.focusup_dl, dial.focusdown_dl, dial.focusleft_dl, dial.focusright_dl } do
@@ -767,7 +766,7 @@ function gui_new_dialog(owner, box, z, dlsize, text, mode, name)
    end
    
    -- draw surrounding box
-   gui_dialog_box_draw(dial.dl, box, z, gui_box_bcolor, gui_box_color1, gui_box_color2, dial.transparent)
+   gui_dialog_box_draw(dial.dl, box, z, gui_box_bcolor, gui_box_color1, gui_box_color2, dial.flags.transparent)
    
    -- draw the focus cursor
    local focus_dl
@@ -1026,7 +1025,7 @@ function gui_new_input(owner, box, text, mode, string, z)
    dl_sublist(app.dl, app.input_dl)
    
    gui_input_box_draw(app.dl, app.box, z, gui_input_color1, gui_input_color2,
-		   app.transparent)
+		   app.flags.transparent)
    --dl_draw_box(app.dl, app.box, z, gui_input_color1, gui_input_color2)
    
    
@@ -1260,6 +1259,6 @@ gui_init()
 
 --
 --- @}
-----
+---
 
 return 1

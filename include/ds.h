@@ -1,9 +1,9 @@
 /**
  * @file      ds.h
- * @author    vincent penne <ziggy@sashipa.com>
+ * @author    vincent penne
  * @date      2002/09/24
  * @brief     dynamically accessible structure support
- * @version   $Id: ds.h,v 1.1 2002-09-24 13:47:04 vincentp Exp $
+ * @version   $Id: ds.h,v 1.2 2003-03-26 23:02:47 ben Exp $
  */
 
 #ifndef _DS_H_

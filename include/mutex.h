@@ -1,14 +1,25 @@
 /**
- *  @file    mutex.h
- *  @author  benjamin gerard <ben@sashipa.com>
- *  @date    2002/10/23
- *  @brief   Implements recursive mutex (mutual exclusion) over spinlock.
+ *  @ingroup  dcplaya_devel
+ *  @file     mutex.h
+ *  @author   benjamin gerard
+ *  @date     2002/10/23
+ *  @brief    Implements recursive mutex (mutual exclusion) over spinlock.
  */
 
 #ifndef _MUTEX_H_
 #define _MUTEX_H_
 
 #include <arch/spinlock.h>
+
+/** @defgroup dcplaya_mutex Rescursive mutex
+ *  @ingroup  dcplaya_devel
+ *  @brief    rescursive mutex.
+ *  @author   benjamin gerard
+ *
+ *  Implements recursive mutex (mutual exclusion) over spinlock.
+ *
+ *  @{
+ */
 
 /** Mutex object. */
 typedef struct {
@@ -122,5 +133,7 @@ inline static void mutex_unlock(mutex_t *mutex)
 	spinlock_unlock(&mutex->lock);
   }
 }
+
+/**@}*/
 
 #endif /* #define _MUTEX_H_ */

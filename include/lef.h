@@ -6,7 +6,7 @@
  * @author  dan potter
  * @brief   ELF library loader.
  *
- * $Id: lef.h,v 1.6 2003-03-23 23:54:54 ben Exp $
+ * $Id: lef.h,v 1.7 2003-03-26 23:02:47 ben Exp $
  */
 
 /*  Based on elf.c from KallistiOS 1.1.5 */
@@ -31,10 +31,11 @@ DCPLAYA_EXTERN_C_START
 #include <arch/types.h>
 #include <sys/queue.h>
 
+/** Symbol. */
 typedef struct {
-  void       * addr;
-  char         type;
-  const char * name;
+  void       * addr; /**< Address      */
+  char         type; /**< Symbol type  */
+  const char * name; /**< Symbol name  */
 } symbol_t;
 
 /** ELF file header structure.*/

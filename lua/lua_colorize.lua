@@ -1,17 +1,17 @@
 --- @ingroup dclpaya_lua_gui
 --- @file    lua_colorize.lua
---- @author  benjamin gerard <ben@sashipa.com>
+--- @author  benjamin gerard
 --- @date    2003/03/20
 --- @brief   LUA source colorizer.
 ---
---- $Id: lua_colorize.lua,v 1.5 2003-03-25 09:26:46 ben Exp $
+--- $Id: lua_colorize.lua,v 1.6 2003-03-26 23:02:49 ben Exp $
 --
 
 --- @defgroup  dcplaya_lua_colorize  LUA source colorizer
 --- @ingroup   dclpaya_lua_gui
 --- @brief     creates preformatted colorized zml for lua source viewer
 ---
---- @author  benjamin gerard <ben@sashipa.com>
+--- @author  benjamin gerard
 --- @{
 
 --- LUA keywords.

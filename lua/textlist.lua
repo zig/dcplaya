@@ -1,10 +1,10 @@
 --- @ingroup dcplaya_lua_textlist Text
 --- @file    textlist.lua
---- @author  benjamin gerard <ben@sashipa.com>
+--- @author  benjamin gerard
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.45 2003-03-25 09:26:47 ben Exp $
+--- $Id: textlist.lua,v 1.46 2003-03-26 23:02:50 ben Exp $
 ---
 
 -- DL hierarchy :

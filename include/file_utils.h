@@ -1,11 +1,11 @@
 /**
  * @ingroup dcplaya_fu_devel
  * @file    file_utils.h
- * @author  benjamin gerard <ben@sashipa.com>
+ * @author  benjamin gerard
  * @date    2002/09/30
  * @brief   File manipulation utilities.
  *
- * $Id: file_utils.h,v 1.10 2003-03-23 23:54:54 ben Exp $
+ * $Id: file_utils.h,v 1.11 2003-03-26 23:02:47 ben Exp $
  */
 
 #ifndef _FILE_UTILS_H_
@@ -16,14 +16,14 @@
 DCPLAYA_EXTERN_C_START
 
 /** @defgroup dcplaya_fu_devel File utils 
- *  @ingroup dcplaya_devel
- *  @brief   file utils API.
+ *  @ingroup  dcplaya_devel
+ *  @brief    file utils API.
  *
  *    The file utils API is dcplaya high level API for handling file and
  *    directory operations.
  *
  *  @see      dcplaya_fn_devel
- *  @author  benjamin gerard <ben@sashipa.com>
+ *  @author   benjamin gerard
  *  @{
  */
 

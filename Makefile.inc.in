@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile.inc.in,v 1.26 2003-03-18 14:53:26 ben Exp $
+# $Id: Makefile.inc.in,v 1.27 2003-03-26 23:02:46 ben Exp $
 #
 
 .SUFFIXES:
@@ -273,16 +273,20 @@ KOS_INC_RULES=$(KOS_LOCAL_INCS) -I- $(KOS_INCS) -I$(KOS_BASE)/kernel/arch/$(KOS_
 
 # Build rules
 %.o: %.c
-	$(KOS_CC) $(KOS_CFLAGS) $(KOS_LOCAL_CFLAGS) $(KOS_INC_RULES) -D_arch_$(KOS_ARCH) -c $< -o $@
+	@echo "CC [$(@F)] from [$(<F)]"
+	@$(KOS_CC) $(KOS_CFLAGS) $(KOS_LOCAL_CFLAGS) $(KOS_INC_RULES) -D_arch_$(KOS_ARCH) -c $< -o $@
 
 %.o: %.cxx
-	$(KOS_CXX) $(KOS_CXXFLAGS) $(KOS_LOCAL_CXXFLAGS) $(KOS_INC_RULES) -D_arch_$(KOS_ARCH) -c $< -o $@
+	@echo "CXX [$(@F)] from [$(<F)]"
+	@$(KOS_CXX) $(KOS_CXXFLAGS) $(KOS_LOCAL_CXXFLAGS) $(KOS_INC_RULES) -D_arch_$(KOS_ARCH) -c $< -o $@
 
 %.o: %.s
-	$(KOS_AS) $(KOS_AFLAGS) $< -o $@
+	@echo "AS [$(@F)] from [$(<F)]"
+	@$(KOS_AS) $(KOS_AFLAGS) $< -o $@
 
 %.o: %.img
-	KOS_ARCH=$(KOS_ARCH) KOS_LD=$(KOS_LD) $(KOS_BIN2O) $< $(notdir $*) $@
+	@echo "Build [$(@F)] from [$(<F)]"
+	@KOS_ARCH=$(KOS_ARCH) KOS_LD=$(KOS_LD) $(KOS_BIN2O) $< $(notdir $*) $@
 
 # Some extra variables
 KOS_ARCH_DIR = $(KOS_BASE)/kernel/arch/$(KOS_ARCH)

@@ -1,23 +1,24 @@
 /**
- * @ingroup dcplaya_plugin_devel
+ * @ingroup dcplaya_inp_plugin_devel
  * @file    inp_driver.h
  * @author  benjamin gerard <ben@sahipa.com>
  * @date    2002
  * @brief   input plugin API.
  *
- * $Id: inp_driver.h,v 1.6 2003-03-19 05:16:16 ben Exp $
+ * $Id: inp_driver.h,v 1.7 2003-03-26 23:02:47 ben Exp $
  */
 
 #ifndef _INP_DRIVER_H_
 #define _INP_DRIVER_H_
 
-/** @defgroup  dcplaya_inp_plugin_devel  Input driver API
+/** @defgroup  dcplaya_inp_plugin_devel  Input driver
  *  @ingroup   dcplaya_plugin_devel
- *  @brief     Programming dcplaya input plugins
+ *  @brief     dcplaya input plugins
  *
  *    Input plugins are dcplaya music drivers.
  *
- *  @author    benjamin gerard <ben@sashipa.com>
+ *  @author    benjamin gerard
+ *  @{
  */
 
 #include "extern_def.h"
@@ -29,8 +30,6 @@ DCPLAYA_EXTERN_C_START
 #include "any_driver.h"
 
 /** @name Input plugin decoding return codes.
- *  @ingroup dcplaya_inp_plugin_devel
- *
  *   Return bits code for decode() handler.
  *  @{
  */
@@ -43,7 +42,6 @@ DCPLAYA_EXTERN_C_START
 /**@}*/
 
 /** Input driver structure.
- *  @ingroup dcplaya_inp_plugin_devel
  */
 typedef struct
 {
@@ -69,6 +67,8 @@ typedef struct
   int (*info)(playa_info_t * info, const char *fn);
 
 } inp_driver_t;
+
+/**@}*/
 
 DCPLAYA_EXTERN_C_END
 

@@ -1,11 +1,11 @@
-/**
+/*
  * @ingroup dcplaya_math_devel
  * @file    math_int.h
- * @author  ben(jamin) gerard <ben@sashipa.com>
+ * @author  benjamin gerard
  * @date    2002/02/12
  * @brief   Integer mathematic support.
  *
- * $Id: math_int.h,v 1.3 2003-03-22 00:35:27 ben Exp $
+ * $Id: math_int.h,v 1.4 2003-03-26 23:02:47 ben Exp $
  */
 
 #ifndef _MATH_INT_H_
@@ -13,18 +13,22 @@
 
 #include "extern_def.h"
 
+DCPLAYA_EXTERN_C_START
+
 /** @name Integer mathematic basics.
  *  @ingroup dcplaya_math_devel
  *  @{
  */
 
-DCPLAYA_EXTERN_C_START
-
-/** Small Bijection for calculate a square root. */
+/** Small Bijection for calculate a square root.
+ *  @param x value
+ *  @return square root of x
+ */
 unsigned int int_sqrt (unsigned int x);
+
+/** @} */
 
 DCPLAYA_EXTERN_C_END
 
-/** @} */
 
 #endif /* #ifndef _MATH_INT_H_ */

@@ -1,32 +1,24 @@
 --- @file    basic.lua
 --- @ingroup dcplaya_lua_basics
---- @author  vincent penne <ziggy@sashipa.com>
---- @author  benjamin gerard <ben@sashipa.com>
+--- @author  vincent penne
+--- @author  benjamin gerard
 --- @brief   basic things used into other library (evt, keyboard_emu, gui)
 ---
---- $Id: basic.lua,v 1.19 2003-03-25 09:26:45 ben Exp $
+--- $Id: basic.lua,v 1.20 2003-03-26 23:02:48 ben Exp $
 ---
 
 --
---- @defgroup  dcplaya_lua_basics  Basic components
---- @ingroup   dcplaya_lua
---- @brief     LUA low level tool-kit.
----
---- @author    benjamin gerard <ben@sashipa.com>
---- @author    vincent penne <ziggy@sashipa.com>
---
-
---
---- @defgroup dcplaya_lua_basics_linklist doubly linked list support.
+--- @defgroup dcplaya_lua_basics_linklist Doubly Linked List
 --- @ingroup  dcplaya_lua_basics
 --- @brief    doubly linked list support
 ---
---- @author    vincent penne <ziggy@sashipa.com>
---
+--- @author    vincent penne
+---
+--- @{
+---
 
 --- insert a new element in list as first element (or as last simply by swaping
 --- ofirst and olast, iprev and inext).
---- @ingroup dcplaya_lua_basics_linklist
 --- 
 --- @param o       owner
 --- @param ofirst  index in the owner pointing to first element of list
@@ -52,7 +44,6 @@ function dlist_insert(o, ofirst, olast, i, iprev, inext, iowner)
 end
 
 --- remove an element from a list.
---- @ingroup dcplaya_lua_basics_linklist
 ---
 --- @param ofirst  index in the owner pointing to first element of list
 --- @param olast   index in the owner pointing to last element of list
@@ -84,10 +75,17 @@ function dlist_remove(ofirst, olast, i, iprev, inext, iowner)
    i[inext] = nil
 end
 
+---
+--- @}
+---
 
---- @defgroup dcplaya_lua_basics_table table operators.
---- @ingroup dcplaya_lua_basics
+--- @defgroup dcplaya_lua_basics_table Table Operators
+--- @ingroup  dcplaya_lua_basics
+--- @brief    table operators
 --- @warning this is not complete ...
+---
+--- @{
+---
 
 --- the ^ operator calculate the square distances between two tables.
 --- @ingroup dcplaya_lua_basics_table
@@ -285,8 +283,22 @@ function table_min(a)
    return imin
 end
 
+---
+--- @}
+---
+
+--
+--- @defgroup  dcplaya_lua_basics  Basic Components
+--- @ingroup   dcplaya_lua
+--- @brief     LUA low level tool-kit.
+---
+--- @author    benjamin gerard
+--- @author    vincent penne
+---
+--- @{
+---
+
 --- Duplicate any type.
---- @ingroup dcplaya_lua_basics
 ---
 --- @param  v  anything to duplicate
 --- @return duplication of v
@@ -308,7 +320,6 @@ function dup(v)
 end
 
 --- Get a lua compatible string describing this object.
---- @ingroup dcplaya_lua_basics
 ---
 --- @param   v       Object to dump
 --- @param   name    Optional name of v
@@ -346,7 +357,6 @@ function type_dump(v, name, indent)
 end
 
 --- Print a lua compatible string describing this object.
---- @ingroup dcplaya_lua_basics
 --- @see type_dump()
 ---
 function dump(v, name, indent)
@@ -354,7 +364,6 @@ function dump(v, name, indent)
 end
 
 --- Clip a value.
---- @ingroup dcplaya_lua_basics
 ---
 --- @param  v  Value to clip
 --- @param  min  Optional minimum clip value.
@@ -369,7 +378,7 @@ function clip_value(v,min,max)
 end
 
 --- Set a vextex.
---- @ingroup dcplaya_lua_basics
+---
 --- @param  vect  Vector (matrix line)
 --- @param  from  Table containing vector components
 ---
@@ -381,13 +390,16 @@ function set_vertex(vect, from)
 end
 
 --- printf like function.
---- @ingroup dcplaya_lua_basics
---- @param  fmt  Format string
---- @param  ...  Arguments needed by format string.
+---
+--- @param  ...  format string and arguments needed by format string.
 --- @warning Add a trailing '\n'.
 function printf(...)
    print(call(format,arg))
 end
+
+---
+--- @}
+---
 
 settagmethod(tag( {} ), "add", table_add)
 settagmethod(tag( {} ), "sub", table_sub)

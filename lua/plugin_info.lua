@@ -2,9 +2,9 @@
 --- @file    plugin_info.lua
 --- @date    2002/12/06
 --- @author  benjamin gerard
+--- @brief   hyper text viewer gui
 ---
---- @brief   hyper text viwer gui
---- $Id: plugin_info.lua,v 1.3 2003-03-25 09:26:46 ben Exp $
+--- $Id: plugin_info.lua,v 1.4 2003-03-26 23:02:49 ben Exp $
 ---
 
 if not dolib("textviewer") then return end
@@ -12,7 +12,7 @@ if not dolib("textviewer") then return end
 --- @name plugin viewer
 --- @ingroup dcplaya_lua_gui
 --- @{
---
+---
 
 --- Create a plugin info tagged text.
 --
@@ -151,7 +151,7 @@ end
 
 --
 --- @}
-----
+---
 
 -- Create application icon sprite
 --sprite_simple(nil,"textviewer.tga")

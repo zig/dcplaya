@@ -1,10 +1,10 @@
-/**
+/*
  * @ingroup dcplaya_plugin_devel
  * @file    any_driver.h
  * @author  benjamin gerard
  * @brief   dcplaya plugin structure.
  *
- * $Id: any_driver.h,v 1.10 2003-03-23 23:54:54 ben Exp $ 
+ * $Id: any_driver.h,v 1.11 2003-03-26 23:02:47 ben Exp $ 
  */
  
 #ifndef _ANY_DRIVER_H_
@@ -14,10 +14,10 @@
 
 DCPLAYA_EXTERN_C_START
 
-/** @defgroup  dcplaya_plugin_devel  Plugin API
- *  @ingroup   dcplaya_devel
- *  @author    benjamin gerard
- *  @brief     Programming dcplaya plugins
+/* @addtogroup  dcplaya_plugin_devel  Plugins
+ *  @ingroup     dcplaya_devel
+ *  @author      benjamin gerard
+ *  @brief       dcplaya plugins
  *  @{
  */
 

@@ -1,9 +1,11 @@
-/**
+/*
+ * @ingroup   dcplaya_obj_plugin_devel
  * @file      obj3d.h
- * @author    Ben(jamin) Gerard <ben@sashipa.com>
+ * @author    benjamin gerard
  * @date      2001/10/20
  * @brief     Simple 3D objects defintions for 3D-object plugins
- * @version   $Id: obj3d.h,v 1.7 2003-01-24 04:28:13 ben Exp $
+ *
+ * $Id: obj3d.h,v 1.8 2003-03-26 23:02:48 ben Exp $
  */
 
 /* Copyright (C) 1998-2001 Ben(jamin) Gerard */
@@ -15,10 +17,11 @@
 
 DCPLAYA_EXTERN_C_START
 
-
 #include "vtx.h"
-/* #include "any_driver.h" */
 
+/* @addtogroup dcplaya_obj_plugin_devel
+ *  @{
+ */
 
 /** Triangle */
 typedef struct {
@@ -28,6 +31,7 @@ typedef struct {
   int flags;  /**< flags */
 } tri_t;
 
+/** Triangle link */
 typedef struct {
   int a;      /**< Index of [a b] linked face */
   int b;      /**< Index of [b c] linked face */
@@ -52,21 +56,23 @@ typedef struct {
   vtx_t *nvx;       /**< Pointer to face normal */
 } obj_t;
 
-/** @name Simple 3d Object
- *  @ingroup dcplaya_devel
- *  @{
+/** Build and alloc if neccessary face normals.
+ *  @param  o  3D object.
+ *  @return error-code
+ *  @return 0 success
  */
-
-/** Build and alloc if neccessary face normals. */
 int obj3d_build_normals(obj_t *o);
 
-/** Verify object consistency. */
+/** Verify object consistency.
+ *  @param  o  3D object.
+ *  @return error-code
+ *  @return 0 success
+ */
 int obj3d_verify(obj_t *o);
 
 /** @} */
 
 DCPLAYA_EXTERN_C_END
-
 
 
 #endif

@@ -1,11 +1,11 @@
 /**
- * @ingroup  dcplaya
+ * @ingroup  dcplaya_fft
  * @file     fft.h
- * @author   Ben(jamin) Gerard <ben@sashipa.com>
+ * @author   benjamin gerard
  * @date     2002/07/??
  * @brief    dcplaya FFT.
  *
- * @id $Id: fft.h,v 1.6 2002-12-30 06:28:18 ben Exp $
+ * @id $Id: fft.h,v 1.7 2003-03-26 23:02:47 ben Exp $
  *
  */
 
@@ -17,8 +17,15 @@
 
 DCPLAYA_EXTERN_C_START
 
+/** @defgroup dcplaya_fft  Fast Fourrier Transform
+ *  @ingroup  dcplaya_math_devel
+ *  @brief    fast fourrier transform
+ *  @author   benjamin gerard
+ *  @{
+ */
+
 /* $$$ BEN: Ca macrhe pas  vraiment quand on le change ! */
-#define FFT_LOG_2 9   /** FFT size (log 2) . Max is 12. */
+#define FFT_LOG_2 9   /**< FFT size (log 2) . Max is 12. */
 
 //extern short fft_R[]; /**< FFT Real numbers.                             */
 //extern short fft_I[]; /**< FFT Imaginary numbers.                        */
@@ -52,8 +59,7 @@ void fft_fill_bands(fftbands_t * bands);
 /** Fill a pcm buffer with current pcm data. */
 void fft_fill_pcm(short * pcm, int n);
 
-/** */
-/* void fft_copy(short * fft, short * pcm, int n, int db); */
+/**@}*/
 
 DCPLAYA_EXTERN_C_END
 

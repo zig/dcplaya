@@ -3,7 +3,10 @@
 #
 # by Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.12 2003-03-25 09:28:42 ben Exp $
+# $Id: Makefile,v 1.13 2003-03-26 23:02:50 ben Exp $
+#
+# This makefile is pretty ugly. Soory :( I'll try to make a clean one
+# when I get some time.
 #
 
 CDRECORD	= cdrecord dev=0,0,0 speed=4
@@ -116,6 +119,7 @@ dcplaya-data: id.txt RELEASE.txt README.txt 1ST_READ.BIN dcplaya-docs
 	@cp -a ../dynshell/dynshell.lez dcplaya/dynshell
 	@cp -a ../lua dcplaya
 	@find dcplaya -type d -name '.xvpics' -print0 | xargs -0 -e rm -rv
+	@find dcplaya -type f -name '*~' -print0 | xargs -0 -e rm -v
 	@cp -a ../doc/doc dcplaya
 	@(cd ..; find plugins -type f -name '*.lez') \
 	| tar cf - -C .. -T - \

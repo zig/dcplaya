@@ -1,6 +1,6 @@
 --- @ingroup dcplaya_lua_gui
 --- @file    menu.lua
---- @author  benjamin gerard <ben@sashipa.com>
+--- @author  benjamin gerard
 --- @date    2002/10/25
 --- @brief   Menu GUI.
 
@@ -26,43 +26,43 @@ gui_menu_close_event = gui_menu_close_event or evt_new_code()
 
 --- Menu definition object.
 --- @ingroup dcplaya_lua_menu_gui
---- struct menu_def : applcation {
----   string     name;    ///< Menu name.
----   number     n;       ///< Number of menu entry.
----   string     title;   ///< Menu title (or nil is none).
----   menuentry  noname;  ///< Array of menu entry.
---- };
+--: struct menu_def : applcation {
+--:   string     name;    ///< Menu name.
+--:   number     n;       ///< Number of menu entry.
+--:   string     title;   ///< Menu title (or nil is none).
+--:   menuentry  noname;  ///< Array of menu entry.
+--: };
 
 --- Menu entry object.
 --- @ingroup dcplaya_lua_menu_gui
---- struct menu_entry {
----   string     name;    ///< Name of entry (label).
----   number     size;    ///< -1:for sub-menu entry
----   string     subname; ///< Name of sub-menu (or nil)
---- };
+--: struct menu_entry {
+--:   string     name;    ///< Name of entry (label).
+--:   number     size;    ///< -1:for sub-menu entry
+--:   string     subname; ///< Name of sub-menu (or nil)
+--: };
 
 --- Menu object.
 --- @ingroup dcplaya_lua_menu_gui
 ---
---- struct menu : application {
----   open();	           ///< Show/active menu
----   close();             ///< Hide/desactive menu
----   set_color();         ///< Set global color
----   draw();              ///< Build display lists
----   confirm();           ///< Menu confirm callback
----   shutdown();          ///< Shutdown menu
----   create();            ///< Create a new menu
----
----   style        style;      ///< Menu style
----   display_list dl;         ///< Menu display list
----   menu_def     def;        ///< menu definition
----   menu         sub_menu[]; ///< Created sub-menu (indexed by name)
----   number       fade;       ///< Current fade step.
----   /** textlist used by this menu which textlist::dir is a menu_entry
----    *  table.
----    */
----   textlist     fl;
---- };
+--: struct menu : application {
+--:   open();	           ///< Show/active menu
+--:   close();             ///< Hide/desactive menu
+--:   set_color();         ///< Set global color
+--:   draw();              ///< Build display lists
+--:   confirm();           ///< Menu confirm callback
+--:   shutdown();          ///< Shutdown menu
+--:   create();            ///< Create a new menu
+--:
+--:   style        style;      ///< Menu style
+--:   display_list dl;         ///< Menu display list
+--:   menu_def     def;        ///< menu definition
+--:   menu         sub_menu[]; ///< Created sub-menu (indexed by name)
+--:   number       fade;       ///< Current fade step.
+--:   /** textlist used by this menu which textlist::dir is a menu_entry
+--:    *  table.
+--:    */
+--:   textlist     fl;
+--: };
 
 --- Create a menu application.
 --- @internal

@@ -5,7 +5,7 @@
 --- @date     2002
 --- @brief    Main dcplaya lua script.
 ---
---- $Id: dcplayarc.lua,v 1.40 2003-03-25 09:28:00 ben Exp $
+--- $Id: dcplayarc.lua,v 1.41 2003-03-26 23:02:47 ben Exp $
 ---
 ---   The @b home.."dcplayarc.lua" file is dcplaya main script.
 ---   It is executed after the dynshell has been loaded.
@@ -108,7 +108,8 @@ function scrolltext(dl, msg, txtcolor, bkgcolor, z)
 
    dl_text_prop(dl,0,size)
    local w,h = dl_measure_text(dl, msg, 1 ,size)
-   w = w * 1.5
+   w = max(w * 1.5, 512)
+
    local x,y = (640-w) * 0.5, (480-h) * 0.5
    dl_set_clipping(dl, x, y-3, x+w, y+h+3)
 
@@ -209,12 +210,12 @@ if type(vmu_file) == "function" then
 	 hideconsole()
 	 -- Disable scrolltext ...
 	 if scroll_dl then
-	    dl_set_ative(scroll_dl,nil)
+	    dl_set_active(scroll_dl,nil)
 	 end
 	 result = vmu_init(1) -- Select only 
 	 -- Enable scrolltext ...
 	 if scroll_dl then
-	    dl_set_ative(scroll_dl,1)
+	    dl_set_active(scroll_dl,1)
 	 end
 	 showconsole()
       end
@@ -235,7 +236,11 @@ if not skip_vmu_userconf and test("-f","/ram/dcplaya/userconf.lua") then
    dofile ("/ram/dcplaya/userconf.lua")
 end
 
-scroll_dl = nil
+if scroll_dl then
+   dl_set_active(scroll_dl,nil)
+   dl_clear(scroll_dl)
+   scroll_dl = nil
+end
 
 -- Final steps :
 help()  -- print available commands

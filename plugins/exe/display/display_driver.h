@@ -1,12 +1,12 @@
 /**
  * @ingroup  dcplaya_display_exe_plugin_devel
  * @file     display_driver.h
- * @author   Vincent Penne <ziggy@sashipa.com>
- * @author   Benjamin Gerard <ben@sashipa.com>
+ * @author   vincent penne
+ * @author   benjamin gerard
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display_driver.h,v 1.2 2003-03-19 05:16:16 ben Exp $
+ * $Id: display_driver.h,v 1.3 2003-03-26 23:02:50 ben Exp $
  */
 
 #ifndef _DISPLAY_DRIVER_H_
@@ -14,10 +14,12 @@
 
 /** @defgroup dcplaya_display_exe_plugin_devel  LUA graphical extensions
  *  @ingroup  dcplaya_exe_plugin_devel
- *  @author   Vincent Penne <ziggy@sashipa.com>
- *  @author   Benjamin Gerard <ben@sashipa.com>
- *  @brief    Doing graphics with LUA.
+ *  @author   vincent penne
+ *  @author   benjamin gerard
+ *  @brief    doing graphics with LUA.
  *  @see      dcplaya_display_list
+ *
+ *  @{
  */
 
 #include <stdio.h>
@@ -26,7 +28,6 @@
 #include "display_list.h"
 
 /** LUA tag for display list type.
- *  @ingroup dcplaya_display_exe_plugin_devel
  *  @see dcplaya_display_list
  */
 extern int dl_list_tag;
@@ -47,5 +48,7 @@ extern any_driver_t display_driver;
     dl = lua_touserdata(L, 1);
 
 #define DL_FUNCTION_END() }
+
+/**@}*/
 
 #endif /* #define _DISPLAY_DRIVER_H_ */

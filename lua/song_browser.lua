@@ -1,10 +1,10 @@
 --- @ingroup  dcplaya_lua_sb_app
 --- @file     song_browser.lua
---- @author   benjamin gerard <ben@sashipa.com>
+--- @author   benjamin gerard
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.64 2003-03-25 09:26:46 ben Exp $
+--- $Id: song_browser.lua,v 1.65 2003-03-26 23:02:50 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song Browser
@@ -19,9 +19,10 @@
 ---   one instance of a song browser application. It is stored in the global
 ---   variable song_browser.
 ---
---- @author   benjamin gerard <ben@sashipa.com>
+--- @author   benjamin gerard
 ---
 --- @{
+---
 
 song_browser_loaded = nil
 if not dolib("textlist") then return end
@@ -316,7 +317,7 @@ end
 
 --
 --- @}
-----
+---
 
 
 --- @name Control functions
@@ -470,7 +471,7 @@ end
 
 --
 --- @}
-----
+---
 
 --- @name Music and playlist functions
 --- @{
@@ -487,11 +488,14 @@ function song_browser_stop(sb)
 end
 
 --- Start a new music.
---- @param  sb   song-browser application (default to song_browser)
+--- @param  sb        song-browser application (default to song_browser)
 --- @param  filename  filename of music to play
---- @param  track-number 0:file default
---- @param  immediat  flush sound buffer if setted (some sound will be lost)
---          Do not set it to play chain tracks properly.
+--- @param  track     track-number 0:file default
+--- @param  immediat  flush sound buffer if setted (some sound will be lost).
+---                   Do not set it to play chain tracks properly.
+--- @return error-code
+--- @retval nil on error
+--
 function song_browser_play(sb, filename, track, immediat)
    sb = sb or song_browser
    if not sb then return end
@@ -506,7 +510,8 @@ end
 --- @param  pos   running position  (default to cursor)
 --- @param  loop  loop at this position if setted 0:keep current loop
 --- @return error-code
---- @return 1 success
+--- @return nil on error
+--
 function song_browser_run(sb,pos,loop)
    sb = sb or song_browser
    if not sb then return end
@@ -530,7 +535,7 @@ end
 --- @param  path    path of directory to load.
 --- @param  locate  name of entry to locate in this directory (optionnal)
 --- @return error-code
---- @retval 1 success
+--- @retval nil on error
 --- @warning The fonction use a different thread to load the directory and
 ---          returns before it is really loaded. Only one directory can be
 ---          loaded at a time and the function will fail if another loading
@@ -560,7 +565,7 @@ end
 --- @param  sb      song-browser application (default to song_browser)
 ---
 --- @return error-code
---- @retval 1 success
+--- @retval nil on error
 --
 function song_browser_playlist_clear(sb)
    sb = sb or song_browser
@@ -573,7 +578,7 @@ end
 --- @param  sb      song-browser application (default to song_browser)
 ---
 --- @return error-code
---- @retval 1 success
+--- @retval nil on error
 --
 function song_browser_playlist_stop(sb)
    sb = sb or song_browser
@@ -593,7 +598,7 @@ end
 --- @param  run     run at given position 0:insertion point
 ---
 --- @return error-code
---- @retval 1 success
+--- @retval nil on error
 --
 function song_browser_playlist(sb, path, insert, run)
    sb = sb or song_browser
@@ -655,13 +660,10 @@ end
 
 --
 --- @}
-----
+---
 
 --- @name File action functions.
----
----
 --- @{
----
 --- 
 
 --- Ask for background library loading.
@@ -692,13 +694,13 @@ end
 
 --- Load an image on the background.
 ---
---- @param  sb      song-browser application (default to song_browser)
---- @param  path    path of image to load
---- @param  mode    background mode ("center", "scale", "tile"). Defaulted
----                 to sb.background_mode or load_background() default.
+--- @param  sb        song-browser application (default to song_browser)
+--- @param  filename  path of image to load
+--- @param  mode      background mode ("center", "scale", "tile"). Defaulted
+---                   to sb.background_mode or load_background() default.
 ---
 --- @return error-code
---- @retval 1 success
+--- @retval nil on error
 --
 function songbrowser_load_image(sb, filename, mode)
    sb = sb or song_browser
@@ -789,6 +791,11 @@ end
 
 --- Edit a file.
 ---
+---   Launch zed to edit the given file.
+---
+--- @param  sb          song-browser application (default to song_browser)
+--- @param  entry_path  path of file to edit
+---
 function song_browser_edit_file(sb, entry_path)
    sb = sb or song_browser
    if not sb then return end
@@ -804,7 +811,7 @@ end
 
 --
 --- @}
-----
+---
 
 -- ----------------------------------------------------------------------
 -- filelist "confirm" actions
@@ -2124,8 +2131,8 @@ end
 
 --
 --- @}
-----
+---
 
 -- end of defgroup
 --- @}
-----
+---

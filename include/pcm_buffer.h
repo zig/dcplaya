@@ -1,11 +1,11 @@
 /**
  * @ingroup dcplaya_pcmbuffer_devel
  * @file    pcm_buffer.h
- * @author  benjamin gerard <ben@sashipa.com>
+ * @author  benjamin gerard
  * @date    2002
  * @brief   PCM and Bitstream buffer.
  *
- * $Id: pcm_buffer.h,v 1.4 2003-03-22 00:35:27 ben Exp $
+ * $Id: pcm_buffer.h,v 1.5 2003-03-26 23:02:48 ben Exp $
  */
 
 #ifndef _PCM_BUFFER_H_
@@ -20,41 +20,35 @@ DCPLAYA_EXTERN_C_START
  *  @brief    PCM and Bitstream buffers.
  *
  *  @warning  Not thread safe.
- *  @author  benjamin gerard <ben@sashipa.com>
+ *  @author   benjamin gerard
+ *  @{
  */
 
 /** Current PCM buffer size (in mono PCM).
- *  @ingroup  dcplaya_pcmbuffer_devel
  */ 
 #define PCM_BUFFER_SIZE pcm_buffer_size
 
 /** Current Bitstream buffer size (in bytes).
- *  @ingroup  dcplaya_pcmbuffer_devel
  */ 
 #define BS_SIZE         bs_buffer_size
 
 /** Current PCM buffer.
- *  @ingroup  dcplaya_pcmbuffer_devel
  */ 
 extern short * pcm_buffer;
 
 /** Current PCM buffer size (in mono PCM).
- *  @ingroup  dcplaya_pcmbuffer_devel
  */ 
 extern int pcm_buffer_size;
 
 /** Current Bitstream buffer.
- *  @ingroup  dcplaya_pcmbuffer_devel
  */ 
 extern char  * bs_buffer;
 
 /** Current Bitstream buffer size (in bytes).
- *  @ingroup  dcplaya_pcmbuffer_devel
  */ 
 extern int bs_buffer_size;
 
 /** Initialise PCM and Bitstream buffer.
- *  @ingroup  dcplaya_pcmbuffer_devel
  *
  *    The pcm_buffer_init() function allocates realloc PCM and Bitstream
  *    buffers. For each buffer the reallocation occurs only if the new size
@@ -77,11 +71,12 @@ extern int bs_buffer_size;
 int pcm_buffer_init(int pcm_size, int bs_size);
 
 /** Shutdown PCM and Bitstream buffer.
- *  @ingroup  dcplaya_pcmbuffer_devel
  *
  *    The pcm_buffer_shutdown() is an alias for the pcm_buffer_init(0,0) call.
  */
 void pcm_buffer_shutdown(void);
+
+/**@}*/
 
 DCPLAYA_EXTERN_C_END
 

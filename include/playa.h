@@ -1,10 +1,10 @@
 /**
  * @ingroup  dcplaya_playa_devel
  * @file     playa.h
- * @author   benjamin gerard <ben@sashipa.com>
+ * @author   benjamin gerard
  * @brief    music player threads
  *
- * $Id: playa.h,v 1.9 2003-03-22 00:35:27 ben Exp $
+ * $Id: playa.h,v 1.10 2003-03-26 23:02:48 ben Exp $
  */
 
 #ifndef _PLAYA_H_
@@ -16,15 +16,16 @@
 DCPLAYA_EXTERN_C_START
 
 
-/** @defgroup dcplaya_playa_devel playa
- *  @ingroup dcplaya_devel
- *  @brief   playa API.
+/** @defgroup dcplaya_playa_devel Playa
+ *  @ingroup  dcplaya_devel
+ *  @brief    music player
  *
- *  @author  benjamin gerard <ben@sashipa.com>
+ *  @author  benjamin gerard
+ *
+ *  @{
  */
 
 /** @name Main decoder thread status
- *  @ingroup  dcplaya_playa_devel
  *  @{
  */
 #define PLAYA_STATUS_INIT     0
@@ -38,7 +39,6 @@ DCPLAYA_EXTERN_C_START
 /**@}*/
 
 /** @name playa initialization functions
- *  @ingroup  dcplaya_playa_devel
  *  @{
  */ 
 
@@ -54,12 +54,7 @@ int playa_shutdown();
 
 /**@}*/
 
-
-
-int playa_isplaying();
-
 /** @name playa control functions
- *  @ingroup  dcplaya_playa_devel
  *  @{
  */ 
 
@@ -92,9 +87,16 @@ int playa_fade(int ms);
 
 
 /** @name playa query functions
- *  @ingroup  dcplaya_playa_devel
  *  @{
  */ 
+
+/** Get playa plying status.
+ *  @return playa plying status.
+ *  @retval 1 player is playing
+ *  @retval 0 player is not playing
+ */
+int playa_isplaying();
+
 
 /** Get playa pause status.
  *  @return playa pause status.
@@ -136,7 +138,10 @@ void playa_get_buffer(int **b, int *nbSamples, int *counter, int *frq);
  */
 int playa_get_frq(void);
 
-/*@}*/
+/**@}*/
+
+/**@}*/
+
 
 DCPLAYA_EXTERN_C_END
 

@@ -1,8 +1,8 @@
 -- converted from kos keyboard.h
 --
--- author : vincent penne <ziggy@sashipa.com>
+-- author : vincent penne
 --
--- $Id: keydefs.lua,v 1.8 2002-12-04 18:46:49 ben Exp $
+-- $Id: keydefs.lua,v 1.9 2003-03-26 23:02:49 ben Exp $
 --
 
 -- if not keydefs_loaded then

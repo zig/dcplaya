@@ -1,11 +1,11 @@
 /**
- * @ingroup  exe_plugin
+ * @ingroup  dcplaya_exe_plugin_devel
  * @file     display_text.c
- * @author   Vincent Penne
+ * @author   benjamin gerard
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, text interface
  * 
- * $Id: display_text.c,v 1.10 2003-03-21 05:46:30 ben Exp $
+ * $Id: display_text.c,v 1.11 2003-03-26 23:02:50 ben Exp $
  */
 
 #include <string.h>

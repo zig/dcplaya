@@ -5,7 +5,7 @@
  * @author    benjamin gerard
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.h,v 1.14 2003-03-23 23:54:54 ben Exp $
+ * @version   $Id: display_list.h,v 1.15 2003-03-26 23:02:47 ben Exp $
  */
 
 #ifndef _DISPLAY_LIST_H_
@@ -13,7 +13,7 @@
 
 /** @defgroup  dcplaya_display_list  Display list system.
  *  @ingroup   dcplaya_devel
- *  @brief     Display list system
+ *  @brief     display list system
  *
  *  A display list is a list that contains commands to be executed every frame.
  *  Commands in a list are execurted sequentially in the order of insertion.
@@ -40,6 +40,7 @@
  * @author    vincent penne
  * @author    benjamin gerard
  *
+ * @{
  */
 
 #include <arch/spinlock.h>
@@ -50,12 +51,10 @@
 #include "draw/color.h"
 
 /** Display list color type.
- *  @ingroup dcplaya_display_list
  */
 typedef draw_color_t dl_color_t;
 
 /** Display list clipping box type.
- *  @ingroup dcplaya_display_list
  */
 typedef draw_clipbox_t dl_clipbox_t;
 
@@ -65,7 +64,6 @@ struct dl_command;
 #define DL_COMID_ERROR   -1
 
 /** Display list command error codes enumeration.
- *  @ingroup dcplaya_display_list
  */
 typedef enum  {
   DL_COMMAND_OK    = 0, /**< Command success.                                */
@@ -75,7 +73,6 @@ typedef enum  {
 } dl_code_e;
 
 /** Display list render context.
- *  @ingroup dcplaya_display_list
  *
  *  A display list render context contains information needed by display
  *  list commands render functions. It consists on current color and current
@@ -88,7 +85,6 @@ typedef struct
 } dl_context_t;
 
 /** Display list run context.
- *  @ingroup dcplaya_display_list
  *
  *  A display list run context contains information needed by the sub-list
  *  command. It contains information on the way that colors and transformation
@@ -103,34 +99,30 @@ typedef struct {
  
 /** Function type to render in opaque list or transparent list ;
  *  its argument is the pointer on the command that contained it.
- *  @ingroup dcplaya_display_list
  */
 typedef dl_code_e (*dl_command_func_t)(void *, dl_context_t *);
 
 /** Display list command identifier.
- *  @ingroup dcplaya_display_list
  */
 typedef int dl_comid_t;
 
 /** Display list command header structure.
- *  @ingroup dcplaya_display_list
  */
-typedef struct dl_command {
-  dl_comid_t next_id;                   /** Next command in list.          */
+typedef struct {
+  dl_comid_t next_id;                   /**< Next command in list.           */
   /** Display list command flags. */
   union {
-	struct {
-	  unsigned int inactive : 1;        /** Command is inactive.           */
-	};
-	int all;
+    struct {                            /**< Fake struct to hold bit field.  */
+      unsigned int inactive : 1;        /**< Command is inactive.            */
+    };
+    int all;                            /**< Access all flags.               */
   } flags;
 	
-  dl_command_func_t render_opaque;      /** Opaque rendering function.      */
-  dl_command_func_t render_transparent; /** Transparent rendering function. */
+  dl_command_func_t render_opaque;      /**< Opaque rendering function.      */
+  dl_command_func_t render_transparent; /**< Transparent rendering function. */
 } dl_command_t;
 
 /** @name Display list flags.
- *  @ingroup dcplaya_display_list
  *  @{
  */
 #define DL_INHERIT_PARENT 0 /**< effective = parent       */
@@ -140,7 +132,6 @@ typedef struct dl_command {
 /**@}*/
 
 /** Display list structure.
- *  @ingroup dcplaya_display_list
  */
 typedef struct dl_list {
   LIST_ENTRY(dl_list) g_list;  /**< linked list entry                   */
@@ -166,8 +157,6 @@ typedef struct dl_list {
   int    heap_size;            /**< Size of the heap.                   */
   int    heap_pos;             /**< Position in heap.                   */
 
-  //  spinlock_t mutex;            /**< Mutex.                              */
-
 } dl_list_t;
 
 /** Heap transfert struct. */
@@ -181,7 +170,6 @@ typedef struct {
 typedef LIST_HEAD(dl_lists, dl_list) dl_lists_t;
 
 /** @name Display list system initialization.
- *  @ingroup dcplaya_display_list
  */
 
 /** Initialize the display list system. */
@@ -194,7 +182,7 @@ int dl_shutdown(void);
 
 
 /** @name Display list management.
- *  @ingroup dcplaya_display_list
+ *  @{
  */
 
 /** Create a new display list.
@@ -231,12 +219,12 @@ int dl_dereference(dl_list_t * dl);
 
 
 /** @name Display list control.
- *  @ingroup dcplaya_display_list
+ *  @{
  */
 
 /** Query active state of given display list.
  *
- *  @param  dl  Display list.
+ *  @param  dl  Display list
  *
  *  @return   Display list active state.
  *  @retval 0 Display list is inactive.
@@ -246,13 +234,14 @@ int dl_get_active(dl_list_t * dl);
 
 /** Change active state of a display list.
  *
- *  @param  dl  Display list.
+ *  @param  dl       Display list
+ *  @param  active   new active state
  *
  *  @return   Display list preivious active state.
  *  @retval 0 Display list was inactive.
  *  @retval 1 Display list was active.
  */
-int dl_set_active(dl_list_t *, int active);
+int dl_set_active(dl_list_t * dl, int active);
 
 /** Change active state of two display list.
  *
@@ -274,7 +263,6 @@ int dl_set_active2(dl_list_t * l1, dl_list_t * l2, int active);
 
 
 /** @name Display list command functions.
- *  @ingroup dcplaya_display_list
  *
  *  Set of function of creating and removing display list commands.
  *
@@ -286,12 +274,13 @@ int dl_set_active2(dl_list_t * l1, dl_list_t * l2, int active);
  *  - Insert the command to the display list with the dl_insert()
  *    function. This will unlock the display list.
  *
+ *  @{
  */
 
 /** Allocate requested number of byte in the display list heap and keep
  *  display list locked until dl_insert() function call.
  *
- *  @param dl    Display list.
+ *  @param dl    Display list
  *  @param size  Requested number of by to allocate.
  *
  *  @return  Pointer into the display list memory heap allocated buffer.
@@ -316,12 +305,14 @@ void * dl_alloc(dl_list_t * dl, size_t size);
 dl_comid_t dl_insert(dl_list_t * dl, void * pcom,
 		     dl_command_func_t o_render, dl_command_func_t t_render);
 
-/** Clear the display list (i.e. reset the command list) */
+/** Clear the display list (i.e. reset the command list)
+ *  @param dl        Display list locked by dl_alloc() function.
+ */
 void dl_clear(dl_list_t * dl);
 
 /** Insert an NO-OPERATION command to display list.
  *
- *  @param   dl  Display list.
+ *  @param   dl  Display list
  *
  *  @return  Command identifier
  *  @retval  DL_COMMID_ERROR failure
@@ -330,11 +321,9 @@ dl_comid_t dl_nop_command(dl_list_t * dl);
 
 /** Insert an SUB-LIST command to display list.
  *
- *  @param   dl        Display list.
+ *  @param   dl        Display list
  *  @param   sublist   Sub display list to run (must be a sublist). 
- *  @param   gc_flags  Set of GC_RESTORE flags that determines which graphic
- *                     properties must be restored.
- *  @param   inherit   Inherit properties
+ *  @param   rc        run context
  *
  *  @return  Command identifier
  *  @retval  DL_COMMID_ERROR failure
@@ -342,42 +331,55 @@ dl_comid_t dl_nop_command(dl_list_t * dl);
  *  @see dl_create()
  */
 dl_comid_t dl_sublist_command(dl_list_t * dl, dl_list_t * sublist,
-							  const dl_runcontext_t * rc);
+			      const dl_runcontext_t * rc);
 
 /**@}*/
 
 
 /** @name Display list rendering functions.
- *  @ingroup dcplaya_display_list
  *
  *  These functions must be call by the rendering thread to perform display
  *  list rendering process in a given mode.
+ *
+ *  @{
  */
  
 /** Render all active display list in opaque mode. */
-void dl_render_opaque();
+void dl_render_opaque(void);
 
 /** Render all active display list in transparent mode. */
-void dl_render_transparent();
+void dl_render_transparent(void);
 
 /**@}*/
 
 
 /** @name Display list context access.
- *  @ingroup dcplaya_display_list
+ *  @{
  */
 
-/** Set display list global transformation. */
+/** Set display list global transformation.
+ *  @param   dl        Display list
+ *  @param   mat       New matrix
+ */
 void dl_set_trans(dl_list_t * dl, const matrix_t mat);
 
-/** Get display list global transformation. */
+/** Get display list global transformation.
+ *  @param   dl        Display list
+ */
 float * dl_get_trans(dl_list_t * dl);
 
-/** Set display list global color. */
+/** Set display list global color.
+ *  @param   dl        Display list
+ *  @param   col       New color
+ */
 void dl_set_color(dl_list_t * dl, const dl_color_t * col);
 
-/** Get display list global color. */
+/** Get display list global color.
+ *  @param   dl        Display list
+ */
 dl_color_t * dl_get_color(dl_list_t * dl);
+
+/**@}*/
 
 /**@}*/
 

@@ -1,17 +1,10 @@
 /**
  * @ingroup dcplaya_ramdisk_devel
  * @file    fs_ramdisk.h
- * @author  benjamin gerard <ben@sashipa.com>
+ * @author  benjamin gerard
  * @brief   RAM disk for KOS file system
  * 
- * $Id: fs_ramdisk.h,v 1.3 2003-03-22 00:35:27 ben Exp $
- */
-
-/** @defgroup dcplaya_ramdisk_devel Ramdisk filesystem
- *  @ingroup dcplaya_devel
- *  @brief   Ramdisk filesystem
- *
- * @author  benjamin gerard <ben@sashipa.com>
+ * $Id: fs_ramdisk.h,v 1.4 2003-03-26 23:02:47 ben Exp $
  */
 
 #ifndef _FS_RAMDISK_H_
@@ -24,8 +17,21 @@ DCPLAYA_EXTERN_C_START
 #include <arch/types.h>
 #include <kos/fs.h>
 
+/** @defgroup dcplaya_fs_devel Filesystem
+ *  @ingroup  dcplaya_devel
+ *  @brief    virtual filesystem for KOS
+ *  @author   benjamin gerard
+ */
+
+/** @defgroup dcplaya_ramdisk_devel Ramdisk Filesystem
+ *  @ingroup  dcplaya_fs_devel
+ *  @brief    ramdisk filesystem
+ *
+ *  @author  benjamin gerard
+ *  @{
+ */
+
 /** @name Initialization functions
- *  @ingroup dcplaya_ramdisk_devel
  *  @{
  */
 
@@ -45,7 +51,6 @@ int fs_ramdisk_shutdown(void);
 /**@}*/
 
 /** @name Mofication notication functions
- *  @ingroup dcplaya_ramdisk_devel
  *  @{
  */
 
@@ -66,6 +71,8 @@ int fs_ramdisk_modified(void);
  *  @retval -1 error (directory does not exist)
  */
 int fs_ramdisk_notify_path(const char *path);
+
+/**@}*/
 
 /**@}*/
 

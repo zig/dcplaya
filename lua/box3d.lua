@@ -1,6 +1,6 @@
 --- @ingroup dcplaya_lua_gui
 --- @file    box3d.lua
---- @author  ben(jamin) gerard <ben@sashipa.com>
+--- @author  ben(jamin) gerard
 --- @date    2002/12/10
 --- @brief   Draw a box with 3D border.
 ---

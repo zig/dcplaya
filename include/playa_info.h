@@ -1,19 +1,11 @@
 /**
  * @ingroup dcplaya_playainfo_devel
  * @file    playa_info.h
- * @author  benjamin gerard <ben@sashipa.com>
+ * @author  benjamin gerard
  * @date    2002/09/23
  * @brief   Music informations
  *
- * $Id: playa_info.h,v 1.7 2003-03-23 23:54:54 ben Exp $
- */
-
-/** @defgroup dcplaya_playainfo_devel playa info
- *  @ingroup  dcplaya_playa_devel
- *  @brief    music information.
- *
- *  @author  benjamin gerard <ben@sashipa.com>
- *  @{
+ * $Id: playa_info.h,v 1.8 2003-03-26 23:02:48 ben Exp $
  */
 
 #ifndef _PLAYA_INFO_H_
@@ -22,6 +14,14 @@
 #include "extern_def.h"
 
 DCPLAYA_EXTERN_C_START
+
+/** @defgroup dcplaya_playainfo_devel playa info
+ *  @ingroup  dcplaya_playa_devel
+ *  @brief    music information.
+ *
+ *  @author  benjamin gerard
+ *  @{
+ */
 
 /** Player info fields enumeration. 
  *  @warning  Do not change order : hardcode
@@ -108,7 +108,6 @@ void playa_info_dump(playa_info_t * info);
 /** @name Numeric information accessor.
  *  @{
  */
-
 int playa_info_bits(playa_info_t * info, int v);
 
 int playa_info_stereo(playa_info_t * info, int v);
@@ -120,7 +119,6 @@ int playa_info_time(playa_info_t * info, int v);
 int playa_info_bps(playa_info_t * info, int v);
 
 int playa_info_bytes(playa_info_t * info, int v);
-
 /**@}*/
 
 /** @name String information accessor.

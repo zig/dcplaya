@@ -4,7 +4,7 @@
 --- @author  benjamin gerard
 --- @brief   hyper text viewer gui.
 ---
---- $Id: textviewer.lua,v 1.18 2003-03-25 09:26:47 ben Exp $
+--- $Id: textviewer.lua,v 1.19 2003-03-26 23:02:50 ben Exp $
 ---
 
 if not dolib("taggedtext") then return end
@@ -49,9 +49,9 @@ end
 --
 --- @param  owner  owner applciation (default is desktop)
 --- @param  texts  string or table of string.
---- @param  application box
---- @param  dialog label (optionnal)
---- @param  mode label mode.
+--- @param  box    application box
+--- @param  label  dialog label (optionnal)
+--- @param  mode   label mode.
 --- @return dialog application
 ---
 function gui_text_viewer(owner, texts, box, label, mode)
@@ -200,7 +200,7 @@ function gui_text_viewer(owner, texts, box, label, mode)
 
    -- Create view-dialog
    dial.viewer = gui_new_dialog(dial, tbox, nil, nil, nil, nil,
-				  "viewer_area")
+				"viewer_area", {transparent=1})
    if not dial.viewer then return end
 
    dial.tbox = ttbox0
@@ -515,7 +515,13 @@ function gui_text_viewer(owner, texts, box, label, mode)
 end
 
 --- Create a text-viewer application from a file.
+--- @param  owner  owner applciation (default is desktop)
 --- @param  fname  Filename to view
+--- @param  box    application box
+--- @param  label  dialog label (optionnal)
+--- @param  mode   label mode.
+--- @param  preformatted  if defined text is load as preformatted and
+---                       preformatted is the tab size.
 --- @see gui_text_viewer
 ---
 function gui_file_viewer(owner, fname, box, label, mode, preformatted)
@@ -527,7 +533,7 @@ function gui_file_viewer(owner, fname, box, label, mode, preformatted)
       local header,footer
       if preformatted then
 	 header = format('<font id="1" size="16" color="text_color"><pre tabsize="%d" tabchar=" ">', preformatted)
-	 footer = '</pre><font id="0">'
+	 footer = '</pre><font id="0" size="16">'
       else
 	 header,footer = "",""
       end
@@ -542,7 +548,7 @@ end
 
 --
 --- @}
-----
+---
 
 -- Create application icon sprite
 sprite_simple(nil,"textviewer.tga")

@@ -1,12 +1,13 @@
 /**
+ * @ingroup dcplaya_vmu_fileheader
  * @file    vmu_fileheader.h
- * @author  benjamin gerard <ben@sashipa.com>
+ * @author  benjamin gerard
  * @date    2002/09/30
- * @brief   vmu file header.
+ * @brief   VMU file header
  *
  *  Thanks to Marcus Comstedt for the documentation.
  *
- * $Id: vmu_fileheader.h,v 1.1 2002-10-21 14:56:59 benjihan Exp $
+ * $Id: vmu_fileheader.h,v 1.2 2003-03-26 23:02:48 ben Exp $
  */
 
 #ifndef _VMU_FILEHEADER_H_
@@ -17,7 +18,11 @@
 
 DCPLAYA_EXTERN_C_START
 
-/** VMS File Header.
+/** @defgroup  dcplaya_vmu_fileheader  VMU file header
+ *  @ingroup   dcplaya_vmu_devel
+ *  @brief     VMU file header
+ *
+ * @par VMS file header.
  *
  *   All VMS files should contain a standard header which is used by the
  *   file managers in the VMS and in the DC boot ROM to display
@@ -29,7 +34,27 @@ DCPLAYA_EXTERN_C_START
  *   field in the VMS directory, which should contain 1 for game files,
  *   and 0 for data files.
  *
- */ 
+ * @par Icon bitmaps.
+ *
+ *   The header should contain at least one icon bitmap for the file. If
+ *   an animated icon is desired, up to three bitmaps can be used (set the
+ *   vmu_fileheader_t::icons field of accordingly). The bitmaps are
+ *   stored  directly after each other, starting just after the
+ *   vmu_fileheader_t (offset 0x80). The bitmaps contain one nybble per
+ *   pixel. Each byte thus represents two horizontally adjacent
+ *   pixels, the high nybble being the left one and the low nybble
+ *   being the right one. Each complete bitmap contains 1024 (32 * 32) 
+ *   nybbles, or 512 bytes, for a 32 x 32 pixel resolution. 
+ *   
+ *  Thanks to Marcus Comstedt for the documentation.
+ *
+ *  @author    benjamin gerard
+ *  @{
+ */
+
+/** VMS file header.
+ *  @see dcplaya_vmu_fileheader for more information.
+ */
 typedef struct {
   /** Description as shown in VMS file menu. Padded with 0x20.               */
   char vms_desc[16];
@@ -55,17 +80,7 @@ typedef struct {
 } vmu_fileheader_t;
 
 /** Icon bitmaps.
- *
- *   The header should contain at least one icon bitmap for the file. If
- *   an animated icon is desired, up to three bitmaps can be used (set the
- *   vmu_fileheader_t::icons field of  accordingly). The bitmaps are
- *   stored  directly after each other, starting just after the
- *   vmu_fileheader_t (offset 0x80). The bitmaps contain one nybble per
- *   pixel. Each byte thus represents two horizontally adjacent
- *   pixels, the high nybble being the left one and the low nybble
- *   being the right one. Each complete bitmap contains 1024 (32 * 32) 
- *   nybbles, or 512 bytes, for a 32 x 32 pixel resolution. 
- *   
+ *  @see dcplaya_vmu_fileheader for more information.
  */
 typedef struct {
   uint8 data[32][16]; /**< Complete bitmap (4 pixels by bytes).              */
@@ -115,7 +130,7 @@ enum vmu_eyecatch_e {
  */
 int vmu_fileheader_crc(const uint8 * buf, int size);
 
-
+/**@}*/
 
 DCPLAYA_EXTERN_C_END
 

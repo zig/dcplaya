@@ -1,5 +1,5 @@
 /**
- * $Id: vmu68.c,v 1.15 2003-03-10 22:55:35 ben Exp $
+ * $Id: vmu68.c,v 1.16 2003-03-26 23:02:51 ben Exp $
  */
 
 #include <dc/vmu.h>
@@ -76,7 +76,7 @@ static int vmu_db = 1;
 
 /* From dreamcast68.c */
 extern int dreamcast68_isplaying(void);
-char songmenu_selected[64];	//songmenu.c
+/* char songmenu_selected[64];	//songmenu.c */
 extern char option_str[];				// option.c
 
 static int addr_xy(int x, int y, int w, int h)

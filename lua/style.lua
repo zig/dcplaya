@@ -1,6 +1,6 @@
 --- @ingroup dcplaya_lua_gui
 --- @file    style.lua
---- @author  benjamin gerard <ben@sashipa.com>
+--- @author  benjamin gerard
 --- @date    2002/12/17
 --- @brief   gui styles.
 --- 

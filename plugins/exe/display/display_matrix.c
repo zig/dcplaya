@@ -1,12 +1,12 @@
 /**
- * @ingroup  exe_plugin
+ * @ingroup  dcplaya_exe_plugin_devel
  * @file     display_matrix.c
- * @author   Vincent Penne <ziggy@sashipa.com>
- * @author   Benjamin Gerard <ben@sashipa.com>
+ * @author   vincent penne
+ * @author   benjamin gerard
  * @date     2002/09/25
  * @brief    graphics lua extension plugin, matrix interface
  * 
- * $Id: display_matrix.c,v 1.8 2003-03-10 22:55:33 ben Exp $
+ * $Id: display_matrix.c,v 1.9 2003-03-26 23:02:50 ben Exp $
  */
 
 #include <stdlib.h>

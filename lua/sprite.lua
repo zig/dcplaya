@@ -1,6 +1,6 @@
 --- @file      sprite.lua
 --- @ingroup   dcplaya_lua_sprite
---- @author    benjamin gerard <ben@sashipa.com>
+--- @author    benjamin gerard
 --- @date      2002/11/06
 --- @brief     lua sprite
 ---
@@ -13,7 +13,7 @@ if not sprite_tag then sprite_tag = newtag() end
 --- @defgroup  dcplaya_lua_sprite  Sprite
 --- @ingroup   dcplaya_lua_graphics
 --- @brief     sprite graphic objects
---- @author    benjamin gerard <ben@sashipa.com>
+--- @author    benjamin gerard
 --- @{
 ---
 
