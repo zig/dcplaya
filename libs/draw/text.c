@@ -5,7 +5,7 @@
  * @date    2002/02/11
  * @brief   drawing and formating text primitives
  *
- * $Id: text.c,v 1.7 2003-03-06 19:59:41 zigziggy Exp $
+ * $Id: text.c,v 1.8 2003-03-07 20:56:39 zigziggy Exp $
  */
 
 #include <stdarg.h>
@@ -71,7 +71,7 @@ static font_t * fonts[8];
 
 static int do_escape(int c, va_list * list);
 static void set_properties(fontid_t n, const float size, const float aspect,
-					  int filter);
+			   int filter);
 
 static void bounding(uint16 * img, int w, int h, int bpl, int *box)
 {
@@ -121,12 +121,12 @@ fontid_t text_new_font(texid_t texid, int wc, int hc, int fixed, float wspace, f
   uint16 * base;
 
   if (nfont >= sizeof(fonts)/sizeof(*fonts)) {
-	goto error;
+    goto error;
   }
 
   t = texture_lock(texid);
   if (!t) {
-	goto error;
+    goto error;
   }
 
   lines = t->height / (int) hc;
@@ -135,7 +135,7 @@ fontid_t text_new_font(texid_t texid, int wc, int hc, int fixed, float wspace, f
 
   fnt = malloc(sizeof(*fnt) - sizeof(fnt->glyph) + chars*sizeof(*fnt->glyph));
   if (!fnt) {
-	goto error;
+    goto error;
   }
 
   fnt->texid = texid;
@@ -152,54 +152,54 @@ fontid_t text_new_font(texid_t texid, int wc, int hc, int fixed, float wspace, f
   base = t->addr;
 
   for (c = y = 0; y < lines; ++y, base += hc << t->wlog2) {
-	uint16 * ba;
-	for (x = 0, ba = base; x < cpl; ++x, ++c, ba += wc) {
-	  myglyph_t *m = fnt->glyph + c;
+    uint16 * ba;
+    for (x = 0, ba = base; x < cpl; ++x, ++c, ba += wc) {
+      myglyph_t *m = fnt->glyph + c;
 
-	  if (!fixed) {
-		bounding(ba, wc, hc, 1<<t->wlog2, b);
-		m->w = (float)(b[2] - b[0] + 2);
-		m->h = hc;
-		m->u1 = (float) (x * wc + b[0]) * xs;
-		m->u2 = (float) (x * wc + b[2]+1) * xs;
-	  } else {
-		m->w = wc;
-		m->h = hc;
-		m->u1 = (float)x * fnt->xs;
-		m->u2 = m->u1 + fnt->xs;
-	  }
-	  m->v1 = (float)y * ys;
-	  m->v2 = m->v1 + ys;
-	}
+      if (!fixed) {
+	bounding(ba, wc, hc, 1<<t->wlog2, b);
+	m->w = (float)(b[2] - b[0] + 2);
+	m->h = hc;
+	m->u1 = (float) (x * wc + b[0]) * xs;
+	m->u2 = (float) (x * wc + b[2]+1) * xs;
+      } else {
+	m->w = wc;
+	m->h = hc;
+	m->u1 = (float)x * fnt->xs;
+	m->u2 = m->u1 + fnt->xs;
+      }
+      m->v1 = (float)y * ys;
+      m->v2 = m->v1 + ys;
+    }
   }
   texture_release(t);
     
   /* Special case for char 4[pad] & 6[joy] */
   for (c=4; c<8; c+=2) {
-	fnt->glyph[c].u1 = (fnt->glyph[c+cpl  ].u1 < fnt->glyph[c     ].u1)  ? 
-	  fnt->glyph[c+cpl  ].u1 : fnt->glyph[c     ].u1;
-	fnt->glyph[c].v1 = (fnt->glyph[c+ 1  ].v1 < fnt->glyph[c     ].v1)  ? 
-	  fnt->glyph[c+ 1  ].v1 : fnt->glyph[c     ].v1;
-	fnt->glyph[c].u2 = (fnt->glyph[c+1+cpl].u2 > fnt->glyph[c+1   ].u2)  ? 
-	  fnt->glyph[c+1+cpl].u2 : fnt->glyph[c+1   ].u2;
-	fnt->glyph[c].v2 = (fnt->glyph[c+cpl  ].v2 > fnt->glyph[c+1+cpl].v2)  ? 
-	  fnt->glyph[c+cpl  ].v2 : fnt->glyph[c+1+cpl].v2;
-	fnt->glyph[c].w  = wc * 2;
-	fnt->glyph[c].h  = hc * 2;
+    fnt->glyph[c].u1 = (fnt->glyph[c+cpl  ].u1 < fnt->glyph[c     ].u1)  ? 
+      fnt->glyph[c+cpl  ].u1 : fnt->glyph[c     ].u1;
+    fnt->glyph[c].v1 = (fnt->glyph[c+ 1  ].v1 < fnt->glyph[c     ].v1)  ? 
+      fnt->glyph[c+ 1  ].v1 : fnt->glyph[c     ].v1;
+    fnt->glyph[c].u2 = (fnt->glyph[c+1+cpl].u2 > fnt->glyph[c+1   ].u2)  ? 
+      fnt->glyph[c+1+cpl].u2 : fnt->glyph[c+1   ].u2;
+    fnt->glyph[c].v2 = (fnt->glyph[c+cpl  ].v2 > fnt->glyph[c+1+cpl].v2)  ? 
+      fnt->glyph[c+cpl  ].v2 : fnt->glyph[c+1+cpl].v2;
+    fnt->glyph[c].w  = wc * 2;
+    fnt->glyph[c].h  = hc * 2;
   }
 
   if (!fixed && wspace)
     fnt->glyph[' '].w = wspace;
 
   SDDEBUG("New font : id:%d %dx%d [%s]\n", nfont, (int)wc, (int)hc,
-		  fixed ? "fixed" : "proportionnel");
+	  fixed ? "fixed" : "proportionnel");
 
   fonts[nfont] = fnt;
   return nfont++;
 
  error:
   if (t) {
-	texture_release(t);
+    texture_release(t);
   }
   return -1;
 }
@@ -212,11 +212,11 @@ void text_shutdown(void)
   SDINDENT;
  
   for (i=0; i<nfont; ++i) {
-	font_t * f = fonts[i];
-	if (f && f != &dummyfont) {
-	  free(f);
-	}
-	fonts[i] = 0;
+    font_t * f = fonts[i];
+    if (f && f != &dummyfont) {
+      free(f);
+    }
+    fonts[i] = 0;
   }
   nfont = 0;
 
@@ -235,9 +235,9 @@ int text_init(void)
   spinlock_init(&mutex);
 
   if (!current_gc) {
-	SDERROR("No GC.\n");
-	err = -1;
-	goto error;
+    SDERROR("No GC.\n");
+    err = -1;
+    goto error;
   }
 
   nfont = 0;
@@ -250,7 +250,7 @@ int text_init(void)
   fonts[0] = &dummyfont;
 
   texid = texture_create_file("/rd/font16x16", "4444");
-/*  text_new_font(texid,16,16,0, 0, 0); */
+  /*  text_new_font(texid,16,16,0, 0, 0); */
   text_new_font(texid,16,16,0, 9, -4);
   texid = texture_create_file("/rd/font8x14", "4444");
   text_new_font(texid,8,14,1, 0, 0);
@@ -276,7 +276,7 @@ static void restore_state(const gc_text_t * restore)
 static myglyph_t * curglyph(unsigned int c)
 {
   if (c >= curfont->n) {
-	  c = 0;
+    c = 0;
   }
   return curfont->glyph + c;
 }
@@ -322,14 +322,14 @@ static float size_of_str(float * h, const char *s)
   const float yscale = xscale * current_gc->text.aspect;
 
   while ((c=(*s++)&255), c) {
-	myglyph_t * g;
+    myglyph_t * g;
 	  
-	if (c >= curfont->n) {
-	  c = 0;
-	}
-	g = curfont->glyph + c;
-	if (g->h > max_h) max_h = g->h;
-	sum += (g->w + curfont->wadd);
+    if (c >= curfont->n) {
+      c = 0;
+    }
+    g = curfont->glyph + c;
+    if (g->h > max_h) max_h = g->h;
+    sum += (g->w + curfont->wadd);
   }
   if (h) *h = max_h * yscale;
 
@@ -347,22 +347,22 @@ static float size_of_strf(float *h, const char *s, va_list list)
 
   save_state(&savegc);
   while ((c=(*s++)&255), c) {
-	myglyph_t * g;
-	float ch;
-	if (esc) {
-	  c = do_escape(c, &list);
-	  xscale = current_gc->text.size / curfont->wc;
-	  yscale = xscale * current_gc->text.aspect;
-	  esc = 0;
-	} else if (c==current_gc->text.escape) {
+    myglyph_t * g;
+    float ch;
+    if (esc) {
+      c = do_escape(c, &list);
+      xscale = current_gc->text.size / curfont->wc;
+      yscale = xscale * current_gc->text.aspect;
+      esc = 0;
+    } else if (c==current_gc->text.escape) {
       esc = 1;
-	  c = -1;
+      c = -1;
     }
-	if (c == -1) continue;
-	g = curglyph(c);
-	ch = g->h * yscale;
-	if (ch > maxh) maxh = ch;
-	sum += g->w * xscale;
+    if (c == -1) continue;
+    g = curglyph(c);
+    ch = g->h * yscale;
+    if (ch > maxh) maxh = ch;
+    sum += (g->w + curfont->wadd) * xscale;
   }
   restore_state(&savegc);
   if (h) *h = maxh;
@@ -411,7 +411,7 @@ void text_size_str(const char * s, float * w, float * h)
 }
 
 void text_size_str_prop(const char * s, float * w, float * h,
-						fontid_t n, const float size, const float aspect)
+			fontid_t n, const float size, const float aspect)
 {
   float w2;
   gc_text_t save;
@@ -439,7 +439,7 @@ static float draw_text_char(float x1, float y1, float z1,
 
   g = curglyph(c);
   if (!g) {
-	return x1;
+    return x1;
   }
 
   /* Compute width and height */
@@ -457,22 +457,25 @@ static float draw_text_char(float x1, float y1, float z1,
 
 
   if (c==4 || c==6) {
-	/* Joypad special case */
-	argb = (argb & 0xFF000000) | (c==4 ? DPAD_COLOR : JOY_COLOR);
+    /* Joypad special case */
+    argb = (argb & 0xFF000000) | (c==4 ? DPAD_COLOR : JOY_COLOR);
     y1 -= hc * 0.5f;
     hc *= 2.0f;
   } else if (c >= 16 && c <= 19) {
-	/* Pad buttons special case */
-	static draw_argb_t colors[4] = {
-	  A_BUTTON_COLOR, B_BUTTON_COLOR, X_BUTTON_COLOR, Y_BUTTON_COLOR
-	};
-	argb = (argb & 0xFF000000) | colors[c-16];
+    /* Pad buttons special case */
+    static draw_argb_t colors[4] = {
+      A_BUTTON_COLOR, B_BUTTON_COLOR, X_BUTTON_COLOR, Y_BUTTON_COLOR
+    };
+    argb = (argb & 0xFF000000) | colors[c-16];
   }
 
   /* Clip very small char */
   if (hc < 1E-5 || wc < 1E-5) {
-	return x1;
+    return x1;
   }
+
+  /* Shift by wadd/2 */
+  x1 += curfont->wadd * scalex * 0.5;
 
   /* Compute right and bottom */
   x2 = x1 + wc;
@@ -481,8 +484,8 @@ static float draw_text_char(float x1, float y1, float z1,
   /* Clip right out and bottom out*/
   /* Clip left out and top out */
   if (x1 >= current_gc->clipbox.x2 || y1 >= current_gc->clipbox.y2 ||
-	  x2 <= current_gc->clipbox.x1 || y2 <= current_gc->clipbox.y1) {
-	return x2;
+      x2 <= current_gc->clipbox.x1 || y2 <= current_gc->clipbox.y1) {
+    return x2;
   }
 
   /* Compute UV */
@@ -493,27 +496,27 @@ static float draw_text_char(float x1, float y1, float z1,
   
   /* Left clip */
   if (x1 < current_gc->clipbox.x1) {
-	float f = (current_gc->clipbox.x1 - x1) / wc;
-	x1 = current_gc->clipbox.x1;
-	u1 = u2 * f + u1 * (1.0f-f);
+    float f = (current_gc->clipbox.x1 - x1) / wc;
+    x1 = current_gc->clipbox.x1;
+    u1 = u2 * f + u1 * (1.0f-f);
   }
   /* Top clip */
   if (y1 < current_gc->clipbox.y1) {
-	float f = (current_gc->clipbox.y1 - y1) / hc;
-	y1 = current_gc->clipbox.y1;
-	v1 = v2 * f + v1 * (1.0f-f);
+    float f = (current_gc->clipbox.y1 - y1) / hc;
+    y1 = current_gc->clipbox.y1;
+    v1 = v2 * f + v1 * (1.0f-f);
   }
   /* Right clip */
   if (x2 > current_gc->clipbox.x2) {
-	float f = (x2 - current_gc->clipbox.x2) / wc;
-	x2 = current_gc->clipbox.x2;
-	u2 = u1 * f + u2 * (1.0f-f);
+    float f = (x2 - current_gc->clipbox.x2) / wc;
+    x2 = current_gc->clipbox.x2;
+    u2 = u1 * f + u2 * (1.0f-f);
   }
   /* Bottom clip */
   if (y2 > current_gc->clipbox.y2) {
-	float f = (y2 - current_gc->clipbox.y2) / hc;
-	y2 = current_gc->clipbox.y2;
-	v2 = v1 * f + v2 * (1.0f-f);
+    float f = (y2 - current_gc->clipbox.y2) / hc;
+    y2 = current_gc->clipbox.y2;
+    v2 = v1 * f + v2 * (1.0f-f);
   }
 
   hw->flags = TA_VERTEX_NORMAL;
@@ -544,50 +547,54 @@ static float draw_text_char(float x1, float y1, float z1,
   hw->u = u2;
   hw->v = v1;
   ta_commit32_nocopy();
+
+
+  /* Shift by wadd/2 */
+  x2 += curfont->wadd * scalex * 0.5;
 	
-  return x2 + curfont->wadd*scalex;
+  return x2;
 }
 
 static int do_escape(int c, va_list *list)
 {
   switch (c) {
   case 'A': case 'B':
-	c = 16 + c - 'A';
-	break;
+    c = 16 + c - 'A';
+    break;
   case 'X': case 'Y':
-	c = 18 + c - 'X';
-	break;
+    c = 18 + c - 'X';
+    break;
   case '+':
-	c = 4;
-	break;
+    c = 4;
+    break;
   case 'o':
-	c = 6;
-	break;
+    c = 6;
+    break;
   case 'a':
-	c = -1;
-	current_gc->text.argb = (current_gc->text.argb & 0x00FFFFFF) | (va_arg(*list, int)<<24);
-	break;
+    c = -1;
+    current_gc->text.argb = (current_gc->text.argb & 0x00FFFFFF) | (va_arg(*list, int)<<24);
+    break;
   case 'r':
-	c = -1;
-	current_gc->text.argb = (current_gc->text.argb & 0xFF00FFFF) | (va_arg(*list, int)<<16);
-	break;
+    c = -1;
+    current_gc->text.argb = (current_gc->text.argb & 0xFF00FFFF) | (va_arg(*list, int)<<16);
+    break;
   case 'g':
-	c = -1;
-	current_gc->text.argb = (current_gc->text.argb & 0xFFFF00FF) | (va_arg(*list, int)<<8);
-	break;
+    c = -1;
+    current_gc->text.argb = (current_gc->text.argb & 0xFFFF00FF) | (va_arg(*list, int)<<8);
+    break;
   case 'b':
-	c = -1;
-	current_gc->text.argb = (current_gc->text.argb & 0xFFFFFF00) | va_arg(*list, int);
-	break;
+    c = -1;
+    current_gc->text.argb = (current_gc->text.argb & 0xFFFFFF00) | va_arg(*list, int);
+    break;
   case 'c':
-	c = -1;
-	current_gc->text.argb = va_arg(*list, unsigned int);
-	break;
+    c = -1;
+    current_gc->text.argb = va_arg(*list, unsigned int);
+    break;
   case 's':
-	text_set_font_size((float)va_arg(*list, int));
-	break;
+    text_set_font_size((float)va_arg(*list, int));
+    break;
   default:
-	SDWARNING("[%s] : weird escape char : 0x%02X\n",__FUNCTION__, c);
+    SDWARNING("[%s] : weird escape char : 0x%02X\n",__FUNCTION__, c);
   }
   return c;
 }
@@ -596,7 +603,7 @@ static int do_escape(int c, va_list *list)
 /* Draw a set of textured polygons at the given depth and color that
    represent a string of text. */
 float text_draw_vstrf(float x1, float y1, float z1,
-							 const char *s, va_list list)
+		      const char *s, va_list list)
 {
   int esc = 0, c;
   float maxh = 0;
@@ -604,46 +611,46 @@ float text_draw_vstrf(float x1, float y1, float z1,
   float xscale, yscale;
 
   if (x1>=current_gc->clipbox.x2 || y1>=current_gc->clipbox.y2) {
-	return 0;
+    return 0;
   }
 
   xscale = current_gc->text.size / curfont->wc;
   yscale = xscale * current_gc->text.aspect;
 
   flags = 0
-	| DRAW_TRANSLUCENT
-	| (current_gc->text.filter ? DRAW_BILINEAR : DRAW_NO_FILTER)
-	| (curfont->texid << DRAW_TEXTURE_BIT);
+    | DRAW_TRANSLUCENT
+    | (current_gc->text.filter ? DRAW_BILINEAR : DRAW_NO_FILTER)
+    | (curfont->texid << DRAW_TEXTURE_BIT);
 
   DRAW_SET_FLAGS(flags);
 
   while (c=(*s++)&255, c) {
-	float curh;
+    float curh;
 
     if (esc) {
       esc = 0;
-	  c = do_escape(c, &list);
-	  xscale = current_gc->text.size / curfont->wc;
-	  yscale = xscale * current_gc->text.aspect;
+      c = do_escape(c, &list);
+      xscale = current_gc->text.size / curfont->wc;
+      yscale = xscale * current_gc->text.aspect;
     } else if (c==current_gc->text.escape) {
       c = -1;
       esc = 1;
     }
-	if (c == -1) continue;
+    if (c == -1) continue;
 
     if (c == ' ') {
-      x1 += curfont->glyph[32].w * xscale;
-	  curh = curfont->glyph[32].h * yscale;
+      x1 += (curfont->glyph[32].w + curfont->wadd) * xscale;
+      curh = curfont->glyph[32].h * yscale;
     } else {
-	  myglyph_t * g = curglyph(c);
+      myglyph_t * g = curglyph(c);
       x1 = draw_text_char(x1, y1, z1, xscale, yscale, c);
-	  curh = g->h * yscale;
+      curh = g->h * yscale;
     }
-	if (curh > maxh) maxh = curh;
+    if (curh > maxh) maxh = curh;
 
-	if (x1>=current_gc->clipbox.x2) {
-	  break;
-	}
+    if (x1>=current_gc->clipbox.x2) {
+      break;
+    }
 
   }
   return maxh;
@@ -669,9 +676,9 @@ float text_draw_str(float x1, float y1, float z1, const char *s)
   int save_escape = current_gc->text.escape;
   current_gc->text.escape = 0;
 
-/*   va_start(list, s); */
+  /*   va_start(list, s); */
   res = text_draw_vstrf(x1, y1, z1, s, list);
-/*   va_end(list); */
+  /*   va_end(list); */
   current_gc->text.escape = save_escape;
   return res;
 }
@@ -701,7 +708,7 @@ float text_draw_strf_center(float x1, float y1, float x2, float y2, float z1,
 /* Draw a set of textured polygons at the given depth and color that
    represent a string of text. */
 float text_draw_str_inside(float x1, float y1, float x2, float y2, float z1,
-						   const char *s)
+			   const char *s)
 {
   const float boxw = x2 - x1;
   const float boxh = y2 - y1;
@@ -716,11 +723,11 @@ float text_draw_str_inside(float x1, float y1, float x2, float y2, float z1,
   strw = size_of_str(&strh, s);
 
   if (strw > boxw || strh > boxh) {
-	float f1 = boxw / strw, f2 =  boxh / strh;
-	scale = (f2 < f1) ? f2 : f1;
-	strw *= scale;
-	strh *= scale;
-	xscale *= scale;
+    float f1 = boxw / strw, f2 =  boxh / strh;
+    scale = (f2 < f1) ? f2 : f1;
+    strw *= scale;
+    strh *= scale;
+    xscale *= scale;
   }
   yscale = xscale * current_gc->text.aspect;
 
@@ -728,9 +735,9 @@ float text_draw_str_inside(float x1, float y1, float x2, float y2, float z1,
   y1 += (boxh - strh) * 0.5f;
 
   flags = 0
-	| DRAW_TRANSLUCENT
-	| (current_gc->text.filter ? DRAW_BILINEAR : DRAW_NO_FILTER)
-	| (curfont->texid << DRAW_TEXTURE_BIT);
+    | DRAW_TRANSLUCENT
+    | (current_gc->text.filter ? DRAW_BILINEAR : DRAW_NO_FILTER)
+    | (curfont->texid << DRAW_TEXTURE_BIT);
 
   DRAW_SET_FLAGS(flags);
 
@@ -752,7 +759,7 @@ float text_set_font_size(const float size)
   LOCK();
   old = current_gc->text.size;
   if (size >= 0) {
-	current_gc->text.size = size;
+    current_gc->text.size = size;
   }
   UNLOCK();
   return old;
@@ -764,7 +771,7 @@ float text_set_font_aspect(const float aspect)
   LOCK();
   old = current_gc->text.aspect;
   if (aspect >= 0) {
-	current_gc->text.aspect = aspect;
+    current_gc->text.aspect = aspect;
   }
   UNLOCK();
   return old;
@@ -777,31 +784,31 @@ fontid_t text_set_font(fontid_t n)
   old = current_gc->text.fontid;
 
   if (n < nfont) {
-	current_gc->text.fontid = n;
+    current_gc->text.fontid = n;
   }
   UNLOCK();
   return old;
 }
 
 static void set_properties(fontid_t n, const float size, const float aspect,
-						   int filter)
+			   int filter)
 {
   if (n < nfont) {
-	current_gc->text.fontid = n;
+    current_gc->text.fontid = n;
   }
   if (size >= 0) {
-	current_gc->text.size = size;
+    current_gc->text.size = size;
   }
   if (aspect >= 0) {
-	current_gc->text.aspect = aspect;
+    current_gc->text.aspect = aspect;
   }
   if (filter >= 0) {
-	current_gc->text.filter = !!filter;
+    current_gc->text.filter = !!filter;
   }
 }
  
 void text_set_properties(fontid_t n, const float size, const float aspect,
-						 int filter)
+			 int filter)
 {
   LOCK();
   set_properties(n, size, aspect, filter);
