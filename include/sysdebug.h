@@ -5,7 +5,7 @@
  * @date       2002/09/04
  * @brief      Debug fonctions.
  *
- * @version    $Id: sysdebug.h,v 1.2 2002-09-12 17:57:31 ben Exp $
+ * @version    $Id: sysdebug.h,v 1.3 2002-09-17 19:58:50 ben Exp $
  */
 
 #ifndef _SYSDEBUG_H_
@@ -120,8 +120,12 @@ void sysdbg_register_level(sysdgb_level_e level,
 # ifdef DEBUG_LOG
 #  define SDMSG(level, ...) \
           sysdbg_printf(__FILE__, __LINE__, level, __VA_ARGS__)
+#  define SDINDENT sysdbg_indent(1,0)
+#  define SDUNINDENT sysdbg_indent(-1,0)
 # else
 #  define SDMSG(level, ...) 
+#  define SDINDENT
+#  define SDUNINDENT
 # endif
 # define SDCRITICAL(...)   SDMSG(sysdbg_critical, __VA_ARGS)
 # define SDERROR(...)      SDMSG(sysdbg_error, __VA_ARGS__)
