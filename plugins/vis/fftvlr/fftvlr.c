@@ -8,7 +8,7 @@
  * 
  * (C) COPYRIGHT 2002 Vincent Penne & Ben(jamin) Gerard
  *
- * $Id: fftvlr.c,v 1.6 2002-09-13 00:27:11 ben Exp $
+ * $Id: fftvlr.c,v 1.7 2002-09-13 14:44:54 ben Exp $
  */
 
 #include <stdlib.h>
@@ -17,6 +17,8 @@
 #include "obj3d.h"
 #include "draw_object.h"
 
+/* from border.c */
+extern int bordertex;
 
 /* From obj3d.c */
 void FaceNormal(float *d, const vtx_t * v, const tri_t *t);
@@ -254,7 +256,6 @@ static int fftvlr_process(viewport_t * vp, matrix_t projection, int elapsed_ms)
     MtxRotateX(fftvlr_mtx, 0.3f);
     fftvlr_mtx[3][2] = 0.6;
 
-
     MtxIdentity(tmp);
     MtxRotateZ(tmp, 3.14159);
     MtxRotateY(tmp, -0.33468713*ay);
@@ -262,7 +263,7 @@ static int fftvlr_process(viewport_t * vp, matrix_t projection, int elapsed_ms)
     MtxTranspose(tmp);
     MtxVectMult(&tlight_normal, &light_normal, tmp);
 
-
+    fftvlr_obj.flags = bordertex;
     return 0;
   }
   return -1;

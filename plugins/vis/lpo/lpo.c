@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.4 2002-09-13 00:27:11 ben Exp $
+ * $Id: lpo.c,v 1.5 2002-09-13 14:44:54 ben Exp $
  */
 
 #include <stdio.h>
@@ -12,6 +12,8 @@
 #include "obj_driver.h"
 #include "vupeek.h"
 #include "draw_object.h"
+#include "remanens.h"
+#include "sysdebug.h"
 
 /* $$$ Defined in libdcutils */
 extern int rand();
@@ -56,6 +58,9 @@ static float opeek_diff;
 static float opeek;
 static float peek_max;
 static float peek_diff_max;
+
+static int lpo_remanens = 1;
+static unsigned int lpo_iframe = 0;
 
 static int same_sign(float a, float b)
 {
@@ -274,7 +279,7 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
 
   /* Copy viewport and projection matrix for further use (render) */
   viewport = *vp;
-  MtxCopy(projmtx,projection);
+  MtxCopy(projmtx, projection);
 
   /* Check for object change */
   if (random_mode && (change_cnt += elapsed_ms) >= change_time) {
@@ -283,6 +288,11 @@ static int process(viewport_t * vp, matrix_t projection, int elapsed_ms)
   }
 
   anim(elapsed_ms);
+
+
+  if (lpo_remanens) {
+    remanens_push(&curobj->obj, mtx, ++lpo_iframe);
+  }
 
   return 0;
 }
@@ -293,13 +303,51 @@ static int opaque_render(void)
   return 0;
 }
 
+/* Light vector */ 
+static vtx_t light = {
+  0, 0, 1.0, 1.0f
+};
+
+/* Ambient color */
+static vtx_t ambient = {
+  0,0,0,0
+};
+
 static int transparent_render(void)
 {
   if (!curobj) {
     return -1;
   }
-  return DrawObjectSingleColor(&viewport, mtx, projmtx,
-			       &curobj->obj, &color);
+
+  if (lpo_remanens) {
+    int age, f, maxf = 2000; /* Max number of face */
+
+    for (age=f=0; f<=maxf && color.w > 0.05f; age += 3) {
+      remanens_t *r = remanens_get(age);
+
+      if (!r) {
+	break;
+      }
+      if (!r->o) {
+	SDWARNING("No stacked object\n");
+	break;
+      }
+
+      f += r->o->nbf;
+      color.w *= 0.75f;
+
+      DrawObjectFrontLighted(&viewport, r->mtx, projmtx,
+		      r->o,
+		      &ambient, &color);
+
+/*       DrawObjectSingleColor(&viewport, r->mtx, projmtx, */
+/* 			    r->o, &color); */
+    }
+    return 0;
+  } else {
+    return DrawObjectSingleColor(&viewport, mtx, projmtx,
+				 &curobj->obj, &color);
+  }
 }
 
 static int init(any_driver_t *d)
