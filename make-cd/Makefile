@@ -3,7 +3,7 @@
 #
 # by Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.6 2003-02-12 18:55:49 ben Exp $
+# $Id: Makefile,v 1.7 2003-02-12 19:02:17 ben Exp $
 #
 
 CDRECORD	= cdrecord dev=0,0,0 speed=4
@@ -89,7 +89,7 @@ test.iso: dcplaya-data
 	@mkdir mnt
 	@mount $@ mnt -o loop
 	@echo "CD image mounted on ./mnt"
-	@echo "type `umount mnt' to unmount"
+	@echo "type umount mnt to unmount"
 
 .PHONY: burn-data
 burn-data: burn-audio data.raw 
