@@ -1,0 +1,32 @@
+/* dreammp3 - config.h.in -  Generated automatically from configure
+ *
+ * (C) 2002 Ben(jamin) Gerard <ben@sashipa.com>
+ *
+ * $Id: config.h.in,v 1.1 2002-08-26 14:14:34 ben Exp $
+ */
+
+#ifndef _CONFIG_H_
+#define _CONFIG_H
+
+/* Debug level */
+#if @DEBUG@
+# define DEBUG 1
+# define DEBUG_LEVEL @DEBUG@
+#else
+# undef DEBUG
+# define DEBUG_LEVEL 0
+#wndif
+
+/* Breakpoint instruction */
+#define BREAKPOINT(N) @BREAKPOINT@
+
+/* Version value e.g. 0x0100 */
+#define VERSION @VERSION_NUM@
+
+/* Version string e.g. "1.0" */
+#define VERSION_STR @VERSION_STR@
+
+/* Official dreammp3 website */
+#define DREAMMP3_URL @DREAMMP3_URL_STR@
+
+#endif

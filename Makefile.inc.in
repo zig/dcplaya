@@ -1,0 +1,201 @@
+# Generic makefile for Dreammp3
+#
+# (C) COPYRIGHT 2002 Ben(jamin) Gerard
+#
+# $id$
+#
+# Get default target object files
+#
+
+# Setup for KOS
+
+# Build architecture
+KOS_ARCH="dreamcast"
+
+# KOS base paths
+KOS_BASE=@KOS_BASE@
+KOS_INCS+= -I$(KOS_BASE)/include
+
+# Make utility
+@SET_MAKE@
+KOS_MAKE=$(MAKE)
+
+# Dreamcast loader utility
+KOS_LOADER=@KOS_LOADER@
+
+export KOS_ARCH KOS_BASE KOS_INCS KOS_MAKE KOS_LOADER
+
+# Genromfs utility
+export KOS_GENROMFS=@KOS_GENROMFS@
+
+# SH-4 compile tools
+KOS_CC=@SH_CC@
+KOS_CCPLUS=@SH_CXX@
+KOS_AS=@SH_AS@
+KOS_LD=@SH_LD@
+export KOS_CC KOS_CCPLUS KOS_AS KOS_LD
+
+# SH-4 bin utils
+KOS_AR=@SH_AR@
+KOS_RANLIB=@SH_RANLIB@
+KOS_OBJCOPY=@SH_OBJCOPY@
+KOS_NM=@SH_NM@
+export KOS_AR KOS_RANLIB KOS_OBJCOPY KOS_NM
+
+# SH-4 compile flags
+KOS_CFLAGS=-Wall -g -ml -m4-single-only -O2 -fno-builtin -fno-strict-aliasing -fomit-frame-pointer
+KOS_CPPFLAGS=-fno-operator-names -fno-rtti
+KOS_AFLAGS=-little
+KOS_LDFLAGS=-ml -m4-single-only -nostartfiles -nostdlib -Wl,-Ttext=0x8c010000
+export KOS_CFLAGS KOS_CPPFLAGS KOS_AFLAGS KOS_LDFLAGS
+
+# ARM-7 compile tools
+DC_ARM7CC=@ARM_CC@
+DC_ARM7CCPLUS=@ARM_CXX@
+DC_ARM7AS=@ARM_AS@
+DC_ARM7LD=@ARM_LD@
+export DC_ARM7CC DC_ARM7CCPLUS DC_ARM7AS DC_ARM7LD
+
+# ARM-7 bin utils
+DC_ARM7AR=@ARM_AR@
+DC_ARM7RANLIB=@ARM_RANLIB@
+DC_ARM7OBJCOPY=@ARM_OBJCOPY@
+DC_ARM7NM=@ARM_NM@
+export DC_ARM7AR DC_ARM7RANLIB DC_ARM7OBJCOPY DC_ARM7NM
+
+# ARM-7 compile flags
+export DC_ARM7CFLAGS=@ARM_CFLAGS@
+export DC_ARM7AFLAGS=@ARM_AFLAGS@
+
+
+ifndef OBJS
+SRCS = $(wildcard *.c) 
+OBJS = $(SRCS:%.c=%.o)
+endif
+
+ifeq '$(LIBRARY)' 'yes'
+ifndef LIBNAME
+LIBNAME := lib$(shell basename `pwd`).a
+endif
+endif
+
+# ----------------------------------------------------------------------
+OPT_FLOAT   = -ffast-math
+OPT_GENERAL = -fomit-frame-pointer -fno-builtin -fno-strict-aliasing
+OPT_SPEED   = -O3 -funroll-loops -finline-functions
+OPT_SIZE    = -Os -fno-inline 
+
+OPTIMIZE_FOR_SPEED = $(OPT_GENERAL) $(OPT_FLOAT) $(OPT_SPEED)
+OPTIMIZE_FOR_SIZE  = $(OPT_GENERAL) $(OPT_SIZE)
+
+ifndef OPTIMIZE
+OPTIMIZE = $(OPT_GENERAL)
+endif
+
+# ----------------------------------------------------------------------
+
+KOS_LOCAL_CFLAGS += $(OPTIMIZE)
+
+DEPEND_INCS = $(KOS_LOCAL_INCS) -I$(KOS_INCS) -I$(KOS_BASE)/kernel/arch/$(KOS_ARCH)/include
+DEPEND_DEFINES = -D_arch_$(KOS_ARCH) $(filter -D%, $(KOS_CFLAGS) $(KOS_LOCAL_CFLAGS))
+
+ifeq "$(strip $(TARGETS))" ""
+TARGETS=$(LEFS) $(ELFS)
+endif
+
+ifeq "$(strip $(TARGETS))" ""
+TARGETS:=$(LIBNAME)
+endif
+
+ifeq "$(strip $(TARGETS))" ""
+TARGETS:=$(OBJS)
+endif
+
+ifeq "$(strip $(TARGETS) $(SUBDIRS))" ""
+all:;@echo 'Nothing to make!'
+else
+all : subdirs $(TARGETS)
+	@echo "Target project [$(TARGETS)] has been build"
+endif
+
+$(LIBNAME) : $(OBJS)
+	@echo "Build library [$@]"
+	@rm -f $@
+	@$(KOS_AR) r $@ $^
+	@sh-elf-ranlib $@
+
+%.elf : $(OBJS)
+	@echo "Build [$@] from [$^]"
+	$(KOS_LD) --format elf32-little -EL -r -x -O -S $^ $(ELF_EXTRA) -o $@
+
+%.lef : $(OBJS) #lib%.a
+	@echo "Build [$@] from [$^]"
+	@$(KOS_LD) --format elf32-little -EL -r -x -O -S $^ $(LEF_EXTRA) -o $@
+	@sh-elf-strip --strip-unneeded $@
+
+#%.lef : %.o
+#	@echo "Build [$@] from [$<]"
+#	@$(KOS_LD)  -export-dynamic --format elf32-little -EL -r -x -O -S $< -o $@
+#	@sh-elf-nm $@
+
+%.bin : %.elf
+	@$(KOS_OBJCOPY) -O binary $< $@
+
+clean: clean_subdirs clean_local
+clean_local:
+	rm -f $(LEFS) $(OBJS) *~ $(CLEAN_LOCAL) $(LIBNAME) $(TARGETS)
+
+$(patsubst %, _dep_dir_%, $(SUBDIRS)):
+	@$(MAKE) -C $(patsubst _dir_%, %, $@)
+
+depend_subdirs: $(patsubst %, _depend_dir_%, $(SUBDIRS))
+
+$(patsubst %, _depend_dir_%, $(SUBDIRS)):
+	@$(MAKE) -C $(patsubst _depend_dir_%, %, $@) depend
+
+depend: depend_subdirs $(DEPEND_EXTRA)
+	makedepend \
+	 -Y \
+	$(filter -I%, $(DEPEND_INCS)) \
+	$(filter -D%, $(DEPEND_DEFINES)) \
+	$(OBJS:%.o=%.c) && rm -f Makefile.bak
+
+distclean: clean
+	@rm -f include/config.h configure Makefile.inc
+	@find . -name '*~' -exec rm -f {} \;
+
+maintainer-clean: distclean
+	@rm -f config.cache config.log config.status
+
+
+
+# ----------------------------------------------------------------------
+
+# Remove standard includes, assumes local includes are "" and kos are <>
+KOS_INC_RULES=$(KOS_LOCAL_INCS) -I- -I. $(KOS_INCS) -I$(KOS_BASE)/kernel/arch/$(KOS_ARCH)/include
+
+# Build rules
+%.o: %.c
+	$(KOS_CC) $(KOS_CFLAGS) $(KOS_LOCAL_CFLAGS) $(KOS_INC_RULES) -D_arch_$(KOS_ARCH) -c $< -o $@
+
+%.o: %.cc
+	$(KOS_CCPLUS) $(KOS_CFLAGS) $(KOS_LOCAL_CFLAGS) $(KOS_INC_RULES) -D_arch_$(KOS_ARCH) $(KOS_CPPFLAGS)  -c $< -o $@
+
+%.o: %.s
+	$(KOS_AS) $(KOS_AFLAGS) $< -o $@
+
+subdirs: $(patsubst %, _dir_%, $(SUBDIRS))
+
+$(patsubst %, _dir_%, $(SUBDIRS)):
+	$(MAKE) -C $(patsubst _dir_%, %, $@)
+
+clean_subdirs: $(patsubst %, _clean_dir_%, $(SUBDIRS))
+
+$(patsubst %, _clean_dir_%, $(SUBDIRS)):
+	$(MAKE) -C $(patsubst _clean_dir_%, %, $@) clean
+
+# Some extra variables
+KOS_ARCH_DIR = $(KOS_BASE)/kernel/arch/$(KOS_ARCH)
+KOS_START = $(KOS_ARCH_DIR)/kernel/startup.o
+
+

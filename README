@@ -1,0 +1,279 @@
+                    dreammp3 - Free Dreamcast mp3 player
+                    ************************************
+
+                    Copyright (C) 2002 Ben(jamin) Gerard
+
+                              <ben@sashipa.com>
+
+                    <http://sashipa.ben.free.fr/dreammp3>
+
+
+   ***********************************************************************
+   *                                                                     *
+   * This program is distributed in the hope that it will be useful, but *
+   * WITHOUT ANY WARRANTY; without even the implied warranty of          *
+   * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                *
+   *                                                                     *
+   ***********************************************************************
+
+
+Introduction
+============
+
+    dreammp3 is a free mp3 player for dreamcast. The GUI is based on dream68
+    one. The mpeg audio decoder is xing engine as distributed in KOS
+    distribution. The ID3 tag manipulation library is libid3tag by Robert
+    Leslie.
+
+    Source files are is such a mess that I will not distribute them. Send me
+    a demand by e-mail if you really want to see what I mean !
+
+Featuring:
+=========
+
+GUI
+---
+
+    CD browser
+    ----------
+
+     - Compatible ISO9660 mode 2 : 32 character long filename.
+     - Change disk auto-detection. May be a little buggy :-( The disk may be
+       changed at anytime. Select the <root> or any directory entry in file
+       browser to read the new disk content. Sometime the new CD is not
+       correctly detected. You should try the 'cache cleaning' trick : just
+       select the [.] or [cd] entry when no music is playing. You can try it
+       many times until it success. If it do not want to do it try to reboot
+       your Dreamcast :-)
+
+    Play list
+    ---------
+
+     - Run/Stop play-list.
+     - Enqueue file.
+     - Insert a file anywhere in play list.
+     - Insert directory content recursively.
+     - Remove an entry.
+     - Retrieve CD location of a play-list entry.
+     - Load/Save from VMU *NOT* available.
+
+    File info
+    ---------
+
+     - Mpeg audio decoder info :
+       - bit-rate [kbps].
+       - mpeg-layer [ I, II, III ].
+       - sampling rate.
+       - channels mode [mono, stereo, dual, joint-stereo].
+     - ID3 info display (see tag list below).
+     - play time and duration.
+
+    VMU LCD
+    -------
+
+     - All File info are reported on VMU LCD.
+     - Nice realtime scope analyser.
+     - VU meters.
+     - Minimal file and play-list browser. Useful to  browse without screen.
+
+MP3 engine
+----------
+
+     - Should support most mp3 files !
+     - VBR (variable bit rate) *NOT* tested.
+
+ID3 tags
+--------
+     - ID3v2 compatible.
+     - ID3v1 *NOT* tested.
+     - Reported ID3 tag list :
+       - Album
+       - Title
+       - Artist
+       - Year
+       - Genre
+       - Track
+
+Bugs
+====
+
+    There is probably some ! Do not hesitate to report them by e-mail
+    <ben@sashipa.com>.
+
+
+Documentation
+=============
+
+    The screen is separate into five areas :
+
+           +----------------------------------------------------+
+           |                      -1- Title                     |
+           +----------------------------------------------------+
+           |                                                    |
+           | +----------------------+   +---------------------+ |
+           | |-2- File-Browser      |   |-3- Play-List        | |
+           | |                      |   |                     | |
+           | |                      |   |                     | |
+           | |                      |   |                     | |
+           | |                      |   |                     | |
+           | |                      |   |                     | |
+           | |                      |   |                     | |
+           | +----------------------+   +---------------------+ |
+           |                     -5- Options                    |
+           |                                                    |
+           | -4- Info/Help                                      |
+           |                                                    |
+           +----------------------------------------------------+
+
+    Current playing music
+    ---------------------
+
+    The current playing music is hi-lighted with *RED* tint. If the play
+    list is running, it will be located in the <Play-List> window. In the
+    other case it will be located in the <File-Browser> window and will be
+    displayed (obviously) only if the current displayed directory is the
+    same than the current playing music one.
+
+
+    General moves
+    -------------
+
+    *LEFT* and *RIGHT* on the *PADDLE* or the *JOYSTICK*
+
+        <file-Browser> / <Play-List> toggle. Selects respectively the
+        <File-Browser> or the <Play-List> as the current active window. The
+        *ACTIVE WINDOW* is displayed in hi-lighted colors, the inactive one
+        (the other) in half tint.
+
+    *UP* and *DOWN* on the *PADDLE* or the *JOYSTICK*
+
+        Moves the *ACTIVE WINDOW* *CURSOR* up and down or scroll window on
+        border.
+
+    *LEFT TRIGGER* and *RIGHT TRIGGER*
+
+        Page up / Page down. Moves cursor to the top/bottom of the window or
+        scroll from one page up/down if the cursor is at the top/bottom
+        location.
+
+    *START*
+
+        Toggles info/help screen display. If no music is playing, the help
+        screen is displayed anyway. Otherwise the help screen is displayed
+        for about 15 seconds before closing back to the music info display. 
+        Hold *START* pressed disable help screen auto close mechanism.
+
+    *Y BUTTON*
+
+        Keep *Y BUTTON* pressed to switch into *OPTION MODE*.
+
+        See [Option moves] section for further informations.
+
+
+    File-Browser moves
+    ------------------
+
+    The <File-Browser> window is used to find mp3 music files on the file
+    system. Currently only the '/cd' file system is available. Only
+    directories and .mp3 files are displayed on this window. You may choose
+    to remove the .mp3 filter (see options section).  Entries are
+    alphabetically sorted with directory first. Underscore '_' characters
+    are replaced by [spaces] and .mp3 extension have been removed from
+    filenames. Directories are surrounded by '[' ']'. The first three
+    entries have special meaning :
+
+    - 1 [<root>] returns to the root to change file-system.
+    - 2 [..]     returns to parents directory.
+    - 3 [.]      reads the same directory after a cache clean.
+
+    *A BUTTON*
+
+        Enters selected directory.
+    or  Start music, if the play list is NOT running.
+    or  Adds music to the end of the play list (enqueue), if the play list
+        is running.
+
+    *B BUTTON*
+
+        Stop music or play-list. If the play-list was playing, the
+        <Play-List> window cursor is move to the location of the music that
+        was played.
+
+    *X BUTTON*
+
+        Insert the selected entry into the play-list below the <Play-List>
+        window cursor location.
+
+
+    Play-List moves
+    ---------------
+
+    The <Play-List> window is used to build a list of music that will be
+    played from top to bottom order.
+
+    *A BUTTON*
+
+        Run play-list from the <Play-List> window cursor location.
+
+    *B BUTTON*
+
+        Remove the cursor location entry from play-list.
+
+    *X BUTTON*
+
+        Actives the <File-Browser> window and selects the file entry
+        corresponding to the <Play-List> window selected entry.
+
+
+    Option moves
+    ------------
+
+    Options appear as a transparent green layer.
+
+    !!! ALL OPTIONS MOVES MUST BE PERFORMED WITH Y BUTTON PRESSED !!!
+
+    *UP* and *DOWN* on the *PADDLE*
+
+        Selects next/previous option.
+
+    *LEFT* and *RIGHT* on the *PADDLE*
+
+        Changes selected option value. *KEEP PRESSED* makes it accelerate.
+
+    Option list
+    -----------
+
+    - Volume
+      ------
+
+        From 0% to 100%. *LEFT* / *RIGHT* on paddle to respectively
+        decreases / increases value. Keep paddle pressed make value change
+        faster.
+
+
+    - File filter
+      -----------
+
+        *LEFT* and *RIGHT* toggle beetween [mp3 only] and [all files]
+        setting.
+
+        - [mp3 only] is the default setting. It removes all files which name
+          is not ended by .mp3 from the file browser. Underscore '_' will be
+          replace by spaces and '.mp3' extension removed from displayed
+          filename. This is the *user friendly* setting.
+
+        - [all files] display directories and files *AS IS*. This is the
+          *expert* setting.
+
+
+    - Play-list shuffle
+      -----------------
+
+        *LEFT* and *RIGHT* toggle beetween [Shuffle OFf] and [Shuffle ON]
+        *setting.
+
+        - [Shuffle OFF] is the default setting.
+
+        - [Shuffle ON] shuffles the play-list when it is starting to play.
+          Entries shuffled start from the current play-list cursor position
+          to the end.
