@@ -4,7 +4,7 @@
  * @author   ben(jamin) gerard <ben@sashipa.com>
  * @brief    Graphic context interface
  *
- * $Id: gc.h,v 1.2 2002-11-27 09:58:09 ben Exp $
+ * $Id: gc.h,v 1.3 2002-11-28 04:22:44 ben Exp $
  */
 
 #ifndef _GC_H_
@@ -31,11 +31,7 @@
 #define GC_RESTORE_COLORS_3    (1<<6)  /**< Restore right/bottom color. */
 #define GC_RESTORE_COLORS      (16<<3) /**< Restore all colors.         */
 
-#define GC_RESTORE_CLIPPING_X1 (1<<7)  /**< Restore left clipping.    */
-#define GC_RESTORE_CLIPPING_Y1 (1<<8)  /**< Restore top clipping.     */
-#define GC_RESTORE_CLIPPING_X2 (1<<9)  /**< Restore right clipping.   */
-#define GC_RESTORE_CLIPPING_Y2 (1<<10)  /**< Restore bottom clipping. */
-#define GC_RESTORE_CLIPPING    (16<<7)  /**< Restore clipping box.    */
+#define GC_RESTORE_CLIPPING    (1<<7)  /**< Restore clipping box.    */
 
 /**@}*/
 
@@ -93,7 +89,7 @@ void gc_shutdown(void);
 gc_t * gc_set(gc_t * gc);
 
 /** Push (save) current graphic context. */
-int gc_push(void);
+int gc_push(int save_flags);
 
 /** Pop (restore) current graphic context. */
 int gc_pop(int restore_flags);

@@ -24,6 +24,7 @@ static const uint32 controler_smooth_mult =
 CONTROLER_SMOOTH_FACTOR / (CONTROLER_NO_SMOOTH_FRAMES-2);
 //  ((CONTROLER_NO_SMOOTH_FRAMES-1)<<16) / CONTROLER_SMOOTH_FACTOR;
 
+static kthread_t * controler_thd;
 static spinlock_t controler_mutex;
 
 enum { RUNNING, QUIT, ZOMBIE };
@@ -102,8 +103,10 @@ static void controler_smooth(uint32 factor)
   cond.joy2y = (cond.joy2y * factor + oldcond.joy2y * oofactor) >> 16;
 }
 
+// defined in src/keyboard.c
+extern int kbd_poll_repeat(uint8 addr, int elapsed_frame);
 
-int controler_thread(void * dummy)
+static void controler_thread(void * dummy)
 {
   while (status != QUIT) {
 
@@ -164,7 +167,6 @@ int controler_thread(void * dummy)
   }
 
   status = ZOMBIE;
-  return 0;
 }
 
 
@@ -182,7 +184,10 @@ int controler_init(uint32 frame)
   oldcond = cond;
 
   status = RUNNING;
-  thd_create(controler_thread, 0);
+  controler_thd = thd_create(controler_thread, 0);
+  if (controler_thd) {
+	thd_set_label(controler_thd, "Controler-thd");
+  }
   
   SDUNINDENT;
   SDDEBUG("[%f] := [%d]\n", __FUNCTION__, err);
@@ -278,8 +283,6 @@ int controler_getchar()
 
 
 
-// defined in src/keyboard.c
-extern int kbd_poll_repeat(uint8 addr, int elapsed_frame);
 
 int controler_peekchar()
 {

@@ -1,4 +1,12 @@
 #! /bin/sh
+#
+# by Benjamin Gerard <ben@sashipa.com>
+#
+# This script construct a very simple symbol table in "C" format.
+# It is used for exporting dcplaya main executable symbils.
+#
+# $Id: makesymb.sh,v 1.3 2002-11-28 04:22:44 ben Exp $
+# 
 
 function Error
 {

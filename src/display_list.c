@@ -1,9 +1,11 @@
 /**
+ * @ingroup   dcplaya_devel
  * @file      display_list.c
  * @author    vincent penne <ziggy@sashipa.com>
+ * @author    benjamin gerard <ben@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.c,v 1.9 2002-11-27 09:58:09 ben Exp $
+ * @version   $Id: display_list.c,v 1.10 2002-11-28 04:22:44 ben Exp $
  */
 
 #include <malloc.h>
@@ -17,9 +19,13 @@
 
 /* List of display list. */
 static dl_lists_t dl_lists;
+static dl_lists_t dl_sub_lists;
 
 /* List of display list mutex. */
 static spinlock_t listmutex;
+
+static dl_runcontext_t listrc;
+
 
 #define lock(l) spinlock_lock(&(l)->mutex)
 #define unlock(l) spinlock_unlock(&(l)->mutex)
@@ -42,6 +48,10 @@ int dl_init(void)
 
   spinlock_init(&listmutex);
   LIST_INIT(&dl_lists);
+  LIST_INIT(&dl_sub_lists);
+
+  *(int *) &listrc = 0;
+  listrc.color_inherit = listrc.trans_inherit = DL_INHERIT_LOCAL;
 
   SDUNINDENT;
   SDDEBUG("[%s] := [0]\n", __FUNCTION__);
@@ -61,7 +71,12 @@ int dl_shutdown(void)
   locklists();
   for (l=LIST_FIRST(&dl_lists); l; l=next) {
 	next = LIST_NEXT(l,g_list);
-	SDDEBUG("destroying list [%p], next:[%p]\n", l,next);
+	SDDEBUG("destroying main-list [%p,%d]\n", l, l->refcount);
+	real_destroy(l);
+  }
+  for (l=LIST_FIRST(&dl_sub_lists); l; l=next) {
+	next = LIST_NEXT(l,g_list);
+	SDDEBUG("destroying sub-list [%p,%d]\n", l, l->refcount);
 	real_destroy(l);
   }
   unlocklists();
@@ -70,7 +85,6 @@ int dl_shutdown(void)
   SDDEBUG("[%s] := [0]\n", __FUNCTION__);
   return 0;
 }
-
 
 void dl_reference(dl_list_t * dl)
 {
@@ -89,15 +103,14 @@ void dl_dereference(dl_list_t * dl)
   }
 }
 
-dl_list_t * dl_create(int heapsize, int active)
+dl_list_t * dl_create(int heapsize, int active, int sub)
 {
+  dl_lists_t * lists;
   dl_list_t * l;
 
   if (!heapsize) {
     heapsize = 1024;
   }
-  //$$$ test enlarge
-  //  heapsize = 8;
 
   l = calloc(1, sizeof(dl_list_t));
   if (!l) {
@@ -106,6 +119,14 @@ dl_list_t * dl_create(int heapsize, int active)
 
   spinlock_init(&l->mutex);
   l->flags.active = !!active;
+  if (sub) {
+	l->flags.sublist = 1;
+	lists = &dl_sub_lists;
+  } else {
+	l->flags.sublist = 0;
+	lists = &dl_lists;
+  }
+
   l->heap = malloc(heapsize);
   l->heap_size = l->heap ? heapsize : 0;
   l->color.a = l->color.r = l->color.g = l->color.b = 1.0f;
@@ -114,12 +135,11 @@ dl_list_t * dl_create(int heapsize, int active)
   l->refcount = 1;
 
   locklists();
-  LIST_INSERT_HEAD(&dl_lists, l, g_list);
+  LIST_INSERT_HEAD(lists, l, g_list);
   unlocklists();
 
   return l;
 }
-
 
 static void real_destroy(dl_list_t * l)
 {
@@ -134,8 +154,6 @@ void dl_destroy(dl_list_t * l)
   unlocklists();
   real_destroy(l);
 }
-
-
 
 int dl_set_active(dl_list_t * l, int active)
 {
@@ -230,7 +248,6 @@ void * dl_alloc(dl_list_t * dl, size_t size)
   void * r;
   int req;
 
-
   lock(dl);
   size += (-size) & (MIN_ALLOC - 1);
   req = dl->heap_pos + size;
@@ -299,44 +316,44 @@ void dl_insert2(dl_list_t * dl, dl_comid_t id,
 }
 
 
-static void dl_render_sub(dl_context_t * parent, dl_list_t * l, int opaque)
+static dl_code_e dl_render_list(dl_runcontext_t * rc, dl_context_t * parent,
+								dl_list_t * l, int opaque)
 {
   dl_comid_t id;
   dl_command_t * c;
   dl_context_t context;
+  dl_code_e code;
+  
   int i, start_idx, end_idx;
-  char * heap;
-
-  if (!l) {
-	return;
-  }
-  lock(l);
-  heap = l->heap;
+  char * const heap = l->heap;
 
   if (!l->flags.active) {
-	unlock(l);
-	return;
+	return DL_COMMAND_OK;
   }
 
-  switch (l->flags.trans_herit) {
-  case DL_MODE_PARENT:
+  if (rc->gc_flags) {
+	gc_push(rc->gc_flags);
+  }
+
+  switch (rc->trans_inherit) {
+  case DL_INHERIT_PARENT:
 	MtxCopy(context.trans, parent->trans);
 	break;
-  case DL_MODE_LOCAL:
+  case DL_INHERIT_LOCAL:
 	MtxCopy(context.trans, l->trans);
 	break;
   default:
 	MtxMult3(context.trans, parent->trans, l->trans);
   }
 
-  switch (l->flags.color_herit) {
-  case DL_MODE_PARENT:
+  switch (rc->color_inherit) {
+  case DL_INHERIT_PARENT:
 	context.color = parent->color;
 	break;
-  case DL_MODE_LOCAL:
+  case DL_INHERIT_LOCAL:
 	context.color = l->color;
 	break;
-  case DL_MODE_ADD:
+  case DL_INHERIT_ADD:
 	draw_color_add_clip(&context.color, &parent->color, &l->color);
 	break;
   default:
@@ -353,28 +370,64 @@ static void dl_render_sub(dl_context_t * parent, dl_list_t * l, int opaque)
 	c = DLCOM(heap, id);
   }
 
-  for ( ; i<end_idx/* && id != DL_COMID_ERROR*/;
+  for (code = DL_COMMAND_OK; i<end_idx/* && id != DL_COMID_ERROR*/;
 		++i, id = c->next_id) {
+
 	c = DLCOM(heap, id);
 
 	if (c->flags.inactive) {
 	  continue;
 	}
+	
+	code = DL_COMMAND_OK; 
 	if (opaque) {
 	  if (c->render_opaque)
-		c->render_opaque(c, &context);
+		code = c->render_opaque(c, &context);
 	} else {
 	  if (c->render_transparent)
-		c->render_transparent(c, &context);
+		code = c->render_transparent(c, &context);
+	}
+
+	switch(code) {
+	case DL_COMMAND_OK:
+	case DL_COMMAND_ERROR:
+	  break;
+  
+	case DL_COMMAND_BREAK:
+	  i = end_idx;
+	  break;
+
+	case DL_COMMAND_SKIP:
+	  if (++i < end_idx) {
+		c = DLCOM(heap, c->next_id);
+	  }
+	  break;
 	}
   }
 
-  unlock(l);
+  if (rc->gc_flags) {
+	gc_pop(rc->gc_flags);
+  }
+
+  return code;
 }
 
 static void dl_render(int opaque)
 {
-#if 1
+  dl_list_t * l;
+
+  locklists();
+  LIST_FOREACH(l, &dl_lists, g_list) {
+	lock(l);
+	dl_render_list(&listrc, 0, l, opaque);
+	unlock(l);
+  }
+  unlocklists();
+}
+
+#if 0
+static void dl_render(int opaque)
+{
   dl_list_t * l;
   dl_context_t context;
 
@@ -446,8 +499,8 @@ static void dl_render(int opaque)
   }
   gc_pop(GC_RESTORE_ALL);
   unlocklists();
-#endif 
 }
+#endif 
 
 void dl_render_opaque()
 {
@@ -490,3 +543,84 @@ dl_color_t * dl_get_color(dl_list_t * dl)
 /*   return &dl->clip_box.x1; */
 /* } */
 
+/* NOP command */
+
+static dl_code_e nop_render(void * pcom, dl_context_t * context)
+{
+  return DL_COMMAND_OK;
+}
+
+int dl_nop_command(dl_list_t * dl)
+{
+  struct  {
+	 dl_command_t uc;
+  } * c;
+
+  c = dl_alloc(dl, sizeof(*c));
+  if (c) {
+	dl_insert(dl, c, nop_render, nop_render);
+  }
+  return -!c;
+}
+
+/* SUBLIST command */
+
+struct sublist_command_t {
+  dl_command_t uc;
+  dl_list_t * sublist;
+  dl_runcontext_t rc;
+};
+
+static dl_code_e sub_render(struct sublist_command_t * c,
+							dl_context_t * context,
+							int opaque)
+{
+  dl_code_e code;
+  dl_list_t * dl = c->sublist;
+
+  lock(dl);
+  code = dl_render_list(&c->rc, context, dl, opaque);
+  unlock(c->sublist);
+
+  return code;
+}
+
+
+static dl_code_e sub_render_opaque(void * pcom, dl_context_t * context)
+{
+  struct sublist_command_t * c = pcom;
+  return sub_render(c, context, 1);
+}
+
+static dl_code_e sub_render_transparent(void * pcom, dl_context_t * context)
+{
+  struct sublist_command_t * c = pcom;
+  return sub_render(c, context, 0);
+}
+
+int dl_sublist_command(dl_list_t * dl, dl_list_t * sublist,
+					   const dl_runcontext_t * rc)
+{
+  struct sublist_command_t * c = 0;
+
+  lock(sublist);
+  if (!sublist->flags.sublist) {
+	unlock(sublist);
+	SDERROR("[%s] : [%p] not a sub-list\n", __FUNCTION__, sublist);
+	goto finish;
+  }
+  ++sublist->refcount;
+  unlock(sublist);
+
+  c = dl_alloc(dl, sizeof(*c));
+  if (c) {
+	c->sublist = sublist;
+	c->rc = *rc;
+	dl_insert(dl, c, sub_render_opaque, sub_render_transparent);
+  } else {
+	dl_dereference(sublist);
+  }
+  
+  finish:
+  return -!c;
+}

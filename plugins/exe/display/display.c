@@ -5,7 +5,7 @@
  * @date     2002/09/25
  * @brief    graphics lua extension plugin
  * 
- * $Id: display.c,v 1.16 2002-11-27 09:58:09 ben Exp $
+ * $Id: display.c,v 1.17 2002-11-28 04:22:44 ben Exp $
  */
 
 #include <stdlib.h>
@@ -101,7 +101,8 @@ static int lua_new_list(lua_State * L)
 {
   dl_list_t * l;
   int heapsize = lua_tonumber(L, 1);
-  int active = lua_tonumber(L, 2);
+  int active   = lua_tonumber(L, 2);
+  int sub      = lua_tonumber(L, 3);
 
   if (dl_list_tag < 0) {
     /* try to initialize it */
@@ -113,10 +114,10 @@ static int lua_new_list(lua_State * L)
     }
   }
 
-  printf("Creating new list %d %d\n", heapsize, active);
+  printf("Creating new %s-list %d %d\n", sub?"sub":"main",heapsize, active);
 
   lua_settop(L, 0);
-  l = dl_create(heapsize, active);
+  l = dl_create(heapsize, active, sub);
   if (l) {
 
     /* insert the new display list into list of all display lists
@@ -320,7 +321,7 @@ static luashell_command_description_t display_commands[] = {
   {
     "dl_new_list", 0,                    /* long and short names */
     "print [["
-	"dl_new_list(heapsize, active) : "
+	"dl_new_list([heapsize, [active, [sub-list] ] ]) : "
 	"create a new display list, return handle on display list"
     "]]",                                /* usage */
     SHELL_COMMAND_C, lua_new_list        /* function */

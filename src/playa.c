@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.13 2002-11-14 23:40:29 benjihan Exp $
+ * $Id: playa.c,v 1.14 2002-11-28 04:22:44 ben Exp $
  */
 
 #include <kos.h>
@@ -34,6 +34,7 @@ static char * make_default_name(const char *fn);
 const char * playa_statusstr(int status);
 
 kthread_t * playa_thread;
+static kthread_t * sndstream_thd;
 static semaphore_t *playa_haltsem;
 static int playavolume = 255;
 static int playa_paused;
@@ -377,7 +378,11 @@ int playa_init()
 
   SDDEBUG("Create soundstream thread\n");
   streamstatus = PLAYA_STATUS_INIT;
-  thd_create(sndstream_thread, 0);
+  sndstream_thd = thd_create(sndstream_thread, 0);
+  if (sndstream_thd) {
+	thd_set_label(sndstream_thd, "Sound-stream-thd");
+  }
+
   SDDEBUG("Waiting soundstream thread\n");
   while (streamstatus != PLAYA_STATUS_PLAYING)
     thd_pass();
@@ -386,7 +391,10 @@ int playa_init()
   SDDEBUG("Create PLAYA decoder thread\n");
   playastatus = PLAYA_STATUS_INIT;
 #ifdef PLAYA_THREAD
-  thd_create(playadecoder_thread, 0);
+  playa_thread = thd_create(playadecoder_thread, 0);
+  if (playa_thread) {
+	thd_set_label(playa_thread, "Playa-thd");
+  }
 #endif
   SDDEBUG("Waiting PLAYA decoder thread\n");
   wait_playastatus(PLAYA_STATUS_READY);

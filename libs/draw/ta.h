@@ -5,7 +5,7 @@
  * @date     2002/11/22
  * @brief    draw tile accelerator interface.
  *
- * $Id: ta.h,v 1.1 2002-11-25 16:42:28 ben Exp $
+ * $Id: ta.h,v 1.2 2002-11-28 04:22:44 ben Exp $
  */
 
 #ifndef _DRAW_TA_H_
@@ -61,11 +61,25 @@ typedef struct {
 /** Build a TA poly header. */
 /* void draw_poly_hdr(ta_hw_poly_t * poly, int flags); */
 
+
+/** Initialize rendering system. */
+int draw_init_render(void);
+
+unsigned int draw_open_render(void);
+
+void draw_translucent_render(void);
+
+void draw_close_render(void);
+
+
 /** Set current drawing mode. */
 void draw_set_flags(int flags);
 
 /** Current drawing flags (mode). */
 extern int draw_current_flags;
+
+/** Current frame counter. */
+extern unsigned int draw_frame_counter;
 
 #define DRAW_SET_FLAGS(F) if (draw_current_flags != (F)) { draw_set_flags(F); } else
 

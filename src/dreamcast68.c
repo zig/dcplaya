@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.33 2002-11-27 09:58:09 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.34 2002-11-28 04:22:44 ben Exp $
  */
 
 //#define RELEASE
@@ -20,7 +20,7 @@
 
 #include <stdlib.h>
 #include <dc/fmath.h>
-#include <dc/ta.h>
+//#include <dc/ta.h>
 #include <stdio.h>
 
 #include "sndstream.h"
@@ -28,6 +28,7 @@
 //#include "gp.h"
 //#include "draw_clipping.h"
 #include "draw/draw.h"
+#include "draw/ta.h"
 
 /* dreamcast68 includes */
 #include "file_wrapper.h"
@@ -120,25 +121,25 @@ unsigned int fade_argb(unsigned int argb)
 }
 
 /* Create a empty triangle to avoid TA empty list */
-static void pipo_poly(int mode)
-{
-  poly_hdr_t poly;
-  vertex_oc_t vert;
-  int i;
+/* static void pipo_poly(int mode) */
+/* { */
+/*   poly_hdr_t poly; */
+/*   vertex_oc_t vert; */
+/*   int i; */
 	
-  ta_poly_hdr_col(&poly, !mode ? TA_OPAQUE : TA_TRANSLUCENT);
-  ta_commit_poly_hdr(&poly);
+/*   ta_poly_hdr_col(&poly, !mode ? TA_OPAQUE : TA_TRANSLUCENT); */
+/*   ta_commit_poly_hdr(&poly); */
 
-  vert.a = vert.r = vert.g = vert.b = 0;
+/*   vert.a = vert.r = vert.g = vert.b = 0; */
 	
-  for (i=0;i<3;++i) {
-    vert.flags = (i!=2) ? TA_VERTEX_NORMAL : TA_VERTEX_EOL;
-    vert.x = (float)(!!i);
-    vert.y = (float)(i>1);
-    vert.z = 1.0f;
-    ta_commit_vertex(&vert, sizeof(vert));
-  }
-}
+/*   for (i=0;i<3;++i) { */
+/*     vert.flags = (i!=2) ? TA_VERTEX_NORMAL : TA_VERTEX_EOL; */
+/*     vert.x = (float)(!!i); */
+/*     vert.y = (float)(i>1); */
+/*     vert.z = 1.0f; */
+/*     ta_commit_vertex(&vert, sizeof(vert)); */
+/*   } */
+/* } */
 
 #ifndef RELEASE
 #define VCOLOR my_vid_border_color
@@ -639,49 +640,46 @@ void main_thread(void *cookie)
     {
       int end = 0;
       while (!end) {
-	uint32 elapsed_frames;
+		uint32 elapsed_frames;
 
-	ta_begin_render();
-	pipo_poly(0);
+		/* Open render */
+		elapsed_frames = draw_open_render();
+		frame_counter68 += elapsed_frames;
 
-	/* Update FFT */
-	update_fft();
+		/* Update FFT */
+		update_fft();
 
-	/* Update the VMU LCD */
-	update_lcd();
+		/* Update the VMU LCD */
+		update_lcd();
 
-	elapsed_frames = frame_counter68;
-	frame_counter68 = ta_state.frame_counter;
-	elapsed_frames = frame_counter68 - elapsed_frames;
-	fade(elapsed_frames);
-	controler_read(&controler68, frame_counter68);
+		fade(elapsed_frames);
+		controler_read(&controler68, frame_counter68);
 
-	/* Update shell */
-	shell_update(elapsed_frames * 1.0f/60.0f);
+		/* Update shell */
+		shell_update(elapsed_frames * 1.0f/60.0f);
 
-	/* Display opaque render list */
-	dl_render_opaque();
+		/* Display opaque render list */
+		dl_render_opaque();
+
+		/* Translucent render */
+		draw_translucent_render();
+
+		end = render_intro(elapsed_frames);
+
+		/* Display transparent render list */
+		dl_render_transparent();
       
-	ta_commit_eol();
+		/* Finish the frame *******************************/
+		/*	extern kthread_t * playa_thread;
+			if (playa_thread)
+			thd_set_prio(playa_thread, PRIO_DEFAULT);
+			ta_finish_frame();
+			if (playa_thread)
+			thd_set_prio(playa_thread, PRIO_DEFAULT-1);*/
 
-	end = render_intro(elapsed_frames);
+		draw_close_render();
 
-	/* Display transparent render list */
-	dl_render_transparent();
-      
-	ta_commit_eol();
-
-	/* Finish the frame *******************************/
-/*	extern kthread_t * playa_thread;
-	if (playa_thread)
-	  thd_set_prio(playa_thread, PRIO_DEFAULT);
-	ta_finish_frame();
-	if (playa_thread)
-	  thd_set_prio(playa_thread, PRIO_DEFAULT-1);*/
-
-	ta_finish_frame();
-
-	// playa_decoderupdate();
+		// playa_decoderupdate();
 
       }
     }
@@ -699,13 +697,10 @@ void main_thread(void *cookie)
     }
 
     //    my_vid_border_color(0,0,0);
-    ta_begin_render();
-
-    pipo_poly(0);
     
-    elapsed_frames = frame_counter68;
-    frame_counter68 = ta_state.frame_counter;
-    elapsed_frames = frame_counter68 - elapsed_frames;
+    elapsed_frames = draw_open_render();
+    frame_counter68 += elapsed_frames;
+
     fade(elapsed_frames);
     controler_read(&controler68, frame_counter68);
 
@@ -727,7 +722,7 @@ void main_thread(void *cookie)
 
     /* Opaque list *************************************/
     //my_vid_border_color(255,0,0);
-/*     bkg_render(fade68, info_is_help() || !is_playing); */
+	/*     bkg_render(fade68, info_is_help() || !is_playing); */
 
     /* Visual opaque list */
     render_visual_opaque();
@@ -735,12 +730,10 @@ void main_thread(void *cookie)
     /* Display opaque render list */
     dl_render_opaque();
       
-    /* End of opaque list */
-    ta_commit_eol();
 
     /* Translucent list ********************************/
 
-    pipo_poly(1);
+    draw_translucent_render();
 
     /* Visual translucent list */
     render_visual_translucent();
@@ -758,19 +751,16 @@ void main_thread(void *cookie)
     /* Display transparent render list */
     dl_render_transparent();
 
-    /* End of translucent list */
-    ta_commit_eol();
-
     /* Finish the frame *******************************/
 
-/*    extern kthread_t * playa_thread;
-    if (playa_thread)
-      thd_set_prio(playa_thread, PRIO_DEFAULT);
-    ta_finish_frame();
-    if (playa_thread)
-      thd_set_prio(playa_thread, PRIO_DEFAULT-1);*/
+	/*    extern kthread_t * playa_thread;
+		  if (playa_thread)
+		  thd_set_prio(playa_thread, PRIO_DEFAULT);
+		  ta_finish_frame();
+		  if (playa_thread)
+		  thd_set_prio(playa_thread, PRIO_DEFAULT-1);*/
     
-    ta_finish_frame();
+    draw_close_render();
     
     //    my_vid_border_color(0,0,0);    
   }
@@ -801,7 +791,7 @@ void main_thread(void *cookie)
   /* Stop display_list */
   dl_shutdown();
 
- error:
+  // error:
   if (cookie) {
     *(int *)cookie = err;
   }
@@ -859,11 +849,10 @@ int dreammp3_main(int argc, char **argv)
   csl_init_main_console();
   csl_printf(csl_main_console, "TOTO !\n");
 
-  ta_init(TA_LIST_OPAQUE_POLYS | TA_LIST_TRANS_POLYS, TA_POLYBUF_32, 1024*1024);
 /*  ta_set_buffer_config(TA_LIST_OPAQUE_POLYS | TA_LIST_TRANS_POLYS, TA_POLYBUF_32, 1024*1024);
   ta_hw_init();*/
 
-  frame_counter68 = ta_state.frame_counter;
+  frame_counter68 = 0; //ta_state.frame_counter;
 
   /* Run no multi-thread setup (malloc/free rules !) */
   if (no_mt_init() < 0) {
@@ -908,6 +897,7 @@ error:
 
 static int warning_splash(void)
 {
+#if 0
   int end = 0;
   unsigned int end_frame = 0;
 
@@ -922,12 +912,14 @@ static int warning_splash(void)
 	
   while (!end) {
     uint32 elapsed_frames;
-
+	
     ta_begin_render();
     pipo_poly(0);
-    elapsed_frames = frame_counter68;
-    frame_counter68 = ta_state.frame_counter;
+
+    elapsed_frames = draw_open_render();
+    frame_counter68 += elapsed_frames;
     elapsed_frames = frame_counter68 - elapsed_frames;
+
     fade(elapsed_frames);
     controler_read(&controler68, frame_counter68);
 
@@ -962,5 +954,6 @@ static int warning_splash(void)
     ta_finish_frame();
 
   }
+#endif
   return 0;
 }

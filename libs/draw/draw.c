@@ -5,11 +5,12 @@
  * @date    2002/11/22
  * @brief   drawing system
  *
- * $Id: draw.c,v 1.1 2002-11-25 16:42:28 ben Exp $
+ * $Id: draw.c,v 1.2 2002-11-28 04:22:44 ben Exp $
  */
 
 #include "draw/draw.h"
 #include "draw/gc.h"
+#include "draw/ta.h"
 
 #include "sysdebug.h"
 
@@ -38,6 +39,12 @@ int draw_init(const float screen_width, const float screen_height)
   MtxProjection(draw_projection, 70*2.0*3.14159/360,
 				0.01, (float)screen_width/screen_height, 1000);
 
+  /* Init renderer (TA). */
+  SDDEBUG("Init render:\n");
+  SDINDENT;
+  err = draw_init_render();
+  SDUNINDENT;
+
   /* Init texture manager. */
   SDDEBUG("Init texture manager:\n");
   SDINDENT;
@@ -51,6 +58,7 @@ int draw_init(const float screen_width, const float screen_height)
   err = gc_init(screen_width, screen_height);
   SDUNINDENT;
   if (err < 0) goto error;
+
 
  error:
 

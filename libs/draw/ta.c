@@ -5,7 +5,7 @@
  * @date     2002/11/22
  * @brief    draw tile accelarator interface
  *
- * $Id: ta.c,v 1.1 2002-11-25 16:42:28 ben Exp $
+ * $Id: ta.c,v 1.2 2002-11-28 04:22:44 ben Exp $
  */
 
 #include "draw/ta.h"
@@ -90,5 +90,69 @@ void draw_set_flags(int flags)
   if (flags != draw_current_flags) {
 	make_poly_hdr(&cur_poly, draw_current_flags = flags);
 	ta_commit32_inline(&cur_poly);
+  }
+}
+
+enum { CLOSE, OPAQUE, TRANSLUCENT };
+
+static int draw_current_render_mode;
+
+unsigned int draw_frame_counter;
+
+int draw_init_render(void)
+{
+  ta_init(TA_LIST_OPAQUE_POLYS|TA_LIST_TRANS_POLYS, TA_POLYBUF_32, 1024*1024);
+  draw_frame_counter = ta_state.frame_counter;
+  draw_current_render_mode = CLOSE;
+
+  return 0;
+}
+
+unsigned int draw_open_render(void)
+{
+  unsigned int oldframe = draw_frame_counter;
+
+  switch(draw_current_render_mode) {
+  case OPAQUE:
+  case TRANSLUCENT:
+    draw_close_render();
+  case CLOSE:
+	ta_begin_render();
+	draw_frame_counter = ta_state.frame_counter;
+	/* Commit dummy polygon. */
+	draw_current_flags = DRAW_INVALID_FLAGS;
+	draw_set_flags(DRAW_OPAQUE);
+	draw_current_render_mode = OPAQUE;
+  }
+
+  return draw_frame_counter - oldframe;
+}
+
+void draw_translucent_render(void)
+{
+  switch(draw_current_render_mode) {
+  case CLOSE:
+	draw_open_render();
+  case OPAQUE:
+    ta_commit_eol();
+	draw_current_flags = DRAW_INVALID_FLAGS;
+	draw_set_flags(DRAW_TRANSLUCENT);
+	draw_current_render_mode = TRANSLUCENT;
+  case TRANSLUCENT:
+	break;
+  }
+}
+
+void draw_close_render(void)
+{
+  switch(draw_current_render_mode) {
+  case OPAQUE:
+	draw_translucent_render();
+  case TRANSLUCENT:
+    ta_commit_eol();
+	ta_finish_frame();
+	draw_current_render_mode = CLOSE;
+  case CLOSE:
+	break;
   }
 }

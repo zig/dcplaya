@@ -4,7 +4,7 @@
  * @author   ben(jamin) gerard <ben@sashipa.com>
  * @brief    graphic context interface.
  *
- * $Id: gc.c,v 1.2 2002-11-27 09:58:09 ben Exp $
+ * $Id: gc.c,v 1.3 2002-11-28 04:22:44 ben Exp $
  */
 
 #include "draw/gc.h"
@@ -64,13 +64,47 @@ gc_t * gc_set(gc_t * gc)
   return old;
 }
 
-int gc_push(void)
+int gc_push(int flags)
 {
   if (sp_gc >= &gc_stack[MAX_GC]) {
 	return -1;
   }
 
-  sp_gc[0] = *current_gc;
+  /* Restore font face. */
+  if (flags & GC_RESTORE_TEXT_FONT) {
+	sp_gc->text.fontid = current_gc->text.fontid;
+  }
+
+  /* Restore size parameters. */
+  if (flags & GC_RESTORE_TEXT_SIZE) {
+	sp_gc->text.size = current_gc->text.size;
+	sp_gc->text.aspect = current_gc->text.aspect;
+  }
+
+  /* Restore text color. */
+  if (flags & GC_RESTORE_TEXT_COLOR) {
+	sp_gc->text.argb = current_gc->text.argb;
+  }
+
+  /* Restore background colors. */
+  if (flags & GC_RESTORE_COLORS_0) {
+	sp_gc->colors[0] = current_gc->colors[0];
+  }
+  if (flags & GC_RESTORE_COLORS_1) {
+	sp_gc->colors[1] = current_gc->colors[1];
+  }
+  if (flags & GC_RESTORE_COLORS_2) {
+	sp_gc->colors[2] = current_gc->colors[2];
+  }
+  if (flags & GC_RESTORE_COLORS_3) {
+	sp_gc->colors[3] = current_gc->colors[3];
+  }
+
+  /* Restore clipping box. */
+  if (flags & GC_RESTORE_CLIPPING) {
+	sp_gc->clipbox = current_gc->clipbox;
+  }
+
   ++sp_gc;
   return 0;
 }
@@ -112,17 +146,8 @@ int gc_pop(int flags)
   }
 
   /* Restore clipping box. */
-  if (flags & GC_RESTORE_CLIPPING_X1) {
-	current_gc->clipbox.x1 = sp_gc->clipbox.x1;
-  }
-  if (flags & GC_RESTORE_CLIPPING_Y1) {
-	current_gc->clipbox.y1 = sp_gc->clipbox.y1;
-  }
-  if (flags & GC_RESTORE_CLIPPING_X2) {
-	current_gc->clipbox.x1 = sp_gc->clipbox.x1;
-  }
-  if (flags & GC_RESTORE_CLIPPING_Y2) {
-	current_gc->clipbox.y2 = sp_gc->clipbox.y2;
+  if (flags & GC_RESTORE_CLIPPING) {
+	current_gc->clipbox = sp_gc->clipbox;
   }
 
   --sp_gc;

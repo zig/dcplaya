@@ -1,8 +1,9 @@
 /**
+ @ @ingroup dcplaya_devel
  * @file    fft.c
  * @author  benjamin gerard <ben@sashipa.com>
  * 
- * @version $Id: fft.c,v 1.6 2002-11-14 23:40:29 benjihan Exp $
+ * @version $Id: fft.c,v 1.7 2002-11-28 04:22:44 ben Exp $
  */
 
 #include <stdlib.h>
@@ -31,8 +32,8 @@ static short fft_R[FFT_SIZE];
 static fft_t fft_I[FFT_SIZE];
 
 static int fft_idx, fft_max, fft_fill;
-static short * fft_buffer = 0;
-static short * pcm_buffer = 0;
+static short * fft_buf = 0;
+static short * pcm_buf = 0;
 
 static void fft_lock(void)
 {
@@ -63,18 +64,18 @@ int fft_init(int nbuffer)
   fft_size = FFT_SIZE >> 1;
   pcm_size = FFT_SIZE;
 
-  fft_buffer = malloc(nbuffer * fft_size * sizeof(*fft_buffer) +
-					  nbuffer * pcm_size * sizeof(*pcm_buffer));
-  pcm_buffer = (short *)(fft_buffer + (nbuffer * fft_size)); 
-  return fft_buffer ? 0 : -1;
+  fft_buf = malloc(nbuffer * fft_size * sizeof(*fft_buf) +
+					  nbuffer * pcm_size * sizeof(*pcm_buf));
+  pcm_buf = (short *)(fft_buf + (nbuffer * fft_size)); 
+  return fft_buf ? 0 : -1;
 }
 
 void fft_shutdown(void)
 {
-  if (fft_buffer) {
-	free(fft_buffer);
+  if (fft_buf) {
+	free(fft_buf);
   }
-  fft_buffer = 0;
+  fft_buf = 0;
   fft_max = 0;
   fft_idx = 0;
 }
@@ -85,7 +86,7 @@ static void fft_queue_buffer(int frq)
   short * fft;
   short * pcm;
 
-  if (!fft_buffer) {
+  if (!fft_buf) {
 	return;
   }
 
@@ -93,8 +94,8 @@ static void fft_queue_buffer(int frq)
   fft_lock();
   fft_idx = (fft_idx + 1) % fft_max;
 
-  fft = fft_buffer + ( fft_idx << (FFT_LOG_2-1) );
-  pcm = pcm_buffer + ( fft_idx << (FFT_LOG_2) );
+  fft = fft_buf + ( fft_idx << (FFT_LOG_2-1) );
+  pcm = pcm_buf + ( fft_idx << (FFT_LOG_2) );
   fft_unlock();
 
   // Copy last sample into overlapping buffer. 
@@ -261,7 +262,7 @@ void fft_copy(short * fft, short * pcm, int n, int db)
 	fft_lock();
 	idx = (fft_idx+1) % fft_max;
 	if (fft) {
-	  any_copy(fft, fft_buffer + (idx << (FFT_LOG_2-1)), FFT_SIZE >> 1, n);
+	  any_copy(fft, fft_buf + (idx << (FFT_LOG_2-1)), FFT_SIZE >> 1, n);
 	  if (db) {
 		int i;
 		const int sub = 0;//6 * 32768 / 36;
@@ -286,7 +287,7 @@ void fft_copy(short * fft, short * pcm, int n, int db)
 	  }
 	}
 	if (pcm) {
-	  any_copy(pcm, pcm_buffer + (idx << (FFT_LOG_2)), FFT_SIZE, n);
+	  any_copy(pcm, pcm_buf + (idx << (FFT_LOG_2)), FFT_SIZE, n);
 	}
 	fft_unlock();
   }
