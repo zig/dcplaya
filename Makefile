@@ -1,8 +1,15 @@
+#
+# dcplaya top level Makefile
+#
+# (C) COPYRIGHT 2002 benjamin gerard <ben@sashipa.com>
+#
+# $Id: Makefile,v 1.10 2002-09-11 03:53:08 ben Exp $ 
+#
 TARGETS=dreammp3.elf
 
 SH_LDFLAGS=-ml -m4-single-only -nostartfiles -nostdlib -static  -Wl,-Ttext=0x8c010000
 
-SUBDIRS = arm plugins src data doc
+SUBDIRS = arm plugins src data
 
 WHOLE_LIBS=-ldreammp3,-ldcutils,-lkallisti
 OPT_LIBS= -los -lgcc -lm
@@ -63,7 +70,9 @@ r: send
 
 run: my_all send
 
-doc: _dir_doc
+.PHONY: doc
+doc:
+	$(MAKE) -C doc	
 
 
 DEPEND_EXTRA=depend_extra
