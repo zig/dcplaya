@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.39 2003-03-12 22:02:00 ben Exp $
+--- $Id: textlist.lua,v 1.40 2003-03-14 22:04:50 ben Exp $
 ---
 
 -- DL hierarchy :
@@ -659,6 +659,18 @@ function textlist_create(flparm)
 	    return fl:move_cursor(i-1-fl.pos)
 	 end
       end
+   end
+
+
+   --- Get screen TOP/LEFT coordinates of an entry.
+   --
+   function textlist_screen_coor(fl,pos)
+      pos = fl:get_pos(pos)
+      if not pos then return end
+      local xentry = fl.dirinfo[pos]
+      local ye = (xentry and xentry.y) or 0
+      local m1,m2 = dl_get_trans(fl.dl), dl_get_trans(fl.cdl)
+      return m1[4][1], m1[4][2] + m2[4][2] + ye
    end
 
    local fl

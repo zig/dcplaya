@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.56 2003-03-14 18:51:03 ben Exp $
+--- $Id: gui.lua,v 1.57 2003-03-14 22:04:50 ben Exp $
 ---
 
 --
@@ -166,6 +166,7 @@ end
 dskt_zmin = 100
 dskt_zmax = 200
 function gui_child_autoplacement(app)
+--    printf("gui_child_autoplacement %q",app.name)
    if not app._dl1 then
       app._dl1 = dl_new_list(256, 1)
       app._dl2 = dl_new_list(256, 1)
@@ -181,29 +182,33 @@ function gui_child_autoplacement(app)
    end
    local n = 0
    while i do
-      n = n + 1
+--       n = n + 1
       if not i._dl and i.dl and i.dl ~= app.dl then
 	 i._dl = dl_new_list(256, 1)
 	 dl_sublist(i._dl, i.dl)
       end
+
+      -- $$$ ben : only increments if there is a _dl
+      n = n + ((i._dl ~= nil) or 0)
       i = i.next
    end
 
-   -- $$$ ben : +1 ???
-   n = n+1
-   local scale = 1/n
+   if n == 0 then
+      -- $$$ ben : No child, desactive both list
+      dl_set_active2(app._dl1, app._dl2, 0)
+      return
+   end
+   
+   local zpart,z = 200/n, 200
    i = app.sub
---   n = 0
    while i do
-      n = n - 1
-
       if i._dl then
+	 z = z - zpart
 	 dl_set_trans(i._dl,
-		      mat_trans(0, 0, 100/scale + 100*n) *
-			 mat_scale(1, 1, scale/2))
+		      mat_scale(1, 1, 1/n)
+			 * mat_trans(0, 0, z))
 	 dl_sublist(app._dl1, i._dl)
       end
-      
       i = i.next
    end
 

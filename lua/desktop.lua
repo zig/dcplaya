@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.29 2003-03-14 18:51:03 ben Exp $
+--- $Id: desktop.lua,v 1.30 2003-03-14 22:04:50 ben Exp $
 ---
 
 if not dolib("evt") then return end
@@ -97,7 +97,7 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 '<macro macro-name="yellow" macro-cmd="font" color="#FFFF00">' ..
 '<macro macro-name="nrm" macro-cmd="font" color="'..col..'">'
 
-   text = text..'<dialog guiref="dialog" label="Desktop" name="desktop">'
+   text = text..'<dialog guiref="dialog" label="Desktop" name="switcher">'
    text = text..'<linecenter>Running applications'..
       ' :<br><vspace h="8"><hspace w="16"><linedown>'
 
@@ -459,29 +459,6 @@ function dskt_handle(app, evt)
 
       gui_child_autoplacement(app)
 
-      -- $$$ test debug
-      local i,a
-      for i,a in { app, evt.app } do
-	 print("autoplace "..a.name)
-	 if not a._dl then
-	    print(a.name..": no _dl !!")
-	 else
-	    local mat = dl_get_trans(a._dl)
-	    local vtx = mat_new(5,4)
-	    vtx[1][3] = 0
-	    vtx[1][4] = 1
-	    vtx[2][3] = 50
-	    vtx[2][4] = 1
-	    vtx[3][3] = 100
-	    vtx[3][4] = 1
-	    vtx[4][3] = 150
-	    vtx[4][4] = 1
-	    vtx[5][3] = 200
-	    vtx[5][4] = 1
-	    mat_dump(vtx * mat,1)
-	 end
-      end
-
       return
    end
 
@@ -490,6 +467,45 @@ function dskt_handle(app, evt)
       return
    end
    return evt
+end
+
+-- $$$ Added by ben for debug
+function dumpZ()
+   local vtx = mat_new(5,4)
+   vtx[1][3] = 0
+   vtx[1][4] = 1
+   vtx[2][3] = 50
+   vtx[2][4] = 1
+   vtx[3][3] = 100
+   vtx[3][4] = 1
+   vtx[4][3] = 150
+   vtx[4][4] = 1
+   vtx[5][3] = 200
+   vtx[5][4] = 1
+
+   function testzzz(app,mat,vtx,indent)
+      if not app then return end
+      indent = indent or 0
+      printf(strrep(">", indent) .. "DUMP %q", app.name)
+      local mtx
+      if not app._dl then
+	 print("no _dl !!")
+	 mtx = mat_new()
+      else
+	 mtx = dl_get_trans(app._dl) * mat
+      end
+      mat_dump(vtx * mtx, 1)
+      
+      -- $$$ test debug
+      local a
+      a = app.sub
+      while a do
+	 testzzz(a,mtx,vtx,indent+1)
+	 a = a.next
+      end
+   end
+
+   testzzz(evt_desktop_app, mat_new(), vtx,0)
 end
 
 function dskt_update(app)

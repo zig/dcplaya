@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   RAM disk for KOS file system
  * 
- * $Id: fs_ramdisk.c,v 1.15 2003-03-12 17:40:59 zigziggy Exp $
+ * $Id: fs_ramdisk.c,v 1.16 2003-03-14 22:04:50 ben Exp $
  */
 
 /** @TODO add lock to file-handle. It is not thread-safe right now !!! */
@@ -830,7 +830,7 @@ static file_t open(const char *fn, int mode)
   if (omode & DIR_MODE) {
     fh[fd].readdir = (omode & READ_MODE) ? node->son : 0;
 #if DEBUG
-    dump_node(fh[fd].readdir,"OPEN-DIR");
+/*     dump_node(fh[fd].readdir,"OPEN-DIR"); */
 #endif
   } else {
     fh[fd].pos = (mode & O_MODE_MASK) == O_APPEND ? node->entry.size : 0;
@@ -881,7 +881,7 @@ static void close(uint32 fd)
     if(!open && node->flags.notify && node->flags.modified) {
       modify = 1;
 #if DEBUG
-      dump_node(node,"CLOSE-MODIFY");
+/*       dump_node(node,"CLOSE-MODIFY"); */
 #endif
     }
     node->flags.modified = 0;
@@ -978,14 +978,14 @@ static dirent_t * readdir(file_t fd)
   /* Don't need to check mode, readdir only set for READ_MODE */
   for (rd = fh[fd].readdir; rd && rd->flags.unlinked; rd = rd->little_bros) {
 #if DEBUG
-    dump_node(rd,"Skip-Dir");
+/*     dump_node(rd,"Skip-Dir"); */
 #endif
   }
     ;
   if (rd) {
     /* Found one, set pointer to next */
     e = &rd->entry;
-    dump_node(rd,"Read-Dir");
+/*     dump_node(rd,"Read-Dir"); */
     rd = rd->little_bros;
   } else {
     e = 0;
@@ -1068,7 +1068,7 @@ static void really_unlink(node_t * node)
 
   detach_node(node);
   if (node->flags.notify) {
-    dump_node(node,"MODIFY BY UNLINK");
+/*     dump_node(node,"MODIFY BY UNLINK"); */
     modify = 1;
   }
   release_node(node);

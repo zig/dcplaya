@@ -473,6 +473,7 @@ function menu_create(owner, name, def, box)
 	 else
 	    local y = (xentry and xentry.y) or 0
 	    if not menu.def.sub then return end
+	    --- $$$ ben : y should not be ok when scrolling. 
 	    submenu = menu:create(subname, menu.def.sub[subname],
 				  {m[4][1]+fl.bo2[1], m[4][2]+y})
 	    gui_child_autoplacement(menu);
