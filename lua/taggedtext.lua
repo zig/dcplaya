@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  sgml text and gui element formater
 ---
---- $Id: taggedtext.lua,v 1.12 2003-01-10 16:08:08 ben Exp $
+--- $Id: taggedtext.lua,v 1.13 2003-01-12 15:33:00 zigziggy Exp $
 ---
 
 if not dolib("sprite") then return end
@@ -247,6 +247,35 @@ function tt_end_button_cmd(mode)
    return block, mode.parent
 end
 
+function tt_a_name_draw(block)
+   local tt = block.tt
+   print("New anchor", block.name)
+   tt.anchors[block.name] = {
+      x=block.x,
+      y=block.y,
+   }
+end
+
+function tt_a_cmd(mode, param)
+   if param.name then
+      local block = {
+	 type = "anchor",
+	 w = 0,
+	 h = 0,
+	 z = mode.z,
+	 name = param.name,
+	 tt = mode,
+	 draw = tt_a_name_draw,
+      }
+      return block
+
+   elseif param.href then
+   end
+end
+
+function tt_end_a_cmd(mode, param)
+end
+
 -- all commands
 tt_commands = {
 
@@ -316,7 +345,10 @@ tt_commands = {
    ["/dialog"] = tt_end_dialog_cmd,
 
    ["button"] = tt_button_cmd,
-   ["/button"] = tt_end_button_cmd
+   ["/button"] = tt_end_button_cmd,
+
+   ["a"] = tt_a_cmd,
+   ["/a"] = tt_end_a_cmd,
 
 }
 
@@ -562,7 +594,8 @@ function tt_build(text, mode)
    mode.total_w = mode.total_w or 0
    mode.total_h = mode.total_h or 0
    mode.fill_totalw = 0
-   mode.guis = { }
+   mode.guis = mode.guis or { }
+   mode.anchors = mode.anchors or { }
    
    mode.box = tt_copymode(mode.box)
 
