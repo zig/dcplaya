@@ -5,7 +5,7 @@
 --- @date     2002
 --- @brief    Main dcplaya lua script.
 ---
---- $Id: dcplayarc.lua,v 1.44 2003-04-01 13:18:55 ben Exp $
+--- $Id: dcplayarc.lua,v 1.45 2003-04-12 12:46:27 ben Exp $
 ---
 ---   The @b home.."dcplayarc.lua" file is dcplaya main script.
 ---   It is executed after the dynshell has been loaded.
@@ -75,6 +75,7 @@ plug_sc68	= home.."plugins/inp/sc68/sc68.lez"
 plug_mikmod	= home.."plugins/inp/mikmod/mikmod.lez"
 plug_ogg	= home.."plugins/inp/ogg/ogg.lez"
 plug_cdda	= home.."plugins/inp/cdda/cdda.lez"
+plug_nsf	= home.."plugins/inp/nsf/nsf.lez"
 plug_obj	= home.."plugins/obj/obj.lez"
 plug_lpo	= home.."plugins/vis/lpo/lpo.lez"
 plug_fftvlr	= home.."plugins/vis/fftvlr/fftvlr.lez"

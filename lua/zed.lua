@@ -3,7 +3,7 @@
 --- @author   vincent penne
 --- @brief    ZED, The Ziggy's Editor
 ---
---- $Id: zed.lua,v 1.14 2003-04-05 16:33:31 ben Exp $
+--- $Id: zed.lua,v 1.15 2003-04-12 12:46:27 ben Exp $
 --
 -- (C) 2002 Vincent Penne (aka Ziggy Stardust)
 --
@@ -263,14 +263,14 @@ function zed_writefile(filename, buffer)
 
    print ("[zed] : writing file ["..filename.."]")
 
-   local i=0
+   local i=1
    if type(buffer) == "table" then
       while buffer[i] do
-	 i = i+1
 	 write(buffer[i].."\n")
+	 i = i+1
       end
    end
-   zed_message=format("*** #%d line(s) written",i)
+   zed_message=format("*** #%d line(s) written",i-1)
 
    closefile(handle)
    return 1
@@ -322,6 +322,8 @@ function zed(filename)
 
 
    zed_initconsole()
+
+   zed_message="(F2) to save, (F10) to quit" 
    
    --zed_gotoxy(0, 0)
    --print("ZED - Ziggy's Editor")

@@ -80,7 +80,7 @@ object plugin API is really poor and would probably be change in the future.
 <p><sub-font>(developer realm)
 
 <p><apres><body-font><left>
-executable plugins main purpose is to had functionalities to the dcplaya LUG
+executable plugins main purpose is to had functionalities to the dcplaya LUA
 interpretor. It adds new functions that could be run from dcplaya console or by
 dcplaya scripts. executable plugins are not limited to this. In fact it can do
 anything like patching dcplaya or whatever.

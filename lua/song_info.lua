@@ -4,7 +4,7 @@
 --- @date     2002/11/29
 --- @brief    Song info application.
 ---
---- $Id: song_info.lua,v 1.29 2003-04-05 16:33:31 ben Exp $
+--- $Id: song_info.lua,v 1.30 2003-04-12 12:46:27 ben Exp $
 
 song_info_loaded = nil
 
@@ -566,7 +566,7 @@ function song_info_create(owner, name, style)
 	 "\016 ... Confirm (depends on the selected item)",
 	 "\017 ... Cancel (stop playing in Filelist / remove in Playlist)",
 	 "\018 ... Display contextual menu",
-	 "\019 ... Toggle appication switcher (access to application menu)",
+	 "\019 ... Toggle application switcher (access to application menu)",
       } do
 	 w,h = dl_measure_text(si.help_dl,text)
 	 dl_draw_text(si.help_dl,

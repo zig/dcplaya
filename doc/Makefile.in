@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard  <ben@sashipa.com>
 #
-# $Id: Makefile.in,v 1.20 2003-04-05 16:33:30 ben Exp $
+# $Id: Makefile.in,v 1.21 2003-04-12 12:46:27 ben Exp $
 #
 
 VERSION = @VERSION@
@@ -25,11 +25,17 @@ ALL_HEADERS_PATH :=\
  ../libs/translator/SHAwrapper \
  ../libs/translator/SHAtranslator \
  ../libs/translator/SHAblitter \
- $(PLG_HEADERS_PATH)
+ $(PLG_HEADERS_PATH) \
+ user_doc
 
 # Local doc files
 HINFILES    := $(wildcard *.hin)
-DEVDOCFILES := $(HINFILES:%.hin=%.h)
+
+# user doc files
+USERDOCFILES := $(wildcard user_doc/*.h)
+
+DEVDOCFILES := $(HINFILES:%.hin=%.h) $(USERDOCFILES)
+
 
 HTML_EXTRA	:= dcplaya_doc.css dcplaya_header.html dcplaya_footer.html 
 
@@ -113,6 +119,7 @@ DOXALL	+= -D WARN_IF_UNDOCUMENTED=NO
 
 DOXALL	+= -D OUTPUT_DIRECTORY='$(DOC_DIR)'
 DOXALL	+= -D FILE_PATTERNS='*.h *.lua'
+DOXALL	+= -D IMAGE_PATH=images 
 
 DOXALL	+= -D EXTRACT_ALL=NO
 DOXALL	+= -D PRIVATE=NO
@@ -227,8 +234,12 @@ $(LUADOCDIR)/%.lua : %.lua  # Makefile
 
 luadoc: $(LUADOCFILES)
 
-devdoc: devdoc.dox $(DEVDOCFILES) luadoc $(HTML_EXTRA)
-	@$(DOXYGEN) $<
+imgdoc:
+	@mkdir -p $(DOC_DIR)/html
+	cp -f images/* $(DOC_DIR)/html
+
+devdoc: devdoc.dox $(DEVDOCFILES) luadoc $(HTML_EXTRA) imgdoc
+	$(DOXYGEN) $<
 
 zmldoc: zmldoc.dox $(DEVDOCFILES) luadoc $(HTML_EXTRA)
 	@$(DOXYGEN) $<

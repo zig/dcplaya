@@ -1,8 +1,9 @@
 /** @ingroup dcplaya_inp_driver
  *  @file    nsf_driver.c
  *  @author  benjamin gerard 
+ *  @date    2003/04/08
  *
- *  $Id: nsf_driver.c,v 1.2 2003-04-09 14:50:32 ben Exp $
+ *  $Id: nsf_driver.c,v 1.3 2003-04-12 12:46:28 ben Exp $
  */ 
 
 /* Adapted from nosefart main_linux.c */
