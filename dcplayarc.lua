@@ -5,7 +5,7 @@
 --- @date     2002
 --- @brief    Main dcplaya lua script.
 ---
---- $Id: dcplayarc.lua,v 1.39 2003-03-23 23:54:53 ben Exp $
+--- $Id: dcplayarc.lua,v 1.40 2003-03-25 09:28:00 ben Exp $
 ---
 ---   The @b home.."dcplayarc.lua" file is dcplaya main script.
 ---   It is executed after the dynshell has been loaded.
@@ -83,11 +83,53 @@ plug_fime	= home.."plugins/vis/fime/fime.lez"
 plug_el         = home.."plugins/exe/entrylist/entrylist.lez"
 plug_jpeg       = home.."plugins/img/jpeg/jpeg.lez"
 
+-- Little function for fun !
+-- $$$ should be move ...
+
+local scroll_dl = nil
+
+function scrolltext(dl, msg, txtcolor, bkgcolor, z)
+   if type(msg) ~= "string" then return end
+   if type(dl_new_list) ~= "function" then
+      return
+   end
+   if tag(dl) ~= dl_tag then
+      dl = dl_new_list(strlen(msg) + 512)
+   end
+   dl_clear(dl)
+   if tag(dl) ~= dl_tag then
+      return
+   end
+   txtcolor = txtcolor or {1, 1, 0, 0}
+   bkgcolor = bkgcolor or {0.8,0.2,0.2,0.4}
+   z = z or 400
+
+   local size = 16
+
+   dl_text_prop(dl,0,size)
+   local w,h = dl_measure_text(dl, msg, 1 ,size)
+   w = w * 1.5
+   local x,y = (640-w) * 0.5, (480-h) * 0.5
+   dl_set_clipping(dl, x, y-3, x+w, y+h+3)
+
+   local c = bkgcolor
+   dl_draw_box1(dl, x, y,x+w, y+h+3, z-10,
+		c[1],c[2],c[3],c[4])
+
+   c = txtcolor
+   dl_draw_scroll_text(dl, x, y, z,
+		       c[1],c[2],c[3],c[4], msg,
+		       w, 1, 1)
+   dl_set_active(dl,1)
+   return dl
+end
+
+
 -- Execute user dcplayarc (extracted from vmu into ramdisk)
 if not dcplayarc_vmu_loading and
    type(test) == "function" and test("-f","/ram/dcplaya/dcplayarc.lua") then
 
-   -- to avoid infinite loop if this file launched from /ram already
+   -- to avoid infinite loop
    dcplayarc_vmu_loading = 1
 
    print("Running [/ram/dcplaya/dcplayarc.lua]")
@@ -116,6 +158,13 @@ end
 
 -- Standard libraries
 dolib ("basic")
+dolib("display_init")
+if type(scrolltext) == "function" then
+   scroll_dl = scrolltext(scroll_dl,
+			  "Welcome to dcplaya " .. __VERSION
+			     .. ". Please wait while loading resources ...")
+end
+
 dolib ("evt")
 dolib ("dirfunc")
 dolib ("shell")
@@ -132,7 +181,9 @@ if __RELEASE and type(dirlist) == "function" then
    if type(files) == "table" then
       local n,i = getn(files)
       for i=1,n do
-	 tex_new(path .. "/" .. files[i])
+	 if not tex_exist(files[i]) then
+	    tex_new(path .. "/" .. files[i])
+	 end
       end
    end
 end
@@ -141,7 +192,6 @@ dolib ("io_control")
 dolib ("gui")
 
 -- vmu initialisation.
-
 dolib ("vmu_init")
 
 if type(ramdisk_init) == "function" then
@@ -157,7 +207,15 @@ if type(vmu_file) == "function" then
       local result
       if type(vmu_init) == "function" then
 	 hideconsole()
+	 -- Disable scrolltext ...
+	 if scroll_dl then
+	    dl_set_ative(scroll_dl,nil)
+	 end
 	 result = vmu_init(1) -- Select only 
+	 -- Enable scrolltext ...
+	 if scroll_dl then
+	    dl_set_ative(scroll_dl,1)
+	 end
 	 showconsole()
       end
    end
@@ -167,8 +225,7 @@ end
 print ("Reading user config files ...")
 
 if not skip_home_userconf then
-   local configfile = home .. (__RELEASE or not __DEBUG)
-      and "userconf-release.lua" or "userconf.lua"
+   local configfile = home .. "userconf.lua"
    printf("Running [%s]",configfile)
    dofile (configfile)
 end
@@ -178,7 +235,9 @@ if not skip_vmu_userconf and test("-f","/ram/dcplaya/userconf.lua") then
    dofile ("/ram/dcplaya/userconf.lua")
 end
 
+scroll_dl = nil
+
 -- Final steps :
 help()  -- print available commands
 shell() -- launch the enhanced shell
-
+hideconsole()

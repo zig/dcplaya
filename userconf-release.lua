@@ -45,11 +45,21 @@
 ---          -# @link dcplaya_lua_sb_app song_browser @endlink,
 ---             launch and get focus on the song-browser application.
 ---     -# Randomly set a vmu visual.
----     -# Randomly set a visual plugin.
+---     -# Randomly set a visual plugin if none is set.
 ---
 --
+
+print()
+print("Executing "..home.."userconf.lua")
+print(" This file : @BUILT-DATE@")
+print(" Release   : " .. (__RELEASE and "yes" or "no"))
+print(" Debug     : " .. (__DEBUG and "yes" or "no"))
+print()
+
 if __RELEASE then
-   print("Loading drivers...")
+   local msg = "Loading drivers ... please wait"
+   print(msg)
+
    local plugins = {
       plug_obj,
       plug_cdda, plug_xing, plug_ogg, plug_mikmod, plug_sidplay, plug_sc68,
@@ -82,11 +92,29 @@ if __RELEASE then
    -- Currently vmu visual are not plugins, just hard the list
    vmu_set_visual(random(3))
 
-   -- Get driver lists
-   local drlist = get_driver_lists()
-   if type(drlist) ~= "table" and drlist.vis and drlist.vis.n > 0 then
-      -- We add some visual driver, set a random one.
-      set_visual(drlist.vis[random(drlist.vis.n)].name)
+   -- Set visual only if no cuurent
+   local vis_name = set_visual()
+   if not vis_name or vis_name == "" then
+      vis_name = nil
+      -- Get driver lists
+      local drlist = get_driver_lists()
+      if type(drlist) == "table" and drlist.vis and drlist.vis.n > 0 then
+	 -- We add some visual driver, set a random one.
+	 vis_name = drlist.vis[random(drlist.vis.n)].name
+	 if vis_name then
+	    print("Setting visual " .. vis_name)
+	    set_visual(vis_name)
+	 end
+      end
    end
+   -- test again
+   -- vis_name = set_visual() 
+   -- $$$ failed ? Probably becoz visual really be set in the next frame ...
+   if not vis_name then
+      print("No visual plugin found :`(")
+   else
+      print("Visual plugin " .. vis_name)
+   end
+
 end
 
