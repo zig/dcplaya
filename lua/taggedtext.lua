@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  sgml text and gui element formater.
 ---
---- $Id: taggedtext.lua,v 1.25 2003-03-10 22:55:33 ben Exp $
+--- $Id: taggedtext.lua,v 1.26 2003-03-20 06:05:34 ben Exp $
 ---
 
 if not dolib("dirfunc") then return end
@@ -93,10 +93,48 @@ function tt_img_cmd(mode, param)
    end
 end
 
+--- Tagged text color table.
+--- @TODO Add some more colors
+tt_color_table = {
+   -- Get gui current colors
+   box_bcolor = function() return gui_box_bcolor end,
+   box_color1 = function() return gui_box_color1 end,
+   box_color2 = function() return gui_box_color2 end,
+   button_bcolor = function() return gui_button_bcolor end,
+   button_color1 = function() return gui_button_color1 end,
+   button_color2 = function() return gui_button_color2 end,
+   text_color = function() return gui_text_color end,
+   text_shiftbox = function() return gui_text_shiftbox end,
+   input_color1 = function() return gui_input_color1 end,
+   input_color2 = function() return gui_input_color2 end,
+   input_cursor_color1 = function() return gui_input_cursor_color1 end,
+   input_cursor_color2 = function() return gui_input_cursor_color2 end,
+}
 
--- UGLY !!!
----  $$$ ben : not anymore :)
+-- UGLY !!!  - $$$ ben : not anymore :)
 function tt_tocolor(s)
+   if type(s) == "string" then
+      print("tt_color:"..s)
+      local first = strsub(s,1,1)
+      if first then
+	 if first == "$" then
+	    s = getglobal(strsub(s,2))
+	 elseif first ~= "#" then
+	    s = tt_color_table[s] or s
+	 end
+      end
+   end
+
+   -- A function : run it !
+   if type(s) == "function" then
+      s = s()
+   end
+
+   -- Just reference colors
+   if type(s) == "table" then
+      return s
+   end
+   -- Other type : create a new color 
    return color_new(s)
 end
 
@@ -117,7 +155,9 @@ function tt_font_cmd(mode, param)
       w = 0,
       h = 0,
       draw = function(block)
-		dl_text_prop(block.dl, block.id, block.h)
+		-- $$$ ben hack : Remove filtering for font 1 (fixed)
+		dl_text_prop(block.dl, block.id, block.h, nil,
+			     block.id ~= 1 or 0)
 	     end
    }
 
@@ -296,6 +336,17 @@ tt_commands = {
 	  mode.vspace = param.vspace
        end,
 
+   pre = function(mode,param)
+	    mode.preformatted = 1
+	    mode.tabsize = param.tabsize or mode.tabsize or 3
+	    mode.tabchar = param.tabchar or mode.tabchar or " "
+	 end,
+
+   ["/pre"] = function(mode,param)
+		 mode.preformatted = nil
+	      end,
+
+
    lineup = function(mode)
 	     mode.align_line_v = tt_align_line_up
 	  end,
@@ -347,6 +398,7 @@ tt_commands = {
 --	       mode.w = mode.w + w
 	       return { w = w, h = 0, draw = function() end }
 	    end,
+
 
    macro = function(mode, param)
 	      local name = param["macro-name"]
@@ -547,6 +599,10 @@ function tt_endline(mode)
       local block = line[i]
       h = max(h, block.h)
    end
+   -- $$$ ben : fix multiple line break.
+   if h == 0 and line.n > 0 and line[1].type and line[1].type == "text" then
+      h = line[1].font_h or 16
+   end
 
    line.fill_totalw = mode.fill_totalw
    line.h = h
@@ -597,15 +653,24 @@ function tt_endgroup(mode, cur)
    return mode
 end
 
---- process a tagged text
+--- process a tagged text.
 function tt_build(text, mode)
    if not tt_tag then
       tt_tag = newtag()
    end
 
+   if tag(text) == tt_tag then
+      return text
+   end
+
+   if type(text) ~= "string" then
+      return
+   end
+
    if not mode then
       mode = { }
    end
+
    settag(mode, tt_tag)
    mode.dl = mode.dl or dl_new_list(1024, 1)
    mode.box = mode.box or { 0, 0, 640, 480 }
@@ -675,7 +740,7 @@ function tt_build(text, mode)
 
    local blocks = { n = 0 }
  
-   local start = 1
+   local start,stop = 1,0
    local len = strlen(text)
 
    -- $$$ added by ben : text without tags
@@ -684,36 +749,61 @@ function tt_build(text, mode)
    if mode.font_h ~= 16 then
       tt_insert_block(mode, tt_font_cmd(mode, { size = mode.font_h }))
    end
-   
+
+   local countermax = 80
+  
+   -- Skip starting sapces.
+   start,stop = strfind(text, "%s*", start)
+   start = stop + 1
+   local prevstart = start-1
+
    while start <= len do
-      local e1, e2 = strfind(text, "[%s%p]*%w+[%s%p]+", start)
+--      local e1, e2 = strfind(text, "[%s%p]*%w+[%s%p]+", start)
+      local e1, e2
+      if not mode.preformatted then
+	 e1,e2 = strfind(text, "[^%s]+%s+", start)
+      else
+	 e1,e2 = strfind(text, "[^\n]+\n+", start)
+      end
       if not e2 then
 	 e2 = len
       end
 
---      if e1 then
---	 print("sub", strsub(text, start, e2))
---      end
+      if prevstart >= start then
+	 printf("tagged text internal error : rollback [%d %d]",
+		prevstart, start)
+	 return
+      end
+      prevstart = start
 
+      -- Get next word
       local t = strsub(text, start, e2)
 
+      local tag
       local e3, e4
-      if start <= e2 then
-	 e3, e4 = strfind(t, "<")
-	 if e3 then 
+      if start < e2 then
+	 if mode.preformatted then
+	    e3, e4 = strfind(t, "</pre>")
+	 else
+	    e3, e4 = strfind(t, "<")
+	 end
+	 if e3 then
 	    e3, e4 = strfind(text, "%b<>", start)
-	    if e3 then
-	       e2 = e3-1
-	       t = strsub(text, start, e2)
-	    end
+	 end
+	 if e3 then
+	    -- Get text
+	    e2 = e3-1
+	    t = strsub(text, start, e2)
+	    -- Get the tag if any
+	    tag = strsub(text, e3+1, e4-1)
 	 end
       end
 
+      -- Create text block
       if start <= e2 then
+
 	 local block = {
 	    type = "text",
-	    text = gsub(t, "%s", "").." ",
---	    text = t,
 	    draw = tt_text_draw,
 	    dl = mode.dl,
 	    font_id = mode.font_id,
@@ -721,9 +811,33 @@ function tt_build(text, mode)
 	    font_aspect = mode.font_aspect,
 	    z = mode.z,
 	    color = mode.color,
-	    
 	 }
+
+	 if not mode.preformatted then
+	    -- not preformatted : remove any space and newline
+	    block.text = (gsub(t, "%s", "").." ")
+	 else
+	    -- preformatted, Keep the text as is but insert EOL when '\n'
+	    local tabstr = strrep(mode.tabchar,mode.tabsize)
+	    local aa = 1
+	    local a,b = strfind(t,"(.-)\n",aa)
+	    while a do
+	       local blk = tt_copymode(block)
+	       -- Make a new text block
+	       blk.text = gsub(strsub(t,a,b-1),"\t",tabstr)
+	       text_nude = text_nude .. blk.text
+	       blk.w, blk.h =
+		  dl_measure_text(blk.dl, blk.text,
+				  blk.font_id, blk.font_h, blk.font_aspect)
+	       tt_insert_block(mode, blk)
+	       tt_endline(mode)
+	       aa = b+1
+	       a,b = strfind(t,"(.-)\n", aa)
+	    end
+	    block.text = gsub(strsub(t,aa),"\t",tabstr)
+	 end
 	 text_nude = text_nude .. block.text
+
 --	 print("text", block.text)
 	 block.w, block.h = dl_measure_text(block.dl, block.text, block.font_id, block.font_h, block.font_aspect)
 
@@ -732,9 +846,7 @@ function tt_build(text, mode)
 	 --print(block.text, block.w, block.h)
       end
      
-      if e3 then
-	 local tag = strsub(text, e3+1, e4-1)
-	 --print("tag", tag)
+      if tag then
 	 e2 = e4
 
 	 local i = 1
@@ -820,31 +932,6 @@ function tt_draw(tt)
 	 block:draw()
       end
    end
-end
-
-
-if nil then
-
-   box = { 100, 100, 600, 400 }
-   tt = tt_build(
-		 [[
-Hello <img name="vmu" scale="0.5"> World ! <br>
-<center> <font size="24" color="#00ffff"> Centered !! <br>
-<right> <font size="14" color="#ffffff"> right aligned <font size="48" color="#ffff00"> <img name="dcplaya" src="dcplaya.tga"> TITI <img name="colorpicker" src="colorpicker.tga"> TOTO TUTU
-		 ]], 
-		 { 
-		    --		 x = "leftout",
-		    y = "down",
-		    box = box,
-		    z = 300
-		 })
-
-   gui_dialog_box_draw(tt.dl, box, tt.z-10, gui_box_color1, gui_box_color1)
-
-   tt_draw(tt)
-
-   --print(tt.total_w, tt.total_h)
-
 end
 
 -- Add filetype for text and zml (Ziggy Markup Language)

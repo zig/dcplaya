@@ -8,6 +8,7 @@ menu_loaded=nil
 if not dolib("textlist") then return end
 if not dolib("style") then return end
 if not dolib("box3d") then return end
+if not dolib("sprite") then return end
 
 if not menu_tag then
    menu_tag = newtag()
@@ -604,6 +605,39 @@ function menu_create(owner, name, def, box)
    menu:focus()
 
    return menu
+end
+
+--
+--- Create an icon sprite for menu.
+--
+function menu_create_sprite(name, src, w, h, u1, v1, u2, v2,
+			    rotate)
+   name = "menu_" .. name
+   local spr = sprite_get(sprname)
+   if spr and (not w or w == spr.w) and (not h or h == spr.h) then
+      return spr
+   end
+   local tex = tex_exist(src)
+      or tex_new(home.."lua/rsc/icons/"..src)
+   if not tex then return end
+   spr = sprite(name, 0, 0, w, h,
+		u1, v1, u2, v2, tex, rotate)
+   return spr
+end
+
+--- Create a taggedtext menu image for yes/no.
+function menu_yesno_image(menu, idx, flag, label, nodraw)
+   menu.fl.dir[idx].name =
+      '<img name="menu_'
+      .. ((flag and 'yes') or 'no')
+      .. '">' .. label
+   if not nodraw then menu:draw() end
+end
+
+--- Create a yesno menu description string.
+function menu_yesno_menu(flag,label)
+   return '{menu_' .. ((flag and 'yes}') or 'no}')
+      .. label
 end
 
 --- Create a menu GUI application.

@@ -5,7 +5,7 @@
  *  @date    2002/09/27
  *  @brief   Image translators.
  *
- *  $Id: translator.h,v 1.6 2003-03-19 05:16:16 ben Exp $
+ *  $Id: translator.h,v 1.7 2003-03-20 06:05:34 ben Exp $
  */
 
 #ifndef _TRANSLATOR_H_
@@ -19,7 +19,7 @@
  *    C++ image translator which are the core of image plugins.
  *
  *  @author  benjamin gerard <ben@sashipa.com>
-/
+ */
 
 /** Image translator.
  *  @ingroup dcplaya_translator_devel

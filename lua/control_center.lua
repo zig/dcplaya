@@ -4,15 +4,14 @@
 --- @date     2002
 --- @brief    control center application.
 ---
---- $Id: control_center.lua,v 1.21 2003-03-17 05:05:59 ben Exp $
+--- $Id: control_center.lua,v 1.22 2003-03-20 06:05:34 ben Exp $
 ---
 
---- @defgroup dcplaya_lua_cc_app Control Center
---- @ingroup dcplaya_lua_app
+--- @defgroup  dcplaya_lua_cc_app  control center application
+--- @ingroup   dcplaya_lua_app
+--- @brief     control center application
 ---
----  @par Control Center introduction
----
----   The control center application is a multi purpose application. It
+---   The control center application is a multi-purpose application. It
 ---   is used to retrieve dcplaya component information, to configure plugins
 ---   and many things.
 ---
@@ -82,36 +81,16 @@ function control_center_about(menu)
 end
 
 --
---- Create an icon sprite.
---- @internal
---
-function control_center_create_sprite(cc, name, src, w, h, u1, v1, u2, v2,
-				      rotate)
-   local spr = sprite_get(name)
-
-   if spr and (not w or w == spr.w) and (not h or h == spr.h) then
-      return spr
-   end
-   local tex = tex_exist(src)
-      or tex_new(home.."lua/rsc/icons/"..src)
-   if not tex then return end
-   spr = sprite(name, 0, 0, w, h,
-		u1, v1, u2, v2, tex, rotate)
-   return spr
-end
-
---
 --- Create all icon sprites. 
 --- @internal
 --
 function control_center_create_sprites(cc)
-   control_center_create_sprite(cc, "cc_dcp", "dcplaya.tga", 32)
-   control_center_create_sprite(cc, "cc_vmu", "vmu32.tga",32)
-   control_center_create_sprite(cc, "cc_vol", "volume2.tga", 32)
-   control_center_create_sprite(cc, "cc_kbd", "keyboard.tga", 32)
-   control_center_create_sprite(cc, "cc_yes", "stock_button_apply.tga", 20)
-   control_center_create_sprite(cc, "cc_no", "stock_button_cancel.tga", 20)
-   --				   24, 24) --, 0 , 0, 8/64, 48/64)
+   menu_create_sprite("dcp", "dcplaya.tga", 32)
+   menu_create_sprite("vmu", "vmu32.tga",32)
+   menu_create_sprite("vol", "volume2.tga", 32)
+   menu_create_sprite("kbd", "keyboard.tga", 32)
+   menu_create_sprite("yes", "stock_button_apply.tga", 20)
+   menu_create_sprite("no", "stock_button_cancel.tga", 20)
 end
 
 function vmu_save_confirm(vmu)
@@ -175,20 +154,7 @@ function control_center_menucreator(target)
    control_center_create_sprites(cc)
 
    local root = ":" .. target.name .. ":" .. 
-      '{cc_dcp}about{about},{cc_vol}volume{volume},{cc_vmu}vmu >vmu,plugins >plugins,{cc_kbd}keyboard >keyboard'
-
-   function cc_yesno_image(menu, idx, flag, label, nodraw)
-      menu.fl.dir[idx].name =
-	 '<img name="cc_'
-	 .. ((flag and 'yes') or 'no')
-	 .. '">' .. label
-      if not nodraw then menu:draw() end
-   end
-
-   function cc_yesno_menu(flag,label)
-      return '{cc_' .. ((flag and 'yes}') or 'no}')
-	 .. label
-   end
+      '{menu_dcp}about{about},{menu_vol}volume{volume},{menu_vmu}vmu >vmu,plugins >plugins,{menu_kbd}keyboard >keyboard'
 
 
    local cb = {
@@ -247,19 +213,19 @@ function control_center_menucreator(target)
       vmu_autosave = function (menu, idx)
 			local cc = menu.root_menu.target
 			cc.vmu_auto_save = not cc.vmu_auto_save
-			cc_yesno_image(menu, idx, cc.vmu_auto_save,
-				       'auto-save')
+			menu_yesno_image(menu, idx, cc.vmu_auto_save,
+					 'auto-save')
 		    end,
 
       vmu_deffile = function (menu, idx)
 			vmu_no_default_file = not vmu_no_default_file
-			cc_yesno_image(menu, idx, not vmu_no_default_file,
+			menu_yesno_image(menu, idx, not vmu_no_default_file,
 				       'use default')
 		     end,
 
       vmu_confwrite = function (menu, idx)
 			 vmu_never_confirm_write = not vmu_never_confirm_write
-			 cc_yesno_image(menu, idx, not vmu_never_confirm_write,
+			 menu_yesno_image(menu, idx, not vmu_never_confirm_write,
 					'confirm')
 		      end,
       kbd_rule = function (menu, idx)
@@ -268,7 +234,7 @@ function control_center_menucreator(target)
 		    ke_set_active_rule(tbl[idx])
 		    tbl[3] = "no keyboard"
 		    for i,v in tbl do
-		       cc_yesno_image(menu, i, i == idx, v, 1)
+		       menu_yesno_image(menu, i, i == idx, v, 1)
 		    end
 		    menu:draw()
 		 end,
@@ -344,20 +310,20 @@ function control_center_menucreator(target)
 	    sub = {
 	       vmu_visual = ':visual:none{setvmuvis},scope{setvmuvis},fft{setvmuvis},band{setvmuvis}',
 	       vmu_option = ':option:'
-		  .. cc_yesno_menu(cc.vmu_auto_save,'auto-save')
+		  .. menu_yesno_menu(cc.vmu_auto_save,'auto-save')
 		  .. '{vmu_autosave},'
-		  .. cc_yesno_menu(not vmu_no_default_file,'use default')
+		  .. menu_yesno_menu(not vmu_no_default_file,'use default')
 		  .. '{vmu_deffile},'
-		  .. cc_yesno_menu(not vmu_never_confirm_write,'confirm')
+		  .. menu_yesno_menu(not vmu_never_confirm_write,'confirm')
 		  .. '{vmu_confwrite}',
 	    }
 	 },
 	 plugins = plugins,
 	 keyboard = ':keyboard:'
-	       .. cc_yesno_menu(krule == "never",'never') .. '{kbd_rule},'
---	       .. cc_yesno_menu(krule == "always",'always') .. '{kbd_rule},'
-	       .. cc_yesno_menu(krule == "normal",'normal') .. '{kbd_rule},'
-	       .. cc_yesno_menu(krule == "nokbd",'no keyboard')
+	       .. menu_yesno_menu(krule == "never",'never') .. '{kbd_rule},'
+--	       .. menu_yesno_menu(krule == "always",'always') .. '{kbd_rule},'
+	       .. menu_yesno_menu(krule == "normal",'normal') .. '{kbd_rule},'
+	       .. menu_yesno_menu(krule == "nokbd",'no keyboard')
 	       .. '{kbd_rule}'
       }
    }

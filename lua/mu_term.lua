@@ -71,3 +71,5 @@
  MT_WRAPOFF	=    "\027w"
 
 mu_term_loaded=1
+
+return mu_term_loaded

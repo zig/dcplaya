@@ -1,7 +1,7 @@
 --- @date 2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  LUA script to initialize dcplaya VMU backup.
---- $Id: vmu_init.lua,v 1.23 2003-03-18 14:53:26 ben Exp $
+--- $Id: vmu_init.lua,v 1.24 2003-03-20 06:05:34 ben Exp $
 ---
 
 -- Unload library
@@ -95,14 +95,18 @@ function vmu_load_file(fname,path)
    fname = canonical_path(fname)
    path = canonical_path(path)
 
+   local result
    local hdl = vmu_file_load(fname,path)
    if hdl then
       local status = vmu_file_stat(hdl)
       printf("vmu_load_file [%s] : [%s]", fname, status)
-      return status == "success"
+      result = status == "success"
    else
       printf("vmu_load_file [%s] : failed", fname)
    end
+   ramdisk_is_modified() -- clear modified since we don't care here
+   return result
+
 end
 
 --- Get pluged VMU list.

@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.55 2003-03-19 22:48:10 ben Exp $
+--- $Id: song_browser.lua,v 1.56 2003-03-20 06:05:34 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song-browser
@@ -37,19 +37,6 @@ if not dolib("playlist") then return end
 --- Create an icon sprite.
 --- @internal
 --
-function song_browser_create_sprite(sb, name, src, w, h, u1, v1, u2, v2,
-				    rotate)
-   local spr = sprite_get(name)
-   if spr and (not w or w == spr.w) and (not h or h == spr.h) then
-      return spr
-   end
-   local tex = tex_exist(src)
-      or tex_new(home.."lua/rsc/icons/"..src)
-   if not tex then return end
-   spr = sprite(name, 0, 0, w, h,
-		u1, v1, u2, v2, tex, rotate)
-   return spr
-end
 
 --
 --- Create all icon sprites. 
@@ -61,15 +48,14 @@ function song_browser_create_sprites(sb)
    end
 
    -- filetypes
-   song_browser_create_sprite(sb, "sb_ft_dir", "folder.tga",32)
-   song_browser_create_sprite(sb, "sb_ft_file", "type_file.tga",32)
-   song_browser_create_sprite(sb, "sb_ft_cdda", "type_cdda.tga",32)
-
-   song_browser_create_sprite(sb, "sb_floppy", "floppy2.tga", 32)
-   song_browser_create_sprite(sb, "sb_info", "info.tga", 32)
-   song_browser_create_sprite(sb, "sb_textview", "textviewer.tga", 32)
-   song_browser_create_sprite(sb, "sb_yes", "stock_button_apply.tga", 20)
-   song_browser_create_sprite(sb, "sb_no", "stock_button_cancel.tga", 20)
+   menu_create_sprite("ft_dir", "folder.tga",32)
+   menu_create_sprite("ft_file", "type_file.tga",32)
+   menu_create_sprite("ft_cdda", "type_cdda.tga",32)
+   menu_create_sprite("floppy", "floppy2.tga", 32)
+   menu_create_sprite("info", "info.tga", 32)
+   menu_create_sprite("textviewer", "textviewer.tga", 32)
+   menu_create_sprite("yes", "stock_button_apply.tga", 20)
+   menu_create_sprite("no", "stock_button_cancel.tga", 20)
 end
 
 --- Creates some sprites.
@@ -677,22 +663,34 @@ function song_browser_create(owner, name)
       if type(entry_path) ~= "string" then return end
       local path,leaf = get_path_and_leaf(entry_path)
       local type,major,minor = filetype(entry_path)
-      if not minor then return end
-      if minor ~= "zml" then
-	 -- try to guess if zml
-	 local fh = openfile(entry_path,"rt")
-	 if not fh then return end
-	 local line = read(fh)
-	 closefile(fh)
-	 if not line then return end
-	 if strfind(line,"%s*<zml>.*") then
-	    minor = "zml"
+      local width,preformatted,view = 550,4,1
+
+      if major == "lua" then
+	 preformatted = 3
+      elseif major == "playlist" then
+	 preformatted = 1
+      elseif major == "text" then
+	 if minor ~= "zml" then
+	    -- try to guess if zml
+	    local fh = openfile(entry_path,"rt")
+	    if not fh then return end
+	    local line = read(fh)
+	    closefile(fh)
+	    if not line then return end
+	    if strfind(line,"%s*<zml>.*") then
+	       minor = "zml"
+	    end
 	 end
+	 if minor == "zml" then
+	    width = 450
+	    preformatted = nil
+	 end
+      else
+	 view = nil
       end
       
-      if minor == "zml" then
-	 gui_file_viewer(nil, entry_path, nil, leaf)
-      else
+      if view then
+	 gui_file_viewer(nil, entry_path, width, leaf, nil, preformatted)
       end
    end
 
@@ -832,7 +830,7 @@ function song_browser_create(owner, name)
       if not leaf then return end
       
       local def = {
-	 root = ":"..leaf..":load{load},insert{load},append{load}",
+	 root = ":"..leaf..":load{load},insert{load},append{load},{menu_textviewer}view{view}",
 	 cb = {
 	    load = function (menu, idx)
 		      local root_menu = menu.root_menu
@@ -866,6 +864,13 @@ function song_browser_create(owner, name)
 			 return 1
 		      end
 		   end,
+	    view =
+	       function (menu, idx)
+		  local root_menu = menu.root_menu
+		  song_browser_view_file(root_menu.target,
+					 root_menu.__entry_path)
+	       end,
+
 	 },
       }
       song_browser_contextmenu(sb,"playlist-menu,",fl,def, entry_path)
@@ -876,7 +881,7 @@ function song_browser_create(owner, name)
       if not leaf then return end
 
       if tag(background) == background_tag then
-	 local spr = sprite("sb_bkg", 0, 0, 32, 24) -- Create pipo sprite
+	 local spr = sprite("menu_bkg", 0, 0, 32, 24) -- Create pipo sprite
 	 if spr then
 	    spr.vtx = background.vtx * mat_scale(32,24,1); -- Hack vertex
 	    spr.tex = background.tex;
@@ -884,7 +889,7 @@ function song_browser_create(owner, name)
       end
 
       local def = {
-	 root = ":"..leaf..":{sb_info}info{info},{sb_bkg}background>",
+	 root = ":"..leaf..":{menu_info}info{info},{menu_bkg}background>",
 	 cb = {
 	    info = function (menu, idx)
 		      local root_menu = menu.root_menu
@@ -947,7 +952,7 @@ function song_browser_create(owner, name)
       local path,leaf = get_path_and_leaf(entry_path)
       if not leaf then return end
       local def = {
-	 root = ":"..leaf..":execute{exe},load library{loadlib},{sb_textedit}edit{edit}",
+	 root = ":"..leaf..":execute{exe},load library{loadlib},{menu_textviewer}view{view},{menu_textedit}edit{edit}",
 	 cb = {
 	    exe =
 	       function (menu, idx)
@@ -965,8 +970,6 @@ function song_browser_create(owner, name)
 		  local text,label,color
 		  if not entry_path then return end
 		  local path,leaf = get_path_and_leaf(entry_path);
-		  if strsub(path,-4) ~= "/lua" then return end
-		  path = strsub(path,1,-4)
 		  local result = dolib(get_nude_name(leaf),1,path)
 		  if not result then
 		     label = "error"
@@ -985,6 +988,12 @@ function song_browser_create(owner, name)
 			  nil,
 			  format("LUA lib load %s", label))
 	       end,
+	    view =
+	       function (menu, idx)
+		  local root_menu = menu.root_menu
+		  song_browser_view_file(root_menu.target,
+					 root_menu.__entry_path)
+	       end,
 	    edit =
 	       function (menu, idx)
 		  local root_menu = menu.root_menu
@@ -1002,7 +1011,7 @@ function song_browser_create(owner, name)
       local path,leaf = get_path_and_leaf(entry_path)
       if not leaf then return end
       local def = {
-	 root = ":"..leaf..":{sb_textview}view{view},{sb_textedit}edit{edit}",
+	 root = ":"..leaf..":{menu_textviewer}view{view},{menu_textedit}edit{edit}",
 	 cb = {
 	    view =
 	       function (menu, idx)
@@ -1523,6 +1532,7 @@ song_browser_kill()
 song_browser = song_browser_create()
 if song_browser then
    print("song-browser is running")
+   return 1 
 end
 
 --

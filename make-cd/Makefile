@@ -3,7 +3,7 @@
 #
 # by Ben(jamin) Gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.9 2003-03-19 05:24:24 ben Exp $
+# $Id: Makefile,v 1.10 2003-03-20 06:05:35 ben Exp $
 #
 
 CDRECORD	= cdrecord dev=0,0,0 speed=4
@@ -101,8 +101,11 @@ burn-data: burn-audio data.raw
 	$(CDRECORD) -xa1 data.raw \
 	&& rm -f audio.raw data.raw burn-audio tmp.iso
 
+.PHONY: dclpaya_docs
+	$(MAKE) -C ../doc txt
+
 .PHONY: dcplaya-data
-dcplaya-data: id.txt RELEASE.txt README.txt 1ST_READ.BIN
+dcplaya-data: id.txt RELEASE.txt README.txt 1ST_READ.BIN dclpaya_docs
 	@echo "[$@]"
 	@rm -rf dcplaya iso
 	@mkdir -p iso dcplaya/dynshell

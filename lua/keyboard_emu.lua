@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    keyboard emulator.
 ---
---- $Id: keyboard_emu.lua,v 1.21 2003-03-19 06:31:23 ben Exp $
+--- $Id: keyboard_emu.lua,v 1.22 2003-03-20 06:05:34 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_ke_app Keyboard emulator
@@ -227,7 +227,6 @@ function ke_addkey(down, downcode, up, upcode, spacing)
 end
 
 function ke_shutdown()
-
    if not evt_included or not ke_app then
       ke_shutdown_all()
       return

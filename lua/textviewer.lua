@@ -4,7 +4,7 @@
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  hyper text viewer gui.
 ---
---- $Id: textviewer.lua,v 1.13 2003-03-19 05:16:16 ben Exp $
+--- $Id: textviewer.lua,v 1.14 2003-03-20 06:05:34 ben Exp $
 ---
 
 if not dolib("taggedtext") then return end
@@ -52,6 +52,11 @@ end
 --- @return dialog application
 ---
 function gui_text_viewer(owner, texts, box, label, mode)
+
+   if type(box) == "number" then
+      box = (640-box) / 2
+      box = { box,50, 640-box, 400 }
+   end
 
    --- Desactive a tagged text.
    --- @internal
@@ -170,7 +175,7 @@ function gui_text_viewer(owner, texts, box, label, mode)
    -- Creates tagged texts
    local tts = {}
 
-   local ttbox0 = { 0,0,tw,th}
+   local ttbox0 = { 0,0,tw,th }
    
    if type(texts) == "string" then
       tts[1] = text_viever_tt_build(texts, { box = ttbox0 })
@@ -510,15 +515,24 @@ end
 --- @param  fname  Filename to view
 --- @see gui_text_viewer
 ---
-function gui_file_viewer(owner, fname, box, label, mode)
+function gui_file_viewer(owner, fname, box, label, mode, preformatted)
    fname = canonical_path(fname)
    if test("-f",fname) then
       local file = openfile(fname,"rt")
       local name = get_nude_name(fname) or "text"
       if not file then return end
-      local tmp = {}
-      tmp[name] = read(file,"*a")
+      local header,footer
+      if preformatted then
+	 header = format('<font id="1" size="8.5" color="text_color"><pre tabsize="%d" tabchar=" ">', preformatted)
+	 footer = '</pre><font id="0">'
+      else
+	 header,footer = "",""
+      end
+      local tmp = read(file,"*a")
       closefile(file)
+      if tmp then
+	 tmp = { top = header .. tmp  .. footer }
+      end
       return gui_text_viewer(owner,tmp,box,label,mode)
    end
 end

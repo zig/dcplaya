@@ -1,19 +1,42 @@
---- @ingroup  lua_devel
+--- @ingroup  dcplaya_lua_basics
 --- @file     init.lua
 --- @author   vincent penne <ziggy@sashipa.com>
 --- @author   benjamin gerard <ben@sashipa.com>
 --- @brief    Fundamental lua stuff.
 ---
---- $Id: init.lua,v 1.19 2003-03-18 01:08:48 ben Exp $
+--- $Id: init.lua,v 1.20 2003-03-20 06:05:34 ben Exp $
 ---
+
+--- @defgroup  dcplaya_lua_basics_library  LUA libraries
+--- @ingroup   dcplaya_lua_basics
+--- @brief     LUA libraries.
+---
+---   LUA libraries are LUA scripts or chunks (lua compiled files) executed
+---   with the dofile() function.
+---   To complete successfully a library must return 1.
+---   Loading a lua library is performed by the dolib() function.
+---   This function  handles proper library loading. It consists on :
+---     - checking already loaded library
+---     - avoiding infinite loop this circular reference
+---     - searching library file in library pathes.
+--
+
+--- Default lua library pathes.
+--- @ingroup   dcplaya_lua_basics_library
+--: string LIBRARY_PATH[];
+
+--- Global loaded library table.
+--- @ingroup   dcplaya_lua_basics_library
+--: string loaded_libraries[];
 
 -- do this file only once !
 if not init_lua then
    init_lua=1
 
+
    -- Set default LIBRARY_PATH
    if not LIBRARY_PATH then
-      LIBRARY_PATH = { home, "/ram/", "/rd/" }
+      LIBRARY_PATH = { "/ram/dcplaya/lua", home .. "lua", "/rd" }
    end
 
    --- Simple doshellcommand (reimplemented in shell.lua).
@@ -228,12 +251,59 @@ if not init_lua then
 
 end -- if not init_lua then
 
---- Load a lua library. The file lua/{NAME}.lua will be loaded via dofile()
---- in pathes stored in LIBRARY_PATH.
---- Library must set the {NAME}_loaded variable when loaded successfully
---- If force parameter is set, the function ignore the {NAME}_loaded value
---- and try to reload the library anyway.
---- the libpath parameter allows to override the default LIBRARY_PATH
+--
+--- Load a lua library.
+---
+--- @ingroup dcplaya_lua_basics_library
+---
+---   For each path stored in the libpath table, the loadlib function
+---   calls a dolfile({PATH}/{NAME}.lua). It stops if the library loads
+---   properly and returns a non nil value.
+---   On success, the loaded_libraries[{NAME}] is set to 1 and the fullpath
+---   is returned.
+---   On failure, the loaded_libraries[{NAME}] is unset and the function
+---   returns nil.
+---   Before starting the search, loaded_libraries[{NAME}] is set to 2. This
+---   is special value used by dolib() function to avoid circular reference.
+---
+--- @param  name     lua library nude name (no path, no extension).
+--- @param  libpath  table containing librairy search path.
+---
+--- @return  library  full pathname.
+--- @retval  nil      on error.
+---
+--- @internal
+--- @see dolib()
+--
+function loadlib(name, libpath)
+   local i,p
+   loaded_libraries[name] = 2
+   for i,p in libpath do
+      if type(p) == "string" then
+	 p = canonical_path(p .. "/" .. name .. ".lua")
+--	 print(format("searching in %q", tostring(p)))
+	 if type(p) == "string" and type(dofile(p)) == "number" then
+	    loaded_libraries[name] = 1
+	    return p
+	 end
+      end
+   end
+   loaded_libraries[name] = nil
+end
+
+--
+--- Load a lua library.
+---
+--- @ingroup dcplaya_lua_basics_library
+---  
+---  @param  name     nude filename of lua library to load.
+---  @param  force    library is reload even if library is loading or loaded.
+---  @param  libpath  path or pathes table. nil defaulted to LIBRARY_PATH.
+---
+---  @return boolean
+---  @retval nil on error
+---
+--- @see loadlib()
 --
 function dolib(name,force,libpath)
    -- Create global loaded library table if not exists.
@@ -251,22 +321,6 @@ function dolib(name,force,libpath)
       print("dolib : bad arguments")
       return
    end
-
-   function loadlib()
-      local i,p
-      loaded_libraries[%name] = 2
-      for i,p in %libpath do
-	 --			print(format("searching in %q", tostring(p)))
-	 if type(p) == "string" then
-	    p = canonical_path(p.."lua/"..%name..".lua")
-	    if dofile(p) then
-	       loaded_libraries[%name] = 1
-	       return p
-	    end
-	 end
-      end
-      loaded_libraries[%name] = 1
-   end
    
    if loaded_libraries[name] and not force then
       print(format("Library %q " ..
@@ -275,7 +329,7 @@ function dolib(name,force,libpath)
       return 1
    end
    print(format("Loading library %q",name))
-   local path = loadlib()
+   local path = loadlib(name, libpath)
    if not path then
       print(format("Load library %q failed", name))
       return

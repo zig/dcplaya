@@ -4,13 +4,10 @@
 --- @author  benjamin gerard <ben@sashipa.com>
 --- @brief   basic things used into other library (evt, keyboard_emu, gui)
 ---
---- $Id: basic.lua,v 1.15 2003-03-10 22:55:32 ben Exp $
+--- $Id: basic.lua,v 1.16 2003-03-20 06:05:34 ben Exp $
 ---
 
--- Unload library
-basic_loaded=nil
-
---- @defgroup dcplaya_lua_basics_linklist doubly linked list support.
+-- @defgroup dcplaya_lua_basics_linklist doubly linked list support.
 --- @ingroup dcplaya_lua_basics
 
 --- insert a new element in list as first element (or as last simply by swaping

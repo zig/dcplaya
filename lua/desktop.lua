@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.31 2003-03-18 01:08:48 ben Exp $
+--- $Id: desktop.lua,v 1.32 2003-03-20 06:05:34 ben Exp $
 ---
 
 if not dolib("evt") then return end
@@ -12,11 +12,9 @@ if not dolib("sprite") then return end
 if not dolib("menu") then return end
 if not dolib("taggedtext") then return end
 
-dskt_keytoggle = gui_keymenu
-
-dskt_keyswitchto = gui_keyconfirm
-
-dskt_keymenu = gui_keyselect
+dskt_keytoggle = gui_keymenu or {}
+dskt_keyswitchto = gui_keyconfirm or {}
+dskt_keymenu = gui_keyselect or {}
 
 function dskt_create_sprites(vs)
    vs.sprites = {}
