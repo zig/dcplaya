@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: gui.lua,v 1.8 2002-10-08 08:22:34 benjihan Exp $
+-- $Id: gui.lua,v 1.9 2002-10-08 20:48:34 benjihan Exp $
 --
 
 --
@@ -199,7 +199,7 @@ function gui_dialog_handle(app, evt)
 
 	local focused = app.sub
 	if focused then
-		if gui_keyconfirm[key] then
+		if gui_keyconfirm[key] and then
 			evt_send(focused, { key = gui_press_event })
 			return
 		end
@@ -555,7 +555,7 @@ function gui_new_text(owner, box, text, mode, z)
 		box = box,
 		z = z,
 		event_table = { },
-		flags = { i888nactive = 1 },
+		flags = { inactive = 1 },
 		mode = mode
 	}
 	gui_text_set(app, text)

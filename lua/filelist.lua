@@ -3,7 +3,7 @@
 -- author : benjamin gerard <ben@sashipa.com>
 -- date   : 2002/10/04
 --
--- $Id: filelist.lua,v 1.3 2002-10-08 08:22:34 benjihan Exp $
+-- $Id: filelist.lua,v 1.4 2002-10-08 20:48:34 benjihan Exp $
 --
 
 --- filelist object - Extends textlist
@@ -39,7 +39,7 @@ function filelist_default_confirm(fl)
 end
 	
 function filelist_create(flparm)
-	print("filelist_create...")
+--	print("filelist_create...")
 	if not flparm then flparm = {} end
 	if not flparm.confirm then flparm.confirm = filelist_default_confirm end
 	fl = textlist_create(flparm)
@@ -51,8 +51,8 @@ function filelist_create(flparm)
 	end
 	filelist_path(fl,fl.pwd)
 
-	filelist_dump(fl)
-	print("...filelist_create")
+--	filelist_dump(fl)
+--	print("...filelist_create")
 	return fl
 end
 
@@ -83,7 +83,7 @@ function filelist_path(fl,path)
 	local start,stop
 --	start,stop,path=strfind(path,"^(.*)/*")
 
-	print(format("filelist_path(%s)",path))
+--	print(format("filelist_path(%s)",path))
 
 	-- Load new path --
 	-- $$$ missing filter
@@ -95,7 +95,7 @@ function filelist_path(fl,path)
 	fl.dir = dir
 	fl.entries = getn(fl.dir)
 	fl.pwd = path
-	print(format("filelist: pwd '%s' ,%d",fl.pwd, fl.entries))
+--	print(format("filelist: pwd '%s' ,%d",fl.pwd, fl.entries))
 
 	local dim = textlist_measure(fl)
 	textlist_set_box(fl,nil,nil,

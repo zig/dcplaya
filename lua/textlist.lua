@@ -3,7 +3,7 @@
 -- author : benjamin gerard <ben@sashipa.com>
 -- date   : 2002/10/04
 --
--- $Id: textlist.lua,v 1.3 2002-10-08 08:22:34 benjihan Exp $
+-- $Id: textlist.lua,v 1.4 2002-10-08 20:48:34 benjihan Exp $
 --
 
 --- textlist object - Display a textlist from a given dir
@@ -109,9 +109,9 @@ function textlist_set_box(fl,x,y,w,h,z)
 	if fl.lines < 0 then fl.lines = 0 end
 --	print(format("LINES=%d B:%d H:%d FH:%d",fl.lines, fl.border, fl.bo2[2], fl.font_h));
 
-	print(format("setbox {x1:%d y1:%d x2:%d y2:%d w:%d h:%d z:%d lines=%d}",
-		fl.box[1],fl.box[2],fl.box[3],fl.box[4],
-		fl.bo2[1],fl.bo2[2],fl.bo2[3], fl.lines))
+--	print(format("setbox {x1:%d y1:%d x2:%d y2:%d w:%d h:%d z:%d lines=%d}",
+--		fl.box[1],fl.box[2],fl.box[3],fl.box[4],
+--		fl.bo2[1],fl.bo2[2],fl.bo2[3], fl.lines))
 --	print("...textlist_set_box")
 		
 end
@@ -153,7 +153,7 @@ end
 function textlist_default(fl)
 	if not fl then return end
 
-	print("textlist_default...")
+--	print("textlist_default...")
 
 	-- Control
 	fl.dir = nil
@@ -177,7 +177,7 @@ function textlist_default(fl)
 	fl.minmax = nil;
 	textlist_set_box(fl,100,100,0,0,200)
 
-	print("...textlist_default")
+--	print("...textlist_default")
 
 end
 
@@ -196,7 +196,7 @@ function textlist_measure(fl)
 		if h2 > h then h = h2 end
 	end
 	fl.font_h = h;
-	print(format("measure=%d %d",w,h))
+--	print(format("measure=%d %d",w,h))
 	return { w, h }
 end	
 
@@ -206,7 +206,7 @@ function textlist_reset(fl)
 	if not fl then end
 	local w
 
-	print("textlist_reset...")
+--	print("textlist_reset...")
 
 	-- Control
 	fl.pos		= 0
@@ -220,7 +220,7 @@ function textlist_reset(fl)
 	fl.dl  		= dl_new_list(2048,0)
 	fl.cdl 		= dl_new_list(128,0)
 	w,fl.font_h	= dl_measure_text(fl.dl, "|")
-	print(format("font_h:%d",fl.font_h))
+--	print(format("font_h:%d",fl.font_h))
 
 	if not fl.minmax then
 		-- min_width, min_height, max_width, max heigth
@@ -228,8 +228,8 @@ function textlist_reset(fl)
 					400, fl.border*2 + 8*(2*fl.span+fl.font_h) }
 	end
 
-	print(format("minmax {minw:%d minh:%d maxw:%d maxh:%d}",
-		fl.minmax[1], fl.minmax[2], fl.minmax[3], fl.minmax[4]))
+--	print(format("minmax {minw:%d minh:%d maxw:%d maxh:%d}",
+--		fl.minmax[1], fl.minmax[2], fl.minmax[3], fl.minmax[4]))
 
 	-- Compute max lines
 	textlist_set_pos(fl,nil,nil,nil)
@@ -242,7 +242,7 @@ function textlist_reset(fl)
 	fl.top = 1
 	textlist_movecursor(fl,1)
 
-	print("...textlist_reset")
+--	print("...textlist_reset")
 end
 
 -- Textlist create function :
@@ -269,8 +269,8 @@ function textlist_create(flparm)
 
 		if flparm.pos then
 			textlist_set_pos(fl, flparm.pos[1], flparm.pos[2], flparm.pos[3])
-			print(format("SET POS:%d %d",
-				flparm.pos[1], flparm.pos[2]))
+--			print(format("SET POS:%d %d",
+--				flparm.pos[1], flparm.pos[2]))
 		end
 		
 		if flparm.box		then fl.minmax		= flparm.box		end
@@ -284,7 +284,7 @@ function textlist_create(flparm)
 	end
 
 	textlist_reset(fl)
-	textlist_dump(fl)
+--	textlist_dump(fl)
 	return fl
 end
 
@@ -439,8 +439,8 @@ function textlist_find_entry_expr(fl,regexpr)
 	local i
 	for i=1, fl.entries, 1 do
 		if strfind(fl.dir[i].name,regexpr) then
-			print(format("textlist_locate_entry_expr(%s) found %s at %d",
-				regexpr, fl.dir[i].name,i))
+--			print(format("textlist_locate_entry_expr(%s) found %s at %d",
+--				regexpr, fl.dir[i].name,i))
 			return textlist_movecursor(fl,i-1-fl.pos)
 		end
 	end
@@ -452,7 +452,7 @@ function textlist_locate_entry(fl,name)
 	local i
 	for i=1, fl.entries, 1 do
 		if fl.dir[i].name == name then
-			print(format("textlist_locate_entry(%s) found at %d",name,i))
+--			print(format("textlist_locate_entry(%s) found at %d",name,i))
 			return textlist_movecursor(fl,i-1-fl.pos)
 		end
 	end
@@ -469,7 +469,7 @@ function textlist_gui_handle(app,evt)
 	if fl then dir = fl.dir end
 
 	if key == evt_shutdown_event then
-		print("textlist : handle shutdown")
+--		print("textlist : handle shutdown")
 		textlist_shutdown(fl)
 		app.done = 1
 		return evt
@@ -482,14 +482,17 @@ function textlist_gui_handle(app,evt)
 		local code = textlist_movecursor(fl,-1)
 		if code and code > 0 then
 			evt_send(app.owner, { key = gui_item_change_event })
+			return nil
 		end
-		return nil
+		return nil --evt
 	elseif gui_keydown[key] then
 		local code = textlist_movecursor(fl,1)
 		if code and code > 0 then
+--			print("down")
 			evt_send(app.owner, { key = gui_item_change_event })
+			return nil
 		end
-		return nil
+		return nil --evt
 	elseif gui_keycancel[key] then
 		evt_send(app.owner, { key = gui_item_cancel_event })
 		return nil
