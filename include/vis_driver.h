@@ -3,7 +3,7 @@
  *
  * (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: vis_driver.h,v 1.4 2002-09-06 23:16:09 ben Exp $
+ * $Id: vis_driver.h,v 1.5 2002-11-25 16:51:05 ben Exp $
  */
 
 
@@ -16,7 +16,7 @@ DCPLAYA_EXTERN_C_START
 
 
 #include "any_driver.h"
-#include "viewport.h"
+#include "draw/viewport.h"
 #include "matrix.h"
 
 /** Input driver */

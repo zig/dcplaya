@@ -5,14 +5,15 @@
  * @date       2002/11/09
  * @brief      Exceptions and guardians handling
  *
- * @version    $Id: exceptions.h,v 1.3 2002-09-17 19:47:08 zig Exp $
+ * @version    $Id: exceptions.h,v 1.4 2002-11-25 16:51:05 ben Exp $
  */
 
 
 #ifndef _EXECEPTIONS_H_
 #define _EXECEPTIONS_H_
 
-#include <kos.h>
+//#include <kos.h>
+#include <kos/thread.h>
 #include "setjmp.h"
 
 void expt_init();

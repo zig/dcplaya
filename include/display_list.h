@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.h,v 1.4 2002-10-16 23:59:50 benjihan Exp $
+ * @version   $Id: display_list.h,v 1.5 2002-11-25 16:51:05 ben Exp $
  */
 
 
@@ -14,8 +14,10 @@
 #include <sys/queue.h>
 #include "matrix.h"
 
+#include "draw/clipping.h"
+
 typedef float dl_color_t[4];
-typedef float dl_clipbox_t[4];
+typedef draw_clipbox_t dl_clipbox_t;
 
 struct dl_command;
 

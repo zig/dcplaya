@@ -4,7 +4,7 @@
  * @author   vincent penne
  * @brief    Simple 3D api
  *
- * @version  $Id: draw_object.h,v 1.4 2002-09-13 14:48:25 ben Exp $
+ * @version  $Id: draw_object.h,v 1.5 2002-11-25 16:51:05 ben Exp $
  */
 
 #ifndef _DRAW_OBJECT_H_
@@ -14,7 +14,7 @@
 
 DCPLAYA_EXTERN_C_START
 
-#include "viewport.h"
+#include "draw/viewport.h"
 #include "obj3d.h"
 #include "matrix.h"
 
