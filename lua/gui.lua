@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: gui.lua,v 1.11 2002-10-11 12:05:21 benjihan Exp $
+-- $Id: gui.lua,v 1.12 2002-10-12 09:40:12 benjihan Exp $
 --
 
 --
@@ -172,8 +172,22 @@ function gui_closest(app, box, coef, cond, condi)
 	
 end
 
+-- A minimal handle function
+function gui_minimal_handle(app,evt)
+	local key = evt.key
+	if key == evt_shutdown_event then
+		dl_destroy_list(app.dl)
+		return evt
+	end
+	local f = app.event_table[key]
+	if f then
+		return f(app, evt)
+	end
+	return evt
+end
 
 -- dialog
+
 function gui_dialog_shutdown(app)
 	if app.sub then
 		evt_send(app.sub, { key = gui_unfocus_event })
@@ -192,6 +206,7 @@ function gui_dialog_handle(app, evt)
 		return evt -- pass the shutdown event to next app
 	end
 
+--	print("dialog key:"..key)
 	local f = app.event_table[key]
 	if f then
 		return f(app, evt)
@@ -235,9 +250,10 @@ function gui_dialog_handle(app, evt)
 	end
 
 	if app.flags.modal then
+		print("modal !!")
 		return nil
 	end
-
+	print("dialog unhandle:"..key)
 	return evt
 end
 
@@ -300,7 +316,6 @@ function gui_new_dialog(owner, box, z, dlsize, text, mode)
 		flags  = { }
 
 	}
-
 
 	-- draw surrounding box
 	dl_draw_box(dial.dl, box, z, gui_box_color1, gui_box_color2)
@@ -368,7 +383,6 @@ function gui_new_button(owner, box, text, mode, z)
 
 	}
 
-
 	dl_draw_box(app.dl, app.box, z, gui_button_color1, gui_button_color2)
 
 	if text then
@@ -388,12 +402,12 @@ function gui_input_shutdown(app)
 end
 
 gui_input_edline_set = {
-[KBD_KEY_HOME] = 1,
-[KBD_KEY_END] = 1,
-[KBD_KEY_LEFT] = 1,
-[KBD_KEY_RIGHT] = 1,
-[KBD_KEY_DEL] = 1,
-[KBD_BACKSPACE] = 1,
+	[KBD_KEY_HOME] = 1,
+	[KBD_KEY_END] = 1,
+	[KBD_KEY_LEFT] = 1,
+	[KBD_KEY_RIGHT] = 1,
+	[KBD_KEY_DEL] = 1,
+	[KBD_BACKSPACE] = 1,
 }
 
 function gui_input_handle(app, evt)
@@ -540,17 +554,10 @@ function gui_new_text(owner, box, text, mode, z)
 
 	z = gui_guess_z(owner, z)
 
-	function handle(app,evt)
-		if evt.key == evt_shutdown_event then
-			gui_destroy_text(app)
-		end
-		return evt
-	end
-
 	app = { 
 		name = "gui_text",
 		version = "1.0",
-		handle = handle,
+		handle = gui_minimal_handle,
 		dl = dl_new_list(1024),
 		box = box,
 		z = z,
@@ -564,23 +571,22 @@ function gui_new_text(owner, box, text, mode, z)
 end
 
 -- Create a dialog child
-function gui_new_children(owner, box, mode, z)
+function gui_new_children(owner, name, handle, box, mode, z)
 	local app
 
 	z = gui_guess_z(owner, z)
-	function handle(app,evt)
-		if evt.key == evt_shutdown_event then
-			dl_destroy_list(app.dl)
-		else
-			local f = app.event_table[evt.key]
-				if f then
-					return f(app, evt)
-			end
-		end
-		return evt
+
+	if not name then
+		if owner.name then name = "child_of_"..owner.name
+		else name = "gui_child" end
+	end
+
+	if not handle then
+		handle = gui_minimal_handle
 	end
 
 	app = { 
+		name = name,
 		handle = handle,
 		dl = dl_new_list(1024),
 		box = box,

@@ -2,7 +2,7 @@
 --
 -- author : vincent penne <ziggy@sashipa.com>
 --
--- $Id: keydefs.lua,v 1.6 2002-10-09 00:51:17 benjihan Exp $
+-- $Id: keydefs.lua,v 1.7 2002-10-12 09:40:13 benjihan Exp $
 --
 
 if not keydefs_included then
@@ -222,9 +222,10 @@ end
 
 
 -- standard keys
+ KBD_TAB		=	9
  KBD_BACKSPACE	=	8
- KBD_ENTER	=	13
- KBD_ESC	=	27
+ KBD_ENTER		=	13
+ KBD_ESC		=	27
 
 end -- it not keydefs_included then
 
