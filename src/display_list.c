@@ -5,7 +5,7 @@
  * @author    benjamin gerard <ben@sashipa.com>
  * @date      2002/09/12
  * @brief     thread safe display list support for dcplaya
- * @version   $Id: display_list.c,v 1.16 2002-12-26 07:12:57 ben Exp $
+ * @version   $Id: display_list.c,v 1.17 2002-12-27 04:11:49 zigziggy Exp $
  */
 
 #include <malloc.h>
@@ -449,6 +449,8 @@ static void dl_render(int opaque)
 {
   dl_list_t * l, * next;
 
+/*  vid_border_color(255, 255, 0); */
+
   CHECK_INIT();
   locklists();
   for (l=LIST_FIRST(&dl_lists[DL_MAIN_TYPE]); l; l=next) {
@@ -458,6 +460,8 @@ static void dl_render(int opaque)
   }
   gc_reset();
   unlocklists();
+
+/*  vid_border_color(0, 0, 0); */
 }
 
 void dl_render_opaque()

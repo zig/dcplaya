@@ -3,7 +3,7 @@
 --- @date   2002/10/04
 --- @brief  Manage and display a list of file.
 ---
---- $Id: filelist.lua,v 1.9 2002-12-04 10:47:25 ben Exp $
+--- $Id: filelist.lua,v 1.10 2002-12-27 04:11:49 zigziggy Exp $
 ---
 
 --- filelist object - Extends textlist
@@ -68,6 +68,7 @@ function filelist_create(flparm)
 
    if not flparm then flparm = {} end
    if not flparm.confirm then flparm.confirm = filelist_confirm end
+   flparm.not_use_tt = 1
    fl = textlist_create(flparm)
    if not fl then return end
    if not flparm.pwd then

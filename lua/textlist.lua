@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.23 2002-12-18 02:27:04 ben Exp $
+--- $Id: textlist.lua,v 1.24 2002-12-27 04:11:49 zigziggy Exp $
 ---
 
 -- Unload the library
@@ -12,6 +12,7 @@ textlist_loaded = nil
 
 -- Load required libraries
 if not dolib("basic") then return end
+if not dolib("taggedtext") then return end
 
 --- @defgroup dcplaya_lua_textlist Text-list GUI
 --- @ingroup  dcplaya_lua_gui
@@ -232,9 +233,40 @@ function textlist_create(flparm)
 
    --- Measure an entry.
    function textlist_measure_text(fl, entry)
-	  local w,h = dl_measure_text(fl.dl, entry.name)
-	  return w, h+2*fl.span
+      if not fl.not_use_tt then
+	 local tt = tt_build(entry.name, { border = {0,0}, x = "left", y = "up" })
+	 entry.tt = tt
+	 --tt.box = { x, y, x+info.w, y+info.h }
+	 --	  tt.dl = dl
+	 tt_draw(tt)
+	 return tt.total_w, tt.total_h + 2*fl.span
+      else
+	 local w,h = dl_measure_text(fl.dl, entry.name)
+	 return w, h+2*fl.span
+      end
    end
+
+   --- Draw given textlist entry in given diplay list.
+   --
+   function textlist_draw_entry(fl, dl, idx, x , y, z)
+      local entry = fl.dir[idx]
+      local info = fl.dirinfo[idx]
+      local color = fl.dircolor
+      if entry.size and entry.size >= 0 then
+	 color = fl.filecolor
+      end
+      local tt = entry.tt
+      if tt then
+	 dl_set_trans(tt.dl, mat_trans(x, y, z))
+	 dl_set_color(tt.dl, color)
+	 dl_sublist(dl, tt.dl)
+      else
+	 return dl_draw_text(dl,
+			     x, y, z,
+			     color[1],color[2],color[3],color[4],
+			     entry.name)
+      end
+    end
 
    --- Insert an entry.
    function textlist_insert_entry(fl, entry, pos)
@@ -367,20 +399,6 @@ function textlist_create(flparm)
 	  end
    end
 
-   --- Draw given textlist entry in given diplay list.
-   --
-   function textlist_draw_entry(fl, dl, idx, x , y, z)
-	  local entry = fl.dir[idx]
-	  local color = fl.dircolor
-	  if entry.size and entry.size >= 0 then
-		 color = fl.filecolor
-	  end
-	  return dl_draw_text(dl,
-						  x, y, z,
-						  color[1],color[2],color[3],color[4],
-						  entry.name)
-   end
-
    --- Draw textlist cursor.
    --
    function textlist_draw_cursor(fl, dl)
@@ -509,6 +527,7 @@ function textlist_create(flparm)
 	  open              = textlist_open,
 	  close             = textlist_close,
 	  update            = textlist_update,
+	  not_use_tt        = flparm.not_use_tt
    }
 
    -- Set display box to min.

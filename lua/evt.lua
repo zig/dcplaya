@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: evt.lua,v 1.18 2002-12-23 09:01:36 ben Exp $
+-- $Id: evt.lua,v 1.19 2002-12-27 04:11:49 zigziggy Exp $
 --
 
 
@@ -157,7 +157,7 @@ function evt_peek()
 	 vcolor(0, 0, 0)
       else
 	 -- do collect garbage once per frame for smoother animation
-	 collectgarbage()
+	 --collectgarbage()
 	 
 	 -- calculate frame time
 	 evt_curframecounter = evt_origframecounter(1)

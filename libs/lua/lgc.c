@@ -1,5 +1,5 @@
 /*
-** $Id: lgc.c,v 1.1 2002-09-13 16:02:36 zig Exp $
+** $Id: lgc.c,v 1.2 2002-12-27 04:11:49 zigziggy Exp $
 ** Garbage Collector
 ** See Copyright Notice in lua.h
 */
@@ -326,23 +326,36 @@ static void callgcTMudata (lua_State *L) {
 }
 
 
+#include <kos.h>
+
 void luaC_collect (lua_State *L, int all) {
+  vid_border_color(0, 255, 0);
   collectudata(L, all);
+  vid_border_color(0, 0, 255);
   callgcTMudata(L);
+  vid_border_color(0, 255, 0);
   collectstrings(L, all);
+  vid_border_color(0, 0, 255);
   collecttable(L);
+  vid_border_color(0, 255, 0);
   collectproto(L);
+  vid_border_color(0, 0, 255);
   collectclosure(L);
+  vid_border_color(255, 0, 0);
 }
 
 
 static void luaC_collectgarbage (lua_State *L) {
+  vid_border_color(255, 0, 0);
   markall(L);
+  vid_border_color(0, 0, 255);
   invalidaterefs(L);  /* check unlocked references */
   luaC_collect(L, 0);
   checkMbuffer(L);
   L->GCthreshold = 2*L->nblocks;  /* set new threshold */
+  vid_border_color(255, 0, 0);
   callgcTM(L, &luaO_nilobject);
+  vid_border_color(0, 0, 0);
 }
 
 

@@ -2,18 +2,20 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.37 2002-12-23 14:15:17 zigziggy Exp $
+--- $Id: gui.lua,v 1.38 2002-12-27 04:11:49 zigziggy Exp $
 ---
 
 --
 -- a gui item is an application (see in evt.lua for the definition) with
 -- additionnal informations :
 --
--- box : the box of the item { x1, y1, x2, y2 } used for focusing
--- dl  : the default display list used to draw inside
--- z   : the z position of the item for reference to draw upon it
+-- box   : the box of the item { x1, y1, x2, y2 } used for focusing
+-- dl    : the default display list used to draw inside
+-- z     : the z position of the item for reference to draw upon it
 -- event_table : table of function(app, evt) indexed by event ID
 -- flags : an array whose entry describe some functionalities
+-- mainmenu_def : an optional menu definition opened by the application 
+-- switcher (see menu.lua for the format of a menu definition)
 --
 
 -- flags can have :
@@ -414,7 +416,7 @@ function gui_dialog_update(app, frametime)
       
       local focus_dl
       for _, focus_dl in { app.focusup_dl, app.focusdown_dl, app.focusleft_dl, app.focusright_dl } do
-	 dl_set_color(focus_dl, ci, 1, ci, ci)
+	 dl_set_color(focus_dl, 0.15 + 0.25*ci, 1, ci, ci)
 	 dl_set_active(focus_dl, 1)
       end
       

@@ -2,13 +2,14 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.9 2002-12-20 23:38:37 ben Exp $
+--- $Id: desktop.lua,v 1.10 2002-12-27 04:11:49 zigziggy Exp $
 ---
 
 if not dolib("evt") then return end
 if not dolib("gui") then return end
 if not dolib("textlist") then return end
 if not dolib("sprite") then return end
+if not dolib("menu") then return end
 
 dskt_keytoggle = { 
    [KBD_KEY_PRINT] = 1, 
@@ -66,6 +67,15 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 	 return
       end
 
+--      if dial.menu then
+--	 if not dial.menu_focusing and not gui_is_focus(dial.menu) then
+--	    dial.menu_focusing = 1
+--	    gui_new_focus(dial, dial.menu)
+--	    dial.menu_focusing = nil
+--	 end
+--	 return evt
+--      end
+
       if key == gui_item_confirm_event then
 	 local result =  dial.vs.fl:get_entry()
 	 evt_shutdown_app(dial)
@@ -77,9 +87,29 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 	 dial._done = 1
 	 dial._result = nil
 	 return
-      end
-
-      if key == gui_item_change_event then
+      elseif gui_keyright[key] or gui_keyleft[key] then
+	 if dial.menu then
+	    evt_shutdown_app(dial.menu)
+	 end
+	 local dir = dial.dir
+	 --	 print("dir = ", dir)
+	 if dir then
+	    local pos = dial.vs.fl.pos
+	    local target = dir[pos+1].app
+	    local def = target.mainmenu_def or {
+	       root=":app:kill{kill}",
+	       cb = {
+		  kill = function(menu) 
+			    evt_shutdown_app(%dial)
+			    evt_shutdown_app(%target)
+			    evt_shutdown_app(menu)
+			 end
+	       },
+	    }
+	    dial.menu = gui_menu(dial, "app", menu_create_defs(def), {400, 200, 100, 100})
+	 end
+	 return
+      elseif key == gui_item_change_event then
 	 local dir = dial.dir
 --	 print("dir = ", dir)
 	 if dir then
