@@ -1,7 +1,7 @@
 --- @date 2002/12/06
 --- @author benjamin gerard <ben@sashipa.com>
 --- @brief  LUA script to initialize dcplaya VMU backup.
---- $Id: vmu_init.lua,v 1.18 2003-03-10 22:55:33 ben Exp $
+--- $Id: vmu_init.lua,v 1.19 2003-03-11 13:39:21 ben Exp $
 ---
 
 -- Unload library
@@ -116,7 +116,8 @@ end
 --- Get pluged VMU list.
 function vmu_list()
    -- Check available VMU
-   local dir = dirlist("-n", "/vmu")
+   local dir = dirlist("-nh", "/vmu")
+   dump(dir,"vmu_list")
    if type(dir) ~= "table" or dir.n < 1 then
       print("vmu_list : no VMU found.")
       return
@@ -136,18 +137,26 @@ function vmu_find_files(dir, expr)
    for i=1, dir.n do
       local v = dir[i]
       local vmudir
-      local path = "/vmu/" .. v.name .. "/"
-      print("Scanning VMU .." .. path)
-      vmudir = dirlist(path)
-      if type(vmudir) == "table" then
-	 local j
-	 for j=1, vmudir.n do
-	    local w = vmudir[j]
-	    print(" -> " .. w.name)
-	    if strfind(w.name,expr) then
-	       w.path = v.name
-	       tinsert(found, w)
-	       print(" + Added " .. w.path.. "/" .. w.name)
+      
+      if type(v) ~= "table" then
+	 print(" ------------------------ ")
+	 printf("v:%s i:%s n:%s", tostring(v), tostring(i), tostring(dir.n))
+	 dump(dir,"vmu_list")
+	 print(" ------------------------ ")
+      else
+	 local path = "/vmu/" .. v.name .. "/"
+	 print("Scanning VMU .." .. path)
+	 vmudir = dirlist(path)
+	 if type(vmudir) == "table" then
+	    local j
+	    for j=1, vmudir.n do
+	       local w = vmudir[j]
+	       print(" -> " .. w.name)
+	       if strfind(w.name,expr) then
+		  w.path = v.name
+		  tinsert(found, w)
+		  print(" + Added " .. w.path.. "/" .. w.name)
+	       end
 	    end
 	 end
       end
@@ -189,7 +198,6 @@ function vmu_init(force_choice)
    local choice = nil
 
    while not done do
-      local dir
       local found = vmu_find_files()
 
       --- Must select a file if more than one was found

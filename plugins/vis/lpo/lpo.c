@@ -1,5 +1,5 @@
 /**
- * $Id: lpo.c,v 1.24 2003-03-10 22:55:34 ben Exp $
+ * $Id: lpo.c,v 1.25 2003-03-11 13:39:21 ben Exp $
  */
 
 #include <stdio.h>
@@ -72,7 +72,7 @@ static float rps_dw = 0.95f;   /**< Smooth factor when rpsd_goal < rps_cur */
 static float rps_sign;         /**< Rotation sens */
 
 static float zoom_min = 0.0f;
-static float zoom_max = 7.0f;
+static float zoom_max = 6.8f;
 
 static int lpo_controler = -1;
 static int lpo_controler_binding = -1;

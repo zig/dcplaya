@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.41 2003-03-10 22:55:33 ben Exp $
+--- $Id: song_browser.lua,v 1.42 2003-03-11 13:39:21 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song browser application
@@ -45,14 +45,14 @@ function song_browser_create_sprite(sb)
 			    sb.sprites.texid)
 
    sb.sprites.file = sprite("file",	
-			    129/2, 12/2,
-			    129, 12, 0, 32/128, 129/512, 44/128,
+			    165/2, 14/2,
+			    165, 14, 0, 31/128, 165/512, 45/128,
 			    sb.sprites.texid)
 
    sb.sprites.list = sprite("list",	
-			    247/2, 12/2,
-			    247, 12,
-			    164/512, 32/128, 411/512, 44/128,
+			    249/2, 14/2,
+			    249, 14,
+			    170/512, 31/128, 419/512, 45/128,
 			    sb.sprites.texid)
 
    sb.sprites.copy = sprite("copy",	
@@ -1263,23 +1263,6 @@ function song_browser_create(owner, name)
    return sb
 end
 
-if not entrylist_tag and plug_el and test("-f",plug_el) then
-   driver_load(plug_el)
-end
-
--- Load texture for application icon
-local tex = tex_exist("song-browser")
-   or tex_new(home .. "lua/rsc/icons/song-browser.tga")
-
-if song_browser then
-   evt_shutdown_app(song_browser)
-end
-
-song_browser = song_browser_create()
-if song_browser then
-   print("song-browser is running")
-end
-
 --
 --- Kill a song-browser application.
 ---
@@ -1295,8 +1278,25 @@ function song_browser_kill(sb)
    sb = sb or song_browser
    if sb then
       evt_shutdown_app(sb)
-      if sb == song_browser then song_browser = nil end
+      if sb == song_browser then
+	 song_browser = nil
+	 print("song-browser shutdowned")
+      end
    end
+end
+
+if not entrylist_tag and plug_el and test("-f",plug_el) then
+   driver_load(plug_el)
+end
+
+-- Load texture for application icon
+local tex = tex_exist("song-browser")
+   or tex_new(home .. "lua/rsc/icons/song-browser.tga")
+
+song_browser_kill()
+song_browser = song_browser_create()
+if song_browser then
+   print("song-browser is running")
 end
 
 --

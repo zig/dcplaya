@@ -4,7 +4,7 @@
 --- @date   2002/10/04
 --- @brief  fileselector gui
 ---
---- $Id: fileselector.lua,v 1.23 2003-03-07 10:11:15 ben Exp $
+--- $Id: fileselector.lua,v 1.24 2003-03-11 13:39:21 ben Exp $
 --
 -- TODO : select item with space 
 --        completion with tab        
@@ -266,9 +266,7 @@ function fileselector(name,path,filename,owner)
    --- Get name of current filelist entry.
    --- @internal
    function fileselector_current(dial)
-      local entry = dial.flist.fl:get_entry()
-      if not entry then return "" end
-      return entry.name
+      return dial.flist.fl:get_text()
    end
 
    --- Main dialog event handle function.
