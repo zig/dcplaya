@@ -5,14 +5,14 @@
  * @date    2002/09/27
  * @brief   texture manager
  *
- * $Id: texture.c,v 1.23 2003-05-01 06:37:04 vincentp Exp $
+ * $Id: texture.c,v 1.24 2004-07-04 14:16:45 vincentp Exp $
  */
 
 #include <stdlib.h>
 #include <string.h>
 
 #include <arch/spinlock.h>
-#include <dc/ta.h>
+#include "dc/ta.h"
 
 #include "dcplaya/config.h"
 #include "draw/texture.h"

@@ -5,7 +5,7 @@
  * @date     2004/03/13
  * @brief    network extension plugin
  * 
- * $Id: net_driver.c,v 1.1 2004-07-03 00:17:17 vincentp Exp $
+ * $Id: net_driver.c,v 1.2 2004-07-04 14:16:45 vincentp Exp $
  */
 
 #include <stdlib.h>
@@ -19,22 +19,23 @@
 #include "driver_list.h"
 #include "net_driver.h"
 
-#include "dc/ethernet.h"
-
 #include "net.h"
 
 #include "lwip/lwip.h"
 
 /** Lua side init flags. */
 static int init;
+static int netinit;
+static int lwipinit;
 
 static int driver_shutdown(any_driver_t * d);
 
 
-extern eth_rx_callback_t eth_rx_callback; /* from kos */
-static eth_rx_callback_t saved_eth_rx_callback;
-void rx_callback(uint8 *pkt, int pktsize);
+static net_input_func saved_rx_callback;
+net_input_func lwip_cb;
+void rx_callback(netif_t * netif, uint8 *pkt, int pktsize);
 
+netif_t * netif;
 
 /* Driver init : not much to do. */ 
 static int driver_init(any_driver_t *d)
@@ -70,7 +71,7 @@ int lua_net_init(lua_State * L)
     goto ok;
   }
 
-  saved_eth_rx_callback = eth_rx_callback;
+  saved_rx_callback = net_input_target;
 
   printf("net_driver LUA initialized.\n");
   init = 1;
@@ -90,11 +91,15 @@ static int lua_net_shutdown(lua_State * L)
 
   fs_shutdown();
 
-  net_input_set_target(0);
-  if (eth_rx_callback == rx_callback)
-    eth_rx_callback = 0; //saved_eth_rx_callback;
+  if (lwipinit) {
+    lwip_shutdown_all();
+    lwipinit = 0;
+  }
 
-  lwip_shutdown();
+  if (netinit) {
+    net_input_set_target(0);
+    netinit = 0;
+  }
 
   init = 0;
   printf("net_driver LUA shutdown.\n");
@@ -109,16 +114,37 @@ extern uint8 eth_mac[6];
 static int lua_net_connect(lua_State * L)
 {
   int res = -1;
+  struct netif_list * listhead;
+
+  dbglog_set_level(7);
+
+  if (netinit)
+    return 0;
+
   printf("calling eth_init\n");
 
-  if (eth_init() == 0) {
+  net_init();
+  netinit = 1;
+  
+  // Find a device for us
+  listhead = net_get_if_list();
+  LIST_FOREACH(netif, listhead, if_list) {
+    if (netif->flags & NETIF_RUNNING)
+      break;
+  }
+  if (netif == NULL) {
+    printf("can't find an active KOS network device\n");
+    return 0;
+  }
+
+  if (netif) {
     uint8 mac[6];
     int i;
 
     printf("Ethernet adapter initialized succesfully !\n");
     res = 0;
 
-    eth_get_mac(eth_mac);
+    memcpy(eth_mac, netif->mac_addr, sizeof(eth_mac));
     printf("MAC address : ");
     for (i=0; i<6; i++)
       printf("%x ", (int) eth_mac[i]);
@@ -133,7 +159,7 @@ static int lua_net_connect(lua_State * L)
 	      lua_tonumber(L, 3), 
 	      lua_tonumber(L, 4));
 
-    eth_set_rx_callback(rx_callback);
+    net_input_set_target(rx_callback);
 
     if (!fs_init())
       printf("NFS initialised succesfully\n");
@@ -148,10 +174,10 @@ static int lua_net_disconnect(lua_State * L)
 {
   printf("calling eth_shutdown\n");
 
-  net_input_set_target(0);
-  eth_set_rx_callback(0);
-
-  eth_shutdown();
+  if (netinit) {
+    net_input_set_target(0);
+    netinit = 0;
+  }
 
   return 0;
 }
@@ -176,11 +202,16 @@ static int lua_lwip_init(lua_State * L)
   IP4_ADDR(&mask, 255, 255, 255, 0);
   IP4_ADDR(&gw, 192, 168, 1, 2);
 
-  dbglog_set_level(7);
-
-  lwip_init_mac();
-  lwip_init_static(&ip, &mask, &gw);
+  //lwip_init_mac();
+  lwip_init_all_static(&ip, &mask, &gw);
   //lwip_init_common("test");
+
+  //lwip_init_all();
+
+  lwip_cb = net_input_target;
+  net_input_set_target(rx_callback);
+
+  lwipinit = 1;
 
   return 0;
 }

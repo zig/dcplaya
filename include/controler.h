@@ -5,7 +5,7 @@
  *  @date    2002/02/13
  *  @brief   Controllers access
  *
- *  $Id: controler.h,v 1.7 2003-03-26 23:02:47 ben Exp $
+ *  $Id: controler.h,v 1.8 2004-07-04 14:16:44 vincentp Exp $
  */
 
 
@@ -27,7 +27,7 @@ DCPLAYA_EXTERN_C_START
  *  @{
  */
 
-#include <dc/controller.h>
+#include <dc/maple/controller.h>
 
 /** controller state. */
 typedef struct

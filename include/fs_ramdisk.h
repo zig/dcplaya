@@ -4,7 +4,7 @@
  * @author  benjamin gerard
  * @brief   RAM disk for KOS file system
  * 
- * $Id: fs_ramdisk.h,v 1.4 2003-03-26 23:02:47 ben Exp $
+ * $Id: fs_ramdisk.h,v 1.5 2004-07-04 14:16:44 vincentp Exp $
  */
 
 #ifndef _FS_RAMDISK_H_
@@ -42,11 +42,11 @@ DCPLAYA_EXTERN_C_START
  *  @retval 0 success
  *  @retval -1 error
  */
-int fs_ramdisk_init(int max_size);
+int dcpfs_ramdisk_init(int max_size);
 
 /** Shutdown the RAMdisk filesystem.
  */
-int fs_ramdisk_shutdown(void);
+int dcpfs_ramdisk_shutdown(void);
 
 /**@}*/
 

@@ -49,7 +49,7 @@ typedef struct {
  */
 static void mutex_init(mutex_t *mutex, int count)
 {
-  if (thd_enabled) {
+  if (thd_mode) {
 	spinlock_init(&mutex->lock);
 	mutex->count = count;
 	mutex->owner = count ? thd_current : 0;
@@ -76,7 +76,7 @@ static void mutex_init(mutex_t *mutex, int count)
 static int mutex_trylock(mutex_t * mutex)
 {
   int ret = 1;
-  if (thd_enabled) {
+  if (thd_mode) {
 	spinlock_lock(&mutex->lock);
 	ret = !mutex->count || mutex->owner == thd_current;
 	spinlock_unlock(&mutex->lock);
@@ -103,7 +103,7 @@ inline static int mutex_lockcount(const mutex_t * mutex)
  */
 inline static void mutex_lock(mutex_t *mutex)
 {
-  if (thd_enabled) {
+  if (thd_mode) {
 	do {
 	  int me, cnt;
 	  spinlock_lock(&mutex->lock);
@@ -135,7 +135,7 @@ inline static void mutex_lock(mutex_t *mutex)
  */
 inline static void mutex_unlock(mutex_t *mutex)
 {
-  if (thd_enabled) {
+  if (thd_mode) {
 	spinlock_lock(&mutex->lock);
 	if (!--mutex->count) {
 	  mutex->owner = 0;

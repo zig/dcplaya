@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/09/03
  * @brief     sidplay input plugin for dcplaya
- * @version   $Id: sidplay_driver.cxx,v 1.14 2003-04-12 12:46:28 ben Exp $
+ * @version   $Id: sidplay_driver.cxx,v 1.15 2004-07-04 14:16:45 vincentp Exp $
  */
 
 /* generated config include */
@@ -30,15 +30,9 @@ extern "C" {
 #include "fifo.h"
 #include "playa.h"
 #include "gzip.h"
+#include "dcplaya/config.h"
 #include "sysdebug.h"
 };
-
-extern "C" {
-int time()
-{
-  return 0;
-}
-}
 
 static int disk_info(playa_info_t *info, sidTune * sidtune);
 

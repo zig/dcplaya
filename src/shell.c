@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     shell support for dcplaya
- * @version   $Id: shell.c,v 1.19 2004-06-30 15:17:36 vincentp Exp $
+ * @version   $Id: shell.c,v 1.20 2004-07-04 14:16:45 vincentp Exp $
  */
 
 #include <kos.h>
@@ -202,6 +202,7 @@ int shell_init()
   uint32 old = thd_default_stack_size;
   //thd_default_stack_size = 1024*1024;
   thd_default_stack_size = 256*1024;
+  kthread_t * thd;
 
   SDDEBUG("[shell_init] : dynshell [%s]\n",shell_lef_fname);
 
@@ -211,8 +212,11 @@ int shell_init()
   if (!shell_lef)
     shell_load(shell_lef_fname);
 
-  thd_create(shell_thread, 0);
+  thd = thd_create(shell_thread, 0);
   thd_default_stack_size = old;
+
+  if (thd)
+    thd_set_label(thd, "Shell-thd");
 
   // Setup some environmental variables
   shell_command("setglobal([[__VERSION]],[[" DCPLAYA_VERSION_STR "]])");

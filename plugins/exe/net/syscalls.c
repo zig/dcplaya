@@ -30,8 +30,7 @@
 #include <stdarg.h>
 //#include <dirent.h>
 #include <kos/fs.h>
-#include <dc/ta.h>
-#include <dc/ethernet.h>
+#include "dc/ta.h"
 #include "syscalls.h"
 #include "net.h"
 #include "commands.h"
@@ -52,25 +51,34 @@ ether_header_t * ether = (ether_header_t *)pkt_buf;
 ip_header_t * ip = (ip_header_t *)(pkt_buf + ETHER_H_LEN);
 udp_header_t * udp = (udp_header_t *)(pkt_buf + ETHER_H_LEN + IP_H_LEN);
 
+
+static int (*real_old_printk_func)(const uint8 *data, int len, int xlat);
+
+/* from console.c */
+extern int (*old_printk_func)(const uint8 *data, int len, int xlat);
+
+
 /* send command, enable bb, bb_loop(), then return */
 
 
 /* thread safe version of eth_tx */
 # define STOPIRQ \
- 	oldirq = irq_disable()
+	if (!irq_inside_int()) \
+ 	  oldirq = irq_disable(); else
 
 # define STARTIRQ \
-	irq_restore(oldirq)
+	if (!irq_inside_int()) \
+	  irq_restore(oldirq); else
 int eth_txts(uint8 *pkt, int len)
 {
   int res;
   int oldirq;
   for( ; ; ) {
-    //STOPIRQ;
-    res = eth_tx(pkt, len, ETH_TX_NOWAIT);
-    //STARTIRQ;
+    STOPIRQ;
+    res = net_tx(pkt, len, irq_inside_int());
+    STARTIRQ;
 
-    if (res != ETH_TX_AGAIN)
+    if (!res || irq_inside_int())
       break;
  
     thd_pass();
@@ -117,9 +125,9 @@ static void wait_result()
   while (!escape_loop) {
     thd_pass();
     if (ta_state.frame_counter - fc > 60) {
+      tool_ip = 0;
       printf("BBA syscall timed out !\n"
 	     "Please reconnect the dc-load client.\n");
-      tool_ip = 0;
       syscall_retval = -1;
       return;
     }
@@ -709,9 +717,27 @@ void dcload_printk(const char *str) {
   net_unlock();
 }
 
+static int printk_func(const uint8 *data, int len, int xlat)
+{
+  if (0 && tool_ip) {
+    int oldirq = 0;
+    int res;
+
+    net_lock();
+    STOPIRQ;
+    res = sc_write(1, data, len);
+    STARTIRQ;
+    net_unlock();
+    return res;
+  } else {
+    return real_old_printk_func(data, len, xlat);
+  }
+}
+
+
 static char *dcload_path = NULL;
 
-uint32 dcload_open(const char *fn, int mode)
+uint32 dcload_open(vfs_handler_t * dummy, const char *fn, int mode)
 {
   dcload_handler_t * hdl = 0;
   int hnd = 0;
@@ -721,6 +747,7 @@ uint32 dcload_open(const char *fn, int mode)
 
 /*   dbglog(DBG_DEBUG, */
 /* 	 "fs_dcload : open [%s,%d]\n",fn,mode); */
+//  printf("open '%s' %d\n", fn, mode);
     
   if (!tool_ip)
     return 0;
@@ -1111,7 +1138,7 @@ dirent_t *dcload_readdir(uint32 hnd)
   return rv;
 }
 
-int dcload_rename(const char *fn1, const char *fn2) {
+int dcload_rename(vfs_handler_t * dummy, const char *fn1, const char *fn2) {
   int oldirq = 0;
   int ret;
 
@@ -1130,7 +1157,7 @@ int dcload_rename(const char *fn1, const char *fn2) {
   return ret;
 }
 
-int dcload_unlink(const char *fn) {
+int dcload_unlink(vfs_handler_t * dummy, const char *fn) {
   int oldirq = 0;
   int ret;
 
@@ -1146,10 +1173,16 @@ int dcload_unlink(const char *fn) {
 
 
 /* Pull all that together */
-static vfs_handler vh = {
-  { "/nfs" },          /* path prefix */
+static vfs_handler_t vh = {
+  {
+    { "/pc" },          /* path prefix */
+    0, 
+    0x00010000,		/* Version 1.0 */
+    0,			/* flags */
+    NMMGR_TYPE_VFS,	/* VFS handler */
+    NMMGR_LIST_INIT	/* list */
+  },
   0, 0,		       /* In-kernel, no cacheing */
-  NULL,                /* linked list pointer */
   dcload_open, 
   dcload_close,
   dcload_read,
@@ -1166,15 +1199,29 @@ static vfs_handler vh = {
 
 
 static int init;
+
+static nmmgr_handler_t * oldfs;
+
 int fs_init()
 {
+  nmmgr_handler_t * hnd;
+
   if (init)
     return 0;
 
   init = 1;
 
+  real_old_printk_func = old_printk_func;
+  old_printk_func = printk_func;
+
+  hnd = nmmgr_lookup("/pc");
+  if (hnd) {
+    nmmgr_handler_remove(hnd);
+    oldfs = hnd;
+  }
+
   /* Register with VFS */
-  return !tcpfs_init() && !httpfs_init() && fs_handler_add("/nfs", &vh);
+  return tcpfs_init() || httpfs_init() || nmmgr_handler_add(&vh);
 }
 
 void fs_shutdown()
@@ -1185,6 +1232,16 @@ void fs_shutdown()
   if (!init)
     return;
   init = 0;
-  fs_handler_remove(&vh);
+  nmmgr_handler_remove(&vh);
+
+  if (real_old_printk_func) {
+    old_printk_func = real_old_printk_func;
+    real_old_printk_func = 0;
+  }
+
+  if (oldfs) {
+    nmmgr_handler_add(oldfs);
+    oldfs = NULL;
+  }
 }
 

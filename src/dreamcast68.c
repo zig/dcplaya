@@ -3,7 +3,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.61 2004-06-30 15:17:36 vincentp Exp $
+ * @version   $Id: dreamcast68.c,v 1.62 2004-07-04 14:16:45 vincentp Exp $
  */
 
 //#define RELEASE
@@ -76,9 +76,6 @@
 
 /* added for stdlib compatibility */
 int errno;
-
-/* from rand.c */
-extern void srandom(unsigned int nseed);
 
 float fade68;
 uint32 frame_counter68 = 0;
@@ -879,7 +876,8 @@ void main_thread(void *cookie)
   SDDEBUG("Start exit procedure\n");
 
   /* VP : quick exit ! Don't want to stay stucked into playa_stop ... */
-  exit();
+  panic("quick exit !!\n");
+  exit(-1);
 
   /* Stop sc68 from playing */
   playa_stop(1);
@@ -1046,11 +1044,21 @@ static int vmu_load(void)
  * - Init all no thread safe
  * - Launch main thread and wait ...
  */
+
+KOS_INIT_ROMDISK(romdisk);
+
 int dreammp3_main(int argc, char **argv)
 {
   int err = 0;
   int kos_debug_level = DBG_KDEBUG;
   int dcp_debug_level = (1<<sysdbg_user)-1;
+
+
+  /* VP : put our keyboard manager */
+  maple_shutdown();
+  dcp_kbd_init();
+  maple_init();
+
 
   curlogo = 0; //& mine_3;
   fade68 = 0.0f;
@@ -1073,7 +1081,11 @@ int dreammp3_main(int argc, char **argv)
   sysdbg_set_level(dcp_debug_level,0);
   dbglog_set_level(kos_debug_level);
   /* Do basic setup */
-  kos_init_all(IRQ_ENABLE | THD_ENABLE, romdisk);
+  /*irq_init();*/
+  thd_default_stack_size = 64*1024;
+  thd_init(THD_MODE_PREEMPT);
+  
+  //kos_init_all(IRQ_ENABLE | THD_ENABLE, romdisk);
   /* Initialize exceptions handling */
   expt_init();
   dbglog_set_level(kos_debug_level);
@@ -1082,7 +1094,8 @@ int dreammp3_main(int argc, char **argv)
   cdrom_reinit();
 
   /* ramdisk init : needed by vmu_load() */
-  if (!fs_ramdisk_init(0)) {
+  fs_ramdisk_shutdown(); /* VP : because we have our own */
+  if (!dcpfs_ramdisk_init(0)) {
     /* create default dir */
     fu_create_dir("/ram/tmp");
     fu_create_dir("/ram/dcplaya");
@@ -1110,12 +1123,13 @@ int dreammp3_main(int argc, char **argv)
     }
   }
 
+
   /* Initialize shell and LUA */
   SDDEBUG("SHELL init\n");
 
   /* From this point the number of jiffies must be somewhat different...
      I hope so ! */
-  srandom(jiffies);
+  srand(jiffies);
   if (shell_init()) {
     STHROW_ERROR(error);
   }

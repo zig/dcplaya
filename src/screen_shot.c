@@ -4,11 +4,11 @@
  * @date    2002/09/14
  * @brief   Takes TGA screen shot.
  * 
- * $Id: screen_shot.c,v 1.6 2003-03-18 14:53:26 ben Exp $
+ * $Id: screen_shot.c,v 1.7 2004-07-04 14:16:45 vincentp Exp $
  */
 
 //#include <kos/fs.h>
-#include <dc/ta.h>
+#include "dc/ta.h"
 #include <stdio.h>
 #include <stdlib.h>
 

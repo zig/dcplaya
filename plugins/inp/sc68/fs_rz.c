@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   Gzipped compressed rom disk for KOS file system
  * 
- * $Id: fs_rz.c,v 1.3 2003-03-10 22:55:33 ben Exp $
+ * $Id: fs_rz.c,v 1.4 2004-07-04 14:16:45 vincentp Exp $
  */
 
 #include <arch/types.h>
@@ -357,7 +357,7 @@ static size_t total(uint32 fd)
 }
 
 /* Put everything together */
-static vfs_handler vh = {
+static vfs_handler_t vh = {
   "sc68-romdisk",       /* name */
   0, 0, NULL,		/* In-kernel, no cacheing, next */
   open,

@@ -11,11 +11,11 @@
      //     NIMP(rnd_avg2)
      //     NIMP(no_rnd_avg2)
      //     NIMP(strtol)
-     NIMP(time)
+/*      NIMP(time) */
      NIMP(localtime)
      NIMP(gmtime)
      NIMP(atof)
-     NIMP(mktime)
+/*      NIMP(mktime) */
      //     NIMP(__ashldi3)
 /*      NIMP(__ashrdi3) */
 /*      NIMP(__lshldi3) */
@@ -30,7 +30,7 @@
      NIMP(put_buffer)
 #endif
      NIMP(lseek)
-     NIMP(localtime_r)
+/*      NIMP(localtime_r) */
      NIMP(lsb2full)
 
 #ifndef AVCODEC_CVS

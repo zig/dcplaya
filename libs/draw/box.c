@@ -4,14 +4,13 @@
  * @author  ben(jamin) gerard <ben@sashipa.com>
  * @date    2002/11/22
  *
- * $Id: box.c,v 1.5 2002-12-30 20:08:32 ben Exp $
+ * $Id: box.c,v 1.6 2004-07-04 14:16:45 vincentp Exp $
  */
 
 #include "draw/box.h"
 #include "draw/gc.h"
 #include "draw/ta.h"
 
-#include <dc/ta.h>
 /* Box points mapping
  * 12
  * 34

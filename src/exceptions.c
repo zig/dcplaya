@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Exceptions and guardians handling
  *
- * @version    $Id: exceptions.c,v 1.5 2004-06-30 15:17:36 vincentp Exp $
+ * @version    $Id: exceptions.c,v 1.6 2004-07-04 14:16:45 vincentp Exp $
  */
 
 #include <kos.h>
@@ -142,9 +142,6 @@ static void guard_irq_handler(irq_t source, irq_context_t *context)
 
   }
 
-  safe_malloc_stats();
-/*   texture_memstats(); */
-
   //printf("CATCHING EXCEPTION IN SHELL\n");
 
   //irq_dump_regs(0, source);
@@ -156,6 +153,9 @@ static void guard_irq_handler(irq_t source, irq_context_t *context)
     irq_srt_addr->r[4] = thd_current->expt_jump_stack[thd_current->expt_guard_stack_pos];
     irq_srt_addr->r[5] = (void *) -1;
   } else {
+    malloc_stats();
+    texture_memstats();
+
     /* not handled --> panic !! */
     irq_dump_regs(0, source);
     panic("DCPLAYA unhandled IRQ/Exception");

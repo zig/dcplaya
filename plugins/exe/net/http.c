@@ -130,7 +130,7 @@ void url_split(char *proto, int proto_size,
 
 
 /* return zero if error */
-static uint32 http_open(const char *uri, int flags)
+static uint32 http_open(vfs_handler_t * dummy, const char *uri, int flags)
 {
     const char *path, *proxy_path;
     char hostname[128];
@@ -440,10 +440,16 @@ URLProtocol http_protocol = {
 #endif
 
 /* Pull all that together */
-static vfs_handler vh = {
-  { "/http" },          /* path prefix */
+static vfs_handler_t vh = {
+  {
+    { "/http" },          /* path prefix */
+    0, 
+    0x00010000,		/* Version 1.0 */
+    0,			/* flags */
+    NMMGR_TYPE_VFS,	/* VFS handler */
+    NMMGR_LIST_INIT	/* list */
+  },
   0, 0,		       /* In-kernel, no cacheing */
-  NULL,                /* linked list pointer */
   http_open, 
   http_close,
   http_read,
@@ -468,7 +474,7 @@ int httpfs_init()
   init = 1;
 
   /* Register with VFS */
-  return fs_handler_add("/http", &vh);
+  return nmmgr_handler_add(&vh);
 }
 
 void httpfs_shutdown()
@@ -476,7 +482,7 @@ void httpfs_shutdown()
   if (!init)
     return;
   init = 0;
-  fs_handler_remove(&vh);
+  nmmgr_handler_remove(&vh);
 }
 
 

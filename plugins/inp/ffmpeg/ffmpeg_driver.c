@@ -1,5 +1,5 @@
 /*
- * $Id: ffmpeg_driver.c,v 1.2 2004-06-30 15:17:36 vincentp Exp $
+ * $Id: ffmpeg_driver.c,v 1.3 2004-07-04 14:16:45 vincentp Exp $
  */
 
 #include "dcplaya/config.h"
@@ -8,6 +8,7 @@
 #include <kos.h>
 
 DCPLAYA_EXTERN_C_START
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -175,6 +176,8 @@ static int init(any_driver_t *d)
 
 
   vidstream_thd = thd_create(vidstream_thread, 0);
+  if (vidstream_thd)
+    thd_set_label(vidstream_thd, "Video-decode-thd");
   //vidstream_thd->prio2 = 9;
 
 
@@ -1461,7 +1464,7 @@ static inp_driver_t ffmpeg_driver =
   /* Input driver specific */
   
   0,                      /**< User Id */
-  ".wmv\0.rm\0.mpg\0.mpeg\0.mpc\0.mp3\0.avi\0",   /**< EXtension list */
+  ".wmv\0.wma\0.rm\0.mpg\0.mpeg\0.mpc\0.mp3\0.avi\0",   /**< EXtension list */
 
   start,
   stop,

@@ -3,16 +3,16 @@
 #
 # (C) COPYRIGHT 2002 benjamin gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.29 2003-08-03 15:31:28 benjihan Exp $ 
+# $Id: Makefile,v 1.30 2004-07-04 14:16:44 vincentp Exp $ 
 #
 TARGETS=dcplaya.elf
 
 SUBDIRS = arm data plugins src libs dynshell
 
 BUILTIN_DRIVERS=./plugins/img/tga/tga.lef
-WHOLE_LIBS=-lz,-ltranslator,-ldraw,-ldreammp3,-llua,-ldcutils,-lkallisti
-OPT_LIBS= -los -lgcc -lm
-ELF_EXTRA += -L./src -L./libs/z -L./libs/draw -L./libs/translator -L./libs/lua -L$(KOS_BASE)/lib\
+WHOLE_LIBS=-lz,-ltranslator,-ldraw,-ldreammp3,-lta,-llua,-lkosutils,-lkallisti
+OPT_LIBS= -lgcc -lm
+ELF_EXTRA += -L./src -L./libs/z -L./libs/draw -L./libs/ta -L./libs/translator -L./libs/lua -L$(KOS_BASE)/lib/$(KOS_ARCH) -L$(KOS_BASE)/addons/lib/$(KOS_ARCH) \
  -Wl,--whole-archive,$(WHOLE_LIBS),--no-whole-archive\
  $(BUILTIN_DRIVERS) $(OPT_LIBS)
 

@@ -4,7 +4,7 @@
  * @date    2003/03/10
  * @brief   VMU file load and save function.
  *
- * $Id: vmu_file.c,v 1.3 2003-03-13 23:15:28 ben Exp $
+ * $Id: vmu_file.c,v 1.4 2004-07-04 14:16:45 vincentp Exp $
  */
 
 #include <kos/thread.h>
@@ -30,7 +30,12 @@ static int header_size;
 static const char header_name[] = "/rd/vmu_header.bin";
 static volatile int init = 0;
 static char vmu_file_default_path[VMUFILE_PATH_MAX+1]; /* +1 for '\0' */
+
+#ifdef NOTYET
 extern volatile int vmu_access_right;
+#else
+volatile int vmu_access_right;
+#endif
 
 int vmu_file_header_size(void)
 {

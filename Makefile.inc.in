@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile.inc.in,v 1.31 2003-07-31 10:01:24 benjihan Exp $
+# $Id: Makefile.inc.in,v 1.32 2004-07-04 14:16:44 vincentp Exp $
 #
 
 .SUFFIXES:
@@ -64,7 +64,7 @@ KOS_BASE=@KOS_BASE@
 ifeq 'x$(origin KOS_INCS)' 'xenvironment'
 KOS_INCS:=
 endif
-KOS_INCS+= -I$(KOS_BASE)/include
+KOS_INCS+= -I$(KOS_BASE)/include -I$(KOS_BASE)/libc/include -I$(KOS_BASE)/addons/include
 
 #export KOS_ARCH KOS_BASE KOS_INCS
 

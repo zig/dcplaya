@@ -4,6 +4,8 @@
 #include <dc/maple.h>
 #include <dc/cdrom.h>
 
+#include "dc/ta.h"
+
 #include "dcplaya/config.h"
 #include "controler.h"
 #include "sysdebug.h"
@@ -176,6 +178,7 @@ static void controler_thread(void * dummy)
 
       spinlock_lock(&controler_mutex);
 
+#ifdef NOTYET
       /* rescan one unit per frame */
       oldfunc = maple_device_func(report, 0);
       /* first unit of given port */
@@ -191,6 +194,7 @@ static void controler_thread(void * dummy)
       if (++report >= 4) {
 	report = 0;
       }
+#endif
 	  
       /* Get controler cond, scan for current number of controler ... */
       controler_get();
@@ -348,7 +352,7 @@ int controler_peekchar(void)
 {
   int k;
   spinlock_lock(&controler_mutex);
-  k = kbd_get_key();
+  k = dcp_kbd_get_key();
   spinlock_unlock(&controler_mutex);
   return k;
 }

@@ -6,13 +6,15 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.98 2004-06-30 15:17:35 vincentp Exp $
+ * @version    $Id: dynshell.c,v 1.99 2004-07-04 14:16:44 vincentp Exp $
  */
 
 #include "dcplaya/config.h"
 
 #include <stdio.h>
 #include <kos.h>
+
+#include "dc/ta.h"
 
 #include "sysdebug.h"
 
@@ -42,6 +44,10 @@
 #include "exceptions.h"
 
 #include "ds.h"
+
+#ifndef NOTYET
+#undef DEBUG
+#endif
 
 lua_State * shell_lua_state;
 
@@ -92,14 +98,12 @@ static int lua_get_shell_command(lua_State * L)
 //static int dynshell_command(const char * fmt, ...)
 static int dynshell_command(const char * com)
 {
-  static int inner; // replace this by a mutex latex
+  static int inner; // replace this by a mutex later
   //char com[1024];
   //char com[10*1024];
   //char com[256];
   //char toto[10*1024];
   int result = -1;
-
-  //printf("dynshell '%s'\n", com);
 
   if (inner) {
 /*     va_list args; */
@@ -1666,10 +1670,12 @@ static int lua_vmutools(lua_State * L)
       err = "Bad file size (not 128Kb)";
       goto error;
     }
+#ifdef NOTYET
     if (fs_vmu_restore(vmupath, buffer)) {
       err = "Restore failure";
       goto error;
     }
+#endif
 
   } else {
     printf("vmu_tools : Backup [%s] into [%s]...\n",
@@ -1680,10 +1686,12 @@ static int lua_vmutools(lua_State * L)
       err = "128K buffer allocation failure";
       goto error;
     }
+#ifdef NOTYET
     if (fs_vmu_backup(vmupath, buffer)) {
       err = "Backup failure";
       goto error;
     }
+#endif
     if (len = gzip_save(file, buffer, 128<<10), len < 0) {
       err = "File write error";
       goto error;
@@ -1710,7 +1718,9 @@ static int lua_vcolor(lua_State * S)
 
 static int lua_clear_cd_cache(lua_State * L)
 {
+#ifdef NOTYET
   iso_ioctl(0,0,0);  /* clear CD cache ! */
+#endif
   return 0;
 }
 
@@ -1819,7 +1829,9 @@ extern volatile int vmu_io_state;
 static int lua_vmu_state(lua_State * L)
 {
   lua_settop(L,0);
+#ifdef NOTYET
   lua_pushnumber(L, vmu_io_state);
+#endif
   return 1;
 }
 
@@ -2522,7 +2534,7 @@ static int lua_load_background(lua_State * L)
   texture_twiddlable(btexture);
 
 #if DEBUG
-  if (!btexture->twiddable) {
+  if (!btexture->twiddlable) {
     SDCRITICAL("[background] : texture [%s] not twiddlable [%dx%d] [%dx%d]\n",
 	       btexture->name,
 	       btexture->width,btexture->height,
@@ -2743,6 +2755,7 @@ static int lua_read_controler(lua_State * L)
 
 static int lua_cdrom_status(lua_State * L)
 {
+#ifdef NOTYET
   int check = lua_gettop(L) >= 1 && lua_type(L,1) != LUA_TNIL;
 
   check = check ? cdrom_check() : cdrom_status();
@@ -2750,6 +2763,7 @@ static int lua_cdrom_status(lua_State * L)
   lua_pushstring(L,cdrom_statusstr(check)+6);
   lua_pushstring(L,cdrom_drivestr(check));
   lua_pushnumber(L,cdrom_disk_id);
+#endif
   return 3;
 }
 
@@ -2914,6 +2928,35 @@ static int lua_fifo_used(lua_State * L)
 static int lua_fifo_size(lua_State * L)
 {
   lua_pushnumber(L, fifo_size());
+  return 1;
+}
+
+static int lua_thread_stats(lua_State * L)
+{
+  kthread_t *np;
+  
+  lua_settop(L, 0);
+  lua_newtable(L);
+
+  LIST_FOREACH(np, &thd_list, t_list) {
+    lua_pushnumber(L, np->tid);
+    lua_newtable(L);
+
+    lua_pushstring(L, "name");
+    lua_pushstring(L, np->label);
+    lua_settable(L, 3);
+
+    lua_pushstring(L, "pwd");
+    lua_pushstring(L, np->pwd);
+    lua_settable(L, 3);
+
+    lua_pushstring(L, "localtime");
+    lua_pushnumber(L, np->localtime);
+    lua_settable(L, 3);
+
+    lua_settable(L, 1);
+  }
+
   return 1;
 }
 
@@ -3506,6 +3549,14 @@ static luashell_command_description_t commands[] = {
     " Display allocated memory statistics.\n"
     ,
     SHELL_COMMAND_C, lua_checkmem
+  },
+
+  {
+    "thread_stats","ts","system",
+    "thread_stats() :\n"
+    " Return a list of threads with statistics.\n"
+    ,
+    SHELL_COMMAND_C, lua_thread_stats
   },
 
   {0},

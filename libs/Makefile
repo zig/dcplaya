@@ -1,5 +1,5 @@
-# $Id: Makefile,v 1.5 2002-11-25 20:31:39 ben Exp $
+# $Id: Makefile,v 1.6 2004-07-04 14:16:45 vincentp Exp $
 
-SUBDIRS = lua z translator draw
+SUBDIRS = lua z translator draw ta
 
 include ../Makefile.inc

@@ -8,7 +8,7 @@
    +2002/02/12 variable stream size modification by ben(jamin) gerard
 */
 
-/* static char id[] = "sndserver $Id: sndstream.c,v 1.4 2003-03-18 14:53:27 ben Exp $"; */
+/* static char id[] = "sndserver $Id: sndstream.c,v 1.5 2004-07-04 14:16:45 vincentp Exp $"; */
 
 #include <kos.h>
 #include "dcplaya/config.h"
@@ -65,6 +65,8 @@ static int stream_bytes = 0;
 static int stream_bytes_max = 0;
 const int stream_bytes_min = 64;
 
+#define spu_write_wait g2_fifo_wait
+
 /* Set "get data" callback */
 void stream_set_callback(void *(*func)(int)) {
   spinlock_lock(&mutex);
@@ -74,8 +76,8 @@ void stream_set_callback(void *(*func)(int)) {
 
 /* "Kicks" a channel command */
 static void chn_kick(int chn) {
-  *cmd = AICA_CMD_KICK | (chn+1);
   spu_write_wait();
+  *cmd = AICA_CMD_KICK | (chn+1);
 }
 
 /* Performs stereo seperation for the two channels; this routine

@@ -9,13 +9,8 @@
 #include "driver_list.h"
 #include "net_driver.h"
 
-#include "dc/ethernet.h"
-
 #include "commands.h"
 #include "packet.h"
-
-
-static int (* lwip_cb)(netif_t *netif, const uint8 *data, int len);
 
 unsigned char broadcast[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
@@ -156,7 +151,7 @@ void process_broadcast(unsigned char *pkt, int len)
 	    /* put our hw address into sender hw address */
 	    memcpy(arp_header->hw_sender, eth_mac, 6);
 	    /* transmit */
-	    eth_tx(pkt, ETHER_H_LEN + ARP_H_LEN, ETH_TX_WAIT);
+	    net_tx(pkt, ETHER_H_LEN + ARP_H_LEN, 1);
 	}
     }
 }
@@ -195,7 +190,7 @@ void process_icmp(ether_header_t *ether, ip_header_t *ip, icmp_header_t *icmp)
     icmp->checksum = 0;
     icmp->checksum = checksum((unsigned short *)icmp, ntohs(ip->length)/2 - 2*(ip->version_ihl & 0x0f));
     /* transmit */
-    eth_tx(ether, ETHER_H_LEN + ntohs(ip->length), ETH_TX_WAIT);
+    net_tx(ether, ETHER_H_LEN + ntohs(ip->length), 1);
   }
 }
 
@@ -249,7 +244,7 @@ int process_udp(ether_header_t *ether, ip_header_t *ip, udp_header_t *udp)
     tool_ip = ntohl(ip->src);
     tool_port = ntohs(udp->src);
     memcpy(tool_mac, ether->src, 6);
-    printf("Set dc-tool IP to 0x%x, port %d\n", tool_ip, tool_port);
+    //printf("Set dc-tool IP to 0x%x, port %d\n", tool_ip, tool_port);
   } else {
 /*     if (tool_ip != ntohs(ip->src)) */
 /*       return -1; */
@@ -342,34 +337,9 @@ int process_mine(unsigned char *pkt, int len)
     return -1;
 }
 
-# define STOPIRQ \
- 	oldirq = irq_disable()
-
-# define STARTIRQ \
-	irq_restore(oldirq)
-static void tx(netif_t * i, uint8 * buf, int len, int mode)
-{
-  int oldirq;
-  //printf("tx %d %d\n", len, mode);
-  //STOPIRQ;
-  eth_tx(buf, len, ETH_TX_NOWAIT/*mode*/);
-  //STARTIRQ;
-}
-
-static void tx_commit(netif_t * i)
-{
-}
-
-netif_t lwip_netif = {
-  "BBA",
-  { },
-  tx,
-  tx_commit,
-};
-
 int eth_interrupt;
 
-void rx_callback(unsigned char *pkt, int len)
+void rx_callback(netif_t * netif, unsigned char *pkt, int len)
 {
   ether_header_t *ether_header = (ether_header_t *)pkt;
 
@@ -382,7 +352,7 @@ void rx_callback(unsigned char *pkt, int len)
   if (lwip_cb) {
     //printf("lwip cb\n");
     eth_interrupt = 1;
-    lwip_cb(&lwip_netif, pkt, len);
+    lwip_cb(netif, pkt, len);
     eth_interrupt = 0;
     return;
   }
@@ -411,18 +381,3 @@ void eth_setip(int a, int b, int c, int d)
     our_ip = ntohl(our_ip);
 }
 
-
-void net_input_set_target(int (* cb)(netif_t *netif, const uint8 *data, int len))
-{
-  lwip_cb = cb;
-}
-
-void lwip_init_mac()
-{
-  u8_t mac[6];
-  int i;
-  eth_get_mac(mac);
-  
-  for (i=0; i<6; i++)
-    lwip_netif.mac_addr[i] = mac[i];
-}

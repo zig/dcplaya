@@ -1,9 +1,9 @@
 /**
- * $Id: vmu68.c,v 1.16 2003-03-26 23:02:51 ben Exp $
+ * $Id: vmu68.c,v 1.17 2004-07-04 14:16:45 vincentp Exp $
  */
 
-#include <dc/vmu.h>
 #include <dc/maple.h>
+#include <dc/maple/vmu.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -115,6 +115,7 @@ static void put_byte_char(uint8 * dst, int c, int xs, int xe)
   }
 }
 
+#define putchar vmuputchar
 static void putchar(uint8 * dst, int x, int y, int c)
 {
   uint8 *src = font[0];
@@ -549,7 +550,9 @@ static void draw_lcd(void *a)
   uint8 mlcd = maple_first_lcd();
 
   if (a && mlcd) {
-    vmu_draw_lcd(mlcd, a);
+    maple_device_t * dev;
+    if (!maple_compat_resolve(mlcd, &dev, MAPLE_FUNC_LCD) && dev)
+      vmu_draw_lcd(dev, a);
   }
 }
 

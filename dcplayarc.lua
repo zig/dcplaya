@@ -5,7 +5,7 @@
 --- @date     2002
 --- @brief    Main dcplaya lua script.
 ---
---- $Id: dcplayarc.lua,v 1.46 2004-06-30 15:17:35 vincentp Exp $
+--- $Id: dcplayarc.lua,v 1.47 2004-07-04 14:16:44 vincentp Exp $
 ---
 ---   The @b home.."dcplayarc.lua" file is dcplaya main script.
 ---   It is executed after the dynshell has been loaded.
@@ -130,7 +130,7 @@ end
 
 
 -- Execute user dcplayarc (extracted from vmu into ramdisk)
-if not dcplayarc_vmu_loading and
+if nil and not dcplayarc_vmu_loading and
    type(test) == "function" and test("-f","/ram/dcplaya/dcplayarc.lua") then
 
    -- to avoid infinite loop
@@ -175,7 +175,6 @@ dolib ("dirfunc")
 dolib ("shell")
 dolib ("zed")
 dolib ("keyboard_emu")
-
 dolib ("sprite")
 
 -- Loading sprite ressource

@@ -4,12 +4,14 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.26 2004-06-30 15:17:36 vincentp Exp $
+ * @version   $Id: console.c,v 1.27 2004-07-04 14:16:45 vincentp Exp $
  */
 
 
 #include <kos.h>
 #include <malloc.h>
+
+#include "dc/ta.h"
 
 #include "dcplaya/config.h"
 #include "console.h"
@@ -38,20 +40,21 @@ csl_console_t * csl_basic_console;
 /* TA console */
 csl_console_t * csl_ta_console;
 
-static dbgio_printk_func old_printk_func;
+extern dbgio_handler_t dbgio_dcload;
+int (*old_printk_func)(const uint8 *data, int len, int xlat);
 
 /* added by ben for disabling console output in zed */
 int csl_echo = 1;
 
-static void csl_printk_func(const char * s)
+static void csl_printk_func(const uint8 *data, int len, int xlat)
 {
-  if (thd_enabled && csl_echo) {
-    csl_putstring(csl_main_console, s);
+  if (thd_mode && csl_echo) {
+    csl_write(csl_main_console, data, len);
   }
 
   /*  if ( !(csl_main_console->render_modes & CSL_RENDER_WINDOW) ) */{
     if (old_printk_func)
-      old_printk_func(s);
+      old_printk_func(data, len, xlat);
   }
 }
 
@@ -152,7 +155,8 @@ void csl_init_main_console()
   csl_init_ta_console();
 
   csl_main_console = csl_basic_console;
-  old_printk_func = dbgio_set_printk(csl_printk_func);
+  old_printk_func = dbgio_dcload.write_buffer;
+  dbgio_dcload.write_buffer = csl_printk_func;
 }
 
 void csl_close_main_console()
@@ -163,8 +167,7 @@ void csl_close_main_console()
   csl_console_destroy(csl_main_console);
   csl_main_console = 0;
 
-  dbgio_set_printk(old_printk_func);
-
+  dbgio_dcload.write_buffer = old_printk_func;
 }
 
 
@@ -453,6 +456,22 @@ void csl_putstring(csl_console_t * console, const char * s )
   spinlock_lock(&console->mutex);
   MUterm_input(s, console->term);
   if ((console->render_modes & CSL_RENDER_BASIC) && strchr(s, '\n'))
+    csl_basic_render(console);
+  console->window.cursor_time = 0;
+  spinlock_unlock(&console->mutex);
+}
+void csl_write(csl_console_t * console, const char * s, int len )
+{
+  int ret = 0;
+  int i;
+  spinlock_lock(&console->mutex);
+  for (i=0; i<len; i++) {
+    int c = s[i];
+    MUterm_inputc(c, console->term);
+    if (c == '\n')
+      ret = 1;
+  }
+  if ((console->render_modes & CSL_RENDER_BASIC) && ret)
     csl_basic_render(console);
   console->window.cursor_time = 0;
   spinlock_unlock(&console->mutex);

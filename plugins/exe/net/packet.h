@@ -3,11 +3,23 @@
 
 #include "bswap.h"
 
+#include <kos/net.h>
+
 //extern unsigned char pkt_buf[1514];
 extern unsigned char broadcast[6];
 extern uint8 eth_mac[6];
 extern uint32 our_ip;
+extern net_input_func lwip_cb;
 
+extern netif_t * netif;
+
+static int net_tx(const uint8 *data, int len, int mode)
+{
+  if (netif)
+    return netif->if_tx(netif, data, len, mode);
+  else
+    return 0;
+}
 
 #define packed __attribute__((packed))
 

@@ -4,7 +4,7 @@
  *  @date   2002/10/22
  *  @brief  Resizable array of indirect elements of any size.
  *
- *  $Id: iarray.c,v 1.7 2004-06-30 15:17:36 vincentp Exp $
+ *  $Id: iarray.c,v 1.8 2004-07-04 14:16:45 vincentp Exp $
  *
  *  @TODO Add callback for copy, clear ... operations
  */
@@ -334,7 +334,7 @@ static void swap(iarray_elt_t * a, iarray_elt_t * b)
   *b = tmp;
 }
 
-extern unsigned int rand(void);
+//extern unsigned int rand(void);
 
 void iarray_shuffle(iarray_t *a, int idx, int n)
 {

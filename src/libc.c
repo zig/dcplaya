@@ -1,10 +1,20 @@
 #include <stdio.h>
 
 
+#ifndef NOTYET
+/* TEMPORARY !! compatibility for now */
+int thd_enabled = 1;
+
+int kos_lazy_cd;
+#endif
+
+
+#if 0
 void puts(const char * str)
 {
-  dbgio_puts(str);
+  dbgio_write_str(str);
 }
+#endif
 
 
 /*-
@@ -310,6 +320,7 @@ __ashrdi3(a, shift)
 }
 #endif
 
+#if 0
 /*
  * Convert a string to a long integer.
  *
@@ -409,9 +420,10 @@ int			base;
 		*endptr = any ? s - 1 : (char *) nptr;
 	return acc;
 }
+#endif
 
 
-
+#if 1
 /****************************************************************
 Copyright (C) 1997 Lucent Technologies
 All Rights Reserved
@@ -487,7 +499,7 @@ sscanf
 	(va_alist)
  va_dcl
 #else
-	(char *s, const char *fmt, ...)
+	(const char *s, const char *fmt, ...)
 #endif
 {
 	char *s0;
@@ -555,9 +567,10 @@ sscanf
 	}
 #endif
 
+#endif
 
 #include <arch/spinlock.h>
-#include <arch/dbgio.h>
+#include <kos/dbgio.h>
 #undef fprintf
 static char out[1024];
 static spinlock_t mutex = SPINLOCK_INITIALIZER;
@@ -570,7 +583,7 @@ int fprintf(FILE * fp, const char *fmt, ...) {
 	i = vsprintf(out, fmt, args);
 	va_end(args);
 
-	dbgio_puts(out);
+	dbgio_write_str(out);
 	spinlock_unlock(&mutex);
 
 	return i;

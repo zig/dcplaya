@@ -5,7 +5,7 @@
  * @date       2002/11/09
  * @brief      Exceptions and guardians handling
  *
- * @version    $Id: exceptions.h,v 1.7 2004-06-30 15:17:35 vincentp Exp $
+ * @version    $Id: exceptions.h,v 1.8 2004-07-04 14:16:44 vincentp Exp $
  */
 
 
@@ -68,7 +68,7 @@ extern void irq_dump_regs(int , int);
  * @{ 
  */
 
-#define NO_EXPT
+//#define NO_EXPT
 
 #ifdef NO_EXPT
 

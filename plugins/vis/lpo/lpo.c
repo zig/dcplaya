@@ -1,12 +1,12 @@
 /**
- * $Id: lpo.c,v 1.28 2003-03-28 19:57:17 ben Exp $
+ * $Id: lpo.c,v 1.29 2004-07-04 14:16:45 vincentp Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include <dc/controller.h>
+#include <dc/maple/controller.h>
 
 #include "dcplaya/config.h"
 #include "math_float.h"

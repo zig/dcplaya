@@ -4,7 +4,7 @@
  * @author    vincent penne
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.h,v 1.9 2003-03-29 15:33:06 ben Exp $
+ * @version   $Id: console.h,v 1.10 2004-07-04 14:16:44 vincentp Exp $
  */
 
 #ifndef _CONSOLE_H_
@@ -155,6 +155,7 @@ void csl_window_configure(csl_console_t * console, int x, int y, int w, int h,
 /** @name Console access functions.
  *  @{
  */
+void csl_write(csl_console_t * console, const char * s, int len );
 void csl_putchar(csl_console_t * console, char c );
 void csl_putstring(csl_console_t * console, const char * s );
 void csl_printf(csl_console_t * console, const char *fmt, ... );

@@ -5,14 +5,14 @@
  * @date     2002/11/22
  * @brief    draw tile accelerator interface.
  *
- * $Id: ta.h,v 1.3 2003-03-23 23:54:54 ben Exp $
+ * $Id: ta.h,v 1.4 2004-07-04 14:16:45 vincentp Exp $
  */
 
 #ifndef _DRAW_TA_H_
 #define _DRAW_TA_H_
 
 #include <arch/types.h>
-#include <dc/ta.h>
+#include "dc/ta.h"
 
 #include "draw/ta_defines.h"
 

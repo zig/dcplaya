@@ -1,5 +1,5 @@
 /*
-** $Id: lobject.c,v 1.2 2003-01-05 18:08:39 zigziggy Exp $
+** $Id: lobject.c,v 1.3 2004-07-04 14:16:45 vincentp Exp $
 ** Some generic functions over Lua objects
 ** See Copyright Notice in lua.h
 */
@@ -26,7 +26,9 @@ const char *const luaO_typenames[] = {
 };
 
 
+#if 1
 // VP : limited version of strcspn (DON'T USE IT !!!!)
+#define strcspn luastrcspn
 static int strcspn(const char * s, char * c)
 {
   const char * p = strchr(s, *c);
@@ -38,7 +40,8 @@ static int strcspn(const char * s, char * c)
 
 // VP : added this
 
-float strtod(char * s, char * * end)
+#define strtod luastrtod
+double strtod(const char * s, char * * end)
 {
   float v = 0;
   int e = 0;
@@ -81,7 +84,7 @@ float strtod(char * s, char * * end)
 
   return neg? -v:v;
 }
-
+#endif
 
 
 

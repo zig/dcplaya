@@ -1,6 +1,6 @@
 # Makefile - dcplaya - data
 #
-# $Id: Makefile,v 1.15 2003-07-31 11:55:51 benjihan Exp $
+# $Id: Makefile,v 1.16 2004-07-04 14:16:44 vincentp Exp $
 #
 
 TARGETS=
@@ -87,7 +87,7 @@ all-romdisk: romdisk.o
 .PHONY: req_local
 req_local:
 	@echo "[$@]"
-	
+
 # ----------------------------------------------------------------------
 include ../Makefile.inc
 # ----------------------------------------------------------------------

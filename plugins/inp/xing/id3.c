@@ -1,4 +1,5 @@
 #include <kos.h>
+#include <assert.h>
 
 #include "dcplaya/config.h"
 #include "id3.h"

@@ -5,7 +5,7 @@
  * @date     2002/11/22
  * @brief    draw tile accelarator interface
  *
- * $Id: ta.c,v 1.7 2003-04-05 16:33:30 ben Exp $
+ * $Id: ta.c,v 1.8 2004-07-04 14:16:45 vincentp Exp $
  */
 
 /* $$$ ben hacks :
@@ -16,7 +16,6 @@
 #include "draw/ta.h"
 #include "draw/vertex.h"
 #include "draw/texture.h"
-#include <dc/ta.h>
 
 /** TA polygon. */
 typedef struct {

@@ -5,7 +5,7 @@
  * @date    2002/02/12
  * @brief   Matrix support.
  *
- * $Id: matrix.h,v 1.13 2003-03-26 23:02:47 ben Exp $
+ * $Id: matrix.h,v 1.14 2004-07-04 14:16:44 vincentp Exp $
  */
 
 #ifndef _MATRIX_H_
@@ -15,6 +15,10 @@
 
 
 DCPLAYA_EXTERN_C_START
+
+#include <kos/vector.h>
+
+#define matrix_t dcpmatrix_t
 
 /** @defgroup  dcplaya_matrix_devel  Matrix
  *  @ingroup   dcplaya_math_devel

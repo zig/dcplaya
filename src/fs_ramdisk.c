@@ -3,7 +3,7 @@
  * @author  benjamin gerard <ben@sashipa.com>
  * @brief   RAM disk for KOS file system
  * 
- * $Id: fs_ramdisk.c,v 1.16 2003-03-14 22:04:50 ben Exp $
+ * $Id: fs_ramdisk.c,v 1.17 2004-07-04 14:16:45 vincentp Exp $
  */
 
 /** @TODO add lock to file-handle. It is not thread-safe right now !!! */
@@ -73,6 +73,8 @@ static node_t root_node;
 static node_t * root = 0;       
 static int fh_mask;       
 static openfile_t fh[32];
+
+static struct vfs_handler vh;
 
 /* Notification :
  *  This mechanism is use to notify ramdisk modification.
@@ -718,7 +720,7 @@ static char * valid_filename(char * fname, int max,
 }
 
 /* Open a file or directory */
-static file_t open(const char *fn, int mode)
+static file_t open(vfs_handler_t * vfs, const char *fn, int mode)
 {
   uint32 fd = INVALID_FH;
   int omode=0;
@@ -744,7 +746,7 @@ static file_t open(const char *fn, int mode)
     omode = WRITE_MODE;
     break;
   default:
-    SDERROR("Unknown/unsupported open mode\n");
+    SDERROR("Unknown/unsupported open mode %d\n", mode & O_MODE_MASK);
     goto error;
   }
   if (mode & O_DIR) {
@@ -859,7 +861,7 @@ static file_t open(const char *fn, int mode)
   return 0;
 }
 
-static void really_unlink(node_t * node);
+static void really_unlink(vfs_handler_t * vfs, node_t * node);
 
 /* Close a file or directory */
 static void close(uint32 fd)
@@ -887,7 +889,7 @@ static void close(uint32 fd)
     node->flags.modified = 0;
 
     if (node->flags.unlinked && !open) {
-      really_unlink(fh[fd].node);
+      really_unlink(&vh, fh[fd].node);
     }
     UNLOCK_NODE();
 
@@ -1054,7 +1056,7 @@ static int rename(const char *fn1, const char *fn2)
   return 0;
 }
 
-static void really_unlink(node_t * node)
+static void really_unlink(vfs_handler_t * vfs, node_t * node)
 {
   //  SDDEBUG("%s [%s]\n",__FUNCTION__,node ? node->entry.name : "<null>");
   SDINDENT;
@@ -1077,7 +1079,7 @@ static void really_unlink(node_t * node)
   return;
 }
 
-static int unlink(const char *fn)
+static int unlink(vfs_handler_t * vfs, const char *fn)
 {
   node_t *node;
   char fname[1024], *leaf;
@@ -1110,7 +1112,7 @@ static int unlink(const char *fn)
     node->flags.unlinked = 1;
   } else {
     /* Node is closed... */
-    really_unlink(node);
+    really_unlink(vfs, node);
   }
   UNLOCK_NODE();
 
@@ -1131,9 +1133,16 @@ static void * mmap(file_t fd)
 }
 
 /* Put everything together */
-static vfs_handler vh = {
-  "ramdisk",            /* name */
-  0, 0, NULL,		/* In-kernel, no cacheing, next */
+static struct vfs_handler vh = {
+  {
+    { "/ram" },            /* name */
+    0, 
+    0x00010000,		/* Version 1.0 */
+    0,			/* flags */
+    NMMGR_TYPE_VFS,	/* VFS handler */
+    NMMGR_LIST_INIT	/* list */
+  },
+  0, NULL,		/* In-kernel, no cacheing, next */
   open,
   close,
   read,
@@ -1149,7 +1158,7 @@ static vfs_handler vh = {
 };
 
 /* Initialize the file system */
-int fs_ramdisk_init(int max_size)
+int dcpfs_ramdisk_init(int max_size)
 {
   SDDEBUG("[%s] : [max_size:%d]\n", __FUNCTION__, max_size);
 
@@ -1190,7 +1199,7 @@ int fs_ramdisk_init(int max_size)
 }
 
 /* De-init the file system */
-int fs_ramdisk_shutdown(void)
+int dcpfs_ramdisk_shutdown(void)
 {
   SDDEBUG("%s\n", __FUNCTION__);
 

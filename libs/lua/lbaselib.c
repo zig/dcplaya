@@ -1,5 +1,5 @@
 /*
-** $Id: lbaselib.c,v 1.5 2004-06-30 15:17:35 vincentp Exp $
+** $Id: lbaselib.c,v 1.6 2004-07-04 14:16:45 vincentp Exp $
 ** Basic library
 ** See Copyright Notice in lua.h
 */
@@ -37,7 +37,7 @@ static int digit(int c, unsigned int base)
 // Ben :  SVID 3, BSD 4.3, ISO 9899 compliant
 
 
-
+#if 0
 unsigned 
 long strtoul(const char * s, char * * end, unsigned int base)
 {
@@ -100,14 +100,17 @@ long strtoul(const char * s, char * * end, unsigned int base)
 
   return neg ? -(signed long)v : v;
 }
+#endif
 
 #include <kos.h>
+#define fputs luafputs
 static void fputs(const char * str, FILE * f)
 {
   if (str && *str)
-    dbgio_puts(str);
+    dbgio_write_str(str);
 }
 //#define fputs dbgio_puts /* VP : Special kos version of puts */
+//#define fputs dbgio_printf /* VP : Special kos version of puts */
 
 
 /*
