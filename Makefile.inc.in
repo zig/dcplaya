@@ -2,7 +2,7 @@
 #
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard
 #
-# $Id: Makefile.inc.in,v 1.18 2002-09-25 03:21:19 benjihan Exp $
+# $Id: Makefile.inc.in,v 1.19 2002-10-04 20:59:16 benjihan Exp $
 #
 
 TOP_DIR="@TOP_DIR@"
@@ -187,8 +187,9 @@ distclean: depend-clean clean
 	@echo "[$@ (`pwd`)]"
 	@rm -f TAGS ID
 	@rm -f include/config.h Makefile.inc doc/Makefile
-	@rm -f config.cache config.log stamp-h stamp-h[0-9]*
-	@find . -type f -name '*~' -o -name Makefile.dep -exec rm -f '{}' \;
+	@rm -f cvs.log config.cache config.log stamp-h stamp-h[0-9]*
+	@find . -type f -name '*~' -exec rm -f '{}' \;
+	@find . -type f -name Makefile.dep -exec rm -f '{}' \;
 	@rm -rf `find . -type d -name '\.deps'`
 
 maintainer-clean: distclean 
