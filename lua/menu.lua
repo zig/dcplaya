@@ -409,10 +409,10 @@ function menu_merge_def(def1,def2)
    -- Copy first def.
    for i,v in def1 do
       if type(i) == "number" then
-	 print("Insert "..tostring(v))
+-- 	 print("Insert "..tostring(v))
 	 tinsert(def,v)
       else
-	 print("Copy "..i.." : "..tostring(v))
+-- 	 print("Copy "..i.." : "..tostring(v))
 	 def[i] = v
       end
    end
@@ -420,13 +420,13 @@ function menu_merge_def(def1,def2)
    -- Merge second def.
    for i,v in def2 do
       if type(i) == "number" then
-	 print("merging #"..i)
+-- 	 print("merging #"..i)
 	 tinsert(def,v);
       elseif type(i) == "string" then
 	 if i == "title" then
 	    def.title = def.title or v
 	 elseif i == "cb" or i == "sub" then
-	    print("merging ["..i.."]")
+-- 	    print("merging ["..i.."]")
 	    if not def[i] then def[i] = {} end
 	    
 	    local j,w
@@ -449,8 +449,6 @@ function menu_merge_def(def1,def2)
 	 print("menu_merge_def : dunno what to do with ["..type(i).."]")
       end
    end
-
-   print("N="..def.n)
      
    settag(def,menudef_tag)
    return def
@@ -537,7 +535,7 @@ end
 function menu_create_defs(def,target)
    local menu
 
-   print("menu_create_defs : "..type(def))
+--    print("menu_create_defs : "..type(def))
 
    if not def then
       return -- Cause no error message
@@ -553,7 +551,7 @@ function menu_create_defs(def,target)
       end
    end
 
-   print("menu_create_defs (intermediat) := "..tostring(menu))
+--    print("menu_create_defs (intermediat) := "..tostring(menu))
 
    if tag(menu) ~= menudef_tag then
       print("menu_create_defs : not a menudef")
@@ -572,13 +570,7 @@ function menu_create_defs(def,target)
       end
    end
 
-   print("menu_create_defs := "..tostring(menu))
-
-   -- $$$
-   if tag(menu) ~= menudef_tag then
-      print("menu_create_defs : !!! tag missing "..tag(menu))
-   end
-
+--    print("menu_create_defs := "..tostring(menu))
 
    return menu
 end
