@@ -8,7 +8,7 @@ function vmu_select_create_sprites(vs)
    vs.sprites = {}
 end
 
-function vmu_select_create(owner, name, x, y, z)
+function vmu_select_create(owner, name, dir, x, y, z)
 
    -- Default
    owner = owner or evt_desktop_app
@@ -45,13 +45,13 @@ function vmu_select_create(owner, name, x, y, z)
    -- Create sprite
    local texid = tex_get("dcpsprites") or tex_new("/rd/dcpsprites.tga")
    local vmusprite = sprite("vmu",	
-							0, 0,
+							0, 62/2,
 							104, 62,
 							108/512, 65/128, 212/512, 127/128,
 							texid,1)
 
    local border = 8
-   local w = vmusprite.w + 2 * (border + style.border)
+   local w = vmusprite.w * 2 + 2 * (border + style.border)
    local h = vmusprite.h + 16 + 2 * (border + style.border) + 16
    local box = { 0, 0, w, h }
    local screenw, screenh = 640,480
@@ -92,8 +92,6 @@ function vmu_select_create(owner, name, x, y, z)
 	  return
    end
 
-   print("ENTRIES:"..dial.vs.fl.dir.n)
-
    -- Customize textlist
    local fl = dial.vs.fl
    fl.vmusprite = vmusprite
@@ -105,23 +103,21 @@ function vmu_select_create(owner, name, x, y, z)
 
    fl.draw_entry = function (fl, dl, entry, x , y, z)
 					  local color = fl.dircolor
-					  local ws = fl.vmusprite.w
 					  local wt,ht = dl_measure_text(dl,entry.name)
-					  local w = max(wt,ws)
-					  local xt = x + (w-wt) * 0.5
-					  local xs = x + (w-ws) * 0.5
+					  x = fl.bo2[1] * 0.5 - fl.border
+					  local xt = x - wt * 0.5
 					  dl_draw_text(dl,
 								   xt, y, z+0.1,
 								   color[1],color[2],color[3],color[4],
 								   entry.name)
-					  fl.vmusprite:draw(dl, xs, y + ht, z)
+					  fl.vmusprite:draw(dl, x, y + ht, z)
 				   end
 
    fl.draw_cursor = function () end
+   
+   fl:change_dir(dir or dirlist("-n","/vmu"))
 
-   fl:change_dir(dirlist("-n","/"))
-
-	return dial
+   return dial
 end
 
 vs = vmu_select_create()
