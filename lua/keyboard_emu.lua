@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    keyboard emulator.
 ---
---- $Id: keyboard_emu.lua,v 1.20 2003-03-17 22:24:17 zigziggy Exp $
+--- $Id: keyboard_emu.lua,v 1.21 2003-03-19 06:31:23 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_ke_app Keyboard emulator
@@ -40,12 +40,9 @@ dolib("display_init")
 --- Keyboard emulator is active only if ke_active is set.
 --: #define ke_active_rules_normal "normal"
 
---: #define ke_active_rules_never nil
---:  ke_active_rules
-
 --- Current keyboard emulator active rule.
 --: string ke_active_rule;
-ke_active_rule = "nokbd"
+ke_active_rule = ke_active_rule or "nokbd"
 
 --- Table of keyboard active rule functions.
 --: table ke_active_rules;
@@ -73,8 +70,7 @@ ke_textz	= ke_z + 30
 ke_vanish_y	= -140
 
 if not ke_theme then
-   ke_theme = 2	-- currently 1 .. 4
---   ke_theme = 4	-- currently 1 .. 4
+   ke_theme = 6	-- currently 1 .. 6
 end
 
 ke_themes = {
@@ -107,7 +103,26 @@ ke_themes = {
       ke_keycolor2	= base * { 1, 0.8, 0.8, 0.8 }
       ke_textcolor	= base * { .5, 1, 1, 1 }
       ke_cursorcolor    = base * { 1, 0.8, 1.1, 0.8 }
-   end
+   end,
+
+   function()
+      local base = { 1, 1, 0.85, 0.3 }
+      ke_boxcolor	= base
+      ke_keycolor1	= base * { 1, 0.4, 0.4, 0.4 }
+      ke_keycolor2	= base * { 1, 0.8, 0.8, 0.8 }
+      ke_textcolor	= base * { .5, 1, 1, 1 }
+      ke_cursorcolor    = base * { 1, 0.8, 1.1, 0.8 }
+   end,
+
+   function()
+      local base = { 1, 0.7, 0.8, 1 }
+      ke_boxcolor	= base * { 0.8, 1 ,1, 1 }
+      ke_keycolor1	= base * { 1, 0.4, 0.4, 0.4 }
+      ke_keycolor2	= base * { 1, 0.8, 0.8, 0.8 }
+      ke_textcolor	= base * { .5, 1, 1, 1 }
+      ke_cursorcolor    = base * { 1, 0.8, 1.1, 0.8 }
+   end,
+
 
 }
 
@@ -547,11 +562,11 @@ function ke_draw()
    if not check_display_driver or not check_display_driver() then
       return
    end
-
-   ke_uparray_dl	= dl_new_list(10*1024, 0)
-   ke_downarray_dl	= dl_new_list(10*1024, 0)
-   ke_cursor_dl	= dl_new_list(1*1024, 1)
-
+   ke_uparray_dl	= ke_uparray_dl or dl_new_list(10*1024, 0)
+   dl_clear(ke_uparray_dl)
+   ke_downarray_dl	= ke_downarray_dl or dl_new_list(10*1024, 0)
+   dl_clear(ke_downarray_dl)
+   ke_cursor_dl	        = dl_new_list(1*1024, 1)
    dl_clear(ke_cursor_dl)
    dl_draw_box1(ke_cursor_dl, 0, 0, 1, 1, ke_cursorz, 1, 1, 1, 1)
    ke_cursorbox = ke_box
@@ -564,51 +579,16 @@ function ke_draw()
       dl_text_prop(dl, 0, 14)
       
    end
-end
-
---- Set/Get active theme.
---- @param  theme  new theme number [1..getn(ke_themes)]
----                or nil for get current.
---- @return old theme.
---
-function ke_set_theme(theme)
-   local old_theme = ke_theme
-   if type(theme) == "number" and type(ke_themes[theme]) == "function" then
-      ke_theme = theme
-      ke_themes[ke_theme]()
-      ke_cursorcolor = ke_cursorcolor or { 1,1,1,1 }
-   end
-   return old_theme
-end
-
-function ke_init()
-
-   if not evt_included then
-      return nil
-   end
-
-   ke_shutdown()
-   ke_set_theme(ke_theme)
-   ke_time = 0
-
-   ke_set_active_rule(ke_startup_rule or "nokbd")
-
-   settagmethod(tag( {} ), "add", table_add)
-   settagmethod(tag( {} ), "sub", table_sub)
-   settagmethod(tag( {} ), "mul", table_mul)
-   settagmethod(tag( {} ), "pow", table_sqrdist)
-
-   ke_draw()
 
    ke_arrays = { }
    ke_vanishing_arrays = { }
    ke_downarray = {
-      name = "down", -- $$ added by ben for VMU display
+      name = "downcase", -- $$ added by ben for VMU display
       dl = ke_downarray_dl, ypos = ke_vanish_y, yaim = ke_vanish_y, alpha = 0
    }
    tinsert(ke_arrays, ke_downarray)
    ke_uparray = {
-      name = "up", -- $$ added by ben for VMU display
+      name = "upcase", -- $$ added by ben for VMU display
       dl = ke_uparray_dl , ypos = ke_vanish_y, yaim = ke_vanish_y, alpha = 0
    }
    tinsert(ke_arrays, ke_uparray)
@@ -709,6 +689,44 @@ function ke_init()
    ke_addkey("Left")
    ke_addkey("Right")
    ke_addkey("Down")
+
+end
+
+--- Set/Get active theme.
+--- @param  theme  new theme number [1..getn(ke_themes)]
+---                or nil for get current.
+--- @return old theme.
+--
+function ke_set_theme(theme)
+   local old_theme = ke_theme
+   if type(theme) == "number" and type(ke_themes[theme]) == "function" then
+      ke_theme = theme
+      ke_themes[ke_theme]()
+      ke_cursorcolor = ke_cursorcolor or { 1,1,1,1 }
+      ke_draw()
+   end
+   return old_theme
+end
+
+function ke_init()
+
+   if not evt_included then
+      return nil
+   end
+
+   ke_shutdown()
+   ke_set_theme(ke_theme)
+   ke_time = 0
+
+   ke_set_active_rule(ke_startup_rule or "nokbd")
+
+   settagmethod(tag( {} ), "add", table_add)
+   settagmethod(tag( {} ), "sub", table_sub)
+   settagmethod(tag( {} ), "mul", table_mul)
+   settagmethod(tag( {} ), "pow", table_sqrdist)
+
+   ke_draw()
+
 
    ke_arraynum = 1 -- set it to any valid value for start ...
    ke_set_active_array(1)
