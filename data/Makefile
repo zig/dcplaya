@@ -1,6 +1,6 @@
 # Makefile - dcplaya - data
 #
-# $Id: Makefile,v 1.14 2003-07-30 10:12:01 benjihan Exp $
+# $Id: Makefile,v 1.15 2003-07-31 11:55:51 benjihan Exp $
 #
 
 TARGETS=
@@ -18,7 +18,7 @@ my_all: vmuimg all-romdisk
 fntimg : romdisk/font16x16.tga romdisk/font8x14.tga
 	@echo "[$@] from [$^]"
 
-bdrimg : romdisk/bordertile.tga romdisk/dcpsprites.tga romdisk/dcpbkg2.jpg
+bdrimg : romdisk/bordertile.tga romdisk/dcpsprites.tga romdisk/dcpbkg3.jpg
 	@echo "[$@] from [$^]"
 
 vmuimg : $(HEADERS)
