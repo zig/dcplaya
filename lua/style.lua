@@ -71,6 +71,23 @@ function style_get(name)
    return style
 end
 
+-- text   [ font, size, aspect, filter, color ]
+-- border [ size, top.colors, left.colors, bottom.colors, right.colors ]
+-- background [ colors ]
+
+function style_name_to_index(name)
+   local index = {}
+   local pos
+   pos = strfind(name,".",1,1)
+   while pos do
+	  tinsert(index,strsub(name,1,pos))
+	  name = strsub(name,pos+1)
+	  pos = strfind(name,".",1,1)
+   end
+   tinsert(index,name)
+   return index
+end
+
 --- Create and add a style.
 ---
 --- @param  name  style name
@@ -82,6 +99,7 @@ end
 --- @see style_add()
 --
 function style_create(name, color_o, color_x, color_y, color_xy)
+
    if not styles then
 	  styles = {}
    end
@@ -111,12 +129,31 @@ end
 --- @return color
 --
 function style_get_color(style,x,y)
+   local colors = style_get_prop(style, "colors")
    local a,b,c,d =
-	  style.colors[1], style.colors[2], style.colors[3], style.colors[4]
+	  colors[1], colors[2], colors[3], colors[4]
    x = x or 0
    y = y or x
    -- (ABCD) = (1-Y-X+XY)*A + (X-XY)*B + (Y-XY)*C + XY*D
    return color_new((1-y-x+x*y) * a + (x-x*y) * b + (y-x*y) * c + (x*y) * d)
+end
+
+--- Get a style properties.
+---
+--- @param  style  style object
+--- @param  prop   properties name
+---
+--- @return properties value for a given style.
+--
+function style_get_prop(style, prop)
+   local sp = (tag(style) == style_tag) and style[prop];
+   if tag(sp) == style_tag then
+	  sp =  style_get(sp, prop)
+   end
+   if not sp and style ~= style_current then
+	  sp = style_get_prop(style_current, prop)
+   end
+   return sp
 end
 
 --

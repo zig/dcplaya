@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.14 2002-12-17 05:12:53 ben Exp $
+--- $Id: song_browser.lua,v 1.15 2002-12-18 02:27:04 ben Exp $
 ---
 
 song_browser_loaded = nil
@@ -106,6 +106,14 @@ function song_browser_create(owner, name)
 			sb.fl:change_dir(sb.fl.dir)
 		 end
 
+		 if not sb.sleeping then
+			sb.idle_time = sb.idle_time or 0
+			if sb.idle_time > 20 then
+			   sb:asleep()
+			end
+			sb.idle_time = sb.idle_time + frametime
+		 end
+
 		 if sb.key_time then
 			sb.key_time = sb.key_time + frametime
 			if sb.key_time >= 1 then
@@ -137,9 +145,8 @@ function song_browser_create(owner, name)
 			end
 			if sb.playlist_idx > n then
 			   print("END OF PLAY-LIST")
-			   sb.playlist_idx = nil
+			   song_browser_stop(sb)
 			end
-			   
 		 end
 
 		 sb.fl:update(frametime)
@@ -160,10 +167,15 @@ function song_browser_create(owner, name)
 
 		local action
 
-		if key >= 32 and key < 128 then
+		if key >= 32 and key < 128 and key ~= 96 then
 		   sb.search_str = (sb.search_str or "^") .. strchar(key)
 		   action = sb.cl:locate_entry_expr(sb.search_str .. ".*")
 		   sb.key_time = 0
+		elseif key == gui_focus_event then
+		   -- nothing to do, this will awake song-browser
+		elseif key == gui_unfocus_event then
+		   sb:asleep()
+		   return
 		elseif gui_keyconfirm[key] then
 		   action = sb:confirm()
 		elseif gui_keycancel[key] then
@@ -171,21 +183,17 @@ function song_browser_create(owner, name)
 		elseif gui_keyselect[key] then
 		   action = sb:select()
 		elseif gui_keyup[key] then
-		   sb:open()
 		   action = sb.cl:move_cursor(-1)
 		elseif gui_keydown[key] then
-		   sb:open()
 		   action = sb.cl:move_cursor(1)
 		elseif gui_keyleft[key] then
 		   if sb.cl ~= sb.fl then
 			  sb.cl = sb.fl
-			  sb:open()
 			  action = 2
 		   end
 		elseif gui_keyright[key] then
 		   if sb.cl ~= sb.pl then
 			  sb.cl = sb.pl
-			  sb:open()
 			  action = 2
 		   end
 		else
@@ -196,17 +204,32 @@ function song_browser_create(owner, name)
 		   local entry = sb.cl:get_entry()
 		   vmu_set_text(entry and entry.name)
 		end
-
-		sb.wake_up = 1
-		
+		sb:open()
 	 end
+
+	--- Song-Browser asleep.
+	--  -------------------
+	function song_browser_asleep(sb)
+	   sb.sleeping = 1
+	   sb.cl:close()
+	end
+
+	--- Song-Browser awake.
+	--  ------------------
+	function song_browser_awake(sb)
+	   sb.sleeping = nil
+	   sb.idle_time = 0
+	   if not sb.closed then
+		  sb.cl:open()
+	   end
+	end
 
 	--- Song-Browser open.
 	--  -----------------
 	function song_browser_open(sb, which)
 	   sb.closed = nil
 	   if not which then
-		  sb.cl:open()
+		  sb:awake()
 		  if sb.cl == sb.fl then
 			 sb.pl:close()
 		  else
@@ -225,6 +248,8 @@ function song_browser_create(owner, name)
 	   if not which then
 		  sb.fl:close()
 		  sb.pl:close()
+		  sb.closed = 1
+		  sb.idle_time = 0
 	   elseif which == 1 then
 		  sb.fl:close()
 	   else
@@ -336,28 +361,30 @@ function song_browser_create(owner, name)
 	end
 
 	sb = {
-		-- Application
-		name = name,
-		version = 1.0,
-		handle = song_browser_handle,
-		update = song_browser_update,
-
-		-- Methods
-		open = song_browser_open,
-		close = song_browser_close,
-		set_color = song_browser_set_color,
-		draw = song_browser_draw,
-		confirm = song_browser_confirm,
-		cancel = song_browser_cancel,
-		select = song_browser_select,
-		shutdown = song_browser_shutdown,
-
-		-- Members
-		style = style,
-		z = gui_guess_z(owner,z),
-		fade = 0,
-		dl = dl_new_list(1024, 1)
-
+	   -- Application
+	   name = name,
+	   version = 1.0,
+	   handle = song_browser_handle,
+	   update = song_browser_update,
+	   
+	   -- Methods
+	   open = song_browser_open,
+	   close = song_browser_close,
+	   set_color = song_browser_set_color,
+	   draw = song_browser_draw,
+	   confirm = song_browser_confirm,
+	   cancel = song_browser_cancel,
+	   select = song_browser_select,
+	   shutdown = song_browser_shutdown,
+	   asleep = song_browser_asleep,
+	   awake = song_browser_awake,
+	   
+	   -- Members
+	   style = style,
+	   z = gui_guess_z(owner,z),
+	   fade = 0,
+	   dl = dl_new_list(1024, 1)
+	   
 	}
 
 	local x,y,z
@@ -381,9 +408,16 @@ function song_browser_create(owner, name)
 	   entry_path = canonical(entry_path .. "/" .. fl.dir[idx].file)
 	   
 	   if entry.size and entry.size==-1 then
+		  print(fl.dir[idx].file,entry_path)
+		  if entry_path == "/cd" or 
+			 (strfind(entry_path,"^/cd.*") and fl.dir[idx].file == ".")  then
+			 clear_cd_cache()
+		  end
+
 		  entrylist_load(fl.dir,entry_path)
 		  fl:change_dir(fl.dir)
 	   else
+		  sb.playlist_idx = nil
 		  song_browser_play(sb, entry_path, 0, 1)
 		  return 1
 	   end 
@@ -391,12 +425,15 @@ function song_browser_create(owner, name)
 
 	function song_browser_stop(sb)
 	   sb.stopping = 1
+	   sb.playlist_idx = nil
+	   sb:draw()
 	   playa_fade(-1)
 	end
 
 	function song_browser_play(sb, filename, track, immediat)
 	   sb.stopping = nil
 	   playa_play(filename, track, immediat)
+	   sb:draw()
 	   playa_fade(2)
 	end
 
@@ -436,6 +473,7 @@ function song_browser_create(owner, name)
 	sb.fl.draw_background_old = sb.fl.draw_background
 	sb.fl.draw_background = song_browser_list_draw_background
 
+	sb.fl.curplay_color = {1,1,0,0}
 
 	function sbpl_insert(sb, entry)
 	   sb.pl:insert_entry(entry)
@@ -443,14 +481,14 @@ function song_browser_create(owner, name)
 
 	function sbpl_confirm(pl, sb)
 	   if pl.dir.n and pl.dir.n >= 1 then
-		  sb.playlist_idx = pl.pos
-		  --	   print("START PLAYLIST AT " .. sb.playlist_idx)
 		  playa_stop()
+		  sb.playlist_idx = pl.pos
 	   end
 	end
 
 	function sbpl_cancel(pl, sb)
-	   evt_shutdown_app(sb)
+	   sb:close()
+--	   evt_shutdown_app(sb)
 	end
 
 	function sbpl_select(pl, sb)
@@ -471,9 +509,24 @@ function song_browser_create(owner, name)
 			   span      = sb.style.span,
 			   owner     = sb
 			} )
+	sb.pl.cookie = sb -- $$$ This should be owner !!!
 	sb.pl.confirm = sbpl_confirm
 	sb.pl.cancel = sbpl_cancel
 	sb.pl.select = sbpl_select
+	sb.pl.curplay_color = sb.fl.curplay_color
+	sb.pl.draw_entry = function (fl, dl, idx, x , y, z)
+						  local sb = fl.cookie			  
+						  local entry = fl.dir[idx]
+						  local color = fl.dircolor
+						  if sb.playlist_idx and idx == sb.playlist_idx then
+							 color = fl.curplay_color or color
+						  end
+						  dl_draw_text(dl,
+									   x, y, z+0.1,
+									   color[1],color[2],color[3],color[4],
+									   entry.name)
+					   end
+
 
 	sb.pl.fade_min = sb.fl.fade_min
 	sb.pl.draw_background_old = sb.pl.draw_background

@@ -4,7 +4,7 @@
 --- @date    2002/10/04
 --- @brief   Manage and display a list of text.
 ---
---- $Id: textlist.lua,v 1.22 2002-12-15 22:43:08 zigziggy Exp $
+--- $Id: textlist.lua,v 1.23 2002-12-18 02:27:04 ben Exp $
 ---
 
 -- Unload the library
@@ -369,7 +369,8 @@ function textlist_create(flparm)
 
    --- Draw given textlist entry in given diplay list.
    --
-   function textlist_draw_entry(fl, dl, entry, x , y, z)
+   function textlist_draw_entry(fl, dl, idx, x , y, z)
+	  local entry = fl.dir[idx]
 	  local color = fl.dircolor
 	  if entry.size and entry.size >= 0 then
 		 color = fl.filecolor
@@ -397,7 +398,7 @@ function textlist_create(flparm)
 				  0, y, w, y+h, 0,
 				  fl.curcolor[1],fl.curcolor[2],fl.curcolor[3],fl.curcolor[4],
 				  fl.curcolor[5],fl.curcolor[6],fl.curcolor[7],fl.curcolor[8])
-	  fl:draw_entry(dl, fl.dir[i], 0, y+fl.span, 0.1)
+	  fl:draw_entry(dl, i, 0, y+fl.span, 0.1)
 	  dl_set_active(dl,1)
    end
 
@@ -409,7 +410,7 @@ function textlist_create(flparm)
 	  local max = getn(fl.dirinfo)
 	  dl_clear(dl)
 	  for i=1, max, 1 do
-		 fl:draw_entry(dl, fl.dir[i], 0, fl.dirinfo[i].y+fl.span, 0)
+		 fl:draw_entry(dl, i, 0, fl.dirinfo[i].y+fl.span, 0)
 	  end
    end
 

@@ -2,7 +2,7 @@
 --- @author Vincent Penne <ziggy@sashipa.com>
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.6 2002-12-17 23:34:32 zigziggy Exp $
+--- $Id: desktop.lua,v 1.7 2002-12-18 02:27:04 ben Exp $
 ---
 
 if not dolib("evt") then return end
@@ -132,7 +132,8 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 			h+fl.vmusprite.h+2*fl.span
 		     end
 
-   fl.draw_entry = function (fl, dl, entry, x , y, z)
+   fl.draw_entry = function (fl, dl, idx, x , y, z)
+			  local entry = fl.dir[idx]
 		      local color = fl.dircolor
 		      local wt,ht = dl_measure_text(dl,entry.name)
 		      x = fl.bo2[1] * 0.5 - fl.border

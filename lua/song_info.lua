@@ -4,7 +4,7 @@
 --- @date    2002/11/29
 --- @brief   Song info application.
 ---
---- $Id: song_info.lua,v 1.10 2002-12-17 23:30:25 ben Exp $
+--- $Id: song_info.lua,v 1.11 2002-12-18 02:27:04 ben Exp $
 
 song_info_loaded = nil
 
@@ -78,7 +78,7 @@ end
 --- @return  song-info application
 --- @retval  nil  error
 ---
-function song_info_create(owner, name)
+function song_info_create(owner, name, style)
    local si
 
    if not owner then owner = evt_desktop_app end
@@ -320,7 +320,7 @@ function song_info_create(owner, name)
    dl_sublist(si.dl, si.layer2_dl)
 
    
-   local bstyle = style_get()
+   local bstyle = style_get(style)
    local fcol, tcol, lcol, bcol, rcol
 
    fcol = bstyle:get_color(0)
@@ -345,8 +345,8 @@ function song_info_create(owner, name)
 	  bstyle:get_color(0.5,1),   --2
 	  bstyle:get_color(1,0.5),   --3
 	  bstyle:get_color(1,1),     --4
-	  bstyle:get_color(1,1),     -- 5
-	  bstyle:get_color(1,0),     -- 6
+	  bstyle:get_color(1,1),     --5
+	  bstyle:get_color(1,0),     --6
 	  bstyle:get_color(0.5,1),   --7
 	  bstyle:get_color(0,1),     --8
    }
