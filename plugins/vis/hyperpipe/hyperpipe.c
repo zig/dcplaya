@@ -3,7 +3,7 @@
  *  @author  benjamin gerard 
  *  @date    2003/01/14
  *
- *  $Id: hyperpipe.c,v 1.9 2003-01-22 19:12:56 ben Exp $
+ *  $Id: hyperpipe.c,v 1.10 2003-01-24 04:16:02 ben Exp $
  */ 
 
 #include <stdio.h>
@@ -166,9 +166,9 @@ static int hyperpipe_alloc(void)
 {
   hyperpipe_free(); /* Safety net */
   v   = (vtx_t *)malloc(sizeof(vtx_t) * hyperpipe_obj.nbv);
-  nrm = (vtx_t *)malloc(sizeof(vtx_t) * hyperpipe_obj.nbf+1);
+  nrm = (vtx_t *)malloc(sizeof(vtx_t) * (hyperpipe_obj.nbf+1));
   tri = (tri_t *)malloc(sizeof(tri_t) * (hyperpipe_obj.nbf+1));
-  tlk = (tlk_t *)malloc(sizeof(tlk_t) * hyperpipe_obj.nbf+1);
+  tlk = (tlk_t *)malloc(sizeof(tlk_t) * (hyperpipe_obj.nbf+1));
   if (!v || !nrm || !tri || !tlk) {
     hyperpipe_free();
     return -1;
@@ -308,7 +308,7 @@ static int start(void)
   k += tesselate(tri+k,tlk+k,V,N);
 
   if (k != T) {
-    printf("[hyperpipe] : bad number of generated face [%d != d]\n",k,T);
+    printf("[hyperpipe] : bad number of generated face [%d != %d]\n",k,T);
     hyperpipe_free();
     return -1;
   }
@@ -319,6 +319,12 @@ static int start(void)
   tlk[T].flags = 0;
 
   build_normals();
+
+  if (obj3d_verify(&hyperpipe_obj)) {
+    printf("[hyperpipe] : verify failed\n");
+    hyperpipe_free();
+    return -1;
+  }
 
   /* Setup matrix*/
   MtxIdentity(proj);
