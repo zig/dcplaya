@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     shell support for dcplaya
- * @version   $Id: shell.c,v 1.14 2003-02-27 10:05:26 ben Exp $
+ * @version   $Id: shell.c,v 1.15 2003-03-03 16:32:17 ben Exp $
  */
 
 #include "config.h"
@@ -203,6 +203,10 @@ int shell_init()
 
 #ifdef RELEASE
   shell_command("setglobal([[__RELEASE]],1)");
+#endif
+
+#ifdef DCPLAYA_URL
+  shell_command("setglobal([[__URL]],[[" DCPLAYA_URL "]])");
 #endif
 
   SDDEBUG("[shell_init] := [0]\n");
