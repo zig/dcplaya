@@ -2,10 +2,11 @@
  * @ingroup    dcplaya
  * @file       dynshell.c
  * @author     vincent penne <ziggy@sashipa.com>
+ * @author     benjamin gerard <ben@sashipa.com>
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.29 2002-09-30 20:05:36 benjihan Exp $
+ * @version    $Id: dynshell.c,v 1.30 2002-10-03 06:34:58 benjihan Exp $
  */
 
 #include <stdio.h>
@@ -321,6 +322,100 @@ static int lua_malloc_stats(lua_State * L)
   return 0; // 0 return values
 }
 
+/* Return 2 lists
+   1st has been filled with directory entries,
+   2nd has been filled with file entries.
+   Each list has been sorted according to sortdir function.
+*/
+static int push_dir_as_2_tables(lua_State * L, fu_dirent_t * dir, int count,
+				fu_sortdir_f sortdir)
+{
+  int k,j,i;
+
+  lua_settop(L,0);
+  if (!dir) {
+    return 0;
+  }
+  fu_sort_dir(dir, count, sortdir);
+
+  for (k=0; k<2; ++k) {
+    lua_newtable(L);
+    for (j=1, i=0; i<count; ++i) {
+      if ( !(k ^ (dir[i].size==-1)) ) continue;
+      ++j;
+      lua_pushnumber(L, j);
+      lua_pushstring(L, dir[i].name);
+      lua_rawset(L, k+1);
+    }
+  }
+  return lua_gettop(L);
+}
+
+/* Return a list of struct {name, size} sorted according to the sortdir
+   function. */
+static int push_dir_as_struct(lua_State * L, fu_dirent_t * dir, int count,
+			      fu_sortdir_f sortdir)
+{
+  int i, table;
+
+  lua_settop(L,0);
+  if (!dir) {
+    return 0;
+  }
+  fu_sort_dir(dir, count, sortdir);
+
+  lua_newtable(L);
+  table = lua_gettop(L);
+  for (i=0; i<count; ++i) {
+    int entry;
+
+    lua_pushnumber(L, i+1);
+    lua_newtable(L);
+    entry=lua_gettop(L);
+
+    lua_pushstring(L, "name");
+    lua_pushstring(L, dir[i].name);
+    lua_settable(L, entry);
+    lua_pushstring(L, "size");
+    lua_pushnumber(L, dir[i].size);
+    lua_settable(L, entry);
+      
+    lua_rawset(L, table);
+  }
+  return lua_gettop(L);
+}
+
+
+static int lua_path_load2(lua_State * L)
+{
+  char rpath[2048];
+  const char * path;
+  int nparam = lua_gettop(L);
+  int count;
+  fu_dirent_t * dir;
+
+  if (nparam < 1) {
+    printf("dirlist : missing parameter\n");
+    return -1;
+  }
+  path = lua_tostring(L, 1);
+  if (!fn_get_path(rpath, path, sizeof(rpath), 0)) {
+    printf("dirlist : path to long [%s]\n", path);
+    return -2;
+  }
+
+  count = fu_read_dir(rpath, &dir, 0);
+  if (count < 0) {
+    printf("dirlist : %s\n", fu_strerr(count));
+    return -3;
+  }
+
+/*   count = push_dir_as_2_tables(L, dir, count, 0); */
+  count = push_dir_as_struct(L, dir, count, 0);
+
+  if (dir) free(dir);
+  return count;
+}
 
 #define MAX_DIR 32
 
@@ -403,6 +498,7 @@ static int r_path_load(lua_State * L, char *path, unsigned int level, const char
 	 level, path, count);*/
   return count;
 }
+
 
 static int lua_path_load(lua_State * L)
 {
@@ -1122,6 +1218,19 @@ static luashell_command_description_t commands[] = {
 
     SHELL_COMMAND_C, lua_path_load
   },
+
+  { 
+    "dirlist",
+    0,
+
+    "print([["
+    "dirlist(path)\n"
+    "]])",
+
+    SHELL_COMMAND_C, lua_path_load2
+  },
+
+
   { 
     "driver_load",
     "dl",
