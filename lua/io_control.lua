@@ -4,7 +4,7 @@
 --- @date     2003/03/08
 --- @brief    IO control application.
 ---
---- $Id: io_control.lua,v 1.1 2003-03-08 13:53:13 ben Exp $
+--- $Id: io_control.lua,v 1.2 2003-03-11 21:33:13 ben Exp $
 ---
 
 if not dolib ("evt") then return end
@@ -31,6 +31,16 @@ if not dolib ("evt") then return end
 --- };
 --
 
+--
+--- RAM change event structure.
+--- @ingroup dcplaya_lua_ioctrl_event
+--- @see ramdisk_is_modified()
+--- @see ramdisk_notify_path()
+--- struct ramdisk_change_event {
+---  event_key key;      /**< Always ioctrl_ramdisk_event.          */
+--- };
+--
+
 --- @defgroup dcplaya_lua_ioctrl_app IO control application
 --- @ingroup dcplaya_lua_app
 ---
@@ -40,9 +50,11 @@ if not dolib ("evt") then return end
 ---   or serial. When it detects a change it sends an event to its parent
 ---   application (usually root).
 ---
----  @warning Currently only CDROM has been implemented.
+---  @warning Currently only CDROM and RAMDISK has been implemented.
 ---
 --- @see cdrom_status()
+--- @see ramdisk_is_modified()
+--- @see ramdisk_notify_path()
 ---
 
 --
@@ -56,6 +68,8 @@ if not dolib ("evt") then return end
 ---  number cdrom_check_interval;  /**< Interval between CDROM checks. */
 ---  number serial_check_timeout;  /**< Idem for serial.               */
 ---  number serial_check_interval; /**< Idem for serial.               */
+---  number ramdisk_check_timeout;  /**< Idem for ramdisk.             */
+---  number ramdisk_check_interval; /**< Idem for ramdisk.             */
 --- };
 --
 
@@ -97,6 +111,22 @@ function ioctrl_update(app, frametime)
       end
       app.cdrom_check_timeout = timeout
    end
+
+   -- ramdisk check (if function is available)
+   if ramdisk_is_modified and app.ramdisk_check_timeout then
+      local timeout = app.ramdisk_check_timeout - frametime
+      if timeout <= 0 then
+	 timeout = app.ramdisk_check_interval
+	 if ramdisk_is_modified() then
+	    evt_send(app.owner,
+		     {
+			key = ioctrl_ramdisk_event,
+		     })
+	 end
+      end
+      app.ramdisk_check_timeout = timeout
+   end
+
 
 end
 
@@ -140,19 +170,22 @@ function io_control()
       -- Members
       cdrom_check_timeout = 0,
       serial_check_timeout = 0,
-      cdrom_check_interval = 0.5101, -- not multiple of serial (on purpose)
+      ramdisk_check_timeout = 0,
+
+      cdrom_check_interval = 0.5103, -- not multiple (on purpose)
       serial_check_interval = 1,
+      ramdisk_check_interval = 3.007,
    }
 
    -- Create io event
    ioctrl_cdrom_event = ioctrl_cdrom_event or evt_new_code()
    ioctrl_serial_event = ioctrl_serial_event or evt_new_code()
+   ioctrl_ramdisk_event = ioctrl_ramdisk_event or evt_new_code()
       
    -- insert the application in root list
    evt_app_insert_last(evt_root_app, ioctrl_app)
 
    print("IO control running")
-
 end
 
 --
