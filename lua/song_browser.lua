@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.49 2003-03-17 03:31:21 ben Exp $
+--- $Id: song_browser.lua,v 1.50 2003-03-17 15:39:37 ben Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song-browser
@@ -1242,21 +1242,24 @@ function song_browser_create(owner, name)
    function songbrowser_menucreator(target)
       local sb = target;
       local cb = {
-	 toggle = function(menu)
+	 toggle = function(menu, idx)
 		     local sb = menu.target
 		     if sb.closed then
 			sb:open()
 		     else
 			sb:close()
 		     end
+		     menu.fl.dir[idx].name = (sb.closed and "open") or "close"
+		     menu:draw()
 		  end,
-	 saveplaylist = function(menu)
+	 saveplaylist = function(menu, idx)
 			   local sb = menu.root_menu.target
 			   sbpl_save(sb,menu)
 			end,
       }
       local root = ":" .. target.name .. ":" .. 
-	 "toggle{toggle},playlist >playlist"
+	 ((sb.closed and "open") or "close") ..
+	 "{toggle},playlist >playlist"
       local def = {
 	 root=root,
 	 cb = cb,
