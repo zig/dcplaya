@@ -42,6 +42,15 @@ int fread(void *ptr,int size, int nmemb, FILE *stream)
   return memb;
 }
 
+int fgetc(FILE *f)
+{
+  char c;
+  if (fread(&c,1,1,f) == 1) {
+    return c & 255;
+  }
+  return -1;
+}
+
 int fseek(FILE *stream, long offset, int whence)
 {
   file_t fd = (file_t)stream;

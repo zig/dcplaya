@@ -13,7 +13,7 @@ ELF_EXTRA += -L./src -L$(KOS_BASE)/lib\
 #ELF_EXTRA +=  -shared -L./src -ldreammp3 -los
 #ELF_EXTRA +=  `find src -type f -name  '*.o'` -los
 
-KOS_INCS+= -I.
+KOS_INCS+= -I. -Iinclude
 ALL_INCS= -I$(KOS_INCS) -I$(KOS_BASE)/kernel/arch/$(KOS_ARCH)/include
 
 CLEAN_LOCAL=symtab.h tmp_symtab.h full-symb-dreammp3.elf debug.log

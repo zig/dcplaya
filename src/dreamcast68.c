@@ -4,7 +4,7 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.7 2002-09-06 09:46:10 ben Exp $
+ * @version   $Id: dreamcast68.c,v 1.8 2002-09-06 23:16:48 ben Exp $
  */
 
 //#define RELEASE
@@ -441,6 +441,7 @@ static int driver_init(void)
   /* Load the default drivers from romdisk */
   {
     const char **p, *paths[] = {
+      /*
       "/pc" DREAMMP3_HOME "plugins/obj",
       "/pc" DREAMMP3_HOME "plugins/vis/lpo",
       "/pc" DREAMMP3_HOME "plugins/vis/fftvlr",
@@ -448,6 +449,8 @@ static int driver_init(void)
       "/pc" DREAMMP3_HOME "plugins/inp/ogg",
       "/pc" DREAMMP3_HOME "plugins/inp/sc68",
       "/pc" DREAMMP3_HOME "plugins/inp/sidplay",
+      */
+      "/pc" DREAMMP3_HOME "plugins/inp/spc",
       0
     };
 

@@ -2,11 +2,11 @@
  *
  * (C) 2002 Ben(jamin) Gerard <ben@sashipa.com>
  *
- * $Id: config.h.in,v 1.2 2002-08-26 20:12:22 ben Exp $
+ * $Id: config.h.in,v 1.3 2002-09-06 23:16:48 ben Exp $
  */
 
 #ifndef _CONFIG_H_
-#define _CONFIG_H
+#define _CONFIG_H_
 
 /* Debug level */
 #if @DEBUG@
@@ -29,4 +29,4 @@
 /* Official dreammp3 website */
 #define DREAMMP3_URL @DREAMMP3_URL_STR@
 
-#endif
+#endif /* #ifndef _CONFIG_H_ */
