@@ -4,13 +4,21 @@
  * @date     2002/10/18
  * @brief    fast allocator for fixed size small buffer.
  * 
- * $Id: allocator.h,v 1.3 2002-10-21 14:56:59 benjihan Exp $
+ * $Id: allocator.h,v 1.4 2002-10-23 00:00:18 benjihan Exp $
  */
 
 #ifndef _ALLOCATOR_H_
 #define _ALLOCATOR_H_
 
-#include <arch/spinlock.h>
+#define ALLOCATOR_MUTEX
+
+#ifdef ALLOCATOR_SEM
+# include <kos/sem.h>
+#elif defined ALLOCATOR_MUTEX
+# include "mutex.h"
+#else
+# include <arch/spinlock.h>
+#endif
 
 /** Allocator elements.
  *
@@ -42,7 +50,13 @@ typedef struct {
   void * realaddress;     /**< Address of big alloc.          */
   allocator_elt_t * used; /**< List of allocated elements.    */
   allocator_elt_t * free; /**< List of free elements.         */
+#ifdef ALLOCATOR_SEM
+  semaphore_t *sem;       /**< Access semaphore               */
+#elif defined ALLOCATOR_MUTEX
+  mutex_t mutex;          /**< recursive access mutex.        */ 
+#else
   spinlock_t mutex;       /**< Mutex for thread safety.       */
+#endif
   unsigned int elt_size;  /**< Size of an element.            */
   unsigned int elements;  /**< Number of elements.            */
   char * bufend;          /**< Pointer to this end of buffer. */

@@ -4,7 +4,7 @@
  * @date    2002/10/20
  * @brief   texture manager
  *
- * $Id: texture.h,v 1.2 2002-10-22 10:35:47 benjihan Exp $
+ * $Id: texture.h,v 1.3 2002-10-23 00:00:18 benjihan Exp $
  */
 
 #ifndef _TEXTURE_H_
@@ -91,6 +91,9 @@ texid_t texture_create_flat(const char *name, unsigned int argb);
  *  @return  -1  Error
  */
 texid_t texture_create_file(const char *fname, const char * formatstr);
+
+/** Destroy a texture. */
+int texture_destroy(texid_t texid, int force);
 
 /** Add, remove or get texture reference counter. */
 int texture_reference(texid_t texid, int count);
