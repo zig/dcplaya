@@ -4,7 +4,7 @@
 --- @date   2002/10/04
 --- @brief  fileselector gui
 ---
---- $Id: fileselector.lua,v 1.26 2003-03-12 15:06:54 ben Exp $
+--- $Id: fileselector.lua,v 1.27 2003-03-13 23:07:04 ben Exp $
 --
 -- TODO : select item with space 
 --        completion with tab        
@@ -371,7 +371,10 @@ function fileselector(name,path,filename,owner)
    -- FILE INPUT
    -- --- --- ---
    local iname = path
-   if filename then iname = iname.."/"..filename end
+   if filename then
+      iname = iname .. "/" .. filename
+      filename = iname
+   end
    dial.input = gui_new_input(dial, { x1, y4, x3, y3 }, nil,nil,iname)
    
    -- --- --- --- --
@@ -419,6 +422,14 @@ function fileselector(name,path,filename,owner)
 				confirm=fileselector_confirm,
 				box={x5-x1, y5-y1, x5-x1, y5-y1}
 			     })
+
+   if filename then
+      fileselector_locate(dial,filename)
+      gui_new_focus(dial,dial.input)
+   else
+      gui_new_focus(dial,dial.flist)
+   end
+
    return dial
 end
 
