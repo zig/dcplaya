@@ -9,8 +9,8 @@ function transform
 {
     name="`expr "$1" : '\(.*\)=.*' \| "$1"`"
     val="`expr "$1" : '.*=\(.*\)' \| ""`"
-#    echo "name:[$name]" >&2
-#    echo "val:[$val]" >&2
+##    echo "name:[$name]" >&2
+##    echo "val:[$val]" >&2
     echo "s#\\\$${name}\\\$#${val}#"
 }
 

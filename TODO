@@ -1,5 +1,5 @@
 
-$Id: TODO,v 1.10 2002-09-25 03:21:19 benjihan Exp $
+$Id: TODO,v 1.11 2002-09-25 14:44:52 benjihan Exp $
 
 ** TODO :
 
@@ -78,3 +78,6 @@ $Id: TODO,v 1.10 2002-09-25 03:21:19 benjihan Exp $
   bug correction for filetype)
 
 - Bug : Lock when killing app to earlier (e.g. while initializing ZED)
+
++ [2002-09-25 04:16:37 PM, ben]
+  Test TODO auto dating.

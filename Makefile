@@ -3,7 +3,7 @@
 #
 # (C) COPYRIGHT 2002 benjamin gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.15 2002-09-20 00:22:11 benjihan Exp $ 
+# $Id: Makefile,v 1.16 2002-09-25 14:44:52 benjihan Exp $ 
 #
 TARGETS=dreammp3.elf
 
@@ -25,7 +25,7 @@ ALL_INCS= -I$(KOS_INCS) -I$(KOS_BASE)/kernel/arch/$(KOS_ARCH)/include
 
 CLEAN_LOCAL=symtab.h tmp_symtab.h full-symb-dreammp3.elf debug.log
 
-my_all: all
+my_all: all TODO
 
 symtab.o: symtab.h 
 .PHONY: symtab.h
@@ -77,6 +77,14 @@ backup: maintainer-clean
 doc:
 	@$(MAKE) -s -C doc	
 
+
+.PHONY: TODO
+TODO:
+	@echo "[Build $@]"
+	@utils/shasubst.sh -D "d=[`date '+%Y-%m-%d %r'`, `id -un`]"\
+	<$@ >$@.$$$$ && \
+	diff -q $@ $@.$$$$; \
+	if test $$? -ne 0; then mv -f $@.$$$$ $@; else rm -f $@.$$$$; fi;
 
 DEPEND_EXTRA=depend_extra
 depend_extra:
