@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: gui.lua,v 1.6 2002-10-07 15:19:39 benjihan Exp $
+-- $Id: gui.lua,v 1.7 2002-10-07 23:28:02 vincentp Exp $
 --
 
 --
@@ -19,7 +19,7 @@
 
 -- flags can have :
 --
--- "modal"    : the item (usually a dialog box) eat all events except shutdown
+-- "modal"    : the item (usually a dialog box) eats all events except shutdown
 --              (can be dangerous !)
 -- "inactive" : the item cannot be focused
 

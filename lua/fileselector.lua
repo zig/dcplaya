@@ -3,7 +3,7 @@
 -- author : benjamin gerard <ben@sashipa.com>
 -- date   : 2002/10/04
 --
--- $Id: fileselector.lua,v 1.4 2002-10-07 15:19:39 benjihan Exp $
+-- $Id: fileselector.lua,v 1.5 2002-10-07 23:28:02 vincentp Exp $
 --
 
 if not filelist_loaded then
@@ -157,7 +157,7 @@ function fileselector(name,path,filename)
 
 	dial.flist = gui_filelist(dial,
 		{	pos={x1,y1},
-			pwd="/pc/t",
+			pwd=path,
 			confirm=confirm,
 			box={x5-x1, y5-y1, x5-x1, y5-y1}
 		})

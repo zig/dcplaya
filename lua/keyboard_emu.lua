@@ -3,7 +3,7 @@
 --
 -- author : Vincent Penne
 --
--- $Id: keyboard_emu.lua,v 1.9 2002-10-06 22:47:29 vincentp Exp $
+-- $Id: keyboard_emu.lua,v 1.10 2002-10-07 23:28:02 vincentp Exp $
 --
 
 
@@ -391,7 +391,7 @@ function ke_update(app, frametime)
 
 	-- update active array position and color
 
-	-- need to check this because of the infamouse FPU exception !!
+	-- need to check this because of the infamous FPU exception !!
 	if abs(ke_array.ypos) < 0.001 then
 		ke_array.ypos = 0
 		ke_array.alpha = 1
