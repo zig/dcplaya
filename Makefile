@@ -3,7 +3,7 @@
 #
 # (C) COPYRIGHT 2002 benjamin gerard <ben@sashipa.com>
 #
-# $Id: Makefile,v 1.30 2004-07-04 14:16:44 vincentp Exp $ 
+# $Id: Makefile,v 1.31 2007-03-17 14:40:29 vincentp Exp $ 
 #
 TARGETS=dcplaya.elf
 
@@ -14,7 +14,7 @@ WHOLE_LIBS=-lz,-ltranslator,-ldraw,-ldreammp3,-lta,-llua,-lkosutils,-lkallisti
 OPT_LIBS= -lgcc -lm
 ELF_EXTRA += -L./src -L./libs/z -L./libs/draw -L./libs/ta -L./libs/translator -L./libs/lua -L$(KOS_BASE)/lib/$(KOS_ARCH) -L$(KOS_BASE)/addons/lib/$(KOS_ARCH) \
  -Wl,--whole-archive,$(WHOLE_LIBS),--no-whole-archive\
- $(BUILTIN_DRIVERS) $(OPT_LIBS)
+ $(BUILTIN_DRIVERS) $(OPT_LIBS) -lconio -lkosh
 
 #ELF_EXTRA +=  -shared -L./src -ldreammp3 -los
 #ELF_EXTRA +=  `find src -type f -name  '*.o'` -los

@@ -260,7 +260,7 @@ int fifo_write_any(const void * buf, int n, fifo_copy_f copy)
   if (!f) {
     return 0;
   }
-  
+
   /* Max PCM to write */
   if (n > f) {
     n = f;

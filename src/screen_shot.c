@@ -4,7 +4,7 @@
  * @date    2002/09/14
  * @brief   Takes TGA screen shot.
  * 
- * $Id: screen_shot.c,v 1.7 2004-07-04 14:16:45 vincentp Exp $
+ * $Id: screen_shot.c,v 1.8 2007-03-17 14:40:29 vincentp Exp $
  */
 
 //#include <kos/fs.h>
@@ -15,6 +15,7 @@
 #include "dcplaya/config.h"
 #include "zlib.h"
 #include "sysdebug.h"
+#include "shell.h"
 
 const char screen_shot_id[] = "dcplaya " DCPLAYA_VERSION_STR " - " DCPLAYA_URL;
 
@@ -135,7 +136,7 @@ int screen_shot(const char *basename)
   sysdbg_indent(1,0);
 
   ++shot;
-  sprintf(tmp, DCPLAYA_HOME "/%s%03d.tga.gz", basename, shot);
+  sprintf(tmp, "%s/%s%03d.tga.gz", shell_home, basename, shot);
 
   SDDEBUG("Opening [%s] for writing\n", tmp);
   fd = gzopen(tmp,"wb");//fs_open(tmp, O_WRONLY);

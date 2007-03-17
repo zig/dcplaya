@@ -20,7 +20,7 @@ RENDER TO TEXTURE WILL NOT WORK ANYMORE FOR NOW, SORRY :((
 
 */
 
-static char id[] = "KOS $Id: ta.c,v 1.2 2004-07-31 22:55:18 vincentp Exp $";
+static char id[] = "KOS $Id: ta.c,v 1.3 2007-03-17 14:40:29 vincentp Exp $";
 
 #include <stdio.h>
 #include <arch/types.h>
@@ -939,6 +939,7 @@ static void int_handler(uint32 code) {
     dbp("5");
     break;
   case G2EVT_TA_RENDERDONE:	/* never gets called?! */
+    //vid_border_color(0, 0, 0);
     render_complete = 1;
     dbp("6");
     //ta_stop_render();
@@ -1037,6 +1038,8 @@ static void int_handler(uint32 code) {
 	ta_render_target(rendered_page^1);
 	ta_start_render();
 	ta_set_reg_target(rendered_page);
+
+	//vid_border_color(255, 255, 0);
       
 	/* Reschedule, probably ta_begin_render is waiting to hear
 	   about the good new :) */

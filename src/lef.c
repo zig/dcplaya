@@ -5,7 +5,7 @@
  * @author  Dan Potter
  * @brief   ELF library loader - Based on elf.c from KallistiOS 1.1.5 
  *
- * @version $Id: lef.c,v 1.18 2004-07-31 22:55:19 vincentp Exp $
+ * @version $Id: lef.c,v 1.19 2007-03-17 14:40:29 vincentp Exp $
  */
 
 #include <malloc.h>
@@ -238,6 +238,11 @@ static void * find_main_sym(char *name) {
   return 0;
 }
 
+void * lef_find_symbol_all(char * name)
+{
+  return find_main_sym(name);
+}
+
 void * lef_find_symbol(lef_prog_t * p, const char * name)
 {
   int i;
@@ -441,7 +446,9 @@ lef_prog_t *lef_load(const char * fname)
   /* Alloc final memory image */
   lef_size = sizeof(lef_prog_t) + sz + align_lef - 1;
   SDDEBUG("lef image size : %d\n", lef_size);
-  out = calloc(1, lef_size);
+  out = calloc(1, lef_size+128);
+/*   out = memalign(128, lef_size+128); */
+/*   memset(out, 0, lef_size+128); */
   if (!out) {
     SDERROR("Out image alloc error\n");
     goto error;

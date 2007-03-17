@@ -13,7 +13,7 @@
 #include <dc/maple.h>
 #include <dc/maple/keyboard.h>
 
-CVSID("$Id: keyboard.c,v 1.9 2004-07-31 22:55:19 vincentp Exp $");
+CVSID("$Id: keyboard.c,v 1.10 2007-03-17 14:40:29 vincentp Exp $");
 
 /*
 
@@ -29,6 +29,7 @@ static int kbd_frame_matrix2[64] = {0};
 static int kbd_frame_matrix[256] = {0};
 static int kbd_matrix[256] = {0};
 static int matrix[256];
+//#define matrix state->matrix
 
 int kbd_present = 2;
 
@@ -254,11 +255,17 @@ static void kbd_periodic(maple_driver_t *drv) {
 static int kbd_attach(maple_driver_t *drv, maple_device_t *dev) {
 	memset(dev->status, 0, sizeof(dev->status));
 	dev->status_valid = 0;
+
+	kbd_present = 0x101;
+      
 	return 0;
 }
 
 static void kbd_detach(maple_driver_t *drv, maple_device_t *dev) {
 	memset(dev->status, 0, sizeof(dev->status));
+
+	kbd_present = 0x100;
+
 	dev->status_valid = 0;
 }
 

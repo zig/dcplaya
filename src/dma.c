@@ -5,7 +5,7 @@
  * @date     2004/07/27
  * @brief    dma support
  * 
- * $Id: dma.c,v 1.1 2004-07-31 22:56:46 vincentp Exp $
+ * $Id: dma.c,v 1.2 2007-03-17 14:40:29 vincentp Exp $
  */
 
 
@@ -248,9 +248,9 @@ dma_chain_t * dma_initiate(void * dest, void * src, uint32 length,
 
   if (type == DMA_TYPE_SPU || type == DMA_TYPE_BBA_RX) {
     if (type == DMA_TYPE_SPU && (0||nospudma)) {
-	vid_border_color(0, 0, 255);
+      vid_border_color(0, 0, 255);
       spu_memload(chain->dest, chain->src, chain->count);
-	vid_border_color(0, 0, 0);
+      vid_border_color(0, 0, 0);
       sem_signal(chain->sema);
       return chain;
     } else {

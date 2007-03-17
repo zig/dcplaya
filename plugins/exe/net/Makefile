@@ -3,13 +3,15 @@
 #
 # (C) COPYRIGHT 2002 Vincent Penne
 #
-# $Id: Makefile,v 1.3 2004-07-31 22:55:18 vincentp Exp $
+# $Id: Makefile,v 1.4 2007-03-17 14:40:29 vincentp Exp $
 #
 
 LEZ=yes
 
 KOS_LOCAL_INCS += -I. -I../../../include
 OPTIMIZE = $(OPTIMIZE_FOR_SPEED)
+
+SUBDIRS = bba lan
 
 include ../../../Makefile.inc
 

@@ -26,10 +26,12 @@
 /* XXX: POST protocol is not completly implemented because ffmpeg use
    only a subset of it */
 
-//#define DEBUG
+#define DEBUG
 
 /* used for protocol handling */
 #define URL_SIZE    256
+
+#define MAX_HEADER_ENTRIES 64
 
 typedef struct {
   file_t hd;
@@ -42,7 +44,38 @@ typedef struct {
   char hoststr[256];
   char path[256];
   int flags;
+
+  char * header_entries[MAX_HEADER_ENTRIES];
+  int nb_header_entries;
 } HTTPContext;
+
+
+static void hdr_clear(HTTPContext * h)
+{
+  int i;
+  for (i=0; i<h->nb_header_entries; i++) {
+    free(h->header_entries[i]);
+    h->header_entries[i] = NULL;
+  }
+  h->nb_header_entries = 0;
+}
+
+static void hdr_add(HTTPContext * h, const char * entry)
+{
+  if (h->nb_header_entries >= MAX_HEADER_ENTRIES)
+    return;
+
+  h->header_entries[h->nb_header_entries ++] = strdup(entry);
+}
+
+static const char * hdr_get(HTTPContext * h, int i)
+{
+  if (i >= h->nb_header_entries)
+    return NULL;
+
+  return h->header_entries[i];
+}
+
 
 static int http_connect(HTTPContext * h, const char *path, const char *hoststr, int flags, int wait);
 static int http_write(uint32 h, uint8 *buf, int size);
@@ -58,7 +91,7 @@ static int http_write(uint32 h, uint8 *buf, int size);
  * @param buf_size size of destination buffer
  * @param str source string
  */
-void pstrcpy(char *buf, int buf_size, const char *str)
+static void pstrcpy(char *buf, int buf_size, const char *str)
 {
     int c;
     char *q = buf;
@@ -156,6 +189,8 @@ static uint32 http_open(vfs_handler_t * dummy, const char *uri, int flags)
   /*         strstart(proxy_path, "http://", NULL); */
   use_proxy = 0;
 
+  s->nb_header_entries = 0;
+
   /* fill the dest addr */
  redo:
   /* needed in any case to build the host string */
@@ -220,6 +255,8 @@ static uint32 http_open(vfs_handler_t * dummy, const char *uri, int flags)
     goto fail;
   return (uint32) s;
  fail:
+  hdr_clear(s);
+
   if (hd>=0)
     fs_close(hd);
   free(s);
@@ -300,9 +337,9 @@ static int process_line(HTTPContext *s, char *line, int line_count)
             strcpy(s->location, p);
         }
         if (!strcmp(tag, "Content-Length")) {
-	    s->len = strtol(p, NULL, 10);
+	  s->len = strtol(p, NULL, 10);
 #ifdef DEBUG
-	    printf("len=%d\n", s->len);
+	  printf("len=%d\n", s->len);
 #endif
         }
     }
@@ -314,6 +351,7 @@ static int http_connect(HTTPContext *s, const char *path, const char *hoststr, i
     int post, err, ch;
     char line[512], *q;
 
+    hdr_clear(s);
 
     /* send http header */
     post = flags & O_WRONLY;
@@ -358,7 +396,7 @@ static int http_connect(HTTPContext *s, const char *path, const char *hoststr, i
     for(;;) {
         ch = http_getc((uint32) s);
 #ifdef DEBUG
-	printf("%c", ch);
+	//printf("%c", ch);
 #endif
         if (ch < 0) {
 #ifdef DEBUG
@@ -374,12 +412,17 @@ static int http_connect(HTTPContext *s, const char *path, const char *hoststr, i
 #ifdef DEBUG
             printf("header='%s'\n", line);
 #endif
+
+	    if (line[0])
+	      hdr_add(s, line);
+
             err = process_line(s, line, s->line_count);
             if (err < 0)
                 return err;
             if (err == 0)
 	      return 0;
 	      //return s->len? 0 : -1;
+
             s->line_count++;
             q = line;
         } else {
@@ -496,6 +539,7 @@ static off_t http_seek(uint32 hnd, off_t offset, int whence)
 static int http_close(uint32 h)
 {
     HTTPContext *s = (HTTPContext *)h;
+    hdr_clear(s);
     if (s->hd >= 0)
       fs_close(s->hd);
     free(s);
@@ -558,6 +602,22 @@ void httpfs_shutdown()
   init = 0;
   nmmgr_handler_remove(&vh);
 }
+
+
+const char * http_get_header(file_t f, int i)
+{
+  HTTPContext * h;
+
+  if (fs_get_handler(f) != &vh)
+    return NULL;
+
+  h = fs_get_handle(f);
+  if (!h)
+    return NULL;
+
+  return hdr_get(h, i);
+}
+
 
 
 //#endif

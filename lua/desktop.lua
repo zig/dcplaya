@@ -3,7 +3,7 @@
 --- @author vincent penne
 --- @brief  desktop application
 ---
---- $Id: desktop.lua,v 1.37 2003-04-05 16:33:30 ben Exp $
+--- $Id: desktop.lua,v 1.38 2007-03-17 14:40:29 vincentp Exp $
 ---
 
 if not dolib("evt") then return end
@@ -181,10 +181,13 @@ function dskt_switcher_create(owner, name, dir, x, y, z)
 	       
 	       if key == gui_press_event then
 		  if app.target.flags and app.target.flags.unfocusable then
-		     gui_ask(
-			     'Sorry, this application is not switchable '..
-				'<img name="smiley" src="stock_smiley.tga" scale="1.5">'
-			     , { "OK !" })
+		     dskt_openmenu(app.owner, app.target,
+				   app.box[3], (app.box[2] + app.box[4]) / 2)
+		     return
+--		     gui_ask(
+--			     'Sorry, this application is not switchable '..
+--				'<img name="smiley" src="stock_smiley.tga" scale="1.5">'
+--			     , { "OK !" })
 		  else
 		     if app.owner then
 			local owner = app.owner.owner
@@ -252,6 +255,11 @@ function dskt_handle(app, evt)
       end
       dskt_shutdown_children(app)
       return nil
+   end
+
+   --print(key)
+   if gui_keynext[key] then
+      app.visible = not app.visible
    end
 
    if dskt_keytoggle[key] then
@@ -366,29 +374,73 @@ function dumpZ()
    testzzz(evt_desktop_app, mat_new(), vtx,0)
 end
 
-function dskt_update(app)
+function dskt_update(app, ft)
+
+   if gui_apparate_update then
+      gui_apparate_update(app, ft)
+   end
+
+   if not app._dl then return end
+
+   local scale = app.global_scale
+
+   if (scale == 1 and app.visible) or 
+      (scale == 10 and not app.visible) then
+      return
+   end
+
+   local aim = 1
+   if not app.visible then
+      aim = 10
+   end
+
+   scale = scale + 7.5 * ft * (aim-scale)
+
+   if scale < 1.005 then
+      scale = 1
+   end
+   
+   if scale > 9 then
+      scale = 10
+      dl_set_active(app._dl, nil)
+   else
+      dl_set_active(app._dl, 1)
+      dl_set_trans(app._dl, 
+		   mat_scale(scale, scale, 1)
+		      * mat_trans(0*320 * (1-scale), 240 * (1-scale), 0)
+		)
+      dl_set_color(app._dl, 1 - (scale-1)/8, 1, 1 - (scale-1)/8, 1, 1)
+   end
+
+   app.global_scale = scale
+
 end
 
 function dskt_create()
    local app = evt_desktop_app
 
    if not app then
-      print ("No desktop application ! Event system should be down.")
+      print ("No desktop application ! Event system is probably be down.")
       return
    elseif app.handle == dskt_handle then
       print ("Desktop already installed.")
    else
       print("Installing desktop application")
-  end
-  app.handle = dskt_handle
-  app.update = dskt_update
-  if not app.dl then
-     app.dl = dl_new_list(256, 1, nil, "desktop.dl")
-  else
-     dl_clear(app.dl)
-  end
-  app.z = 0
-  return app
+   end
+
+   app.global_scale = 1
+   app.visible = 1
+
+   app.handle = dskt_handle
+   app.update = dskt_update
+
+   if not app.dl then
+      app.dl = dl_new_list(256, 1, nil, "desktop.dl")
+   else
+      dl_clear(app.dl)
+   end
+   app.z = 0
+   return app
 end
 
 -- Create default application sprite

@@ -5,7 +5,7 @@
 --- @date     2002
 --- @brief    Main dcplaya lua script.
 ---
---- $Id: dcplayarc.lua,v 1.48 2004-07-31 22:55:17 vincentp Exp $
+--- $Id: dcplayarc.lua,v 1.49 2007-03-17 14:40:29 vincentp Exp $
 ---
 ---   The @b home.."dcplayarc.lua" file is dcplaya main script.
 ---   It is executed after the dynshell has been loaded.
@@ -91,6 +91,7 @@ plug_web        = home.."plugins/exe/web/web.lez"
 plug_ffmpeg     = home.."plugins/inp/ffmpeg/ffmpeg.lez"
 
 codec_misc      = home.."plugins/inp/ffmpeg/codec_misc/codec_misc.codez"
+codec_net       = home.."plugins/inp/ffmpeg/codec_net/codec_net.codez"
 codec_xvid      = home.."plugins/inp/ffmpeg/xvid/codec_xvid.codez"
 
 -- Little function for fun !
@@ -200,8 +201,9 @@ if __RELEASE and type(dirlist) == "function" then
    end
 end
 
-dolib ("io_control")
-dolib ("gui")
+dolib "io_control"
+dolib "gui"
+dolib "gui_apparate"
 
 if not __RELEASE then
    if scroll_dl then

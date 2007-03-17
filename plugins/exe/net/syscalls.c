@@ -968,12 +968,22 @@ ssize_t dcload_read(uint32 hnd, void *buf, size_t cnt)
     dcload_handler_t * dh = dcload_get_buffer_handler(hnd);
     
     if (!dh || cnt > dcload_buffering) {
+      ssize_t n = 0;
       if (dh) {
 	hnd = dh->hdl;
+
+	n = dh->cnt - dh->cur;
+	if (n > 0) {
+	  memcpy(buf, dh->buffer+dh->cur, n);
+	  buf = (void *)((int8 *)buf + n);
+	  cnt -= n;
+	} else
+	  n = 0;
+
 	dh->cur = dh->cnt = 0;
 	dh->tell = -1;
       }
-      ret = dcload_read_buffer(hnd-1, buf, cnt);
+      ret = dcload_read_buffer(hnd-1, buf, cnt) + n;
     } else {
       int eof = 0;
       hnd = dh->hdl-1;
@@ -988,7 +998,7 @@ ssize_t dcload_read(uint32 hnd, void *buf, size_t cnt)
 	  if (!eof) {
 	    n = dcload_read_buffer(hnd, dh->buffer, dh->max);
 	    eof = n != dh->max;
-	    if (n == -1) {
+	    if (n < 0) {
 	      /* $$$ Try */
 	      if (!ret)
 		ret = n;
@@ -1288,14 +1298,11 @@ int fs_init()
   }
 
   /* Register with VFS */
-  return tcpfs_init() || httpfs_init() || nmmgr_handler_add(&vh);
+  return nmmgr_handler_add(&vh);
 }
 
 void fs_shutdown()
 {
-  httpfs_shutdown();
-  tcpfs_shutdown();
-
   if (!init)
     return;
   init = 0;

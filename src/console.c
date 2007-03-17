@@ -4,7 +4,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     console handling for dcplaya
- * @version   $Id: console.c,v 1.29 2004-08-01 17:54:26 vincentp Exp $
+ * @version   $Id: console.c,v 1.30 2007-03-17 14:40:29 vincentp Exp $
  */
 
 
@@ -344,7 +344,7 @@ void csl_window_transparent_render(csl_console_t * c)
 		    z + 10, p);
     }
 
-    if (c->window.cursor_time < 0.5 && y == c->term->cursor.y) {
+    if (y == c->term->cursor.y && c->window.cursor_time < 0.5) {
       float px = c->window.x;
       float w;
       int i;

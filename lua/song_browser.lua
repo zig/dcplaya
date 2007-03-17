@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    song browser application.
 ---
---- $Id: song_browser.lua,v 1.74 2004-08-01 17:54:26 vincentp Exp $
+--- $Id: song_browser.lua,v 1.75 2007-03-17 14:40:29 vincentp Exp $
 ---
 
 --- @defgroup dcplaya_lua_sb_app Song Browser
@@ -218,7 +218,8 @@ function song_browser_update_playlist(sb, frametime)
 
 		  -- VP : temporary, assume we are streaming 
 		  -- a radio so limit the fifo size
-		  ff_lf(48) -- should be a good value for most radio
+		  -- no more necessary, fifo bug FIXED at last
+		  --ff_lf(48) -- should be a good value for most radio
 
 	       end
 	    elseif __DEBUG then

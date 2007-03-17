@@ -5,7 +5,7 @@
  * @date     2002/09/20
  * @brief    Simple gzipped file access.
  *
- * $Id: gzip.c,v 1.6 2004-07-31 22:55:19 vincentp Exp $
+ * $Id: gzip.c,v 1.7 2007-03-17 14:40:29 vincentp Exp $
  */
 
 #include <kos/fs.h>
@@ -71,22 +71,28 @@ void *gzip_load(const char *fname, int *ptr_ulen)
   ulen = is_gz(fd, len);
   if (ulen < 0) {
     /* Not a gzip file : get total file size. */
-    ulen = len;
+    //ulen = len;
+  } else {
+    f = gzdopen(fd, "rb");
+    if (!f) {
+      SDERROR("gzopen failed\n");
+      goto error;
+    }
+    fd = -1; /* $$$ Closed by gzclose(). Verify fdopen() rules. */
   }
 
-  f = gzdopen(fd, "rb");
-  if (!f) {
-    SDERROR("gzopen failed\n");
-    goto error;
-  }
-  fd = -1; /* $$$ Closed by gzclose(). Verify fdopen() rules. */
-
-  uncompr = calloc(1, ulen);
+  uncompr = calloc(1, ulen<0? len:ulen);
   if (!uncompr) {
     SDERROR("malloc error\n");
     goto error;
   }
-  len = gzread(f, uncompr, ulen);
+  if (ulen >= 0)
+    len = gzread(f, uncompr, ulen);
+  else {
+    ulen = len;
+    len = fs_read(fd, uncompr, len);
+    printf("%d %d\n", ulen, len);
+  }
   if (len != ulen) {
     int err;
     SDERROR("gzread error: %s\n", gzerror(f, &err));

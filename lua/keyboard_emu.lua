@@ -4,7 +4,7 @@
 --- @date     2002
 --- @brief    keyboard emulator.
 ---
---- $Id: keyboard_emu.lua,v 1.25 2003-03-28 14:01:44 ben Exp $
+--- $Id: keyboard_emu.lua,v 1.26 2007-03-17 14:40:29 vincentp Exp $
 ---
 
 --- @defgroup dcplaya_lua_ke_app  Keyboard Emulator
@@ -16,6 +16,9 @@
 ---   application in the event manager (first child of evt_root_app).
 ---
 ---   There is only one keyboard application running (ke_app).
+---
+---   Hisorical note : this is the very first lua application that has been 
+---   developped in dcplaya :)
 ---
 --- @author vincent penne
 --- @{
@@ -136,7 +139,8 @@ ke_keyconfirm	= { [KBD_CONT1_A]=1 }
 ke_keycancel	= { [KBD_CONT1_B]=1 }
 ke_keynext	= { [KBD_CONT1_C]=1 }
 ke_keyprev	= { [KBD_CONT1_D]=1 }
-ke_keyactivate	= { [KBD_CONT1_START]=1, [KBD_CONT2_START]=1, [KBD_CONT3_START]=1, [KBD_CONT4_START]=1 }
+ke_keyactivate	= { [KBD_CONT1_START]=1, [KBD_CONT2_START]=1, 
+   [KBD_CONT3_START]=1, [KBD_CONT4_START]=1 }
 
 ke_translate	= { 
    [KBD_CONT1_DPAD_UP] = KBD_KEY_UP,

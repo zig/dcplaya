@@ -339,7 +339,7 @@ int process_mine(unsigned char *pkt, int len)
 
     switch (ip_header->protocol) {
     case 1: /* icmp */
-      if (!lwip_cb) {
+      if (1 || !lwip_cb) {
 	icmp_header = (icmp_header_t *)(pkt + ETHER_H_LEN + 4*(ip_header->version_ihl & 0x0f));
 	process_icmp(ether_header, ip_header, icmp_header);
 	return 0;

@@ -3,7 +3,7 @@
 --- @author  vincent penne
 --- @brief   gui lua library on top of evt system
 ---
---- $Id: gui.lua,v 1.65 2004-07-31 22:55:18 vincentp Exp $
+--- $Id: gui.lua,v 1.66 2007-03-17 14:40:29 vincentp Exp $
 ---
 ---
 
@@ -185,6 +185,21 @@ gui_keyselect = {
    [KBD_CONT2_X] = 1, 
    [KBD_CONT3_X] = 1, 
    [KBD_CONT4_X] = 1, 
+}
+
+gui_keynext = { 
+   [KBD_KEY_PGDOWN] = 1, 
+   [KBD_CONT1_C] = 1, 
+   [KBD_CONT2_C] = 1, 
+   [KBD_CONT3_C] = 1, 
+   [KBD_CONT4_C] = 1, 
+}
+gui_keyprev = { 
+   [KBD_KEY_PGUP] = 1, 
+   [KBD_CONT1_D] = 1, 
+   [KBD_CONT2_D] = 1, 
+   [KBD_CONT3_D] = 1, 
+   [KBD_CONT4_D] = 1, 
 }
 
 -- compute an automatic guess if none is given
@@ -403,7 +418,11 @@ function gui_dialog_shutdown(app)
    if app.sub then
       evt_send(app.sub, { key = gui_unfocus_event, app = app.sub }, 1)
    end
-   dl_set_active(app.dl)
+   if gui_disaparate then
+      gui_disaparate(app)
+   else
+      dl_set_active(app.dl)
+   end
    dl_set_active(app.focusup_dl)
    dl_set_active(app.focusdown_dl)
    dl_set_active(app.focusright_dl)
@@ -698,6 +717,8 @@ function gui_new_dialog(owner, box, z, dlsize, text, mode, name, flags)
       flags  = flags or {}
    }
 
+   dl_set_active(dial.dl, nil) -- hide it while we draw
+
    for _, dl in { dial.focusup_dl, dial.focusdown_dl, dial.focusleft_dl, dial.focusright_dl } do
       dl_sublist(dial.dl, dl)
    end
@@ -723,6 +744,14 @@ function gui_new_dialog(owner, box, z, dlsize, text, mode, name, flags)
    end
    
    evt_app_insert_first(owner, dial)
+
+
+   if gui_apparate then
+      gui_apparate(dial)
+   else
+      dl_set_active(dial.dl, 1)
+   end
+
    
    -- disconnect joypad for main app
 --   cond_connect(nil)

@@ -4,7 +4,7 @@
 # (C) COPYRIGHT 2002 Ben(jamin) Gerard <ben@sasahipa.com>
 #
 #
-# $Id: Makefile,v 1.5 2004-07-31 22:55:18 vincentp Exp $
+# $Id: Makefile,v 1.6 2007-03-17 14:40:29 vincentp Exp $
 #
 
 LEZ=yes
@@ -13,7 +13,9 @@ FFMPEG_DIR	:= ffmpeg
 FFMPEG_INCS 	:= .
 FFMPEG_LIB	:= $(FFMPEG_DIR)/libavformat.a $(FFMPEG_DIR)/libavcodec.a
 
-LEF_TARGET_EXTRA_DEP := $(FFMPEG_LIB) sha123/libsha123.a istream/libistream.a
+LEF_TARGET_EXTRA_DEP := $(FFMPEG_LIB) \
+			sha123/libsha123.a istream/libistream.a \
+			id3tag/libid3tag.a \
 #LEF_EXTRA := -L$(FFMPEG_DIR) -Lsha123 -Listream -lavformat -lavcodec -lsha123 -listream
 LEF_EXTRA = -L$(KOS_BASE)/../kos-ports/lib/dreamcast -loggvorbisplay
 
@@ -25,7 +27,7 @@ KOS_LOCAL_INCS += -I. -I../../../include -I../../../libs\
 OPTIMIZE = $(OPTIMIZE_FOR_SPEED)
 
 
-SUBDIRS = sha123 istream
+SUBDIRS = sha123 istream id3tag codec_misc codec_net
 
 
 include ../../../Makefile.inc

@@ -8,7 +8,7 @@
    +2002/02/12 variable stream size modification by ben(jamin) gerard
 */
 
-/* static char id[] = "sndserver $Id: sndstream.c,v 1.6 2004-07-31 22:55:19 vincentp Exp $"; */
+/* static char id[] = "sndserver $Id: sndstream.c,v 1.7 2007-03-17 14:40:29 vincentp Exp $"; */
 
 #include <kos.h>
 #include <dc/g2bus.h>
@@ -327,8 +327,8 @@ int stream_poll() {
       res = stream_bytes>>1;
     }
     spinlock_lock(&mutex);
-    /*       spu_memload(SPU_SPL1_ADDR + stream_bytes*curbuffer, (uint8*)sep_buffer[0], stream_bytes); */
-    /*       spu_memload(SPU_SPL2_ADDR + stream_bytes*curbuffer, (uint8*)sep_buffer[1], stream_bytes); */
+/*     spu_memload(SPU_SPL1_ADDR + stream_bytes*curbuffer, (uint8*)sep_buffer[0], stream_bytes); */
+/*     spu_memload(SPU_SPL2_ADDR + stream_bytes*curbuffer, (uint8*)sep_buffer[1], stream_bytes); */
     chain1 = dma_initiate((void *) SPU_SPL1_ADDR + stream_bytes*curbuffer, (uint8*)sep_buffer[0], stream_bytes, DMA_TYPE_SPU);
     chain2 = dma_initiate((void *) SPU_SPL2_ADDR + stream_bytes*curbuffer, (uint8*)sep_buffer[1], stream_bytes, DMA_TYPE_SPU);
     dma_wait(chain1);

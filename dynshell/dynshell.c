@@ -6,7 +6,7 @@
  * @date       2002/11/09
  * @brief      Dynamic LUA shell
  *
- * @version    $Id: dynshell.c,v 1.100 2004-07-31 22:55:17 vincentp Exp $
+ * @version    $Id: dynshell.c,v 1.101 2007-03-17 14:40:29 vincentp Exp $
  */
 
 #include "dcplaya/config.h"
@@ -57,8 +57,8 @@ static shell_command_func_t old_command_func;
 
 static int song_tag;
 
-static const char * home = DCPLAYA_HOME "/";
-static const char * initfile = DCPLAYA_HOME "/lua/init.lua";
+static const char home[256];
+static const char initfile[256];
 
 static float frame_to_second(unsigned int frames) {
   return frames * (1.0f/60.0f);
@@ -3821,6 +3821,9 @@ shutdown_func_t lef_main()
   printf("shell: Initializing dynamic shell\n");
 
   //luaB_set_fputs(shell_lua_fputs);
+
+  shell_home_path(home, sizeof(home), "");
+  shell_home_path(initfile, sizeof(initfile), "lua/init.lua");
 
   shell_lua_state = lua_open(10*1024);  
   if (shell_lua_state == NULL) {

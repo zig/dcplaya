@@ -1,8 +1,14 @@
+
+//#include <arch/cc.h>
+#ifndef HAVE_U8_T
 typedef unsigned char u8_t;
 typedef signed char s8_t;
 typedef unsigned int u32_t;
 typedef unsigned short u16_t;
+#endif
 
+#include <errno.h>
+#define	ENOMEM		12	/* Out of memory */
 
 //#define CONFIG_AC3 1
 #define ARCH_SH4 1

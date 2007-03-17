@@ -1,11 +1,18 @@
 
 #define NULL 0L
 
+#include <assert.h>
+
 #include "sha123/api.h"
 #include "sha123/sha123.h"
 #include "istream/istream_def.h"
 
 #include "ffmpeg.h"
+
+#include "playa.h"
+extern playa_info_t *glb_info;
+extern int info_need_update;
+
 
 #ifndef OLDFFx
 
@@ -165,11 +172,11 @@ static int decode_frame(AVCodecContext * avctx,
   ctx->buf_size = buf_size;
   ctx->pos = 0;
 
-#ifdef OLDFF
+  //#ifdef OLDFF
   if (buf_size <= 0)
     return 0;
   //printf("frame size %d\n", buf_size);
-#endif
+  //#endif
 
   if (ctx->decoder == NULL && !ctx->error) {
     ctx->decoder = sha123_start(&ctx->param);
@@ -181,23 +188,28 @@ static int decode_frame(AVCodecContext * avctx,
     res = sha123_decode(ctx->decoder, data, !first/*AVCODEC_MAX_AUDIO_FRAME_SIZE*/);
     if (res) {
       printf("sha123 : decoder error %d\n", res);
-      return -1;
+      return 0;
     } else {
+
       //printf("pcm_point = %d (%d, %d)\n", ctx->decoder->pcm_point, ctx->pos, ctx->max);
       *data_size = ctx->decoder->pcm_point;
 
-#ifdef OLDFF
+      //#ifdef OLDFF
       if (!ctx->gotinfo) {
 	sha123_info_t * info = sha123_info(ctx->decoder);
 	if (info) {
 	  avctx->channels = info->channels;
 	  avctx->sample_rate = info->sampling_rate;
-	  printf("channels=%d,rate=%d\n",avctx->channels,avctx->sample_rate);
+	  printf("sha123 update channels=%d,rate=%d\n",avctx->channels,avctx->sample_rate);
 	  avctx->bit_rate = 0;
 	  ctx->gotinfo = 1;
+
+	  playa_info_frq    (glb_info, avctx->sample_rate);
+	  playa_info_stereo (glb_info, avctx->channels > 1? 1:0);
+	  info_need_update = 1;
 	}
       }
-#endif
+      //#endif
 
     }
   }
@@ -208,7 +220,7 @@ static int decode_frame(AVCodecContext * avctx,
 }
 
 
-#if 0
+#if 1
 AVCodec shamp2_decoder =
 {
     "mp2",
@@ -217,7 +229,7 @@ AVCodec shamp2_decoder =
     sizeof(context_t),
     decode_init,
     NULL,
-    close,
+    decode_close,
     decode_frame,
     CODEC_CAP_PARSE_ONLY,
 };

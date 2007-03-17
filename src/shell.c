@@ -3,7 +3,7 @@
  * @author    vincent penne <ziggy@sashipa.com>
  * @date      2002/08/11
  * @brief     shell support for dcplaya
- * @version   $Id: shell.c,v 1.21 2004-08-01 17:54:26 vincentp Exp $
+ * @version   $Id: shell.c,v 1.22 2007-03-17 14:40:29 vincentp Exp $
  */
 
 #include <kos.h>
@@ -31,7 +31,9 @@ shell_shutdown_func_t shell_lef_shutdown_func;
 
 
 char * shell_user_lef_fname = "/ram/dcplaya/dynshell.lez";
-char * shell_lef_fname = DCPLAYA_HOME "/dynshell/dynshell.lez";
+char shell_home[256] = DCPLAYA_HOME;
+char shell_lef_fname[256];
+//char * shell_lef_fname = DCPLAYA_HOME "/dynshell/dynshell.lez";
 
 static shell_command_func_t shell_command_func;
 
@@ -192,7 +194,10 @@ static void shell_thread(void * param)
  }
 }
 
-
+void shell_home_path(char * dest, int len, const char * path)
+{
+  sprintf(dest, "%s/%s", shell_home, path);
+}
 
 int shell_init()
 {
@@ -204,6 +209,8 @@ int shell_init()
   //thd_default_stack_size = 256*1024;
   thd_default_stack_size = 64*1024;
   kthread_t * thd;
+
+  shell_home_path(shell_lef_fname, sizeof(shell_lef_fname), "dynshell/dynshell.lez");
 
   SDDEBUG("[shell_init] : dynshell [%s]\n",shell_lef_fname);
 

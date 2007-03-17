@@ -4,7 +4,7 @@
  * @author    vincent penne
  * @date      2002/09/12
  * @brief     shell support for dcplaya
- * @version   $Id: shell.h,v 1.8 2003-03-29 15:33:06 ben Exp $
+ * @version   $Id: shell.h,v 1.9 2007-03-17 14:40:29 vincentp Exp $
  */
 
 /** @defgroup dcplaya_shell_devel Shell
@@ -71,6 +71,14 @@ int shell_showconsole();
  *  @return old state
  */
 int shell_hideconsole();
+
+/** Home path */
+extern char shell_home[];
+
+/** Build a path starting from shell_home
+ *
+ */
+void shell_home_path(char * dest, int len, const char * path);
 
 /**@}*/
 

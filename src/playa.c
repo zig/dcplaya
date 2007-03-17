@@ -3,7 +3,7 @@
  * @author   benjamin gerard <ben@sashipa.com>
  * @brief    music player threads
  *
- * $Id: playa.c,v 1.28 2004-08-01 17:54:26 vincentp Exp $
+ * $Id: playa.c,v 1.29 2007-03-17 14:40:29 vincentp Exp $
  */
 
 #include <kos.h>
@@ -345,6 +345,14 @@ static void real_playa_update(void)
       if (status & INP_DECODE_INFO) {
 /* 	SDDEBUG("Driver change INFO : %x\n", info.update_mask); */
 	playa_info_update(&info);
+
+	/* VP : added that in case frequency changes */
+	/* Set sampling rate for next music */
+	if (info.info[PLAYA_INFO_FRQ].v &&
+	    next_frq != info.info[PLAYA_INFO_FRQ].v) {
+	  stream_frq(next_frq = current_frq = info.info[PLAYA_INFO_FRQ].v);
+	  SDDEBUG("Set stream frq := [%d]\n",current_frq);
+	}
       }
 
       if (! (status & INP_DECODE_CONT)) {

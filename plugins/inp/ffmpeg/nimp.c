@@ -26,8 +26,8 @@
      NIMP(audio_init)
      NIMP(dv1394_init)
 #ifdef AVCODEC_CVS
-     NIMP(put_flush_packet)
-     NIMP(put_buffer)
+/*      NIMP(put_flush_packet) */
+/*      NIMP(put_buffer) */
 #endif
      NIMP(lseek)
 /*      NIMP(localtime_r) */

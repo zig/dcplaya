@@ -3,8 +3,11 @@
  * @author    ben(jamin) gerard <ben@sashipa.com>
  * @date      2002/02/08
  * @brief     sc68 for dreamcast - main for kos 1.1.x
- * @version   $Id: dreamcast68.c,v 1.64 2004-08-01 17:54:26 vincentp Exp $
+ * @version   $Id: dreamcast68.c,v 1.65 2007-03-17 14:40:29 vincentp Exp $
  */
+
+/* define this to have the kosh-serial debugger */
+#define KOSH
 
 //#define RELEASE
 #define SKIP_INTRO
@@ -26,6 +29,11 @@
 #include <arch/timer.h>
 
 #include "dcplaya/config.h"
+
+#ifdef KOSH
+# include <conio/conio.h>
+# include <kosh/kosh.h>
+#endif
 
 #include "math_float.h"
 #include "filetype.h"
@@ -1068,6 +1076,7 @@ int dreammp3_main(int argc, char **argv)
   int kos_debug_level = DBG_KDEBUG;
   int dcp_debug_level = (1<<sysdbg_user)-1;
 
+
   /* VP : put our keyboard manager */
   maple_shutdown();
   dcp_kbd_init();
@@ -1103,6 +1112,11 @@ int dreammp3_main(int argc, char **argv)
 
   thd_init(THD_MODE_PREEMPT);
   
+#ifdef KOSH
+  conio_init(CONIO_TTY_SERIAL, CONIO_INPUT_LINE);
+  kosh_init();
+#endif
+
 
   //kos_init_all(IRQ_ENABLE | THD_ENABLE, romdisk);
   /* Initialize exceptions handling */
@@ -1207,6 +1221,11 @@ int dreammp3_main(int argc, char **argv)
 
   /* Shutting down exceptions handling */
   expt_shutdown();
+
+#ifdef KOSH
+  kosh_shutdown();
+  conio_shutdown();
+#endif
 
   return 0;
 }

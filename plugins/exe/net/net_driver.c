@@ -5,7 +5,7 @@
  * @date     2004/03/13
  * @brief    network extension plugin
  * 
- * $Id: net_driver.c,v 1.3 2004-07-31 22:55:18 vincentp Exp $
+ * $Id: net_driver.c,v 1.4 2007-03-17 14:40:29 vincentp Exp $
  */
 
 #include <stdlib.h>
@@ -40,6 +40,101 @@ netif_t * netif;
 
 /* from console.c */
 extern int (*old_printk_func)(const uint8 *data, int len, int xlat);
+
+
+static int (* net_driver_init)();
+static int (* net_driver_shutdown)();
+static lef_prog_t * net_driver_lef;
+static netif_t * * net_driver_if;
+
+
+static int net_driver_close()
+{
+/*   if (net_driver_if) */
+/*     net_unreg_device(net_driver_if); */
+
+  if (net_driver_if && net_driver_init && net_driver_shutdown)
+    net_driver_shutdown();
+
+  if (net_driver_lef)
+    lef_free(net_driver_lef);
+
+  net_driver_init = 0;
+  net_driver_shutdown = 0;
+  net_driver_if = 0;
+}
+
+static int net_driver_open(const char * name)
+{
+  net_driver_lef = lef_load(name);
+  if (!net_driver_lef)
+    goto error;
+
+  net_driver_init = lef_find_symbol(net_driver_lef, "_driver_init");
+  net_driver_shutdown = lef_find_symbol(net_driver_lef, "_driver_shutdown");
+  net_driver_if = lef_find_symbol(net_driver_lef, "_netif");
+
+  if (!net_driver_if || !net_driver_init || !net_driver_shutdown) {
+    printf("net_driver_open: no netif symbol found in '%s'\n", name);
+    goto error;
+  }
+
+  if (net_driver_init && net_driver_init()) {
+    printf("net_driver_open: driver_init failed in '%s'\n", name);
+    goto error;
+  }
+
+  /* Try to detect/init us */
+  if ((*net_driver_if)->if_detect(*net_driver_if) < 0) {
+    printf("net_driver_open: can't detect adapter '%s'\n", name);
+    goto error;
+  }
+
+  return 0;
+ error:
+  net_driver_close();
+  
+  return -1;
+}
+
+static int find_adaptator(const char * name)
+{
+  static const char * list[] = {
+    "plugins/exe/net/bba/bba.lez",
+    "plugins/exe/net/lan/lan.lez",
+    0
+  };
+  static const char * list2[] = {
+    0,
+    0
+  };
+  
+  char * * l;
+
+  if (name) {
+    list2[0] = name;
+    l = list2;
+  } else
+    l = list;
+
+  while (*l) {
+    char tmp[256];
+    if (*l[0] == '/')
+      strcpy(tmp, *l);
+    else
+      shell_home_path(tmp, sizeof(tmp), *l);
+    if (!net_driver_open(tmp))
+      break;
+    l++;
+  }
+  
+  if (*l) {
+    printf("Network driver '%s' loaded and used.\n", *l);
+    return 0;
+  } else
+    return -1;
+}
+
 
 
 /* Driver init : not much to do. */ 
@@ -94,15 +189,23 @@ static int lua_net_shutdown(lua_State * L)
     goto ok;
   }
 
-  fs_shutdown();
-
   if (lwipinit) {
+    httpfs_shutdown();
+    tcpfs_shutdown();
+
     lwip_shutdown_all();
     lwipinit = 0;
   }
 
   if (netinit) {
+    fs_shutdown();
+
     net_input_set_target(0);
+
+    net_shutdown();
+
+    net_driver_close();
+
     netinit = 0;
   }
 
@@ -123,7 +226,6 @@ static int lua_net_connect(lua_State * L)
   int res = -1;
   struct netif_list * listhead;
   uint8 ip[4];
-  static int net_init_called;
 
   dbglog_set_level(7);
 
@@ -138,12 +240,18 @@ static int lua_net_connect(lua_State * L)
   printf("calling eth_init\n");
 
 
-  old_printk_func = 0;
+  if (!netinit) {
+    //net_init();
 
+    old_printk_func = 0;
 
-  if (!net_init_called) {
+    if (find_adaptator(lua_tostring(L, 2))) {
+      lua_settop(L, 0);
+      lua_pushstring(L, "No adaptator recognised");
+      return 1;
+    }
+
     net_init();
-    net_init_called = 1;
   }
   netinit = 1;
   
@@ -155,7 +263,9 @@ static int lua_net_connect(lua_State * L)
   }
   if (netif == NULL) {
     printf("can't find an active KOS network device\n");
-    return 0;
+    lua_settop(L, 0);
+    lua_pushstring(L, "Can't find an active KOS network device");
+    return 1;
   }
 
   if (netif) {
@@ -181,21 +291,19 @@ static int lua_net_connect(lua_State * L)
       printf("nfs, httpfs, tcpfs and udpfs initialized succesfully\n");
   }
 
-  lua_pushnumber(L, res);
-
-  return 1;
+  return 0;
 }
 
 static int lua_net_disconnect(lua_State * L)
 {
-  printf("calling eth_shutdown\n");
+/*   printf("calling eth_shutdown\n"); */
 
-  if (netinit) {
-    net_input_set_target(0);
-    netinit = 0;
-  }
+/*   if (netinit) { */
+/*     net_input_set_target(0); */
+/*     netinit = 0; */
+/*   } */
 
-  return 0;
+  return lua_net_shutdown(L);
 }
 
 static int lua_net_print(lua_State * L)
@@ -226,7 +334,8 @@ static int lua_lwip_init(lua_State * L)
       ) {
 
     printf("Syntax error : try net_lwip_init your.ip.add.ress 255.255.255.0 your.gate.way.ip\n");
-    return 0;
+    lua_pushstring(L, "Syntax error : try net_lwip_init your.ip.add.ress 255.255.255.0 your.gate.way.ip\n");
+    return 1;
   }
 
   //lwip_init_mac();
@@ -238,11 +347,11 @@ static int lua_lwip_init(lua_State * L)
   lwip_cb = net_input_target;
   net_input_set_target(rx_callback);
 
+  tcpfs_init() || httpfs_init();
+
   lwipinit = 1;
 
-  lua_pushnumber(L, res);
-
-  return 1;
+  return 0;
 }
 
 #include "lwip/sockets.h"

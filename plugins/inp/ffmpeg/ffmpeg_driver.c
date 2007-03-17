@@ -5,7 +5,7 @@
 #else
 
 /*
- * $Id: ffmpeg_driver.c,v 1.8 2004-08-01 17:54:26 vincentp Exp $
+ * $Id: ffmpeg_driver.c,v 1.9 2007-03-17 14:40:29 vincentp Exp $
  *
  * Author : Vincent Penne
  *
@@ -133,6 +133,8 @@ static int verbose = 1;
 static uint32_t * audio_buf;
 static int audio_size;
 static int audio_ptr;
+static uint64_t shift_pts;
+static uint64_t vshift_pts;
 static uint64_t audio_pts;
 static uint64_t audio_next_pts;
 static int audio_fifo_used;
@@ -224,11 +226,22 @@ static semaphore_t * vid_fifo_sema;
 static lef_prog_t * codecs[32];
 static int nbcodecs;
 
+static int adaptative_synchro = 1;
 static int limit_fifo;
 
 /* from playa.c to force the player priority */
-extern playa_force_prio;
+extern int playa_force_prio;
 
+
+/* from file.c in libavformat */
+extern int ff_packet_size;
+extern int ff_cur_fd;
+
+/* symbol retrieved via lef symbols */
+static const char * (* http_get_header)(file_t f, int i);
+
+playa_info_t *glb_info;
+int info_need_update;
 
 uint64_t toto = 1800000000000UL;
 uint64_t toto2 = 1600000000010UL;
@@ -348,11 +361,22 @@ static int shutdown(any_driver_t *d)
   return 0;
 }
 
+static int info(playa_info_t *info, const char *fname)
+{
+  return id3_info(info, fname);
+}
+
 static int start(const char *fn, int track, playa_info_t *info)
 {
+  glb_info = info;
+
   EXPT_GUARD_BEGIN;
 
   stop();
+
+  if(id3_info(info, fn)<0) {
+    playa_info_free(info);
+  }
 
   audio_buf = (u32_t *) av_malloc(AUDIO_SZ);
   if (audio_buf == NULL)
@@ -386,6 +410,63 @@ static int start(const char *fn, int track, playa_info_t *info)
   playa_info_time   (info, ic->duration * 1000 / AV_TIME_BASE);
 #endif
 
+
+
+  /* if the file is an http stream, then retrieve information from
+     the header for possible shoutcast info */
+
+  /* find this function which should be defined in the net plugin */
+  http_get_header = lef_find_symbol_all("_http_get_header");
+
+  if (ff_cur_fd >= 0 && http_get_header) {
+    int i;
+    const char * line;
+    char * url[256];
+
+    url[0] = 0;
+    i = 0;
+    while ( line=http_get_header(ff_cur_fd, i), line ) {
+      char * buf[256];
+      const char * p = buf;
+      strcpy(buf, line);
+      while (*p && *p!=':')
+	p++;
+
+      if (*p == ':') {
+	*p = 0;
+	p++;
+
+	//printf("'%s' --> '%s'\n", buf, p);
+	  
+	if (!stricmp(buf, "icy-name")) {
+	  playa_info_title(info, p);
+	} else if (!stricmp(buf, "icy-genre")) {
+	  playa_info_genre(info, p);
+	} else if (!stricmp(buf, "icy-url")) {
+	  strcpy(url, p);
+	  playa_info_comments(info, p);
+	} else if (!stricmp(buf, "icy-br")) {
+	  if (audio_stream) {
+	    audio_stream->codec.bit_rate = atoi(p)*1000;
+	    avcodec_string(buf, sizeof(buf), &audio_stream->codec, 0);
+	    playa_info_comments   (info, buf);
+	  }
+	}
+
+	if (url[0]) {
+	  sprintf(buf, "%s - %s", url, playa_info_comments(info, (char *)-1));
+	  playa_info_comments   (info, buf);
+	}
+      }
+
+      i++;
+    }
+  }
+
+    
+
+
+
   ready = 1;
 
   EXPT_GUARD_RETURN 0;
@@ -403,6 +484,8 @@ static int decoder(playa_info_t *info)
 {
   int n = -1;
 
+  glb_info = info;
+
   EXPT_GUARD_BEGIN;
 
   if (!ready) {
@@ -419,13 +502,20 @@ static int decoder(playa_info_t *info)
 
   EXPT_GUARD_END;
   if (n)
-    return INP_DECODE_END;
+    n = INP_DECODE_END;
 #ifndef DECODE_THREAD
   else if (video_stream)
-    return INP_DECODE_CONT;
+    n = INP_DECODE_CONT;
 #endif
   else
-    return 0;
+    n = 0;
+
+  if (info_need_update) {
+    n += INP_DECODE_INFO;
+    info_need_update = 0;
+  }
+
+  return n;
 }
 
 static driver_option_t * options(any_driver_t * d, int idx,
@@ -628,7 +718,6 @@ extern controler_state_t controler68;
 /* time statistics */
 static int adecode_j, aplay_j, readstream_j, vdecode_j, vconv_j;
 
-
 int decode_start(const char * filename)
 {
     AVFormatParameters params, *ap = &params;
@@ -645,6 +734,9 @@ int decode_start(const char * filename)
 
     audio_size = 0;
     audio_ptr = 0;
+
+    shift_pts = -1;
+    vshift_pts = -1;
 
     video_frame_counter = 0;
 
@@ -673,7 +765,7 @@ int decode_start(const char * filename)
         print_error(filename, err);
         return -1;
     }
-    
+
     /* If not enough info to get the stream parameters, we decode the
        first frames to get it. (used in mpeg case for example) */
     ret = av_find_stream_info(ic);
@@ -1083,13 +1175,20 @@ void play_audio()
       audio_fifo_used = fifo_used();
       audio_fc = ta_state.frame_counter;
       audio_time = timer_ms_gettime64();
+      if (audio_next_pts == AV_NOPTS_VALUE)
+	printf("AUDIO NO PTS !!\n");
       audio_pts = audio_next_pts 
 	- ((int64_t)audio_fifo_used) * AV_TIME_BASE / audio_fifo_rate
 	+ ((int64_t)audio_size) * AV_TIME_BASE / audio_fifo_rate
 	;
 
+/*       if (shift_pts == -1) */
+/* 	shift_pts = audio_pts; */
+
+      audio_pts -= vshift_pts;
+
       audio_size -= n;
-      audio_ptr += n;
+      audio_ptr += n * audio_stream->codec.channels / 2;
     }
     av_unlock();
   }
@@ -1097,8 +1196,9 @@ void play_audio()
 }
 
 
-#define VID_FIFO_SZ 32
+#define VID_FIFO_SZ 256
 
+static int vid_fifo_limit = 32;
 static int vid_fifo_in;
 static int vid_fifo_out;
 static AVPacket vid_fifo[VID_FIFO_SZ];
@@ -1133,7 +1233,8 @@ static AVPacket * vid_fifo_getstep()
 
 static int vid_fifo_room()
 {
-  return ((vid_fifo_in+1)&(VID_FIFO_SZ-1)) != vid_fifo_out;
+  return vid_fifo_used() < vid_fifo_limit;
+  //  return ((vid_fifo_in+1)&(VID_FIFO_SZ-1)) != vid_fifo_out;
 }
 
 static int vid_fifo_put(AVPacket * pkt)
@@ -1841,33 +1942,64 @@ static void vidstream_thread(void *userdata)
 	      + 3 /* six screen blanking */
 	      )
 #else
-	    static uint64_t oldtime;
+
+	int iaudio_pts = audio_pts/1000;
+	int ipts = pts/1000;
+	int ioldpts = oldpts/1000;
+#define oldpts ioldpts
+#define pts ipts
+#define audio_pts iaudio_pts
+#define audio_time ((int)audio_time)
+#define uint64 uint32
+#define uint64_t uint32_t
+#define int64 int32
+#define int64_t int32_t
+#define AV_TIME_BASE 1000
+
+        static uint64_t oldtime;
 	static float diffavg;
 	static float diffavg2;
 	static int nbdiffs, idiffs;
-	static uint64_t olddiff;
+	static int64_t olddiff;
+	static uint64_t last_second;
 	uint64_t time;
 	time = timer_ms_gettime64();
-	if (oldpts) {
-	  uint64_t diff, dtime;
-	  //static int coef = (1.055) * (1<<16);
-	  static int coef = (1<<16);
+	
+/* 	static uint64_t last_second2; */
+/* 	if (time-last_second2 >= 100) { */
+/* 	  last_second2 = time; */
+/* 	  printf("A/V %g, A %g, V %g\n",  */
+/* 		 (1/1000.0f)*((pts-audio_pts)), */
+/* 		 (1/1000.0f)*((audio_pts)), */
+/* 		 (1/1000.0f)*((pts))); */
+/* 	} */
+
+	if ((1||adaptative_synchro || (time-last_second < 1000)) && oldpts) {
+	  int64_t diff;
+	  uint64_t dtime;
+	  static int coef = (1.055) * (1<<16);
+	  //static int coef = (1<<16);
 	  static int rcoef = (1<<16);
 	  static int oldcoef = (1<<16);
 #define NBDIFFS 10
 	  static float diffs[NBDIFFS];
 	  static float diffs2[NBDIFFS];
+
+	  if (!adaptative_synchro)
+	    ;//rcoef = (1.055) * (1<<16);
+
 	  dtime = (time - oldtime) * rcoef >>16;
-	  if (pts / (AV_TIME_BASE/1000) <= 
-	      oldpts / (AV_TIME_BASE/1000)
-	      - dtime
+
+	  if ( pts / (AV_TIME_BASE/1000) <= 
+	       oldpts / (AV_TIME_BASE/1000)
+	       - dtime
 	      ) {
-	    //oldpts += ( (time - oldtime) * coef >>16) * (AV_TIME_BASE/1000);
+	    //oldpts += ( (time - oldtime) * rcoef >>16) * (AV_TIME_BASE/1000);
 
 	    diff = 
-	      pts / (AV_TIME_BASE/1000) -
-	      (audio_pts / (AV_TIME_BASE/1000)
-	       - audio_time + time 
+	      ((uint64_t)(pts/* - audio_pts*/)) / (AV_TIME_BASE/1000) -
+	      ( audio_pts / (AV_TIME_BASE/1000)
+	       + time - audio_time 
 	       + 3*1000/60)
 	      + 125 /* empirical value */
 	      + audio_delay
@@ -1900,9 +2032,13 @@ static void vidstream_thread(void *userdata)
 	    float avg = diffavg/nbdiffs;
 	    float avg2 = diffavg2/nbdiffs;
 
-/* 	    static toto; toto++; if ((toto&7)==0) */
-/* 	      printf("avg %g avg2 %g coeff %g dt %d\n",  */
-/* 		     avg, avg2, ((float) coef)/(1<<16), (int)dt); */
+/* 	    static uint64 opts = 0; */
+/* 	    if (!opts) opts = pts; */
+
+	    static toto; toto++; if ((toto&7)==0)
+/* 	      printf("pts %g avg %g avg2 %g coeff %g dt %d\n",  */
+/* 		     (1/1000.0f)*((pts-audio_pts)/(AV_TIME_BASE/1000)), avg, avg2,  */
+/* 		     ((float) coef)/(1<<16), (int)dt); */
 
 	    /* 	      avg = (1 - 0.1*avg); */
 	    /* 	      coef *= avg*avg; */
@@ -1926,7 +2062,17 @@ static void vidstream_thread(void *userdata)
 
 	    break;
 	  }
+
+#undef oldpts
+#undef pts
+#undef audio_pts
+#undef audio_time
+#undef uint64
+#undef uint64_t
+#define AV_TIME_BASE 1000000
+
 	} else {
+ 	  last_second = time;
 	  if (pts / (AV_TIME_BASE/1000) <= 
 	      audio_pts / (AV_TIME_BASE/1000)
 	      - audio_time + time 
@@ -1939,8 +2085,14 @@ static void vidstream_thread(void *userdata)
 	    nbdiffs = idiffs = 0;
 	    olddiff = 0;
 
+	    printf("A/V %g, A %g, V %g\n", 
+		   (1/1000.0f)*(pts/1000-audio_pts/1000),
+		   (1/1000.0f)*(audio_pts/1000),
+		   (1/1000.0f)*(pts/1000));
+
 	    oldtime = time;
 	    oldpts = pts;
+
 	    break;
 	  }
 	}
@@ -2003,12 +2155,22 @@ static void vdecode_thread(void * dummy)
       continue;
     }
 
-    got_picture = vidstream_decode(pkt);
+    if (!vidstream_skip)
+      got_picture = vidstream_decode(pkt);
+    else
+      got_picture = 0;
 
     if (got_picture) {
       while (((dma_picin+1)%dma_picmax) == dma_picout)
 	thd_pass();
-      dma_pics[dma_picin].pts = pkt->pts;
+
+      if (pkt->pts == AV_NOPTS_VALUE)
+	printf("VIDEO NO PTS !!\n");
+
+      if (vshift_pts == -1)
+	vshift_pts = pkt->pts;
+
+      dma_pics[dma_picin].pts = pkt->pts - vshift_pts;
       dma_picin = ((dma_picin+1)%dma_picmax);
       sem_signal(dma_pics_sema);
       thd_schedule_next(vidstream_thd);
@@ -2045,16 +2207,17 @@ int decode_frame()
 
 #ifdef DECODE_THREAD
   if (video_stream) {
-/*     int used = pic_fifo_used(); */
-/*     int size = dma_picmax; */
+    int used = pic_fifo_used();
+    int size = dma_picmax;
 
-/*     if (used <= size/4) */
-/*       vdecode_thd->prio2 = 9; */
-/*     else if (used <= size/2) */
-/*       vdecode_thd->prio2 = 6; */
-/*     else */
-/*       vdecode_thd->prio2 = 4; */
-    vdecode_thd->prio2 = thd_current->prio2;
+    if (used <= size/4)
+      vdecode_thd->prio2 = 7;
+    else if (used <= size/2)
+      vdecode_thd->prio2 = 5;
+    else
+      vdecode_thd->prio2 = 3;
+
+/*     vdecode_thd->prio2 = thd_current->prio2; */
   } else
       vdecode_thd->prio2 = 1;
 #endif
@@ -2386,7 +2549,7 @@ static int lua_toto(lua_State * L)
 static int lua_fifo_size(lua_State * L)
 {
   if (ready) {
-    lua_pushnumber(L, VID_FIFO_SZ + dma_picmax);
+    lua_pushnumber(L, vid_fifo_limit + dma_picmax);
     return 1;
   } else
     return 0;
@@ -2488,7 +2651,6 @@ static int lua_picbuf_size(lua_State * L)
   return 0;
 }
 
-extern int ff_packet_size;
 static int lua_packet_size(lua_State * L)
 {
   ff_packet_size = ((int)lua_tonumber(L, 1)) * 1024;
@@ -2507,6 +2669,31 @@ static int lua_limit_fifo(lua_State * L)
     limit_fifo = 0;
 
   printf("Sound fifo limit set to %dKb\n", limit_fifo/1024);
+
+  return 0;
+}
+
+static int lua_vid_limit_fifo(lua_State * L)
+{
+  vid_fifo_limit = ((int)lua_tonumber(L, 1));
+  if (vid_fifo_limit <= 5)
+    vid_fifo_limit = 5;
+  if (vid_fifo_limit > VID_FIFO_SZ-1)
+    vid_fifo_limit = VID_FIFO_SZ-1;
+
+  printf("Video fifo limit set to %d packets\n", vid_fifo_limit);
+
+  return 0;
+}
+
+static int lua_ff_as(lua_State * L)
+{
+  adaptative_synchro = lua_tonumber(L, 1);
+
+  if (adaptative_synchro)
+    printf("adaptative_synchro ON\n");
+  else
+    printf("adaptative_synchro OFF\n");
 
   return 0;
 }
@@ -2613,12 +2800,28 @@ static luashell_command_description_t commands[] = {
   },
 
   {
+    "ff_adaptative_synchro", "ff_as", "ffmpeg",/* long name, short name, topic */
+    "ff_adaptative_synchro(value) : "
+    "Set on or off adaptative audio/video synchro. "
+    "Usually better to turn this off when watching "
+    "a TV streaming.\n",                       /* usage */
+    SHELL_COMMAND_C, lua_ff_as                 /* function */
+  },
+
+  {
     "ff_limit_fifo", "ff_lf", "ffmpeg",        /* long name, short name, topic */
     "ff_limit_fifo(kb) : "
     "Limit the sound fifo size. Try this when "
     "streaming from the internet if it sounds "
     "strange after a while. \n",               /* usage */
     SHELL_COMMAND_C, lua_limit_fifo            /* function */
+  },
+
+  {
+    "ff_video_limit_fifo", "ff_vlf", "ffmpeg", /* long name, short name, topic */
+    "ff_video_limit_fifo(kb) : "
+    "Limit the video fifo size. ",             /* usage */
+    SHELL_COMMAND_C, lua_vid_limit_fifo        /* function */
   },
 
   {
@@ -2660,7 +2863,7 @@ static inp_driver_t ffmpeg_driver =
   start,
   stop,
   decoder,
-/*   info, */
+  info,
 };
 
 EXPORT_DRIVER(ffmpeg_driver)
