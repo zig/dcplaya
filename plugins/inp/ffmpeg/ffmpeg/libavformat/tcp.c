@@ -17,6 +17,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "avformat.h"
+#ifndef ARCH_SH4
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -236,3 +237,4 @@ URLProtocol tcp_protocol = {
     NULL, /* seek */
     tcp_close,
 };
+#endif

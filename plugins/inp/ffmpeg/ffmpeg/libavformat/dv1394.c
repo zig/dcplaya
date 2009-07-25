@@ -17,6 +17,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "avformat.h"
+
+#ifndef ARCH_SH4
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -25,8 +28,6 @@
 #include <sys/poll.h>
 #include <sys/time.h>
 #include <time.h>
-
-#include "avformat.h"
 
 #undef DV1394_DEBUG
 
@@ -242,3 +243,4 @@ int dv1394_init(void)
     av_register_input_format(&dv1394_format);
     return 0;
 }
+#endif

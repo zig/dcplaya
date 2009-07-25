@@ -18,6 +18,18 @@
  */
 #include "config.h"
 #include "avformat.h"
+
+#ifdef ARCH_SH4
+
+#include <arch/timer.h>
+int64_t av_gettime(void)
+{
+  //return ta_state.frame_counter * 1000000LL / 60;
+  return timer_ms_gettime64();
+}
+
+#else
+
 #ifdef CONFIG_WIN32
 #include <sys/types.h>
 #include <sys/timeb.h>
@@ -56,3 +68,5 @@ struct tm *localtime_r(const time_t *t, struct tm *tp)
     return tp;
 }
 #endif /* !defined(HAVE_LOCALTIME_R) */
+
+#endif

@@ -20,6 +20,7 @@
 
 #undef NDEBUG
 #include <assert.h>
+#include <time.h>
 
 AVInputFormat *first_iformat;
 AVOutputFormat *first_oformat;
@@ -142,7 +143,7 @@ AVInputFormat *av_find_input_format(const char *short_name)
  */
 static void av_destruct_packet(AVPacket *pkt)
 {
-    av_free(pkt->data);
+    av_pkt_free(pkt->data);
     pkt->data = NULL; pkt->size = 0;
 }
 
@@ -155,7 +156,7 @@ static void av_destruct_packet(AVPacket *pkt)
  */
 int av_new_packet(AVPacket *pkt, int size)
 {
-    void *data = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+    void *data = av_pkt_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!data)
         return AVERROR_NOMEM;
     memset(data + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
@@ -175,7 +176,7 @@ int av_dup_packet(AVPacket *pkt)
         uint8_t *data;
         /* we duplicate the packet and don't forget to put the padding
            again */
-        data = av_malloc(pkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
+        data = av_pkt_malloc(pkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
         if (!data) {
             return AVERROR_NOMEM;
         }
@@ -2254,10 +2255,10 @@ int64_t parse_date(const char *datestr, int duration)
         }
 
         if (!q) {
-            if (is_utc) {
-                dt = *gmtime(&now);
-            } else {
-                dt = *localtime(&now);
+/*            if (is_utc) {
+                dt = *gmtime_r(&now, &dt);
+            } else*/ {
+                dt = *localtime_r(&now, &dt);
             }
             dt.tm_hour = dt.tm_min = dt.tm_sec = 0;
         } else {

@@ -209,14 +209,16 @@ static int generate_bits_table(uint32_t *dst, uint8_t *len_table){
     int len, index;
     uint32_t bits=0;
 
+    //av_log(NULL, AV_LOG_ERROR, "%x\n", (int)(INT64_MAX>>32));
+    
     for(len=32; len>0; len--){
         for(index=0; index<256; index++){
             if(len_table[index]==len)
                 dst[index]= bits++;
         }
         if(bits & 1){
-            av_log(NULL, AV_LOG_ERROR, "Error generating huffman table\n");
-            return -1;
+            av_log(NULL, AV_LOG_ERROR, "Error generating huffman table (len=%d)\n", len);
+            //return -1;
         }
         bits >>= 1;
     }
@@ -227,7 +229,7 @@ static void generate_len_table(uint8_t *dst, uint64_t *stats, int size){
     uint64_t counts[2*size];
     int up[2*size];
     int offset, i, next;
-    
+
     for(offset=1; ; offset<<=1){
         for(i=0; i<size; i++){
             counts[i]= stats[i] + offset - 1;

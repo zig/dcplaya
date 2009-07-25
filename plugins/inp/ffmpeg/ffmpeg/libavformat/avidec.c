@@ -352,8 +352,9 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
 
     assert(!avi->index_loaded);
-    avi_load_index(s);
-    avi->index_loaded = 1;
+    /* VP : Removed this ! */
+/*    avi_load_index(s);
+    avi->index_loaded = 1;*/
  
     return 0;
 }
@@ -420,6 +421,7 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
             && i + size <= avi->movi_end) {
         
             av_new_packet(pkt, size);
+	    //printf("get_buffer at %d (size=%d)\n", (int)url_ftell(pb), size);
             get_buffer(pb, pkt->data, size);
             if (size & 1) {
                 get_byte(pb);

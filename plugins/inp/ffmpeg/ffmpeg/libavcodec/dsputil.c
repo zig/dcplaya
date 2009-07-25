@@ -31,7 +31,6 @@
 #include "simple_idct.h"
 #include "faandct.h"
 
-uint8_t cropTbl[256 + 2 * MAX_NEG_CROP];
 uint32_t squareTbl[512];
 
 const uint8_t ff_zigzag_direct[64] = {
@@ -3164,12 +3163,12 @@ WARPER8_16_SQ(bit8x8_c, bit16_c)
 
 /* XXX: those functions should be suppressed ASAP when all IDCTs are
  converted */
-static void ff_jref_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
+void ff_jref_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
     j_rev_dct (block);
     put_pixels_clamped_c(block, dest, line_size);
 }
-static void ff_jref_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
+void ff_jref_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
     j_rev_dct (block);
     add_pixels_clamped_c(block, dest, line_size);

@@ -17,7 +17,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "avformat.h"
-
+#ifndef ARCH_SH4
+#if 0
 #include <unistd.h> /* for select() prototype */
 #include <sys/time.h>
 #include <netinet/in.h>
@@ -27,9 +28,14 @@
 #else
 # include "barpainet.h"
 #endif
+#endif
 
 //#define DEBUG
 //#define DEBUG_RTP_TCP
+
+struct in_addr {
+  uint32 s_addr;
+};
 
 enum RTSPClientState {
     RTSP_STATE_IDLE,
@@ -1341,3 +1347,4 @@ int rtsp_init(void)
     av_register_input_format(&sdp_demux);
     return 0;
 }
+#endif

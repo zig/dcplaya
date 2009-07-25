@@ -17,8 +17,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "avformat.h"
+//#ifndef ARCH_SH4
 #include "mpegts.h"
 
+#if 0
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -29,6 +31,7 @@
 # include "barpainet.h"
 #endif
 #include <netdb.h>
+#endif
 
 //#define DEBUG
 
@@ -749,3 +752,4 @@ int rtp_init(void)
     av_register_output_format(&rtp_mux);
     return 0;
 }
+//#endif

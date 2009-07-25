@@ -18,8 +18,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+
 #include "../avcodec.h"
 #include "../dsputil.h"
+
 
 static void memzero_align8(void *dst,size_t size)
 {
@@ -101,18 +103,22 @@ static void idct_add(uint8_t *dest, int line_size, DCTELEM *block)
 	}
 }
 
+
 extern void dsputil_init_align(DSPContext* c, AVCodecContext *avctx);
 
 void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx)
 {
-	const int idct_algo= avctx->idct_algo;
+#undef printf
+	printf("DSPUTIL SH4 by Bero initialising ...\n");
 	dsputil_init_align(c,avctx);
+	//dsputil_init_align64(c,avctx);
 
 	c->clear_blocks = clear_blocks_sh4;
-	if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_SH4){        
-		c->idct_put = idct_put;
-		c->idct_add = idct_add;
-               c->idct     = idct_sh4;
-		c->idct_permutation_type= FF_NO_IDCT_PERM; //FF_SIMPLE_IDCT_PERM; //FF_LIBMPEG2_IDCT_PERM;
-	}
+	if (avctx->idct_algo != FF_IDCT_AUTO && avctx->idct_algo != FF_IDCT_SH4)
+		return;
+	printf("Using SH4 IDCT ...\n");
+	c->idct_put = idct_put;
+	c->idct_add = idct_add;
+	c->idct = idct_sh4;
+	c->idct_permutation_type= FF_NO_IDCT_PERM; //FF_SIMPLE_IDCT_PERM; //FF_LIBMPEG2_IDCT_PERM;
 }

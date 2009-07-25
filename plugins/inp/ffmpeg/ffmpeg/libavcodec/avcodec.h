@@ -13,11 +13,14 @@ extern "C" {
 
 #include "common.h"
 #include "rational.h"
-#include <sys/types.h> /* size_t */
+#include <arch/types.h> /* size_t */
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
 #define LIBAVCODEC_BUILD       4716
+
+/* CVS Version */ 
+#define AVCODEC_CVS 1
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -2145,12 +2148,20 @@ extern AVCodecParser mpegaudio_parser;
 extern AVCodecParser ac3_parser;
 
 /* memory */
-void *av_malloc(unsigned int size);
-void *av_mallocz(unsigned int size);
-void *av_realloc(void *ptr, unsigned int size);
-void av_free(void *ptr);
-char *av_strdup(const char *s);
-void av_freep(void *ptr);
+
+#define av_malloc(size) av_malloc_(size, __FILE__, __LINE__)
+#define av_mallocz(size) av_mallocz_(size, __FILE__, __LINE__)
+#define av_realloc(ptr, size) av_realloc_(ptr, size, __FILE__, __LINE__)
+#define av_free(ptr) av_free_(ptr, __FILE__, __LINE__)
+#define av_strdup(ptr) av_strdup_(ptr, __FILE__, __LINE__)
+#define av_freep(ptr) av_freep_(ptr, __FILE__, __LINE__)
+
+void *av_malloc_(unsigned int size, const char * file, int line);
+void *av_mallocz_(unsigned int size, const char * file, int line);
+void *av_realloc_(void *ptr, unsigned int size, const char * file, int line);
+void av_free_(void *ptr, const char * file, int line);
+char *av_strdup_(const char *s, const char * file, int line);
+void av_freep_(void *ptr, const char * file, int line);
 void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size);
 /* for static data only */
 /* call av_free_static to release all staticaly allocated tables */

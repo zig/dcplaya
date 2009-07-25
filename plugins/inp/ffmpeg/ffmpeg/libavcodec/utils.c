@@ -33,29 +33,6 @@
 
 static void avcodec_default_free_buffers(AVCodecContext *s);
 
-void *av_mallocz(unsigned int size)
-{
-    void *ptr;
-    
-    ptr = av_malloc(size);
-    if (!ptr)
-        return NULL;
-    memset(ptr, 0, size);
-    return ptr;
-}
-
-char *av_strdup(const char *s)
-{
-    char *ptr;
-    int len;
-    len = strlen(s) + 1;
-    ptr = av_malloc(len);
-    if (!ptr)
-        return NULL;
-    memcpy(ptr, s, len);
-    return ptr;
-}
-
 /**
  * realloc which does nothing if the block is large enough
  */
@@ -98,17 +75,6 @@ void av_free_static(void)
         av_freep(&array_static[--last_static]);
     }
     av_freep(&array_static);
-}
-
-/**
- * Frees memory and sets the pointer to NULL.
- * @param arg pointer to the pointer which should be freed
- */
-void av_freep(void *arg)
-{
-    void **ptr= (void**)arg;
-    av_free(*ptr);
-    *ptr = NULL;
 }
 
 /* encoder management */
@@ -601,6 +567,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
 
     if (p) {
         codec_name = p->name;
+	//av_log(NULL, AV_LOG_DEBUG, "1...%s\n", codec_name);
         if (!encode && enc->codec_id == CODEC_ID_MP3) {
             if (enc->sub_id == 2)
                 codec_name = "mp2";
@@ -608,12 +575,15 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                 codec_name = "mp1";
         }
     } else if (enc->codec_id == CODEC_ID_MPEG2TS) {
+      //av_log(NULL, AV_LOG_DEBUG, "2...\n");
         /* fake mpeg2 transport stream codec (currently not
            registered) */
         codec_name = "mpeg2ts";
     } else if (enc->codec_name[0] != '\0') {
+      //av_log(NULL, AV_LOG_DEBUG, "3...\n");
         codec_name = enc->codec_name;
     } else {
+      //av_log(NULL, AV_LOG_DEBUG, "4...\n");
         /* output avi tags */
         if (enc->codec_type == CODEC_TYPE_VIDEO) {
             snprintf(buf1, sizeof(buf1), "%c%c%c%c", 
@@ -733,7 +703,7 @@ void avcodec_init(void)
 	return;
     inited = 1;
 
-    dsputil_static_init();
+    //dsputil_static_init();
 }
 
 /**
@@ -897,3 +867,42 @@ int avcodec_thread_init(AVCodecContext *s, int thread_count){
     return -1;
 }
 #endif
+
+
+#undef av_mallocz
+#undef av_strdup
+#undef av_freep
+void *av_mallocz_(unsigned int size, const char * file, int line)
+{
+    void *ptr;
+    
+    ptr = av_malloc_(size, file, line);
+    if (!ptr)
+        return NULL;
+    memset(ptr, 0, size);
+    return ptr;
+}
+
+char *av_strdup_(const char *s, const char * file, int line)
+{
+    char *ptr;
+    int len;
+    len = strlen(s) + 1;
+    ptr = av_malloc_(len, file, line);
+    if (!ptr)
+        return NULL;
+    memcpy(ptr, s, len);
+    return ptr;
+}
+
+/**
+ * Frees memory and sets the pointer to NULL.
+ * @param arg pointer to the pointer which should be freed
+ */
+void av_freep_(void *arg, const char * file, int line)
+{
+    void **ptr= (void**)arg;
+    av_free_(*ptr, file, line);
+    *ptr = NULL;
+}
+

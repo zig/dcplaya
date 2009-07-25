@@ -22,6 +22,11 @@
  * MPEG Audio decoder.
  */ 
 
+/* #ifdef __FAST_MATH__ */
+/* merde ! */
+/* #endif */
+#define __FAST_MATH__
+
 //#define DEBUG
 #include "avcodec.h"
 #include "mpegaudio.h"
@@ -318,12 +323,15 @@ static int decode_init(AVCodecContext * avctx)
     static int init=0;
     int i, j, k;
 
+    //av_log(NULL, AV_LOG_DEBUG, "1...\n");
+
     if(avctx->antialias_algo == FF_AA_INT)
         s->compute_antialias= compute_antialias_integer;
     else
         s->compute_antialias= compute_antialias_float;
 
     if (!init && !avctx->parse_only) {
+      //av_log(NULL, AV_LOG_DEBUG, "2...\n");
         /* scale factors table for layer 1/2 */
         for(i=0;i<64;i++) {
             int shift, mod;
@@ -348,6 +356,7 @@ static int decode_init(AVCodecContext * avctx)
                     scale_factor_mult[i][2]);
         }
         
+	//av_log(NULL, AV_LOG_DEBUG, "2...\n");
         /* window */
         /* max = 18760, max sum over all 16 coefs : 44736 */
         for(i=0;i<257;i++) {
@@ -363,6 +372,7 @@ static int decode_init(AVCodecContext * avctx)
                 window[512 - i] = v;
         }
         
+	//av_log(NULL, AV_LOG_DEBUG, "3...\n");
         /* huffman decode tables */
         huff_code_table[0] = NULL;
         for(i=1;i<16;i++) {
@@ -385,11 +395,13 @@ static int decode_init(AVCodecContext * avctx)
             }
             huff_code_table[i] = code_table;
         }
+	//av_log(NULL, AV_LOG_DEBUG, "4...\n");
         for(i=0;i<2;i++) {
             init_vlc(&huff_quad_vlc[i], i == 0 ? 7 : 4, 16, 
                      mpa_quad_bits[i], 1, 1, mpa_quad_codes[i], 1, 1);
         }
 
+	//av_log(NULL, AV_LOG_DEBUG, "5...\n");
         for(i=0;i<9;i++) {
             k = 0;
             for(j=0;j<22;j++) {
@@ -407,6 +419,7 @@ static int decode_init(AVCodecContext * avctx)
         if(!table_4_3_value)
             return -1;
         
+	//av_log(NULL, AV_LOG_DEBUG, "6...\n");
         int_pow_init();
         for(i=1;i<TABLE_4_3_SIZE;i++) {
             int e, m;
@@ -437,22 +450,31 @@ static int decode_init(AVCodecContext * avctx)
             table_4_3_exp[i] = e;
         }
         
+	//av_log(NULL, AV_LOG_DEBUG, "7...\n");
         for(i=0;i<7;i++) {
             float f;
             int v;
+	    //av_log(NULL, AV_LOG_DEBUG, "%d\n", i);
             if (i != 6) {
-                f = tan((double)i * M_PI / 12.0);
-                v = FIXR(f / (1.0 + f));
+		if (i == 3) {
+		  v = FIXR(0.5f);
+		} else {
+		  f = tan((double)i * M_PI / 12.0);
+		  v = FIXR(f / (1.0 + f));
+		}
+		//av_log(NULL, AV_LOG_DEBUG, "i = %g, f = %g, v = %d\n", i * M_PI / 12.0, f, v);
             } else {
                 v = FIXR(1.0);
             }
             is_table[0][i] = v;
             is_table[1][6 - i] = v;
         }
+	//av_log(NULL, AV_LOG_DEBUG, "7.1...\n");
         /* invalid values */
         for(i=7;i<16;i++)
             is_table[0][i] = is_table[1][i] = 0.0;
 
+	//av_log(NULL, AV_LOG_DEBUG, "7.2...\n");
         for(i=0;i<16;i++) {
             double f;
             int e, k;
@@ -468,6 +490,7 @@ static int decode_init(AVCodecContext * avctx)
             }
         }
 
+	//av_log(NULL, AV_LOG_DEBUG, "8...\n");
         for(i=0;i<8;i++) {
             float ci, cs, ca;
             ci = ci_table[i];
@@ -502,6 +525,7 @@ static int decode_init(AVCodecContext * avctx)
             mdct_win[3][12 + i] = FIXR(1.0);
         }
 
+	//av_log(NULL, AV_LOG_DEBUG, "9...\n");
         for(i=0;i<12;i++)
             mdct_win[2][i] = FIXR(sin(M_PI * (i + 0.5) / 12.0));
         
@@ -525,6 +549,7 @@ static int decode_init(AVCodecContext * avctx)
         init = 1;
     }
 
+    //av_log(NULL, AV_LOG_DEBUG, "1fin...\n");
     s->inbuf_index = 0;
     s->inbuf = &s->inbuf1[s->inbuf_index][BACKSTEP_SIZE];
     s->inbuf_ptr = s->inbuf;
@@ -2520,9 +2545,14 @@ static int decode_frame(AVCodecContext * avctx,
     int len, out_size;
     short *out_samples = data;
 
+/*     av_log(NULL, AV_LOG_DEBUG, "1...\n"); */
+    
     buf_ptr = buf;
     while (buf_size > 0) {
 	len = s->inbuf_ptr - s->inbuf;
+
+/* 	av_log(NULL, AV_LOG_DEBUG, "len = %d\n", len); */
+
 	if (s->frame_size == 0) {
             /* special case for next header for first frame in free
                format case (XXX: find a simpler method) */
@@ -2668,6 +2698,7 @@ static int decode_frame(AVCodecContext * avctx,
     return buf_ptr - buf;
 }
 
+#if 1
 AVCodec mp2_decoder =
 {
     "mp2",
@@ -2693,3 +2724,184 @@ AVCodec mp3_decoder =
     decode_frame,
     CODEC_CAP_PARSE_ONLY,
 };
+#endif
+
+
+
+
+
+/*************************/
+
+typedef struct MpegAudioParseContext {
+    uint8_t inbuf[MPA_MAX_CODED_FRAME_SIZE];	/* input buffer */
+    uint8_t *inbuf_ptr;
+    int frame_size;
+    int free_format_frame_size;
+    int free_format_next_header;
+} MpegAudioParseContext;
+
+#define MPA_HEADER_SIZE 4
+
+/* header + layer + bitrate + freq + lsf/mpeg25 */
+#define SAME_HEADER_MASK \
+   (0xffe00000 | (3 << 17) | (0xf << 12) | (3 << 10) | (3 << 19))
+
+static int mpegaudio_parse_init(AVCodecParserContext *s1)
+{
+    MpegAudioParseContext *s = s1->priv_data;
+    s->inbuf_ptr = s->inbuf;
+    return 0;
+}
+
+static int mpegaudio_parse(AVCodecParserContext *s1,
+                           AVCodecContext *avctx,
+                           uint8_t **poutbuf, int *poutbuf_size, 
+                           const uint8_t *buf, int buf_size)
+{
+    MpegAudioParseContext *s = s1->priv_data;
+    int len, ret;
+    uint32_t header;
+    const uint8_t *buf_ptr;
+
+    *poutbuf = NULL;
+    *poutbuf_size = 0;
+    buf_ptr = buf;
+    while (buf_size > 0) {
+	len = s->inbuf_ptr - s->inbuf;
+	if (s->frame_size == 0) {
+            /* special case for next header for first frame in free
+               format case (XXX: find a simpler method) */
+            if (s->free_format_next_header != 0) {
+                s->inbuf[0] = s->free_format_next_header >> 24;
+                s->inbuf[1] = s->free_format_next_header >> 16;
+                s->inbuf[2] = s->free_format_next_header >> 8;
+                s->inbuf[3] = s->free_format_next_header;
+                s->inbuf_ptr = s->inbuf + 4;
+                s->free_format_next_header = 0;
+                goto got_header;
+            }
+	    /* no header seen : find one. We need at least MPA_HEADER_SIZE
+               bytes to parse it */
+	    len = MPA_HEADER_SIZE - len;
+	    if (len > buf_size)
+		len = buf_size;
+	    if (len > 0) {
+		memcpy(s->inbuf_ptr, buf_ptr, len);
+		buf_ptr += len;
+		buf_size -= len;
+		s->inbuf_ptr += len;
+	    }
+	    if ((s->inbuf_ptr - s->inbuf) >= MPA_HEADER_SIZE) {
+            got_header:
+		header = (s->inbuf[0] << 24) | (s->inbuf[1] << 16) |
+		    (s->inbuf[2] << 8) | s->inbuf[3];
+
+                ret = mpa_decode_header(avctx, header);
+                if (ret < 0) {
+		    /* no sync found : move by one byte (inefficient, but simple!) */
+		    memmove(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf - 1);
+		    s->inbuf_ptr--;
+                    dprintf("skip %x\n", header);
+                    /* reset free format frame size to give a chance
+                       to get a new bitrate */
+                    s->free_format_frame_size = 0;
+		} else {
+                    s->frame_size = ret;
+#if 0
+                    /* free format: prepare to compute frame size */
+		    if (decode_header(s, header) == 1) {
+			s->frame_size = -1;
+                    }
+#endif
+		}
+	    }
+        } else 
+#if 0
+        if (s->frame_size == -1) {
+            /* free format : find next sync to compute frame size */
+	    len = MPA_MAX_CODED_FRAME_SIZE - len;
+	    if (len > buf_size)
+		len = buf_size;
+            if (len == 0) {
+		/* frame too long: resync */
+                s->frame_size = 0;
+		memmove(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf - 1);
+		s->inbuf_ptr--;
+            } else {
+                uint8_t *p, *pend;
+                uint32_t header1;
+                int padding;
+
+                memcpy(s->inbuf_ptr, buf_ptr, len);
+                /* check for header */
+                p = s->inbuf_ptr - 3;
+                pend = s->inbuf_ptr + len - 4;
+                while (p <= pend) {
+                    header = (p[0] << 24) | (p[1] << 16) |
+                        (p[2] << 8) | p[3];
+                    header1 = (s->inbuf[0] << 24) | (s->inbuf[1] << 16) |
+                        (s->inbuf[2] << 8) | s->inbuf[3];
+                    /* check with high probability that we have a
+                       valid header */
+                    if ((header & SAME_HEADER_MASK) ==
+                        (header1 & SAME_HEADER_MASK)) {
+                        /* header found: update pointers */
+                        len = (p + 4) - s->inbuf_ptr;
+                        buf_ptr += len;
+                        buf_size -= len;
+                        s->inbuf_ptr = p;
+                        /* compute frame size */
+                        s->free_format_next_header = header;
+                        s->free_format_frame_size = s->inbuf_ptr - s->inbuf;
+                        padding = (header1 >> 9) & 1;
+                        if (s->layer == 1)
+                            s->free_format_frame_size -= padding * 4;
+                        else
+                            s->free_format_frame_size -= padding;
+                        dprintf("free frame size=%d padding=%d\n", 
+                                s->free_format_frame_size, padding);
+                        decode_header(s, header1);
+                        goto next_data;
+                    }
+                    p++;
+                }
+                /* not found: simply increase pointers */
+                buf_ptr += len;
+                s->inbuf_ptr += len;
+                buf_size -= len;
+            }
+	} else 
+#endif
+        if (len < s->frame_size) {
+            if (s->frame_size > MPA_MAX_CODED_FRAME_SIZE)
+                s->frame_size = MPA_MAX_CODED_FRAME_SIZE;
+	    len = s->frame_size - len;
+	    if (len > buf_size)
+		len = buf_size;
+	    memcpy(s->inbuf_ptr, buf_ptr, len);
+	    buf_ptr += len;
+	    s->inbuf_ptr += len;
+	    buf_size -= len;
+	}
+        //    next_data:
+        if (s->frame_size > 0 && 
+            (s->inbuf_ptr - s->inbuf) >= s->frame_size) {
+            *poutbuf = s->inbuf;
+            *poutbuf_size = s->inbuf_ptr - s->inbuf;
+	    s->inbuf_ptr = s->inbuf;
+	    s->frame_size = 0;
+	    break;
+	}
+    }
+    return buf_ptr - buf;
+}
+
+
+AVCodecParser mpegaudio_parser = {
+    { CODEC_ID_MP2, CODEC_ID_MP3 },
+    sizeof(MpegAudioParseContext),
+    mpegaudio_parse_init,
+    mpegaudio_parse,
+    NULL,
+};
+

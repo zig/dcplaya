@@ -112,6 +112,27 @@ max run: 29/41
 #define IS_3IV1 0
 #endif
 
+#ifdef TRACE
+#include <stdio.h>
+void tprintf(const char * fmt, ...)
+{
+  static FILE * fp;
+  static char out[1024];
+  va_list args;
+
+  if (fp == NULL) {
+    fp = fopen("/pc/home/zig/ffmpeg.trace", "w");
+  }
+
+  va_start(args, fmt);
+  vsprintf(out, fmt, args);
+  va_end(args);
+
+  av_log(NULL, AV_LOG_DEBUG, out);
+  fwrite(out, 1, strlen(out), fp);
+}
+#endif
+
 int h263_get_picture_format(int width, int height)
 {
     int format;

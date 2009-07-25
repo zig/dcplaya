@@ -19,22 +19,25 @@
  */
 
 #include "../dsputil.h"
-#define c1	1.38703984532214752434	/* sqrt(2)*cos(1*pi/16) */
-#define c2	1.30656296487637657577	/* sqrt(2)*cos(2*pi/16) */
-#define c3	1.17587560241935884520	/* sqrt(2)*cos(3*pi/16) */
-#define c4	1.00000000000000000000	/* sqrt(2)*cos(4*pi/16) */
-#define c5	0.78569495838710234903	/* sqrt(2)*cos(5*pi/16) */
-#define c6	0.54119610014619712324	/* sqrt(2)*cos(6*pi/16) */
-#define c7	0.27589937928294311353	/* sqrt(2)*cos(7*pi/16) */
 
-const	static float even_table[] __attribute__ ((aligned(8))) = {
+#define SHIFT 6
+
+#define c1	(1<<SHIFT)* 1.38703984532214752434	/* sqrt(2)*cos(1*pi/16) */
+#define c2	(1<<SHIFT)* 1.30656296487637657577	/* sqrt(2)*cos(2*pi/16) */
+#define c3	(1<<SHIFT)* 1.17587560241935884520	/* sqrt(2)*cos(3*pi/16) */
+#define c4	(1<<SHIFT)* 1.00000000000000000000	/* sqrt(2)*cos(4*pi/16) */
+#define c5	(1<<SHIFT)* 0.78569495838710234903	/* sqrt(2)*cos(5*pi/16) */
+#define c6	(1<<SHIFT)* 0.54119610014619712324	/* sqrt(2)*cos(6*pi/16) */
+#define c7	(1<<SHIFT)* 0.27589937928294311353	/* sqrt(2)*cos(7*pi/16) */
+
+const	static float even_table[] __attribute__ ((aligned(64))) = {
 	 c4, c4, c4, c4,
 	 c2, c6,-c6,-c2,
 	 c4,-c4,-c4, c4,
 	 c6,-c2, c2,-c6
 };
 
-const	static float odd_table[] __attribute__ ((aligned(8))) = {
+const	static float odd_table[] __attribute__ ((aligned(64))) = {
 	 c1, c3, c5, c7,
 	 c3,-c7,-c1,-c5,
 	 c5,-c1, c7, c3,
@@ -115,16 +118,24 @@ static void load_matrix_(float xf[],const float table[])
 
 #endif
 
-#if 1
+#if 0
 #define	DESCALE(x,n)	(x)*(1.0f/(1<<(n)))
 #else
-#define	DESCALE(x,n)	(((int)(x)+(1<<(n-1)))>>(n))
+//#define	DESCALE(x,n)	(( ((int)(x)) +(1<<(n-1)))>>(n))
+#define	DESCALE(x,n)	( ( ((int)(x)) + ( (1 << 2*SHIFT+2) - 1 ) >> \
+			    (2*SHIFT+3) ) )
 #endif
+
+/* #if 0 */
+/* #define	DESCALE(x,n)	(x)*(1.0f/(1<<(n))) */
+/* #else */
+/* #define	DESCALE(x,n)	(((int)(x)+(1<<(n-1)))>>(n)) */
+/* #endif */
 
 /* this code work worse on gcc cvs. 3.2.3 work fine */
 
 
-#if 1
+#if 0
 //optimized 
 
 void idct_sh4(DCTELEM *block)
@@ -205,6 +216,7 @@ void idct_sh4(DCTELEM *block)
 	ofs2 = sizeof(float)*4*8;
 	ofs3 = sizeof(float)*6*8;
 
+
 	i = 8;
 
 #define	OA(fblock,ofs)	*(float*)((char*)fblock + ofs)
@@ -260,7 +272,8 @@ void idct_sh4(DCTELEM *block)
 	DEFREG;
 
 	int i;
-	float	tblock[8*8],*fblock;
+	static float	tblock[8*8] __attribute__((aligned(64)));
+	float   *fblock;
 
 	/* row */
 

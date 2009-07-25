@@ -20,6 +20,8 @@
 #include "avio.h"
 #include <stdarg.h>
 
+#define CONFIG_ENCODERS
+
 #define IO_BUFFER_SIZE 32768
 
 int init_put_byte(ByteIOContext *s,

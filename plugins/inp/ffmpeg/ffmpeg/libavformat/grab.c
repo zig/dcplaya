@@ -16,7 +16,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+
 #include "avformat.h"
+#ifndef ARCH_SH4
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -849,3 +851,4 @@ int video_grab_init(void)
     av_register_input_format(&video_grab_device_format);
     return 0;
 }
+#endif

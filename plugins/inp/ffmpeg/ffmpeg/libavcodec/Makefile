@@ -13,14 +13,16 @@ OBJS= common.o utils.o mem.o allcodecs.o \
       mpegvideo.o jrevdct.o jfdctfst.o jfdctint.o\
       mpegaudio.o ac3enc.o mjpeg.o resample.o resample2.o dsputil.o \
       motion_est.o imgconvert.o imgresample.o \
-      mpeg12.o mpegaudiodec.o pcm.o simple_idct.o \
+      mpeg12.o \
+      pcm.o simple_idct.o \
       ratecontrol.o adpcm.o eval.o dv.o error_resilience.o \
       fft.o mdct.o mace.o huffyuv.o cyuv.o opts.o raw.o h264.o golomb.o \
       vp3.o asv1.o 4xm.o cabac.o ffv1.o ra144.o ra288.o vcr1.o cljr.o \
       roqvideo.o dpcm.o interplayvideo.o xan.o rpza.o cinepak.o msrle.o \
       msvideo1.o vqavideo.o idcinvideo.o adx.o rational.o faandct.o 8bps.o \
-      smc.o parser.o flicvideo.o truemotion1.o vmdav.o lcl.o qtrle.o g726.o \
-      flac.o vp3dsp.o integer.o
+      smc.o parser.o parser_reg.o flicvideo.o truemotion1.o vmdav.o lcl.o qtrle.o g726.o \
+      flac.o vp3dsp.o integer.o \
+      mpegaudiodec.o dsputil_tables.o
 
 ifeq ($(AMR_NB),yes)
 ifeq ($(AMR_NB_FIXED),yes)
@@ -159,7 +161,9 @@ OBJS += ppc/dsputil_altivec.o ppc/mpegvideo_altivec.o ppc/idct_altivec.o \
 endif
 
 ifeq ($(TARGET_ARCH_SH4),yes)
-OBJS+= sh4/idct_sh4.o sh4/dsputil_sh4.o sh4/dsputil_align.o
+OBJS+= sh4/dsputil_align.o
+OBJS+= sh4/dsputil_align64.o
+OBJS+= sh4/idct_sh4.o sh4/dsputil_sh4.o
 endif
 
 ifeq ($(TARGET_ARCH_SPARC),yes)
@@ -174,13 +178,17 @@ endif
 SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S)
 OBJS := $(OBJS) $(ASM_OBJS)
 
+MISC_OUT := utils.o imgconvert.o adx.o parser.o integer.o mpegaudiodec.o dsputil_tables.o common.o
+OBJS_MISC := $(filter-out $(MISC_OUT),$(OBJS))
+
+LIB_MISC= $(LIBPREF)avcodec_misc$(LIBSUF)
 LIB= $(LIBPREF)avcodec$(LIBSUF)
 ifeq ($(BUILD_SHARED),yes)
 SLIB= $(SLIBPREF)avcodec$(SLIBSUF)
 endif
 TESTS= imgresample-test dct-test motion-test fft-test
 
-all: $(LIB) $(SLIB)
+all: $(LIB) $(SLIB) $(LIB_MISC)
 
 amrlibs:
 	$(MAKE) -C amr spclib fipoplib
@@ -190,6 +198,12 @@ tests: apiexample cpuid_test $(TESTS)
 $(LIB): $(OBJS) $(AMRLIBS)
 	rm -f $@
 	$(AR) rc $@ $(OBJS) $(AMREXTRALIBS)
+	$(RANLIB) $@
+
+$(LIB_MISC): $(OBJS_MISC) $(AMRLIBS)
+	rm -f $@
+	$(AR) rc $@ $(OBJS) $(AMREXTRALIBS)
+	$(AR) d $@ $(MISC_OUT)
 	$(RANLIB) $@
 
 $(SLIB): $(OBJS)

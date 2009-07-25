@@ -18,6 +18,8 @@
  */
 #include "avformat.h"
 
+#ifndef ARCH_SH4
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -343,3 +345,4 @@ int audio_init(void)
     av_register_output_format(&audio_out_format);
     return 0;
 }
+#endif

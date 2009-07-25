@@ -11,7 +11,7 @@ extern "C" {
 #define LIBAVFORMAT_VERSION     FFMPEG_VERSION
 #define LIBAVFORMAT_IDENT	"FFmpeg" FFMPEG_VERSION "b" AV_STRINGIFY(LIBAVFORMAT_BUILD)
 
-#include <time.h>
+#include "time.h"
 #include <stdio.h>  /* FILE */
 #include "avcodec.h"
 
@@ -509,6 +509,11 @@ typedef struct FifoBuffer {
     uint8_t *rptr, *wptr, *end;
 } FifoBuffer;
 
+#define fifo_init av_fifo_init
+#define fifo_free av_fifo_free
+#define fifo_size av_fifo_size
+#define fifo_read av_fifo_read
+#define fifo_write av_fifo_write
 int fifo_init(FifoBuffer *f, int size);
 void fifo_free(FifoBuffer *f);
 int fifo_size(FifoBuffer *f, uint8_t *rptr);

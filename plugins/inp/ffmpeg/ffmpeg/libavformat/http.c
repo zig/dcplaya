@@ -17,7 +17,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "avformat.h"
+//#ifndef ARCH_SH4
 #include <unistd.h>
+
+#if 0
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -27,7 +30,7 @@
 # include "barpainet.h"
 #endif
 #include <netdb.h>
-
+#endif
 
 /* XXX: POST protocol is not completly implemented because ffmpeg use
    only a subset of it */
@@ -277,3 +280,4 @@ URLProtocol http_protocol = {
     http_close,
 };
 
+//#endif

@@ -387,6 +387,17 @@ typedef struct RL_VLC_ELEM {
 /* used to avoid missaligned exceptions on some archs (alpha, ...) */
 #ifdef ARCH_X86
 #    define unaligned32(a) (*(uint32_t*)(a))
+#elif defined(ARCH_SH4)
+static inline uint32_t unaligned32(const void *v) {
+	// genelic gnuc version is 16 ops, this is 13 ops
+	const uint8_t *p = v;
+	uint32_t tmp,tmp2;
+	tmp  = *p++;
+	tmp |= *p++<<8;
+	tmp2 = *p++;
+	tmp2 |= (char)*p++<<8; // on sh, load char is faster than unsigned char
+	return tmp | (tmp2<<16);
+}
 #else
 #    ifdef __GNUC__
 static inline uint32_t unaligned32(const void *v) {
@@ -596,11 +607,28 @@ for examples see get_bits, show_bits, skip_bits, get_vlc
 
 static inline int unaligned32_be(const void *v)
 {
+#ifdef ARCH_SH4
+	const uint8_t *p=v;
+	uint32_t tmp,tmp2;
+	tmp  = (char) *p++<<8; /* on sh4 load signed char is faster */
+	tmp |= /*(char)*/ *p++;
+	tmp2 = *p++<<8;
+	tmp2 |= *p++;
+	return (tmp<<16) | tmp2;
+#elif defined(CONFIG_ALIGN)
+	const uint8_t *p=v;
+	return (p[0]<<24) | (p[1]<<16) | (p[2]<<8) | (p[3]);
+#else
+	return be2me_32( unaligned32(v)); //original
+#endif
+
+#if 0
 #ifdef CONFIG_ALIGN
 	const uint8_t *p=v;
 	return (((p[0]<<8) | p[1])<<16) | (p[2]<<8) | (p[3]);
 #else
 	return be2me_32( unaligned32(v)); //original
+#endif
 #endif
 }
 
@@ -1025,21 +1053,23 @@ static always_inline int get_vlc2(GetBitContext *s, VLC_TYPE (*table)[2],
 
 #ifdef TRACE
 
+void tprintf(const char * fmt, ...);
+
 static inline void print_bin(int bits, int n){
     int i;
     
     for(i=n-1; i>=0; i--){
-        printf("%d", (bits>>i)&1);
+        tprintf("%d", (bits>>i)&1);
     }
     for(i=n; i<24; i++)
-        printf(" ");
+        tprintf(" ");
 }
 
 static inline int get_bits_trace(GetBitContext *s, int n, char *file, char *func, int line){
     int r= get_bits(s, n);
     
     print_bin(r, n);
-    printf("%5d %2d %3d bit @%5d in %s %s:%d\n", r, n, r, get_bits_count(s)-n, file, func, line);
+    tprintf("%5d %2d %3d bit @%5d in %s %s:%d\n", r, n, r, get_bits_count(s)-n, file, func, line);
     return r;
 }
 static inline int get_vlc_trace(GetBitContext *s, VLC_TYPE (*table)[2], int bits, int max_depth, char *file, char *func, int line){
@@ -1051,7 +1081,7 @@ static inline int get_vlc_trace(GetBitContext *s, VLC_TYPE (*table)[2], int bits
     
     print_bin(bits2, len);
     
-    printf("%5d %2d %3d vlc @%5d in %s %s:%d\n", bits2, len, r, pos, file, func, line);
+    tprintf("%5d %2d %3d vlc @%5d in %s %s:%d\n", bits2, len, r, pos, file, func, line);
     return r;
 }
 static inline int get_xbits_trace(GetBitContext *s, int n, char *file, char *func, int line){
@@ -1059,7 +1089,7 @@ static inline int get_xbits_trace(GetBitContext *s, int n, char *file, char *fun
     int r= get_xbits(s, n);
     
     print_bin(show, n);
-    printf("%5d %2d %3d xbt @%5d in %s %s:%d\n", show, n, r, get_bits_count(s)-n, file, func, line);
+    tprintf("%5d %2d %3d xbt @%5d in %s %s:%d\n", show, n, r, get_bits_count(s)-n, file, func, line);
     return r;
 }
 
@@ -1069,7 +1099,7 @@ static inline int get_xbits_trace(GetBitContext *s, int n, char *file, char *fun
 #define get_vlc(s, vlc)            get_vlc_trace(s, (vlc)->table, (vlc)->bits, 3, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #define get_vlc2(s, tab, bits, max) get_vlc_trace(s, tab, bits, max, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 
-#define tprintf(...) av_log(NULL, AV_LOG_DEBUG, __VA_ARGS__)
+//#define tprintf(...) av_log(NULL, AV_LOG_DEBUG, __VA_ARGS__)
 
 #else //TRACE
 #define tprintf(...) {}
