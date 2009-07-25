@@ -1,0 +1,931 @@
+codec_net.o: codec_net.c ../ffmpeg.h \
+  /mnt/big3/zig/dc/kos/libc/include/errno.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h ../ffmpeg/avcodec.h \
+  ../ffmpeg/common.h ../ffmpeg/config.h \
+  /mnt/big3/zig/dc/kos/libc/include/stdlib.h \
+  /mnt/big3/zig/dc/kos/libc/include/unistd.h \
+  /usr/local/cross-tools/sh-dc-elf-3.4.0/lib/gcc-lib/sh-dc-elf/3.2.3/include/stddef.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h \
+  /mnt/big3/zig/dc/kos/libc/include/malloc.h \
+  /mnt/big3/zig/dc/kos/libc/include/stdio.h \
+  /usr/local/cross-tools/sh-dc-elf-3.4.0/lib/gcc-lib/sh-dc-elf/3.2.3/include/stdarg.h \
+  /mnt/big3/zig/dc/kos/include/kos/fs.h \
+  /mnt/big3/zig/dc/kos/include/kos/limits.h \
+  /mnt/big3/zig/dc/kos/libc/include/time.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/queue.h \
+  /mnt/big3/zig/dc/kos/include/kos/nmmgr.h \
+  /mnt/big3/zig/dc/kos/libc/include/string.h \
+  /mnt/big3/zig/dc/kos/libc/include/ctype.h \
+  /mnt/big3/zig/dc/kos/include/math.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/math.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/reent.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/_ansi.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/config.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/ieeefp.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/fastmath.h \
+  ../ffmpeg/bswap.h /mnt/big3/zig/dc/kos/libc/include/assert.h \
+  ../ffmpeg/rational.h ../ffmpeg/avformat.h ../ffmpeg/avio.h rtp.h rtsp.h \
+  rtspcodes.h ../ffmpeg/os_support.h
+
+../ffmpeg.h:
+
+/mnt/big3/zig/dc/kos/libc/include/errno.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h:
+
+../ffmpeg/avcodec.h:
+
+../ffmpeg/common.h:
+
+../ffmpeg/config.h:
+
+/mnt/big3/zig/dc/kos/libc/include/stdlib.h:
+
+/mnt/big3/zig/dc/kos/libc/include/unistd.h:
+
+/usr/local/cross-tools/sh-dc-elf-3.4.0/lib/gcc-lib/sh-dc-elf/3.2.3/include/stddef.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h:
+
+/mnt/big3/zig/dc/kos/libc/include/malloc.h:
+
+/mnt/big3/zig/dc/kos/libc/include/stdio.h:
+
+/usr/local/cross-tools/sh-dc-elf-3.4.0/lib/gcc-lib/sh-dc-elf/3.2.3/include/stdarg.h:
+
+/mnt/big3/zig/dc/kos/include/kos/fs.h:
+
+/mnt/big3/zig/dc/kos/include/kos/limits.h:
+
+/mnt/big3/zig/dc/kos/libc/include/time.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/queue.h:
+
+/mnt/big3/zig/dc/kos/include/kos/nmmgr.h:
+
+/mnt/big3/zig/dc/kos/libc/include/string.h:
+
+/mnt/big3/zig/dc/kos/libc/include/ctype.h:
+
+/mnt/big3/zig/dc/kos/include/math.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/math.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/reent.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/_ansi.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/config.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/ieeefp.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/fastmath.h:
+
+../ffmpeg/bswap.h:
+
+/mnt/big3/zig/dc/kos/libc/include/assert.h:
+
+../ffmpeg/rational.h:
+
+../ffmpeg/avformat.h:
+
+../ffmpeg/avio.h:
+
+rtp.h:
+
+rtsp.h:
+
+rtspcodes.h:
+
+../ffmpeg/os_support.h:
+http.o: http.c /mnt/big3/zig/dc/kos-ports/lwip/kos/include/lwip/lwip.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/debug.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/cc.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h \
+  /usr/local/cross-tools/sh-dc-elf-3.4.0/lib/gcc-lib/sh-dc-elf/3.2.3/include/stddef.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/arch.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/dc/video.h \
+  /mnt/big3/zig/dc/kos/include/kos/fs.h \
+  /mnt/big3/zig/dc/kos/include/kos/limits.h \
+  /mnt/big3/zig/dc/kos/libc/include/time.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/queue.h \
+  /mnt/big3/zig/dc/kos/include/kos/nmmgr.h \
+  /mnt/big3/zig/dc/kos/libc/include/string.h \
+  /mnt/big3/zig/dc/kos/libc/include/unistd.h \
+  /mnt/big3/zig/dc/kos/libc/include/assert.h \
+  /mnt/big3/zig/dc/kos/libc/include/stdio.h \
+  /usr/local/cross-tools/sh-dc-elf-3.4.0/lib/gcc-lib/sh-dc-elf/3.2.3/include/stdarg.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/kos/include/lwipopts.h \
+  /mnt/big3/zig/dc/kos/libc/include/stdlib.h \
+  /mnt/big3/zig/dc/kos/libc/include/malloc.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/opt.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/mem.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/arch.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/memp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/sys.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/sys_arch.h \
+  /mnt/big3/zig/dc/kos/include/kos/sem.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/iovec.h \
+  /mnt/big3/zig/dc/kos/include/kos/thread.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/irq.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/stats.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/tcpip.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/api_msg.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/pbuf.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/ip.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/def.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/ip_addr.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/err.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/udp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/inet.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/tcp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/icmp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/netif.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/dhcp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/api.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/kos/include/netif/kosnetif.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/netif/etharp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/netif/loopif.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/perf.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/sockets.h \
+  ../ffmpeg.h /mnt/big3/zig/dc/kos/libc/include/errno.h \
+  ../ffmpeg/avcodec.h ../ffmpeg/common.h ../ffmpeg/config.h \
+  /mnt/big3/zig/dc/kos/libc/include/ctype.h \
+  /mnt/big3/zig/dc/kos/include/math.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/math.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/reent.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/_ansi.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/config.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/ieeefp.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/fastmath.h \
+  ../ffmpeg/bswap.h ../ffmpeg/rational.h ../ffmpeg/avformat.h \
+  ../ffmpeg/avio.h rtp.h rtsp.h rtspcodes.h ../ffmpeg/os_support.h
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/lwip/lwip.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/debug.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/cc.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h:
+
+/usr/local/cross-tools/sh-dc-elf-3.4.0/lib/gcc-lib/sh-dc-elf/3.2.3/include/stddef.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/arch.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/dc/video.h:
+
+/mnt/big3/zig/dc/kos/include/kos/fs.h:
+
+/mnt/big3/zig/dc/kos/include/kos/limits.h:
+
+/mnt/big3/zig/dc/kos/libc/include/time.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/queue.h:
+
+/mnt/big3/zig/dc/kos/include/kos/nmmgr.h:
+
+/mnt/big3/zig/dc/kos/libc/include/string.h:
+
+/mnt/big3/zig/dc/kos/libc/include/unistd.h:
+
+/mnt/big3/zig/dc/kos/libc/include/assert.h:
+
+/mnt/big3/zig/dc/kos/libc/include/stdio.h:
+
+/usr/local/cross-tools/sh-dc-elf-3.4.0/lib/gcc-lib/sh-dc-elf/3.2.3/include/stdarg.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/lwipopts.h:
+
+/mnt/big3/zig/dc/kos/libc/include/stdlib.h:
+
+/mnt/big3/zig/dc/kos/libc/include/malloc.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/opt.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/mem.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/arch.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/memp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/sys.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/sys_arch.h:
+
+/mnt/big3/zig/dc/kos/include/kos/sem.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/iovec.h:
+
+/mnt/big3/zig/dc/kos/include/kos/thread.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/irq.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/stats.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/tcpip.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/api_msg.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/pbuf.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/ip.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/def.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/ip_addr.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/err.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/udp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/inet.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/tcp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/icmp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/netif.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/dhcp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/api.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/netif/kosnetif.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/netif/etharp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/netif/loopif.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/perf.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/sockets.h:
+
+../ffmpeg.h:
+
+/mnt/big3/zig/dc/kos/libc/include/errno.h:
+
+../ffmpeg/avcodec.h:
+
+../ffmpeg/common.h:
+
+../ffmpeg/config.h:
+
+/mnt/big3/zig/dc/kos/libc/include/ctype.h:
+
+/mnt/big3/zig/dc/kos/include/math.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/math.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/reent.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/_ansi.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/config.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/ieeefp.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/fastmath.h:
+
+../ffmpeg/bswap.h:
+
+../ffmpeg/rational.h:
+
+../ffmpeg/avformat.h:
+
+../ffmpeg/avio.h:
+
+rtp.h:
+
+rtsp.h:
+
+rtspcodes.h:
+
+../ffmpeg/os_support.h:
+mms.o: mms.c /mnt/big3/zig/dc/kos-ports/lwip/kos/include/lwip/lwip.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/debug.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/cc.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h \
+  /usr/local/cross-tools/sh-dc-elf-3.4.0/lib/gcc-lib/sh-dc-elf/3.2.3/include/stddef.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/arch.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/dc/video.h \
+  /mnt/big3/zig/dc/kos/include/kos/fs.h \
+  /mnt/big3/zig/dc/kos/include/kos/limits.h \
+  /mnt/big3/zig/dc/kos/libc/include/time.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/queue.h \
+  /mnt/big3/zig/dc/kos/include/kos/nmmgr.h \
+  /mnt/big3/zig/dc/kos/libc/include/string.h \
+  /mnt/big3/zig/dc/kos/libc/include/unistd.h \
+  /mnt/big3/zig/dc/kos/libc/include/assert.h \
+  /mnt/big3/zig/dc/kos/libc/include/stdio.h \
+  /usr/local/cross-tools/sh-dc-elf-3.4.0/lib/gcc-lib/sh-dc-elf/3.2.3/include/stdarg.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/kos/include/lwipopts.h \
+  /mnt/big3/zig/dc/kos/libc/include/stdlib.h \
+  /mnt/big3/zig/dc/kos/libc/include/malloc.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/opt.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/mem.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/arch.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/memp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/sys.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/sys_arch.h \
+  /mnt/big3/zig/dc/kos/include/kos/sem.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/iovec.h \
+  /mnt/big3/zig/dc/kos/include/kos/thread.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/irq.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/stats.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/tcpip.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/api_msg.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/pbuf.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/ip.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/def.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/ip_addr.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/err.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/udp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/inet.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/tcp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/icmp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/netif.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/dhcp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/api.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/kos/include/netif/kosnetif.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/netif/etharp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/netif/loopif.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/perf.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/sockets.h \
+  ../ffmpeg.h /mnt/big3/zig/dc/kos/libc/include/errno.h \
+  ../ffmpeg/avcodec.h ../ffmpeg/common.h ../ffmpeg/config.h \
+  /mnt/big3/zig/dc/kos/libc/include/ctype.h \
+  /mnt/big3/zig/dc/kos/include/math.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/math.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/reent.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/_ansi.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/config.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/ieeefp.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/fastmath.h \
+  ../ffmpeg/bswap.h ../ffmpeg/rational.h ../ffmpeg/avformat.h \
+  ../ffmpeg/avio.h rtp.h rtsp.h rtspcodes.h ../ffmpeg/os_support.h
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/lwip/lwip.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/debug.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/cc.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h:
+
+/usr/local/cross-tools/sh-dc-elf-3.4.0/lib/gcc-lib/sh-dc-elf/3.2.3/include/stddef.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/arch.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/dc/video.h:
+
+/mnt/big3/zig/dc/kos/include/kos/fs.h:
+
+/mnt/big3/zig/dc/kos/include/kos/limits.h:
+
+/mnt/big3/zig/dc/kos/libc/include/time.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/queue.h:
+
+/mnt/big3/zig/dc/kos/include/kos/nmmgr.h:
+
+/mnt/big3/zig/dc/kos/libc/include/string.h:
+
+/mnt/big3/zig/dc/kos/libc/include/unistd.h:
+
+/mnt/big3/zig/dc/kos/libc/include/assert.h:
+
+/mnt/big3/zig/dc/kos/libc/include/stdio.h:
+
+/usr/local/cross-tools/sh-dc-elf-3.4.0/lib/gcc-lib/sh-dc-elf/3.2.3/include/stdarg.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/lwipopts.h:
+
+/mnt/big3/zig/dc/kos/libc/include/stdlib.h:
+
+/mnt/big3/zig/dc/kos/libc/include/malloc.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/opt.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/mem.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/arch.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/memp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/sys.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/sys_arch.h:
+
+/mnt/big3/zig/dc/kos/include/kos/sem.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/iovec.h:
+
+/mnt/big3/zig/dc/kos/include/kos/thread.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/irq.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/stats.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/tcpip.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/api_msg.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/pbuf.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/ip.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/def.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/ip_addr.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/err.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/udp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/inet.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/tcp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/icmp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/netif.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/dhcp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/api.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/netif/kosnetif.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/netif/etharp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/netif/loopif.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/perf.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/sockets.h:
+
+../ffmpeg.h:
+
+/mnt/big3/zig/dc/kos/libc/include/errno.h:
+
+../ffmpeg/avcodec.h:
+
+../ffmpeg/common.h:
+
+../ffmpeg/config.h:
+
+/mnt/big3/zig/dc/kos/libc/include/ctype.h:
+
+/mnt/big3/zig/dc/kos/include/math.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/math.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/reent.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/_ansi.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/config.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/ieeefp.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/fastmath.h:
+
+../ffmpeg/bswap.h:
+
+../ffmpeg/rational.h:
+
+../ffmpeg/avformat.h:
+
+../ffmpeg/avio.h:
+
+rtp.h:
+
+rtsp.h:
+
+rtspcodes.h:
+
+../ffmpeg/os_support.h:
+rtp.o: rtp.c /mnt/big3/zig/dc/kos-ports/lwip/kos/include/lwip/lwip.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/debug.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/cc.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h \
+  /usr/local/cross-tools/sh-dc-elf-3.4.0/lib/gcc-lib/sh-dc-elf/3.2.3/include/stddef.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/arch.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/dc/video.h \
+  /mnt/big3/zig/dc/kos/include/kos/fs.h \
+  /mnt/big3/zig/dc/kos/include/kos/limits.h \
+  /mnt/big3/zig/dc/kos/libc/include/time.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/queue.h \
+  /mnt/big3/zig/dc/kos/include/kos/nmmgr.h \
+  /mnt/big3/zig/dc/kos/libc/include/string.h \
+  /mnt/big3/zig/dc/kos/libc/include/unistd.h \
+  /mnt/big3/zig/dc/kos/libc/include/assert.h \
+  /mnt/big3/zig/dc/kos/libc/include/stdio.h \
+  /usr/local/cross-tools/sh-dc-elf-3.4.0/lib/gcc-lib/sh-dc-elf/3.2.3/include/stdarg.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/kos/include/lwipopts.h \
+  /mnt/big3/zig/dc/kos/libc/include/stdlib.h \
+  /mnt/big3/zig/dc/kos/libc/include/malloc.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/opt.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/mem.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/arch.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/memp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/sys.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/sys_arch.h \
+  /mnt/big3/zig/dc/kos/include/kos/sem.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/iovec.h \
+  /mnt/big3/zig/dc/kos/include/kos/thread.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/irq.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/stats.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/tcpip.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/api_msg.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/pbuf.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/ip.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/def.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/ip_addr.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/err.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/udp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/inet.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/tcp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/icmp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/netif.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/dhcp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/api.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/kos/include/netif/kosnetif.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/netif/etharp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/netif/loopif.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/perf.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/sockets.h \
+  ../ffmpeg.h /mnt/big3/zig/dc/kos/libc/include/errno.h \
+  ../ffmpeg/avcodec.h ../ffmpeg/common.h ../ffmpeg/config.h \
+  /mnt/big3/zig/dc/kos/libc/include/ctype.h \
+  /mnt/big3/zig/dc/kos/include/math.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/math.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/reent.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/_ansi.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/config.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/ieeefp.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/fastmath.h \
+  ../ffmpeg/bswap.h ../ffmpeg/rational.h ../ffmpeg/avformat.h \
+  ../ffmpeg/avio.h rtp.h rtsp.h rtspcodes.h ../ffmpeg/os_support.h \
+  ../ffmpeg/mpegts.h
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/lwip/lwip.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/debug.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/cc.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h:
+
+/usr/local/cross-tools/sh-dc-elf-3.4.0/lib/gcc-lib/sh-dc-elf/3.2.3/include/stddef.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/arch.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/dc/video.h:
+
+/mnt/big3/zig/dc/kos/include/kos/fs.h:
+
+/mnt/big3/zig/dc/kos/include/kos/limits.h:
+
+/mnt/big3/zig/dc/kos/libc/include/time.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/queue.h:
+
+/mnt/big3/zig/dc/kos/include/kos/nmmgr.h:
+
+/mnt/big3/zig/dc/kos/libc/include/string.h:
+
+/mnt/big3/zig/dc/kos/libc/include/unistd.h:
+
+/mnt/big3/zig/dc/kos/libc/include/assert.h:
+
+/mnt/big3/zig/dc/kos/libc/include/stdio.h:
+
+/usr/local/cross-tools/sh-dc-elf-3.4.0/lib/gcc-lib/sh-dc-elf/3.2.3/include/stdarg.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/lwipopts.h:
+
+/mnt/big3/zig/dc/kos/libc/include/stdlib.h:
+
+/mnt/big3/zig/dc/kos/libc/include/malloc.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/opt.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/mem.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/arch.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/memp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/sys.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/sys_arch.h:
+
+/mnt/big3/zig/dc/kos/include/kos/sem.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/iovec.h:
+
+/mnt/big3/zig/dc/kos/include/kos/thread.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/irq.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/stats.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/tcpip.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/api_msg.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/pbuf.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/ip.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/def.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/ip_addr.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/err.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/udp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/inet.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/tcp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/icmp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/netif.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/dhcp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/api.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/netif/kosnetif.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/netif/etharp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/netif/loopif.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/perf.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/sockets.h:
+
+../ffmpeg.h:
+
+/mnt/big3/zig/dc/kos/libc/include/errno.h:
+
+../ffmpeg/avcodec.h:
+
+../ffmpeg/common.h:
+
+../ffmpeg/config.h:
+
+/mnt/big3/zig/dc/kos/libc/include/ctype.h:
+
+/mnt/big3/zig/dc/kos/include/math.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/math.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/reent.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/_ansi.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/config.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/ieeefp.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/fastmath.h:
+
+../ffmpeg/bswap.h:
+
+../ffmpeg/rational.h:
+
+../ffmpeg/avformat.h:
+
+../ffmpeg/avio.h:
+
+rtp.h:
+
+rtsp.h:
+
+rtspcodes.h:
+
+../ffmpeg/os_support.h:
+
+../ffmpeg/mpegts.h:
+tcp.o: tcp.c /mnt/big3/zig/dc/kos-ports/lwip/kos/include/lwip/lwip.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/debug.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/cc.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h \
+  /usr/local/cross-tools/sh-dc-elf-3.4.0/lib/gcc-lib/sh-dc-elf/3.2.3/include/stddef.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/arch.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/dc/video.h \
+  /mnt/big3/zig/dc/kos/include/kos/fs.h \
+  /mnt/big3/zig/dc/kos/include/kos/limits.h \
+  /mnt/big3/zig/dc/kos/libc/include/time.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/queue.h \
+  /mnt/big3/zig/dc/kos/include/kos/nmmgr.h \
+  /mnt/big3/zig/dc/kos/libc/include/string.h \
+  /mnt/big3/zig/dc/kos/libc/include/unistd.h \
+  /mnt/big3/zig/dc/kos/libc/include/assert.h \
+  /mnt/big3/zig/dc/kos/libc/include/stdio.h \
+  /usr/local/cross-tools/sh-dc-elf-3.4.0/lib/gcc-lib/sh-dc-elf/3.2.3/include/stdarg.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/kos/include/lwipopts.h \
+  /mnt/big3/zig/dc/kos/libc/include/stdlib.h \
+  /mnt/big3/zig/dc/kos/libc/include/malloc.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/opt.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/mem.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/arch.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/memp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/sys.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/sys_arch.h \
+  /mnt/big3/zig/dc/kos/include/kos/sem.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/iovec.h \
+  /mnt/big3/zig/dc/kos/include/kos/thread.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/irq.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/stats.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/tcpip.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/api_msg.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/pbuf.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/ip.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/def.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/ip_addr.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/err.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/udp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/inet.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/tcp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/icmp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/netif.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/dhcp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/api.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/kos/include/netif/kosnetif.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/netif/etharp.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/netif/loopif.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/perf.h \
+  /mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/sockets.h \
+  ../ffmpeg.h /mnt/big3/zig/dc/kos/libc/include/errno.h \
+  ../ffmpeg/avcodec.h ../ffmpeg/common.h ../ffmpeg/config.h \
+  /mnt/big3/zig/dc/kos/libc/include/ctype.h \
+  /mnt/big3/zig/dc/kos/include/math.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/math.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/reent.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/_ansi.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/config.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/ieeefp.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/fastmath.h \
+  ../ffmpeg/bswap.h ../ffmpeg/rational.h ../ffmpeg/avformat.h \
+  ../ffmpeg/avio.h rtp.h rtsp.h rtspcodes.h ../ffmpeg/os_support.h
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/lwip/lwip.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/debug.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/cc.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h:
+
+/usr/local/cross-tools/sh-dc-elf-3.4.0/lib/gcc-lib/sh-dc-elf/3.2.3/include/stddef.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/arch.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/dc/video.h:
+
+/mnt/big3/zig/dc/kos/include/kos/fs.h:
+
+/mnt/big3/zig/dc/kos/include/kos/limits.h:
+
+/mnt/big3/zig/dc/kos/libc/include/time.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/queue.h:
+
+/mnt/big3/zig/dc/kos/include/kos/nmmgr.h:
+
+/mnt/big3/zig/dc/kos/libc/include/string.h:
+
+/mnt/big3/zig/dc/kos/libc/include/unistd.h:
+
+/mnt/big3/zig/dc/kos/libc/include/assert.h:
+
+/mnt/big3/zig/dc/kos/libc/include/stdio.h:
+
+/usr/local/cross-tools/sh-dc-elf-3.4.0/lib/gcc-lib/sh-dc-elf/3.2.3/include/stdarg.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/lwipopts.h:
+
+/mnt/big3/zig/dc/kos/libc/include/stdlib.h:
+
+/mnt/big3/zig/dc/kos/libc/include/malloc.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/opt.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/mem.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/arch.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/memp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/sys.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/sys_arch.h:
+
+/mnt/big3/zig/dc/kos/include/kos/sem.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/iovec.h:
+
+/mnt/big3/zig/dc/kos/include/kos/thread.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/irq.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/stats.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/tcpip.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/api_msg.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/pbuf.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/ip.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/def.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/ip_addr.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/err.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/udp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/inet.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/tcp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/ipv4/lwip/icmp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/netif.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/dhcp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/api.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/netif/kosnetif.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/netif/etharp.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/netif/loopif.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/kos/include/arch/perf.h:
+
+/mnt/big3/zig/dc/kos-ports/lwip/lwip/src/include/lwip/sockets.h:
+
+../ffmpeg.h:
+
+/mnt/big3/zig/dc/kos/libc/include/errno.h:
+
+../ffmpeg/avcodec.h:
+
+../ffmpeg/common.h:
+
+../ffmpeg/config.h:
+
+/mnt/big3/zig/dc/kos/libc/include/ctype.h:
+
+/mnt/big3/zig/dc/kos/include/math.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/math.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/reent.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/_ansi.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/config.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/ieeefp.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/fastmath.h:
+
+../ffmpeg/bswap.h:
+
+../ffmpeg/rational.h:
+
+../ffmpeg/avformat.h:
+
+../ffmpeg/avio.h:
+
+rtp.h:
+
+rtsp.h:
+
+rtspcodes.h:
+
+../ffmpeg/os_support.h:
