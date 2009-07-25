@@ -1,0 +1,377 @@
+alloc.o: alloc.c /mnt/big3/zig/dc/kos/libc/include/stdlib.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h \
+  /mnt/big3/zig/dc/kos/libc/include/unistd.h \
+  /usr/local/cross-tools/sh-elf/lib/gcc-lib/sh-dc-elf/3.0.4/include/stddef.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h \
+  /mnt/big3/zig/dc/kos/libc/include/malloc.h ../sha123/alloc.h
+
+/mnt/big3/zig/dc/kos/libc/include/stdlib.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h:
+
+/mnt/big3/zig/dc/kos/libc/include/unistd.h:
+
+/usr/local/cross-tools/sh-elf/lib/gcc-lib/sh-dc-elf/3.0.4/include/stddef.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h:
+
+/mnt/big3/zig/dc/kos/libc/include/malloc.h:
+
+../sha123/alloc.h:
+api.o: api.c /mnt/big3/zig/dc/kos/libc/include/stdlib.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h \
+  /mnt/big3/zig/dc/kos/libc/include/unistd.h \
+  /usr/local/cross-tools/sh-elf/lib/gcc-lib/sh-dc-elf/3.0.4/include/stddef.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h \
+  /mnt/big3/zig/dc/kos/libc/include/malloc.h ../sha123/api.h \
+  ../istream/istream.h ../sha123/tables.h ../sha123/types.h \
+  ../sha123/sha123.h ../sha123/defs.h ../sha123/bitstream.h \
+  ../sha123/equalizer.h ../sha123/header.h ../sha123/alloc.h \
+  ../sha123/debug.h ../sha123/decode.h ../sha123/dct.h \
+  /mnt/big3/zig/dc/kos/libc/include/stdio.h \
+  /usr/local/cross-tools/sh-elf/lib/gcc-lib/sh-dc-elf/3.0.4/include/stdarg.h \
+  /mnt/big3/zig/dc/kos/include/kos/fs.h \
+  /mnt/big3/zig/dc/kos/include/kos/limits.h \
+  /mnt/big3/zig/dc/kos/libc/include/time.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/queue.h \
+  /mnt/big3/zig/dc/kos/include/kos/nmmgr.h \
+  /mnt/big3/zig/dc/kos/libc/include/string.h
+
+/mnt/big3/zig/dc/kos/libc/include/stdlib.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h:
+
+/mnt/big3/zig/dc/kos/libc/include/unistd.h:
+
+/usr/local/cross-tools/sh-elf/lib/gcc-lib/sh-dc-elf/3.0.4/include/stddef.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h:
+
+/mnt/big3/zig/dc/kos/libc/include/malloc.h:
+
+../sha123/api.h:
+
+../istream/istream.h:
+
+../sha123/tables.h:
+
+../sha123/types.h:
+
+../sha123/sha123.h:
+
+../sha123/defs.h:
+
+../sha123/bitstream.h:
+
+../sha123/equalizer.h:
+
+../sha123/header.h:
+
+../sha123/alloc.h:
+
+../sha123/debug.h:
+
+../sha123/decode.h:
+
+../sha123/dct.h:
+
+/mnt/big3/zig/dc/kos/libc/include/stdio.h:
+
+/usr/local/cross-tools/sh-elf/lib/gcc-lib/sh-dc-elf/3.0.4/include/stdarg.h:
+
+/mnt/big3/zig/dc/kos/include/kos/fs.h:
+
+/mnt/big3/zig/dc/kos/include/kos/limits.h:
+
+/mnt/big3/zig/dc/kos/libc/include/time.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/queue.h:
+
+/mnt/big3/zig/dc/kos/include/kos/nmmgr.h:
+
+/mnt/big3/zig/dc/kos/libc/include/string.h:
+bitstream.o: bitstream.c ../sha123/bitstream.h \
+  ../sha123/bitstream_inline.h ../sha123/debug.h
+
+../sha123/bitstream.h:
+
+../sha123/bitstream_inline.h:
+
+../sha123/debug.h:
+dct.o: dct.c ../sha123/debug.h ../sha123/dct.h ../sha123/types.h \
+  ../sha123/dct64.h ../sha123/dct36.h
+
+../sha123/debug.h:
+
+../sha123/dct.h:
+
+../sha123/types.h:
+
+../sha123/dct64.h:
+
+../sha123/dct36.h:
+dct12_std.o: dct12_std.c ../sha123/defs.h ../sha123/dct12.h \
+  ../sha123/types.h
+
+../sha123/defs.h:
+
+../sha123/dct12.h:
+
+../sha123/types.h:
+dct36.o: dct36.c ../sha123/dct36.h ../sha123/dct.h ../sha123/types.h
+
+../sha123/dct36.h:
+
+../sha123/dct.h:
+
+../sha123/types.h:
+dct36_std.o: dct36_std.c ../sha123/dct36.h ../sha123/dct.h \
+  ../sha123/types.h ../sha123/defs.h
+
+../sha123/dct36.h:
+
+../sha123/dct.h:
+
+../sha123/types.h:
+
+../sha123/defs.h:
+dct64.o: dct64.c ../sha123/dct64.h ../sha123/dct.h ../sha123/types.h
+
+../sha123/dct64.h:
+
+../sha123/dct.h:
+
+../sha123/types.h:
+dct64_std.o: dct64_std.c ../sha123/dct64.h ../sha123/dct.h \
+  ../sha123/types.h
+
+../sha123/dct64.h:
+
+../sha123/dct.h:
+
+../sha123/types.h:
+debug.o: debug.c
+decode.o: decode.c ../sha123/dct64.h ../sha123/dct.h ../sha123/types.h \
+  ../sha123/decode.h ../sha123/tables.h
+
+../sha123/dct64.h:
+
+../sha123/dct.h:
+
+../sha123/types.h:
+
+../sha123/decode.h:
+
+../sha123/tables.h:
+equalizer.o: equalizer.c /mnt/big3/zig/dc/kos/include/math.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/math.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/reent.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/_ansi.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/config.h \
+  /mnt/big3/zig/dc/kos/libc/include/time.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h \
+  /usr/local/cross-tools/sh-elf/lib/gcc-lib/sh-dc-elf/3.0.4/include/stddef.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/ieeefp.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/fastmath.h \
+  ../sha123/equalizer.h ../sha123/types.h
+
+/mnt/big3/zig/dc/kos/include/math.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/math.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/reent.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/_ansi.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/config.h:
+
+/mnt/big3/zig/dc/kos/libc/include/time.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h:
+
+/usr/local/cross-tools/sh-elf/lib/gcc-lib/sh-dc-elf/3.0.4/include/stddef.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/ieeefp.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/fastmath.h:
+
+../sha123/equalizer.h:
+
+../sha123/types.h:
+header.o: header.c ../sha123/header.h ../sha123/debug.h
+
+../sha123/header.h:
+
+../sha123/debug.h:
+layer1.o: layer1.c ../sha123/sha123.h ../sha123/api.h \
+  ../istream/istream.h ../sha123/defs.h ../sha123/types.h \
+  ../sha123/bitstream.h ../sha123/equalizer.h ../sha123/header.h \
+  ../sha123/tables.h
+
+../sha123/sha123.h:
+
+../sha123/api.h:
+
+../istream/istream.h:
+
+../sha123/defs.h:
+
+../sha123/types.h:
+
+../sha123/bitstream.h:
+
+../sha123/equalizer.h:
+
+../sha123/header.h:
+
+../sha123/tables.h:
+layer2.o: layer2.c /mnt/big3/zig/dc/kos/include/math.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/math.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/reent.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/_ansi.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/config.h \
+  /mnt/big3/zig/dc/kos/libc/include/time.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h \
+  /usr/local/cross-tools/sh-elf/lib/gcc-lib/sh-dc-elf/3.0.4/include/stddef.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/ieeefp.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/fastmath.h \
+  ../sha123/sha123.h ../sha123/api.h ../istream/istream.h \
+  ../sha123/defs.h ../sha123/types.h ../sha123/bitstream.h \
+  ../sha123/equalizer.h ../sha123/header.h ../sha123/l2tables.h \
+  ../sha123/tables.h
+
+/mnt/big3/zig/dc/kos/include/math.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/math.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/reent.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/_ansi.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/config.h:
+
+/mnt/big3/zig/dc/kos/libc/include/time.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h:
+
+/usr/local/cross-tools/sh-elf/lib/gcc-lib/sh-dc-elf/3.0.4/include/stddef.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/ieeefp.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/fastmath.h:
+
+../sha123/sha123.h:
+
+../sha123/api.h:
+
+../istream/istream.h:
+
+../sha123/defs.h:
+
+../sha123/types.h:
+
+../sha123/bitstream.h:
+
+../sha123/equalizer.h:
+
+../sha123/header.h:
+
+../sha123/l2tables.h:
+
+../sha123/tables.h:
+layer3.o: layer3.c /mnt/big3/zig/dc/kos/include/math.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/math.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/reent.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/_ansi.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/config.h \
+  /mnt/big3/zig/dc/kos/libc/include/time.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h \
+  /usr/local/cross-tools/sh-elf/lib/gcc-lib/sh-dc-elf/3.0.4/include/stddef.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/ieeefp.h \
+  /mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/fastmath.h \
+  ../sha123/debug.h ../sha123/sha123.h ../sha123/api.h \
+  ../istream/istream.h ../sha123/defs.h ../sha123/types.h \
+  ../sha123/bitstream.h ../sha123/equalizer.h ../sha123/header.h \
+  ../sha123/huffman.h ../sha123/dct12.h ../sha123/dct36.h ../sha123/dct.h
+
+/mnt/big3/zig/dc/kos/include/math.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/math.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/reent.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/_ansi.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/sys/config.h:
+
+/mnt/big3/zig/dc/kos/libc/include/time.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h:
+
+/usr/local/cross-tools/sh-elf/lib/gcc-lib/sh-dc-elf/3.0.4/include/stddef.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/ieeefp.h:
+
+/mnt/big3/zig/dc/kos/include/newlib-libm-sh4/machine/fastmath.h:
+
+../sha123/debug.h:
+
+../sha123/sha123.h:
+
+../sha123/api.h:
+
+../istream/istream.h:
+
+../sha123/defs.h:
+
+../sha123/types.h:
+
+../sha123/bitstream.h:
+
+../sha123/equalizer.h:
+
+../sha123/header.h:
+
+../sha123/huffman.h:
+
+../sha123/dct12.h:
+
+../sha123/dct36.h:
+
+../sha123/dct.h:
+tables.o: tables.c /usr/include/math.h /usr/include/features.h \
+  /usr/include/sys/cdefs.h /usr/include/gnu/stubs.h \
+  /usr/include/bits/huge_val.h /usr/include/bits/mathdef.h \
+  /usr/include/bits/mathcalls.h /usr/include/bits/mathinline.h \
+  ../sha123/tables.h ../sha123/types.h ../sha123/debug.h
+
+/usr/include/math.h:
+
+/usr/include/features.h:
+
+/usr/include/sys/cdefs.h:
+
+/usr/include/gnu/stubs.h:
+
+/usr/include/bits/huge_val.h:
+
+/usr/include/bits/mathdef.h:
+
+/usr/include/bits/mathcalls.h:
+
+/usr/include/bits/mathinline.h:
+
+../sha123/tables.h:
+
+../sha123/types.h:
+
+../sha123/debug.h:
