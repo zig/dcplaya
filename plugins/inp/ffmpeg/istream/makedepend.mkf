@@ -1,0 +1,68 @@
+alloc.o: alloc.c /mnt/big3/zig/dc/kos/libc/include/stdlib.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h \
+  /mnt/big3/zig/dc/kos/libc/include/unistd.h \
+  /usr/local/cross-tools/sh-elf/lib/gcc-lib/sh-dc-elf/3.0.4/include/stddef.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h \
+  /mnt/big3/zig/dc/kos/libc/include/malloc.h ../istream/alloc.h
+
+/mnt/big3/zig/dc/kos/libc/include/stdlib.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h:
+
+/mnt/big3/zig/dc/kos/libc/include/unistd.h:
+
+/usr/local/cross-tools/sh-elf/lib/gcc-lib/sh-dc-elf/3.0.4/include/stddef.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h:
+
+/mnt/big3/zig/dc/kos/libc/include/malloc.h:
+
+../istream/alloc.h:
+istream.o: istream.c ../istream/istream_def.h ../istream/istream.h
+
+../istream/istream_def.h:
+
+../istream/istream.h:
+istream_file.o: istream_file.c /mnt/big3/zig/dc/kos/libc/include/stdio.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h \
+  /mnt/big3/zig/dc/kos/libc/include/unistd.h \
+  /usr/local/cross-tools/sh-elf/lib/gcc-lib/sh-dc-elf/3.0.4/include/stddef.h \
+  /mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h \
+  /usr/local/cross-tools/sh-elf/lib/gcc-lib/sh-dc-elf/3.0.4/include/stdarg.h \
+  /mnt/big3/zig/dc/kos/include/kos/fs.h \
+  /mnt/big3/zig/dc/kos/include/kos/limits.h \
+  /mnt/big3/zig/dc/kos/libc/include/time.h \
+  /mnt/big3/zig/dc/kos/libc/include/sys/queue.h \
+  /mnt/big3/zig/dc/kos/include/kos/nmmgr.h \
+  /mnt/big3/zig/dc/kos/libc/include/string.h ../istream/istream_def.h \
+  ../istream/istream.h ../istream/alloc.h
+
+/mnt/big3/zig/dc/kos/libc/include/stdio.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/cdefs.h:
+
+/mnt/big3/zig/dc/kos/libc/include/unistd.h:
+
+/usr/local/cross-tools/sh-elf/lib/gcc-lib/sh-dc-elf/3.0.4/include/stddef.h:
+
+/mnt/big3/zig/dc/kos/kernel/arch/dreamcast/include/arch/types.h:
+
+/usr/local/cross-tools/sh-elf/lib/gcc-lib/sh-dc-elf/3.0.4/include/stdarg.h:
+
+/mnt/big3/zig/dc/kos/include/kos/fs.h:
+
+/mnt/big3/zig/dc/kos/include/kos/limits.h:
+
+/mnt/big3/zig/dc/kos/libc/include/time.h:
+
+/mnt/big3/zig/dc/kos/libc/include/sys/queue.h:
+
+/mnt/big3/zig/dc/kos/include/kos/nmmgr.h:
+
+/mnt/big3/zig/dc/kos/libc/include/string.h:
+
+../istream/istream_def.h:
+
+../istream/istream.h:
+
+../istream/alloc.h:
