@@ -399,10 +399,8 @@ static int http_connect(HTTPContext *s, const char *path, const char *hoststr, i
 	//printf("%c", ch);
 #endif
         if (ch < 0) {
-#ifdef DEBUG
 	  printf("http header truncated\n");
-#endif
-	  return -1;
+	  return 0;
 	}
         if (ch == '\n') {
             /* process line */
