@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 #
 # Convert .ase file to .c
 #

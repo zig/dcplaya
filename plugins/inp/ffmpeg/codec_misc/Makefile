@@ -10,13 +10,13 @@
 #LEZ=yes
 
 FFMPEG_DIR	:= ../ffmpeg
-FFMPEG_INCS	:= .
-FFMPEG_LIB	:= $(FFMPEG_DIR)/libavformat.a $(FFMPEG_DIR)/libavcodec.a
+FFMPEG_INCS	:= . $(FFMPEG_DIR)/libavformat $(FFMPEG_DIR)/libavcodec
+FFMPEG_LIB	:= $(FFMPEG_DIR)/libavformat/libavformat.a $(FFMPEG_DIR)/libavcodec/libavcodec.a
 
 #LEF_TARGET_EXTRA_DEP := $(FFMPEG_LIB)
 #LEF_EXTRA := -L$(FFMPEG_DIR) -R ../ffmpeg.lef -lavformat -lavcodec
 #LEF_EXTRA := -R ../ffmpeg.lef $(FFMPEG_LIB)
-LEF_EXTRA := -L$(FFMPEG_DIR) -lavcodec_misc
+LEF_EXTRA := -L$(FFMPEG_DIR)/libavcodec -L$(FFMPEG_DIR)/libavformat -lavcodec_misc
 #LEF_EXTRA := ../ffmpeg.lef $(FFMPEG_LIB)
 
 KOS_LOCAL_CFLAGS += -DHOST_LITTLE_ENDIAN -DDCPLAYA=1

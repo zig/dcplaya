@@ -10,8 +10,8 @@
 LEZ=yes
 
 FFMPEG_DIR	:= ffmpeg
-FFMPEG_INCS 	:= .
-FFMPEG_LIB	:= $(FFMPEG_DIR)/libavformat.a $(FFMPEG_DIR)/libavcodec.a
+FFMPEG_INCS 	:= . libavformat libavcodec
+FFMPEG_LIB	:= $(FFMPEG_DIR)/libavformat/libavformat.a $(FFMPEG_DIR)/libavcodec/libavcodec.a
 
 LEF_TARGET_EXTRA_DEP := $(FFMPEG_LIB) \
 			sha123/libsha123.a istream/libistream.a \
@@ -28,7 +28,6 @@ OPTIMIZE = $(OPTIMIZE_FOR_SPEED)
 
 
 SUBDIRS = sha123 istream id3tag codec_misc codec_net
-
 
 include ../../../Makefile.inc
 
