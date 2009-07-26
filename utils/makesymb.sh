@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 #
 # by Benjamin Gerard <ben@sashipa.com>
 #
