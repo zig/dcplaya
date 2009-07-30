@@ -87,12 +87,13 @@ plug_fime	= home.."plugins/vis/fime/fime.lez"
 plug_el         = home.."plugins/exe/entrylist/entrylist.lez"
 plug_jpeg       = home.."plugins/img/jpeg/jpeg.lez"
 plug_net        = home.."plugins/exe/net/net.lez"
+plug_dhcp       = home.."plugins/exe/dhcp/dhcp.lez"
 plug_web        = home.."plugins/exe/web/web.lez"
-plug_ffmpeg     = home.."plugins/inp/ffmpeg/ffmpeg.lez"
+plug_ffmpeg     = home.."plugins/inp/ffmpeg/ffmpeg.lef"
 
-codec_misc      = home.."plugins/inp/ffmpeg/codec_misc/codec_misc.codez"
-codec_net       = home.."plugins/inp/ffmpeg/codec_net/codec_net.codez"
-codec_xvid      = home.."plugins/inp/ffmpeg/xvid/codec_xvid.codez"
+codec_misc      = home.."plugins/inp/ffmpeg/codec_misc/codec_misc.codec"
+codec_net       = home.."plugins/inp/ffmpeg/codec_net/codec_net.codec"
+codec_xvid      = home.."plugins/inp/ffmpeg/xvid/codec_xvid.codec"
 
 -- Little function for fun !
 -- $$$ should be move ...
