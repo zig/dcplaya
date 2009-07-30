@@ -86,6 +86,24 @@ typedef struct {
   unsigned char data[1] packed;
 } ip_udp_pseudo_header_t;
 
+typedef struct {
+  unsigned char op packed;
+  unsigned char htype packed;
+  unsigned char hlen packed;
+  unsigned char hops packed;
+  unsigned int xid packed;
+  unsigned short secs packed;
+  unsigned short flags packed;
+  unsigned int ciaddr packed;
+  unsigned int yiaddr packed;
+  unsigned int siaddr packed;
+  unsigned int giaddr packed;
+  unsigned char chaddr[16] packed;
+  unsigned char sname[64] packed;
+  unsigned char file[128] packed;
+  unsigned char data[1] packed;
+} dhcp_header_t;
+
 unsigned short checksum(unsigned short *buf, int count);
 void make_ether(char *dest, char *src, ether_header_t *ether);
 void make_ip(int dest, int src, int length, char protocol, ip_header_t *ip);
@@ -103,6 +121,6 @@ void make_udp(unsigned short dest, unsigned short src, unsigned char * data, int
 #define ARP_H_LEN   28
 
 /* thread safe version of eth_tx, waiting nicely with thd_pass */
-int eth_txts(uint8 *pkt, int len);
+//int eth_txts(uint8 *pkt, int len);
 
 #endif

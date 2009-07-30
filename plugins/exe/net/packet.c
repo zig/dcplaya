@@ -219,7 +219,7 @@ void process_icmp(ether_header_t *ether, ip_header_t *ip, icmp_header_t *icmp)
 
 void cmd_retval(ip_header_t * ip, udp_header_t * udp, command_t * command);
 
-int process_udp(ether_header_t *ether, ip_header_t *ip, udp_header_t *udp)
+int process_dcload_udp(ether_header_t *ether, ip_header_t *ip, udp_header_t *udp)
 {
   ip_udp_pseudo_header_t *pseudo;
   unsigned short i;
@@ -309,7 +309,8 @@ int process_udp(ether_header_t *ether, ip_header_t *ip, udp_header_t *udp)
   return 0;
 }
 
-int process_mine(unsigned char *pkt, int len)
+int (*dhcp_cb)(unsigned char *pkt);
+static int process_mine(unsigned char *pkt, int len, int broad)
 {
     ether_header_t *ether_header = (ether_header_t *)pkt;
     ip_header_t *ip_header = (ip_header_t *)(pkt + 14);
@@ -323,7 +324,6 @@ int process_mine(unsigned char *pkt, int len)
 	return -1;
 
     /* ignore fragmented packets */
-
     if (ntohs(ip_header->flags_frag_offset) & 0x3fff)
 	return -1;
     
@@ -339,6 +339,8 @@ int process_mine(unsigned char *pkt, int len)
 
     switch (ip_header->protocol) {
     case 1: /* icmp */
+      if (broad)
+	return -1;
       if (1 || !lwip_cb) {
 	icmp_header = (icmp_header_t *)(pkt + ETHER_H_LEN + 4*(ip_header->version_ihl & 0x0f));
 	process_icmp(ether_header, ip_header, icmp_header);
@@ -347,7 +349,11 @@ int process_mine(unsigned char *pkt, int len)
       break;
     case 17: /* udp */
       udp_header = (udp_header_t *)(pkt + ETHER_H_LEN + 4*(ip_header->version_ihl & 0x0f));
-      return process_udp(ether_header, ip_header, udp_header);
+      if (dhcp_cb && ntohs(udp_header->dest) == 68) // client DHCP
+	return dhcp_cb(pkt);
+      if (broad)
+	return -1;
+      return process_dcload_udp(ether_header, ip_header, udp_header);
     }
 
     return -1;
@@ -358,12 +364,13 @@ int eth_interrupt;
 void rx_callback(netif_t * netif, unsigned char *pkt, int len)
 {
   ether_header_t *ether_header = (ether_header_t *)pkt;
+  int broad = !memcmp(ether_header->dest, broadcast, 6);
 
   //vid_border_color(255, 255, 0);
 
   if (ether_header->type[0] == 0x08 &&
-      !memcmp(ether_header->dest, eth_mac, 6)) {
-    if (!process_mine(pkt, len))
+      (!memcmp(ether_header->dest, eth_mac, 6) || broad)) {
+    if (!process_mine(pkt, len, broad))
       goto end;
   }
 
@@ -379,7 +386,7 @@ void rx_callback(netif_t * netif, unsigned char *pkt, int len)
     goto end;
 
   if (ether_header->type[0] == 0x08 &&
-      !memcmp(ether_header->dest, broadcast, 6)) {
+      broad) {
     if (process_broadcast(pkt, len))
       goto end;
   }

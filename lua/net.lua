@@ -43,7 +43,9 @@ Choose how you want to connect.]],
 600, "Network settings")
 
    if answer == 1 then
-      gui_ask("Sorry, this is not implemented yet ...", {"OK"})
+       net_cfg = { dhcp = 1 }
+       net_autoconnect()
+       net_save_settings()
    elseif answer == 2 then
 
       local text = '<dialog guiref="dialog" label="Network settings" name="Network settings">'
@@ -113,12 +115,12 @@ end
 
 
 function net_autoconnect()
-   if not net_cfg or not net_cfg.ip then
+   if not net_cfg or (not net_cfg.ip and not net_cfg.dhcp) then
       return
    end
 
    if not net_connect then
-      dl(plug_net)
+       dl(plug_net)
    end
 
    if not net_connect then
@@ -131,32 +133,45 @@ function net_autoconnect()
    local scroll = gui_scrolltext and 
       gui_scrolltext(nil, "Bringing network up ...")
 
-   local res = net_connect(net_cfg.ip)
    local text = "<left>"
-   if not res then
-      text = text..'net_connect ... OK <br>'
-      res = net_lwip_init(net_cfg.ip, net_cfg.mask, net_cfg.gw)
-      if not res then
-	 text = text..'lwip_init ... OK '
-	 text = text..[[
+
+   if net_cfg.dhcp then
+       if not dolib("dhcp") or not dhcp() then
+	   text = text..'DHCP ... FAILED <br>'
+       else
+	   text = text..format([[DHCP ...  <br><right>
+				       your IP %s<br>
+				       router %s<br>
+				       dns %s<br><left>]], 
+			       net_cfg.ip, net_cfg.gw, net_cfg.dns)
+       end
+   end
+   if net_cfg.ip then
+       local res = net_connect(net_cfg.ip)
+       if not res then
+	   text = text..'net_connect ... OK <br>'
+	   res = net_lwip_init(net_cfg.ip, net_cfg.mask, net_cfg.gw)
+	   if not res then
+	       text = text..'lwip_init ... OK '
+	       text = text..[[
 <vspace h="16">You should be able to use the network from now on !
 <vspace h="16">
-To access files on your PC, you need dcload-ip, then launch it twice like this : 
+To access files on your PC, you need a patched dcload-ip, then launch it like this : 
 <font id="1" size="16" color="text_color"> <left>
 <vspace h="16">
-dc-tool -r <br>
 dc-tool -z
 <vspace h="16">
 <font id="0" size="16"> <left>
 On windoz, you can access only one of your drive, launch dc-tool from the drive
 you want to access.
 ]]
-	 net_resolv(net_cfg.dns)
-      else
-	 text = text..'lwip_init ... FAILED'
-      end
-   else
-      text = text..'net_connect ... FAILED<br>Either you don\'t have any BBA or Lan adaptor, either you are already connected ?'
+	       net_resolv(net_cfg.dns)
+	   else
+	       text = text..'lwip_init ... FAILED'
+	   end
+       else
+	   text = text..'net_connect ... FAILED<br>Either you don\'t have any BBA or Lan adaptor, either you are already connected ?'
+       end
    end
 
    text = text.."<br><center>"
