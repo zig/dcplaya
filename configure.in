@@ -218,7 +218,7 @@ AC_MSG_RESULT([])
 AC_MSG_RESULT([** Configure SH tools **])
 AC_MSG_RESULT([])
 
-SH_CFLAGS="-Wall -O4 -Wno-multichar"
+SH_CFLAGS="-Wall -Os -Wno-multichar"
 if test $DEBUG -ne 0; then
     SH_CFLAGS="$SH_CFLAGS -g"
 fi
