@@ -18,7 +18,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "../dsputil.h"
+#include "libavcodec/dsputil.h"
 
 #define SHIFT 6
 
@@ -30,14 +30,14 @@
 #define c6	(1<<SHIFT)* 0.54119610014619712324	/* sqrt(2)*cos(6*pi/16) */
 #define c7	(1<<SHIFT)* 0.27589937928294311353	/* sqrt(2)*cos(7*pi/16) */
 
-const	static float even_table[] __attribute__ ((aligned(64))) = {
+const	static float even_table[] __attribute__ ((aligned(8))) = {
 	 c4, c4, c4, c4,
 	 c2, c6,-c6,-c2,
 	 c4,-c4,-c4, c4,
 	 c6,-c2, c2,-c6
 };
 
-const	static float odd_table[] __attribute__ ((aligned(64))) = {
+const	static float odd_table[] __attribute__ ((aligned(8))) = {
 	 c1, c3, c5, c7,
 	 c3,-c7,-c1,-c5,
 	 c5,-c1, c7, c3,
@@ -126,11 +126,7 @@ static void load_matrix_(float xf[],const float table[])
 			    (2*SHIFT+3) ) )
 #endif
 
-/* #if 0 */
-/* #define	DESCALE(x,n)	(x)*(1.0f/(1<<(n))) */
-/* #else */
-/* #define	DESCALE(x,n)	(((int)(x)+(1<<(n-1)))>>(n)) */
-/* #endif */
+#define SCALE(x) ( x )
 
 /* this code work worse on gcc cvs. 3.2.3 work fine */
 
@@ -216,7 +212,6 @@ void idct_sh4(DCTELEM *block)
 	ofs2 = sizeof(float)*4*8;
 	ofs3 = sizeof(float)*6*8;
 
-
 	i = 8;
 
 #define	OA(fblock,ofs)	*(float*)((char*)fblock + ofs)
@@ -267,111 +262,140 @@ void idct_sh4(DCTELEM *block)
 #endif
 }
 #else
+
+//#define CHECK
+
 void idct_sh4(DCTELEM *block)
 {
-	DEFREG;
+  DEFREG;
 
-	int i;
-	static float	tblock[8*8] __attribute__((aligned(64)));
-	float   *fblock;
+  int i;
+  float	tblock[8*8],*fblock;
+#ifdef CHECK
+  int set[9];
+#endif
 
-	/* row */
+  /* row */
 
-	/* even part */
-	load_matrix(even_table);
+  /* even part */
+  load_matrix(even_table);
 
-	fblock = tblock;
-	i = 8;
-	do {
-		fr0 = block[0];
-		fr1 = block[2];
-		fr2 = block[4];
-		fr3 = block[6];
-		block+=8;
-		ftrv();
-		fblock[0] = fr0;
-		fblock[2] = fr1;
-		fblock[4] = fr2;
-		fblock[6] = fr3;
-		fblock+=8;
-	} while(--i);
-	block-=8*8;
-	fblock-=8*8;
+  fblock = tblock;
+  i = 8;
+  do {
+#ifdef CHECK
+    if (!
+	((block[4]) | (block[6]) | (block[2]) | (block[1]) |
+	 (block[7]) | (block[5]) | (block[3]))) {
 
-	load_matrix(odd_table);
+      fblock[0] = fblock[1] = fblock[2] = fblock[3] = fblock[4] = 
+	fblock[5] = fblock[6] = fblock[7] = block[0];
+      set[i] = 1;
 
-	i = 8;
+      block+=8;
+      fblock+=8;
+      continue;
+    }
+    set[i] = 0;
+#endif
 
-	do {
-		float t0,t1,t2,t3;
-		fr0 = block[1];
-		fr1 = block[3];
-		fr2 = block[5];
-		fr3 = block[7];
-		block+=8;
-		ftrv();
-		t0 = fblock[0];
-		t1 = fblock[2];
-		t2 = fblock[4];
-		t3 = fblock[6];
-		fblock[0] = t0 + fr0;
-		fblock[7] = t0 - fr0;
-		fblock[1] = t1 + fr1;
-		fblock[6] = t1 - fr1;
-		fblock[2] = t2 + fr2;
-		fblock[5] = t2 - fr2;
-		fblock[3] = t3 + fr3;
-		fblock[4] = t3 - fr3;
-		fblock+=8;
-	} while(--i);
-	block-=8*8;
-	fblock-=8*8;
+    fr0 = SCALE(block[0]);
+    fr1 = SCALE(block[2]);
+    fr2 = SCALE(block[4]);
+    fr3 = SCALE(block[6]);
+    block+=8;
+    ftrv();
+    fblock[0] = fr0;
+    fblock[2] = fr1;
+    fblock[4] = fr2;
+    fblock[6] = fr3;
+    fblock+=8;
+  } while(--i);
+  block-=8*8;
+  fblock-=8*8;
 
-	/* col */
+  load_matrix(odd_table);
 
-	/* even part */
-	load_matrix(even_table);
+  i = 8;
 
-	i = 8;
+  do {
+#ifdef CHECK
+    if (set[i]) {
+      block+=8;
+      fblock+=8;
+      continue;
+    }
+#endif
 
-	do {
-		fr0 = fblock[8*0];
-		fr1 = fblock[8*2];
-		fr2 = fblock[8*4];
-		fr3 = fblock[8*6];
-		ftrv();
-		fblock[8*0] = fr0;
-		fblock[8*2] = fr1;
-		fblock[8*4] = fr2;
-		fblock[8*6] = fr3;
-		fblock++;
-	} while(--i);
-	fblock-=8;
+    float t0,t1,t2,t3;
+    fr0 = SCALE(block[1]);
+    fr1 = SCALE(block[3]);
+    fr2 = SCALE(block[5]);
+    fr3 = SCALE(block[7]);
+    block+=8;
+    ftrv();
+    t0 = fblock[0];
+    t1 = fblock[2];
+    t2 = fblock[4];
+    t3 = fblock[6];
+    fblock[0] = t0 + fr0;
+    fblock[7] = t0 - fr0;
+    fblock[1] = t1 + fr1;
+    fblock[6] = t1 - fr1;
+    fblock[2] = t2 + fr2;
+    fblock[5] = t2 - fr2;
+    fblock[3] = t3 + fr3;
+    fblock[4] = t3 - fr3;
+    fblock+=8;
+  } while(--i);
+  block-=8*8;
+  fblock-=8*8;
 
-	load_matrix(odd_table);
+  /* col */
 
-	i=8;
-	do {
-		float t0,t1,t2,t3;
-		fr0 = fblock[8*1];
-		fr1 = fblock[8*3];
-		fr2 = fblock[8*5];
-		fr3 = fblock[8*7];
-		ftrv();
-		t0 = fblock[8*0];
-		t1 = fblock[8*2];
-		t2 = fblock[8*4];
-		t3 = fblock[8*6];
-		fblock++;
-		block[8*0] = DESCALE(t0 + fr0,3);
-		block[8*7] = DESCALE(t0 - fr0,3);
-		block[8*1] = DESCALE(t1 + fr1,3);
-		block[8*6] = DESCALE(t1 - fr1,3);
-		block[8*2] = DESCALE(t2 + fr2,3);
-		block[8*5] = DESCALE(t2 - fr2,3);
-		block[8*3] = DESCALE(t3 + fr3,3);
-		block[8*4] = DESCALE(t3 - fr3,3);
-		block++;
-	} while(--i);
+  /* even part */
+  load_matrix(even_table);
+
+  i = 8;
+
+  do {
+    fr0 = fblock[8*0];
+    fr1 = fblock[8*2];
+    fr2 = fblock[8*4];
+    fr3 = fblock[8*6];
+    ftrv();
+    fblock[8*0] = fr0;
+    fblock[8*2] = fr1;
+    fblock[8*4] = fr2;
+    fblock[8*6] = fr3;
+    fblock++;
+  } while(--i);
+  fblock-=8;
+
+  load_matrix(odd_table);
+
+  i=8;
+  do {
+    float t0,t1,t2,t3;
+    fr0 = fblock[8*1];
+    fr1 = fblock[8*3];
+    fr2 = fblock[8*5];
+    fr3 = fblock[8*7];
+    ftrv();
+    t0 = fblock[8*0];
+    t1 = fblock[8*2];
+    t2 = fblock[8*4];
+    t3 = fblock[8*6];
+    fblock++;
+    block[8*0] = DESCALE(t0 + fr0,3);
+    block[8*7] = DESCALE(t0 - fr0,3);
+    block[8*1] = DESCALE(t1 + fr1,3);
+    block[8*6] = DESCALE(t1 - fr1,3);
+    block[8*2] = DESCALE(t2 + fr2,3);
+    block[8*5] = DESCALE(t2 - fr2,3);
+    block[8*3] = DESCALE(t3 + fr3,3);
+    block[8*4] = DESCALE(t3 - fr3,3);
+    block++;
+  } while(--i);
 }
 #endif

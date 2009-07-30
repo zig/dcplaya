@@ -83,7 +83,7 @@ typedef struct {
   unsigned char string[1] __attribute__ ((packed));
 } command_3int_string_t;
 
-void build_send_packet(int command_len);
+//void build_send_packet(int command_len);
 
 
 struct dcload_dirent {

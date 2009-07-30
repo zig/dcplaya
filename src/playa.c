@@ -179,7 +179,7 @@ static void * sndstream_callback(int size)
     if (used == 0) {
       old_jiffies = jiffies;
       playa_thread->prio2 = PLAYA_DECODER_THREAD_PRIORITY;
-    } else if (jiffies - old_jiffies > MINIMUM_TIME_BEFORE_BOOST*HZ) {
+    } else/* if (jiffies - old_jiffies > MINIMUM_TIME_BEFORE_BOOST*HZ)*/ {
 
       /* eliminate overflow */
       old_jiffies = jiffies - MINIMUM_TIME_BEFORE_BOOST*HZ;

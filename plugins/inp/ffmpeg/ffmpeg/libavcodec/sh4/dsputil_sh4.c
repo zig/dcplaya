@@ -18,10 +18,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-
-#include "../avcodec.h"
-#include "../dsputil.h"
-
+#include "libavcodec/avcodec.h"
+#include "libavcodec/dsputil.h"
 
 static void memzero_align8(void *dst,size_t size)
 {
@@ -31,6 +29,7 @@ static void memzero_align8(void *dst,size_t size)
 	asm(
 #if defined(__SH4__)
 	" fschg\n"  //single float mode
+	caca !!
 #endif
 	" fldi0 fr0\n"
 	" fldi0 fr1\n"
@@ -65,60 +64,145 @@ static void clear_blocks_sh4(DCTELEM *blocks)
 	memzero_align8(blocks,sizeof(DCTELEM)*6*64);
 }
 
-extern void idct_sh4(DCTELEM *block);
-static void idct_put(uint8_t *dest, int line_size, DCTELEM *block)
-{
-	idct_sh4(block);
-	int i;
-	uint8_t *cm = cropTbl + MAX_NEG_CROP;
-	for(i=0;i<8;i++) {
-		dest[0] = cm[block[0]];
-		dest[1] = cm[block[1]];
-		dest[2] = cm[block[2]];
-		dest[3] = cm[block[3]];
-		dest[4] = cm[block[4]];
-		dest[5] = cm[block[5]];
-		dest[6] = cm[block[6]];
-		dest[7] = cm[block[7]];
-		dest+=line_size;
-		block+=8;
-	}
-}
-static void idct_add(uint8_t *dest, int line_size, DCTELEM *block)
-{
-	idct_sh4(block);
-	int i;
-	uint8_t *cm = cropTbl + MAX_NEG_CROP;
-	for(i=0;i<8;i++) {
-		dest[0] = cm[dest[0]+block[0]];
-		dest[1] = cm[dest[1]+block[1]];
-		dest[2] = cm[dest[2]+block[2]];
-		dest[3] = cm[dest[3]+block[3]];
-		dest[4] = cm[dest[4]+block[4]];
-		dest[5] = cm[dest[5]+block[5]];
-		dest[6] = cm[dest[6]+block[6]];
-		dest[7] = cm[dest[7]+block[7]];
-		dest+=line_size;
-		block+=8;
-	}
-}
+/* #include "idct_xvid.c" */
+/* #define idct_sh4 idct_int32 */
 
+#if 0
+static void idct_put_int32(uint8_t *dest, int line_size, DCTELEM *block)
+{
+  idct_int32(block);
+  int i;
+  uint8_t *cm = cropTbl + MAX_NEG_CROP;
+  for(i=0;i<8;i++) {
+    dest[0] = cm[block[0]];
+    dest[1] = cm[block[1]];
+    dest[2] = cm[block[2]];
+    dest[3] = cm[block[3]];
+    dest[4] = cm[block[4]];
+    dest[5] = cm[block[5]];
+    dest[6] = cm[block[6]];
+    dest[7] = cm[block[7]];
+    dest+=line_size;
+    block+=8;
+  }
+}
+static void idct_add_int32(uint8_t *dest, int line_size, DCTELEM *block)
+{
+  idct_int32(block);
+  int i;
+  uint8_t *cm = cropTbl + MAX_NEG_CROP;
+  for(i=0;i<8;i++) {
+    dest[0] = cm[dest[0]+block[0]];
+    dest[1] = cm[dest[1]+block[1]];
+    dest[2] = cm[dest[2]+block[2]];
+    dest[3] = cm[dest[3]+block[3]];
+    dest[4] = cm[dest[4]+block[4]];
+    dest[5] = cm[dest[5]+block[5]];
+    dest[6] = cm[dest[6]+block[6]];
+    dest[7] = cm[dest[7]+block[7]];
+    dest+=line_size;
+    block+=8;
+  }
+}
+#endif
+
+extern void idct_sh4(DCTELEM *block);
+static void idct_put_sh4(uint8_t *dest, int line_size, DCTELEM *block)
+{
+  idct_sh4(block);
+  int i;
+  uint8_t *cm = cropTbl + MAX_NEG_CROP;
+  for(i=0;i<8;i++) {
+    dest[0] = cm[block[0]];
+    dest[1] = cm[block[1]];
+    dest[2] = cm[block[2]];
+    dest[3] = cm[block[3]];
+    dest[4] = cm[block[4]];
+    dest[5] = cm[block[5]];
+    dest[6] = cm[block[6]];
+    dest[7] = cm[block[7]];
+    dest+=line_size;
+    block+=8;
+  }
+}
+static void idct_add_sh4(uint8_t *dest, int line_size, DCTELEM *block)
+{
+  idct_sh4(block);
+  int i;
+  uint8_t *cm = cropTbl + MAX_NEG_CROP;
+  for(i=0;i<8;i++) {
+    dest[0] = cm[dest[0]+block[0]];
+    dest[1] = cm[dest[1]+block[1]];
+    dest[2] = cm[dest[2]+block[2]];
+    dest[3] = cm[dest[3]+block[3]];
+    dest[4] = cm[dest[4]+block[4]];
+    dest[5] = cm[dest[5]+block[5]];
+    dest[6] = cm[dest[6]+block[6]];
+    dest[7] = cm[dest[7]+block[7]];
+    dest+=line_size;
+    block+=8;
+  }
+}
 
 extern void dsputil_init_align(DSPContext* c, AVCodecContext *avctx);
 
+extern void simple_idct(DCTELEM *block);
+extern void simple_idct_add(uint8_t *dest, int line_size, DCTELEM *block);
+extern void simple_idct_put(uint8_t *dest, int line_size, DCTELEM *block);
+
+extern void j_rev_dct(DCTELEM * data);
+extern void ff_jref_idct_put(uint8_t *dest, int line_size, DCTELEM *block);
+extern void ff_jref_idct_add(uint8_t *dest, int line_size, DCTELEM *block);
+
+extern DSPContext * cur_dspcontext;
+extern DSPContext fast_dspcontext;
+extern DSPContext precise_dspcontext;
+
 void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx)
 {
-#undef printf
-	printf("DSPUTIL SH4 by Bero initialising ...\n");
+	const int idct_algo= avctx->idct_algo;
+
+#if 0
+	cur_dspcontext = c; /* VP : added this for hacking in the player 
+			       in realtime */
+
+
+	fast_dspcontext.idct_put = idct_put_sh4;
+	fast_dspcontext.idct_add = idct_add_sh4;
+	fast_dspcontext.idct     = idct_sh4;
+
+	precise_dspcontext.idct_put = simple_idct_put;
+	precise_dspcontext.idct_add = simple_idct_add;
+	precise_dspcontext.idct =     simple_idct;
+
+/* 	  precise_dspcontext.idct_put = idct_put_int32; */
+/* 	  precise_dspcontext.idct_add = idct_add_int32; */
+/* 	  precise_dspcontext.idct =     idct_int32; */
+#endif
+
 	dsputil_init_align(c,avctx);
-	//dsputil_init_align64(c,avctx);
+
+	//idct_int32_init();
 
 	c->clear_blocks = clear_blocks_sh4;
-	if (avctx->idct_algo != FF_IDCT_AUTO && avctx->idct_algo != FF_IDCT_SH4)
-		return;
-	printf("Using SH4 IDCT ...\n");
-	c->idct_put = idct_put;
-	c->idct_add = idct_add;
-	c->idct = idct_sh4;
-	c->idct_permutation_type= FF_NO_IDCT_PERM; //FF_SIMPLE_IDCT_PERM; //FF_LIBMPEG2_IDCT_PERM;
+
+	//return;
+
+	if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_SH4){        
+	  c->idct_put = idct_put_sh4;
+	  c->idct_add = idct_add_sh4;
+	  c->idct     = idct_sh4;
+	  c->idct_permutation_type= FF_NO_IDCT_PERM;
+
+//		c->idct_permutation_type= FF_SIMPLE_IDCT_PERM;
+//		c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
+
+/*         c->idct_put= ff_jref_idct_put; */
+/*         c->idct_add= ff_jref_idct_add; */
+/* 	c->idct     = j_rev_dct; */
+/*         c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM; */
+
+	}
 }
+
+

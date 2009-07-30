@@ -641,6 +641,16 @@ if not init_lua then
    end
    dl=driver_load
 
+   function driver_unload(name)
+       local old_d = driver_list[name]
+       local shut
+       shut = getglobal(name.."_driver_shutdown")
+       unregister_commands(old_d, force)
+       if shut then
+	   shut()
+       end
+   end
+
 end -- if not init_lua then
 
 --

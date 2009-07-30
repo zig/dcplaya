@@ -41,8 +41,8 @@ void FaceNormal(float *d, const vtx_t * v, const tri_t *t);
 #define VLR_Y 0.2f
 /*#define VLR_W 32
 #define VLR_H 96*/
-#define VLR_W 30
-#define VLR_H 30
+#define VLR_W 60
+#define VLR_H 60
 
 
 /* Resulting number of triangles and vertrices */

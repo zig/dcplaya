@@ -35,52 +35,6 @@ typedef struct {
   int stream;
 } TCPContext;
 
-struct sockaddr_in dnssrv;
-
-int dns(const char * name, struct ip_addr * res)
-{
-  int i;
-  int c;
-  unsigned char *ip = (unsigned char *)&res->addr;
-
-  i = 0;
-  c = 0;
-    
-  res->addr = 0;
-  while(name[c] != 0) {
-    if (name[c] != '.') {
-      if (!isdigit(name[c]))
-	goto dns;
-      ip[i] *= 10;
-      ip[i] += name[c] - '0';
-    }
-    else {
-      if (name[c+1] == '.')
-	goto dns;
-      i++;
-    }
-    if (i >= 5)
-      goto dns;
-    c++;
-  }
-
-  //res->addr = ntohl(res->addr);
-
-  return 0;
-
- dns:
-  if (dnssrv.sin_port) {
-    if (lwip_gethostbyname(&dnssrv, name, &res->addr) < 0) {
-      printf("gethostbyname: Can't look up name");
-      return -1;
-    } else {
-      return 0;
-    }
-  } else
-    return -1;
-}
-
-
 
 /* return zero if error */
 static uint32 open(const char *uri, int flags, int udp)

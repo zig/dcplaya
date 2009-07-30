@@ -14,10 +14,10 @@ CFLAGS+=-p
 LDFLAGS+=-p
 endif
 
-MANPAGE=$(SRC_PATH)/doc/ffmpeg.1
-PROG=ffmpeg$(EXESUF)
-PROGTEST=output_example$(EXESUF)
-QTFASTSTART=qt-faststart$(EXESUF)
+#MANPAGE=$(SRC_PATH)/doc/ffmpeg.1
+#PROG=ffmpeg$(EXESUF)
+#PROGTEST=output_example$(EXESUF)
+#QTFASTSTART=qt-faststart$(EXESUF)
 
 ifeq ($(CONFIG_FFSERVER),yes)
 MANPAGE+=$(SRC_PATH)/doc/ffserver.1

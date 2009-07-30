@@ -309,6 +309,10 @@ function ke_handle(app, evt)
 
    local key = evt.key
 
+   if not key then
+       return
+   end
+
    if key == evt_shutdown_event then
       ke_shutdown_all()
       return evt -- pass the shutdown event to next app

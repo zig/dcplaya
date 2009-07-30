@@ -97,6 +97,54 @@ static int net_driver_open(const char * name)
   return -1;
 }
 
+
+struct sockaddr_in dnssrv;
+
+int dns(const char * name, struct ip_addr * res)
+{
+  int i;
+  int c;
+  unsigned char *ip = (unsigned char *)&res->addr;
+
+  i = 0;
+  c = 0;
+    
+  res->addr = 0;
+  while(name[c] != 0) {
+    if (name[c] != '.') {
+      if (!isdigit(name[c]))
+	goto dns;
+      ip[i] *= 10;
+      ip[i] += name[c] - '0';
+    }
+    else {
+      if (name[c+1] == '.')
+	goto dns;
+      i++;
+    }
+    if (i >= 5)
+      goto dns;
+    c++;
+  }
+
+  //res->addr = ntohl(res->addr);
+
+  return 0;
+
+ dns:
+  if (dnssrv.sin_port) {
+    if (lwip_gethostbyname(&dnssrv, name, &res->addr) < 0) {
+      printf("gethostbyname: Can't look up name");
+      return -1;
+    } else {
+      return 0;
+    }
+  } else
+    return -1;
+}
+
+
+
 static int find_adaptator(const char * name)
 {
   static const char * list[] = {
@@ -229,11 +277,17 @@ static int lua_net_connect(lua_State * L)
 
   dbglog_set_level(7);
 
-  if (netinit)
-    return 0;
-
   if (lua_tostring(L, 1) == NULL || dns(lua_tostring(L, 1), ip)) {
     printf("Syntax error : try net_connect your.ip.add.ress\n");
+    return 0;
+  }
+
+  if (netinit) {
+    if (memcmp(ip, "\0\0\0\0", 4)) {
+      /* hack so that we keep dcload connection alive during DHCP re-negotiation */
+      printf("Set IP : %d.%d.%d.%d\n", ip[0], ip[1], ip[2], ip[3]);
+      eth_setip(ip[0], ip[1], ip[2], ip[3]);
+    }
     return 0;
   }
 
@@ -281,7 +335,6 @@ static int lua_net_connect(lua_State * L)
       printf("%x ", (int) eth_mac[i]);
     printf("\n");
 
-    
     printf("Set IP : %d.%d.%d.%d\n", ip[0], ip[1], ip[2], ip[3]);
     eth_setip(ip[0], ip[1], ip[2], ip[3]);
 
@@ -316,6 +369,8 @@ static int lua_net_print(lua_State * L)
   return 0;
 }
 
+void dummy() { }
+
 static int lua_lwip_init(lua_State * L)
 {
   struct ip_addr ip;
@@ -338,18 +393,32 @@ static int lua_lwip_init(lua_State * L)
     return 1;
   }
 
-  //lwip_init_mac();
-  res = lwip_init_all_static(&ip, &mask, &gw);
-  //lwip_init_common("test");
+  if (!lwipinit) {
+    //lwip_init_mac();
+    res = lwip_init_all_static(&ip, &mask, &gw);
+    //lwip_init_common("test");
+    
+    //lwip_init_all();
+    
+    lwip_cb = net_input_target;
+    net_input_set_target(rx_callback);
+    
+    tcpfs_init() || httpfs_init();
+    
+    lwipinit = 1;
+  } else {
+    struct netif *netif;
+    // just change ip configuration of interface
 
-  //lwip_init_all();
-
-  lwip_cb = net_input_target;
-  net_input_set_target(rx_callback);
-
-  tcpfs_init() || httpfs_init();
-
-  lwipinit = 1;
+    netif = netif_find("kn0");
+    if (!netif)
+      return 0;
+    
+    printf("resetting IP of kn0 interface\n");
+    memcpy(&netif->ip_addr, &ip, sizeof(ip));
+    memcpy(&netif->netmask, &mask, sizeof(ip));
+    memcpy(&netif->gw, &gw, sizeof(ip));
+  }
 
   return 0;
 }

@@ -44,13 +44,14 @@ static int escape_loop;
 
 static int running = 1;
 
-unsigned int syscall_retval;
+static unsigned int syscall_retval;
 
 static unsigned char pkt_buf[1514];
 
 ether_header_t * ether = (ether_header_t *)pkt_buf;
 ip_header_t * ip = (ip_header_t *)(pkt_buf + ETHER_H_LEN);
 udp_header_t * udp = (udp_header_t *)(pkt_buf + ETHER_H_LEN + IP_H_LEN);
+dhcp_header_t * dhcp = (dhcp_header_t *)(pkt_buf + ETHER_H_LEN + IP_H_LEN + UDP_H_LEN);
 
 
 static semaphore_t * result_sema;
@@ -80,7 +81,7 @@ extern int (*old_printk_func)(const uint8 *data, int len, int xlat);
 //#define NICE
 
 extern int bba_dma_busy;
-int eth_txts(uint8 *pkt, int len)
+static int eth_txts(uint8 *pkt, int len)
 {
   int res;
   int oldirq;
@@ -511,7 +512,7 @@ void cmd_partbin(ip_header_t * ip, udp_header_t * udp, command_t * command)
 void cmd_donebin(ip_header_t * ip, udp_header_t * udp, command_t * command)
 {
     int i;
-    
+
     for(i = 0; i < (bin_info.load_size + 1023)/1024; i++)
 	if (!bin_info.map[i])
 	    break;
@@ -637,23 +638,15 @@ void cmd_execute(ether_header_t * ether, ip_header_t * ip, udp_header_t * udp, c
 	make_udp(ntohs(udp->src), ntohs(udp->dest),(unsigned char *) command, COMMAND_LEN, (ip_header_t *)(pkt_buf + ETHER_H_LEN), (udp_header_t *)(pkt_buf + ETHER_H_LEN + IP_H_LEN));
 	eth_txts(pkt_buf, ETHER_H_LEN + IP_H_LEN + UDP_H_LEN + COMMAND_LEN);
 
-#if 0	
-	if (!booted)
-	    disp_info();
-	else
-	    disp_status("executing...");
+#if 0
+	printf("executing %p ...", ntohl(command->address));
 	
 	if (ntohl(command->size)&1)
 	    *(unsigned int *)0x8c004004 = 0xdeadbeef; /* enable console */
 	else
 	    *(unsigned int *)0x8c004004 = 0xfeedface; /* disable console */
-	if (ntohl(command->size)>>1)
-	    cdfs_redir_enable();
-	
-	bb->stop();
-	
-	running = 1;
 
+	irq_disable();
 	disable_cache();
 	go(ntohl(command->address));
 #endif

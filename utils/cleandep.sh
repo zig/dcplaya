@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 #
 # This script clean dependencies added by makedepend.
 # In other words, it deletes all line from the [# DO NOT DELETE] one

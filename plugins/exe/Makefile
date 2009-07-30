@@ -6,6 +6,6 @@
 # $Id: Makefile,v 1.3 2004-07-31 22:55:18 vincentp Exp $
 #
 
-SUBDIRS = display entrylist net
+SUBDIRS = display entrylist net dhcp
 
 include ../../Makefile.inc

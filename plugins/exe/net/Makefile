@@ -26,4 +26,4 @@ KOS_INCS +=  \
 
 KOS_LOCAL_INCS += -I../../../include -I../../../libs -I.
 
-LEF_EXTRA += -L$(KOS_BASE)/../kos-ports/lib/dreamcast -llwip4
+LEF_EXTRA += -L$(KOS_BASE)/addons/lib/dreamcast -llwip4

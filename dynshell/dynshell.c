@@ -152,7 +152,7 @@ static int dynshell_command(const char * com)
     lua_Debug ar;
     lua_State * L = shell_lua_state;
     int n = 0;
-    while (lua_getstack(L, n, &ar)) {
+    while (lua_getstack(L, n, &ar) && n < 2) {
       lua_getinfo (L, "lnS", &ar);
       printf("[%d] "
 	     "currentline = %d, "

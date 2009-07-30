@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 # 
 # (C) 2003 benjamin gerard <ben@sashipa.com>
 #

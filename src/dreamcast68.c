@@ -1076,11 +1076,16 @@ int dreammp3_main(int argc, char **argv)
   int kos_debug_level = DBG_KDEBUG;
   int dcp_debug_level = (1<<sysdbg_user)-1;
 
+  //fs_dcload_init_console();	/* Init dc-load console, if applicable */
+
+  printf(">>> in dreammp3_main\n");
 
   /* VP : put our keyboard manager */
   maple_shutdown();
   dcp_kbd_init();
   maple_init();
+
+  printf("%d\n", __LINE__);
 
   curlogo = 0; //& mine_3;
   fade68 = 0.0f;
@@ -1105,6 +1110,8 @@ int dreammp3_main(int argc, char **argv)
   /* Do basic setup */
   /*irq_init();*/
 
+  printf("%d\n", __LINE__);
+
   /* Default thread stack of 16Kb */
   thd_default_stack_size = 16*1024;  /* seems to be enough in most cases */
   //thd_current->stack_size = 64*1024; /* this is the value sbrk is configured for */
@@ -1112,10 +1119,14 @@ int dreammp3_main(int argc, char **argv)
 
   thd_init(THD_MODE_PREEMPT);
   
+  printf("%d\n", __LINE__);
+
 #ifdef KOSH
   conio_init(CONIO_TTY_SERIAL, CONIO_INPUT_LINE);
   kosh_init();
 #endif
+
+  printf("%d\n", __LINE__);
 
 
   //kos_init_all(IRQ_ENABLE | THD_ENABLE, romdisk);
@@ -1123,8 +1134,12 @@ int dreammp3_main(int argc, char **argv)
   expt_init();
   dbglog_set_level(kos_debug_level);
 
+  printf("%d\n", __LINE__);
+
   /* $$$ Becoz of a bug sometine cdron is not detected, force detextio here */
   cdrom_reinit();
+
+  printf("%d\n", __LINE__);
 
   /* ramdisk init : needed by vmu_load() */
   fs_ramdisk_shutdown(); /* VP : because we have our own */
@@ -1137,6 +1152,8 @@ int dreammp3_main(int argc, char **argv)
     /* clear modified state */
     fs_ramdisk_modified();
   }
+
+  printf("%d\n", __LINE__);
 
 
   /* Initialize the vmu file module as soon as possible... */
@@ -1159,6 +1176,8 @@ int dreammp3_main(int argc, char **argv)
       SDDEBUG("START pressed : skipping VMU load\n");
     }
   }
+
+  printf("%d\n", __LINE__);
 
 
   /* Initialize shell and LUA */
