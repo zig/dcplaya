@@ -13,7 +13,7 @@ OPTIMIZE = $(OPTIMIZE_FOR_SPEED)
 
 include ../../../Makefile.inc
 
-LWIPDIR = $(KOS_BASE)/../kos-ports/lwip/lwip/src
+LWIPDIR = $(KOS_BASE)/addons/lwip/lwip/src
 ARCHDIR = $(LWIPDIR)/../../kos
 
 KOS_LOCAL_CFLAGS += -DDCPLAYA=1 -DIPv4 -DLWIP_DEBUG

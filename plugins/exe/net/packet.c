@@ -391,7 +391,7 @@ void rx_callback(netif_t * netif, unsigned char *pkt, int len)
       goto end;
   }
   
- end:
+ end: ;
   //vid_border_color(0, 0, 0);
 }
 

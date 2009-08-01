@@ -33,6 +33,8 @@ static uint64 stat_dma_copy_t;
 static int stat_dma;
 static uint64 stat_dma_t;
 
+static void bba_dma_wait();
+
 /*
 
 Handles the DMA part of the BBA functionality.

@@ -26,15 +26,15 @@ typedef int (* istream_write_t) (istream_t *, const void *, int);
 
 /** Input stream structure. */
 struct _istream_t {
-  const istream_name_t name;
-  const istream_open_t open;
-  const istream_close_t close;
-  const istream_read_t read;
-  const istream_read_t write;
-  const istream_length_t length;
-  const istream_tell_t tell;
-  const istream_seek_t seekf;
-  const istream_seek_t seekb;
+  istream_name_t name;
+  istream_open_t open;
+  istream_close_t close;
+  istream_read_t read;
+  istream_read_t write;
+  istream_length_t length;
+  istream_tell_t tell;
+  istream_seek_t seekf;
+  istream_seek_t seekb;
 };
 
 #endif /* #ifndef _ISTREAM_DEF_H_ */

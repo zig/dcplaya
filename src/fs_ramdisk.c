@@ -1009,7 +1009,7 @@ static int ioctl(file_t fd, void *data, size_t size)
 }
 
 // $$$ Ben: not surefor erro-code convention
-static int rename(const char *fn1, const char *fn2)
+int rename(const char *fn1, const char *fn2)
 {
   node_t * node1,  * node2;
   char fname1[1024], *leaf1;

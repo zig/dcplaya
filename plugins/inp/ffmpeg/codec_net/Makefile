@@ -36,7 +36,7 @@ include ../../../../Makefile.inc
 
 
 # lwip
-LWIPDIR = $(KOS_BASE)/../kos-ports/lwip/lwip/src
+LWIPDIR = $(KOS_BASE)/addons/lwip/lwip/src
 ARCHDIR = $(LWIPDIR)/../../kos
 
 KOS_LOCAL_CFLAGS += -DIPv4 -DLWIP_DEBUG -DHAVE_U8_T

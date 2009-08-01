@@ -78,7 +78,7 @@ romdisk-data:
 .PHONY: romdisk.img
 romdisk.img: romdisk-data vmuheader romimg romdisk/stream.drv
 	@echo "[$@]"
-	@$(KOS_GENROMFS) -f $@ -d romdisk -v 2> /dev/null
+	$(KOS_GENROMFS) -f $@ -d romdisk -v 2> /dev/null
 
 .PHONY: all-romdisk
 all-romdisk: romdisk.o

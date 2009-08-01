@@ -62,7 +62,7 @@ public:
   virtual int Flush(void);
 
   /** @see SHAstream::IsEOF() */
-  virtual int SHAstreamMem::IsEOF(void);
+  virtual int IsEOF(void);
 
 };
 

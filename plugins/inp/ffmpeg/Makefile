@@ -32,6 +32,7 @@ SUBDIRS = sha123 istream id3tag codec_misc codec_net
 include ../../../Makefile.inc
 
 subdirs: $(FFMPEG_LIB) ffmpeg/config.h ffmpeg/config.mak
+
 $(TARGET): $(FFMPEG_LIB)
 
 ffmpeg/config.h ffmpeg/config.mak: ffmpeg/configure

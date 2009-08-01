@@ -427,7 +427,7 @@ static int start(const char *fn, int track, playa_info_t *info)
     i = 0;
     while ( line=http_get_header(ff_cur_fd, i), line ) {
       char * buf[256];
-      const char * p = buf;
+      char * p = buf;
       strcpy(buf, line);
       while (*p && *p!=':')
 	p++;

@@ -24,7 +24,7 @@
 static void memzero_align8(void *dst,size_t size)
 {
 #if defined(__SH4__) || defined(__SH4_SINGLE__) || defined(__SH4_SINGLE_ONLY__)
-	(char*)dst+=size;
+	dst+=size;
 	size/=8*4;
 	asm(
 #if defined(__SH4__)

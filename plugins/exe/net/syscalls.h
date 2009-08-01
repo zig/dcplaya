@@ -43,7 +43,7 @@
 #define CMD_READDIR  "DC18"
 #define CMD_CDFSREAD "DC19"
 
-extern unsigned int syscall_retval;
+static unsigned int syscall_retval;
 
 typedef struct {
   unsigned char id[4] __attribute__ ((packed));
