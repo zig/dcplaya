@@ -39,7 +39,7 @@ $(TARGET): $(FFMPEG_LIB)
 
 ffmpeg/config.h ffmpeg/config.mak: ffmpeg/configure
 	cd ffmpeg ; \
-	./configure --cc=$(KOS_CC) --as=$(KOS_AS) --target=sh4-linux --prefix=$(KOS_CC_BASE) --extra-cflags="-O2 -ffast-math -fomit-frame-pointer -fno-strict-aliasing -Wno-multichar -Wall -finline-functions $(KOS_CFLAGS) $(KOS_INC_RULES) -D_arch_$(KOS_ARCH)" --cpu=sh4 --disable-ffserver --disable-encoders --disable-ffmpeg --disable-ffplay --disable-network --disable-opts ; \
+	./configure --cc=$(KOS_CC) --as=$(KOS_AS) --target=sh4-linux --prefix=$(KOS_CC_BASE) --extra-cflags="-Os -fno-builtin -ffast-math -fomit-frame-pointer -fno-strict-aliasing -Wno-multichar -Wall -finline-functions $(KOS_CFLAGS) $(KOS_INC_RULES) -D_arch_$(KOS_ARCH)" --cpu=sh4 --disable-ffserver --disable-encoders --disable-ffmpeg --disable-ffplay --disable-network --disable-opts ; \
 	cd ..
 
 .PHONY: $(FFMPEG_LIB)

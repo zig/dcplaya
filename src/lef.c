@@ -18,6 +18,10 @@
 #include "sysdebug.h"
 #include "gzip.h"
 
+// #define SDERROR printf
+// #define SDDEBUG printf
+// #define SDWARNING printf
+
 // VP : define this to have full debug logging informations
 //#define FULL_DEBUG
 
@@ -445,7 +449,7 @@ lef_prog_t *lef_load(const char * fname)
 
   /* Alloc final memory image */
   lef_size = sizeof(lef_prog_t) + sz + align_lef - 1;
-  SDDEBUG("lef image size : %d\n", lef_size);
+  printf("lef image size : %d\n", lef_size);
   out = calloc(1, lef_size+128);
 /*   out = memalign(128, lef_size+128); */
 /*   memset(out, 0, lef_size+128); */

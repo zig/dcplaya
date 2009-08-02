@@ -65,7 +65,7 @@ print ("Welcome to dcplaya !\n")
 print (format("Home is set to '%s'", home))
 
 -- VP : set this variable to nil to remove shadock edition special running
---SHADOCK_EDITION = 1
+SHADOCK_EDITION = 1
 
 -- reading directory on PC is slow through serial port, 
 -- so we precalculate available plugins instead of doing a dir_load command
@@ -89,9 +89,9 @@ plug_jpeg       = home.."plugins/img/jpeg/jpeg.lez"
 plug_net        = home.."plugins/exe/net/net.lez"
 plug_dhcp       = home.."plugins/exe/dhcp/dhcp.lez"
 plug_web        = home.."plugins/exe/web/web.lez"
-plug_ffmpeg     = home.."plugins/inp/ffmpeg/ffmpeg.lef"
+plug_ffmpeg     = home.."plugins/inp/ffmpeg/ffmpeg.lez"
 
-codec_misc      = home.."plugins/inp/ffmpeg/codec_misc/codec_misc.codec"
+codec_misc      = home.."plugins/inp/ffmpeg/codec_misc/codec_misc.codez"
 codec_net       = home.."plugins/inp/ffmpeg/codec_net/codec_net.codec"
 codec_xvid      = home.."plugins/inp/ffmpeg/xvid/codec_xvid.codec"
 
