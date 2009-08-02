@@ -13,11 +13,8 @@ FFMPEG_DIR	:= ../ffmpeg
 FFMPEG_INCS	:= . $(FFMPEG_DIR)/libavformat $(FFMPEG_DIR)/libavcodec
 FFMPEG_LIB	:= $(FFMPEG_DIR)/libavformat/libavformat.a $(FFMPEG_DIR)/libavcodec/libavcodec.a
 
-#LEF_TARGET_EXTRA_DEP := $(FFMPEG_LIB)
-#LEF_EXTRA := -L$(FFMPEG_DIR) -R ../ffmpeg.lef -lavformat -lavcodec
-#LEF_EXTRA := -R ../ffmpeg.lef $(FFMPEG_LIB)
-LEF_EXTRA := -L$(FFMPEG_DIR)/libavcodec -lavcodec_misc
-#LEF_EXTRA := ../ffmpeg.lef $(FFMPEG_LIB)
+#LEF_EXTRA := $(FFMPEG_DIR)/libavcodec/libavcodec_misc.a -R ../ffmpeg.lef
+LEF_EXTRA := -L$(FFMPEG_DIR)/libavcodec/ -lavcodec_misc
 
 KOS_LOCAL_CFLAGS += -DHOST_LITTLE_ENDIAN -DDCPLAYA=1
 
@@ -39,7 +36,7 @@ include ../../../../Makefile.inc
 	@echo "Build [$@] from [$^]"
 	@gzip --best -n -c -v $< >$@
 
-%.codec : $(OBJS) #$(filter %.a %.o %.elf %.lef, $(LEF_EXTRA)) $(LEF_TARGET_EXTRA_DEP)
+%.codec : $(OBJS) $(filter %.a %.o %.elf %.lef, $(LEF_EXTRA)) $(LEF_TARGET_EXTRA_DEP)
 	@echo "Build [$@] from [$^]"
 	$(KOS_LD) -b elf32-shl -d -O 3 -EL -r --cref -M -Map $*.map -x -O -S $^ $(LEF_EXTRA) -o $@
 	$(KOS_STRIP) --strip-unneeded $@

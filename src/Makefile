@@ -15,4 +15,9 @@ KOS_LOCAL_INCS := -I../include -I.. -I../libs -I../libs/z
 #KOS_LOCAL_CFLAGS += -DDREAMMP3_HOME="\"$(TOPDIR)\""
 
 include ../Makefile.inc
+
+pullsymbols.o: pullsymbols.c
+	@echo "CC [$(@F)] from [$(<F)]"
+	$(KOS_CC) $(KOS_CFLAGS) $(KOS_LOCAL_CFLAGS) $(KOS_INC_RULES) -D_arch_$(KOS_ARCH) -c $< -o $@ -fno-builtin
+
 # DO NOT DELETE

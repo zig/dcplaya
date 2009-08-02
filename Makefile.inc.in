@@ -155,13 +155,14 @@ endif
 
 # ----------------------------------------------------------------------
 OPT_FLOAT   = -ffast-math
-OPT_GENERAL = -fomit-frame-pointer -fno-builtin -fno-strict-aliasing
+OPT_GENERAL = -fomit-frame-pointer -fno-strict-aliasing -Wno-multichar -Wall
 OPT_SPEED   = -O3 -funroll-loops -finline-functions
 OPT_SIZE    = -Os -fno-inline 
 
 OPTIMIZE_FOR_SPEED = $(OPT_GENERAL) $(OPT_FLOAT) $(OPT_SPEED)
-OPTIMIZE_FOR_SIZE  = $(OPT_GENERAL) $(OPT_SIZE)
+OPTIMIZE_FOR_SIZE  = $(OPT_GENERAL) $(OPT_FLOAT) $(OPT_SIZE)
 
+OPTIMIZE = $(OPTIMIZE_FOR_SIZE)
 ifndef OPTIMIZE
 OPTIMIZE = $(OPT_GENERAL)
 endif

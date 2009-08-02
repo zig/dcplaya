@@ -19,6 +19,7 @@
  */
 
 
+#define static
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 

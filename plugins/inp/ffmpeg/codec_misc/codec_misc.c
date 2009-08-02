@@ -331,8 +331,3 @@ int codec_main()
 
   return 0;
 }
-
-int lef_main()
-{
-  return 0;
-}

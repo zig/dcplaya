@@ -28,42 +28,28 @@ OPTIMIZE = $(OPTIMIZE_FOR_SPEED)
 
 
 SUBDIRS = sha123 istream id3tag codec_misc codec_net
+# these subdirs need ffmpeg.lef to be build already (so they can use symbol in it)
+DEPENDENT_SUBDIRS = codec_misc codec_net
 
 include ../../../Makefile.inc
 
-subdirs: $(FFMPEG_LIB) ffmpeg/config.h ffmpeg/config.mak
+$(patsubst %, _dir_%, $(DEPENDENT_SUBDIRS)): $(FFMPEG_LIB) ffmpeg/config.h ffmpeg/config.mak ffmpeg.lef
 
 $(TARGET): $(FFMPEG_LIB)
 
 ffmpeg/config.h ffmpeg/config.mak: ffmpeg/configure
 	cd ffmpeg ; \
-	./configure --cc=$(KOS_CC) --as=$(KOS_AS) --target=sh4-linux --prefix=$(KOS_CC_BASE) --extra-cflags="$(KOS_CFLAGS) $(KOS_LOCAL_CFLAGS) $(KOS_INC_RULES) -D_arch_$(KOS_ARCH)" --cpu=sh4 --disable-ffserver --disable-encoders --disable-ffmpeg --disable-ffplay --disable-network ; \
+	./configure --cc=$(KOS_CC) --as=$(KOS_AS) --target=sh4-linux --prefix=$(KOS_CC_BASE) --extra-cflags="-O2 -ffast-math -fomit-frame-pointer -fno-strict-aliasing -Wno-multichar -Wall -finline-functions $(KOS_CFLAGS) $(KOS_INC_RULES) -D_arch_$(KOS_ARCH)" --cpu=sh4 --disable-ffserver --disable-encoders --disable-ffmpeg --disable-ffplay --disable-network --disable-opts ; \
 	cd ..
-
-# SH-4 compile tools
-ifeq "0" "1"
-KOS_CC=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-gcc
-KOS_CXX=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-g++
-KOS_AS=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-as
-KOS_LD=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-ld
-#export KOS_CC KOS_CXX KOS_AS KOS_LD
-
-# SH-4 bin utils
-KOS_AR=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-ar
-KOS_RANLIB=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-ranlib
-KOS_OBJCOPY=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-objcopy
-KOS_OBJDUMP=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-objdump
-KOS_NM=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-nm
-KOS_STRIP=/usr/local/cross-tools/sh-dc-elf-3.4.0/bin/sh-dc-elf-strip
-endif
 
 .PHONY: $(FFMPEG_LIB)
 $(FFMPEG_LIB): ffmpeg/config.h ffmpeg/config.mak
 	$(MAKE) -C $(FFMPEG_DIR) -f Makefile 
 
-#clean : clean_libffmpeg
-#clean_libffmpeg: ffmpeg/config.h ffmpeg/config.mak
-#	$(MAKE) -C $(FFMPEG_DIR) -f Makefile clean
+clean : clean_libffmpeg
+clean_libffmpeg: ffmpeg/config.h ffmpeg/config.mak
+	$(MAKE) -C $(FFMPEG_DIR) -f Makefile clean
+	rm -f ffmpeg/config.h ffmpeg/config.mak
 
 depend : depend_libffmpeg
 depend_libffmpeg: ffmpeg/config.h ffmpeg/config.mak

@@ -231,7 +231,7 @@ depend: $(SRCS)
 dep:	depend
 
 clean: $(CLEANAMR)
-	rm -f *.o *.d *~ .depend $(LIB) $(SLIB) *.so i386/*.o i386/*~ \
+	rm -f *.o *.d *~ .depend $(LIB_MISC) $(LIB) $(SLIB) *.so i386/*.o i386/*~ \
 	   armv4l/*.o armv4l/*~ \
 	   mlib/*.o mlib/*~ \
 	   alpha/*.o alpha/*~ \

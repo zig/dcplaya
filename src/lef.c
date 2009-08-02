@@ -713,12 +713,7 @@ info = section header index of section to which reloc applies
     int mainsym /*, getsvcsym, notifysym*/;
 
     mainsym = find_sym("_lef_main", symtab, symtabsize);
-    if (mainsym < 0) {
-      errors++;
-      SDERROR( "ELF contains no _lef_main\n");
-      goto error;
-    }
-    out->main = (int (*)(int,char**))(symtab[mainsym].value);
+    out->main = mainsym >= 0? (int (*)(int,char**))(symtab[mainsym].value) : NULL;
   }
 
   /* Create symbols table */

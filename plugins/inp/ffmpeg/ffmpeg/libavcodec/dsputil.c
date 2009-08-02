@@ -1334,7 +1334,7 @@ static inline void copy_block9(uint8_t *dst, uint8_t *src, int dstStride, int sr
     }
 }
 
-
+#if 0
 #define QPEL_MC(r, OPNAME, RND, OP) \
 static void OPNAME ## mpeg4_qpel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){\
     uint8_t *cm = cropTbl + MAX_NEG_CROP;\
@@ -1832,6 +1832,8 @@ QPEL_MC(0, avg_       , _       , op_avg)
 #undef op_put
 #undef op_put_no_rnd
 
+#endif
+    
 #if 1
 #define H264_LOWPASS(OPNAME, OP, OP2) \
 static void OPNAME ## h264_qpel4_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
@@ -3311,24 +3313,24 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->PFX ## _pixels_tab[IDX][14] = PFX ## NUM ## _mc23_c; \
     c->PFX ## _pixels_tab[IDX][15] = PFX ## NUM ## _mc33_c
 
-    dspfunc(put_qpel, 0, 16);
-    dspfunc(put_no_rnd_qpel, 0, 16);
+/*     dspfunc(put_qpel, 0, 16); */
+/*     dspfunc(put_no_rnd_qpel, 0, 16); */
 
-    dspfunc(avg_qpel, 0, 16);
+/*     dspfunc(avg_qpel, 0, 16); */
     /* dspfunc(avg_no_rnd_qpel, 0, 16); */
 
-    dspfunc(put_qpel, 1, 8);
-    dspfunc(put_no_rnd_qpel, 1, 8);
+/*     dspfunc(put_qpel, 1, 8); */
+/*     dspfunc(put_no_rnd_qpel, 1, 8); */
 
-    dspfunc(avg_qpel, 1, 8);
+/*     dspfunc(avg_qpel, 1, 8); */
     /* dspfunc(avg_no_rnd_qpel, 1, 8); */
 
-    dspfunc(put_h264_qpel, 0, 16);
-    dspfunc(put_h264_qpel, 1, 8);
-    dspfunc(put_h264_qpel, 2, 4);
-    dspfunc(avg_h264_qpel, 0, 16);
-    dspfunc(avg_h264_qpel, 1, 8);
-    dspfunc(avg_h264_qpel, 2, 4);
+/*     dspfunc(put_h264_qpel, 0, 16); */
+/*     dspfunc(put_h264_qpel, 1, 8); */
+/*     dspfunc(put_h264_qpel, 2, 4); */
+/*     dspfunc(avg_h264_qpel, 0, 16); */
+/*     dspfunc(avg_h264_qpel, 1, 8); */
+/*     dspfunc(avg_h264_qpel, 2, 4); */
 
 #undef dspfunc
     c->put_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_c;
