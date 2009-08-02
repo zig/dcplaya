@@ -147,10 +147,12 @@ end
 function song_browser_update_playlist(sb, frametime)
 
    if sb.stopping and playa_fade() == 0 then
+      sb.cur_music_path = nil
       playa_stop()
       sb.stopping = nil
       sb.playlist_idx = nil
    elseif sb.playlist_start_pos then
+      sb.cur_music_path = nil
       playa_stop(1) -- Don't want any music at start
       sb.playlist_idx = sb.playlist_start_pos
       sb.playlist_start_pos = nil
@@ -204,6 +206,8 @@ function song_browser_update_playlist(sb, frametime)
 	 end
 
  	 print(path)
+	 sb.cur_music_path = path
+	 sb.cur_music_track = 1
 	 if path then
 	    local ty, major, minor = filetype(path) --, filesize(path))
 	    local f = sb.pl.actions.run[major]
@@ -294,6 +298,17 @@ function song_browser_handle(sb, evt)
    elseif key == gui_menu_close_event then
       song_browser_contextmenu(sb) -- shutdown menu
       return
+   elseif gui_keyprev[key] then
+       if sb.cur_music_path then
+	   sb.cur_music_track = sb.cur_music_track + 1
+	   if not playa_play(sb.cur_music_path, sb.cur_music_track) then
+	       sb.cur_music_track = 1
+	       if not playa_play(sb.cur_music_path, sb.cur_music_track) then
+		   sb.cur_music_path = nil
+	       end		   
+	   end
+	   return
+       end
    end
 
    if sb.closed then
@@ -547,6 +562,7 @@ function song_browser_stop(sb)
    if not sb then return end
    sb.stopping = 1
    playa_fade(-1)
+   sb.cur_music_path = nil
    return song_browser_playlist_stop(sb)
 end
 
@@ -564,6 +580,8 @@ function song_browser_play(sb, filename, track, immediat)
    if not sb then return end
    sb.stopping = nil
    local r = playa_play(filename, track, immediat)
+   sb.cur_music_path = filename
+   sb.cur_music_track = track
    playa_fade(2)
    return r
 end
@@ -966,6 +984,7 @@ end
 --    *     - @b 2    if entry is "not confirmed" but change occurs
 --    *     - @b 3    if entry is "confirmed" and change occurs
 function sbfl_confirm(fl, sb)
+   sb.cur_music_path = nil
    return song_browser_any_action(sb, "confirm", fl)
 end
 
@@ -1364,6 +1383,7 @@ function sbfl_cancel(fl, sb, action, entry_path, entry)
 end
 
 function sbfl_cancel_default(fl, sb, action, entry_path, entry)
+   sb.cur_music_path = nil
    if playa_play() == 1 then
       sb:stop();
    end
@@ -2112,8 +2132,10 @@ function song_browser_create(owner, name)
       run = {
 	 music = function (fl, sb, path, nxt)
 		    if playa_play(path) then
-		       sb.playlist_wait = fl.actions.wait.music
-		       return 1
+			sb.cur_music_path = path
+			sb.cur_music_track = 1
+			sb.playlist_wait = fl.actions.wait.music
+			return 1
 		    end
 		 end,
 	 image = function (fl, sb, path, nxt)
@@ -2145,6 +2167,7 @@ function song_browser_create(owner, name)
       },
       wait = {
 	 music = function (fl, sb, elapsed)
+		    sb.cur_music_path = nil
 		    return playa_play() ~= 0
 		 end,
 	 image = function (fl, sb, elapsed)
