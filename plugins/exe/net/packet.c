@@ -309,7 +309,12 @@ int process_dcload_udp(ether_header_t *ether, ip_header_t *ip, udp_header_t *udp
   return 0;
 }
 
-int (*dhcp_cb)(unsigned char *pkt);
+static int (*dhcp_cb)(unsigned char *pkt);
+void net_set_dhcp_cb(int (*cb)(unsigned char *pkt))
+{
+  dhcp_cb = cb;
+}
+
 static int process_mine(unsigned char *pkt, int len, int broad)
 {
     ether_header_t *ether_header = (ether_header_t *)pkt;

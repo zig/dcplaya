@@ -10,8 +10,6 @@ typedef struct {
   unsigned char domain[256 + 1];
 } dhcp_conf_t;
 
-extern int (*dhcp_cb)(unsigned char *pkt); /* from net driver */
-
 void dhcp_discover(unsigned int xid);
 void dhcp_request();
 int dhcp_handle(unsigned char *pkt);

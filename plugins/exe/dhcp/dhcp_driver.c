@@ -23,6 +23,7 @@
 
 #include "lwip/lwip.h"
 
+#include "packet.h"
 #include "dhcp.h"
 
 static int init; /* is inited */
@@ -61,7 +62,7 @@ int lua_dhcp_init(lua_State * L)
     goto ok;
   }
 
-  dhcp_cb = dhcp_handle;
+  net_set_dhcp_cb(dhcp_handle);
 
   printf("dhcp_driver LUA initialized.\n");
   init = 1;
@@ -77,7 +78,7 @@ static int lua_dhcp_shutdown(lua_State * L)
     goto ok;
   }
 
-  dhcp_cb = NULL;
+  net_set_dhcp_cb(NULL);
 
   init = 0;
   printf("dhcp_driver LUA shutdown.\n");

@@ -231,6 +231,7 @@ struct lef_sym_t {
 
 
 #define R_SH_DIR32		1
+#define R_SH_REL32		2
 /** Relocation-A Entries. */
 struct lef_rela_t {
   uint32	offset;		/**< Offset within section */

@@ -114,16 +114,18 @@ export KOS_CFLAGS KOS_CPPFLAGS KOS_AFLAGS KOS_LDFLAGS
 export KOS_ALL_VARS $(KOS_ALL_VARS)
 
 ifndef OBJS
+ASM_SRCS = $(wildcard *.asm) 
 S_SRCS = $(wildcard *.s) 
 C_SRCS = $(wildcard *.c) 
 CXX_SRCS = $(wildcard *.cxx) 
 
+ASM_OBJS = $(ASM_SRCS:%.asm=%.o)
 S_OBJS = $(S_SRCS:%.s=%.o)
 C_OBJS = $(C_SRCS:%.c=%.o)
 CXX_OBJS = $(CXX_SRCS:%.cxx=%.o)
 
-SRCS = $(S_SRCS) $(C_SRCS) $(CXX_SRCS)
-OBJS = $(S_OBJS) $(C_OBJS) $(CXX_OBJS)
+SRCS = $(ASM_SRCS) $(S_SRCS) $(C_SRCS) $(CXX_SRCS)
+OBJS = $(ASM_OBJS) $(S_OBJS) $(C_OBJS) $(CXX_OBJS)
 endif
 
 ifndef DEPS
@@ -192,9 +194,9 @@ endif
 
 $(LIBNAME) : $(OBJS) $(LIB_EXTRA) $(LIB_TARGET_EXTRA_DEP)
 	@echo "Build library [$@]"
-	@rm -f $@
-	@$(KOS_AR) crs $@ $^ 
-	@$(KOS_RANLIB) $@
+	rm -f $@
+	$(KOS_AR) crs $@ $^ 
+	$(KOS_RANLIB) $@
 
 %.elf : $(OBJS) $(ELF_TARGET_EXTRA_DEP)
 	@echo "Build [$@] from [$^]"
@@ -202,16 +204,16 @@ $(LIBNAME) : $(OBJS) $(LIB_EXTRA) $(LIB_TARGET_EXTRA_DEP)
 
 %.lez : %.lef
 	@echo "Build [$@] from [$^]"
-	@gzip --best -n -c -v $< >$@
+	gzip --best -n -c -v $< >$@
 %.lef : $(OBJS) $(filter %.a %.o %.elf %.lef, $(LEF_EXTRA)) $(LEF_TARGET_EXTRA_DEP)
 	@echo "Build [$@] from [$^]"
-	@$(KOS_LD) -b elf32-shl -d -O 3 -EL -r --cref -M -Map $*.map -x -O -S $^ $(LEF_EXTRA) -o $@
+	$(KOS_LD) -b elf32-shl -d -O 3 -EL -r --cref -M -Map $*.map -x -O -S $^ $(LEF_EXTRA) -o $@
 	@$(KOS_STRIP) --strip-unneeded $@
-	@$(KOS_OBJDUMP) -t $@ | grep '*COM*' || echo ":_) No *COM* found."
+	$(KOS_OBJDUMP) -t $@ | grep '*COM*' || echo ":_) No *COM* found."
 
 %.bin : %.elf $(BIN_TARGET_EXTRA_DEP)
 	@echo "Build [$@] from [$^] [`pwd`]"
-	@$(KOS_OBJCOPY) -O binary -R .stack $< $@
+	$(KOS_OBJCOPY) -O binary -R .stack $< $@
 
 
 subdirs: $(patsubst %, _dir_%, $(SUBDIRS))
@@ -323,6 +325,10 @@ KOS_INC_RULES=$(KOS_LOCAL_INCS) -I- $(KOS_INCS) -I$(KOS_BASE)/kernel/arch/$(KOS_
 %.o: %.cpp
 	@echo "CXX [$(@F)] from [$(<F)]"
 	$(KOS_CXX) $(KOS_CXXFLAGS) $(KOS_LOCAL_CXXFLAGS) $(KOS_INC_RULES) -D_arch_$(KOS_ARCH) -c $< -o $@
+
+%.o: %.asm
+	@echo "ASM [$(@F)] from [$(<F)]"
+	$(KOS_CC) $(KOS_CFLAGS) $(KOS_LOCAL_CFLAGS) $(KOS_INC_RULES) -D_arch_$(KOS_ARCH) -x assembler-with-cpp -c $< -o $@
 
 %.o: %.s
 	@echo "AS [$(@F)] from [$(<F)]"

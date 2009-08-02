@@ -65,7 +65,7 @@ print ("Welcome to dcplaya !\n")
 print (format("Home is set to '%s'", home))
 
 -- VP : set this variable to nil to remove shadock edition special running
-SHADOCK_EDITION = 1
+--SHADOCK_EDITION = 1
 
 -- reading directory on PC is slow through serial port, 
 -- so we precalculate available plugins instead of doing a dir_load command

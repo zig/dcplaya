@@ -38,7 +38,7 @@ symtab.h :
 
 force_$(TARGETS): symtab.o main.o force_math.o data/romdisk.o
 	@echo "Build [$@]"
-	$(KOS_CC) $(KOS_CFLAGS) $(KOS_LDFLAGS) -o $(TARGETS) $(KOS_START) \
+	$(KOS_CXX) $(KOS_CFLAGS) $(KOS_LDFLAGS) -o $(TARGETS) $(KOS_START) \
 		$^ $(ELF_EXTRA)
 
 .PRECIOUS: $(TARGETS)

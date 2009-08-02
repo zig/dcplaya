@@ -464,7 +464,7 @@ static int start(const char *fn, int track, playa_info_t *info)
   }
 
     
-
+  printf(">>> start\n");
 
 
   ready = 1;
@@ -1210,7 +1210,10 @@ static int vid_fifo_used()
 
 static int pic_fifo_used()
 {
-  return (dma_picin - dma_picout + dma_picmax) % dma_picmax;
+  if (dma_picmax)
+    return (dma_picin - dma_picout + dma_picmax) % dma_picmax;
+  else
+    return 0;
 }
 
 static AVPacket * vid_fifo_get()

@@ -70,6 +70,10 @@ end
 
 function dhcp()
     dl(plug_dhcp)
+    if not dhcp_discover then
+	print "failed to load dhcp plugin"
+	return
+    end
     
     net_connect("0.0.0.0")
 

@@ -573,7 +573,7 @@ info = section header index of section to which reloc applies
       void * main_addr;
       char * name;
 
-      if (ELF32_R_TYPE(reltab[j].info) != R_SH_DIR32) {
+      if (ELF32_R_TYPE(reltab[j].info) != R_SH_DIR32 && ELF32_R_TYPE(reltab[j].info) != R_SH_REL32) {
 	SDERROR("Unknown RELA type %02x\n",
 		ELF32_R_TYPE(reltab[j].info));
 	++errors;

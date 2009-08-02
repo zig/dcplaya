@@ -123,4 +123,7 @@ void make_udp(unsigned short dest, unsigned short src, unsigned char * data, int
 /* thread safe version of eth_tx, waiting nicely with thd_pass */
 //int eth_txts(uint8 *pkt, int len);
 
+/* plug dhcp cb */
+void net_set_dhcp_cb(int (*cb)(unsigned char *pkt));
+
 #endif

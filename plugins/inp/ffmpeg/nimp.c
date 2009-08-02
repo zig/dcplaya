@@ -46,3 +46,48 @@
 void dummyf()
 {
 }
+
+
+
+#if 0
+
+/* looking for division by zero ... */
+
+#include "lef.h"
+static int symb(uint32 PC)
+{
+  symbol_t *symb = lef_closest_symbol(PC);
+  if (symb) {
+    printf("STACK 0x%8x (%s + 0x%x)\n", 
+	   PC, symb->name, PC - ((uint32)symb->addr));
+  }
+  return 0;
+}
+static int stack_cb(void *ctx, void *dummy)
+{
+  uint32 PC = _Unwind_GetIP(ctx);
+  symb(PC);
+  return 0;
+}
+
+int __udivsi3_i4i(unsigned int a, int b)
+{
+    if (!b) {
+        printf("udiv %d %d\n");
+        symb(__builtin_return_address(0));
+        //_Unwind_Backtrace(stack_cb, NULL);
+    }
+  return (float) a / (float) b;
+}
+
+int __sdivsi3_i4i(int a, int b)
+{
+    if (!b) {
+        printf("sdiv %d %d\n");
+        symb(__builtin_return_address(0));
+        //_Unwind_Backtrace(stack_cb, NULL);
+    }
+  return (float) a / (float) b;
+}
+
+#endif

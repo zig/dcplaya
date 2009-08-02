@@ -64,6 +64,17 @@ static struct {
 extern symbol_t main_symtab[];
 extern int main_symtab_size;
 
+static int stack_cb(void *ctx, void *dummy)
+{
+  uint32 PC = _Unwind_GetIP(ctx);
+  symbol_t *symb = lef_closest_symbol(PC);
+  if (symb) {
+    printf("STACK 0x%8x (%s + 0x%x)\n", 
+	   PC, symb->name, PC - ((uint32)symb->addr));
+  }
+  return 0;
+}
+
 static void guard_irq_handler(irq_t source, irq_context_t *context)
 {
   if (source == EXC_FPU) {
@@ -91,6 +102,7 @@ static void guard_irq_handler(irq_t source, irq_context_t *context)
     int i;
     uint * stack = (uint *) irq_srt_addr->r[15];
 
+#if 1
     for (i=15; i>=0; i--) {
       symb = lef_closest_symbol(stack[i]);
       if (symb) {
@@ -99,6 +111,9 @@ static void guard_irq_handler(irq_t source, irq_context_t *context)
 	       stack[i] - ((int)symb->addr));
       }
     }
+#else
+    _Unwind_Backtrace(stack_cb, NULL);
+#endif
 
     for (i=0; exceptions_code[i].code; i++)
       if (exceptions_code[i].code == source) {
