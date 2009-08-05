@@ -38,9 +38,9 @@
      NIMP(align_put_bits)
 #endif
 
-         NIMP(sinh)
-         NIMP(cosh)
-         NIMP(tanh)
+/*          NIMP(sinh) */
+/*          NIMP(cosh) */
+/*          NIMP(tanh) */
 
 
 void dummyf()

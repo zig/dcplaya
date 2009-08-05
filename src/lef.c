@@ -18,9 +18,11 @@
 #include "sysdebug.h"
 #include "gzip.h"
 
-// #define SDERROR printf
-// #define SDDEBUG printf
-// #define SDWARNING printf
+/* #define SDERROR printf */
+/* #define SDDEBUG printf */
+/* #define SDWARNING printf */
+/* #define SDINFO printf */
+/* #define SDMSG printf */
 
 // VP : define this to have full debug logging informations
 //#define FULL_DEBUG
@@ -787,6 +789,8 @@ info = section header index of section to which reloc applies
     
     CIRCLEQ_INSERT_HEAD(&lef_list, out, g_list);
   }
+
+  icache_flush_range(out, lef_size + 128);
 
   SDDEBUG("image [@%08x, @%08x, %08x] entry [%08x]\n",
 	  out->data, imgout, out->size, out->main);

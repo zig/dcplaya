@@ -108,6 +108,7 @@ NIMP(__ashldi3)
      NIMP(__floatdisf)
      NIMP(__fixsfdi)
 #else
+#if 1
 /*
  * Convert (signed) quad to float.
  */
@@ -318,6 +319,7 @@ __ashrdi3(a, shift)
         }
         return (aa.q);
 }
+#endif
 #endif
 
 #if 0
@@ -569,6 +571,7 @@ sscanf
 
 #endif
 
+#include <stdio.h>
 #include <arch/spinlock.h>
 #include <kos/dbgio.h>
 #undef fprintf

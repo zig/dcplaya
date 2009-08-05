@@ -16,6 +16,9 @@ static float force(float v)
   w += cos(v);
   w += sin(v);
   w += tan(v);
+  w += cosh(v);
+  w += sinh(v);
+  w += tanh(v);
   w += atan(v);
   w += atan2(v,v);
   w += sqrt(v);

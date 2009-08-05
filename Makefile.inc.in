@@ -156,14 +156,14 @@ endif
 # ----------------------------------------------------------------------
 OPT_FLOAT   = -ffast-math
 OPT_GENERAL = -fomit-frame-pointer -fno-strict-aliasing -Wno-multichar -Wall -fno-builtin
-OPT_SPEED   = -O2 -funroll-loops -finline-functions
+OPT_SPEED   = -O3 -funroll-loops -finline-functions
 OPT_SIZE    = -Os 
 
 OPTIMIZE_FOR_SPEED = $(OPT_GENERAL) $(OPT_FLOAT) $(OPT_SPEED)
 OPTIMIZE_FOR_SIZE  = $(OPT_GENERAL) $(OPT_FLOAT) $(OPT_SIZE)
 
-OPTIMIZE = $(OPTIMIZE_FOR_SIZE)
-#OPTIMIZE = $(OPTIMIZE_FOR_SPEED)
+#OPTIMIZE = $(OPTIMIZE_FOR_SIZE)
+OPTIMIZE = $(OPTIMIZE_FOR_SPEED)
 ifndef OPTIMIZE
 OPTIMIZE = $(OPT_GENERAL)
 endif
@@ -316,9 +316,14 @@ KOS_INC_RULES=$(KOS_LOCAL_INCS) -I- $(KOS_INCS) -I$(KOS_BASE)/kernel/arch/$(KOS_
 
 
 # Build rules
+
+# fix bizarre gcc bug (?)
+libc.o: FIX_GCC_BUG = -fno-inline-functions
+dynshell.o: FIX_GCC_BUG = -fno-inline-functions
+
 %.o: %.c
 	@echo "CC [$(@F)] from [$(<F)]"
-	$(KOS_CC) $(KOS_CFLAGS) $(KOS_LOCAL_CFLAGS) $(KOS_INC_RULES) -D_arch_$(KOS_ARCH) -c $< -o $@
+	$(KOS_CC) $(KOS_CFLAGS) $(KOS_LOCAL_CFLAGS) $(KOS_INC_RULES) -D_arch_$(KOS_ARCH) $(FIX_GCC_BUG) -c $< -o $@
 
 %.o: %.cxx
 	@echo "CXX [$(@F)] from [$(<F)]"
